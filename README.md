@@ -1,5 +1,12 @@
 # Pokemon Library Monorepo
 
+[![CI](https://github.com/uehlbran/pokemon-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/uehlbran/pokemon-lib/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/uehlbran/pokemon-lib)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-5FA04E?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/uehlbran/pokemon-lib?label=CodeRabbit&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+)](https://coderabbit.ai)
+[![Qodo Merge](https://img.shields.io/badge/AI%20Review-Qodo%20Merge-5B4FC4?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+)](https://www.qodo.ai/products/qodo-merge/)
+
 A TypeScript monorepo producing open-source Pokemon libraries for building games, simulators, and tools.
 
 ## Packages

@@ -91,6 +91,18 @@ These specs are reference material. Implementation may deviate where code reveal
 - Snapshot tests for imported data (correct shapes and counts)
 - Validate against Showdown battle logs for battle engine correctness
 
+## PR Review
+
+Every PR gets reviewed by two AI tools plus a human approver:
+
+- **CodeRabbit** — inline comments, PR summary, security scan. Config: `.coderabbit.yaml`
+- **Qodo Merge** — structured review with severity categories. Free tier (75 PRs/month)
+- **Human** — required approval (1 reviewer). Final say on architecture and correctness
+
+AI reviews are advisory (comments only, never formal approvals). See `.github/AI_REVIEWERS.md` for interaction commands.
+
+Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agents).
+
 ## Implementation Phases
 
 - **Phase 1**: Core + Battle + Gen 1 (simplest gen — no abilities, no held items, 151 Pokemon, 165 moves, 15-type chart). Ship 0.1.0.
