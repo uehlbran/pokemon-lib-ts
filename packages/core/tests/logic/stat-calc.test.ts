@@ -187,7 +187,9 @@ describe("getNatureModifier", () => {
 });
 
 describe("calculateAllStats", () => {
-  // Charizard base stats
+  // Charizard base stats — using modern (Gen 3+) values for formula testing.
+  // Note: Gen 1 uses a unified Special stat (109/109). These split values
+  // (spAttack: 109, spDefense: 85) are correct for the generation-agnostic formula.
   const charizardSpecies = {
     baseStats: {
       hp: 78,

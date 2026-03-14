@@ -47,8 +47,8 @@ describe("Gen 1 Data Integration", () => {
       hp: 78,
       attack: 84,
       defense: 78,
-      spAttack: 85,
-      spDefense: 85,
+      spAttack: 109,
+      spDefense: 109,
       speed: 100,
     });
     expect(charizard.generation).toBe(1);

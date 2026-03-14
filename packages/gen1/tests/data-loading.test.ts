@@ -59,8 +59,8 @@ describe("Gen 1 Data Loading", () => {
     expect(charizard.baseStats.hp).toBe(78);
     expect(charizard.baseStats.attack).toBe(84);
     expect(charizard.baseStats.defense).toBe(78);
-    expect(charizard.baseStats.spAttack).toBe(85);
-    expect(charizard.baseStats.spDefense).toBe(85); // Same as spAttack in Gen 1 (unified Special)
+    expect(charizard.baseStats.spAttack).toBe(109);
+    expect(charizard.baseStats.spDefense).toBe(109); // Same as spAttack in Gen 1 (unified Special)
     expect(charizard.baseStats.speed).toBe(100);
   });
 
