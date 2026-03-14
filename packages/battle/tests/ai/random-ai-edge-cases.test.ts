@@ -1,0 +1,376 @@
+import { SeededRandom } from "@pokemon-lib/core";
+import { describe, expect, it } from "vitest";
+import { RandomAI } from "../../src/ai/RandomAI";
+import type { BattleConfig } from "../../src/context";
+import { BattleEngine } from "../../src/engine";
+import type { BattleState } from "../../src/state";
+import { createTestPokemon } from "../../src/utils";
+import { createMockDataManager } from "../helpers/mock-data-manager";
+import { MockRuleset } from "../helpers/mock-ruleset";
+
+function createTestState(
+  overrides?: Partial<{
+    team1Hp: number[];
+    team2Hp: number[];
+    team1Pp: number[];
+  }>,
+): BattleState {
+  const rng = new SeededRandom(42);
+
+  const team1 = [
+    createTestPokemon(6, 50, {
+      uid: "charizard-1",
+      nickname: "Charizard",
+      moves: [
+        { moveId: "tackle", currentPP: overrides?.team1Pp?.[0] ?? 35, maxPP: 35, ppUps: 0 },
+        { moveId: "scratch", currentPP: overrides?.team1Pp?.[1] ?? 35, maxPP: 35, ppUps: 0 },
+      ],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 120,
+      },
+      currentHp: overrides?.team1Hp?.[0] ?? 200,
+    }),
+    createTestPokemon(25, 50, {
+      uid: "pikachu-1",
+      nickname: "Pikachu",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 120,
+        attack: 80,
+        defense: 60,
+        spAttack: 80,
+        spDefense: 80,
+        speed: 130,
+      },
+      currentHp: overrides?.team1Hp?.[1] ?? 120,
+    }),
+  ];
+
+  const team2 = [
+    createTestPokemon(9, 50, {
+      uid: "blastoise-1",
+      nickname: "Blastoise",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 80,
+      },
+      currentHp: overrides?.team2Hp?.[0] ?? 200,
+    }),
+  ];
+
+  return {
+    phase: "ACTION_SELECT",
+    generation: 1,
+    format: "singles",
+    turnNumber: 1,
+    sides: [
+      {
+        index: 0,
+        trainer: null,
+        team: team1,
+        active: [
+          {
+            pokemon: team1[0]!,
+            teamSlot: 0,
+            statStages: {
+              hp: 0,
+              attack: 0,
+              defense: 0,
+              spAttack: 0,
+              spDefense: 0,
+              speed: 0,
+              accuracy: 0,
+              evasion: 0,
+            },
+            volatileStatuses: new Map(),
+            types: ["fire", "flying"],
+            ability: "blaze",
+            lastMoveUsed: null,
+            turnsOnField: 1,
+            movedThisTurn: false,
+            consecutiveProtects: 0,
+            substituteHp: 0,
+            transformed: false,
+            transformedSpecies: null,
+            isMega: false,
+            isDynamaxed: false,
+            dynamaxTurnsLeft: 0,
+            isTerastallized: false,
+            teraType: null,
+          },
+        ],
+        hazards: [],
+        screens: [],
+        tailwind: { active: false, turnsLeft: 0 },
+        luckyChant: { active: false, turnsLeft: 0 },
+        wish: null,
+        futureAttack: null,
+        faintCount: 0,
+        gimmickUsed: false,
+      },
+      {
+        index: 1,
+        trainer: null,
+        team: team2,
+        active: [
+          {
+            pokemon: team2[0]!,
+            teamSlot: 0,
+            statStages: {
+              hp: 0,
+              attack: 0,
+              defense: 0,
+              spAttack: 0,
+              spDefense: 0,
+              speed: 0,
+              accuracy: 0,
+              evasion: 0,
+            },
+            volatileStatuses: new Map(),
+            types: ["water"],
+            ability: "torrent",
+            lastMoveUsed: null,
+            turnsOnField: 1,
+            movedThisTurn: false,
+            consecutiveProtects: 0,
+            substituteHp: 0,
+            transformed: false,
+            transformedSpecies: null,
+            isMega: false,
+            isDynamaxed: false,
+            dynamaxTurnsLeft: 0,
+            isTerastallized: false,
+            teraType: null,
+          },
+        ],
+        hazards: [],
+        screens: [],
+        tailwind: { active: false, turnsLeft: 0 },
+        luckyChant: { active: false, turnsLeft: 0 },
+        wish: null,
+        futureAttack: null,
+        faintCount: 0,
+        gimmickUsed: false,
+      },
+    ],
+    weather: null,
+    terrain: null,
+    trickRoom: { active: false, turnsLeft: 0 },
+    magicRoom: { active: false, turnsLeft: 0 },
+    wonderRoom: { active: false, turnsLeft: 0 },
+    gravity: { active: false, turnsLeft: 0 },
+    turnHistory: [],
+    rng,
+    ended: false,
+    winner: null,
+  };
+}
+
+describe("RandomAI — edge cases", () => {
+  describe("chooseAction", () => {
+    it("given no active pokemon, when chooseAction is called, then struggle is returned as fallback", () => {
+      // Arrange
+      const ai = new RandomAI();
+      const state = createTestState();
+      // Remove active pokemon
+      state.sides[0].active = [];
+      const ruleset = new MockRuleset();
+      const rng = new SeededRandom(42);
+
+      // Act
+      const action = ai.chooseAction(0, state, ruleset, rng);
+
+      // Assert
+      expect(action.type).toBe("struggle");
+      expect(action.side).toBe(0);
+    });
+
+    it("given a pokemon with one move at 0 PP and one with PP, when chooseAction is called, then only the move with PP is selected", () => {
+      // Arrange
+      const ai = new RandomAI();
+      const state = createTestState({ team1Pp: [0, 35] });
+      const ruleset = new MockRuleset();
+      const rng = new SeededRandom(42);
+
+      const moveIndices = new Set<number>();
+
+      // Act — call many times to verify only index 1 is picked
+      for (let i = 0; i < 50; i++) {
+        const action = ai.chooseAction(0, state, ruleset, new SeededRandom(i));
+        if (action.type === "move") {
+          moveIndices.add(action.moveIndex);
+        }
+      }
+
+      // Assert — only move index 1 (scratch with PP) should be chosen
+      expect(moveIndices.has(0)).toBe(false); // tackle has 0 PP
+      expect(moveIndices.has(1)).toBe(true); // scratch has 35 PP
+    });
+
+    it("given a pokemon with only one move with PP, when chooseAction is called many times, then it always returns that move", () => {
+      // Arrange
+      const ai = new RandomAI();
+      const state = createTestState({ team1Pp: [35, 0] });
+      const ruleset = new MockRuleset();
+
+      // Act & Assert
+      for (let i = 0; i < 20; i++) {
+        const action = ai.chooseAction(0, state, ruleset, new SeededRandom(i));
+        expect(action.type).toBe("move");
+        if (action.type === "move") {
+          expect(action.moveIndex).toBe(0); // Only tackle has PP
+        }
+      }
+    });
+  });
+
+  describe("chooseSwitchIn", () => {
+    it("given multiple alive bench pokemon, when chooseSwitchIn is called many times, then different pokemon can be selected", () => {
+      // Arrange
+      const ai = new RandomAI();
+      const state = createTestState();
+      // Add a third pokemon to team
+      const extraMon = createTestPokemon(9, 50, {
+        uid: "extra-1",
+        nickname: "Extra",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 200,
+      });
+      state.sides[0].team.push(extraMon);
+
+      const ruleset = new MockRuleset();
+      const slots = new Set<number>();
+
+      // Act
+      for (let i = 0; i < 100; i++) {
+        const slot = ai.chooseSwitchIn(0, state, ruleset, new SeededRandom(i));
+        slots.add(slot);
+      }
+
+      // Assert — both bench slots (1 and 2) should be picked at least once
+      expect(slots.has(1)).toBe(true);
+      expect(slots.has(2)).toBe(true);
+      expect(slots.has(0)).toBe(false); // Active slot should not be picked
+    });
+  });
+
+  describe("integration — AI drives battle with KO and switch prompt", () => {
+    it("given a RandomAI controlling both sides, when a pokemon faints and reserve is available, then AI picks a valid switch", () => {
+      // Arrange
+      const ai = new RandomAI();
+      const ruleset = new MockRuleset();
+      ruleset.setFixedDamage(100); // High damage to force KO quickly
+      const dataManager = createMockDataManager();
+
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+      ];
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 200,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-2",
+          nickname: "Pikachu",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 130,
+          },
+          currentHp: 120,
+        }),
+      ];
+
+      const config: BattleConfig = {
+        generation: 1,
+        format: "singles",
+        teams: [team1, team2],
+        seed: 42,
+      };
+
+      const engine = new BattleEngine(config, ruleset, dataManager);
+      engine.start();
+
+      const aiRng = new SeededRandom(42);
+      let maxTurns = 20;
+
+      // Act — AI loop
+      while (!engine.isEnded() && maxTurns > 0) {
+        if (engine.getPhase() === "ACTION_SELECT") {
+          const action0 = ai.chooseAction(0, engine.getState(), ruleset, aiRng);
+          const action1 = ai.chooseAction(1, engine.getState(), ruleset, aiRng);
+          engine.submitAction(0, action0);
+          engine.submitAction(1, action1);
+          maxTurns--;
+        } else if (engine.getPhase() === "SWITCH_PROMPT") {
+          // AI picks a switch for whichever side needs it
+          for (const side of [0, 1] as const) {
+            const switches = engine.getAvailableSwitches(side);
+            if (switches.length > 0 && engine.getActive(side)?.pokemon.currentHp === 0) {
+              const slot = ai.chooseSwitchIn(side, engine.getState(), ruleset, aiRng);
+              try {
+                engine.submitSwitch(side, slot);
+              } catch {
+                // Side might not need switch
+              }
+            }
+          }
+          // If still in SWITCH_PROMPT, break to avoid infinite loop
+          if (engine.getPhase() === "SWITCH_PROMPT") break;
+        } else {
+          break;
+        }
+      }
+
+      // Assert — battle should eventually complete
+      expect(engine.isEnded()).toBe(true);
+      expect(engine.getWinner()).not.toBeNull();
+    });
+  });
+});

@@ -1,0 +1,61 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for suggesting a feature! Please describe what you'd like to see.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the feature you'd like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: What problem does this solve? How would you use this feature?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Target Package
+      description: Which package should this feature be added to?
+      options:
+        - "@pokemon-lib/core"
+        - "@pokemon-lib/battle"
+        - "@pokemon-lib/gen1"
+        - "@pokemon-lib/gen2"
+        - "@pokemon-lib/gen3"
+        - "@pokemon-lib/gen4"
+        - "@pokemon-lib/gen5"
+        - "@pokemon-lib/gen6"
+        - "@pokemon-lib/gen7"
+        - "@pokemon-lib/gen8"
+        - "@pokemon-lib/gen9"
+        - New package
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, mockups, or references.
+    validations:
+      required: false
