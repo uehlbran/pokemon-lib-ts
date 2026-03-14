@@ -1,0 +1,12 @@
+reviews:
+  auto_review:
+    enabled: true
+  path_instructions:
+    - path: "packages/core/**"
+      instructions: "Core package must have zero runtime dependencies. Prefer readonly interfaces. Use lowercase string literals, not UPPERCASE enums."
+    - path: "packages/battle/**"
+      instructions: "Battle engine uses event-driven architecture (BattleEvent[] stream). State must be JSON-serializable. GenerationRuleset is the key interface — gen-specific behavior is delegated through it."
+    - path: "packages/gen1/**"
+      instructions: "Gen 1 implements GenerationRuleset directly (does NOT extend BaseRuleset). Uses unified Special stat (no split SpAtk/SpDef). 15-type chart (no Dark/Steel/Fairy). Verify formulas against Bulbapedia/Showdown."
+    - path: "packages/gen3/**"
+      instructions: "Gen 3+ extend BaseRuleset. Check that overrides are correct for this generation's mechanics."
