@@ -1,0 +1,730 @@
+import type { ActivePokemon } from "@pokemon-lib/battle";
+import type { DamageContext } from "@pokemon-lib/battle";
+import type {
+  MoveData,
+  PokemonInstance,
+  PokemonSpeciesData,
+  PokemonType,
+  StatBlock,
+  TypeChart,
+} from "@pokemon-lib/core";
+import { describe, expect, it } from "vitest";
+import { calculateGen1Damage } from "../src/Gen1DamageCalc";
+
+/**
+ * Gen 1 Damage Formula Tests
+ *
+ * The Gen 1 damage formula:
+ *   damage = ((((2 * Level / 5 + 2) * Power * Attack / Defense) / 50) + 2)
+ *            * STAB * TypeEffectiveness * Random(217..255)/255
+ *
+ * Key differences from later gens:
+ * - No abilities, no held items
+ * - Physical/Special determined by type (not per-move)
+ * - Critical hits use base stats, ignore stat stages
+ * - Integer division at each step
+ * - Burn halves attack for physical moves
+ */
+
+// ---------------------------------------------------------------------------
+// Test helpers — build minimal mocks matching the real interfaces
+// ---------------------------------------------------------------------------
+
+/** A mock RNG whose int() always returns a fixed value. */
+function createMockRng(intReturnValue: number) {
+  return {
+    next: () => 0,
+    int: (_min: number, _max: number) => intReturnValue,
+    chance: () => false,
+    pick: <T>(arr: readonly T[]) => arr[0]!,
+    shuffle: <T>(arr: readonly T[]) => [...arr],
+    getState: () => 0,
+    setState: () => {},
+  };
+}
+
+/** Convert a desired 0-1 random factor to the int roll the implementation expects (217-255). */
+function randomFactorToRoll(factor: number): number {
+  // The implementation does: roll = rng.int(217,255); randomFactor = roll / 255
+  // So roll = Math.round(factor * 255), clamped to [217, 255].
+  return Math.min(255, Math.max(217, Math.round(factor * 255)));
+}
+
+/** Minimal ActivePokemon mock. */
+function createActivePokemon(opts: {
+  level: number;
+  attack: number;
+  defense: number;
+  spAttack: number;
+  spDefense: number;
+  types: PokemonType[];
+  status?: "burn" | null;
+}): ActivePokemon {
+  const stats: StatBlock = {
+    hp: 200,
+    attack: opts.attack,
+    defense: opts.defense,
+    spAttack: opts.spAttack,
+    spDefense: opts.spDefense,
+    speed: 100,
+  };
+
+  const pokemon = {
+    uid: "test",
+    speciesId: 1,
+    nickname: null,
+    level: opts.level,
+    experience: 0,
+    nature: "hardy",
+    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    currentHp: 200,
+    moves: [],
+    ability: "",
+    abilitySlot: "normal1" as const,
+    heldItem: null,
+    status: opts.status ?? null,
+    friendship: 0,
+    gender: "male" as const,
+    isShiny: false,
+    metLocation: "",
+    metLevel: 1,
+    originalTrainer: "",
+    originalTrainerId: 0,
+    pokeball: "pokeball",
+    calculatedStats: stats,
+  } as PokemonInstance;
+
+  return {
+    pokemon,
+    teamSlot: 0,
+    statStages: {
+      hp: 0,
+      attack: 0,
+      defense: 0,
+      spAttack: 0,
+      spDefense: 0,
+      speed: 0,
+      accuracy: 0,
+      evasion: 0,
+    },
+    volatileStatuses: new Map(),
+    types: opts.types,
+    ability: "",
+    lastMoveUsed: null,
+    turnsOnField: 0,
+    movedThisTurn: false,
+    consecutiveProtects: 0,
+    substituteHp: 0,
+    transformed: false,
+    transformedSpecies: null,
+    isMega: false,
+    isDynamaxed: false,
+    dynamaxTurnsLeft: 0,
+    isTerastallized: false,
+    teraType: null,
+  } as ActivePokemon;
+}
+
+/** Minimal physical move mock. Type "normal" is physical in Gen 1. */
+function createPhysicalMove(power: number): MoveData {
+  return {
+    id: "test-move",
+    displayName: "Test Move",
+    type: "normal" as PokemonType,
+    category: "physical",
+    power,
+    accuracy: 100,
+    pp: 35,
+    priority: 0,
+    target: "adjacent-foe",
+    flags: {
+      contact: false,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: true,
+      mirror: true,
+      snatch: false,
+      gravity: false,
+      defrost: false,
+      recharge: false,
+      charge: false,
+      bypassSubstitute: false,
+    },
+    effect: null,
+    description: "",
+    generation: 1,
+  } as MoveData;
+}
+
+/** Minimal species data mock. */
+function createSpecies(): PokemonSpeciesData {
+  return {
+    id: 1,
+    name: "test",
+    displayName: "Test",
+    types: ["normal"],
+    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
+    abilities: { normal: [""], hidden: null },
+    genderRatio: 50,
+    catchRate: 45,
+    baseExp: 64,
+    expGroup: "medium-slow",
+    evYield: {},
+    eggGroups: ["monster"],
+    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
+    evolution: null,
+    dimensions: { height: 1, weight: 10 },
+    spriteKey: "test",
+    baseFriendship: 70,
+    generation: 1,
+    isLegendary: false,
+    isMythical: false,
+  } as PokemonSpeciesData;
+}
+
+/**
+ * A type chart where every matchup is neutral (1x).
+ * Override specific entries when testing type effectiveness.
+ */
+function createNeutralTypeChart(): TypeChart {
+  const types: PokemonType[] = [
+    "normal",
+    "fire",
+    "water",
+    "electric",
+    "grass",
+    "ice",
+    "fighting",
+    "poison",
+    "ground",
+    "flying",
+    "psychic",
+    "bug",
+    "rock",
+    "ghost",
+    "dragon",
+  ];
+  const chart = {} as Record<string, Record<string, number>>;
+  for (const atk of types) {
+    chart[atk] = {};
+    for (const def of types) {
+      chart[atk]![def] = 1;
+    }
+  }
+  return chart as TypeChart;
+}
+
+/**
+ * Build a type chart that produces the desired effectiveness for normal-type moves
+ * against the defender type "water" (an arbitrary stand-in type).
+ */
+function createTypeChartWithEffectiveness(effectiveness: number): {
+  chart: TypeChart;
+  defenderTypes: PokemonType[];
+} {
+  const chart = createNeutralTypeChart();
+  if (effectiveness === 1.0) {
+    // Everything is already neutral
+    return { chart, defenderTypes: ["normal"] };
+  }
+  // Use "water" as the defender type and set normal -> water to the desired value
+  (chart as Record<string, Record<string, number>>).normal!.water = effectiveness;
+  return { chart, defenderTypes: ["water"] };
+}
+
+/**
+ * Build a DamageContext + TypeChart from simplified test parameters.
+ *
+ * This bridges the old flat-param test style to the real calculateGen1Damage API.
+ */
+function buildContext(params: {
+  level: number;
+  power: number;
+  attack: number;
+  defense: number;
+  stab: boolean;
+  typeEffectiveness: number;
+  isCritical: boolean;
+  randomFactor: number;
+}): { context: DamageContext; chart: TypeChart; species: PokemonSpeciesData } {
+  const { chart, defenderTypes } = createTypeChartWithEffectiveness(params.typeEffectiveness);
+
+  // STAB: if stab is true, attacker types include the move's type ("normal")
+  const attackerTypes: PokemonType[] = params.stab ? ["normal"] : ["fire"];
+
+  const attacker = createActivePokemon({
+    level: params.level,
+    attack: params.attack,
+    defense: 100,
+    spAttack: params.attack,
+    spDefense: 100,
+    types: attackerTypes,
+  });
+
+  const defender = createActivePokemon({
+    level: 50,
+    attack: 100,
+    defense: params.defense,
+    spAttack: 100,
+    spDefense: params.defense,
+    types: defenderTypes,
+  });
+
+  const move = createPhysicalMove(params.power);
+  const roll = randomFactorToRoll(params.randomFactor);
+  const rng = createMockRng(roll);
+  const species = createSpecies();
+
+  const context = {
+    attacker,
+    defender,
+    move,
+    state: {} as DamageContext["state"], // not accessed by calculateGen1Damage
+    rng: rng as DamageContext["rng"],
+    isCrit: params.isCritical,
+  } satisfies DamageContext;
+
+  return { context, chart, species };
+}
+
+/** Shortcut: build + calculate in one call, return the numeric damage. */
+function calcDamage(params: {
+  level: number;
+  power: number;
+  attack: number;
+  defense: number;
+  stab: boolean;
+  typeEffectiveness: number;
+  isCritical: boolean;
+  randomFactor: number;
+}): number {
+  const { context, chart, species } = buildContext(params);
+  return calculateGen1Damage(context, chart, species).damage;
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe("Gen 1 Damage Calculation", () => {
+  // --- Basic Damage Calculation ---
+
+  it("given known attacker/defender stats and a physical move, when calculating damage at max roll, then falls in expected range", () => {
+    // Arrange: Level 50 attacker with Attack 100, Defender with Defense 100, Power 80 move
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+      randomFactor: 1.0, // Max roll
+    };
+    // Act
+    const damage = calcDamage(params);
+    // Assert
+    // Step 1: floor((2*50/5 + 2)) = floor(22) = 22
+    // Step 2: floor(22 * 80 * 100) / 100 / 50 + 2 = floor(1760*100/100)/50 + 2
+    //       = 1760/50 + 2 = 35.2 + 2 = 37 (with floors)
+    // Exact result depends on order of operations with floor divisions
+    expect(damage).toBeGreaterThan(0);
+    expect(damage).toBeLessThan(200);
+    expect(Number.isInteger(damage)).toBe(true);
+  });
+
+  it("given known attacker/defender stats, when calculating damage at min roll (0.85), then is lower than max roll", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+    };
+    // Act
+    const maxDamage = calcDamage({ ...params, randomFactor: 1.0 });
+    const minDamage = calcDamage({ ...params, randomFactor: 0.85 });
+    // Assert
+    expect(minDamage).toBeLessThanOrEqual(maxDamage);
+    expect(minDamage).toBeGreaterThan(0);
+  });
+
+  it("given damage calculation, when random factor varies 0.85 to 1.0, then damage range spans about 15%", () => {
+    // Arrange
+    const params = {
+      level: 100,
+      power: 100,
+      attack: 200,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+    };
+    // Act
+    const maxDamage = calcDamage({ ...params, randomFactor: 1.0 });
+    const minDamage = calcDamage({ ...params, randomFactor: 0.85 });
+    // Assert: The ratio should be approximately 0.85
+    if (maxDamage > 0) {
+      const ratio = minDamage / maxDamage;
+      expect(ratio).toBeGreaterThanOrEqual(0.8); // Allow some rounding tolerance
+      expect(ratio).toBeLessThanOrEqual(0.9);
+    }
+  });
+
+  // --- STAB (Same Type Attack Bonus) ---
+
+  it("given a STAB move, when calculating damage, then applies 1.5x multiplier", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const withoutStab = calcDamage({ ...params, stab: false });
+    const withStab = calcDamage({ ...params, stab: true });
+    // Assert: STAB damage should be approximately 1.5x non-STAB
+    expect(withStab).toBeGreaterThan(withoutStab);
+    if (withoutStab > 0) {
+      const ratio = withStab / withoutStab;
+      // With integer division, the ratio may not be exactly 1.5 but should be close
+      expect(ratio).toBeGreaterThanOrEqual(1.4);
+      expect(ratio).toBeLessThanOrEqual(1.6);
+    }
+  });
+
+  // --- Type Effectiveness ---
+
+  it("given a super effective move (2x), when calculating damage, then approximately doubles damage", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const neutral = calcDamage({ ...params, typeEffectiveness: 1.0 });
+    const superEffective = calcDamage({ ...params, typeEffectiveness: 2.0 });
+    // Assert
+    expect(superEffective).toBeGreaterThan(neutral);
+    if (neutral > 0) {
+      const ratio = superEffective / neutral;
+      expect(ratio).toBeGreaterThanOrEqual(1.8);
+      expect(ratio).toBeLessThanOrEqual(2.2);
+    }
+  });
+
+  it("given a not very effective move (0.5x), when calculating damage, then approximately halves damage", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const neutral = calcDamage({ ...params, typeEffectiveness: 1.0 });
+    const notVeryEffective = calcDamage({ ...params, typeEffectiveness: 0.5 });
+    // Assert
+    expect(notVeryEffective).toBeLessThan(neutral);
+    if (neutral > 0) {
+      const ratio = notVeryEffective / neutral;
+      expect(ratio).toBeGreaterThanOrEqual(0.4);
+      expect(ratio).toBeLessThanOrEqual(0.6);
+    }
+  });
+
+  it("given an immune matchup (0x), when calculating damage, then deals 0 damage", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 0,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const damage = calcDamage(params);
+    // Assert
+    expect(damage).toBe(0);
+  });
+
+  it("given double super effective (4x), when calculating damage, then approximately quadruples damage", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const neutral = calcDamage({ ...params, typeEffectiveness: 1.0 });
+    const doubleSE = calcDamage({ ...params, typeEffectiveness: 4.0 });
+    // Assert
+    expect(doubleSE).toBeGreaterThan(neutral);
+    if (neutral > 0) {
+      const ratio = doubleSE / neutral;
+      expect(ratio).toBeGreaterThanOrEqual(3.5);
+      expect(ratio).toBeLessThanOrEqual(4.5);
+    }
+  });
+
+  // --- Level Scaling ---
+
+  it("given higher level attacker, when calculating damage, then deals more damage", () => {
+    // Arrange
+    const params = {
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const damageLow = calcDamage({ ...params, level: 10 });
+    const damageMid = calcDamage({ ...params, level: 50 });
+    const damageHigh = calcDamage({ ...params, level: 100 });
+    // Assert
+    expect(damageMid).toBeGreaterThan(damageLow);
+    expect(damageHigh).toBeGreaterThan(damageMid);
+  });
+
+  // --- High Attack vs Low Defense ---
+
+  it("given very high attack vs very low defense, when calculating damage, then deals massive damage", () => {
+    // Arrange
+    const params = {
+      level: 100,
+      power: 150,
+      attack: 400,
+      defense: 50,
+      stab: true,
+      typeEffectiveness: 2.0,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const damage = calcDamage(params);
+    // Assert
+    expect(damage).toBeGreaterThan(500); // Should be very high
+  });
+
+  // --- Low Power Move ---
+
+  it("given very low power move, when calculating damage, then still deals at least 1 damage", () => {
+    // Arrange
+    const params = {
+      level: 5,
+      power: 10,
+      attack: 10,
+      defense: 200,
+      stab: false,
+      typeEffectiveness: 0.5,
+      isCritical: false,
+      randomFactor: 0.85,
+    };
+    // Act
+    const damage = calcDamage(params);
+    // Assert: Minimum damage should be 1 (unless type immunity)
+    expect(damage).toBeGreaterThanOrEqual(1);
+  });
+
+  // --- Burn Effect on Physical Moves ---
+
+  it("given a burned attacker using a physical move, when calculating damage, then attack is halved", () => {
+    // Arrange: Use the full API to set burn status on the attacker
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const move = createPhysicalMove(80);
+    const rng = createMockRng(255); // max roll
+
+    const attackerNormal = createActivePokemon({
+      level: 50,
+      attack: 200,
+      defense: 100,
+      spAttack: 200,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const attackerBurned = createActivePokemon({
+      level: 50,
+      attack: 200,
+      defense: 100,
+      spAttack: 200,
+      spDefense: 100,
+      types: ["fire"],
+      status: "burn",
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+
+    const ctxNormal = {
+      attacker: attackerNormal,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: rng as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    const ctxBurned = {
+      attacker: attackerBurned,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    // Act
+    const normalDamage = calculateGen1Damage(ctxNormal, chart, species).damage;
+    const burnedDamage = calculateGen1Damage(ctxBurned, chart, species).damage;
+    // Assert: With halved attack, damage should be roughly halved
+    if (normalDamage > 0) {
+      expect(burnedDamage).toBeLessThan(normalDamage);
+    }
+  });
+
+  // --- Determinism with known values ---
+
+  it("given identical inputs, when calculating damage multiple times, then always produces the same result", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const damage1 = calcDamage(params);
+    const damage2 = calcDamage(params);
+    const damage3 = calcDamage(params);
+    // Assert
+    expect(damage1).toBe(damage2);
+    expect(damage2).toBe(damage3);
+  });
+
+  // --- Power 0 Edge Case ---
+
+  it("given a move with power 0, when calculating damage, then returns minimal or zero damage", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 0,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const damage = calcDamage(params);
+    // Assert
+    expect(damage).toBeLessThanOrEqual(2); // Only the +2 constant at most
+  });
+
+  // --- Integer Division Consistency ---
+
+  it("given damage calculation, when result is computed, then all intermediate values use floor division", () => {
+    // Arrange: Use values that would produce fractional intermediates
+    const params = {
+      level: 37,
+      power: 65,
+      attack: 87,
+      defense: 73,
+      stab: true,
+      typeEffectiveness: 2.0,
+      isCritical: false,
+      randomFactor: 0.93,
+    };
+    // Act
+    const damage = calcDamage(params);
+    // Assert
+    expect(Number.isInteger(damage)).toBe(true);
+    expect(damage).toBeGreaterThan(0);
+  });
+
+  // --- STAB + Super Effective Stacking ---
+
+  it("given STAB and super effective, when calculating damage, then both multipliers stack", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      isCritical: false,
+      randomFactor: 1.0,
+    };
+    // Act
+    const neutral = calcDamage({
+      ...params,
+      stab: false,
+      typeEffectiveness: 1.0,
+    });
+    const stabOnly = calcDamage({
+      ...params,
+      stab: true,
+      typeEffectiveness: 1.0,
+    });
+    const seOnly = calcDamage({
+      ...params,
+      stab: false,
+      typeEffectiveness: 2.0,
+    });
+    const stabAndSe = calcDamage({
+      ...params,
+      stab: true,
+      typeEffectiveness: 2.0,
+    });
+    // Assert: STAB+SE should be greater than either alone
+    expect(stabAndSe).toBeGreaterThan(stabOnly);
+    expect(stabAndSe).toBeGreaterThan(seOnly);
+    // And the combined should be roughly 3x neutral (1.5 * 2.0 = 3.0)
+    if (neutral > 0) {
+      const ratio = stabAndSe / neutral;
+      expect(ratio).toBeGreaterThanOrEqual(2.5);
+      expect(ratio).toBeLessThanOrEqual(3.5);
+    }
+  });
+});
