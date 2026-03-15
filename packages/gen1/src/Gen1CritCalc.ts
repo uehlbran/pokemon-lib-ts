@@ -11,40 +11,46 @@ const HIGH_CRIT_MOVES: readonly string[] = ["slash", "karate-chop", "razor-leaf"
 /**
  * Calculate the Gen 1 critical hit probability.
  *
- * Gen 1 crit rate = floor(baseSpeed / 2) / 256
- * - Focus Energy bug: divides by 4 instead of multiplying
- * - High-crit moves (Slash, Karate Chop, Razor Leaf, Crabhammer):
- *   use floor(baseSpeed * 8 / 2) / 256, capped at 255/256
+ * Matches Showdown's gen1 scripts.ts algorithm exactly:
+ *   1. critChance = floor(baseSpeed / 2)
+ *   2. Focus Energy (bugged): divides by 2 instead of multiplying by 4
+ *      Normal: multiplies by 2 (clamped 1-255)
+ *   3. Normal move: divide by 2
+ *      High-crit move: multiply by 4 (clamped 1-255)
+ *   4. Hit check: randomChance(critChance, 256)
  *
  * @param attackerBaseSpeed - The base Speed stat of the attacking species
  * @param hasFocusEnergy - Whether the attacker has used Focus Energy
  * @param isHighCritMove - Whether the move has a high critical hit ratio
- * @returns Probability of critical hit (0 to ~1)
+ * @returns Probability of critical hit (0 to 1)
  */
 export function getGen1CritRate(
   attackerBaseSpeed: number,
   hasFocusEnergy: boolean,
   isHighCritMove: boolean,
 ): number {
-  let threshold: number;
+  // Step 1: base threshold
+  let critChance = Math.floor(attackerBaseSpeed / 2);
 
-  if (isHighCritMove) {
-    // High-crit moves: speed * 8 / 2, capped at 255
-    threshold = Math.min(255, Math.floor((attackerBaseSpeed * 8) / 2));
-  } else {
-    // Normal moves: speed / 2
-    threshold = Math.floor(attackerBaseSpeed / 2);
-  }
-
-  // Focus Energy bug: divides by 4 instead of multiplying by 4
+  // Step 2: Focus Energy modifier
   if (hasFocusEnergy) {
-    threshold = Math.floor(threshold / 4);
+    // Gen 1 Focus Energy bug: divides by 2 instead of multiplying by 4
+    critChance = Math.floor(critChance / 2);
+  } else {
+    // Normal: multiply by 2, clamped to 1-255
+    critChance = Math.min(255, Math.max(1, critChance * 2));
   }
 
-  // Cap at 255
-  threshold = Math.min(255, threshold);
+  // Step 3: move type modifier
+  if (isHighCritMove) {
+    // High-crit moves: multiply by 4, clamped to 1-255
+    critChance = Math.min(255, Math.max(1, critChance * 4));
+  } else {
+    // Normal moves: divide by 2
+    critChance = Math.floor(critChance / 2);
+  }
 
-  return threshold / 256;
+  return critChance / 256;
 }
 
 /**
