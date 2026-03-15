@@ -7,8 +7,9 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { DamageContext, DamageResult } from "../../src/context";
+import type { AbilityContext, DamageContext, DamageResult, ItemContext, MoveEffectContext } from "../../src/context";
 import { BaseRuleset } from "../../src/ruleset/BaseRuleset";
+import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
 import { createActivePokemon, createDefaultStatStages, createTestPokemon } from "../../src/utils";
 
 // Concrete implementation of BaseRuleset for testing
@@ -20,9 +21,10 @@ class TestRuleset extends BaseRuleset {
     const types = this.getValidTypes();
     const chart: Record<string, Record<string, number>> = {};
     for (const atk of types) {
-      chart[atk] = {};
+      const row: Record<string, number> = {};
+      chart[atk] = row;
       for (const def of types) {
-        chart[atk]![def] = 1;
+        row[def] = 1;
       }
     }
     return chart as TypeChart;
@@ -176,7 +178,7 @@ describe("BaseRuleset", () => {
       // Act — run many times and check distribution
       let crits = 0;
       for (let i = 0; i < 1000; i++) {
-        if (ruleset.rollCritical({ attacker: active, move, state: {} as any, rng })) {
+        if (ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })) {
           crits++;
         }
       }
@@ -217,7 +219,7 @@ describe("BaseRuleset", () => {
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
         trickRoom: { active: false, turnsLeft: 0 },
-      } as any;
+      } as unknown as BattleState;
 
       const actions = [
         { type: "move" as const, side: 0 as const, moveIndex: 0 },
@@ -261,7 +263,7 @@ describe("BaseRuleset", () => {
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
         trickRoom: { active: false, turnsLeft: 0 },
-      } as any;
+      } as unknown as BattleState;
 
       const actions = [
         { type: "switch" as const, side: 0 as const, switchTo: 1 },
@@ -304,7 +306,7 @@ describe("BaseRuleset", () => {
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
         trickRoom: { active: true, turnsLeft: 3 },
-      } as any;
+      } as unknown as BattleState;
 
       const actions = [
         { type: "move" as const, side: 0 as const, moveIndex: 0 },
@@ -367,7 +369,7 @@ describe("BaseRuleset", () => {
         attacker: active1,
         defender: active2,
         move,
-        state: {} as any,
+        state: {} as unknown as BattleState,
         rng,
       });
 
@@ -423,7 +425,7 @@ describe("BaseRuleset", () => {
             attacker: active1,
             defender: active2,
             move,
-            state: {} as any,
+            state: {} as unknown as BattleState,
             rng,
           }),
         ).toBe(true);
@@ -480,7 +482,7 @@ describe("BaseRuleset", () => {
             attacker: active1,
             defender: active2,
             move,
-            state: {} as any,
+            state: {} as unknown as BattleState,
             rng,
           })
         ) {
@@ -542,7 +544,7 @@ describe("BaseRuleset", () => {
             attacker: active1,
             defender: active2,
             move,
-            state: {} as any,
+            state: {} as unknown as BattleState,
             rng,
           })
         ) {
@@ -559,7 +561,7 @@ describe("BaseRuleset", () => {
   describe("executeMoveEffect", () => {
     it("given any context, when executeMoveEffect is called, then empty result is returned", () => {
       // Act
-      const result = ruleset.executeMoveEffect({} as any);
+      const result = ruleset.executeMoveEffect({} as unknown as MoveEffectContext);
 
       // Assert
       expect(result.statusInflicted).toBeNull();
@@ -588,7 +590,7 @@ describe("BaseRuleset", () => {
       const active = createActivePokemon(pokemon, 0, ["fire"]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "burn", {} as any);
+      const damage = ruleset.applyStatusDamage(active, "burn", {} as unknown as BattleState);
 
       // Assert
       expect(damage).toBe(12); // floor(200/16) = 12
@@ -609,7 +611,7 @@ describe("BaseRuleset", () => {
       const active = createActivePokemon(pokemon, 0, ["fire"]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "poison", {} as any);
+      const damage = ruleset.applyStatusDamage(active, "poison", {} as unknown as BattleState);
 
       // Assert
       expect(damage).toBe(25); // floor(200/8) = 25
@@ -621,7 +623,7 @@ describe("BaseRuleset", () => {
       const active = createActivePokemon(pokemon, 0, ["fire"]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "sleep", {} as any);
+      const damage = ruleset.applyStatusDamage(active, "sleep", {} as unknown as BattleState);
 
       // Assert
       expect(damage).toBe(0);
@@ -675,7 +677,7 @@ describe("BaseRuleset", () => {
       const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
       const active = createActivePokemon(pokemon, 0, ["fire"]);
       // Mock RNG: next() always returns 0 → chance(0.25) → 0 < 0.25 → true
-      const rng = { next: () => 0, int: () => 0, chance: () => true } as any;
+      const rng = { next: () => 0, int: () => 0, chance: () => true } as unknown as SeededRandom;
 
       // Act
       const result = ruleset.checkFullParalysis(active, rng);
@@ -689,7 +691,7 @@ describe("BaseRuleset", () => {
       const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
       const active = createActivePokemon(pokemon, 0, ["fire"]);
       // Mock RNG: next() always returns 0.9999 → chance(0.25) → 0.9999 < 0.25 → false
-      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as any;
+      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as unknown as SeededRandom;
 
       // Act
       const result = ruleset.checkFullParalysis(active, rng);
@@ -719,7 +721,7 @@ describe("BaseRuleset", () => {
   describe("rollConfusionSelfHit", () => {
     it("given a deterministic-true RNG, when called, then returns true (self-hit)", () => {
       // Arrange
-      const rng = { next: () => 0, int: () => 0, chance: () => true } as any;
+      const rng = { next: () => 0, int: () => 0, chance: () => true } as unknown as SeededRandom;
 
       // Act
       const result = ruleset.rollConfusionSelfHit(rng);
@@ -730,7 +732,7 @@ describe("BaseRuleset", () => {
 
     it("given a deterministic-false RNG, when called, then returns false (no self-hit)", () => {
       // Arrange
-      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as any;
+      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as unknown as SeededRandom;
 
       // Act
       const result = ruleset.rollConfusionSelfHit(rng);
@@ -763,7 +765,7 @@ describe("BaseRuleset", () => {
       active.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
 
       // Act
-      const canAct = ruleset.processSleepTurn(active, {} as any);
+      const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
 
       // Assert
       expect(canAct).toBe(false);
@@ -778,7 +780,7 @@ describe("BaseRuleset", () => {
       active.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
 
       // Act
-      const canAct = ruleset.processSleepTurn(active, {} as any);
+      const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
 
       // Assert
       expect(canAct).toBe(true);
@@ -793,7 +795,7 @@ describe("BaseRuleset", () => {
       active.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
 
       // Act
-      const canAct = ruleset.processSleepTurn(active, {} as any);
+      const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
 
       // Assert
       expect(canAct).toBe(true);
@@ -822,27 +824,27 @@ describe("BaseRuleset", () => {
 
   describe("applyAbility", () => {
     it("given any trigger, when applyAbility is called, then no-op result is returned", () => {
-      const result = ruleset.applyAbility("on-switch-in", {} as any);
+      const result = ruleset.applyAbility("on-switch-in", {} as unknown as AbilityContext);
       expect(result.activated).toBe(false);
     });
   });
 
   describe("applyHeldItem", () => {
     it("given any trigger, when applyHeldItem is called, then no-op result is returned", () => {
-      const result = ruleset.applyHeldItem("on-after-attack", {} as any);
+      const result = ruleset.applyHeldItem("on-after-attack", {} as unknown as ItemContext);
       expect(result.activated).toBe(false);
     });
   });
 
   describe("applyWeatherEffects", () => {
     it("given any state, when applyWeatherEffects is called, then empty array is returned", () => {
-      expect(ruleset.applyWeatherEffects({} as any)).toEqual([]);
+      expect(ruleset.applyWeatherEffects({} as unknown as BattleState)).toEqual([]);
     });
   });
 
   describe("applyTerrainEffects", () => {
     it("given any state, when applyTerrainEffects is called, then empty array is returned", () => {
-      expect(ruleset.applyTerrainEffects({} as any)).toEqual([]);
+      expect(ruleset.applyTerrainEffects({} as unknown as BattleState)).toEqual([]);
     });
   });
 
@@ -857,7 +859,7 @@ describe("BaseRuleset", () => {
 
   describe("applyEntryHazards", () => {
     it("given any context, when applyEntryHazards is called, then no-op result is returned", () => {
-      const result = ruleset.applyEntryHazards({} as any, {} as any);
+      const result = ruleset.applyEntryHazards({} as unknown as ActivePokemon, {} as unknown as BattleSide);
       expect(result.damage).toBe(0);
     });
   });
@@ -920,7 +922,7 @@ describe("BaseRuleset", () => {
 
   describe("validatePokemon", () => {
     it("given any pokemon, when validatePokemon is called, then valid result is returned", () => {
-      const result = ruleset.validatePokemon({} as any, {} as any);
+      const result = ruleset.validatePokemon({} as unknown as PokemonInstance, {} as unknown as PokemonSpeciesData);
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
     });
