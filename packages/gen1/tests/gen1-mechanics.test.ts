@@ -288,7 +288,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.volatileInflicted).toBe("bound");
+    expect(result.volatileInflicted).toBe("trapped");
   });
 
   it.todo(
