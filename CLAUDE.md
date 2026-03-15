@@ -115,7 +115,7 @@ Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agent
 3. Implement the ruleset:
    - Gen 1-2: Implement `GenerationRuleset` directly
    - Gen 3-9: Extend `BaseRuleset`, override gen-specific methods
-4. Read the spec: `specs/battle/NN-genN.md`
+4. Read the spec: `specs/battle/` (e.g., `02-gen1.md`, `03-gen2.md`, ... `10-gen9.md`)
 5. Write tests for every gen-specific mechanic
 6. Export from `packages/genN/src/index.ts`
 

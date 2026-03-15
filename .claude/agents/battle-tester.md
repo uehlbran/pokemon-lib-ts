@@ -43,7 +43,7 @@ All battle tests must use `SeededRandom` with known seeds. Same seed + same acti
 
 ## Context Files
 
-- **Specs**: `specs/battle/` — authoritative source for all battle mechanics per generation
+- **Specs**: `specs/battle/` — authoritative source for all battle mechanics per generation (e.g., `02-gen1.md` through `10-gen9.md`)
 - **Battle CLAUDE.md**: `packages/battle/CLAUDE.md` — cardinal delegation rule, turn flow, testing strategy
 - **Gen CLAUDE.md**: `packages/genN/CLAUDE.md` — gen-specific quirks and constraints
 

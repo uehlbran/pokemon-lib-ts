@@ -60,7 +60,7 @@ npx vitest run      # Run tests (from package dir)
 
 ## Context Files
 
-- **Specs**: `specs/battle/NN-genN.md` — authoritative source for gen-specific mechanics
+- **Specs**: `specs/battle/` — authoritative source for gen-specific mechanics (e.g., `02-gen1.md` through `10-gen9.md`)
 - **Battle CLAUDE.md**: `packages/battle/CLAUDE.md` — cardinal delegation rule, turn flow, engine architecture
 - **Gen CLAUDE.md**: `packages/genN/CLAUDE.md` — gen-specific quirks and constraints
 

@@ -50,7 +50,7 @@ describe('Gen 1 Pokemon Data', () => {
 
 ## Property-Based Tests
 
-Verify invariants that must always hold, regardless of inputs.
+Verify invariants that must always hold, regardless of inputs. Requires [fast-check](https://github.com/dubzzz/fast-check) (`npm install -D fast-check`).
 
 ```typescript
 it('should always return a positive stat value given any valid inputs', () => {
