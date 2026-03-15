@@ -595,19 +595,6 @@ export class Gen2Ruleset implements GenerationRuleset {
         break;
       }
 
-      case "rest": {
-        const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-        if (attacker.pokemon.currentHp < maxHp && attacker.pokemon.status !== "sleep") {
-          result.healAmount = maxHp - attacker.pokemon.currentHp;
-          result.statusInflicted = "sleep";
-          // Sleep counter of 3: player sleeps for 2 active turns (3→2→1→wake)
-          result.messages.push(`${pokemonName} went to sleep and became healthy!`);
-        } else {
-          result.messages.push(`${pokemonName} can't use Rest!`);
-        }
-        break;
-      }
-
       case "explosion":
       case "self-destruct": {
         result.selfFaint = true;
