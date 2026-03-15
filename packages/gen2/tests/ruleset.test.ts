@@ -2305,43 +2305,47 @@ describe("Gen2Ruleset", () => {
   // --- Struggle Recoil ---
 
   describe("calculateStruggleRecoil", () => {
-    it("given damage=100, when calculating recoil, then returns 50", () => {
+    // Bug #100 fixed: Gen 2 Struggle recoil = floor(maxHp / 4), NOT floor(damageDealt / 2)
+    // Source: gen2-ground-truth.md §9 — "Recoil: 1/4 of the user's max HP — formula: floor(maxHp / 4)"
+    // Source: pret/pokecrystal — Struggle recoil uses user's max HP divided by 4, not damage dealt
+
+    it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive();
+      const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
-      // Assert: floor(100 / 2) = 50
+      // Assert: floor(200/4) = 50 (damage value ignored — recoil based on max HP)
       expect(recoil).toBe(50);
     });
 
-    it("given damage=1, when calculating recoil, then returns 1 (min 1)", () => {
+    it("given attacker with 200 max HP and damage=1, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive();
+      const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
-      // Assert: max(1, floor(1/2)) = max(1, 0) = 1
-      expect(recoil).toBe(1);
+      // Assert: floor(200/4) = 50 (NOT max(1, floor(1/2)) = 1 — old buggy formula)
+      expect(recoil).toBe(50);
     });
 
-    it("given damage=0, when calculating recoil, then returns 1 (max of 1 and floor(0/2))", () => {
+    it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive();
+      const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
-      // Assert: max(1, floor(0/2)) = max(1, 0) = 1
-      expect(recoil).toBe(1);
+      // Assert: floor(200/4) = 50 (NOT max(1, floor(0/2)) = 1 — old buggy formula)
+      expect(recoil).toBe(50);
     });
 
-    it("given damage=101, when calculating recoil, then returns 50 (floor(101/2)=50)", () => {
+    it("given attacker with 200 max HP and damage=101, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive();
+      const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
-      // Assert: floor(101 / 2) = 50
+      // Assert: floor(200/4) = 50 (damage value ignored)
       expect(recoil).toBe(50);
     });
   });

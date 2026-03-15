@@ -5,11 +5,7 @@ import type {
   DamageResult,
 } from "@pokemon-lib-ts/battle";
 import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import {
-  getStabModifier,
-  getStatStageMultiplier,
-  getTypeEffectiveness,
-} from "@pokemon-lib-ts/core";
+import { getStabModifier, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 
 import { getWeatherDamageModifier } from "./Gen2Weather";
 
@@ -177,15 +173,15 @@ function getItemModifier(attacker: ActivePokemon, moveType: PokemonType): number
 /**
  * Calculate damage for a move in Gen 2.
  *
- * Formula per Showdown scripts.ts:651-714:
+ * Formula per ground truth §3 (pret/pokecrystal order):
  *   1. baseDamage = floor(floor(floor((2*L/5)+2) * P * A) / D) / 50)  — no +2 yet
  *   2. Crit: * 2
  *   3. Item modifier (type-boost items at 1.1x)
  *   4. Clamp: max(1, min(997, baseDamage))
  *   5. + 2
- *   6. Weather: water+rain/fire+sun → floor(* 1.5); opposite → floor(/ 2)
- *   7. STAB: += floor(damage / 2)
- *   8. Type effectiveness (multiply, floor each type separately)
+ *   6. STAB: += floor(damage / 2)  — BEFORE weather (ground truth §3)
+ *   7. Type effectiveness (sequential, floor each type separately)
+ *   8. Weather: water+rain/fire+sun → floor(* 1.5); opposite → floor(/ 2)
  *   9. Random: floor(damage * rng.int(217,255) / 255)
  *   10. Minimum 1
  *
@@ -261,22 +257,30 @@ export function calculateGen2Damage(
   // Step 5: Add the +2 constant
   baseDamage += 2;
 
-  // Step 6: Weather modifier
-  const weather = state.weather?.type ?? null;
-  const weatherMod = weather ? getWeatherDamageModifier(move.type, weather) : 1;
-  if (weatherMod !== 1) {
-    baseDamage = Math.floor(baseDamage * weatherMod);
-  }
-
-  // Step 7: STAB
+  // Step 6: STAB (applied BEFORE weather — correct order per ground truth §3)
+  // Source: gen2-ground-truth.md §3 — "STAB × type_effectiveness × weather"
   const stabMod = getStabModifier(move.type, attacker.types);
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
-  // Step 8: Type effectiveness
-  const effectiveness = getTypeEffectiveness(move.type, defender.types, typeChart);
-  if (effectiveness === 0) {
+  // Step 7: Type effectiveness — applied sequentially with floor per type
+  // Source: gen2-ground-truth.md §3 — "applied sequentially per defender type"
+  const defenderTypes = defender.types;
+  let effectiveness = 1;
+
+  // Check immunity first (a 0x interaction means 0 total damage)
+  let isImmune = false;
+  for (const defType of defenderTypes) {
+    const factor = typeChart[move.type]?.[defType] ?? 1;
+    if (factor === 0) {
+      isImmune = true;
+      break;
+    }
+    effectiveness *= factor;
+  }
+
+  if (isImmune) {
     return {
       damage: 0,
       effectiveness: 0,
@@ -284,7 +288,27 @@ export function calculateGen2Damage(
       randomFactor: 1,
     };
   }
-  baseDamage = Math.floor(baseDamage * effectiveness);
+
+  // Apply each defender type's multiplier sequentially with floor after each step
+  for (const defType of defenderTypes) {
+    const factor = typeChart[move.type]?.[defType] ?? 1;
+    if (factor === 2) {
+      // SE: floor(damage * 20 / 10) = floor(damage * 2)
+      baseDamage = Math.floor((baseDamage * 20) / 10);
+    } else if (factor === 0.5) {
+      // NVE: floor(damage * 5 / 10)
+      baseDamage = Math.floor((baseDamage * 5) / 10);
+    }
+    // factor === 1: no change
+  }
+
+  // Step 8: Weather modifier (applied AFTER STAB and type effectiveness)
+  // Source: gen2-ground-truth.md §3 — weather applied after STAB
+  const weather = state.weather?.type ?? null;
+  const weatherMod = weather ? getWeatherDamageModifier(move.type, weather) : 1;
+  if (weatherMod !== 1) {
+    baseDamage = Math.floor(baseDamage * weatherMod);
+  }
 
   // Step 9: Random factor (217-255) / 255
   const randomRoll = rng.int(217, 255);
