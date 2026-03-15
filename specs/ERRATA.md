@@ -104,12 +104,12 @@ final_damage = floor(100 * 1.0) = 100
 - Gen 5+: 1-3 turns (sleep mechanics changed)
 
 **Burn damage**:
-- Gen 1-4: 1/16 max HP per turn
-- Gen 6+: 1/16 max HP per turn (unchanged)
+- Gen 1: 1/16 max HP per turn
+- Gen 2+: 1/8 max HP per turn
 
 **Poison damage (regular)**:
-- Gen 1-4: 1/16 max HP per turn
-- Gen 5+: 1/8 max HP per turn
+- Gen 1: 1/16 max HP per turn
+- Gen 2+: 1/8 max HP per turn
 
 **Toxic damage (badly poisoned)**:
 - All gens: N/16 per turn where N increments each turn (1/16, 2/16, 3/16...)
