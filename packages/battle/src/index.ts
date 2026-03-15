@@ -95,7 +95,6 @@ export type {
   FutureAttackState,
   ScreenState,
   TerrainState,
-  TrainerRef,
   TurnRecord,
   VolatileStatusState,
   WeatherState,

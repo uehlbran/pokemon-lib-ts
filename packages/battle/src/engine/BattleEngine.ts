@@ -938,7 +938,7 @@ export class BattleEngine implements BattleEventEmitter {
     actor.movedThisTurn = true;
   }
 
-  private canExecuteMove(actor: ActivePokemon, _move: MoveData): boolean {
+  private canExecuteMove(actor: ActivePokemon, move: MoveData): boolean {
     const side = this.getSideIndex(actor);
 
     // Flinch check
@@ -974,7 +974,16 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Freeze check
     if (actor.pokemon.status === "freeze") {
-      if (this.ruleset.checkFreezeThaw(actor, this.state.rng)) {
+      if (move.flags.defrost) {
+        // Defrost moves (Scald, Flame Wheel, etc.) always thaw the user
+        actor.pokemon.status = null;
+        this.emit({
+          type: "status-cure",
+          side,
+          pokemon: getPokemonName(actor),
+          status: "freeze",
+        });
+      } else if (this.ruleset.checkFreezeThaw(actor, this.state.rng)) {
         actor.pokemon.status = null;
         this.emit({
           type: "status-cure",

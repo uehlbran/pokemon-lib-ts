@@ -284,9 +284,50 @@ export function createMockDataManager(): DataManager {
     }
   }
 
+  const flameWheelMoveData: MoveData = {
+    id: "flame-wheel",
+    displayName: "Flame Wheel",
+    type: "fire",
+    category: "physical",
+    power: 60,
+    accuracy: 100,
+    pp: 25,
+    priority: 0,
+    target: "adjacent-foe",
+    flags: {
+      contact: true,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: true,
+      mirror: true,
+      snatch: false,
+      gravity: false,
+      defrost: true,
+      recharge: false,
+      charge: false,
+      bypassSubstitute: false,
+    },
+    effect: null,
+    description:
+      "The user cloaks itself in fire and charges at the target. It can also thaw the user if frozen.",
+    generation: 2,
+  };
+
   dm.loadFromObjects({
     pokemon: [charizardSpecies, blastoiseSpecies, pikachuSpecies],
-    moves: [tackleMoveData, thunderboltMoveData, scratchMoveData, quickAttackMoveData],
+    moves: [
+      tackleMoveData,
+      thunderboltMoveData,
+      scratchMoveData,
+      quickAttackMoveData,
+      flameWheelMoveData,
+    ],
     typeChart: typeChart as unknown as TypeChart,
   });
 

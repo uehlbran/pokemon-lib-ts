@@ -102,6 +102,6 @@ export interface PokemonCreationOptions {
   originalTrainer: string;
   originalTrainerId: number;
   pokeball: string;
-  teraType: PokemonType;
-  dynamaxLevel: number;
+  teraType?: PokemonType;
+  dynamaxLevel?: number;
 }

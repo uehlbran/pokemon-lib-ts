@@ -17,7 +17,7 @@ export interface BattleSide {
   /** Side index (0 = player/side-A, 1 = opponent/side-B); immutable */
   readonly index: 0 | 1;
   /** Trainer info for display purposes, or `null` for wild battles */
-  readonly trainer: TrainerRef | null;
+  readonly trainer: TrainerDataRef | null;
   /** Full team of Pokémon instances (includes fainted members) */
   team: PokemonInstance[];
   /**
@@ -48,7 +48,7 @@ export interface BattleSide {
  * Minimal reference to a trainer for display and battle attribution.
  * Stored in `BattleSide.trainer`.
  */
-export interface TrainerRef {
+export interface TrainerDataRef {
   /** Unique trainer identifier */
   readonly id: string;
   /** Name shown in the battle UI (e.g., `"Ash"`, `"Gym Leader Brock"`) */
