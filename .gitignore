@@ -7,3 +7,4 @@ tools/repos/
 *:Zone.Identifier
 .worktrees/
 .claude/worktrees/
+.claude/.review-passed
