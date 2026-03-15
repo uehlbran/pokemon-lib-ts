@@ -196,13 +196,15 @@ describe("Gen1Ruleset", () => {
 
   // --- Critical Hit ---
 
-  it("given Gen1Ruleset, when getting crit multiplier, then returns 2 (Gen 1-5 use 2x crits)", () => {
+  it("given Gen1Ruleset, when getting crit multiplier, then returns 1 (Gen 1 crits use level doubling, not a separate multiplier)", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     // Act
     const multiplier = ruleset.getCritMultiplier();
-    // Assert: Gen 1 crit damage is 2x, not 1.5x
-    expect(multiplier).toBe(2);
+    // Assert: Gen 1 implements crits by doubling the attacker's level in the damage formula
+    // (effectiveLevel = level * 2), not by applying a flat 2x multiplier after the fact.
+    // The BattleEngine does not call getCritMultiplier() for Gen 1 — the boost is internal.
+    expect(multiplier).toBe(1);
   });
 
   it("given Gen1Ruleset, when getting crit rate table, then returns a valid array", () => {

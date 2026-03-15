@@ -733,7 +733,7 @@ describe("Gen 1 Damage Calculation", () => {
 
   it("given critical hit vs non-critical with same stats, when calculating damage, then crit deals more damage via level doubling (not flat 2x)", () => {
     // Arrange: Level 50 attacker. levelFactor non-crit = floor(100/5)+2 = 22, crit = floor(200/5)+2 = 42
-    // Ratio = 42/22 ≈ 1.91x — NOT exactly 2x
+    // levelFactor ratio = 42/22 ≈ 1.91x, but final damage ratio is ~1.86x due to the +2 additive constant — NOT exactly 2x
     const params = {
       level: 50,
       power: 80,
@@ -826,6 +826,52 @@ describe("Gen 1 Damage Calculation", () => {
     expect(Number.isInteger(result.damage)).toBe(true);
     // Verify randomFactor in return value is 217/255
     expect(result.randomFactor).toBeCloseTo(217 / 255, 10);
+  });
+
+  it("given high baseDamage scenario, when roll is 219, then damage matches integer-first computation floor(baseDamage * roll / 255)", () => {
+    // This test pins down the exact expected value for a high baseDamage case.
+    // Integer-first: floor(X * roll / 255) — the correct Gen 1 implementation.
+    // Float-first:   floor(X * (roll / 255)) — the incorrect alternative that can differ.
+    // Params: L100, Power 100, Attack 706, Defense 100 → baseDamage = 595
+    //   levelFactor = floor((2*100)/5)+2 = 42
+    //   floor(floor(42*100*706)/100)/50 + 2 = floor(29652/50)+2 = 593+2 = 595
+    // Roll = 219 → floor(595 * 219 / 255) = floor(130305/255) = 511
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const move = createPhysicalMove(100);
+    const rng = createMockRng(219);
+
+    const attacker = createActivePokemon({
+      level: 100,
+      attack: 706,
+      defense: 100,
+      spAttack: 706,
+      spDefense: 100,
+      types: ["fire"], // non-STAB for "normal"-type move
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+
+    const context = {
+      attacker,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: rng as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    const result = calculateGen1Damage(context, chart, species);
+
+    // baseDamage = 595, roll = 219 → floor(595 * 219 / 255) = 511
+    expect(result.damage).toBe(511);
+    expect(Number.isInteger(result.damage)).toBe(true);
   });
 
   // --- Stat Stage Multiplier Table (Correction 22) ---
