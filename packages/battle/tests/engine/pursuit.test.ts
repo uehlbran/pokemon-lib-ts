@@ -307,7 +307,7 @@ describe("Pursuit — pre-switch execution", () => {
 
       // The first move-start from the action phase must precede side 1's switch-out
       // (side 1 starts with a switch-in at battle start, so we look at the post-start switch-out)
-      const postStartSwitchOut = switchOuts.find(({ e }) => {
+      const _postStartSwitchOut = switchOuts.find(({ e }) => {
         const se = e as { type: string; side?: number };
         return se.side === 1;
       });
