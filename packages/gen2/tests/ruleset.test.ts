@@ -224,17 +224,22 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       // Act
       const order = ruleset.getEndOfTurnOrder();
-      // Assert
-      expect(Array.isArray(order)).toBe(true);
-      expect(order).toContain("weather-damage");
-      expect(order).toContain("leftovers");
-      expect(order).toContain("leech-seed");
-      expect(order).toContain("status-damage");
-      expect(order).toContain("nightmare");
-      expect(order).toContain("curse");
-      expect(order).toContain("perish-song");
-      expect(order).toContain("weather-countdown");
-      expect(order).toContain("screen-countdown");
+      // Assert: exact order per pret/pokecrystal ground truth
+      // future-attack → leftovers → status-damage → leech-seed → nightmare →
+      // curse → bind → weather-damage → perish-song → screen-countdown → weather-countdown
+      expect(order).toEqual([
+        "future-attack",
+        "leftovers",
+        "status-damage",
+        "leech-seed",
+        "nightmare",
+        "curse",
+        "bind",
+        "weather-damage",
+        "perish-song",
+        "screen-countdown",
+        "weather-countdown",
+      ]);
     });
 
     it("should return correct crit rate table (5 entries)", () => {
@@ -285,7 +290,7 @@ describe("Gen2Ruleset", () => {
   // --- Sleep Turns ---
 
   describe("Given sleep turns roll", () => {
-    it("should return 1-6 turns", () => {
+    it("should return 1-7 turns (Gen 2 Showdown-confirmed range)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const results = new Set<number>();
@@ -296,13 +301,13 @@ describe("Gen2Ruleset", () => {
         const turns = ruleset.rollSleepTurns(rng);
         results.add(turns);
         expect(turns).toBeGreaterThanOrEqual(1);
-        expect(turns).toBeLessThanOrEqual(6);
+        expect(turns).toBeLessThanOrEqual(7);
       }
 
-      // Assert: should see multiple different values
+      // Assert: should produce full range including 7
       expect(results.size).toBeGreaterThan(1);
       expect(results.has(1)).toBe(true);
-      expect(results.has(6)).toBe(true);
+      expect(results.has(7)).toBe(true);
     });
   });
 

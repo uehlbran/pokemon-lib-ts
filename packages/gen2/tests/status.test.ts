@@ -153,8 +153,8 @@ function createMockBattleState(): BattleState {
  * Type immunities (Gen 2):
  * - Fire: immune to burn
  * - Ice: immune to freeze
- * - Electric: immune to paralysis (NEW in Gen 2!)
  * - Poison/Steel: immune to poison
+ * Note: Electric types are NOT immune to paralysis in Gen 2 (added in Gen 6).
  */
 describe("Gen2Status", () => {
   describe("Given burn status", () => {
@@ -352,15 +352,13 @@ describe("Gen2Status", () => {
   });
 
   describe("Given paralysis", () => {
-    it("should not affect Electric types (Gen 2 immunity)", () => {
+    it("given an Electric-type Pokemon, when checking if paralysis can be inflicted, then returns true (Electric not immune in Gen 2)", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: ["electric"] });
-
+      const electricPokemon = createMockActivePokemon({ types: ["electric"] });
       // Act
-      const canInflict = canInflictGen2Status("paralysis", target);
-
+      const result = canInflictGen2Status("paralysis", electricPokemon);
       // Assert
-      expect(canInflict).toBe(false);
+      expect(result).toBe(true);
     });
 
     it("should affect non-Electric types", () => {
@@ -473,15 +471,15 @@ describe("Gen2Status", () => {
       expect(canInflict).toBe(false);
     });
 
-    it("should prevent paralysis on Electric/Steel", () => {
+    it("should allow paralysis on Electric/Steel (no paralysis immunity by type in Gen 2)", () => {
       // Arrange
       const target = createMockActivePokemon({ types: ["electric", "steel"] });
 
       // Act
       const canInflict = canInflictGen2Status("paralysis", target);
 
-      // Assert
-      expect(canInflict).toBe(false);
+      // Assert — Electric not immune to paralysis in Gen 2 (immunity added in Gen 6)
+      expect(canInflict).toBe(true);
     });
 
     it("should prevent poison on Poison/Ground", () => {
