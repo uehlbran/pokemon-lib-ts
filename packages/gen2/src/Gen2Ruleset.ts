@@ -249,22 +249,29 @@ export class Gen2Ruleset implements GenerationRuleset {
       return true;
     }
 
-    // Apply accuracy and evasion stages
-    // Gen 2 uses the standard accuracy formula (NO 1/256 miss bug)
+    // Convert move accuracy from percentage to 0-255 scale
+    let accuracy = Math.floor((move.accuracy * 255) / 100);
+
+    // Gen 2 accuracy boost lookup tables (not formula-based)
+    const GEN2_ACC_BOOST_POS = [1, 4 / 3, 5 / 3, 2, 7 / 3, 8 / 3, 3]; // stages +0 to +6
+    const GEN2_ACC_BOOST_NEG = [1, 3 / 4, 3 / 5, 1 / 2, 3 / 7, 3 / 8, 1 / 3]; // stages -0 to -6
+
     const accStage = attacker.statStages.accuracy;
     const evaStage = defender.statStages.evasion;
     const netStage = Math.max(-6, Math.min(6, accStage - evaStage));
 
-    let multiplier: number;
-    if (netStage >= 0) {
-      multiplier = (3 + netStage) / 3;
-    } else {
-      multiplier = 3 / (3 - netStage);
-    }
+    const multiplier =
+      netStage >= 0 ? (GEN2_ACC_BOOST_POS[netStage] ?? 1) : (GEN2_ACC_BOOST_NEG[-netStage] ?? 1);
+    accuracy = Math.floor(accuracy * multiplier);
 
-    const finalAccuracy = Math.floor(move.accuracy * multiplier);
+    // Cap at [1, 255]
+    accuracy = Math.max(1, Math.min(255, accuracy));
 
-    return rng.int(1, 100) <= finalAccuracy;
+    // Gen 2: 255 accuracy never misses (no 1/256 bug like Gen 1)
+    if (accuracy >= 255) return true;
+
+    // Hit check on 0-255 scale
+    return rng.int(0, 255) < accuracy;
   }
 
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
@@ -318,6 +325,15 @@ export class Gen2Ruleset implements GenerationRuleset {
     return result;
   }
 
+  /**
+   * Roll for a secondary effect chance on the 0-255 scale.
+   * Even a 100% chance has a 1/256 failure rate (effectChance = 255, roll can equal 255).
+   */
+  private rollEffectChance(chance: number, rng: SeededRandom): boolean {
+    const effectChance = Math.floor((chance * 255) / 100);
+    return rng.int(0, 255) < effectChance;
+  }
+
   private applyMoveEffect(
     effect: NonNullable<MoveData["effect"]>,
     move: MoveData,
@@ -354,8 +370,8 @@ export class Gen2Ruleset implements GenerationRuleset {
 
     switch (effect.type) {
       case "status-chance": {
-        // Roll for status infliction
-        if (rng.int(1, 100) <= effect.chance) {
+        // Roll for status infliction on 0-255 scale (1/256 failure rate even at 100%)
+        if (this.rollEffectChance(effect.chance, rng)) {
           if (!defender.pokemon.status) {
             if (canInflictGen2Status(effect.status, defender)) {
               result.statusInflicted = effect.status;
@@ -375,11 +391,9 @@ export class Gen2Ruleset implements GenerationRuleset {
       }
 
       case "stat-change": {
-        // Check if the stat change has a chance component
-        if (effect.chance < 100) {
-          if (rng.int(1, 100) > effect.chance) {
-            break;
-          }
+        // Check if the stat change has a chance component (0-255 scale, 1/256 failure even at 100%)
+        if (!this.rollEffectChance(effect.chance, rng)) {
+          break;
         }
         for (const change of effect.changes) {
           result.statChanges.push({
@@ -418,7 +432,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       }
 
       case "volatile-status": {
-        if (effect.chance < 100 && rng.int(1, 100) > effect.chance) {
+        if (!this.rollEffectChance(effect.chance, rng)) {
           break;
         }
         result.volatileInflicted = effect.status;
@@ -578,6 +592,19 @@ export class Gen2Ruleset implements GenerationRuleset {
       case "baton-pass": {
         // Switch out preserving stat changes and volatile statuses
         result.switchOut = true;
+        break;
+      }
+
+      case "rest": {
+        const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+        if (attacker.pokemon.currentHp < maxHp && attacker.pokemon.status !== "sleep") {
+          result.healAmount = maxHp - attacker.pokemon.currentHp;
+          result.statusInflicted = "sleep";
+          // Sleep counter of 3: player sleeps for 2 active turns (3→2→1→wake)
+          result.messages.push(`${pokemonName} went to sleep and became healthy!`);
+        } else {
+          result.messages.push(`${pokemonName} can't use Rest!`);
+        }
         break;
       }
 
@@ -761,7 +788,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return 0.5; // Gen 2: 50% chance to hit self in confusion
   }
 
-  calculateConfusionDamage(pokemon: ActivePokemon, _state: BattleState, rng: SeededRandom): number {
+  calculateConfusionDamage(
+    pokemon: ActivePokemon,
+    _state: BattleState,
+    _rng: SeededRandom,
+  ): number {
     const level = pokemon.pokemon.level;
     const stats = pokemon.pokemon.calculatedStats;
     const attack = stats?.attack ?? 100;
@@ -782,11 +813,8 @@ export class Gen2Ruleset implements GenerationRuleset {
     let baseDamage = Math.floor(Math.floor(levelFactor * 40 * effectiveAttack) / effectiveDefense);
     baseDamage = Math.floor(baseDamage / 50) + 2;
 
-    // Random factor (217-255)/255
-    const randomRoll = rng.int(217, 255);
-    const finalDamage = Math.floor((baseDamage * randomRoll) / 255);
-
-    return Math.max(1, finalDamage);
+    // Showdown: noDamageVariance: true — confusion self-hit has no random factor
+    return Math.max(1, baseDamage);
   }
 
   // --- Switch Out ---

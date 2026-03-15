@@ -3953,7 +3953,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": null,
+    "effect": { "type": "crash", "amount": 0.125 },
     "description": "If this attack is not successful and the target was not immune, the user loses HP equal to 1/8 the damage the target would have taken, rounded down, but not less than 1 HP, as crash damage.",
     "generation": 1
   },
@@ -4353,7 +4353,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": null,
+    "effect": { "type": "crash", "amount": 0.125 },
     "description": "If this attack is not successful and the target was not immune, the user loses HP equal to 1/8 the damage the target would have taken, rounded down, but not less than 1 HP, as crash damage.",
     "generation": 1
   },
@@ -6552,7 +6552,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": null,
+    "effect": { "type": "custom", "handler": "rest" },
     "description": "The user falls asleep for the next two turns and restores all of its HP, curing itself of any non-volatile status condition in the process, even if it was already asleep. Fails if the user has full HP.",
     "generation": 1
   },
