@@ -637,18 +637,18 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    // Gen 2: cannot act on the turn it wakes up
+    // Gen 2+: CAN act on the turn it wakes up (unlike Gen 1)
     const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false; // Cannot act on wake turn in Gen 2
+      return true; // Gen 2+: can act on wake turn
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false; // Cannot act on wake turn in Gen 2
+      return true; // Gen 2+: can act on wake turn
     }
     return false; // Still sleeping
   }

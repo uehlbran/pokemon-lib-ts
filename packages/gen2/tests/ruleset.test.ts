@@ -306,6 +306,88 @@ describe("Gen2Ruleset", () => {
     });
   });
 
+  // --- Sleep Turn Processing ---
+
+  describe("Given processSleepTurn", () => {
+    it("should allow acting on the wake turn (Gen 2 behavior)", () => {
+      // Given a Pokemon that will wake up this turn (turnsLeft = 1)
+      const ruleset = new Gen2Ruleset();
+      const mockActivePokemon = createMockActive({ status: "sleep" });
+      mockActivePokemon.pokemon.status = "sleep";
+      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+      const mockState = createMockState(
+        createMockSide(0, mockActivePokemon),
+        createMockSide(1, createMockActive()),
+      );
+
+      // When processing the sleep turn
+      const result = ruleset.processSleepTurn(mockActivePokemon, mockState);
+
+      // Then the Pokemon wakes up and CAN act (Gen 2 behavior)
+      expect(result).toBe(true);
+      expect(mockActivePokemon.pokemon.status).toBeNull();
+      expect(mockActivePokemon.volatileStatuses.has("sleep-counter")).toBe(false);
+    });
+
+    it("should still be asleep when turns remaining > 1", () => {
+      // Given a Pokemon with multiple sleep turns left
+      const ruleset = new Gen2Ruleset();
+      const mockActivePokemon = createMockActive({ status: "sleep" });
+      mockActivePokemon.pokemon.status = "sleep";
+      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+      const mockState = createMockState(
+        createMockSide(0, mockActivePokemon),
+        createMockSide(1, createMockActive()),
+      );
+
+      // When processing the sleep turn
+      const result = ruleset.processSleepTurn(mockActivePokemon, mockState);
+
+      // Then the Pokemon is still asleep and cannot act
+      expect(result).toBe(false);
+      expect(mockActivePokemon.pokemon.status).toBe("sleep");
+      expect(mockActivePokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
+    });
+
+    it("should wake up after decrementing turns to 0", () => {
+      // Given a Pokemon with 1 turn of sleep remaining
+      const ruleset = new Gen2Ruleset();
+      const mockActivePokemon = createMockActive({ status: "sleep" });
+      mockActivePokemon.pokemon.status = "sleep";
+      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+      const mockState = createMockState(
+        createMockSide(0, mockActivePokemon),
+        createMockSide(1, createMockActive()),
+      );
+
+      // When processing the sleep turn
+      const result = ruleset.processSleepTurn(mockActivePokemon, mockState);
+
+      // Then it decrements and wakes up, allowing action
+      expect(result).toBe(true);
+      expect(mockActivePokemon.pokemon.status).toBeNull();
+    });
+
+    it("should wake up immediately when already at 0 turns", () => {
+      // Given a Pokemon with 0 turns of sleep remaining
+      const ruleset = new Gen2Ruleset();
+      const mockActivePokemon = createMockActive({ status: "sleep" });
+      mockActivePokemon.pokemon.status = "sleep";
+      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
+      const mockState = createMockState(
+        createMockSide(0, mockActivePokemon),
+        createMockSide(1, createMockActive()),
+      );
+
+      // When processing the sleep turn
+      const result = ruleset.processSleepTurn(mockActivePokemon, mockState);
+
+      // Then it wakes up and can act
+      expect(result).toBe(true);
+      expect(mockActivePokemon.pokemon.status).toBeNull();
+    });
+  });
+
   // --- Spikes Entry Hazard ---
 
   describe("Given Spikes entry hazard", () => {
