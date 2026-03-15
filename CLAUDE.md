@@ -158,6 +158,7 @@ Rules:
 - Only serialize work when there is a true dependency (e.g., must read output of step 1 to inform step 2)
 
 ### Branch Discipline
+
 - **Always branch from latest main**: `git fetch origin main && git checkout -b <branch> origin/main`
 - **Never reuse branch names** for unrelated work — if a branch was used in a prior PR, create a new one
 - **Use descriptive, unique names**: include the scope (e.g., `fix/gen1-crit-calc`, not `fix/gen1-corrections`)

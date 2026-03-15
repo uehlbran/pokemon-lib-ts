@@ -192,8 +192,8 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
       hp: 250,
       attack: 5,
       defense: 5,
-      spAttack: 35,
-      spDefense: 35,
+      spAttack: 105,
+      spDefense: 105,
       speed: 50,
     });
     const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
@@ -209,8 +209,8 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
       hp: 250,
       attack: 5,
       defense: 5,
-      spAttack: 35,
-      spDefense: 35,
+      spAttack: 105,
+      spDefense: 105,
       speed: 50,
     });
     const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
@@ -219,7 +219,7 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
     // Assert
     expect(stats.attack).toBe(expectedStat(5)); // 109
     expect(stats.defense).toBe(expectedStat(5)); // 109
-    expect(stats.spAttack).toBe(expectedStat(35)); // 169
+    expect(stats.spAttack).toBe(expectedStat(105)); // 309
     expect(stats.speed).toBe(expectedStat(50)); // 199
   });
 
@@ -668,15 +668,16 @@ describe("3C: Damage Formula (exact expected values)", () => {
   it("given Mewtwo using Psychic (STAB, neutral, max roll), when calculating damage at L100, then damage is correct", () => {
     // Arrange:
     // Mewtwo: Spc = 154*2+99 = 407 (L100, max DVs, max StatExp)
-    // Chansey: Spc = 35*2+99 = 169 (used as special defense)
+    // Chansey: Spc = 105*2+99 = 309 (Gen 1 unified Special base 105, used as special defense)
     // Psychic: power 90, special, psychic type — Mewtwo is Psychic type → STAB
     // levelFactor = floor(2*100/5)+2 = 42
-    // baseDamage (before STAB) = floor(floor(42*90*407)/169)/50 + 2
-    //   = floor(floor(1538370)/169)/50 + 2
-    //   = floor(1538370/169) = floor(9101.6) = 9101; floor(9101/50)+2 = 182+2 = 184
-    // STAB: floor(184 * 1.5) = 276
-    // type effectiveness: 1x (psychic vs normal/fairy — but Chansey is normal here, use neutral chart)
-    // random 255/255 = 1: floor(276 * 255 / 255) = 276
+    // Overflow: atk(407)≥256 → floor(407/4)%256=101; def(309)≥256 → floor(309/4)%256=77
+    // baseDamage (before STAB) = floor(floor(42*90*101)/77)/50 + 2
+    //   = floor(floor(381780)/77)/50 + 2
+    //   = floor(381780/77) = floor(4958.18) = 4958; floor(4958/50)+2 = 99+2 = 101
+    // STAB: floor(101 * 1.5) = 151
+    // type effectiveness: 1x (psychic vs normal here, use neutral chart)
+    // random 255/255 = 1: floor(151 * 255 / 255) = 151
     const psychicMove = createMove("psychic", "psychic", 90, "special");
     const chart = neutralTypeChart();
     const mewtwoBattleSpecies = makeSpecies("mewtwo", {
@@ -699,8 +700,8 @@ describe("3C: Damage Formula (exact expected values)", () => {
       hp: expectedHp(250),
       attack: expectedStat(5),
       defense: expectedStat(5),
-      spAttack: expectedStat(35),
-      spDefense: expectedStat(35),
+      spAttack: expectedStat(105),
+      spDefense: expectedStat(105),
       speed: expectedStat(50),
     };
     const mewtwo = createActivePokemon({ level: 100, stats: mewtwoStats, types: ["psychic"] });
@@ -719,8 +720,8 @@ describe("3C: Damage Formula (exact expected values)", () => {
     // Assert — damage should be positive and reflect STAB
     expect(result.damage).toBeGreaterThan(0);
     expect(Number.isInteger(result.damage)).toBe(true);
-    // Exact expected damage at max roll (255/255): 274 (verified against implementation)
-    expect(result.damage).toBe(274);
+    // Exact expected damage at max roll (255/255): 151 (overflow path — atk 407→101, def 309→77)
+    expect(result.damage).toBe(151);
     // With STAB (1.5x) vs without, the ratio should be approx 1.5x
     const rngNoStab = createMockRng(255);
     const mewtwoNoStab = createActivePokemon({ level: 100, stats: mewtwoStats, types: ["water"] });

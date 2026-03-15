@@ -2,7 +2,7 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen1Ruleset } from "../src/Gen1Ruleset";
+import { createGen1DataManager, Gen1Ruleset } from "../src";
 
 /**
  * Gen 1 Move Mechanics Tests
@@ -702,14 +702,9 @@ describe("Gen 1 confusion self-hit formula", () => {
 
 describe("Self-Destruct move", () => {
   it("given Self-Destruct is used, when executeMoveEffect is called with the real move ID, then selfFaint is true", () => {
-    // Arrange - use handler "self-destruct" (hyphenated, matching moves.json)
+    // Arrange — load the real move from data so a data regression (wrong handler) would be caught
     const attacker = makeActivePokemon();
-    const selfDestructMove = makeMove({
-      id: "self-destruct",
-      category: "physical" as const,
-      power: 200,
-      effect: { type: "custom" as const, handler: "self-destruct" },
-    });
+    const selfDestructMove = createGen1DataManager().getMove("self-destruct");
     const context = makeMoveEffectContext({ attacker, move: selfDestructMove });
     // Act
     const result = ruleset.executeMoveEffect(context);

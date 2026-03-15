@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Self-Destruct handler: move ID lookup was `"selfdestruct"` but data uses `"self-destruct"` — user now correctly faints after use
 - Counter: now restricted to Normal and Fighting type moves only (uses new `lastDamageType` field from `@pokemon-lib-ts/battle@0.5.0`)
+- Fixed-damage, level-damage, OHKO, and Counter moves now propagate their `type` into `customDamage` so `lastDamageType` is tracked correctly (Counter countability requires Normal/Fighting last hit)
+
+### Breaking Change
+- Upgrading to `@pokemon-lib-ts/battle@0.5.0` adds a required `lastDamageType: PokemonType | null` field to `ActivePokemon`; any inline `ActivePokemon` literals in tests or consumers must be updated
 
 ## [0.2.4] - 2026-03-15
 
