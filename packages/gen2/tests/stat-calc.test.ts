@@ -261,6 +261,295 @@ describe("Gen2StatCalc", () => {
     });
   });
 
+  describe("Given well-known Gen 2 Pokemon at level 100 with max DVs and max StatExp", () => {
+    // At L100, DV=15, StatExp=65535:
+    //   StatExp bonus = floor(ceil(sqrt(65535)) / 4) = floor(256 / 4) = 64
+    //   HP  = (Base + 15) * 2 + 64 + 100 + 10 = Base * 2 + 204
+    //   Stat = (Base + 15) * 2 + 64 + 5       = Base * 2 + 99
+    const maxDvs = { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 };
+    const maxStatExp = {
+      hp: 65535,
+      attack: 65535,
+      defense: 65535,
+      spAttack: 65535,
+      spDefense: 65535,
+      speed: 65535,
+    };
+
+    it("given Tyranitar at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 100,
+        attack: 134,
+        defense: 110,
+        spAttack: 95,
+        spDefense: 100,
+        speed: 61,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(404); // 100*2+204
+      expect(stats.attack).toBe(367); // 134*2+99
+      expect(stats.defense).toBe(319); // 110*2+99
+      expect(stats.spAttack).toBe(289); // 95*2+99
+      expect(stats.spDefense).toBe(299); // 100*2+99
+      expect(stats.speed).toBe(221); // 61*2+99
+    });
+
+    it("given Mewtwo at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 106,
+        attack: 110,
+        defense: 90,
+        spAttack: 154,
+        spDefense: 90,
+        speed: 130,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(416); // 106*2+204
+      expect(stats.attack).toBe(319); // 110*2+99
+      expect(stats.defense).toBe(279); // 90*2+99
+      expect(stats.spAttack).toBe(407); // 154*2+99
+      expect(stats.spDefense).toBe(279); // 90*2+99
+      expect(stats.speed).toBe(359); // 130*2+99
+    });
+
+    it("given Snorlax at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 160,
+        attack: 110,
+        defense: 65,
+        spAttack: 65,
+        spDefense: 110,
+        speed: 30,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(524); // 160*2+204
+      expect(stats.attack).toBe(319); // 110*2+99
+      expect(stats.defense).toBe(229); // 65*2+99
+      expect(stats.spAttack).toBe(229); // 65*2+99
+      expect(stats.spDefense).toBe(319); // 110*2+99
+      expect(stats.speed).toBe(159); // 30*2+99
+    });
+
+    it("given Blissey at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 255,
+        attack: 10,
+        defense: 10,
+        spAttack: 75,
+        spDefense: 135,
+        speed: 55,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(714); // 255*2+204
+      expect(stats.attack).toBe(119); // 10*2+99
+      expect(stats.defense).toBe(119); // 10*2+99
+      expect(stats.spAttack).toBe(249); // 75*2+99
+      expect(stats.spDefense).toBe(369); // 135*2+99
+      expect(stats.speed).toBe(209); // 55*2+99
+    });
+
+    it("given Lugia at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 106,
+        attack: 90,
+        defense: 130,
+        spAttack: 90,
+        spDefense: 154,
+        speed: 110,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(416); // 106*2+204
+      expect(stats.attack).toBe(279); // 90*2+99
+      expect(stats.defense).toBe(359); // 130*2+99
+      expect(stats.spAttack).toBe(279); // 90*2+99
+      expect(stats.spDefense).toBe(407); // 154*2+99
+      expect(stats.speed).toBe(319); // 110*2+99
+    });
+
+    it("given Ho-Oh at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 106,
+        attack: 130,
+        defense: 90,
+        spAttack: 110,
+        spDefense: 154,
+        speed: 90,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(416); // 106*2+204
+      expect(stats.attack).toBe(359); // 130*2+99
+      expect(stats.defense).toBe(279); // 90*2+99
+      expect(stats.spAttack).toBe(319); // 110*2+99
+      expect(stats.spDefense).toBe(407); // 154*2+99
+      expect(stats.speed).toBe(279); // 90*2+99
+    });
+
+    it("given Espeon at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 65,
+        attack: 65,
+        defense: 60,
+        spAttack: 130,
+        spDefense: 95,
+        speed: 110,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(334); // 65*2+204
+      expect(stats.attack).toBe(229); // 65*2+99
+      expect(stats.defense).toBe(219); // 60*2+99
+      expect(stats.spAttack).toBe(359); // 130*2+99
+      expect(stats.spDefense).toBe(289); // 95*2+99
+      expect(stats.speed).toBe(319); // 110*2+99
+    });
+
+    it("given Umbreon at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 95,
+        attack: 65,
+        defense: 110,
+        spAttack: 60,
+        spDefense: 130,
+        speed: 65,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(394); // 95*2+204
+      expect(stats.attack).toBe(229); // 65*2+99
+      expect(stats.defense).toBe(319); // 110*2+99
+      expect(stats.spAttack).toBe(219); // 60*2+99
+      expect(stats.spDefense).toBe(359); // 130*2+99
+      expect(stats.speed).toBe(229); // 65*2+99
+    });
+
+    it("given Scizor at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 70,
+        attack: 130,
+        defense: 100,
+        spAttack: 55,
+        spDefense: 80,
+        speed: 65,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(344); // 70*2+204
+      expect(stats.attack).toBe(359); // 130*2+99
+      expect(stats.defense).toBe(299); // 100*2+99
+      expect(stats.spAttack).toBe(209); // 55*2+99
+      expect(stats.spDefense).toBe(259); // 80*2+99
+      expect(stats.speed).toBe(229); // 65*2+99
+    });
+
+    it("given Heracross at level 100 with max DVs and max StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      const pokemon = createTestPokemon({ level: 100, ivs: maxDvs, evs: maxStatExp });
+      const species = createTestSpecies({
+        hp: 80,
+        attack: 125,
+        defense: 75,
+        spAttack: 40,
+        spDefense: 95,
+        speed: 85,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(364); // 80*2+204
+      expect(stats.attack).toBe(349); // 125*2+99
+      expect(stats.defense).toBe(249); // 75*2+99
+      expect(stats.spAttack).toBe(179); // 40*2+99
+      expect(stats.spDefense).toBe(289); // 95*2+99
+      expect(stats.speed).toBe(269); // 85*2+99
+    });
+  });
+
+  describe("Given Pikachu at level 50 with max DVs and no StatExp", () => {
+    it("given Pikachu at level 50 with max DVs and zero StatExp, when calculating stats, then returns expected values", () => {
+      // Arrange
+      // StatExp bonus = floor(ceil(sqrt(0)) / 4) = 0
+      // Non-HP: floor(((Base + 15) * 2 + 0) * 50 / 100) + 5 = (Base + 15) + 5 = Base + 20
+      // HP:     floor(((Base + 15) * 2 + 0) * 50 / 100) + 50 + 10 = (Base + 15) + 60 = Base + 75
+      const pokemon = createTestPokemon({
+        level: 50,
+        ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+        evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      });
+      const species = createTestSpecies({
+        hp: 35,
+        attack: 55,
+        defense: 30,
+        spAttack: 50,
+        spDefense: 40,
+        speed: 90,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      expect(stats.hp).toBe(110); // 35+75
+      expect(stats.attack).toBe(75); // 55+20
+      expect(stats.defense).toBe(50); // 30+20
+      expect(stats.spAttack).toBe(70); // 50+20
+      expect(stats.spDefense).toBe(60); // 40+20
+      expect(stats.speed).toBe(110); // 90+20
+    });
+  });
+
   describe("Given stat formula properties", () => {
     it("should always return positive integer stats", () => {
       // Arrange
