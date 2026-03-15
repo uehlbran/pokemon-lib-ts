@@ -338,7 +338,7 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
     expect(stats.hp).toBe(142);
   });
 
-  it("given Pikachu at L50 max DVs max StatExp, when calculating Speed, then returns 149", () => {
+  it("given Pikachu at L50 max DVs max StatExp, when calculating Speed, then returns 142", () => {
     // Arrange — base Spe 90, L50, max DVs (15), max StatExp
     // Spe = floor(((90+15)*2+64)*50/100) + 5
     //     = floor((210+64)*50/100) + 5
@@ -719,6 +719,8 @@ describe("3C: Damage Formula (exact expected values)", () => {
     // Assert — damage should be positive and reflect STAB
     expect(result.damage).toBeGreaterThan(0);
     expect(Number.isInteger(result.damage)).toBe(true);
+    // Exact expected damage at max roll (255/255): 274 (verified against implementation)
+    expect(result.damage).toBe(274);
     // With STAB (1.5x) vs without, the ratio should be approx 1.5x
     const rngNoStab = createMockRng(255);
     const mewtwoNoStab = createActivePokemon({ level: 100, stats: mewtwoStats, types: ["water"] });
@@ -879,9 +881,10 @@ describe("3C: Damage Formula (exact expected values)", () => {
 
   // --- Critical hit roughly doubles damage via level doubling ---
 
-  it("given a critical hit at L50, when comparing to non-crit, then damage ratio is approx 1.91x (not exactly 2x)", () => {
+  it("given a critical hit at L50, when comparing to non-crit, then damage ratio is approx 1.86x (not exactly 2x)", () => {
     // Arrange: At L50, levelFactor normal = 22, crit = 42; ratio = 42/22 ≈ 1.909
-    // Final damage ratio is ~1.91x because level doubles, not a flat 2x multiplier
+    // After floor operations the actual damage ratio is ~1.86x (e.g. 69/37), not 1.91x
+    // Final damage ratio is ~1.86x because level doubles and floors compound, not a flat 2x multiplier
     const move = createMove("test", "normal", 80, "physical");
     const chart = neutralTypeChart();
     const attackStats: StatBlock = {
