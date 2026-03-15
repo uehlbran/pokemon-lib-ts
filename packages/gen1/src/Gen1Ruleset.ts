@@ -307,7 +307,10 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Source: gen1-ground-truth.md §7 — Hyper Beam
     // In Gen 1, Hyper Beam skips recharge if it KOs the target, breaks a Substitute, or misses.
     // The recharge flag on the move is handled by the engine; we signal skip via noRecharge.
-    if (move.flags.recharge && damage >= defender.pokemon.currentHp && damage > 0) {
+    // NOTE: By the time executeMoveEffect is called, the engine has already applied damage to
+    // defender.pokemon.currentHp (clamped to 0 on KO). So a KO is detected by checking currentHp === 0.
+    // We also require damage > 0 to avoid triggering on missed moves (damage = 0).
+    if (move.flags.recharge && damage > 0 && defender.pokemon.currentHp === 0) {
       result.noRecharge = true;
     }
 
