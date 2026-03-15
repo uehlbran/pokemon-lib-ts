@@ -1,8 +1,9 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../src/context";
+import type { AbilityContext, AbilityResult, BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
+import type { VolatileStatusState } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -123,7 +124,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine } = createEngine({ team1 });
 
       // Assert — should have default stats
-      const pokemon = engine.getTeam(0)[0]!;
+      const pokemon = engine.getTeam(0)[0] as PokemonInstance;
       expect(pokemon.calculatedStats).toBeDefined();
       expect(pokemon.calculatedStats?.hp).toBe(150); // Uses currentHp as fallback
     });
@@ -150,7 +151,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine } = createEngine({ team1 });
 
       // Assert — should keep the existing stats
-      const pokemon = engine.getTeam(0)[0]!;
+      const pokemon = engine.getTeam(0)[0] as PokemonInstance;
       expect(pokemon.calculatedStats?.hp).toBe(300);
     });
   });
@@ -194,9 +195,12 @@ describe("BattleEngine — branch coverage", () => {
 
       const ruleset = new MockRuleset();
       // Override to enable abilities
-      (ruleset as any).hasAbilities = () => true;
+      (ruleset as unknown as Record<string, unknown>).hasAbilities = () => true;
       const abilityTriggers: number[] = [];
-      (ruleset as any).applyAbility = (_trigger: string, ctx: any) => {
+      (ruleset as unknown as Record<string, unknown>).applyAbility = (
+        _trigger: string,
+        ctx: AbilityContext,
+      ): AbilityResult => {
         // Track which side's ability triggered first
         const side = ctx.pokemon.pokemon.uid === "fast-mon" ? 1 : 0;
         abilityTriggers.push(side);
@@ -242,8 +246,10 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Give Blastoise a substitute
-      engine.getActive(1)!.substituteHp = 50;
-      engine.getActive(1)?.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      const blastoise1 = engine.getActive(1);
+      if (!blastoise1) throw new Error("Expected active pokemon on side 1");
+      blastoise1.substituteHp = 50;
+      blastoise1.volatileStatuses.set("substitute", { turnsLeft: -1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -261,8 +267,10 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      engine.getActive(1)!.substituteHp = 5;
-      engine.getActive(1)?.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      const blastoise2 = engine.getActive(1);
+      if (!blastoise2) throw new Error("Expected active pokemon on side 1");
+      blastoise2.substituteHp = 5;
+      blastoise2.volatileStatuses.set("substitute", { turnsLeft: -1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -281,7 +289,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a move with non-1x effectiveness, when damage is calculated, then effectiveness event is emitted", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).calculateDamage = () => ({
+      (ruleset as unknown as Record<string, unknown>).calculateDamage = () => ({
         damage: 20,
         effectiveness: 2,
         isCrit: false,
@@ -392,7 +400,7 @@ describe("BattleEngine — branch coverage", () => {
       engine.getActive(1)!.pokemon.status = "sleep";
       // Use a volatile to track sleep turns (the engine checks for this)
       // biome-ignore lint/style/noNonNullAssertion: test setup
-      (engine.getActive(1)!.volatileStatuses as Map<any, any>).set("sleep", {
+      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set("sleep-counter", {
         turnsLeft: 3,
       });
 
@@ -415,7 +423,7 @@ describe("BattleEngine — branch coverage", () => {
       // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "sleep";
       // biome-ignore lint/style/noNonNullAssertion: test setup
-      (engine.getActive(1)!.volatileStatuses as Map<any, any>).set("sleep", {
+      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set("sleep-counter", {
         turnsLeft: 0,
       });
 
@@ -436,7 +444,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a frozen pokemon, when freeze thaw fails, then it cannot act", () => {
       // Arrange — use a ruleset where freeze never thaws
       const ruleset = new MockRuleset();
-      (ruleset as any).checkFreezeThaw = () => false;
+      (ruleset as unknown as Record<string, unknown>).checkFreezeThaw = () => false;
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -458,7 +466,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a frozen pokemon, when freeze thaw succeeds, then it can act", () => {
       // Arrange — use a ruleset where freeze always thaws
       const ruleset = new MockRuleset();
-      (ruleset as any).checkFreezeThaw = () => true;
+      (ruleset as unknown as Record<string, unknown>).checkFreezeThaw = () => true;
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -599,8 +607,8 @@ describe("BattleEngine — branch coverage", () => {
     it("given weather with damage and a ruleset that applies weather effects, when end of turn runs, then weather damage is emitted", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).hasWeather = () => true;
-      (ruleset as any).applyWeatherEffects = () => [
+      (ruleset as unknown as Record<string, unknown>).hasWeather = () => true;
+      (ruleset as unknown as Record<string, unknown>).applyWeatherEffects = () => [
         { side: 0, pokemon: "Charizard", damage: 12, message: "Hurt by sand" },
       ];
       const patchedRuleset = Object.create(ruleset) as MockRuleset;

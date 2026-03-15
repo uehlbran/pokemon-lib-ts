@@ -253,8 +253,8 @@ export class BattleEngine implements BattleEventEmitter {
     const active = sideState.active[0];
     const activeSlot = active?.teamSlot ?? -1;
 
-    // Trapping check: Mean Look, Spider Web prevent switching
-    if (active?.volatileStatuses.has("trapped")) {
+    // Delegate switching restriction check to the ruleset
+    if (active && !this.ruleset.canSwitch(active, this.state)) {
       return [];
     }
 
@@ -428,7 +428,10 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private resolveTurn(): void {
-    const actions = [this.pendingActions.get(0)!, this.pendingActions.get(1)!];
+    const action0 = this.pendingActions.get(0);
+    const action1 = this.pendingActions.get(1);
+    if (!action0 || !action1) return;
+    const actions = [action0, action1];
     this.pendingActions.clear();
 
     // --- TURN_START ---
@@ -687,6 +690,11 @@ export class BattleEngine implements BattleEventEmitter {
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
 
+    // Recharge: if the move requires recharge and noRecharge was not set, mark the attacker
+    if (moveData.flags.recharge && !effectResult.noRecharge) {
+      actor.volatileStatuses.set("recharge", { turnsLeft: 1 });
+    }
+
     // Held item: on-hit trigger for attacker
     if (this.ruleset.hasHeldItems() && damage > 0) {
       const atkItemResult = this.ruleset.applyHeldItem("on-hit", {
@@ -843,8 +851,8 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Confusion check
     if (actor.volatileStatuses.has("confusion")) {
-      const confState = actor.volatileStatuses.get("confusion")!;
-      if (confState.turnsLeft <= 0) {
+      const confState = actor.volatileStatuses.get("confusion");
+      if (!confState || confState.turnsLeft <= 0) {
         actor.volatileStatuses.delete("confusion");
         this.emit({
           type: "volatile-end",
@@ -887,8 +895,8 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Bound check (Gen 1 trapping — Wrap, Bind, Fire Spin, Clamp)
     if (actor.volatileStatuses.has("bound")) {
-      const boundState = actor.volatileStatuses.get("bound")!;
-      if (boundState.turnsLeft <= 1) {
+      const boundState = actor.volatileStatuses.get("bound");
+      if (!boundState || boundState.turnsLeft <= 1) {
         actor.volatileStatuses.delete("bound");
         this.emit({
           type: "volatile-end",
@@ -927,9 +935,17 @@ export class BattleEngine implements BattleEventEmitter {
       });
       // Initialize toxic counter volatile so end-of-turn damage can scale correctly
       if (result.statusInflicted === "badly-poisoned") {
-        defender.volatileStatuses.set("toxic-counter" as any, {
+        defender.volatileStatuses.set("toxic-counter", {
           turnsLeft: -1,
           data: { counter: 1 },
+        });
+      }
+      // Initialize sleep counter volatile so processSleepTurn can track remaining turns
+      if (result.statusInflicted === "sleep") {
+        const sleepTurns = this.ruleset.rollSleepTurns(this.state.rng);
+        defender.volatileStatuses.set("sleep-counter", {
+          turnsLeft: sleepTurns,
+          data: {},
         });
       }
     }
@@ -1006,13 +1022,13 @@ export class BattleEngine implements BattleEventEmitter {
     // Weather from move effects
     if (result.weatherSet && this.ruleset.hasWeather()) {
       this.state.weather = {
-        type: result.weatherSet.weather as any,
+        type: result.weatherSet.weather,
         turnsLeft: result.weatherSet.turns,
         source: result.weatherSet.source,
       };
       this.emit({
         type: "weather-set",
-        weather: result.weatherSet.weather as any,
+        weather: result.weatherSet.weather,
         source: result.weatherSet.source,
       });
     }
@@ -1020,7 +1036,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Hazard from move effects
     if (result.hazardSet) {
       const targetSide = this.state.sides[result.hazardSet.targetSide];
-      const hazardType = result.hazardSet.hazard as any;
+      const hazardType = result.hazardSet.hazard;
       const existing = targetSide.hazards.find((h) => h.type === hazardType);
       if (!existing) {
         targetSide.hazards.push({ type: hazardType, layers: 1 });
@@ -1278,14 +1294,7 @@ export class BattleEngine implements BattleEventEmitter {
             source: status,
           });
         }
-        // Increment toxic counter for badly-poisoned pokemon (delegated to ruleset via applyStatusDamage)
-        if (status === "badly-poisoned") {
-          const toxicState = active.volatileStatuses.get("toxic-counter" as any);
-          if (toxicState?.data) {
-            (toxicState.data as Record<string, unknown>).counter =
-              ((toxicState.data.counter as number) ?? 1) + 1;
-          }
-        }
+        // Toxic counter increment is handled by the ruleset's applyStatusDamage
       }
     }
   }
@@ -1512,7 +1521,8 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active || active.pokemon.currentHp <= 0) continue;
       if (!active.volatileStatuses.has("perish-song")) continue;
 
-      const perishState = active.volatileStatuses.get("perish-song")!;
+      const perishState = active.volatileStatuses.get("perish-song");
+      if (!perishState) continue;
       const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
 
       this.emit({

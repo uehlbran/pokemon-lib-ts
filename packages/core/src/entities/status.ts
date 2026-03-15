@@ -39,6 +39,9 @@ export type VolatileStatus =
   | "drowsy" // Gen 9 — from Yawn equivalent
   | "bound" // Bind, Wrap, Fire Spin, etc.
   | "trapped" // Mean Look, Spider Web (Gen 2+) — prevents switching
+  | "recharge" // Must recharge next turn (Hyper Beam, etc.)
+  | "toxic-counter" // Tracks escalating Toxic damage counter
+  | "sleep-counter" // Tracks remaining sleep turns
   | "no-retreat" // Gen 8
   | "tar-shot" // Gen 8
   | "octolock"; // Gen 8

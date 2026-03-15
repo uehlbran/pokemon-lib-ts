@@ -67,7 +67,7 @@ export class MockRuleset implements GenerationRuleset {
     for (const atk of types) {
       chart[atk] = {};
       for (const def of types) {
-        chart[atk]![def] = 1;
+        (chart[atk] as Record<string, number>)[def] = 1;
       }
     }
     return chart as TypeChart;
@@ -199,16 +199,16 @@ export class MockRuleset implements GenerationRuleset {
   }
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    const sleepState = pokemon.volatileStatuses.get("sleep" as any);
+    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep" as any);
+      pokemon.volatileStatuses.delete("sleep-counter");
       return true;
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep" as any);
+      pokemon.volatileStatuses.delete("sleep-counter");
       return true;
     }
     return false;
@@ -283,6 +283,42 @@ export class MockRuleset implements GenerationRuleset {
 
   onSwitchOut(_pokemon: ActivePokemon, _state: BattleState): void {
     // No-op for mock
+  }
+
+  canSwitch(_pokemon: ActivePokemon, _state: BattleState): boolean {
+    return true;
+  }
+
+  calculateLeechSeedDrain(pokemon: ActivePokemon): number {
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
+  }
+
+  calculateCurseDamage(pokemon: ActivePokemon): number {
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  calculateNightmareDamage(pokemon: ActivePokemon): number {
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  processPerishSong(pokemon: ActivePokemon): {
+    readonly newCount: number;
+    readonly fainted: boolean;
+  } {
+    const perishState = pokemon.volatileStatuses.get("perish-song");
+    if (!perishState) return { newCount: 0, fainted: false };
+    const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
+    if (counter <= 1) return { newCount: 0, fainted: true };
+    const newCount = counter - 1;
+    if (perishState.data) {
+      perishState.data.counter = newCount;
+    } else {
+      perishState.turnsLeft = newCount;
+    }
+    return { newCount, fainted: false };
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {

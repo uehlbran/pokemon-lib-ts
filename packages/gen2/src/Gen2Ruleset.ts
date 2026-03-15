@@ -33,6 +33,7 @@ import type {
   StatBlock,
   TypeChart,
   VolatileStatus,
+  WeatherType,
 } from "@pokemon-lib-ts/core";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 import {
@@ -303,8 +304,8 @@ export class Gen2Ruleset implements GenerationRuleset {
       healAmount: number;
       switchOut: boolean;
       messages: string[];
-      weatherSet?: { weather: string; turns: number; source: string } | null;
-      hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+      weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
+      hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
@@ -348,8 +349,8 @@ export class Gen2Ruleset implements GenerationRuleset {
       healAmount: number;
       switchOut: boolean;
       messages: string[];
-      weatherSet?: { weather: string; turns: number; source: string } | null;
-      hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+      weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
+      hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
@@ -521,8 +522,8 @@ export class Gen2Ruleset implements GenerationRuleset {
       healAmount: number;
       switchOut: boolean;
       messages: string[];
-      weatherSet?: { weather: string; turns: number; source: string } | null;
-      hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+      weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
+      hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
@@ -796,6 +797,50 @@ export class Gen2Ruleset implements GenerationRuleset {
     pokemon.volatileStatuses.delete("flinch");
     pokemon.volatileStatuses.delete("focus-energy");
     pokemon.volatileStatuses.delete("leech-seed");
+  }
+
+  // --- Switching ---
+
+  canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
+    // Gen 2: Mean Look / Spider Web prevent switching
+    return !pokemon.volatileStatuses.has("trapped");
+  }
+
+  // --- End-of-Turn Formulas ---
+
+  calculateLeechSeedDrain(pokemon: ActivePokemon): number {
+    // Gen 2: 1/8 max HP
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
+  }
+
+  calculateCurseDamage(pokemon: ActivePokemon): number {
+    // Gen 2: 1/4 max HP per turn
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  calculateNightmareDamage(pokemon: ActivePokemon): number {
+    // Gen 2: 1/4 max HP per turn while asleep
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  processPerishSong(pokemon: ActivePokemon): {
+    readonly newCount: number;
+    readonly fainted: boolean;
+  } {
+    const perishState = pokemon.volatileStatuses.get("perish-song");
+    if (!perishState) return { newCount: 0, fainted: false };
+    const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
+    if (counter <= 1) return { newCount: 0, fainted: true };
+    const newCount = counter - 1;
+    if (perishState.data) {
+      perishState.data.counter = newCount;
+    } else {
+      perishState.turnsLeft = newCount;
+    }
+    return { newCount, fainted: false };
   }
 
   // --- End-of-Turn Order ---

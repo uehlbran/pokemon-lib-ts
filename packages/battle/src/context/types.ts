@@ -1,6 +1,7 @@
 import type {
   AbilityTrigger,
   BattleStat,
+  EntryHazardType,
   Generation,
   MoveCategory,
   MoveData,
@@ -9,6 +10,7 @@ import type {
   PokemonType,
   PrimaryStatus,
   VolatileStatus,
+  WeatherType,
 } from "@pokemon-lib-ts/core";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type { BattleEvent } from "../events";
@@ -97,8 +99,8 @@ export interface MoveEffectResult {
   readonly statusCured?: { target: "attacker" | "defender" | "both" } | null;
   /** Wave 2/3: Data for volatile status infliction (turnsLeft, etc.) */
   readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-  readonly weatherSet?: { weather: string; turns: number; source: string } | null;
-  readonly hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+  readonly weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
+  readonly hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
   readonly volatilesToClear?: ReadonlyArray<{
     target: "attacker" | "defender";
     volatile: VolatileStatus;
