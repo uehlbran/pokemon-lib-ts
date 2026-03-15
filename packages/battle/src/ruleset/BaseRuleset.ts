@@ -2,6 +2,7 @@ import type {
   AbilityTrigger,
   EntryHazardType,
   Generation,
+  NonHpStat,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
@@ -10,6 +11,7 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import { ALL_NATURES, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,
@@ -58,13 +60,23 @@ export abstract class BaseRuleset implements GenerationRuleset {
       return Math.floor(((2 * baseStat + iv + Math.floor(ev / 4)) * level) / 100) + 5;
     };
 
+    // Apply nature modifier (+10% boosted stat, -10% decreased stat)
+    // Source: Game Freak Gen 3+ formula — floor(stat * 1.1) or floor(stat * 0.9)
+    const nature = ALL_NATURES.find((n) => n.id === pokemon.nature);
+    const applyNature = (stat: number, statKey: NonHpStat): number => {
+      if (!nature || nature.increased === null) return stat;
+      if (nature.increased === statKey) return Math.floor(stat * 1.1);
+      if (nature.decreased === statKey) return Math.floor(stat * 0.9);
+      return stat;
+    };
+
     return {
       hp,
-      attack: calcStat(base.attack, ivs.attack, evs.attack),
-      defense: calcStat(base.defense, ivs.defense, evs.defense),
-      spAttack: calcStat(base.spAttack, ivs.spAttack, evs.spAttack),
-      spDefense: calcStat(base.spDefense, ivs.spDefense, evs.spDefense),
-      speed: calcStat(base.speed, ivs.speed, evs.speed),
+      attack: applyNature(calcStat(base.attack, ivs.attack, evs.attack), "attack"),
+      defense: applyNature(calcStat(base.defense, ivs.defense, evs.defense), "defense"),
+      spAttack: applyNature(calcStat(base.spAttack, ivs.spAttack, evs.spAttack), "spAttack"),
+      spDefense: applyNature(calcStat(base.spDefense, ivs.spDefense, evs.spDefense), "spDefense"),
+      speed: applyNature(calcStat(base.speed, ivs.speed, evs.speed), "speed"),
     };
   }
 
@@ -300,8 +312,29 @@ export abstract class BaseRuleset implements GenerationRuleset {
     _state: BattleState,
     _rng: SeededRandom,
   ): number {
-    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
-    return Math.max(1, Math.floor(maxHp / 8));
+    // Gen 3+: confusion self-hit uses 40 base power with the user's own Attack and Defense.
+    // No random variance, no STAB, no critical hit, no type effectiveness.
+    // Burn halves physical attack even on confusion self-hits (confusion is always physical-category).
+    // No Gen 1 stat overflow check — that bug is Gen 1 specific.
+    // Source: Showdown sim/battle.ts confusion self-damage logic
+    const level = pokemon.pokemon.level;
+    const calcStats = pokemon.pokemon.calculatedStats;
+    const baseAtk = calcStats?.attack ?? 50;
+    const baseDef = calcStats?.defense ?? 50;
+
+    let atk = Math.max(1, Math.floor(baseAtk * getStatStageMultiplier(pokemon.statStages.attack)));
+    const def = Math.max(
+      1,
+      Math.floor(baseDef * getStatStageMultiplier(pokemon.statStages.defense)),
+    );
+
+    if (pokemon.pokemon.status === "burn") {
+      atk = Math.floor(atk / 2);
+    }
+
+    const levelFactor = Math.floor((2 * level) / 5) + 2;
+    const damage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
+    return Math.max(1, damage);
   }
 
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
