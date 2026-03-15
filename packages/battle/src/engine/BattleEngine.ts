@@ -1468,8 +1468,12 @@ export class BattleEngine implements BattleEventEmitter {
         }
         case "volatile-cure": {
           const volatile = effect.value as string;
-          if (pokemon.volatileStatuses.has(volatile as import("@pokemon-lib-ts/core").VolatileStatus)) {
-            pokemon.volatileStatuses.delete(volatile as import("@pokemon-lib-ts/core").VolatileStatus);
+          if (
+            pokemon.volatileStatuses.has(volatile as import("@pokemon-lib-ts/core").VolatileStatus)
+          ) {
+            pokemon.volatileStatuses.delete(
+              volatile as import("@pokemon-lib-ts/core").VolatileStatus,
+            );
             this.emit({
               type: "volatile-end",
               side,
