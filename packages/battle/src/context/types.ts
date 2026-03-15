@@ -14,7 +14,13 @@ import type {
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import type { BattleEvent } from "../events";
-import type { ActivePokemon, BattleFormat, BattleSide, BattleState } from "../state";
+import type {
+  ActivePokemon,
+  BattleFormat,
+  BattleSide,
+  BattleState,
+  TrainerDataRef,
+} from "../state";
 
 /**
  * All inputs required for a generation's damage calculation.
@@ -402,13 +408,6 @@ export interface BattleConfig {
   readonly seed: number;
   /** `true` if this is a wild Pokémon encounter (enables flee, catch mechanics) */
   readonly isWildBattle?: boolean;
-}
-
-/** Simplified trainer reference for battle config */
-export interface TrainerDataRef {
-  readonly id: string;
-  readonly displayName: string;
-  readonly trainerClass: string;
 }
 
 /**

@@ -186,6 +186,7 @@ Rules:
 ## PR Workflow
 
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/`. See Package Versioning above.
+- **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. GitHub auto-closes the issue when the PR merges. No issue? Leave it out — don't fabricate links.
 - Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use manual polling.
 - **`/babysit-pr` auto-merges by default** and self-polls until complete — no `/loop` wrapper needed. Use `--no-merge` to require confirmation before merging.
 - **Act autonomously.** When handling a PR, agents should:
