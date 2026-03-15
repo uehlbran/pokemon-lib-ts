@@ -120,9 +120,14 @@ function getDefenseStat(
     effective = Math.floor(baseStat * getStatStageMultiplier(stage));
   }
 
-  // Metal Powder doubles Ditto's (132) Defense and SpDefense
+  // Metal Powder doubles Ditto's (132) Defense only (not SpDefense)
+  // Source: pret/pokecrystal src/engine/battle/Items.asm — GetItemStatBoost applies to physical Defense only
   // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
-  if (defender.pokemon.heldItem === "metal-powder" && defender.pokemon.speciesId === 132) {
+  if (
+    physical &&
+    defender.pokemon.heldItem === "metal-powder" &&
+    defender.pokemon.speciesId === 132
+  ) {
     effective = effective * 2;
   }
 

@@ -293,6 +293,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
+      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -345,6 +346,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
+      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
     },
     context: MoveEffectContext,
   ): void {
@@ -506,9 +508,17 @@ export class Gen1Ruleset implements GenerationRuleset {
           // all volatile statuses (leech-seed, focus-energy, confusion, disable, etc.)
           result.statusCured = { target: "both" };
           result.screensCleared = "both";
-          // Directly clear all volatile statuses for both Pokemon
-          attacker.volatileStatuses.clear();
-          defender.volatileStatuses.clear();
+          // Build volatilesToClear from all current volatile statuses on both Pokemon.
+          // The engine will delete each and emit volatile-end events via processEffectResult.
+          const hazeClears: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }> =
+            [];
+          for (const volatile of attacker.volatileStatuses.keys()) {
+            hazeClears.push({ target: "attacker", volatile });
+          }
+          for (const volatile of defender.volatileStatuses.keys()) {
+            hazeClears.push({ target: "defender", volatile });
+          }
+          result.volatilesToClear = hazeClears;
           result.messages.push("All stat changes were eliminated!");
         } else if (effect.handler === "explosion" || effect.handler === "self-destruct") {
           // Explosion / Self-Destruct: user faints after using the move

@@ -1580,7 +1580,7 @@ describe("Gen 2 Damage Calculation", () => {
       }
     });
 
-    it("given Ditto holding Metal Powder attacked with a special move, when calculating damage, then SpDefense is doubled (damage ~halved)", () => {
+    it("given Ditto holding Metal Powder attacked with a special move, when calculating damage, then no SpDefense doubling (Metal Powder only affects physical Defense)", () => {
       // Arrange
       const attacker = createActivePokemon({
         level: 50,
@@ -1638,13 +1638,8 @@ describe("Gen 2 Damage Calculation", () => {
       const withPowderDmg = calculateGen2Damage(withPowderCtx, chart, species);
       const noPowderDmg = calculateGen2Damage(noPowderCtx, chart, species);
 
-      // Assert: Metal Powder doubles SpDefense for Ditto → damage roughly halved
-      expect(withPowderDmg.damage).toBeLessThan(noPowderDmg.damage);
-      if (withPowderDmg.damage > 0) {
-        const ratio = noPowderDmg.damage / withPowderDmg.damage;
-        expect(ratio).toBeGreaterThanOrEqual(1.8);
-        expect(ratio).toBeLessThanOrEqual(2.2);
-      }
+      // Assert: Metal Powder does NOT double SpDefense — Ditto takes same damage as without Metal Powder
+      expect(withPowderDmg.damage).toBe(noPowderDmg.damage);
     });
 
     it("given Pikachu holding Metal Powder, when attacked with a physical move, then no defense doubling (only Ditto gets bonus)", () => {
