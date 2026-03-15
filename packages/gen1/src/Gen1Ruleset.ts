@@ -574,6 +574,17 @@ export class Gen1Ruleset implements GenerationRuleset {
     };
   }
 
+  // --- Confusion Damage ---
+
+  calculateConfusionDamage(
+    pokemon: ActivePokemon,
+    _state: BattleState,
+    _rng: SeededRandom,
+  ): number {
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
+  }
+
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {

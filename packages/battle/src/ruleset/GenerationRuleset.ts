@@ -217,6 +217,15 @@ export interface GenerationRuleset {
    */
   validatePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData): ValidationResult;
 
+  // --- Confusion Damage ---
+
+  /**
+   * Calculate confusion self-hit damage.
+   * Gen 1: simplified maxHP/8
+   * Gen 2+: actual 40 base power typeless physical damage formula
+   */
+  calculateConfusionDamage(pokemon: ActivePokemon, state: BattleState, rng: SeededRandom): number;
+
   // --- End-of-Turn Order ---
 
   /**

@@ -81,6 +81,8 @@ export interface MoveEffectResult {
   readonly healAmount: number;
   readonly switchOut: boolean;
   readonly messages: readonly string[];
+  readonly weatherSet?: { weather: string; turns: number; source: string } | null;
+  readonly hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
 }
 
 export interface AbilityContext {
@@ -163,6 +165,7 @@ export type EndOfTurnEffect =
   | "speed-boost"
   | "moody"
   | "bad-dreams"
+  | "nightmare"
   | "harvest"
   | "pickup"
   | "poison-heal";
