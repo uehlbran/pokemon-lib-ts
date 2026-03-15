@@ -1,6 +1,8 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { Gen2Ruleset } from "../src/Gen2Ruleset";
 import { calculateGen2StatusDamage, canInflictGen2Status } from "../src/Gen2Status";
 
 /**
@@ -503,5 +505,87 @@ describe("Gen2Status", () => {
       // Assert
       expect(canInflict).toBe(false);
     });
+  });
+});
+
+describe("Comprehensive status mechanics", () => {
+  it("given a frozen Pokemon, when rolling thaw chance 10000 times, then thaws approximately 9.77% of turns", () => {
+    // Arrange
+    const rng = new SeededRandom(12345);
+    const ruleset = new Gen2Ruleset();
+    const pokemon = createMockActivePokemon({ status: "freeze" });
+    let thawCount = 0;
+    // Act
+    for (let i = 0; i < 10000; i++) {
+      if (ruleset.checkFreezeThaw(pokemon, rng)) thawCount++;
+    }
+    const rate = thawCount / 10000;
+    // Assert — 25/256 ≈ 9.77%, allow ±2%
+    expect(rate).toBeGreaterThan(0.0777);
+    expect(rate).toBeLessThan(0.1177);
+  });
+
+  it("given a burned Pokemon with 200 max HP, when calculating status damage, then takes 25 damage per turn", () => {
+    // Arrange
+    const pokemon = createMockActivePokemon({ maxHp: 200, status: "burn" });
+    const mockState = {} as BattleState;
+    // Act
+    const damage = calculateGen2StatusDamage(pokemon, "burn", mockState);
+    // Assert
+    expect(damage).toBe(25); // floor(200/8) = 25
+  });
+
+  it("given a burned Pokemon with 1 max HP, when calculating status damage, then takes minimum 1 damage", () => {
+    // Arrange
+    const pokemon = createMockActivePokemon({ maxHp: 1, status: "burn" });
+    // Act
+    const damage = calculateGen2StatusDamage(pokemon, "burn", {} as BattleState);
+    // Assert
+    expect(damage).toBe(1);
+  });
+
+  it("given an Electric-type Pokemon, when checking if burn can be inflicted, then returns true", () => {
+    // Arrange
+    const electricPokemon = createMockActivePokemon({ types: ["electric"] });
+    // Act
+    const result = canInflictGen2Status("burn", electricPokemon);
+    // Assert
+    expect(result).toBe(true);
+  });
+
+  it("given a Fire-type Pokemon, when checking if burn can be inflicted, then returns false", () => {
+    // Arrange
+    const firePokemon = createMockActivePokemon({ types: ["fire"] });
+    // Act
+    const result = canInflictGen2Status("burn", firePokemon);
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it("given an Ice-type Pokemon, when checking if freeze can be inflicted, then returns false", () => {
+    // Arrange
+    const icePokemon = createMockActivePokemon({ types: ["ice"] });
+    // Act
+    const result = canInflictGen2Status("freeze", icePokemon);
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it("given a Steel-type Pokemon, when checking if poison can be inflicted, then returns false", () => {
+    // Arrange
+    const steelPokemon = createMockActivePokemon({ types: ["steel"] });
+    // Act
+    const result = canInflictGen2Status("poison", steelPokemon);
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it("given a Pokemon already burned, when checking if paralysis can be inflicted, then returns false", () => {
+    // Arrange
+    const pokemon = createMockActivePokemon({ status: "burn" });
+    // Act
+    const result = canInflictGen2Status("paralysis", pokemon);
+    // Assert
+    expect(result).toBe(false);
   });
 });
