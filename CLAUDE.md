@@ -107,16 +107,15 @@ These specs are reference material. Implementation may deviate where code reveal
 
 ## PR Review
 
-Every PR gets reviewed by three AI tools plus a human approver:
+Every PR requires local review before push plus a human approver:
 
-- **CodeRabbit** — inline comments, PR summary, security scan. Config: `.coderabbit.yaml`
-- **Qodo PR-Agent** — structured review with severity categories. GitHub Action, best-effort (soft-fails on rate limit)
-- **Claude Code** — deep local review via `pokemon-reviewer` subagent. Runs on push via `git pushreview`. Posts findings to PR as comments
-- **Human** — required approval (1 reviewer). Final say on architecture and correctness
+- **`/review` (required)** — runs falcon (correctness), kestrel (architecture), sentinel (security) locally. Must be run before every PR. This is the primary review gate.
+- **CodeRabbit** — inline comments, PR summary, security scan (advisory, bonus). Config: `.coderabbit.yaml`
+- **Qodo PR-Agent** — structured review (advisory, best-effort — may be rate-limited). GitHub Action.
+- **Claude Code** — deep local review via `pokemon-reviewer` subagent. Runs on push via `git pushreview`. Posts findings to PR as comments (advisory).
+- **Human** — required approval (1 reviewer). Final say on architecture and correctness.
 
 AI reviews are advisory (comments only, never formal approvals). See `.github/AI_REVIEWERS.md` for interaction commands.
-
-Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agents).
 
 ## How to Add a New Generation
 
@@ -185,6 +184,7 @@ Rules:
 
 ## PR Workflow
 
+- **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally. Do not depend on CodeRabbit/Qodo — they can be rate-limited.
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/`. See Package Versioning above.
 - **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. GitHub auto-closes the issue when the PR merges. No issue? Leave it out — don't fabricate links.
 - Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use manual polling.
@@ -215,3 +215,12 @@ Before every `git push`, all agents must run the following validation gate:
 If typecheck or tests fail, fix the issue and re-run before pushing. Never push failing code.
 
 **Exception:** For docs-only changes (no files under `src/` or `data/` modified), skip typecheck and test — biome check is still required.
+
+## Bug Reporting
+
+When agents discover bugs outside the scope of their current task, they must file GitHub issues
+rather than ignoring them or noting them in markdown files. See `.claude/rules/bug-filing.md` for
+the format and dedup check procedure. Use the `bug-finder` agent for proactive scanning.
+
+When a PR fixes a tracked issue, include `Closes #N` in the PR body so GitHub auto-closes the
+issue on merge. Always link PRs to the issues they resolve.

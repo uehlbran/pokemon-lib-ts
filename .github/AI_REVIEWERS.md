@@ -49,34 +49,36 @@ This repository uses AI-powered code review tools to supplement human review. AI
 
 **Configuration:** `.claude/agents/pokemon-reviewer.md`
 
-### Local Pre-PR Review
+### Local Pre-PR Review (Required)
 
-Before pushing a PR, you can run a deeper local review using Claude Code:
+Before pushing any PR, run a deep local review using Claude Code:
 
 ```
 /review
 ```
 
-This runs three specialized review agents:
+This runs three specialized review agents in parallel:
 - **falcon** -- correctness, bugs, logic errors, test quality
 - **kestrel** -- architecture, SOLID principles, pattern consistency
 - **sentinel** -- security vulnerabilities, auth flaws, data exposure
 
-This is deeper than the `pokemon-reviewer` subagent and reads full project context including specs.
+This is the **primary review gate**. It reads full project context including specs and is deeper
+than any remote AI reviewer. Do not skip it — CodeRabbit and Qodo are bonus-only and can be
+rate-limited.
 
 ## Full Review Workflow
 
-1. **Local (optional):** Run `/review` before pushing for deep pre-flight analysis
-2. **Push:** `git pushreview` (pushes + triggers Claude review)
+1. **Local (required):** Run `/review` — falcon + kestrel + sentinel must pass
+2. **Push:** `git pushreview` (pushes + triggers Claude review comment on the PR)
 3. **CI:** Build, test, typecheck, lint must pass (required)
-4. **CodeRabbit:** Auto-posts summary + inline comments (advisory)
-5. **Qodo PR-Agent:** Auto-posts structured review (advisory, best-effort)
-6. **Claude Code:** Posts review comment from local subagent (advisory)
-7. **Human:** Review AI feedback, address anything valid, approve and merge
+4. **CodeRabbit:** Auto-posts summary + inline comments (advisory, bonus)
+5. **Qodo PR-Agent:** Auto-posts structured review (advisory, best-effort — may be rate-limited)
+6. **Human:** Review feedback, address anything valid, approve and merge
 
 ## Guidelines
 
-1. **AI reviews are advisory** -- They comment but never approve. A human reviewer must approve every PR.
-2. **Don't blindly fix** -- Evaluate AI suggestions critically. They can be wrong.
-3. **Dismiss false positives** -- React with :thumbsdown: or reply explaining why the suggestion doesn't apply.
-4. **Security findings are high priority** -- If an AI flags a security issue, investigate before dismissing.
+1. **`/review` is required** -- Run falcon/kestrel/sentinel locally before every PR. This is not optional.
+2. **AI reviews are advisory** -- Remote reviewers comment but never approve. A human reviewer must approve every PR.
+3. **Don't blindly fix** -- Evaluate AI suggestions critically. They can be wrong.
+4. **Dismiss false positives** -- React with :thumbsdown: or reply explaining why the suggestion doesn't apply.
+5. **Security findings are high priority** -- If an AI flags a security issue, investigate before dismissing.

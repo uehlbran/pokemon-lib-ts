@@ -1,0 +1,39 @@
+name: Check Issue Link
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  check-issue-link:
+    name: "Issue reference required"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR body for issue reference
+        # PR_BODY is passed as an env var (safe pattern — no direct ${{ }} in run: command)
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # Pass if body contains a closing keyword + issue number
+          if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+'; then
+            echo "Issue reference found."
+            exit 0
+          fi
+
+          # Pass if explicitly marked as no-issue (pure tooling/docs/chore)
+          if echo "$PR_BODY" | grep -qiE 'closes[[:space:]]*:[[:space:]]*n/?a|no.?issue|not.?applicable'; then
+            echo "Explicitly marked as no related issue."
+            exit 0
+          fi
+
+          echo "PR body must include a closing reference (e.g. 'Closes #42') or mark as no-issue."
+          echo ""
+          echo "If this PR fixes a tracked bug or implements a tracked feature:"
+          echo "  Add 'Closes #N' to the PR body so GitHub auto-closes the issue on merge."
+          echo ""
+          echo "If this PR has no related issue (pure chore, docs, tooling):"
+          echo "  Add 'Closes: N/A' to the Related Issue section and explain why."
+          exit 1
