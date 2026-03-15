@@ -89,10 +89,13 @@ describe("GenerationRuleset interface verification", () => {
 
       // Assert — should be a nested record structure with number values
       expect(typeof chart).toBe("object");
-      const firstKey = Object.keys(chart)[0]!;
+      const firstKey = Object.keys(chart)[0];
+      if (!firstKey) throw new Error("Expected type chart to have at least one key");
       expect(typeof chart[firstKey]).toBe("object");
-      const innerFirstKey = Object.keys(chart[firstKey]!)[0]!;
-      expect(typeof chart[firstKey]![innerFirstKey]).toBe("number");
+      const innerRow = chart[firstKey];
+      const innerFirstKey = innerRow ? Object.keys(innerRow)[0] : undefined;
+      if (!innerFirstKey) throw new Error("Expected inner type chart row to have at least one key");
+      expect(typeof chart[firstKey]?.[innerFirstKey]).toBe("number");
     });
 
     it("given MockRuleset.getValidTypes, when called, then it returns an array of lowercase string types", () => {

@@ -16,6 +16,21 @@ import type { Generation, Item, Move, Specie, Type } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
 
 // ---------------------------------------------------------------------------
+// Local interfaces for typed casts
+// ---------------------------------------------------------------------------
+
+interface ShowdownAbilities {
+  "0"?: string;
+  "1"?: string;
+  H?: string;
+  S?: string;
+}
+
+interface WithId {
+  id: string;
+}
+
+// ---------------------------------------------------------------------------
 // CLI arg parsing
 // ---------------------------------------------------------------------------
 
@@ -599,7 +614,9 @@ function buildMoveEffect(move: Move): object | null {
     const status = mapStatus(move.status);
     if (
       status &&
-      !effects.some((e: any) => e.type === "status-chance" || e.type === "status-guaranteed")
+      !(effects as { type: string }[]).some(
+        (e) => e.type === "status-chance" || e.type === "status-guaranteed",
+      )
     ) {
       effects.push({
         type: "status-chance",
@@ -807,13 +824,15 @@ async function buildPokemonData() {
     const abilities =
       GEN_NUM <= 2
         ? { normal: [] as string[], hidden: null }
-        : {
-            normal: Object.entries(species.abilities as any)
+        : (() => {
+            const abils = species.abilities as ShowdownAbilities;
+            const normal = Object.entries(abils)
               .filter(([k]) => k !== "H" && k !== "S")
               .map(([, v]) => toKebab(v as string))
-              .filter((a) => a),
-            hidden: (species.abilities as any).H ? toKebab((species.abilities as any).H) : null,
-          };
+              .filter((a): a is string => !!a);
+            const hidden = abils.H ? toKebab(abils.H) : null;
+            return { normal, hidden };
+          })();
 
     // Evolution
     let evolution: object | null = null;
@@ -826,7 +845,7 @@ async function buildPokemonData() {
       if (hasPrevo) {
         from = buildEvolutionLink(species, gen);
         // The "from" link points to the prevo, with the method being how THIS species evolved
-        const prevoSpecies = gen.species.get(species.prevo!);
+        const prevoSpecies = gen.species.get(species.prevo ?? "");
         if (prevoSpecies?.exists) {
           from.speciesId = prevoSpecies.num;
         }
@@ -961,7 +980,7 @@ function buildMovesData() {
   }
 
   // Sort by generation then alphabetically
-  moves.sort((a: any, b: any) => a.id.localeCompare(b.id));
+  (moves as WithId[]).sort((a, b) => a.id.localeCompare(b.id));
 
   return moves;
 }
@@ -1239,7 +1258,7 @@ function buildItemsData() {
     const battleUsable = !!(holdEffect || item.isBerry);
     const fieldUsable = false;
 
-    const entry: Record<string, any> = {
+    const entry: Record<string, unknown> = {
       id: kebabId,
       displayName: item.name,
       description: item.desc || item.shortDesc || "",
@@ -1260,7 +1279,7 @@ function buildItemsData() {
   }
 
   // Sort alphabetically
-  items.sort((a: any, b: any) => a.id.localeCompare(b.id));
+  (items as WithId[]).sort((a, b) => a.id.localeCompare(b.id));
 
   return items;
 }

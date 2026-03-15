@@ -95,6 +95,6 @@ export function rollGen2Critical(
   rng: SeededRandom,
 ): boolean {
   const stage = getGen2CritStage(attacker, move);
-  const critRate = GEN2_CRIT_STAGES[stage]!;
+  const critRate = GEN2_CRIT_STAGES[stage] as number;
   return rng.chance(critRate);
 }

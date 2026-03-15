@@ -37,7 +37,7 @@ function createMockRng(intReturnValue: number) {
     next: () => 0,
     int: (_min: number, _max: number) => intReturnValue,
     chance: () => false,
-    pick: <T>(arr: readonly T[]) => arr[0]!,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
     shuffle: <T>(arr: readonly T[]) => [...arr],
     getState: () => 0,
     setState: () => {},
@@ -215,8 +215,9 @@ function createNeutralTypeChart(): TypeChart {
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
     chart[atk] = {};
+    const row = chart[atk] as Record<string, number>;
     for (const def of types) {
-      chart[atk]![def] = 1;
+      row[def] = 1;
     }
   }
   return chart as TypeChart;
@@ -236,7 +237,8 @@ function createTypeChartWithEffectiveness(effectiveness: number): {
     return { chart, defenderTypes: ["normal"] };
   }
   // Use "water" as the defender type and set normal -> water to the desired value
-  (chart as Record<string, Record<string, number>>).normal!.water = effectiveness;
+  const normalRow = (chart as Record<string, Record<string, number>>).normal;
+  if (normalRow) normalRow.water = effectiveness;
   return { chart, defenderTypes: ["water"] };
 }
 

@@ -42,7 +42,7 @@ function createMockRng(intReturnValue: number) {
     next: () => 0,
     int: (_min: number, _max: number) => intReturnValue,
     chance: () => false,
-    pick: <T>(arr: readonly T[]) => arr[0]!,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
     shuffle: <T>(arr: readonly T[]) => [...arr],
     getState: () => 0,
     setState: () => {},
@@ -219,7 +219,7 @@ function createNeutralTypeChart(): TypeChart {
   for (const atk of types) {
     chart[atk] = {};
     for (const def of types) {
-      chart[atk]![def] = 1;
+      (chart[atk] as Record<string, number>)[def] = 1;
     }
   }
   return chart as TypeChart;
@@ -564,7 +564,8 @@ describe("Gen 2 Damage Calculation", () => {
     const chart = createNeutralTypeChart();
     // Set normal -> water to 2x for super effective test
     const seChart = createNeutralTypeChart();
-    (seChart as Record<string, Record<string, number>>).normal!.water = 2;
+    ((seChart as Record<string, Record<string, number>>).normal as Record<string, number>).water =
+      2;
     const defenderWater = createActivePokemon({
       level: 50,
       attack: 100,
@@ -625,7 +626,7 @@ describe("Gen 2 Damage Calculation", () => {
     });
     const move = createMove("normal", 80);
     const chart = createNeutralTypeChart();
-    (chart as Record<string, Record<string, number>>).normal!.ghost = 0;
+    ((chart as Record<string, Record<string, number>>).normal as Record<string, number>).ghost = 0;
     const species = createSpecies(["normal"]);
 
     const context: DamageContext = {
@@ -1674,7 +1675,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: "metal-powder",
       });
-      (pikachuWithPowder.pokemon as any).speciesId = 25;
+      (pikachuWithPowder.pokemon as unknown as { speciesId: number }).speciesId = 25;
 
       const pikachuNoPowder = createActivePokemon({
         level: 50,
@@ -1685,7 +1686,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: null,
       });
-      (pikachuNoPowder.pokemon as any).speciesId = 25;
+      (pikachuNoPowder.pokemon as unknown as { speciesId: number }).speciesId = 25;
 
       const move = createMove("normal", 80);
       const chart = createNeutralTypeChart();

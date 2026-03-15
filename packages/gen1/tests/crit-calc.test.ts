@@ -93,7 +93,7 @@ describe("Gen 1 Critical Hit", () => {
     const rates = speeds.map((s) => getGen1CritRate(s, false, false));
     // Assert
     for (let i = 1; i < rates.length; i++) {
-      expect(rates[i]).toBeGreaterThanOrEqual(rates[i - 1]!);
+      expect(rates[i]).toBeGreaterThanOrEqual(rates[i - 1] ?? 0);
     }
   });
 
