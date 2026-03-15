@@ -570,9 +570,7 @@ describe("Gen2Ruleset", () => {
       // baseDamage = floor(floor(22 * 40 * 150) / 100 / 50) + 2 = floor(2640) + 2
       // Actually: floor(floor(22*40*150)/100) = floor(132000/100) = 1320
       // floor(1320/50) + 2 = 26 + 2 = 28
-      // With random (217-255)/255: floor(28 * randomRoll / 255)
-      // Min: floor(28 * 217/255) = floor(23.8) = 23
-      // Max: floor(28 * 255/255) = 28
+      // Expected range: min 23, max 28
       expect(damage).toBeGreaterThanOrEqual(23);
       expect(damage).toBeLessThanOrEqual(28);
     });

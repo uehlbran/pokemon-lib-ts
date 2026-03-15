@@ -19,11 +19,13 @@ import { calculateGen2Damage, isPhysicalInGen2 } from "../src/Gen2DamageCalc";
  *
  * Modifier chain (each step floors):
  *   1. Critical hit (2x)
- *   2. Weather (rain/sun: 1.5x or 0.5x)
- *   3. STAB (1.5x)
- *   4. Type effectiveness (Type1 x Type2)
- *   5. Item modifier (type-boosting items: 1.1x)
- *   6. Random factor (217-255)/255
+ *   2. Item modifier (type-boosting items: 1.1x)
+ *   3. Clamp [1, 997]
+ *   4. +2 constant
+ *   5. Weather (rain/sun: 1.5x or 0.5x)
+ *   6. STAB (1.5x)
+ *   7. Type effectiveness
+ *   8. Random factor (217-255)/255
  *
  * Key differences from Gen 1:
  *   - Weather modifier is new
@@ -2049,6 +2051,70 @@ describe("Gen 2 Damage Calculation", () => {
         expect(ratio).toBeGreaterThanOrEqual(1.8);
         expect(ratio).toBeLessThanOrEqual(2.2);
       }
+    });
+
+    it("given Explosion move, when damage is calculated, then defender defense is halved before damage calc", () => {
+      // Arrange: Explosion with defender defense=100 should equal a same-power non-explosion
+      // move against a defender with defense=50 (half), because Explosion halves defense.
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defenderFullDef = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defenderHalfDef = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 50,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const explosionMove: MoveData = {
+        ...createMove("normal", 150),
+        id: "explosion",
+      };
+      const regularMove: MoveData = {
+        ...createMove("normal", 150),
+        id: "hyper-beam",
+      };
+
+      const explosionCtx: DamageContext = {
+        attacker,
+        defender: defenderFullDef,
+        move: explosionMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const regularHalfDefCtx: DamageContext = {
+        attacker,
+        defender: defenderHalfDef,
+        move: regularMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const explosionDmg = calculateGen2Damage(explosionCtx, chart, species);
+      const regularHalfDefDmg = calculateGen2Damage(regularHalfDefCtx, chart, species);
+
+      // Assert: Explosion halves defender defense → damage identical to same move vs half-def defender
+      expect(explosionDmg.damage).toBe(regularHalfDefDmg.damage);
     });
 
     it("given a non-explosion move, when calculating damage, then defense is not halved", () => {

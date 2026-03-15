@@ -146,6 +146,24 @@ describe("Gen 2 Data Loading", () => {
       expect(dm.isLoaded()).toBe(true);
     });
 
+    it("given moves.json data, when high-jump-kick/jump-kick are loaded, then they have crash effect with 0.125 amount", () => {
+      // Arrange
+      const dm = createGen2DataManager();
+
+      // Act
+      const highJumpKick = dm.getMove("high-jump-kick");
+      const jumpKick = dm.getMove("jump-kick");
+
+      // Assert
+      expect(highJumpKick.effect).toBeDefined();
+      expect((highJumpKick.effect as { type: string; amount: number }).type).toBe("crash");
+      expect((highJumpKick.effect as { type: string; amount: number }).amount).toBe(0.125);
+
+      expect(jumpKick.effect).toBeDefined();
+      expect((jumpKick.effect as { type: string; amount: number }).type).toBe("crash");
+      expect((jumpKick.effect as { type: string; amount: number }).amount).toBe(0.125);
+    });
+
     it("should throw for non-existent species", () => {
       // Arrange
       const dm = createGen2DataManager();
