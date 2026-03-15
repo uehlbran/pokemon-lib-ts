@@ -127,13 +127,13 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     }
 
     // PSNCureBerry: Cures poison and badly-poisoned (consumed)
-    case "psncureberry": {
+    case "psn-cure-berry": {
       if (status === "poison" || status === "badly-poisoned") {
         return {
           activated: true,
           effects: [
             { type: "status-cure", target: "self", value: status },
-            { type: "consume", target: "self", value: "psncureberry" },
+            { type: "consume", target: "self", value: "psn-cure-berry" },
           ],
           messages: [`${pokemonName}'s PSNCureBerry cured its poisoning!`],
         };
@@ -215,9 +215,9 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
-    // King's Rock: 10% flinch chance on damaging moves
+    // King's Rock: 30/256 (~11.72%) flinch chance on damaging moves
     case "kings-rock": {
-      if (context.rng.chance(0.1)) {
+      if (context.rng.chance(30 / 256)) {
         return {
           activated: true,
           effects: [{ type: "flinch", target: "opponent", value: true }],

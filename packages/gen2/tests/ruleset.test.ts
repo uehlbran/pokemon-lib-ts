@@ -246,7 +246,7 @@ describe("Gen2Ruleset", () => {
   // --- Freeze Thaw ---
 
   describe("Given freeze thaw check", () => {
-    it("should thaw 20% of the time", () => {
+    it("should thaw ~9.8% of the time (25/256)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockActive = createMockActive({ status: "freeze" });
@@ -261,17 +261,17 @@ describe("Gen2Ruleset", () => {
         }
       }
 
-      // Assert: ~20% thaw rate (+/- 3% tolerance)
+      // Assert: ~9.8% thaw rate (25/256)
       const thawRate = thawCount / trials;
-      expect(thawRate).toBeGreaterThan(0.15);
-      expect(thawRate).toBeLessThan(0.25);
+      expect(thawRate).toBeGreaterThan(0.06);
+      expect(thawRate).toBeLessThan(0.15);
     });
   });
 
   // --- Sleep Turns ---
 
   describe("Given sleep turns roll", () => {
-    it("should return 1-7 turns", () => {
+    it("should return 1-6 turns", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const results = new Set<number>();
@@ -282,13 +282,13 @@ describe("Gen2Ruleset", () => {
         const turns = ruleset.rollSleepTurns(rng);
         results.add(turns);
         expect(turns).toBeGreaterThanOrEqual(1);
-        expect(turns).toBeLessThanOrEqual(7);
+        expect(turns).toBeLessThanOrEqual(6);
       }
 
       // Assert: should see multiple different values
       expect(results.size).toBeGreaterThan(1);
       expect(results.has(1)).toBe(true);
-      expect(results.has(7)).toBe(true);
+      expect(results.has(6)).toBe(true);
     });
   });
 

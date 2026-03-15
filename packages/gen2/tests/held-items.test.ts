@@ -291,7 +291,7 @@ describe("Gen 2 Held Items", () => {
     it("given a poisoned Pokemon holding PSNCureBerry, when end-of-turn triggers, then cures poison", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "psncureberry",
+        heldItem: "psn-cure-berry",
         status: "poison",
       });
 
@@ -308,7 +308,7 @@ describe("Gen 2 Held Items", () => {
     it("given a badly-poisoned Pokemon holding PSNCureBerry, when end-of-turn triggers, then cures badly-poisoned", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "psncureberry",
+        heldItem: "psn-cure-berry",
         status: "badly-poisoned",
       });
 
@@ -544,7 +544,7 @@ describe("Gen 2 Held Items", () => {
     it("given PSNCureBerry but Pokemon has burn (not poison), when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "psncureberry",
+        heldItem: "psn-cure-berry",
         status: "burn",
       });
 

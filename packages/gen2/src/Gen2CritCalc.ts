@@ -10,15 +10,15 @@ import type { SeededRandom } from "@pokemon-lib-ts/core";
  * | 0     | 17/256   |
  * | 1     | 32/256   |
  * | 2     | 64/256   |
- * | 3     | 128/256  |
- * | 4+    | 255/256  |
+ * | 3     | 85/256   |
+ * | 4+    | 128/256  |
  */
 export const GEN2_CRIT_STAGES: readonly number[] = [
   17 / 256,
   32 / 256,
   64 / 256,
+  85 / 256,
   128 / 256,
-  255 / 256,
 ];
 
 /**

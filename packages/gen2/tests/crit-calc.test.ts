@@ -123,8 +123,8 @@ function createMockMove(overrides: Partial<MoveData> = {}): MoveData {
  * Stage 0: 17/256 (~6.6%)
  * Stage 1: 32/256 (12.5%)
  * Stage 2: 64/256 (25%)
- * Stage 3: 128/256 (50%)
- * Stage 4+: 255/256 (~99.6%)
+ * Stage 3: 85/256 (~33.2%)
+ * Stage 4+: 128/256 (50%)
  *
  * Modifiers that add +1 stage each (stackable):
  * - High crit moves (Slash, etc.): +1
@@ -143,8 +143,8 @@ describe("Gen2CritCalc", () => {
       expect(GEN2_CRIT_STAGES[0]).toBeCloseTo(17 / 256, 6);
       expect(GEN2_CRIT_STAGES[1]).toBeCloseTo(32 / 256, 6);
       expect(GEN2_CRIT_STAGES[2]).toBeCloseTo(64 / 256, 6);
-      expect(GEN2_CRIT_STAGES[3]).toBeCloseTo(128 / 256, 6);
-      expect(GEN2_CRIT_STAGES[4]).toBeCloseTo(255 / 256, 6);
+      expect(GEN2_CRIT_STAGES[3]).toBeCloseTo(85 / 256, 6);
+      expect(GEN2_CRIT_STAGES[4]).toBeCloseTo(128 / 256, 6);
     });
   });
 
@@ -267,7 +267,7 @@ describe("Gen2CritCalc", () => {
   });
 
   describe("Given Scope Lens + Focus Energy + high crit move", () => {
-    it("should stack to stage 3 (128/256 rate)", () => {
+    it("should stack to stage 3 (85/256 rate)", () => {
       // Arrange
       const volatiles = new Map();
       volatiles.set("focus-energy", { turnsLeft: -1 });
@@ -286,7 +286,7 @@ describe("Gen2CritCalc", () => {
   });
 
   describe("Given maximum stacking (stage 4+)", () => {
-    it("should cap at 255/256 rate", () => {
+    it("should cap at 128/256 rate", () => {
       // Arrange — even if we somehow get past stage 4, cap at the max stage index
       const volatiles = new Map();
       volatiles.set("focus-energy", { turnsLeft: -1 });
