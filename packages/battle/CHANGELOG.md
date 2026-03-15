@@ -5,6 +5,18 @@ All notable changes to `@pokemon-lib-ts/battle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-15
+
+### Fixed
+
+- Defrost moves (`flags.defrost = true`, e.g., Flame Wheel, Scald) now always thaw a frozen Pokémon when used, regardless of the RNG freeze-thaw roll
+
+### Changed
+
+- **Breaking (pre-1.0):** `TrainerRef` renamed to `TrainerDataRef` to match the name used in `BattleConfig`. Consumers importing `TrainerRef` must update to `TrainerDataRef` — shape is identical.
+- `BattleSide.trainer` field type updated from `TrainerRef` to `TrainerDataRef`
+- `TrainerRef` removed from public exports
+
 ## [0.5.0] - 2026-03-15
 
 ### Changed
