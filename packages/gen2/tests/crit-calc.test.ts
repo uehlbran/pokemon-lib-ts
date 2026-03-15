@@ -332,4 +332,108 @@ describe("Gen2CritCalc", () => {
       expect(result1).toBe(result2);
     });
   });
+
+  describe("Statistical crit rate verification", () => {
+    it("given base crit stage (0), when rolling 10000 times, then crit rate is approximately 6.64%", () => {
+      // Arrange
+      const rng = new SeededRandom(1001);
+      const attacker = createMockActivePokemon();
+      const normalMove = createMockMove();
+      let crits = 0;
+
+      // Act
+      for (let i = 0; i < 10000; i++) {
+        if (rollGen2Critical(attacker, normalMove, rng)) crits++;
+      }
+      const rate = crits / 10000;
+
+      // Assert — 17/256 ≈ 6.64%, tolerance ±1.5%
+      expect(rate).toBeGreaterThan(0.0514);
+      expect(rate).toBeLessThan(0.0814);
+    });
+
+    it("given stage 1 (high crit move), when rolling 10000 times, then crit rate is approximately 12.5%", () => {
+      // Arrange
+      const rng = new SeededRandom(2002);
+      const attacker = createMockActivePokemon();
+      const highCritMove = createMockMove({ id: "slash" });
+      let crits = 0;
+
+      // Act
+      for (let i = 0; i < 10000; i++) {
+        if (rollGen2Critical(attacker, highCritMove, rng)) crits++;
+      }
+      const rate = crits / 10000;
+
+      // Assert — 32/256 = 12.5%, tolerance ±1.5%
+      expect(rate).toBeGreaterThan(0.11);
+      expect(rate).toBeLessThan(0.14);
+    });
+
+    it("given stage 2 (Focus Energy + high crit move), when rolling 10000 times, then crit rate is approximately 25%", () => {
+      // Arrange — stage 2 requires two modifiers: Focus Energy (+1) + high crit move (+1)
+      const rng = new SeededRandom(3003);
+      const volatiles = new Map([["focus-energy", { turnsLeft: -1 }]]);
+      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
+      const highCritMove = createMockMove({ id: "slash" });
+      let crits = 0;
+
+      // Act
+      for (let i = 0; i < 10000; i++) {
+        if (rollGen2Critical(attacker, highCritMove, rng)) crits++;
+      }
+      const rate = crits / 10000;
+
+      // Assert — 64/256 = 25%, tolerance ±1.5%
+      expect(rate).toBeGreaterThan(0.235);
+      expect(rate).toBeLessThan(0.265);
+    });
+
+    it("given stage 3 (Scope Lens + Focus Energy + high crit move), when rolling 10000 times, then crit rate is approximately 33.2%", () => {
+      // Arrange — stage 3 is the maximum achievable via Scope Lens (+1) + Focus Energy (+1) + high crit move (+1)
+      const rng = new SeededRandom(4004);
+      const volatiles = new Map([["focus-energy", { turnsLeft: -1 }]]);
+      const attacker = createMockActivePokemon({
+        volatileStatuses: volatiles,
+        heldItem: "scope-lens",
+      });
+      const highCritMove = createMockMove({ id: "slash" });
+      let crits = 0;
+
+      // Act — this is stage 3 (85/256 ≈ 33.2%)
+      for (let i = 0; i < 10000; i++) {
+        if (rollGen2Critical(attacker, highCritMove, rng)) crits++;
+      }
+      const rate = crits / 10000;
+
+      // Assert — 85/256 ≈ 33.2%, tolerance ±2%
+      expect(rate).toBeGreaterThan(0.312);
+      expect(rate).toBeLessThan(0.352);
+    });
+
+    it("given Focus Energy active with no high-crit move, when querying crit stage, then stage is 1 (not 5)", () => {
+      // Arrange
+      const volatiles = new Map([["focus-energy", { turnsLeft: -1 }]]);
+      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
+      const normalMove = createMockMove();
+
+      // Act
+      const stage = getGen2CritStage(attacker, normalMove);
+
+      // Assert — Focus Energy adds +1, not +4 (Gen 1 bug fixed)
+      expect(stage).toBe(1);
+    });
+
+    it("given a high crit move with no Focus Energy, when querying crit stage, then stage is 1", () => {
+      // Arrange
+      const attacker = createMockActivePokemon();
+      const highCritMove = createMockMove({ id: "cross-chop" });
+
+      // Act
+      const stage = getGen2CritStage(attacker, highCritMove);
+
+      // Assert
+      expect(stage).toBe(1);
+    });
+  });
 });
