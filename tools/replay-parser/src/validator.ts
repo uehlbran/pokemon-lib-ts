@@ -1,6 +1,6 @@
-import { getTypeEffectiveness } from "@pokemon-lib/core";
-import type { DataManager, PokemonType, TypeChart } from "@pokemon-lib/core";
-import { createGen1DataManager } from "@pokemon-lib/gen1";
+import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import type { DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import type {
   ParsedReplay,
   ReconstructedPokemon,

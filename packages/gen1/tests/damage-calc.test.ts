@@ -1,5 +1,5 @@
-import type { ActivePokemon } from "@pokemon-lib/battle";
-import type { DamageContext } from "@pokemon-lib/battle";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import type { DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonInstance,
@@ -7,8 +7,8 @@ import type {
   PokemonType,
   StatBlock,
   TypeChart,
-} from "@pokemon-lib/core";
-import { getStatStageMultiplier } from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
+import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen1Damage } from "../src/Gen1DamageCalc";
 

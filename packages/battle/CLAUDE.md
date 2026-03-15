@@ -1,10 +1,10 @@
-# @pokemon-lib/battle
+# @pokemon-lib-ts/battle
 
 ## Purpose
 
 Pluggable battle engine: BattleEngine, GenerationRuleset interface, BaseRuleset abstract class, event stream, AI controllers. The engine is generation-agnostic — all gen-specific behavior is delegated to the ruleset.
 
-**Depends on `@pokemon-lib/core` only.** No gen packages, no external deps.
+**Depends on `@pokemon-lib-ts/core` only.** No gen packages, no external deps.
 
 ## Cardinal Rule
 

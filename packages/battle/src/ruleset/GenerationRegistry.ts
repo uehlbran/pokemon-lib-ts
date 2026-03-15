@@ -1,4 +1,4 @@
-import type { Generation } from "@pokemon-lib/core";
+import type { Generation } from "@pokemon-lib-ts/core";
 import type { GenerationRuleset } from "./GenerationRuleset";
 
 /**

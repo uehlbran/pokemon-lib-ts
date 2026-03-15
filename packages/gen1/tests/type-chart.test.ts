@@ -1,4 +1,4 @@
-import type { TypeChart } from "@pokemon-lib/core";
+import type { TypeChart } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen1DataManager } from "../src/data";
 

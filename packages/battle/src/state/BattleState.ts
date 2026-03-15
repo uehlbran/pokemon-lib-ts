@@ -1,5 +1,5 @@
-import type { Generation, TerrainType, WeatherType } from "@pokemon-lib/core";
-import type { SeededRandom } from "@pokemon-lib/core";
+import type { Generation, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
+import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type { BattleAction } from "../events";
 import type { BattleEvent } from "../events";
 import type { BattleSide } from "./BattleSide";

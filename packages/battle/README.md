@@ -1,4 +1,4 @@
-# @pokemon-lib/battle
+# @pokemon-lib-ts/battle
 
 Pluggable Pokemon battle engine. Bring your own generation ruleset.
 
@@ -14,14 +14,14 @@ Pluggable Pokemon battle engine. Bring your own generation ruleset.
 ## Installation
 
 ```bash
-npm install @pokemon-lib/battle @pokemon-lib/core
+npm install @pokemon-lib-ts/battle @pokemon-lib-ts/core
 ```
 
 ## Usage
 
 ```typescript
-import { BattleEngine } from "@pokemon-lib/battle";
-import { Gen1Ruleset, createGen1DataManager } from "@pokemon-lib/gen1";
+import { BattleEngine } from "@pokemon-lib-ts/battle";
+import { Gen1Ruleset, createGen1DataManager } from "@pokemon-lib-ts/gen1";
 
 const dm = createGen1DataManager();
 const ruleset = new Gen1Ruleset();

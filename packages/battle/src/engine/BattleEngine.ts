@@ -1,5 +1,5 @@
-import type { DataManager, MoveData } from "@pokemon-lib/core";
-import { SeededRandom } from "@pokemon-lib/core";
+import type { DataManager, MoveData } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import type { AvailableMove, BattleConfig, EndOfTurnEffect, MoveEffectResult } from "../context";
 import type {
   BattleAction,
@@ -282,7 +282,7 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   /** Get the team for a side */
-  getTeam(side: 0 | 1): readonly import("@pokemon-lib/core").PokemonInstance[] {
+  getTeam(side: 0 | 1): readonly import("@pokemon-lib-ts/core").PokemonInstance[] {
     return this.state.sides[side].team;
   }
 
@@ -345,7 +345,7 @@ export class BattleEngine implements BattleEventEmitter {
 
   private createSide(
     index: 0 | 1,
-    team: import("@pokemon-lib/core").PokemonInstance[],
+    team: import("@pokemon-lib-ts/core").PokemonInstance[],
     trainer: import("../context").TrainerDataRef | null,
   ): BattleSide {
     return {
@@ -374,7 +374,7 @@ export class BattleEngine implements BattleEventEmitter {
     const pokemon = side.team[teamSlot];
     if (!pokemon) return;
 
-    let types: import("@pokemon-lib/core").PokemonType[];
+    let types: import("@pokemon-lib-ts/core").PokemonType[];
     try {
       const species = this.dataManager.getSpecies(pokemon.speciesId);
       types = [...species.types];

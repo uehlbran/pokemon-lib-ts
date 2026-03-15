@@ -2,7 +2,7 @@
 
 ## Overview
 
-The data pipeline transforms raw PokeAPI data into generation-specific JSON files that are packaged and shipped with each `@pokemon-lib/genN` npm package. This document specifies:
+The data pipeline transforms raw PokeAPI data into generation-specific JSON files that are packaged and shipped with each `@pokemon-lib-ts/genN` npm package. This document specifies:
 
 - How to source PokeAPI data
 - The transformation logic for each entity type (Pokemon, moves, abilities, items, types, natures)
@@ -138,7 +138,7 @@ const CANONICAL_VERSION_GROUPS: Record<number, string> = {
 ### Directory Structure
 
 ```
-pokemon-lib/
+pokemon-lib-ts/
 ├── tools/
 │   └── data-importer/
 │       ├── package.json

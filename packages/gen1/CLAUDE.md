@@ -1,10 +1,10 @@
-# @pokemon-lib/gen1
+# @pokemon-lib-ts/gen1
 
 ## Purpose
 
 Gen 1 ruleset + complete Gen 1 data. Implements `GenerationRuleset` directly — does **NOT** extend `BaseRuleset` (Gen 1 mechanics are too different from Gen 3+ defaults).
 
-**Depends on `@pokemon-lib/core` + `@pokemon-lib/battle`.**
+**Depends on `@pokemon-lib-ts/core` + `@pokemon-lib-ts/battle`.**
 
 ## Gen 1 Constraints
 

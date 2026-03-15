@@ -15,23 +15,23 @@ We're starting Phase 1: Core + Battle + Gen 1. Here's what I need you to build, 
 Set up the monorepo structure:
 
 ```
-pokemon-lib/
+pokemon-lib-ts/
 ├── package.json              # Root — npm workspaces, shared dev deps
 ├── turbo.json                # Turborepo pipeline
 ├── tsconfig.base.json        # Shared TS config (strict mode)
 ├── biome.json                # Biome config (spaces, indent 2, line width 100, organize imports, recommended rules, warn noExplicitAny)
 ├── CLAUDE.md                 # Already exists — copy from specs
 ├── packages/
-│   ├── core/                 # @pokemon-lib/core
-│   ├── battle/               # @pokemon-lib/battle
-│   └── gen1/                 # @pokemon-lib/gen1
+│   ├── core/                 # @pokemon-lib-ts/core
+│   ├── battle/               # @pokemon-lib-ts/battle
+│   └── gen1/                 # @pokemon-lib-ts/gen1
 └── tools/
     └── data-importer/        # Build-time data pipeline
 ```
 
 Install dev dependencies: turbo, typescript 5.4+, vitest, @biomejs/biome, tsup, @types/node. Each package gets its own package.json, tsconfig.json, vitest.config.ts, and tsup.config.ts (ESM + CJS dual output).
 
-### Step 2: @pokemon-lib/core
+### Step 2: @pokemon-lib-ts/core
 
 Implement the core package. Reference `specs/core/01-entities.md` for all TypeScript interfaces and `specs/core/02-shared-logic.md` for calculation functions.
 
@@ -45,7 +45,7 @@ Build in this order:
 
 Run `npm run build && npm run test && npm run typecheck` after completing core. Fix any issues before moving on.
 
-### Step 3: @pokemon-lib/battle
+### Step 3: @pokemon-lib-ts/battle
 
 Implement the battle engine. Reference `specs/battle/00-architecture.md` for the GenerationRuleset interface, BattleState, events, and API. Reference `specs/battle/01-core-engine.md` for the engine implementation.
 
@@ -59,7 +59,7 @@ Build in this order:
 
 Run build + test + typecheck. Fix issues.
 
-### Step 4: @pokemon-lib/gen1 Data
+### Step 4: @pokemon-lib-ts/gen1 Data
 
 Build the Gen 1 data importer. Reference `specs/core/03-data-pipeline.md` for the pipeline design.
 

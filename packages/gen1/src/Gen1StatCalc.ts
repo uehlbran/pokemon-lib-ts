@@ -1,4 +1,4 @@
-import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib/core";
+import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
 
 /**
  * Compute the stat experience contribution used in Gen 1 stat formulas.

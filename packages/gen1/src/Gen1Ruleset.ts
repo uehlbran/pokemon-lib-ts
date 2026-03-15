@@ -21,7 +21,7 @@ import type {
   TerrainEffectResult,
   ValidationResult,
   WeatherEffectResult,
-} from "@pokemon-lib/battle";
+} from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   EntryHazardType,
@@ -32,9 +32,9 @@ import type {
   PrimaryStatus,
   StatBlock,
   TypeChart,
-} from "@pokemon-lib/core";
-import type { SeededRandom } from "@pokemon-lib/core";
-import { calculateExpGainClassic, getStatStageMultiplier } from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
+import type { SeededRandom } from "@pokemon-lib-ts/core";
+import { calculateExpGainClassic, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 
 import { rollGen1Critical } from "./Gen1CritCalc";
 import { calculateGen1Damage, isPhysicalInGen1 } from "./Gen1DamageCalc";

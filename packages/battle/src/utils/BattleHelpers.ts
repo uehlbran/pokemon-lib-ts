@@ -3,7 +3,7 @@ import type {
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
-} from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
 import type { PokemonSnapshot } from "../events";
 import type { ActivePokemon } from "../state";
 

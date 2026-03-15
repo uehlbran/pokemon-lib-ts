@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A TypeScript monorepo producing open-source Pokemon libraries: `@pokemon-lib/core` (entities, shared logic, zero dependencies), `@pokemon-lib/battle` (pluggable battle engine), and `@pokemon-lib/gen1` through `@pokemon-lib/gen9` (per-gen rulesets + complete standalone data). Any consumer (Phaser game, Discord bot, CLI tool) can install only the gens it needs and swap battle systems at runtime.
+A TypeScript monorepo producing open-source Pokemon libraries: `@pokemon-lib-ts/core` (entities, shared logic, zero dependencies), `@pokemon-lib-ts/battle` (pluggable battle engine), and `@pokemon-lib-ts/gen1` through `@pokemon-lib-ts/gen9` (per-gen rulesets + complete standalone data). Any consumer (Phaser game, Discord bot, CLI tool) can install only the gens it needs and swap battle systems at runtime.
 
 ## Architecture
 
@@ -10,11 +10,11 @@ Turborepo monorepo with npm workspaces. 11 publishable packages under `packages/
 
 ```
 packages/
-  core/       # @pokemon-lib/core — TypeScript interfaces, stat calc, type effectiveness, EXP curves, DataManager, SeededRandom
-  battle/     # @pokemon-lib/battle — BattleEngine, GenerationRuleset interface, BaseRuleset, BattleState, BattleEvent stream, AI controllers
-  gen1/       # @pokemon-lib/gen1 — Gen1Ruleset (implements GenerationRuleset directly) + complete Gen 1 data
-  gen2/       # @pokemon-lib/gen2 — Gen2Ruleset (implements GenerationRuleset directly) + complete Gen 2 data
-  gen3/-gen9/ # @pokemon-lib/gen3-gen9 — extend BaseRuleset + complete per-gen data
+  core/       # @pokemon-lib-ts/core — TypeScript interfaces, stat calc, type effectiveness, EXP curves, DataManager, SeededRandom
+  battle/     # @pokemon-lib-ts/battle — BattleEngine, GenerationRuleset interface, BaseRuleset, BattleState, BattleEvent stream, AI controllers
+  gen1/       # @pokemon-lib-ts/gen1 — Gen1Ruleset (implements GenerationRuleset directly) + complete Gen 1 data
+  gen2/       # @pokemon-lib-ts/gen2 — Gen2Ruleset (implements GenerationRuleset directly) + complete Gen 2 data
+  gen3/-gen9/ # @pokemon-lib-ts/gen3-gen9 — extend BaseRuleset + complete per-gen data
 tools/
   data-importer/  # Build-time scripts that parse Showdown + PokeAPI data into per-gen JSON
 ```

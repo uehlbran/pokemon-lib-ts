@@ -1,5 +1,5 @@
-import { getTypeEffectiveness } from "@pokemon-lib/core";
-import type { PokemonType } from "@pokemon-lib/core";
+import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import type { PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { isPhysicalInGen1 } from "../src/Gen1DamageCalc";
 import { GEN1_TYPE_CHART } from "../src/Gen1TypeChart";

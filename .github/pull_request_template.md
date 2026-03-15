@@ -5,9 +5,9 @@
 -
 
 ## Affected Packages
-- [ ] `@pokemon-lib/core`
-- [ ] `@pokemon-lib/battle`
-- [ ] `@pokemon-lib/gen1`
+- [ ] `@pokemon-lib-ts/core`
+- [ ] `@pokemon-lib-ts/battle`
+- [ ] `@pokemon-lib-ts/gen1`
 
 ## Type
 - [ ] Feature

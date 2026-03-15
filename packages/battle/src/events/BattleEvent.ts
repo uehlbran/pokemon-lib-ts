@@ -9,7 +9,7 @@ import type {
   TerrainType,
   VolatileStatus,
   WeatherType,
-} from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
 import type { BattleFormat } from "../state";
 
 export type BattleEvent =

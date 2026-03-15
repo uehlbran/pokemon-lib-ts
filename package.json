@@ -1,5 +1,5 @@
 {
-  "name": "pokemon-lib",
+  "name": "pokemon-lib-ts",
   "private": true,
   "packageManager": "npm@11.9.0",
   "workspaces": ["packages/*", "tools/*"],

@@ -1,4 +1,4 @@
-import { SeededRandom } from "@pokemon-lib/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { RandomAI } from "../../src/ai/RandomAI";
 import type { BattleConfig } from "../../src/context";

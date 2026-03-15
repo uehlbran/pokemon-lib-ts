@@ -1,5 +1,5 @@
-import type { PokemonType, TypeChart } from "@pokemon-lib/core";
-import { TYPES_BY_GEN } from "@pokemon-lib/core";
+import type { PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import { TYPES_BY_GEN } from "@pokemon-lib-ts/core";
 import typeChartData from "../data/type-chart.json";
 
 /** Gen 1 type chart (15 types, no Dark/Steel/Fairy). Includes the Ghost vs Psychic immunity bug. */

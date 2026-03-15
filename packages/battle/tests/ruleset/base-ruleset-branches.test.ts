@@ -1,5 +1,5 @@
-import type { Generation, PokemonType, TypeChart } from "@pokemon-lib/core";
-import { SeededRandom } from "@pokemon-lib/core";
+import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../src/context";
 import { BaseRuleset } from "../../src/ruleset/BaseRuleset";
