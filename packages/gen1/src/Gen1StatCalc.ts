@@ -21,8 +21,9 @@ export function calculateStatExpContribution(statExp: number): number {
  * floor(((Base + DV) * 2 + statExpContrib) * Level / 100) + 5
  */
 function calculateGen1Stat(base: number, dv: number, statExp: number, level: number): number {
+  const clampedDv = Math.min(dv, 15); // DVs are 4-bit values; max is 15
   const statExpContrib = calculateStatExpContribution(statExp);
-  return Math.floor((((base + dv) * 2 + statExpContrib) * level) / 100) + 5;
+  return Math.floor((((base + clampedDv) * 2 + statExpContrib) * level) / 100) + 5;
 }
 
 /**
@@ -31,8 +32,9 @@ function calculateGen1Stat(base: number, dv: number, statExp: number, level: num
  * floor(((Base + DV) * 2 + statExpContrib) * Level / 100) + Level + 10
  */
 function calculateGen1Hp(base: number, dv: number, statExp: number, level: number): number {
+  const clampedDv = Math.min(dv, 15); // DVs are 4-bit values; max is 15
   const statExpContrib = calculateStatExpContribution(statExp);
-  return Math.floor((((base + dv) * 2 + statExpContrib) * level) / 100) + level + 10;
+  return Math.floor((((base + clampedDv) * 2 + statExpContrib) * level) / 100) + level + 10;
 }
 
 /**
@@ -49,6 +51,14 @@ export function calculateGen1Stats(
   pokemon: PokemonInstance,
   species: PokemonSpeciesData,
 ): StatBlock {
+  // Gen 1 has a unified Special stat; spDefense inputs are intentionally ignored
+  // and we use only spAttack to compute the single Special value
+  const special = calculateGen1Stat(
+    species.baseStats.spAttack,
+    pokemon.ivs.spAttack,
+    pokemon.evs.spAttack,
+    pokemon.level,
+  );
   return {
     hp: calculateGen1Hp(species.baseStats.hp, pokemon.ivs.hp, pokemon.evs.hp, pokemon.level),
     attack: calculateGen1Stat(
@@ -63,18 +73,8 @@ export function calculateGen1Stats(
       pokemon.evs.defense,
       pokemon.level,
     ),
-    spAttack: calculateGen1Stat(
-      species.baseStats.spAttack,
-      pokemon.ivs.spAttack,
-      pokemon.evs.spAttack,
-      pokemon.level,
-    ),
-    spDefense: calculateGen1Stat(
-      species.baseStats.spDefense,
-      pokemon.ivs.spDefense,
-      pokemon.evs.spDefense,
-      pokemon.level,
-    ),
+    spAttack: special,
+    spDefense: special,
     speed: calculateGen1Stat(
       species.baseStats.speed,
       pokemon.ivs.speed,

@@ -411,6 +411,28 @@ describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
     // Assert
     expect(stats.spAttack).toBe(stats.spDefense);
   });
+
+  it("given DIFFERENT species spAttack (85) vs spDefense (100) base stats, when calculating stats, then spAttack still equals spDefense (spAttack inputs used for both)", () => {
+    // Arrange — if the old independent calculation were used, different base stats would produce
+    // different values; this test only passes after Fix 2 forces a unified Special
+    const species = makeSpecies({
+      hp: 78,
+      attack: 84,
+      defense: 78,
+      spAttack: 85,
+      spDefense: 100,
+      speed: 100,
+    });
+    const pokemon = makeInstance({
+      level: 50,
+      ivs: { hp: 10, attack: 10, defense: 10, spAttack: 10, spDefense: 10, speed: 10 },
+      evs: { hp: 1000, attack: 1000, defense: 1000, spAttack: 1000, spDefense: 1000, speed: 1000 },
+    });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert — Gen 1 has a single Special stat; spDefense must mirror spAttack regardless of base stat differences
+    expect(stats.spAttack).toBe(stats.spDefense);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -472,6 +494,38 @@ describe("calculateGen1Stats — DV monotonicity", () => {
       const previous = results[i - 1] ?? 0;
       expect(current).toBeGreaterThanOrEqual(previous);
     }
+  });
+
+  it("given DV > 15 (dv=16), when calculating stats, then result equals DV=15", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const pokemonDv15 = makeInstance({
+      level: 100,
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+      evs: zeroStatExp(),
+    });
+    const pokemonDv16 = makeInstance({
+      level: 100,
+      ivs: { hp: 16, attack: 16, defense: 16, spAttack: 16, spDefense: 16, speed: 16 },
+      evs: zeroStatExp(),
+    });
+    // Act
+    const statsDv15 = calculateGen1Stats(pokemonDv15, species);
+    const statsDv16 = calculateGen1Stats(pokemonDv16, species);
+    // Assert — DV 16 must be clamped to 15 at the formula level
+    expect(statsDv16.hp).toBe(statsDv15.hp);
+    expect(statsDv16.attack).toBe(statsDv15.attack);
+    expect(statsDv16.defense).toBe(statsDv15.defense);
+    expect(statsDv16.spAttack).toBe(statsDv15.spAttack);
+    expect(statsDv16.spDefense).toBe(statsDv15.spDefense);
+    expect(statsDv16.speed).toBe(statsDv15.speed);
   });
 });
 
