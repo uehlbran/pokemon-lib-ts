@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Qodo PR-Agent
         id: qodo
-        uses: qodo-ai/pr-agent@main
+        uses: qodo-ai/pr-agent@v0.28
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           github_action_config.auto_review: "true"

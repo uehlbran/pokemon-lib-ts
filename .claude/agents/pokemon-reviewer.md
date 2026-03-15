@@ -94,4 +94,4 @@ REVIEW
 )"
 ```
 
-If the diff is trivial (only docs, only comments, only data file regeneration with no schema change), say so briefly and approve.
+If the diff is trivial (only docs, only comments, only data file regeneration with no schema change), say so briefly and post a comment-only review. Never submit formal approvals — AI reviews are advisory only.
