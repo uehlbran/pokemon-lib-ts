@@ -15,7 +15,7 @@ You are a generation ruleset implementation specialist for the pokemon-lib proje
 
 ## Architecture
 
-```
+```text
 GenerationRuleset (interface, ~20 methods)
   ├── Gen1Ruleset (implements directly)
   ├── Gen2Ruleset (implements directly)
@@ -27,7 +27,7 @@ GenerationRuleset (interface, ~20 methods)
 
 ## Implementation Checklist (per gen)
 
-1. Read the gen spec: `specs/battle/NN-genN.md`
+1. Read the gen spec in `specs/battle/` (e.g., `02-gen1.md` through `10-gen9.md`)
 2. Create the ruleset class with all GenerationRuleset methods
 3. Implement stat calculation (each gen has its own formula)
 4. Implement damage calculation
