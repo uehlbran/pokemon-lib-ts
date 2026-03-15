@@ -28,7 +28,7 @@ describe("Gen 1 Counter mechanic (not yet implemented)", () => {
 
 describe("Gen 1 Trapping moves (Wrap, Bind, etc.) — not yet implemented", () => {
   it.todo(
-    "given Wrap used on first hit, when executing the move, then deals damage on the first hit only (no residual trap damage in Gen 1)",
+    "given Wrap used on first hit, when executing the move, then deals damage every turn of the trap (attacker locked into repeating the move)",
   );
 
   it.todo(
