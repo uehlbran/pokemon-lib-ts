@@ -1814,7 +1814,10 @@ describe("Gen1Ruleset no-op methods", () => {
 
   it("given Gen1Ruleset, when calling applyEntryHazards, then returns empty result", () => {
     // Arrange / Act
-    const result = ruleset.applyEntryHazards({} as unknown as ActivePokemon, {} as unknown as BattleSide);
+    const result = ruleset.applyEntryHazards(
+      {} as unknown as ActivePokemon,
+      {} as unknown as BattleSide,
+    );
     // Assert
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();

@@ -614,7 +614,9 @@ function buildMoveEffect(move: Move): object | null {
     const status = mapStatus(move.status);
     if (
       status &&
-      !(effects as { type: string }[]).some((e) => e.type === "status-chance" || e.type === "status-guaranteed")
+      !(effects as { type: string }[]).some(
+        (e) => e.type === "status-chance" || e.type === "status-guaranteed",
+      )
     ) {
       effects.push({
         type: "status-chance",

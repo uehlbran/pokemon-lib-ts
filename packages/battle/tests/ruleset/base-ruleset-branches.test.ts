@@ -54,7 +54,11 @@ describe("BaseRuleset — additional branches", () => {
       const active = createActivePokemon(pokemon, 0, ["fire"]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "badly-poisoned", {} as unknown as BattleState);
+      const damage = ruleset.applyStatusDamage(
+        active,
+        "badly-poisoned",
+        {} as unknown as BattleState,
+      );
 
       // Assert
       expect(damage).toBe(10); // floor(160/16) = 10
@@ -267,7 +271,9 @@ describe("BaseRuleset — additional branches", () => {
       // Act — run many times
       let crits = 0;
       for (let i = 0; i < 1000; i++) {
-        if (ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })) {
+        if (
+          ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
+        ) {
           crits++;
         }
       }

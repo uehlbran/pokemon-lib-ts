@@ -7,7 +7,13 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { AbilityContext, DamageContext, DamageResult, ItemContext, MoveEffectContext } from "../../src/context";
+import type {
+  AbilityContext,
+  DamageContext,
+  DamageResult,
+  ItemContext,
+  MoveEffectContext,
+} from "../../src/context";
 import { BaseRuleset } from "../../src/ruleset/BaseRuleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
 import { createActivePokemon, createDefaultStatStages, createTestPokemon } from "../../src/utils";
@@ -178,7 +184,9 @@ describe("BaseRuleset", () => {
       // Act — run many times and check distribution
       let crits = 0;
       for (let i = 0; i < 1000; i++) {
-        if (ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })) {
+        if (
+          ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
+        ) {
           crits++;
         }
       }
@@ -691,7 +699,11 @@ describe("BaseRuleset", () => {
       const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
       const active = createActivePokemon(pokemon, 0, ["fire"]);
       // Mock RNG: next() always returns 0.9999 → chance(0.25) → 0.9999 < 0.25 → false
-      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as unknown as SeededRandom;
+      const rng = {
+        next: () => 0.9999,
+        int: () => 255,
+        chance: () => false,
+      } as unknown as SeededRandom;
 
       // Act
       const result = ruleset.checkFullParalysis(active, rng);
@@ -732,7 +744,11 @@ describe("BaseRuleset", () => {
 
     it("given a deterministic-false RNG, when called, then returns false (no self-hit)", () => {
       // Arrange
-      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as unknown as SeededRandom;
+      const rng = {
+        next: () => 0.9999,
+        int: () => 255,
+        chance: () => false,
+      } as unknown as SeededRandom;
 
       // Act
       const result = ruleset.rollConfusionSelfHit(rng);
@@ -859,7 +875,10 @@ describe("BaseRuleset", () => {
 
   describe("applyEntryHazards", () => {
     it("given any context, when applyEntryHazards is called, then no-op result is returned", () => {
-      const result = ruleset.applyEntryHazards({} as unknown as ActivePokemon, {} as unknown as BattleSide);
+      const result = ruleset.applyEntryHazards(
+        {} as unknown as ActivePokemon,
+        {} as unknown as BattleSide,
+      );
       expect(result.damage).toBe(0);
     });
   });
@@ -922,7 +941,10 @@ describe("BaseRuleset", () => {
 
   describe("validatePokemon", () => {
     it("given any pokemon, when validatePokemon is called, then valid result is returned", () => {
-      const result = ruleset.validatePokemon({} as unknown as PokemonInstance, {} as unknown as PokemonSpeciesData);
+      const result = ruleset.validatePokemon(
+        {} as unknown as PokemonInstance,
+        {} as unknown as PokemonSpeciesData,
+      );
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
     });
