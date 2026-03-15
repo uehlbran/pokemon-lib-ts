@@ -669,6 +669,139 @@ describe("BaseRuleset", () => {
     });
   });
 
+  describe("checkFullParalysis", () => {
+    it("given a paralyzed pokemon and a deterministic-true RNG, when called, then returns true (fully paralyzed)", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      // Mock RNG: next() always returns 0 → chance(0.25) → 0 < 0.25 → true
+      const rng = { next: () => 0, int: () => 0, chance: () => true } as any;
+
+      // Act
+      const result = ruleset.checkFullParalysis(active, rng);
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it("given a paralyzed pokemon and a deterministic-false RNG, when called, then returns false (can move)", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      // Mock RNG: next() always returns 0.9999 → chance(0.25) → 0.9999 < 0.25 → false
+      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as any;
+
+      // Act
+      const result = ruleset.checkFullParalysis(active, rng);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it("given a seeded RNG, when checkFullParalysis is called many times, then paralysis rate is ~25%", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const rng = new SeededRandom(42);
+
+      // Act
+      let paralyzed = 0;
+      for (let i = 0; i < 1000; i++) {
+        if (ruleset.checkFullParalysis(active, rng)) paralyzed++;
+      }
+
+      // Assert — ~25% rate
+      expect(paralyzed).toBeGreaterThan(200);
+      expect(paralyzed).toBeLessThan(310);
+    });
+  });
+
+  describe("rollConfusionSelfHit", () => {
+    it("given a deterministic-true RNG, when called, then returns true (self-hit)", () => {
+      // Arrange
+      const rng = { next: () => 0, int: () => 0, chance: () => true } as any;
+
+      // Act
+      const result = ruleset.rollConfusionSelfHit(rng);
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it("given a deterministic-false RNG, when called, then returns false (no self-hit)", () => {
+      // Arrange
+      const rng = { next: () => 0.9999, int: () => 255, chance: () => false } as any;
+
+      // Act
+      const result = ruleset.rollConfusionSelfHit(rng);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it("given a seeded RNG, when rollConfusionSelfHit is called many times, then self-hit rate is ~50%", () => {
+      // Arrange
+      const rng = new SeededRandom(42);
+
+      // Act
+      let selfHits = 0;
+      for (let i = 0; i < 1000; i++) {
+        if (ruleset.rollConfusionSelfHit(rng)) selfHits++;
+      }
+
+      // Assert — ~50% rate
+      expect(selfHits).toBeGreaterThan(400);
+      expect(selfHits).toBeLessThan(600);
+    });
+  });
+
+  describe("processSleepTurn", () => {
+    it("given a pokemon with turnsLeft > 1, when called, then decrements counter and returns false (still sleeping)", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, { status: "sleep" });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      active.volatileStatuses.set("sleep" as any, { turnsLeft: 3 });
+
+      // Act
+      const canAct = ruleset.processSleepTurn(active, {} as any);
+
+      // Assert
+      expect(canAct).toBe(false);
+      expect((active.volatileStatuses.get("sleep" as any) as any).turnsLeft).toBe(2);
+      expect(active.pokemon.status).toBe("sleep");
+    });
+
+    it("given a pokemon with turnsLeft = 1, when called, then wakes up, clears status, and returns true (can act)", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, { status: "sleep" });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      active.volatileStatuses.set("sleep" as any, { turnsLeft: 1 });
+
+      // Act
+      const canAct = ruleset.processSleepTurn(active, {} as any);
+
+      // Assert
+      expect(canAct).toBe(true);
+      expect(active.pokemon.status).toBeNull();
+      expect(active.volatileStatuses.has("sleep" as any)).toBe(false);
+    });
+
+    it("given a pokemon with turnsLeft = 0, when called, then wakes up, clears status, and returns true (can act)", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, { status: "sleep" });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      active.volatileStatuses.set("sleep" as any, { turnsLeft: 0 });
+
+      // Act
+      const canAct = ruleset.processSleepTurn(active, {} as any);
+
+      // Assert
+      expect(canAct).toBe(true);
+      expect(active.pokemon.status).toBeNull();
+      expect(active.volatileStatuses.has("sleep" as any)).toBe(false);
+    });
+  });
+
   describe("feature flags", () => {
     it("given a Gen 3+ ruleset, when hasAbilities is called, then true is returned", () => {
       expect(ruleset.hasAbilities()).toBe(true);
