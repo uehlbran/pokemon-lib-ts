@@ -3,8 +3,8 @@
 > All TypeScript interfaces, types, and enums for the core data model.
 >
 > These interfaces use the "modern" (Gen 3+) superset model — they have fields for
-> abilities, natures, SpAtk/SpDef split, etc. Each gen package (`@pokemon-lib/gen1`
-> through `@pokemon-lib/gen9`) populates these same interfaces with generation-appropriate
+> abilities, natures, SpAtk/SpDef split, etc. Each gen package (`@pokemon-lib-ts/gen1`
+> through `@pokemon-lib-ts/gen9`) populates these same interfaces with generation-appropriate
 > values. For example, Gen 1 data fills `abilities.normal` with `[]` and `natures.json`
 > is empty, while Gen 9 data fills them fully. The interfaces are permissive enough
 > to represent any generation's Pokémon data without needing gen-specific interface variants.

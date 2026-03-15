@@ -1,6 +1,6 @@
-import type { ActivePokemon } from "@pokemon-lib/battle";
-import type { MoveData, PokemonSpeciesData } from "@pokemon-lib/core";
-import type { SeededRandom } from "@pokemon-lib/core";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import type { SeededRandom } from "@pokemon-lib-ts/core";
 
 /**
  * Moves with a high critical hit ratio in Gen 1.

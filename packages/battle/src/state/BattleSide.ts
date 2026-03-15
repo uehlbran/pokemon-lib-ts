@@ -6,7 +6,7 @@ import type {
   PokemonType,
   ScreenType,
   VolatileStatus,
-} from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
 
 export interface BattleSide {
   readonly index: 0 | 1;

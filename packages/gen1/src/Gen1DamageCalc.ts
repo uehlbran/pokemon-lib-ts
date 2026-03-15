@@ -1,13 +1,17 @@
-import type { DamageBreakdown, DamageContext, DamageResult } from "@pokemon-lib/battle";
-import type { ActivePokemon } from "@pokemon-lib/battle";
+import type { DamageBreakdown, DamageContext, DamageResult } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonSpeciesData,
   PokemonType,
   StatBlock,
   TypeChart,
-} from "@pokemon-lib/core";
-import { getStabModifier, getStatStageMultiplier, getTypeEffectiveness } from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
+import {
+  getStabModifier,
+  getStatStageMultiplier,
+  getTypeEffectiveness,
+} from "@pokemon-lib-ts/core";
 
 /**
  * Physical types in Gen 1.

@@ -1,5 +1,5 @@
 {
-  "name": "@pokemon-lib/battle",
+  "name": "@pokemon-lib-ts/battle",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -19,6 +19,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pokemon-lib/core": "*"
+    "@pokemon-lib-ts/core": "*"
   }
 }

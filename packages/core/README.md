@@ -1,4 +1,4 @@
-# @pokemon-lib/core
+# @pokemon-lib-ts/core
 
 Core Pokemon data types, entities, and shared game logic. Zero runtime dependencies.
 
@@ -17,7 +17,7 @@ Core Pokemon data types, entities, and shared game logic. Zero runtime dependenc
 ## Installation
 
 ```bash
-npm install @pokemon-lib/core
+npm install @pokemon-lib-ts/core
 ```
 
 ## Usage
@@ -29,13 +29,13 @@ import {
   getTypeEffectiveness,
   SeededRandom,
   DataManager,
-} from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
 
 // Stat calculation
 const hp = calculateHp(78, 31, 0, 50); // base, iv, ev, level
 
 // Type effectiveness
-import { GEN6_TYPE_CHART } from "@pokemon-lib/core";
+import { GEN6_TYPE_CHART } from "@pokemon-lib-ts/core";
 const multiplier = getTypeEffectiveness("fire", ["grass"], GEN6_TYPE_CHART); // 2
 
 // Deterministic RNG

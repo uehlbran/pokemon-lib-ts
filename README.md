@@ -1,10 +1,10 @@
 # Pokemon Library Monorepo
 
-[![CI](https://github.com/uehlbran/pokemon-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/uehlbran/pokemon-lib/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/github/license/uehlbran/pokemon-lib)](./LICENSE)
+[![CI](https://github.com/uehlbran/pokemon-lib-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/uehlbran/pokemon-lib-ts/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/uehlbran/pokemon-lib-ts)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-5FA04E?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/uehlbran/pokemon-lib?label=CodeRabbit&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+)](https://coderabbit.ai)
+[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/uehlbran/pokemon-lib-ts?label=CodeRabbit&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+)](https://coderabbit.ai)
 [![Qodo Merge](https://img.shields.io/badge/AI%20Review-Qodo%20Merge-5B4FC4?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+)](https://www.qodo.ai/products/qodo-merge/)
 
 A TypeScript monorepo producing open-source Pokemon libraries for building games, simulators, and tools.
@@ -13,9 +13,9 @@ A TypeScript monorepo producing open-source Pokemon libraries for building games
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [`@pokemon-lib/core`](./packages/core) | 0.1.0 | Entity types, stat calc, type effectiveness, EXP curves, DataManager, SeededRandom |
-| [`@pokemon-lib/battle`](./packages/battle) | 0.1.0 | Pluggable battle engine with GenerationRuleset interface, event system, AI controllers |
-| [`@pokemon-lib/gen1`](./packages/gen1) | 0.1.0 | Gen 1 (Red/Blue/Yellow) ruleset + complete data (151 Pokemon, 164 moves, 15-type chart) |
+| [`@pokemon-lib-ts/core`](./packages/core) | 0.1.0 | Entity types, stat calc, type effectiveness, EXP curves, DataManager, SeededRandom |
+| [`@pokemon-lib-ts/battle`](./packages/battle) | 0.1.0 | Pluggable battle engine with GenerationRuleset interface, event system, AI controllers |
+| [`@pokemon-lib-ts/gen1`](./packages/gen1) | 0.1.0 | Gen 1 (Red/Blue/Yellow) ruleset + complete data (151 Pokemon, 164 moves, 15-type chart) |
 
 ## Architecture
 
@@ -30,14 +30,14 @@ core  <-  battle  <-  gen1  <-  your app
 Consumers install only the generations they need:
 
 ```bash
-npm install @pokemon-lib/battle @pokemon-lib/gen1
+npm install @pokemon-lib-ts/battle @pokemon-lib-ts/gen1
 ```
 
 ## Quick Start
 
 ```typescript
-import { BattleEngine } from "@pokemon-lib/battle";
-import { Gen1Ruleset, createGen1DataManager } from "@pokemon-lib/gen1";
+import { BattleEngine } from "@pokemon-lib-ts/battle";
+import { Gen1Ruleset, createGen1DataManager } from "@pokemon-lib-ts/gen1";
 
 const dataManager = createGen1DataManager();
 const ruleset = new Gen1Ruleset();
@@ -62,8 +62,8 @@ engine.start();
 ### Setup
 
 ```bash
-git clone https://github.com/uehlbran/pokemon-lib.git
-cd pokemon-lib
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
 npm install
 ```
 

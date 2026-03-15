@@ -1,4 +1,4 @@
-import type { SeededRandom } from "@pokemon-lib/core";
+import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type { BattleAction } from "../events";
 import type { GenerationRuleset } from "../ruleset";
 import type { BattleState } from "../state";

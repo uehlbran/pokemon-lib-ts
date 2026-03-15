@@ -8,8 +8,8 @@ import type {
   PrimaryStatus,
   StatBlock,
   TypeChart,
-} from "@pokemon-lib/core";
-import type { SeededRandom } from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
+import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,

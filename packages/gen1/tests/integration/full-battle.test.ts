@@ -1,7 +1,7 @@
-import { BattleEngine, RandomAI } from "@pokemon-lib/battle";
-import type { BattleAction, BattleConfig, BattleEvent } from "@pokemon-lib/battle";
-import { SeededRandom } from "@pokemon-lib/core";
-import type { PokemonInstance } from "@pokemon-lib/core";
+import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
+import type { BattleAction, BattleConfig, BattleEvent } from "@pokemon-lib-ts/battle";
+import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset, createGen1DataManager } from "../../src";
 

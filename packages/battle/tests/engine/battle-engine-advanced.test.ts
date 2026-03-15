@@ -1,4 +1,4 @@
-import type { PokemonInstance } from "@pokemon-lib/core";
+import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";

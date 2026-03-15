@@ -28,17 +28,17 @@ body:
       label: Target Package
       description: Which package should this feature be added to?
       options:
-        - "@pokemon-lib/core"
-        - "@pokemon-lib/battle"
-        - "@pokemon-lib/gen1"
-        - "@pokemon-lib/gen2"
-        - "@pokemon-lib/gen3"
-        - "@pokemon-lib/gen4"
-        - "@pokemon-lib/gen5"
-        - "@pokemon-lib/gen6"
-        - "@pokemon-lib/gen7"
-        - "@pokemon-lib/gen8"
-        - "@pokemon-lib/gen9"
+        - "@pokemon-lib-ts/core"
+        - "@pokemon-lib-ts/battle"
+        - "@pokemon-lib-ts/gen1"
+        - "@pokemon-lib-ts/gen2"
+        - "@pokemon-lib-ts/gen3"
+        - "@pokemon-lib-ts/gen4"
+        - "@pokemon-lib-ts/gen5"
+        - "@pokemon-lib-ts/gen6"
+        - "@pokemon-lib-ts/gen7"
+        - "@pokemon-lib-ts/gen8"
+        - "@pokemon-lib-ts/gen9"
         - New package
         - Not sure
     validations:

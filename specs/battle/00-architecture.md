@@ -3,14 +3,14 @@
 > Pluggable generation system, state machine, event model, and how generation-specific
 > rulesets integrate with the core engine.
 >
-> This library depends on `@pokemon-lib/core` and nothing else.
+> This library depends on `@pokemon-lib-ts/core` and nothing else.
 > Zero game engine dependencies — pure TypeScript.
 
 ---
 
 ## 1. Vision
 
-`@pokemon-lib/battle` is a standalone Pokémon battle simulator that supports **every generation's mechanics** (Gen 1 through Gen 9) via a pluggable ruleset system. A consumer picks a generation, creates a battle, and the engine handles everything — turn order, damage calculation, status effects, abilities, items, weather, terrain, switching, and win conditions.
+`@pokemon-lib-ts/battle` is a standalone Pokémon battle simulator that supports **every generation's mechanics** (Gen 1 through Gen 9) via a pluggable ruleset system. A consumer picks a generation, creates a battle, and the engine handles everything — turn order, damage calculation, status effects, abilities, items, weather, terrain, switching, and win conditions.
 
 The engine is:
 - **Deterministic** — given the same inputs and seed, produces the same outputs
@@ -258,9 +258,9 @@ Consumers only pay for the generations they use:
 
 ```typescript
 // Import only Gen 1 and Gen 9
-import { Gen1Ruleset } from '@pokemon-lib/battle/gen/gen1';
-import { Gen9Ruleset } from '@pokemon-lib/battle/gen/gen9';
-import { generations, BattleEngine } from '@pokemon-lib/battle';
+import { Gen1Ruleset } from '@pokemon-lib-ts/battle/gen/gen1';
+import { Gen9Ruleset } from '@pokemon-lib-ts/battle/gen/gen9';
+import { generations, BattleEngine } from '@pokemon-lib-ts/battle';
 
 generations.register(new Gen1Ruleset());
 generations.register(new Gen9Ruleset());
@@ -908,10 +908,10 @@ export class CompetitiveAI implements AIController { /* Tier 3: considers switch
 
 ## 10. File Structure
 
-Gen-specific code lives in separate packages (`@pokemon-lib/gen1` through `@pokemon-lib/gen9`). The battle package only contains the engine, interfaces, AI, and events.
+Gen-specific code lives in separate packages (`@pokemon-lib-ts/gen1` through `@pokemon-lib-ts/gen9`). The battle package only contains the engine, interfaces, AI, and events.
 
 ```
-packages/battle/src/            # @pokemon-lib/battle — engine only
+packages/battle/src/            # @pokemon-lib-ts/battle — engine only
 ├── index.ts                    # Public API barrel export
 ├── engine/
 │   ├── BattleEngine.ts         # Main engine class
@@ -936,7 +936,7 @@ packages/battle/src/            # @pokemon-lib/battle — engine only
     ├── BattleHelpers.ts        # Shared utility functions
     └── Validators.ts           # Team/move legality checking
 
-packages/gen1/src/              # @pokemon-lib/gen1 — example gen package
+packages/gen1/src/              # @pokemon-lib-ts/gen1 — example gen package
 ├── index.ts                    # Exports Gen1Ruleset + createDataManager()
 ├── Gen1Ruleset.ts              # Implements GenerationRuleset
 ├── Gen1DamageCalc.ts
@@ -945,7 +945,7 @@ packages/gen1/src/              # @pokemon-lib/gen1 — example gen package
 └── data/
     └── index.ts                # Data loader (reads from ../data/*.json)
 
-packages/gen6/src/              # @pokemon-lib/gen6 — example with gimmick
+packages/gen6/src/              # @pokemon-lib-ts/gen6 — example with gimmick
 ├── index.ts
 ├── Gen6Ruleset.ts              # Extends BaseRuleset
 ├── MegaEvolution.ts            # BattleGimmick implementation
@@ -957,41 +957,41 @@ packages/gen6/src/              # @pokemon-lib/gen6 — example with gimmick
 
 ## 11. Inheritance Strategy
 
-`BaseRuleset` lives in `@pokemon-lib/battle` and implements Gen 3+ defaults. Each gen package imports it and extends or replaces as needed. Gen 1 and Gen 2 are different enough that they implement the interface directly.
+`BaseRuleset` lives in `@pokemon-lib-ts/battle` and implements Gen 3+ defaults. Each gen package imports it and extends or replaces as needed. Gen 1 and Gen 2 are different enough that they implement the interface directly.
 
 ```
-@pokemon-lib/battle exports:
+@pokemon-lib-ts/battle exports:
   GenerationRuleset (interface)   ← the contract
   BaseRuleset (abstract class)    ← Gen 3+ defaults
 
-@pokemon-lib/gen1 exports:
+@pokemon-lib-ts/gen1 exports:
   Gen1Ruleset implements GenerationRuleset  ← standalone (too different)
 
-@pokemon-lib/gen2 exports:
+@pokemon-lib-ts/gen2 exports:
   Gen2Ruleset implements GenerationRuleset  ← standalone (bridges old/new)
 
-@pokemon-lib/gen3 exports:
+@pokemon-lib-ts/gen3 exports:
   Gen3Ruleset extends BaseRuleset  ← minimal overrides (Gen 3 IS the base)
 
-@pokemon-lib/gen4 exports:
+@pokemon-lib-ts/gen4 exports:
   Gen4Ruleset extends BaseRuleset  ← adds physical/special split, Stealth Rock
 
-@pokemon-lib/gen5 exports:
+@pokemon-lib-ts/gen5 exports:
   Gen5Ruleset extends BaseRuleset  ← adds scaled EXP, team preview, Gems
 
-@pokemon-lib/gen6 exports:
+@pokemon-lib-ts/gen6 exports:
   Gen6Ruleset extends BaseRuleset  ← adds Fairy, Mega, updated crit/type chart
 
-@pokemon-lib/gen7 exports:
+@pokemon-lib-ts/gen7 exports:
   Gen7Ruleset extends BaseRuleset  ← adds Z-Moves, terrain from abilities
 
-@pokemon-lib/gen8 exports:
+@pokemon-lib-ts/gen8 exports:
   Gen8Ruleset extends BaseRuleset  ← adds Dynamax, removes Mega/Z
 
-@pokemon-lib/gen9 exports:
+@pokemon-lib-ts/gen9 exports:
   Gen9Ruleset extends BaseRuleset  ← adds Tera, removes Dynamax, Snow replaces Hail
 ```
 
-Each gen package depends on `@pokemon-lib/battle` (for `BaseRuleset` and `GenerationRuleset`), and `@pokemon-lib/core` (for entity types and shared logic). The gen packages are leaves in the dependency graph — nothing depends on them except the consumer's application.
+Each gen package depends on `@pokemon-lib-ts/battle` (for `BaseRuleset` and `GenerationRuleset`), and `@pokemon-lib-ts/core` (for entity types and shared logic). The gen packages are leaves in the dependency graph — nothing depends on them except the consumer's application.
 
 ---

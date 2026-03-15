@@ -1,4 +1,4 @@
-// @pokemon-lib/battle — BattleEngine, GenerationRuleset interface, BaseRuleset, BattleState, BattleEvent stream, AI controllers
+// @pokemon-lib-ts/battle — BattleEngine, GenerationRuleset interface, BaseRuleset, BattleState, BattleEvent stream, AI controllers
 
 // Ruleset
 export type { GenerationRuleset } from "./ruleset";

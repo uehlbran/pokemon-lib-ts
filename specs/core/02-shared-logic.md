@@ -893,7 +893,7 @@ export default defineConfig({
 Each package gets a `CLAUDE.md` that Claude Code reads at the start of every session.
 
 ```markdown
-# @pokemon-lib/core
+# @pokemon-lib-ts/core
 
 ## Project Context
 <!-- Fill in project-specific context here -->

@@ -1,11 +1,11 @@
-import { DataManager } from "@pokemon-lib/core";
+import { DataManager } from "@pokemon-lib-ts/core";
 import type {
   ItemData,
   MoveData,
   NatureData,
   PokemonSpeciesData,
   TypeChart,
-} from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
 import itemsData from "../../data/items.json";
 import movesData from "../../data/moves.json";
 import naturesData from "../../data/natures.json";

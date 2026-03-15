@@ -1,5 +1,5 @@
-import { DataManager } from "@pokemon-lib/core";
-import type { MoveData, PokemonSpeciesData } from "@pokemon-lib/core";
+import { DataManager } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonSpeciesData } from "@pokemon-lib-ts/core";
 
 /**
  * Creates a DataManager pre-loaded with minimal test data.

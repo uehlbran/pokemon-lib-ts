@@ -3,7 +3,7 @@ import type { ParsedReplay, ParsedTurn, ReconstructedPokemon } from "../src/repl
 import { validateReplay } from "../src/validator.js";
 
 // ---------------------------------------------------------------------------
-// Mock @pokemon-lib/gen1 and @pokemon-lib/core
+// Mock @pokemon-lib-ts/gen1 and @pokemon-lib-ts/core
 // ---------------------------------------------------------------------------
 
 const mockTypeChart = {
@@ -40,7 +40,7 @@ const mockMoves: Record<string, { type: string }> = {
   surf: { type: "water" },
 };
 
-vi.mock("@pokemon-lib/gen1", () => ({
+vi.mock("@pokemon-lib-ts/gen1", () => ({
   createGen1DataManager: () => ({
     getTypeChart: () => mockTypeChart,
     getMove: (id: string) => {
@@ -56,8 +56,8 @@ vi.mock("@pokemon-lib/gen1", () => ({
   }),
 }));
 
-vi.mock("@pokemon-lib/core", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@pokemon-lib/core")>();
+vi.mock("@pokemon-lib-ts/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@pokemon-lib-ts/core")>();
   return {
     ...actual,
     getTypeEffectiveness: (

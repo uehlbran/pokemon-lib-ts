@@ -1,6 +1,6 @@
-import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib/battle";
-import { SeededRandom, getStatStageMultiplier } from "@pokemon-lib/core";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib/core";
+import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { SeededRandom, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 

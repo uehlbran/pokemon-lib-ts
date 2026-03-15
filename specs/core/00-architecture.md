@@ -7,7 +7,7 @@
 
 ## 1. Vision
 
-`@pokemon-lib/core` is a standalone TypeScript library that models the Pokémon data domain. It provides:
+`@pokemon-lib-ts/core` is a standalone TypeScript library that models the Pokémon data domain. It provides:
 
 - **Entity definitions** — TypeScript interfaces and types for every Pokémon concept (species, instances, moves, abilities, items, natures)
 - **Shared logic** — Stat calculation, type effectiveness, experience curves, nature modifiers, catch rate formulas, damage range utilities
@@ -15,7 +15,7 @@
 - **Seeded PRNG** — Deterministic randomness for reproducible simulations
 - **Zero dependencies** — No runtime npm dependencies. No game engine. No DOM. Runs in Node.js, Deno, Bun, browsers, workers — anywhere TypeScript runs.
 
-The core library is the foundation that both `@pokemon-lib/battle` and any game (Phaser, terminal, Discord bot, whatever) build on.
+The core library is the foundation that both `@pokemon-lib-ts/battle` and any game (Phaser, terminal, Discord bot, whatever) build on.
 
 ---
 
@@ -35,7 +35,7 @@ The libraries live in a single monorepo managed by **Turborepo** with npm worksp
 Between Gen 1 and Gen 9, almost everything about a Pokémon can change: base stats (Pikachu got a Speed buff in Gen 6), types (Clefairy was Normal in Gen 1-5, Fairy in Gen 6+), abilities (didn't exist before Gen 3), learnsets (entirely different per gen), catch rates, egg groups, and more. An "overlay" or "diff" approach would require complex merging logic that's a breeding ground for subtle bugs (imagine a Gen 1 Clefairy that accidentally kept Fairy typing because the overlay missed one field). Fully separate data means each gen is independently testable, importers are simpler, and there's zero ambiguity about what a "Gen 1 Charizard" looks like. The duplication cost is trivial — JSON files totaling ~50-100MB across all 9 gens, loaded once.
 
 ```
-pokemon-lib/
+pokemon-lib-ts/
 ├── package.json                 # Root — workspaces config, shared dev deps
 ├── turbo.json                   # Turborepo pipeline config
 ├── tsconfig.base.json           # Shared TypeScript config
@@ -45,7 +45,7 @@ pokemon-lib/
 │       └── ci.yml               # Build + test on PR
 │
 ├── packages/
-│   ├── core/                    # @pokemon-lib/core — types, shared logic
+│   ├── core/                    # @pokemon-lib-ts/core — types, shared logic
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   ├── vitest.config.ts
@@ -59,7 +59,7 @@ pokemon-lib/
 │   │   │   └── constants/       # Enums, magic numbers, lookup tables
 │   │   └── tests/
 │   │
-│   ├── battle/                  # @pokemon-lib/battle — engine only, no gen logic
+│   ├── battle/                  # @pokemon-lib-ts/battle — engine only, no gen logic
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   ├── vitest.config.ts
@@ -74,7 +74,7 @@ pokemon-lib/
 │   │   └── tests/
 │   │       └── engine/          # Engine-level tests (gen-agnostic)
 │   │
-│   ├── gen1/                    # @pokemon-lib/gen1 — Gen 1 ruleset + data
+│   ├── gen1/                    # @pokemon-lib-ts/gen1 — Gen 1 ruleset + data
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   ├── vitest.config.ts
@@ -92,7 +92,7 @@ pokemon-lib/
 │   │   │   └── natures.json     # Empty — natures don't exist in Gen 1
 │   │   └── tests/
 │   │
-│   ├── gen2/                    # @pokemon-lib/gen2 — Gen 2 ruleset + data
+│   ├── gen2/                    # @pokemon-lib-ts/gen2 — Gen 2 ruleset + data
 │   │   ├── package.json
 │   │   ├── src/
 │   │   │   ├── index.ts
@@ -103,19 +103,19 @@ pokemon-lib/
 │   │       ├── items.json       # Held items, berries (Gen 2 versions)
 │   │       └── type-chart.json  # 17-type chart (Dark + Steel, no Fairy)
 │   │
-│   ├── gen3/                    # @pokemon-lib/gen3
+│   ├── gen3/                    # @pokemon-lib-ts/gen3
 │   │   └── ...                  # 386 species, abilities introduced, natures
-│   ├── gen4/                    # @pokemon-lib/gen4
+│   ├── gen4/                    # @pokemon-lib-ts/gen4
 │   │   └── ...                  # 493 species, physical/special split per move
-│   ├── gen5/                    # @pokemon-lib/gen5
+│   ├── gen5/                    # @pokemon-lib-ts/gen5
 │   │   └── ...                  # 649 species, hidden abilities, scaled EXP
-│   ├── gen6/                    # @pokemon-lib/gen6
+│   ├── gen6/                    # @pokemon-lib-ts/gen6
 │   │   └── ...                  # 721 species, Fairy type, Mega Evolution
-│   ├── gen7/                    # @pokemon-lib/gen7
+│   ├── gen7/                    # @pokemon-lib-ts/gen7
 │   │   └── ...                  # 809 species, Z-Moves, Alolan forms
-│   ├── gen8/                    # @pokemon-lib/gen8
+│   ├── gen8/                    # @pokemon-lib-ts/gen8
 │   │   └── ...                  # 905 species, Dynamax, Galarian forms
-│   └── gen9/                    # @pokemon-lib/gen9
+│   └── gen9/                    # @pokemon-lib-ts/gen9
 │       ├── package.json
 │       ├── src/
 │       │   ├── index.ts
@@ -150,7 +150,7 @@ pokemon-lib/
 
 ```json
 {
-  "name": "pokemon-lib",
+  "name": "pokemon-lib-ts",
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {
@@ -222,7 +222,7 @@ pokemon-lib/
 
 ```json
 {
-  "name": "@pokemon-lib/core",
+  "name": "@pokemon-lib-ts/core",
   "version": "0.1.0",
   "description": "Core Pokémon data types, entities, and shared game logic",
   "type": "module",
@@ -287,7 +287,7 @@ The battle package is the **engine only** — no gen-specific logic, no data. It
 
 ```json
 {
-  "name": "@pokemon-lib/battle",
+  "name": "@pokemon-lib-ts/battle",
   "version": "0.1.0",
   "description": "Pokémon battle engine — bring your own generation ruleset",
   "type": "module",
@@ -316,7 +316,7 @@ The battle package is the **engine only** — no gen-specific logic, no data. It
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pokemon-lib/core": "workspace:*"
+    "@pokemon-lib-ts/core": "workspace:*"
   },
   "keywords": ["pokemon", "battle", "simulator", "typescript"],
   "license": "MIT",
@@ -332,7 +332,7 @@ Each gen package exports its `GenerationRuleset` implementation AND its complete
 
 ```json
 {
-  "name": "@pokemon-lib/gen1",
+  "name": "@pokemon-lib-ts/gen1",
   "version": "0.1.0",
   "description": "Gen 1 (Red/Blue/Yellow) battle mechanics and Pokémon data",
   "type": "module",
@@ -357,8 +357,8 @@ Each gen package exports its `GenerationRuleset` implementation AND its complete
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pokemon-lib/core": "workspace:*",
-    "@pokemon-lib/battle": "workspace:*"
+    "@pokemon-lib-ts/core": "workspace:*",
+    "@pokemon-lib-ts/battle": "workspace:*"
   },
   "keywords": ["pokemon", "gen1", "red-blue-yellow", "battle"],
   "license": "MIT",
@@ -400,7 +400,7 @@ While in `0.x.x` (pre-stable), MINOR bumps may include breaking changes. This is
 2. Update `CHANGELOG.md` with all changes since last release
 3. Run full test suite (`npm run test` from root)
 4. Build (`npm run build`)
-5. Tag in git (`git tag @pokemon-lib/core@0.1.0`)
+5. Tag in git (`git tag @pokemon-lib-ts/core@0.1.0`)
 6. Publish to npm (`npm publish --access public` from each package dir)
 
 ---
@@ -466,7 +466,7 @@ The core library also provides **shared logic** (stat calc, type chart lookup, E
 
 ## 6. Public API Surface
 
-### `@pokemon-lib/core` — Main Export
+### `@pokemon-lib-ts/core` — Main Export
 
 ```typescript
 // Re-exports everything. Consumers can import from here for convenience.
@@ -477,7 +477,7 @@ export * from './prng';
 export * from './constants';
 ```
 
-### `@pokemon-lib/core/entities` — Types & Interfaces
+### `@pokemon-lib-ts/core/entities` — Types & Interfaces
 
 ```typescript
 // All entity interfaces — no logic, just shapes
@@ -518,7 +518,7 @@ export type {
 };
 ```
 
-### `@pokemon-lib/core/logic` — Shared Calculations
+### `@pokemon-lib-ts/core/logic` — Shared Calculations
 
 ```typescript
 // Stat calculation
@@ -546,7 +546,7 @@ export function getStatStageMultiplier(stage: number): number;
 export function getAccuracyEvasionMultiplier(stage: number): number;
 ```
 
-### `@pokemon-lib/core/data` — Data Management
+### `@pokemon-lib-ts/core/data` — Data Management
 
 ```typescript
 export class DataManager {
@@ -578,7 +578,7 @@ export interface DataPaths {
 }
 ```
 
-### `@pokemon-lib/core/prng` — Seeded Randomness
+### `@pokemon-lib-ts/core/prng` — Seeded Randomness
 
 ```typescript
 export class SeededRandom {
@@ -602,16 +602,17 @@ export class SeededRandom {
 │  Your Game / App                                       │
 │  (Phaser, Discord Bot, CLI, Web App, etc.)            │
 │                                                        │
-│  npm install @pokemon-lib/battle @pokemon-lib/gen1     │
-│             @pokemon-lib/gen9                          │
+│  npm install @pokemon-lib-ts/battle @pokemon-lib-ts/gen1     │
+│             @pokemon-lib-ts/gen9                          │
 └──────┬─────────────────────┬──────────────────────────┘
        │                     │
        │ depends on          │ depends on
        ▼                     ▼
 ┌──────────────┐   ┌────────────────────────────────────┐
-│  @pokemon-   │   │  @pokemon-lib/gen1                  │
-│  lib/battle  │   │  @pokemon-lib/gen9                  │
-│              │   │  (or any combination of gen1-gen9)  │
+│  @pokemon-   │   │  @pokemon-lib-ts/gen1                  │
+│  lib-ts/     │   │  @pokemon-lib-ts/gen9                  │
+│  battle      │   │  (or any combination of gen1-gen9)  │
+│              │   │                                     │
 │  - Engine    │   │                                     │
 │  - Ruleset   │   │  Each gen package contains:         │
 │    interface │   │  - GenerationRuleset implementation │
@@ -623,7 +624,7 @@ export class SeededRandom {
        │ depends on         │ depends on
        ▼                    ▼
 ┌─────────────────────────────┐
-│  @pokemon-lib/core           │
+│  @pokemon-lib-ts/core           │
 │                              │
 │  - Entity types/interfaces   │
 │  - Shared logic (stat calc,  │
@@ -637,16 +638,16 @@ export class SeededRandom {
 ```
 
 **Key points:**
-- A Pokédex app only needs `@pokemon-lib/core` + a gen data package. No battle engine required.
-- A game that supports "Gen 1 mode" and "Gen 9 mode" installs `@pokemon-lib/gen1` + `@pokemon-lib/gen9`.
+- A Pokédex app only needs `@pokemon-lib-ts/core` + a gen data package. No battle engine required.
+- A game that supports "Gen 1 mode" and "Gen 9 mode" installs `@pokemon-lib-ts/gen1` + `@pokemon-lib-ts/gen9`.
 - The battle engine is gen-agnostic — it doesn't know or care which gen it's running. The gen package tells it how to behave.
 
 ### Usage Example: Switching Battle Systems in a Game
 
 ```typescript
-import { BattleEngine } from '@pokemon-lib/battle';
-import { Gen1 } from '@pokemon-lib/gen1';
-import { Gen9 } from '@pokemon-lib/gen9';
+import { BattleEngine } from '@pokemon-lib-ts/battle';
+import { Gen1 } from '@pokemon-lib-ts/gen1';
+import { Gen9 } from '@pokemon-lib-ts/gen9';
 
 // Player picks "Classic Mode" in settings
 function createBattle(genChoice: 'classic' | 'modern', config: BattleConfig) {
@@ -697,14 +698,14 @@ Each gen package contains a **complete** set of Pokémon data for that generatio
 
 ```typescript
 // Option A: Use a gen package's built-in data (most common)
-import { Gen1 } from '@pokemon-lib/gen1';
+import { Gen1 } from '@pokemon-lib-ts/gen1';
 
 const data = Gen1.createDataManager();
 await data.load();  // Loads Gen 1 data from the package's data/ directory
 const charizard = data.getSpecies(6);  // Gen 1 Charizard — no abilities, Normal/Flying→Fire/Flying types
 
 // Option B: Use core's DataManager with custom data (fan game, custom dex)
-import { DataManager } from '@pokemon-lib/core';
+import { DataManager } from '@pokemon-lib-ts/core';
 
 const dm = new DataManager();
 await dm.loadFromObjects({

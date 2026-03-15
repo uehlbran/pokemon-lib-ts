@@ -1,4 +1,4 @@
-# @pokemon-lib/core
+# @pokemon-lib-ts/core
 
 ## Purpose
 

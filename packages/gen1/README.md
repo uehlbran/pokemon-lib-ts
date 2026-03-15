@@ -1,4 +1,4 @@
-# @pokemon-lib/gen1
+# @pokemon-lib-ts/gen1
 
 Gen 1 (Red/Blue/Yellow) battle mechanics and complete Pokemon data.
 
@@ -13,14 +13,14 @@ Gen 1 (Red/Blue/Yellow) battle mechanics and complete Pokemon data.
 ## Installation
 
 ```bash
-npm install @pokemon-lib/gen1 @pokemon-lib/battle @pokemon-lib/core
+npm install @pokemon-lib-ts/gen1 @pokemon-lib-ts/battle @pokemon-lib-ts/core
 ```
 
 ## Usage
 
 ```typescript
-import { Gen1Ruleset, createGen1DataManager } from "@pokemon-lib/gen1";
-import { BattleEngine } from "@pokemon-lib/battle";
+import { Gen1Ruleset, createGen1DataManager } from "@pokemon-lib-ts/gen1";
+import { BattleEngine } from "@pokemon-lib-ts/battle";
 
 // Load Gen 1 data
 const dm = createGen1DataManager();

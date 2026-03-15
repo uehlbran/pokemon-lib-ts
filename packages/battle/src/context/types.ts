@@ -9,8 +9,8 @@ import type {
   PokemonType,
   PrimaryStatus,
   VolatileStatus,
-} from "@pokemon-lib/core";
-import type { SeededRandom } from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
+import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type { BattleEvent } from "../events";
 import type { ActivePokemon, BattleFormat, BattleSide, BattleState } from "../state";
 

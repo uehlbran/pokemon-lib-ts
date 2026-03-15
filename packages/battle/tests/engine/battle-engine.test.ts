@@ -1,4 +1,4 @@
-import type { DataManager, PokemonInstance } from "@pokemon-lib/core";
+import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
