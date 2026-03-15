@@ -485,7 +485,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           result.statusCured = { target: "both" };
           result.screensCleared = "both";
           result.messages.push("All stat changes were eliminated!");
-        } else if (effect.handler === "explosion" || effect.handler === "selfdestruct") {
+        } else if (effect.handler === "explosion" || effect.handler === "self-destruct") {
           // Explosion / Self-Destruct: user faints after using the move
           result.selfFaint = true;
         } else if (effect.handler === "counter") {

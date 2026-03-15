@@ -690,6 +690,28 @@ describe("Gen 1 confusion self-hit formula", () => {
 });
 
 // ============================================================================
+// Self-Destruct move
+// ============================================================================
+
+describe("Self-Destruct move", () => {
+  it("given Self-Destruct is used, when executeMoveEffect is called with the real move ID, then selfFaint is true", () => {
+    // Arrange - use handler "self-destruct" (hyphenated, matching moves.json)
+    const attacker = makeActivePokemon();
+    const selfDestructMove = makeMove({
+      id: "self-destruct",
+      category: "physical" as const,
+      power: 200,
+      effect: { type: "custom" as const, handler: "self-destruct" },
+    });
+    const context = makeMoveEffectContext({ attacker, move: selfDestructMove });
+    // Act
+    const result = ruleset.executeMoveEffect(context);
+    // Assert — user should faint
+    expect(result.selfFaint).toBe(true);
+  });
+});
+
+// ============================================================================
 // Trapping move duration (weighted distribution)
 // ============================================================================
 
