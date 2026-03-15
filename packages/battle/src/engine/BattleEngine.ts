@@ -557,6 +557,28 @@ export class BattleEngine implements BattleEventEmitter {
       move: moveData.id,
     });
 
+    // Protect consecutive use: each use after the first has 1/3^N chance of succeeding
+    if (moveData.effect?.type === "protect") {
+      const denominator = Math.min(729, 3 ** actor.consecutiveProtects);
+      if (actor.consecutiveProtects > 0 && !this.state.rng.chance(1 / denominator)) {
+        // Protect failed due to consecutive use
+        actor.consecutiveProtects = 0;
+        this.emit({
+          type: "move-fail",
+          side: action.side,
+          pokemon: getPokemonName(actor),
+          move: moveData.id,
+          reason: "protect failed",
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+    } else {
+      // Non-protect move: reset the consecutive counter
+      actor.consecutiveProtects = 0;
+    }
+
     // Find the target
     const defenderSide = action.side === 0 ? 1 : 0;
     const defender = this.getActive(defenderSide as 0 | 1);
@@ -688,6 +710,11 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
+
+    // Increment consecutiveProtects if protect was successfully used
+    if (moveData.effect?.type === "protect") {
+      actor.consecutiveProtects++;
+    }
 
     // Recharge: if the move requires recharge and noRecharge was not set, mark the attacker
     if (moveData.flags.recharge && !effectResult.noRecharge) {
