@@ -2,9 +2,9 @@ import type {
   ActivePokemon,
   BattleState,
   MoveEffectContext,
-} from "@pokemon-lib/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib/core";
-import { SeededRandom } from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 
