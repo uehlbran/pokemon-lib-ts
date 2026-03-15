@@ -2222,11 +2222,24 @@ describe("Gen 2 Damage Calculation", () => {
     const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
     const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
 
-    // Assert: item boost should still apply (independently of weather order),
-    // both damage values are valid, and item version is larger
-    expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
-    expect(withItemDmg.damage).toBeGreaterThan(0);
-    expect(noItemDmg.damage).toBeGreaterThan(0);
+    // Assert: exact damage values prove the correct application order.
+    // Hand-trace (level=50, spA=100, spD=100, power=80, rng=255):
+    //   base = floor(floor((floor(2*50/5)+2) * 80 * 100) / 100 / 50) = 35
+    // With mystic-water:
+    //   item  = floor(35 * 1.1) = 38
+    //   clamp = max(1, min(997, 38)) = 38
+    //   +2    = 40
+    //   rain  = floor(40 * 1.5) = 60
+    //   STAB  = 60 + floor(60/2) = 90
+    //   type  = 1x → 90
+    //   rand  = floor(90 * 255/255) = 90
+    // Without item:
+    //   clamp = 35, +2 = 37
+    //   rain  = floor(37 * 1.5) = 55
+    //   STAB  = 55 + floor(55/2) = 82
+    //   rand  = 82
+    expect(withItemDmg.damage).toBe(90);
+    expect(noItemDmg.damage).toBe(82);
   });
 
   // --- Stat Overflow (Change 2) ---

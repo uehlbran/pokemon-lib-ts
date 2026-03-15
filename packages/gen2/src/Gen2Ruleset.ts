@@ -392,7 +392,9 @@ export class Gen2Ruleset implements GenerationRuleset {
 
       case "stat-change": {
         // Check if the stat change has a chance component (0-255 scale, 1/256 failure even at 100%)
-        if (!this.rollEffectChance(effect.chance, rng)) {
+        // Only apply the secondary-effect roll for damaging moves — status moves (e.g. Swords Dance)
+        // have guaranteed primary effects and must never incur the 1/256 failure.
+        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng)) {
           break;
         }
         for (const change of effect.changes) {
@@ -432,7 +434,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       }
 
       case "volatile-status": {
-        if (!this.rollEffectChance(effect.chance, rng)) {
+        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng)) {
           break;
         }
         result.volatileInflicted = effect.status;

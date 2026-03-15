@@ -2097,8 +2097,14 @@ describe("Gen2Ruleset", () => {
       }
 
       // Assert: all results are identical (no random variance)
+      // Hand-trace (level=50, attack=100, defense=100, power=40):
+      //   base = floor(floor((floor(2*50/5)+2) * 40 * 100) / 100 / 50)
+      //        = floor(floor(22 * 40 * 100) / 100 / 50)
+      //        = floor(880 / 50) = 17
+      //   +2   = 19, max(1, 19) = 19
       const first = results[0]!;
       expect(results.every((r) => r === first)).toBe(true);
+      expect(first).toBe(19);
     });
   });
 
