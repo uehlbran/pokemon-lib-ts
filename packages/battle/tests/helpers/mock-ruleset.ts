@@ -190,6 +190,30 @@ export class MockRuleset implements GenerationRuleset {
     return rng.int(1, 3);
   }
 
+  checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
+    return rng.chance(0.25);
+  }
+
+  rollConfusionSelfHit(rng: SeededRandom): boolean {
+    return rng.chance(0.5);
+  }
+
+  processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
+    const sleepState = pokemon.volatileStatuses.get("sleep" as any);
+    if (!sleepState || sleepState.turnsLeft <= 0) {
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep" as any);
+      return true;
+    }
+    sleepState.turnsLeft--;
+    if (sleepState.turnsLeft <= 0) {
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep" as any);
+      return true;
+    }
+    return false;
+  }
+
   hasAbilities(): boolean {
     return false;
   }
