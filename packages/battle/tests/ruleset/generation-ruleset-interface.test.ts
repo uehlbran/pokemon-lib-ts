@@ -8,7 +8,7 @@ import { MockRuleset } from "../helpers/mock-ruleset";
  * a contract test — if the interface grows, this test must be updated.
  */
 describe("GenerationRuleset interface verification", () => {
-  // List of all ~22 methods + 2 readonly properties defined in GenerationRuleset
+  // List of all ~25 methods + 2 readonly properties defined in GenerationRuleset
   const expectedMembers = [
     // Properties
     "generation",
@@ -33,6 +33,9 @@ describe("GenerationRuleset interface verification", () => {
     "applyStatusDamage",
     "checkFreezeThaw",
     "rollSleepTurns",
+    "checkFullParalysis",
+    "rollConfusionSelfHit",
+    "processSleepTurn",
     // Abilities
     "hasAbilities",
     "applyAbility",
@@ -71,9 +74,9 @@ describe("GenerationRuleset interface verification", () => {
     }
   });
 
-  it("given the GenerationRuleset interface, when counting all members, then there are at least 22 method/property entries", () => {
-    // Assert — the interface has 22 properties and methods per spec
-    expect(expectedMembers.length).toBeGreaterThanOrEqual(22);
+  it("given the GenerationRuleset interface, when counting all members, then there are at least 25 method/property entries", () => {
+    // Assert — the interface has 25 properties and methods per spec
+    expect(expectedMembers.length).toBeGreaterThanOrEqual(25);
   });
 
   describe("return types are specific (no any)", () => {

@@ -148,8 +148,8 @@ export interface GenerationRuleset {
   /**
    * Process one turn of sleep for a Pokemon.
    * Decrements the sleep counter and wakes the Pokemon if it reaches 0.
-   * Returns true if the Pokemon can act this turn (woke up in Gen 2+).
-   * Returns false if still sleeping, or woke up but cannot act (Gen 1).
+   * Returns true if the Pokemon can act this turn (Gen 5+: can act on wake turn).
+   * Returns false if still sleeping, or woke up but cannot act (Gen 1-4).
    */
   processSleepTurn(pokemon: ActivePokemon, state: BattleState): boolean;
 
