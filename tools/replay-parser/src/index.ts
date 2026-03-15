@@ -93,7 +93,10 @@ async function cmdValidate(args: string[]): Promise<void> {
   const parsed = parseReplay(logText);
   const result = validateReplay(parsed);
 
-  printReport(result, { json: values.json as boolean | undefined });
+  printReport(result, {
+    json: values.json as boolean | undefined,
+    noColor: values["no-color"] as boolean | undefined,
+  });
 
   const errors = result.mismatches.filter((m) => m.severity === "error").length;
   if (errors > 0) process.exit(1);

@@ -26,17 +26,17 @@ const STATUS_IMMUNE_TYPES: Record<string, string[]> = {
 };
 
 /**
- * Resolve a nickname to a ReconstructedPokemon by searching both teams.
+ * Resolve a nickname to a ReconstructedPokemon using side (0 = p1, 1 = p2).
+ * Searching only the correct team prevents cross-team nickname collisions.
  */
 function resolvePokemon(
   nickname: string,
+  side: 0 | 1,
   teams: ParsedReplay["teams"],
 ): ReconstructedPokemon | null {
-  for (const team of teams) {
-    const found = team.find((p) => p.nickname === nickname);
-    if (found) return found;
-  }
-  return null;
+  const team = teams[side];
+  if (!team) return null;
+  return team.find((p) => p.nickname === nickname) ?? null;
 }
 
 export function validateReplay(replay: ParsedReplay): ValidationResult {
@@ -96,8 +96,12 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
             continue;
           }
 
-          // Resolve target species
-          const targetPokemon = resolvePokemon(targetNickname, replay.teams);
+          // Resolve target species — use side from ident to avoid cross-team nickname collisions
+          const targetPokemon = resolvePokemon(
+            targetNickname,
+            moveEvent.targetIdent!.side,
+            replay.teams,
+          );
           if (targetPokemon === null) {
             mismatches.push({
               turnNumber: turn.turnNumber,
@@ -171,7 +175,11 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
         // Only validate if we know the immunity rule for this status
         if (immuneTypes !== undefined) {
           const afflictedNickname = statusEvent.ident.nickname;
-          const afflictedPokemon = resolvePokemon(afflictedNickname, replay.teams);
+          const afflictedPokemon = resolvePokemon(
+            afflictedNickname,
+            statusEvent.ident.side,
+            replay.teams,
+          );
 
           if (afflictedPokemon === null) {
             mismatches.push({

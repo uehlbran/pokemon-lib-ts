@@ -74,7 +74,10 @@ export function formatReport(
   return lines.join("\n");
 }
 
-export function printReport(result: ValidationResult, opts?: { json?: boolean }): void {
+export function printReport(
+  result: ValidationResult,
+  opts?: { json?: boolean; noColor?: boolean },
+): void {
   const text = formatReport(result, opts);
   process.stdout.write(`${text}\n`);
 }

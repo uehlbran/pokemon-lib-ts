@@ -15,9 +15,8 @@ describe("Gen 1 Replay Validation", () => {
     : [];
 
   if (replayFiles.length === 0) {
-    it("skipped — no replay fixtures found", () => {
-      // No files to validate — this is OK in CI without fixtures
-      expect(true).toBe(true);
+    it("setup — replay fixtures exist (REQUIRED)", () => {
+      expect(replayFiles.length).toBeGreaterThan(0);
     });
     return;
   }
