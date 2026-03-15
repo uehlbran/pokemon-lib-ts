@@ -19,11 +19,13 @@ import { calculateGen2Damage, isPhysicalInGen2 } from "../src/Gen2DamageCalc";
  *
  * Modifier chain (each step floors):
  *   1. Critical hit (2x)
- *   2. Weather (rain/sun: 1.5x or 0.5x)
- *   3. STAB (1.5x)
- *   4. Type effectiveness (Type1 x Type2)
- *   5. Item modifier (type-boosting items: 1.1x)
- *   6. Random factor (217-255)/255
+ *   2. Item modifier (type-boosting items: 1.1x)
+ *   3. Clamp [1, 997]
+ *   4. +2 constant
+ *   5. Weather (rain/sun: 1.5x or 0.5x)
+ *   6. STAB (1.5x)
+ *   7. Type effectiveness
+ *   8. Random factor (217-255)/255
  *
  * Key differences from Gen 1:
  *   - Weather modifier is new
@@ -963,8 +965,9 @@ describe("Gen 2 Damage Calculation", () => {
     expect(boostedDmg.damage).toBeGreaterThan(normalDmg.damage);
   });
 
-  it("given a burned attacker using a physical move with a critical hit, when calculating damage, then burn still halves attack", () => {
-    // Arrange
+  it("given a burned attacker using a physical move with a critical hit (equal stages), when calculating damage, then burn is ignored on crit", () => {
+    // Arrange: atkStage=0, defStage=0 → ignoreBoosts=true → burn is also ignored.
+    // Showdown behavior: when atkStage <= defStage, ALL boosts (and burn) are ignored.
     const attackerBurned = createActivePokemon({
       level: 50,
       attack: 200,
@@ -1015,8 +1018,8 @@ describe("Gen 2 Damage Calculation", () => {
     const burnDmg = calculateGen2Damage(burnCrit, chart, species);
     const normalDmg = calculateGen2Damage(normalCrit, chart, species);
 
-    // Assert: Burned crit should deal less than normal crit
-    expect(burnDmg.damage).toBeLessThan(normalDmg.damage);
+    // Assert: With equal stages on crit, burn is ignored — damage should be equal
+    expect(burnDmg.damage).toBe(normalDmg.damage);
   });
 
   it("given a critical hit with negative defender defense stages, when calculating damage, then uses the lowered defense", () => {
@@ -2050,6 +2053,70 @@ describe("Gen 2 Damage Calculation", () => {
       }
     });
 
+    it("given Explosion move, when damage is calculated, then defender defense is halved before damage calc", () => {
+      // Arrange: Explosion with defender defense=100 should equal a same-power non-explosion
+      // move against a defender with defense=50 (half), because Explosion halves defense.
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defenderFullDef = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defenderHalfDef = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 50,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const explosionMove: MoveData = {
+        ...createMove("normal", 150),
+        id: "explosion",
+      };
+      const regularMove: MoveData = {
+        ...createMove("normal", 150),
+        id: "hyper-beam",
+      };
+
+      const explosionCtx: DamageContext = {
+        attacker,
+        defender: defenderFullDef,
+        move: explosionMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const regularHalfDefCtx: DamageContext = {
+        attacker,
+        defender: defenderHalfDef,
+        move: regularMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const explosionDmg = calculateGen2Damage(explosionCtx, chart, species);
+      const regularHalfDefDmg = calculateGen2Damage(regularHalfDefCtx, chart, species);
+
+      // Assert: Explosion halves defender defense → damage identical to same move vs half-def defender
+      expect(explosionDmg.damage).toBe(regularHalfDefDmg.damage);
+    });
+
     it("given a non-explosion move, when calculating damage, then defense is not halved", () => {
       // Arrange: verify that a regular move (same power as explosion) deals less
       const attacker = createActivePokemon({
@@ -2092,6 +2159,332 @@ describe("Gen 2 Damage Calculation", () => {
       // Assert: regular move with full defense produces a valid positive damage result
       expect(result.damage).toBeGreaterThan(0);
     });
+  });
+
+  // --- Formula Order: item modifier before clamp, weather after ---
+
+  it("given type-boost item and rain weather on a water move, when calculating damage, then item modifier is applied before weather (correct order)", () => {
+    // Arrange: verify item modifier is applied at step 3 (before clamp+2+weather)
+    // rather than after type effectiveness (old wrong position).
+    // With a water move in rain + mystic-water item, we verify the final damage value
+    // matches the correct intermediate calculation order.
+    const attackerWithItem = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["water"],
+      heldItem: "mystic-water",
+    });
+    const attackerNoItem = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["water"],
+      heldItem: null,
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    // Water type move → special in Gen 2 → uses spAttack/spDefense = 100
+    const move = createMove("water", 80, "special");
+    const chart = createNeutralTypeChart();
+    const species = createSpecies(["water"]);
+
+    const rainState = createMockState({ type: "rain", turnsLeft: 5, source: "rain-dance" });
+
+    const withItemCtx: DamageContext = {
+      attacker: attackerWithItem,
+      defender,
+      move,
+      state: rainState,
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+    const noItemCtx: DamageContext = {
+      attacker: attackerNoItem,
+      defender,
+      move,
+      state: rainState,
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+
+    // Act
+    const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+    const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+    // Assert: exact damage values prove the correct application order.
+    // Hand-trace (level=50, spA=100, spD=100, power=80, rng=255):
+    //   base = floor(floor((floor(2*50/5)+2) * 80 * 100) / 100 / 50) = 35
+    // With mystic-water:
+    //   item  = floor(35 * 1.1) = 38
+    //   clamp = max(1, min(997, 38)) = 38
+    //   +2    = 40
+    //   rain  = floor(40 * 1.5) = 60
+    //   STAB  = 60 + floor(60/2) = 90
+    //   type  = 1x → 90
+    //   rand  = floor(90 * 255/255) = 90
+    // Without item:
+    //   clamp = 35, +2 = 37
+    //   rain  = floor(37 * 1.5) = 55
+    //   STAB  = 55 + floor(55/2) = 82
+    //   rand  = 82
+    expect(withItemDmg.damage).toBe(90);
+    expect(noItemDmg.damage).toBe(82);
+  });
+
+  // --- Stat Overflow (Change 2) ---
+
+  it("given attack >= 256, when damage is calculated, then stats wrap to avoid overflow", () => {
+    // Arrange: attack=300 triggers overflow; both stats get divided by 4 and taken mod 256.
+    // Overflow: attack = floor(300/4) % 256 = 75; defense = floor(100/4) % 256 = 25.
+    // Pre-wrapped attacker/defender use those already-wrapped values directly.
+    const attackerHighAtk = createActivePokemon({
+      level: 50,
+      attack: 300, // Will trigger overflow
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const attackerWrapped = createActivePokemon({
+      level: 50,
+      attack: 75, // floor(300/4) % 256 = 75
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const defenderForOverflow = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100, // Will also be wrapped: floor(100/4) % 256 = 25
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const defenderWrapped = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 25, // Pre-wrapped: floor(100/4) % 256 = 25
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const move = createMove("normal", 80);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies(["normal"]);
+
+    const overflowCtx: DamageContext = {
+      attacker: attackerHighAtk,
+      defender: defenderForOverflow,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+    const wrappedCtx: DamageContext = {
+      attacker: attackerWrapped,
+      defender: defenderWrapped,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+
+    // Act
+    const overflowDmg = calculateGen2Damage(overflowCtx, chart, species);
+    const wrappedDmg = calculateGen2Damage(wrappedCtx, chart, species);
+
+    // Assert: overflow path produces same result as pre-wrapped values (attack=75, def=25)
+    expect(overflowDmg.damage).toBe(wrappedDmg.damage);
+  });
+
+  // --- Crit interaction: atkStage <= defStage (Change 3a) ---
+
+  it("given crit with atkStage=0 and defStage=+2, when calculating damage, then all boosts on both sides are ignored", () => {
+    // Arrange: atkStage(0) <= defStage(+2) → ignoreBoosts=true → treat as if no stages.
+    // Defender with +2 defense boost on crit should produce same damage as defender with no boost.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      statStages: { attack: 0 },
+    });
+    const defenderBoosted = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      statStages: { defense: 2 },
+    });
+    const defenderNoBoosted = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      statStages: { defense: 0 },
+    });
+    const move = createMove("normal", 80);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies(["normal"]);
+
+    const critBoostedDefCtx: DamageContext = {
+      attacker,
+      defender: defenderBoosted,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: true,
+    };
+    const critNoBoostCtx: DamageContext = {
+      attacker,
+      defender: defenderNoBoosted,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: true,
+    };
+
+    // Act
+    const critBoostedDmg = calculateGen2Damage(critBoostedDefCtx, chart, species);
+    const critNoBoostDmg = calculateGen2Damage(critNoBoostCtx, chart, species);
+
+    // Assert: Ignoring boosts → boosted defender defense is irrelevant → same damage
+    expect(critBoostedDmg.damage).toBe(critNoBoostDmg.damage);
+  });
+
+  // --- Crit interaction: atkStage > defStage (Change 3b) ---
+
+  it("given crit with atkStage=+2 and defStage=0, when calculating damage, then all boosts are kept (higher attack = more damage)", () => {
+    // Arrange: atkStage(+2) > defStage(0) → ignoreBoosts=false → keep all boosts normally.
+    const attackerBoosted = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      statStages: { attack: 2 },
+    });
+    const attackerNoBoosted = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      statStages: { attack: 0 },
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      statStages: { defense: 0 },
+    });
+    const move = createMove("normal", 80);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies(["normal"]);
+
+    const critBoostedAtkCtx: DamageContext = {
+      attacker: attackerBoosted,
+      defender,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: true,
+    };
+    const critNoBoostedAtkCtx: DamageContext = {
+      attacker: attackerNoBoosted,
+      defender,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: true,
+    };
+
+    // Act
+    const critBoostedDmg = calculateGen2Damage(critBoostedAtkCtx, chart, species);
+    const critNoBoostedDmg = calculateGen2Damage(critNoBoostedAtkCtx, chart, species);
+
+    // Assert: Keeping +2 attack boost → more damage than no boost
+    expect(critBoostedDmg.damage).toBeGreaterThan(critNoBoostedDmg.damage);
+  });
+
+  // --- Stat cap at 999 (Change 4) ---
+
+  it("given attack stat of 1000, when damage is calculated, then attack is capped at 999", () => {
+    // Arrange: attack=1000 should be capped to 999; attack=999 should be identical.
+    const attackerOver = createActivePokemon({
+      level: 50,
+      attack: 1000,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const attackerCapped = createActivePokemon({
+      level: 50,
+      attack: 999,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const move = createMove("normal", 80);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies(["normal"]);
+
+    const overCtx: DamageContext = {
+      attacker: attackerOver,
+      defender,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+    const cappedCtx: DamageContext = {
+      attacker: attackerCapped,
+      defender,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+
+    // Act
+    const overDmg = calculateGen2Damage(overCtx, chart, species);
+    const cappedDmg = calculateGen2Damage(cappedCtx, chart, species);
+
+    // Assert: Both produce identical damage since attack is capped at 999
+    expect(overDmg.damage).toBe(cappedDmg.damage);
   });
 
   it("given identical inputs, when calculating damage twice, then produces identical results", () => {

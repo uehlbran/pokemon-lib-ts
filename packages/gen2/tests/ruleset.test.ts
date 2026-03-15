@@ -570,9 +570,7 @@ describe("Gen2Ruleset", () => {
       // baseDamage = floor(floor(22 * 40 * 150) / 100 / 50) + 2 = floor(2640) + 2
       // Actually: floor(floor(22*40*150)/100) = floor(132000/100) = 1320
       // floor(1320/50) + 2 = 26 + 2 = 28
-      // With random (217-255)/255: floor(28 * randomRoll / 255)
-      // Min: floor(28 * 217/255) = floor(23.8) = 23
-      // Max: floor(28 * 255/255) = 28
+      // Expected range: min 23, max 28
       expect(damage).toBeGreaterThanOrEqual(23);
       expect(damage).toBeLessThanOrEqual(28);
     });
@@ -2076,6 +2074,122 @@ describe("Gen2Ruleset", () => {
       // Assert: should have 3 errors (level, species, moves)
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(3);
+    });
+  });
+
+  // --- Confusion No Variance (Showdown: noDamageVariance) ---
+
+  describe("Given confusion self-hit damage", () => {
+    it("should produce identical damage across different RNG seeds (no random component)", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const pokemon = createMockActive({ level: 50, attack: 100, defense: 100 });
+      const state = createMockState(
+        createMockSide(0, pokemon),
+        createMockSide(1, createMockActive()),
+      );
+
+      // Act: calculate damage with different seeds
+      const results: number[] = [];
+      for (let seed = 0; seed < 20; seed++) {
+        const rng = new SeededRandom(seed);
+        results.push(ruleset.calculateConfusionDamage(pokemon, state, rng));
+      }
+
+      // Assert: all results are identical (no random variance)
+      // Hand-trace (level=50, attack=100, defense=100, power=40):
+      //   base = floor(floor((floor(2*50/5)+2) * 40 * 100) / 100 / 50)
+      //        = floor(floor(22 * 40 * 100) / 100 / 50)
+      //        = floor(880 / 50) = 17
+      //   +2   = 19, max(1, 19) = 19
+      const first = results[0]!;
+      expect(results.every((r) => r === first)).toBe(true);
+      expect(first).toBe(19);
+    });
+  });
+
+  // --- Accuracy 0-255 Scale ---
+
+  describe("Given accuracy check on 0-255 scale", () => {
+    it("should never miss with 100% accurate move at zero stat stages (accuracy >= 255 short-circuits)", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive();
+      const defender = createMockActive();
+      const move = { accuracy: 100, id: "tackle" } as any;
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+      // Act: floor(100 * 255 / 100) = 255, which >= 255 returns true immediately
+      let misses = 0;
+      for (let seed = 0; seed < 10000; seed++) {
+        const rng = new SeededRandom(seed);
+        if (!ruleset.doesMoveHit({ attacker, defender, move, state, rng })) {
+          misses++;
+        }
+      }
+
+      // Assert: 0 misses — accuracy >= 255 never misses
+      expect(misses).toBe(0);
+    });
+
+    it("should cap accuracy at 255 when +6 accuracy stage boosts would exceed 255", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive();
+      attacker.statStages.accuracy = 6;
+      const defender = createMockActive();
+      const move = { accuracy: 70, id: "thunder" } as any;
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+      // Act: floor(70 * 255 / 100) = 178, * 3 = 534, capped at 255 → always hits
+      let misses = 0;
+      for (let seed = 0; seed < 1000; seed++) {
+        const rng = new SeededRandom(seed);
+        if (!ruleset.doesMoveHit({ attacker, defender, move, state, rng })) {
+          misses++;
+        }
+      }
+
+      // Assert: capped at 255 → always hits
+      expect(misses).toBe(0);
+    });
+  });
+
+  // --- 1/256 Failure Rate for Secondary Effects ---
+
+  describe("Given secondary effect 1/256 failure rate", () => {
+    it("should use 0-255 scale for status-chance (100% chance can fail 1/256 times)", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive({ types: ["fire"] });
+      // Run enough trials to observe the ~1/256 failure rate
+      const trials = 50000;
+      let failCount = 0;
+
+      for (let seed = 0; seed < trials; seed++) {
+        const defender = createMockActive({ types: ["normal"] });
+        const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+        const move = {
+          id: "flamethrower",
+          type: "fire",
+          effect: { type: "status-chance", status: "burn", chance: 100 },
+        } as any;
+        const rng = new SeededRandom(seed);
+        const result = ruleset.executeMoveEffect({
+          attacker,
+          defender,
+          move,
+          damage: 70,
+          state,
+          rng,
+        });
+        if (result.statusInflicted === null) failCount++;
+      }
+
+      // Assert: ~1/256 failure rate (~195 failures in 50000 trials)
+      // Expect between 50 and 400 failures (wide range to avoid flakiness)
+      expect(failCount).toBeGreaterThan(50);
+      expect(failCount).toBeLessThan(400);
     });
   });
 
