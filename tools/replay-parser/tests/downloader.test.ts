@@ -1,7 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { downloadAndSave, downloadReplay, searchReplays } from "../src/downloader.js";
+import {
+  downloadAndSave,
+  downloadBatch,
+  downloadReplay,
+  searchReplays,
+} from "../src/downloader.js";
 import type { ReplaySearchResult, ShowdownReplayJson } from "../src/replay-types.js";
 
 // Mock node:fs/promises so no real disk writes occur
@@ -70,10 +75,13 @@ const sampleSearchResults: ReplaySearchResult[] = [
 describe("downloadReplay", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    // Use fake timers so rate-limit sleeps complete instantly via runAllTimersAsync
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("given a replay id, when downloadReplay is called, then fetches from correct URL", async () => {
@@ -82,7 +90,9 @@ describe("downloadReplay", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     // Act
-    await downloadReplay("gen1ou-123456");
+    const promise = downloadReplay("gen1ou-123456");
+    await vi.runAllTimersAsync();
+    await promise;
 
     // Assert
     expect(mockFetch).toHaveBeenCalledOnce();
@@ -95,7 +105,9 @@ describe("downloadReplay", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     // Act
-    const result = await downloadReplay("gen1ou-123456");
+    const promise = downloadReplay("gen1ou-123456");
+    await vi.runAllTimersAsync();
+    const result = await promise;
 
     // Assert
     expect(result).toEqual(sampleReplay);
@@ -109,8 +121,11 @@ describe("downloadReplay", () => {
     const mockFetch = vi.fn().mockResolvedValue(makeErrorResponse(404, "Not Found"));
     vi.stubGlobal("fetch", mockFetch);
 
-    // Act & Assert
-    await expect(downloadReplay("gen1ou-nonexistent")).rejects.toThrow(
+    // Act & Assert — attach a catch before running timers to avoid unhandled rejection warnings
+    const promise = downloadReplay("gen1ou-nonexistent");
+    promise.catch(() => {});
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow(
       "Failed to fetch replay gen1ou-nonexistent: 404 Not Found",
     );
   });
@@ -120,8 +135,26 @@ describe("downloadReplay", () => {
     const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
     vi.stubGlobal("fetch", mockFetch);
 
-    // Act & Assert
-    await expect(downloadReplay("gen1ou-123456")).rejects.toThrow("Network error");
+    // Act & Assert — attach a catch before running timers to avoid unhandled rejection warnings
+    const promise = downloadReplay("gen1ou-123456");
+    promise.catch(() => {});
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow("Network error");
+  });
+
+  it("given a response missing the log field, when downloadReplay is called, then throws", async () => {
+    // Arrange
+    const badData = { id: "gen1ou-123456", format: "gen1ou" }; // no log field
+    const mockFetch = vi.fn().mockResolvedValue(makeOkResponse(badData));
+    vi.stubGlobal("fetch", mockFetch);
+
+    // Act & Assert — attach a catch before running timers to avoid unhandled rejection warnings
+    const promise = downloadReplay("gen1ou-123456");
+    promise.catch(() => {});
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow(
+      "Unexpected response shape for replay gen1ou-123456: missing 'log' field",
+    );
   });
 });
 
@@ -132,10 +165,12 @@ describe("downloadReplay", () => {
 describe("searchReplays", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("given a format, when searchReplays is called, then fetches from search URL with format param", async () => {
@@ -144,7 +179,9 @@ describe("searchReplays", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     // Act
-    await searchReplays({ format: "gen1ou" });
+    const promise = searchReplays({ format: "gen1ou" });
+    await vi.runAllTimersAsync();
+    await promise;
 
     // Assert
     expect(mockFetch).toHaveBeenCalledOnce();
@@ -159,7 +196,9 @@ describe("searchReplays", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     // Act
-    const results = await searchReplays({ format: "gen1ou" });
+    const promise = searchReplays({ format: "gen1ou" });
+    await vi.runAllTimersAsync();
+    const results = await promise;
 
     // Assert
     expect(results).toHaveLength(3);
@@ -173,7 +212,9 @@ describe("searchReplays", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     // Act
-    const results = await searchReplays({ format: "gen1ou", count: 2 });
+    const promise = searchReplays({ format: "gen1ou", count: 2 });
+    await vi.runAllTimersAsync();
+    const results = await promise;
 
     // Assert
     expect(results).toHaveLength(2);
@@ -187,7 +228,9 @@ describe("searchReplays", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     // Act
-    const results = await searchReplays({ format: "gen1ou" });
+    const promise = searchReplays({ format: "gen1ou" });
+    await vi.runAllTimersAsync();
+    const results = await promise;
 
     // Assert
     expect(results).toEqual([]);
@@ -204,7 +247,7 @@ describe("downloadAndSave", () => {
     vi.stubGlobal("fetch", vi.fn());
     mockMkdir.mockClear();
     mockWriteFile.mockClear();
-    // Mock timers so sleep(1000) resolves instantly
+    // Mock timers so rate-limit sleep resolves instantly
     vi.useFakeTimers();
   });
 
@@ -221,7 +264,6 @@ describe("downloadAndSave", () => {
 
     // Act
     const promise = downloadAndSave("gen1ou-123456", outputDir);
-    // Advance timers so the rate-limit sleep resolves
     await vi.runAllTimersAsync();
     await promise;
 
@@ -254,10 +296,111 @@ describe("downloadAndSave", () => {
     const mockFetch = vi.fn().mockResolvedValue(makeErrorResponse(500, "Internal Server Error"));
     vi.stubGlobal("fetch", mockFetch);
 
-    // Act & Assert
-    // downloadReplay rejects before sleep is reached, so no timer advance needed
-    await expect(downloadAndSave("gen1ou-bad", "/tmp/replays")).rejects.toThrow(
+    // Act & Assert — attach a catch before running timers to avoid unhandled rejection warnings
+    const promise = downloadAndSave("gen1ou-bad", "/tmp/replays");
+    promise.catch(() => {});
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow(
       "Failed to fetch replay gen1ou-bad: 500 Internal Server Error",
     );
+  });
+
+  it("given an ID with path traversal characters, when downloadAndSave is called, then throws", async () => {
+    // Arrange
+    const mockFetch = vi.fn().mockResolvedValue(makeOkResponse(sampleReplay));
+    vi.stubGlobal("fetch", mockFetch);
+
+    // Act & Assert — validation is synchronous, throws before any fetch or timer
+    await expect(downloadAndSave("../evil/path", "/tmp/replays")).rejects.toThrow(
+      'Invalid replay ID: "../evil/path"',
+    );
+    await expect(downloadAndSave("gen1ou/../../etc/passwd", "/tmp/replays")).rejects.toThrow(
+      "Invalid replay ID:",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// downloadBatch
+// ---------------------------------------------------------------------------
+
+describe("downloadBatch", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+    mockMkdir.mockClear();
+    mockWriteFile.mockClear();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("given a format and count, when downloadBatch is called, then searches and downloads each replay", async () => {
+    // Arrange: mock searchReplays returning 2 results, downloadAndSave returning paths
+    const twoResults = sampleSearchResults.slice(0, 2);
+    const replayForId1: ShowdownReplayJson = { ...sampleReplay, id: "gen1ou-1" };
+    const replayForId2: ShowdownReplayJson = { ...sampleReplay, id: "gen1ou-2" };
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(makeOkResponse(twoResults))
+      .mockResolvedValueOnce(makeOkResponse(replayForId1))
+      .mockResolvedValueOnce(makeOkResponse(replayForId2));
+    vi.stubGlobal("fetch", mockFetch);
+
+    // Act
+    const promise = downloadBatch({ format: "gen1ou", count: 2, outputDir: "/tmp/replays" });
+    await vi.runAllTimersAsync();
+    const paths = await promise;
+
+    // Assert: returns array of file paths, one per result
+    expect(paths).toHaveLength(2);
+    expect(paths[0]).toBe(join("/tmp/replays", "gen1ou-1.log"));
+    expect(paths[1]).toBe(join("/tmp/replays", "gen1ou-2.log"));
+  });
+
+  it("given an onProgress callback, when downloadBatch is called, then calls progress for each replay", async () => {
+    // Arrange
+    const twoResults = sampleSearchResults.slice(0, 2);
+    const replayForId1: ShowdownReplayJson = { ...sampleReplay, id: "gen1ou-1" };
+    const replayForId2: ShowdownReplayJson = { ...sampleReplay, id: "gen1ou-2" };
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(makeOkResponse(twoResults))
+      .mockResolvedValueOnce(makeOkResponse(replayForId1))
+      .mockResolvedValueOnce(makeOkResponse(replayForId2));
+    vi.stubGlobal("fetch", mockFetch);
+    const onProgress = vi.fn();
+
+    // Act
+    const promise = downloadBatch({
+      format: "gen1ou",
+      count: 2,
+      outputDir: "/tmp/replays",
+      onProgress,
+    });
+    await vi.runAllTimersAsync();
+    await promise;
+
+    // Assert: onProgress called with (id, index, total)
+    expect(onProgress).toHaveBeenCalledTimes(2);
+    expect(onProgress).toHaveBeenNthCalledWith(1, "gen1ou-1", 0, 2);
+    expect(onProgress).toHaveBeenNthCalledWith(2, "gen1ou-2", 1, 2);
+  });
+
+  it("given empty search results, when downloadBatch is called, then returns empty array", async () => {
+    // Arrange: mock searchReplays returning []
+    const mockFetch = vi.fn().mockResolvedValueOnce(makeOkResponse([]));
+    vi.stubGlobal("fetch", mockFetch);
+
+    // Act
+    const promise = downloadBatch({ format: "gen1ou", count: 5, outputDir: "/tmp/replays" });
+    await vi.runAllTimersAsync();
+    const paths = await promise;
+
+    // Assert
+    expect(paths).toEqual([]);
+    expect(paths).toHaveLength(0);
   });
 });

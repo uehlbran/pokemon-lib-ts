@@ -9,17 +9,32 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+let lastFetchTime = 0;
+
+async function rateLimitedFetch(url: string): Promise<Response> {
+  const elapsed = Date.now() - lastFetchTime;
+  if (elapsed < RATE_LIMIT_MS) {
+    await sleep(RATE_LIMIT_MS - elapsed);
+  }
+  lastFetchTime = Date.now();
+  return fetch(url);
+}
+
 /**
  * Download a single replay by ID.
  * GET https://replay.pokemonshowdown.com/{id}.json
  */
 export async function downloadReplay(id: string): Promise<ShowdownReplayJson> {
   const url = `${BASE_URL}/${id}.json`;
-  const response = await fetch(url);
+  const response = await rateLimitedFetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch replay ${id}: ${response.status} ${response.statusText}`);
   }
-  return response.json() as Promise<ShowdownReplayJson>;
+  const data = (await response.json()) as ShowdownReplayJson;
+  if (typeof data?.log !== "string") {
+    throw new Error(`Unexpected response shape for replay ${id}: missing 'log' field`);
+  }
+  return data;
 }
 
 /**
@@ -31,7 +46,7 @@ export async function searchReplays(options: {
   count?: number;
 }): Promise<ReplaySearchResult[]> {
   const url = `${BASE_URL}/search.json?format=${encodeURIComponent(options.format)}`;
-  const response = await fetch(url);
+  const response = await rateLimitedFetch(url);
   if (!response.ok) {
     throw new Error(`Failed to search replays: ${response.status} ${response.statusText}`);
   }
@@ -44,14 +59,17 @@ export async function searchReplays(options: {
 
 /**
  * Download a replay and save its .log file to outputDir.
- * Applies rate limiting (1 second between requests).
+ * Applies rate limiting (1 second between requests) via rateLimitedFetch.
  */
 export async function downloadAndSave(id: string, outputDir: string): Promise<string> {
+  // Sanitize ID to prevent path traversal
+  if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+    throw new Error(`Invalid replay ID: ${JSON.stringify(id)}`);
+  }
   const replay = await downloadReplay(id);
   await mkdir(outputDir, { recursive: true });
   const filePath = join(outputDir, `${id}.log`);
   await writeFile(filePath, replay.log, "utf-8");
-  await sleep(RATE_LIMIT_MS);
   return filePath;
 }
 
