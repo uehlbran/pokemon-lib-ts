@@ -1,8 +1,8 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../src/context";
+import type { BattleConfig, MoveEffectResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
-import type { BattleEvent } from "../../src/events";
+import type { BattleAction, BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -80,7 +80,7 @@ describe("BattleEngine — edge cases", () => {
           if (prop === "phase") {
             phaseLog.push(value as string);
           }
-          (target as any)[prop] = value;
+          (target as Record<string | symbol, unknown>)[prop] = value;
           return true;
         },
       };
@@ -115,15 +115,16 @@ describe("BattleEngine — edge cases", () => {
     it("given both pokemon at low HP, when recoil from a move kills the attacker, then battle ends with correct winner", () => {
       // Arrange — Charizard attacks, KOs Blastoise, but recoil KOs Charizard too
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
-        statusInflicted: null,
-        volatileInflicted: null,
-        statChanges: [],
-        recoilDamage: 50,
-        healAmount: 0,
-        switchOut: false,
-        messages: [],
-      });
+      (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
+        () => ({
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [],
+          recoilDamage: 50,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        });
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -528,7 +529,9 @@ describe("BattleEngine — edge cases", () => {
     it("given a custom ruleset with patched turn order, when actions are submitted, then the engine uses the ruleset's order", () => {
       // Arrange — make Blastoise (slower) go first via custom turn order
       const ruleset = new MockRuleset();
-      (ruleset as any).resolveTurnOrder = (actions: any[]) => {
+      (
+        ruleset as unknown as { resolveTurnOrder: (actions: BattleAction[]) => BattleAction[] }
+      ).resolveTurnOrder = (actions: BattleAction[]) => {
         return [...actions].reverse(); // Reverse: slower goes first
       };
 
@@ -552,15 +555,16 @@ describe("BattleEngine — edge cases", () => {
     it("given a turn with stat changes from move effects, when the next turn begins, then stat stages persist correctly", () => {
       // Arrange — move effect drops defender's attack by 1
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
-        statusInflicted: null,
-        volatileInflicted: null,
-        statChanges: [{ target: "defender" as const, stat: "attack" as const, stages: -1 }],
-        recoilDamage: 0,
-        healAmount: 0,
-        switchOut: false,
-        messages: [],
-      });
+      (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
+        () => ({
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [{ target: "defender" as const, stat: "attack" as const, stages: -1 }],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        });
 
       const { engine } = createEngine({ ruleset });
       engine.start();
@@ -603,15 +607,16 @@ describe("BattleEngine — edge cases", () => {
     it("given a move that would push stat stages beyond +6, when effect is processed, then stage is clamped at 6", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
-        statusInflicted: null,
-        volatileInflicted: null,
-        statChanges: [{ target: "attacker" as const, stat: "attack" as const, stages: 12 }],
-        recoilDamage: 0,
-        healAmount: 0,
-        switchOut: false,
-        messages: [],
-      });
+      (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
+        () => ({
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [{ target: "attacker" as const, stat: "attack" as const, stages: 12 }],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        });
 
       const { engine } = createEngine({ ruleset });
       engine.start();
@@ -627,15 +632,16 @@ describe("BattleEngine — edge cases", () => {
     it("given a move that would push stat stages below -6, when effect is processed, then stage is clamped at -6", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
-        statusInflicted: null,
-        volatileInflicted: null,
-        statChanges: [{ target: "defender" as const, stat: "defense" as const, stages: -12 }],
-        recoilDamage: 0,
-        healAmount: 0,
-        switchOut: false,
-        messages: [],
-      });
+      (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
+        () => ({
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [{ target: "defender" as const, stat: "defense" as const, stages: -12 }],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        });
 
       const { engine } = createEngine({ ruleset });
       engine.start();
@@ -712,15 +718,16 @@ describe("BattleEngine — edge cases", () => {
     it("given a pokemon already with a status, when a move tries to inflict another status, then the existing status is preserved", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
-        statusInflicted: "poison" as const,
-        volatileInflicted: null,
-        statChanges: [],
-        recoilDamage: 0,
-        healAmount: 0,
-        switchOut: false,
-        messages: [],
-      });
+      (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
+        () => ({
+          statusInflicted: "poison" as const,
+          volatileInflicted: null,
+          statChanges: [],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        });
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -747,15 +754,16 @@ describe("BattleEngine — edge cases", () => {
     it("given a pokemon already with a volatile, when a move tries to inflict the same volatile, then no duplicate is created", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
-        statusInflicted: null,
-        volatileInflicted: "confusion" as const,
-        statChanges: [],
-        recoilDamage: 0,
-        healAmount: 0,
-        switchOut: false,
-        messages: [],
-      });
+      (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
+        () => ({
+          statusInflicted: null,
+          volatileInflicted: "confusion" as const,
+          statChanges: [],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        });
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -784,15 +792,16 @@ describe("BattleEngine — edge cases", () => {
     it("given a pokemon at full HP, when a move effect tries to heal, then HP stays at max", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
-        statusInflicted: null,
-        volatileInflicted: null,
-        statChanges: [],
-        recoilDamage: 0,
-        healAmount: 100,
-        switchOut: false,
-        messages: [],
-      });
+      (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
+        () => ({
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [],
+          recoilDamage: 0,
+          healAmount: 100,
+          switchOut: false,
+          messages: [],
+        });
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -919,7 +928,7 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Faint Pikachu after start (constructor recalculates stats/HP)
-      engine.getTeam(0)[1]!.currentHp = 0;
+      (engine.getTeam(0)[1] as PokemonInstance).currentHp = 0;
 
       // Act
       const switches = engine.getAvailableSwitches(0);

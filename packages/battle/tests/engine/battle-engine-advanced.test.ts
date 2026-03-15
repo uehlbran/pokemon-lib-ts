@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent, MoveAction } from "../../src/events";
+import type { ActivePokemon } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -341,7 +342,7 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Give Blastoise (side 1, slower) the flinch volatile
-      const blastoise = engine.getActive(1)!;
+      const blastoise = engine.getActive(1) as ActivePokemon;
       blastoise.volatileStatuses.set("flinch", { turnsLeft: 1 });
 
       // Act
@@ -369,7 +370,7 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Give Blastoise confusion
-      const blastoise = engine.getActive(1)!;
+      const blastoise = engine.getActive(1) as ActivePokemon;
       blastoise.volatileStatuses.set("confusion", { turnsLeft: 3 });
 
       // Act
@@ -562,7 +563,7 @@ describe("BattleEngine — advanced scenarios", () => {
       // Arrange — patch the mock ruleset to return a status effect
       const ruleset = new MockRuleset();
       const originalExecute = ruleset.executeMoveEffect.bind(ruleset);
-      (ruleset as any).executeMoveEffect = () => ({
+      ruleset.executeMoveEffect = () => ({
         statusInflicted: "burn" as const,
         volatileInflicted: null,
         statChanges: [],
@@ -587,7 +588,7 @@ describe("BattleEngine — advanced scenarios", () => {
     it("given a move that inflicts a volatile, when effect result has volatile, then volatile is applied", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
+      ruleset.executeMoveEffect = () => ({
         statusInflicted: null,
         volatileInflicted: "confusion" as const,
         statChanges: [],
@@ -612,7 +613,7 @@ describe("BattleEngine — advanced scenarios", () => {
     it("given a move that changes stats, when effect result has stat changes, then stats are modified", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
+      ruleset.executeMoveEffect = () => ({
         statusInflicted: null,
         volatileInflicted: null,
         statChanges: [{ target: "defender" as const, stat: "attack" as const, stages: -1 }],
@@ -637,7 +638,7 @@ describe("BattleEngine — advanced scenarios", () => {
     it("given a move with recoil, when effect result has recoil damage, then attacker takes damage", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
+      ruleset.executeMoveEffect = () => ({
         statusInflicted: null,
         volatileInflicted: null,
         statChanges: [],
@@ -664,7 +665,7 @@ describe("BattleEngine — advanced scenarios", () => {
     it("given a move with healing, when effect result has heal amount, then attacker heals", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      (ruleset as any).executeMoveEffect = () => ({
+      ruleset.executeMoveEffect = () => ({
         statusInflicted: null,
         volatileInflicted: null,
         statChanges: [],
