@@ -1,0 +1,329 @@
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up.
+|t:|1773532867
+|gametype|singles
+|player|p1|Acetylaldehyde|scientist-gen1rb|
+|player|p2|Ban Manaphy|#pmpliiidachsbuns|
+|gen|1
+|tier|[Gen 1] OU
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|raw|<div class="infobox"><details class="readmore"><summary><strong>8 custom rules:</strong></summary> stabmons move legality, *bind, *clamp, *hypnosis, *lovelykiss, *sing, *spore, *wrap</details></div>
+|
+|t:|1773532867
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Exeggutor|Exeggutor|100/100
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|turn|1
+|inactive|Acetylaldehyde also wants the timer to be on.
+|c|☆Ban Manaphy|nice
+|c|☆Ban Manaphy|hf
+|c|☆Acetylaldehyde|lol
+|c|☆Acetylaldehyde|hf
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532901
+|move|p2a: Exeggutor|Sleep Powder|p1a: Exeggutor
+|-status|p1a: Exeggutor|slp|[from] move: Sleep Powder
+|cant|p1a: Exeggutor|slp
+|
+|upkeep
+|turn|2
+|
+|t:|1773532915
+|switch|p1a: Clefable|Clefable|100/100
+|move|p2a: Exeggutor|Razor Leaf|p1a: Clefable
+|-crit|p1a: Clefable
+|-damage|p1a: Clefable|62/100
+|
+|upkeep
+|turn|3
+|
+|t:|1773532926
+|move|p1a: Clefable|Thunder Wave|p2a: Exeggutor
+|-status|p2a: Exeggutor|par
+|move|p2a: Exeggutor|Stun Spore|p1a: Clefable
+|-status|p1a: Clefable|par
+|
+|upkeep
+|turn|4
+|
+|t:|1773532933
+|move|p1a: Clefable|Slash|p2a: Exeggutor
+|-crit|p2a: Exeggutor
+|-damage|p2a: Exeggutor|64/100 par
+|move|p2a: Exeggutor|Explosion|p1a: Clefable
+|-damage|p1a: Clefable|0 fnt
+|faint|p1a: Clefable
+|faint|p2a: Exeggutor
+|
+|t:|1773532942
+|switch|p1a: Gengar|Gengar|100/100
+|switch|p2a: Starmie|Starmie|100/100
+|turn|5
+|
+|t:|1773532953
+|switch|p1a: Exeggutor|Exeggutor|100/100 slp
+|move|p2a: Starmie|Thunder Wave|p1a: Exeggutor
+|-fail|p1a: Exeggutor
+|
+|upkeep
+|turn|6
+|
+|t:|1773532961
+|switch|p1a: Starmie|Starmie|100/100
+|move|p2a: Starmie|Blizzard|p1a: Starmie|[miss]
+|-miss|p2a: Starmie
+|
+|upkeep
+|turn|7
+|
+|t:|1773532968
+|move|p1a: Starmie|Thunder Wave|p2a: Starmie
+|-status|p2a: Starmie|par
+|move|p2a: Starmie|Thunder Wave|p1a: Starmie
+|-status|p1a: Starmie|par
+|
+|upkeep
+|turn|8
+|
+|t:|1773532975
+|switch|p2a: Jolteon|Jolteon|100/100
+|move|p1a: Starmie|Thunderbolt|p2a: Jolteon
+|-resisted|p2a: Jolteon
+|-damage|p2a: Jolteon|90/100
+|
+|upkeep
+|turn|9
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773533012
+|switch|p1a: Golem|Golem|100/100
+|move|p2a: Jolteon|Thunderbolt|p1a: Golem
+|-immune|p1a: Golem
+|
+|upkeep
+|turn|10
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773533018
+|switch|p2a: Snorlax|Snorlax|100/100
+|move|p1a: Golem|Earthquake|p2a: Snorlax
+|-crit|p2a: Snorlax
+|-damage|p2a: Snorlax|35/100
+|
+|upkeep
+|turn|11
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773533029
+|switch|p1a: Gengar|Gengar|100/100
+|move|p2a: Snorlax|Recover|p2a: Snorlax
+|-heal|p2a: Snorlax|85/100
+|
+|upkeep
+|turn|12
+|
+|t:|1773533043
+|move|p1a: Gengar|Hypnosis|p2a: Snorlax
+|-status|p2a: Snorlax|slp|[from] move: Hypnosis
+|-curestatus|p2a: Snorlax|slp|[msg]
+|
+|upkeep
+|turn|13
+|
+|t:|1773533047
+|switch|p2a: Starmie|Starmie|100/100 par
+|move|p1a: Gengar|Hypnosis|p2a: Starmie
+|-fail|p2a: Starmie
+|
+|upkeep
+|turn|14
+|
+|t:|1773533054
+|move|p1a: Gengar|Thunderbolt|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|48/100 par
+|move|p2a: Starmie|Thunder Wave|p1a: Gengar
+|-status|p1a: Gengar|par
+|
+|upkeep
+|turn|15
+|
+|t:|1773533060
+|move|p2a: Starmie|Crabhammer|p1a: Gengar
+|-crit|p1a: Gengar
+|-damage|p1a: Gengar|51/100 par
+|move|p1a: Gengar|Thunderbolt|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|0 fnt
+|faint|p2a: Starmie
+|
+|t:|1773533082
+|switch|p2a: Snorlax|Snorlax|85/100
+|turn|16
+|
+|t:|1773533098
+|move|p2a: Snorlax|Earthquake|p1a: Gengar
+|-supereffective|p1a: Gengar
+|-damage|p1a: Gengar|0 fnt
+|faint|p1a: Gengar
+|
+|t:|1773533104
+|switch|p1a: Starmie|Starmie|100/100 par
+|turn|17
+|
+|t:|1773533107
+|move|p2a: Snorlax|Swords Dance|p2a: Snorlax
+|-boost|p2a: Snorlax|atk|2
+|move|p1a: Starmie|Thunder Wave|p2a: Snorlax
+|-status|p2a: Snorlax|par
+|
+|upkeep
+|turn|18
+|
+|t:|1773533118
+|move|p2a: Snorlax|Earthquake|p1a: Starmie
+|-damage|p1a: Starmie|47/100 par
+|cant|p1a: Starmie|par
+|
+|upkeep
+|turn|19
+|
+|t:|1773533124
+|switch|p1a: Exeggutor|Exeggutor|100/100 slp
+|move|p2a: Snorlax|Earthquake|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|77/100 slp
+|
+|upkeep
+|turn|20
+|
+|t:|1773533130
+|cant|p1a: Exeggutor|slp
+|move|p2a: Snorlax|Earthquake|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|53/100 slp
+|
+|upkeep
+|turn|21
+|
+|t:|1773533135
+|-curestatus|p1a: Exeggutor|slp|[msg]
+|move|p2a: Snorlax|Hyper Beam|p1a: Exeggutor|[miss]
+|-miss|p2a: Snorlax
+|
+|upkeep
+|turn|22
+|
+|t:|1773533144
+|move|p1a: Exeggutor|Psychic|p2a: Snorlax
+|-damage|p2a: Snorlax|54/100 par
+|-unboost|p2a: Snorlax|spa|1
+|-unboost|p2a: Snorlax|spd|1
+|move|p2a: Snorlax|Hyper Beam|p1a: Exeggutor
+|-damage|p1a: Exeggutor|0 fnt
+|faint|p1a: Exeggutor
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773533192
+|switch|p1a: Tauros|Tauros|100/100
+|turn|23
+|
+|t:|1773533196
+|switch|p1a: Golem|Golem|100/100
+|move|p2a: Snorlax|Hyper Beam|p1a: Golem
+|-resisted|p1a: Golem
+|-damage|p1a: Golem|56/100
+|-mustrecharge|p2a: Snorlax
+|
+|upkeep
+|turn|24
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773533201
+|move|p1a: Golem|Earthquake|p2a: Snorlax
+|-damage|p2a: Snorlax|22/100 par
+|cant|p2a: Snorlax|recharge
+|
+|upkeep
+|turn|25
+|
+|t:|1773533206
+|move|p1a: Golem|Earthquake|p2a: Snorlax
+|-damage|p2a: Snorlax|0 fnt
+|faint|p2a: Snorlax
+|
+|t:|1773533208
+|switch|p2a: Lapras|Lapras|100/100
+|turn|26
+|
+|t:|1773533214
+|switch|p1a: Starmie|Starmie|47/100 par
+|move|p2a: Lapras|Blizzard|p1a: Starmie
+|-crit|p1a: Starmie
+|-resisted|p1a: Starmie
+|-damage|p1a: Starmie|2/100 par
+|
+|upkeep
+|turn|27
+|
+|t:|1773533221
+|move|p2a: Lapras|Thunderbolt|p1a: Starmie
+|-supereffective|p1a: Starmie
+|-damage|p1a: Starmie|0 fnt
+|faint|p1a: Starmie
+|
+|t:|1773533225
+|switch|p1a: Tauros|Tauros|100/100
+|turn|28
+|
+|t:|1773533232
+|move|p1a: Tauros|Slash|p2a: Lapras
+|-crit|p2a: Lapras
+|-damage|p2a: Lapras|60/100
+|move|p2a: Lapras|Crabhammer|p1a: Tauros
+|-crit|p1a: Tauros
+|-damage|p1a: Tauros|26/100
+|
+|upkeep
+|turn|29
+|
+|t:|1773533241
+|move|p1a: Tauros|Explosion|p2a: Lapras
+|-damage|p2a: Lapras|0 fnt
+|faint|p2a: Lapras
+|faint|p1a: Tauros
+|
+|t:|1773533245
+|switch|p1a: Golem|Golem|56/100
+|switch|p2a: Tauros|Tauros|100/100
+|turn|30
+|
+|t:|1773533251
+|move|p2a: Tauros|Earthquake|p1a: Golem
+|-supereffective|p1a: Golem
+|-damage|p1a: Golem|20/100
+|move|p1a: Golem|Earthquake|p2a: Tauros
+|-damage|p2a: Tauros|61/100
+|
+|upkeep
+|turn|31
+|
+|t:|1773533256
+|move|p2a: Tauros|Earthquake|p1a: Golem
+|-supereffective|p1a: Golem
+|-damage|p1a: Golem|0 fnt
+|faint|p1a: Golem
+|
+|win|Ban Manaphy
+|c|☆Acetylaldehyde|gg
+|c|☆Ban Manaphy|gg
+|player|p2|

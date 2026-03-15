@@ -1,0 +1,566 @@
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up.
+|t:|1773531975
+|gametype|singles
+|player|p1|Acetylaldehyde|scientist-gen1rb|
+|player|p2|Ban Manaphy|#pmpliiidachsbuns|
+|gen|1
+|tier|[Gen 1] OU
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|raw|<div class="infobox"><details class="readmore"><summary><strong>8 custom rules:</strong></summary> stabmons move legality, *bind, *clamp, *hypnosis, *lovelykiss, *sing, *spore, *wrap</details></div>
+|
+|t:|1773531975
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Chansey|Chansey|100/100
+|switch|p2a: Clefable|Clefable|100/100
+|turn|1
+|inactive|Acetylaldehyde also wants the timer to be on.
+|c|☆Acetylaldehyde|hf man
+|c|☆Ban Manaphy|you too 
+|inactive|Acetylaldehyde has 270 seconds left.
+|inactive|Ban Manaphy has 270 seconds left.
+|inactive|Ban Manaphy has 240 seconds left.
+|
+|t:|1773532048
+|move|p2a: Clefable|Sing|p1a: Chansey
+|-status|p1a: Chansey|slp|[from] move: Sing
+|cant|p1a: Chansey|slp
+|
+|upkeep
+|turn|2
+|
+|t:|1773532066
+|switch|p1a: Starmie|Starmie|100/100
+|move|p2a: Clefable|Super Fang|p1a: Starmie
+|-damage|p1a: Starmie|51/100
+|
+|upkeep
+|turn|3
+|
+|t:|1773532093
+|move|p1a: Starmie|Recover|p1a: Starmie
+|-heal|p1a: Starmie|100/100
+|move|p2a: Clefable|Thunder Wave|p1a: Starmie
+|-status|p1a: Starmie|par
+|
+|upkeep
+|turn|4
+|
+|t:|1773532102
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|cant|p1a: Starmie|par
+|
+|upkeep
+|turn|5
+|
+|t:|1773532122
+|switch|p1a: Exeggutor|Exeggutor|100/100
+|move|p2a: Exeggutor|Razor Leaf|p1a: Exeggutor
+|-crit|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|85/100
+|
+|upkeep
+|turn|6
+|
+|t:|1773532129
+|move|p1a: Exeggutor|Sleep Powder|p2a: Exeggutor
+|-status|p2a: Exeggutor|slp|[from] move: Sleep Powder
+|cant|p2a: Exeggutor|slp
+|
+|upkeep
+|turn|7
+|
+|t:|1773532136
+|switch|p1a: Tauros|Tauros|100/100
+|-curestatus|p2a: Exeggutor|slp|[msg]
+|
+|upkeep
+|turn|8
+|
+|t:|1773532140
+|switch|p1a: Chansey|Chansey|100/100 slp
+|move|p2a: Exeggutor|Razor Leaf|p1a: Chansey
+|-crit|p1a: Chansey
+|-damage|p1a: Chansey|81/100 slp
+|
+|upkeep
+|turn|9
+|
+|t:|1773532147
+|switch|p2a: Lapras|Lapras|100/100
+|switch|p1a: Exeggutor|Exeggutor|85/100
+|
+|upkeep
+|turn|10
+|inactive|Ban Manaphy has 270 seconds left.
+|
+|t:|1773532179
+|switch|p1a: Chansey|Chansey|81/100 slp
+|move|p2a: Lapras|Blizzard|p1a: Chansey
+|-damage|p1a: Chansey|62/100 slp
+|
+|upkeep
+|turn|11
+|
+|t:|1773532185
+|move|p2a: Lapras|Crabhammer|p1a: Chansey|[miss]
+|-miss|p2a: Lapras
+|cant|p1a: Chansey|slp
+|
+|upkeep
+|turn|12
+|
+|t:|1773532191
+|move|p2a: Lapras|Crabhammer|p1a: Chansey
+|-damage|p1a: Chansey|46/100 slp
+|-curestatus|p1a: Chansey|slp|[msg]
+|
+|upkeep
+|turn|13
+|
+|t:|1773532208
+|move|p2a: Lapras|Sing|p1a: Chansey|[miss]
+|-miss|p2a: Lapras
+|move|p1a: Chansey|Thunder Wave|p2a: Lapras
+|-status|p2a: Lapras|par
+|
+|upkeep
+|turn|14
+|
+|t:|1773532217
+|move|p1a: Chansey|Super Fang|p2a: Lapras
+|-damage|p2a: Lapras|51/100 par
+|move|p2a: Lapras|Sing|p1a: Chansey|[miss]
+|-miss|p2a: Lapras
+|
+|upkeep
+|turn|15
+|
+|t:|1773532222
+|move|p1a: Chansey|Recover|p1a: Chansey
+|-heal|p1a: Chansey|96/100
+|move|p2a: Lapras|Thunderbolt|p1a: Chansey
+|-damage|p1a: Chansey|86/100
+|
+|upkeep
+|turn|16
+|
+|t:|1773532228
+|move|p1a: Chansey|Super Fang|p2a: Lapras
+|-damage|p2a: Lapras|26/100 par
+|move|p2a: Lapras|Thunderbolt|p1a: Chansey
+|-damage|p1a: Chansey|75/100
+|
+|upkeep
+|turn|17
+|
+|t:|1773532237
+|switch|p1a: Jolteon|Jolteon|100/100
+|move|p2a: Lapras|Sing|p1a: Jolteon|[miss]
+|-miss|p2a: Lapras
+|
+|upkeep
+|turn|18
+|
+|t:|1773532245
+|switch|p2a: Jolteon|Jolteon|100/100
+|move|p1a: Jolteon|Thunderbolt|p2a: Jolteon
+|-resisted|p2a: Jolteon
+|-damage|p2a: Jolteon|85/100
+|
+|upkeep
+|turn|19
+|
+|t:|1773532252
+|switch|p1a: Chansey|Chansey|75/100
+|move|p2a: Jolteon|Super Fang|p1a: Chansey
+|-damage|p1a: Chansey|38/100
+|
+|upkeep
+|turn|20
+|
+|t:|1773532260
+|switch|p2a: Lapras|Lapras|26/100 par
+|move|p1a: Chansey|Recover|p1a: Chansey
+|-heal|p1a: Chansey|88/100
+|
+|upkeep
+|turn|21
+|
+|t:|1773532267
+|move|p1a: Chansey|Super Fang|p2a: Lapras|[miss]
+|-miss|p1a: Chansey
+|cant|p2a: Lapras|par
+|
+|upkeep
+|turn|22
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532303
+|switch|p1a: Jolteon|Jolteon|100/100
+|move|p2a: Lapras|Crabhammer|p1a: Jolteon
+|-crit|p1a: Jolteon
+|-damage|p1a: Jolteon|40/100
+|
+|upkeep
+|turn|23
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532317
+|switch|p2a: Jolteon|Jolteon|85/100
+|move|p1a: Jolteon|Thunderbolt|p2a: Jolteon
+|-resisted|p2a: Jolteon
+|-damage|p2a: Jolteon|68/100
+|
+|upkeep
+|turn|24
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532333
+|move|p1a: Jolteon|Thunder Wave|p2a: Jolteon
+|-status|p2a: Jolteon|par
+|move|p2a: Jolteon|Super Fang|p1a: Jolteon
+|-damage|p1a: Jolteon|20/100
+|
+|upkeep
+|turn|25
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532349
+|switch|p1a: Chansey|Chansey|88/100
+|move|p2a: Jolteon|Super Fang|p1a: Chansey
+|-damage|p1a: Chansey|44/100
+|
+|upkeep
+|turn|26
+|
+|t:|1773532360
+|switch|p2a: Lapras|Lapras|26/100 par
+|move|p1a: Chansey|Recover|p1a: Chansey
+|-heal|p1a: Chansey|94/100
+|
+|upkeep
+|turn|27
+|
+|t:|1773532368
+|switch|p1a: Exeggutor|Exeggutor|85/100
+|move|p2a: Lapras|Thunderbolt|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|77/100
+|
+|upkeep
+|turn|28
+|
+|t:|1773532381
+|switch|p2a: Clefable|Clefable|100/100
+|move|p1a: Exeggutor|Razor Leaf|p2a: Clefable
+|-crit|p2a: Clefable
+|-damage|p2a: Clefable|59/100
+|
+|upkeep
+|turn|29
+|
+|t:|1773532391
+|switch|p1a: Starmie|Starmie|100/100 par
+|move|p2a: Clefable|Sing|p1a: Starmie
+|-fail|p1a: Starmie
+|
+|upkeep
+|turn|30
+|
+|t:|1773532402
+|switch|p2a: Jolteon|Jolteon|68/100 par
+|cant|p1a: Starmie|par
+|
+|upkeep
+|turn|31
+|
+|t:|1773532410
+|switch|p2a: Lapras|Lapras|26/100 par
+|switch|p1a: Jolteon|Jolteon|20/100
+|
+|upkeep
+|turn|32
+|
+|t:|1773532418
+|switch|p2a: Jolteon|Jolteon|68/100 par
+|move|p1a: Jolteon|Thunderbolt|p2a: Jolteon
+|-resisted|p2a: Jolteon
+|-damage|p2a: Jolteon|52/100 par
+|
+|upkeep
+|turn|33
+|
+|t:|1773532429
+|move|p1a: Jolteon|Explosion|p2a: Jolteon
+|-damage|p2a: Jolteon|0 fnt
+|faint|p2a: Jolteon
+|faint|p1a: Jolteon
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532468
+|switch|p1a: Starmie|Starmie|100/100 par
+|switch|p2a: Clefable|Clefable|59/100
+|turn|34
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532479
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|move|p1a: Starmie|Thunder Wave|p2a: Exeggutor
+|-status|p2a: Exeggutor|par
+|
+|upkeep
+|turn|35
+|
+|t:|1773532489
+|switch|p1a: Chansey|Chansey|94/100
+|move|p2a: Exeggutor|Razor Leaf|p1a: Chansey
+|-crit|p1a: Chansey
+|-damage|p1a: Chansey|75/100
+|
+|upkeep
+|turn|36
+|
+|t:|1773532495
+|switch|p2a: Lapras|Lapras|26/100 par
+|move|p1a: Chansey|Super Fang|p2a: Lapras
+|-damage|p2a: Lapras|13/100 par
+|
+|upkeep
+|turn|37
+|
+|t:|1773532509
+|move|p1a: Chansey|Recover|p1a: Chansey
+|-heal|p1a: Chansey|100/100
+|move|p2a: Lapras|Thunderbolt|p1a: Chansey
+|-crit|p1a: Chansey
+|-damage|p1a: Chansey|83/100
+|
+|upkeep
+|turn|38
+|
+|t:|1773532515
+|move|p1a: Chansey|Super Fang|p2a: Lapras
+|-damage|p2a: Lapras|7/100 par
+|move|p2a: Lapras|Thunderbolt|p1a: Chansey
+|-damage|p1a: Chansey|72/100
+|
+|upkeep
+|turn|39
+|
+|t:|1773532520
+|move|p1a: Chansey|Recover|p1a: Chansey
+|-heal|p1a: Chansey|100/100
+|move|p2a: Lapras|Sing|p1a: Chansey
+|-status|p1a: Chansey|slp|[from] move: Sing
+|
+|upkeep
+|turn|40
+|
+|t:|1773532531
+|switch|p2a: Tauros|Tauros|100/100
+|cant|p1a: Chansey|slp
+|
+|upkeep
+|turn|41
+|
+|t:|1773532538
+|switch|p1a: Snorlax|Snorlax|100/100
+|move|p2a: Tauros|Slash|p1a: Snorlax
+|-crit|p1a: Snorlax
+|-damage|p1a: Snorlax|58/100
+|
+|upkeep
+|turn|42
+|
+|t:|1773532547
+|move|p2a: Tauros|Glare|p1a: Snorlax
+|-status|p1a: Snorlax|par
+|move|p1a: Snorlax|Recover|p1a: Snorlax
+|-heal|p1a: Snorlax|100/100 par
+|
+|upkeep
+|turn|43
+|inactive|Acetylaldehyde has 270 seconds left.
+|
+|t:|1773532579
+|switch|p2a: Lapras|Lapras|7/100 par
+|move|p1a: Snorlax|Swords Dance|p1a: Snorlax
+|-boost|p1a: Snorlax|atk|2
+|
+|upkeep
+|turn|44
+|
+|t:|1773532586
+|cant|p1a: Snorlax|par
+|cant|p2a: Lapras|par
+|
+|upkeep
+|turn|45
+|
+|t:|1773532590
+|move|p1a: Snorlax|Earthquake|p2a: Lapras
+|-crit|p2a: Lapras
+|-damage|p2a: Lapras|0 fnt
+|faint|p2a: Lapras
+|
+|t:|1773532592
+|switch|p2a: Exeggutor|Exeggutor|100/100 par
+|turn|46
+|
+|t:|1773532604
+|move|p2a: Exeggutor|Reflect|p2a: Exeggutor
+|-start|p2a: Exeggutor|Reflect
+|move|p1a: Snorlax|Hyper Beam|p2a: Exeggutor
+|-damage|p2a: Exeggutor|47/100 par
+|-mustrecharge|p1a: Snorlax
+|
+|upkeep
+|turn|47
+|
+|t:|1773532609
+|move|p2a: Exeggutor|Razor Leaf|p1a: Snorlax
+|-crit|p1a: Snorlax
+|-damage|p1a: Snorlax|65/100 par
+|cant|p1a: Snorlax|recharge
+|
+|upkeep
+|turn|48
+|
+|t:|1773532616
+|move|p2a: Exeggutor|Razor Leaf|p1a: Snorlax
+|-damage|p1a: Snorlax|44/100 par
+|move|p1a: Snorlax|Recover|p1a: Snorlax
+|-heal|p1a: Snorlax|94/100 par
+|
+|upkeep
+|turn|49
+|
+|t:|1773532621
+|move|p2a: Exeggutor|Razor Leaf|p1a: Snorlax
+|-crit|p1a: Snorlax
+|-damage|p1a: Snorlax|59/100 par
+|move|p1a: Snorlax|Swords Dance|p1a: Snorlax
+|-boost|p1a: Snorlax|atk|2
+|
+|upkeep
+|turn|50
+|
+|t:|1773532627
+|move|p1a: Snorlax|Recover|p1a: Snorlax
+|-heal|p1a: Snorlax|100/100 par
+|cant|p2a: Exeggutor|par
+|
+|upkeep
+|turn|51
+|
+|t:|1773532632
+|move|p1a: Snorlax|Hyper Beam|p2a: Exeggutor
+|-damage|p2a: Exeggutor|0 fnt
+|faint|p2a: Exeggutor
+|
+|t:|1773532635
+|switch|p2a: Clefable|Clefable|59/100
+|turn|52
+|
+|t:|1773532640
+|move|p2a: Clefable|Explosion|p1a: Snorlax
+|-damage|p1a: Snorlax|14/100 par
+|faint|p2a: Clefable
+|
+|t:|1773532646
+|switch|p2a: Starmie|Starmie|100/100
+|turn|53
+|
+|t:|1773532663
+|move|p2a: Starmie|Crabhammer|p1a: Snorlax
+|-crit|p1a: Snorlax
+|-damage|p1a: Snorlax|0 fnt
+|faint|p1a: Snorlax
+|
+|t:|1773532676
+|switch|p1a: Exeggutor|Exeggutor|77/100
+|turn|54
+|
+|t:|1773532680
+|move|p2a: Starmie|Blizzard|p1a: Exeggutor
+|-supereffective|p1a: Exeggutor
+|-damage|p1a: Exeggutor|35/100
+|move|p1a: Exeggutor|Sleep Powder|p2a: Starmie|[miss]
+|-miss|p1a: Exeggutor
+|
+|upkeep
+|turn|55
+|
+|t:|1773532690
+|switch|p1a: Starmie|Starmie|100/100 par
+|move|p2a: Starmie|Blizzard|p1a: Starmie
+|-resisted|p1a: Starmie
+|-damage|p1a: Starmie|86/100 par
+|
+|upkeep
+|turn|56
+|
+|t:|1773532696
+|move|p2a: Starmie|Thunderbolt|p1a: Starmie
+|-supereffective|p1a: Starmie
+|-damage|p1a: Starmie|38/100 par
+|move|p1a: Starmie|Thunder Wave|p2a: Starmie
+|-status|p2a: Starmie|par
+|
+|upkeep
+|turn|57
+|
+|t:|1773532707
+|cant|p1a: Starmie|par
+|move|p2a: Starmie|Thunderbolt|p1a: Starmie
+|-supereffective|p1a: Starmie
+|-damage|p1a: Starmie|0 fnt
+|faint|p1a: Starmie
+|
+|t:|1773532715
+|switch|p1a: Exeggutor|Exeggutor|35/100
+|turn|58
+|
+|t:|1773532720
+|move|p1a: Exeggutor|Razor Leaf|p2a: Starmie
+|-crit|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|4/100 par
+|move|p2a: Starmie|Blizzard|p1a: Exeggutor
+|-supereffective|p1a: Exeggutor
+|-damage|p1a: Exeggutor|0 fnt
+|faint|p1a: Exeggutor
+|
+|t:|1773532728
+|switch|p1a: Tauros|Tauros|100/100
+|turn|59
+|
+|t:|1773532732
+|move|p1a: Tauros|Slash|p2a: Starmie
+|-crit|p2a: Starmie
+|-damage|p2a: Starmie|0 fnt
+|faint|p2a: Starmie
+|
+|t:|1773532738
+|switch|p2a: Tauros|Tauros|100/100
+|turn|60
+|
+|t:|1773532747
+|move|p1a: Tauros|Explosion|p2a: Tauros
+|-damage|p2a: Tauros|0 fnt
+|faint|p2a: Tauros
+|faint|p1a: Tauros
+|
+|win|Acetylaldehyde
+|c|☆Ban Manaphy|gg
+|c|☆Acetylaldehyde|gg

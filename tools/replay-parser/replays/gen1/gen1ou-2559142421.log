@@ -1,0 +1,1273 @@
+|j|☆jst lutra
+|j|☆rby sd sweep
+|t:|1773525343
+|gametype|singles
+|player|p1|jst lutra|101|1284
+|player|p2|rby sd sweep|1|1418
+|gen|1
+|tier|[Gen 1] OU
+|rated|
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773525343
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Silver|Alakazam|100/100
+|switch|p2a: Alakazam|Alakazam|100/100
+|turn|1
+|
+|t:|1773525358
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|switch|p1a: Misty|Starmie|100/100
+|
+|upkeep
+|turn|2
+|
+|t:|1773525363
+|move|p1a: Misty|Blizzard|p2a: Exeggutor
+|-supereffective|p2a: Exeggutor
+|-damage|p2a: Exeggutor|59/100
+|move|p2a: Exeggutor|Sleep Powder|p1a: Misty|[miss]
+|-miss|p2a: Exeggutor
+|
+|upkeep
+|turn|3
+|
+|t:|1773525368
+|switch|p2a: Snorlax|Snorlax|100/100
+|move|p1a: Misty|Blizzard|p2a: Snorlax
+|-damage|p2a: Snorlax|78/100
+|
+|upkeep
+|turn|4
+|
+|t:|1773525375
+|move|p1a: Misty|Blizzard|p2a: Snorlax
+|-crit|p2a: Snorlax
+|-damage|p2a: Snorlax|36/100
+|move|p2a: Snorlax|Body Slam|p1a: Misty
+|-damage|p1a: Misty|64/100
+|-status|p1a: Misty|par
+|
+|upkeep
+|turn|5
+|
+|t:|1773525380
+|switch|p1a: Kyler|Exeggutor|100/100
+|move|p2a: Snorlax|Body Slam|p1a: Kyler
+|-damage|p1a: Kyler|68/100
+|-status|p1a: Kyler|par
+|
+|upkeep
+|turn|6
+|
+|t:|1773525387
+|move|p2a: Snorlax|Self-Destruct|p1a: Kyler
+|-damage|p1a: Kyler|0 fnt
+|faint|p1a: Kyler
+|faint|p2a: Snorlax
+|
+|t:|1773525404
+|switch|p2a: Starmie|Starmie|100/100
+|switch|p1a: Cheryl|Chansey|100/100
+|turn|7
+|
+|t:|1773525412
+|move|p2a: Starmie|Thunder Wave|p1a: Cheryl
+|-status|p1a: Cheryl|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Starmie
+|-status|p2a: Starmie|par
+|
+|upkeep
+|turn|8
+|
+|t:|1773525417
+|switch|p2a: Rhydon|Rhydon|100/100
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|9
+|
+|t:|1773525424
+|switch|p1a: Silver|Alakazam|100/100
+|move|p2a: Rhydon|Earthquake|p1a: Silver
+|-damage|p1a: Silver|33/100
+|
+|upkeep
+|turn|10
+|
+|t:|1773525433
+|move|p1a: Silver|Psychic|p2a: Rhydon
+|-crit|p2a: Rhydon
+|-damage|p2a: Rhydon|0 fnt
+|faint|p2a: Rhydon
+|
+|t:|1773525436
+|switch|p2a: Tauros|Tauros|100/100
+|turn|11
+|
+|t:|1773525439
+|move|p1a: Silver|Psychic|p2a: Tauros
+|-damage|p2a: Tauros|54/100
+|move|p2a: Tauros|Body Slam|p1a: Silver
+|-crit|p1a: Silver
+|-damage|p1a: Silver|0 fnt
+|faint|p1a: Silver
+|
+|t:|1773525447
+|switch|p1a: Blue|Tauros|100/100
+|turn|12
+|
+|t:|1773525454
+|switch|p2a: Starmie|Starmie|100/100 par
+|move|p1a: Blue|Double-Edge|p2a: Starmie
+|-damage|p2a: Starmie|61/100 par
+|-damage|p1a: Blue|92/100|[from] Recoil|[of] p2a: Starmie
+|
+|upkeep
+|turn|13
+|
+|t:|1773525462
+|switch|p1a: Misty|Starmie|64/100 par
+|switch|p2a: Alakazam|Alakazam|100/100
+|
+|upkeep
+|turn|14
+|
+|t:|1773525474
+|move|p2a: Alakazam|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|44/100 par
+|move|p1a: Misty|Thunder Wave|p2a: Alakazam
+|-status|p2a: Alakazam|par
+|
+|upkeep
+|turn|15
+|
+|t:|1773525480
+|move|p2a: Alakazam|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|25/100 par
+|-unboost|p1a: Misty|spa|1
+|-unboost|p1a: Misty|spd|1
+|move|p1a: Misty|Recover|p1a: Misty
+|-heal|p1a: Misty|75/100 par
+|
+|upkeep
+|turn|16
+|
+|t:|1773525487
+|switch|p1a: Cheryl|Chansey|100/100 par
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-crit|p1a: Cheryl
+|-damage|p1a: Cheryl|67/100 par
+|
+|upkeep
+|turn|17
+|
+|t:|1773525498
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|47/100 par
+|-unboost|p1a: Cheryl|spa|1
+|-unboost|p1a: Cheryl|spd|1
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|18
+|
+|t:|1773525502
+|cant|p2a: Alakazam|par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|19
+|j| RBYSD ChUwUva
+|
+|t:|1773525509
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|22/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|71/100 par
+|
+|upkeep
+|turn|20
+|
+|t:|1773525514
+|switch|p2a: Starmie|Starmie|61/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|100/100 par
+|
+|upkeep
+|turn|21
+|
+|t:|1773525518
+|switch|p1a: Misty|Starmie|75/100 par
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|
+|upkeep
+|turn|22
+|
+|t:|1773525525
+|switch|p1a: Cheryl|Chansey|100/100 par
+|switch|p2a: Alakazam|Alakazam|100/100 par
+|
+|upkeep
+|turn|23
+|
+|t:|1773525529
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|81/100 par
+|-unboost|p1a: Cheryl|spa|1
+|-unboost|p1a: Cheryl|spd|1
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|24
+|
+|t:|1773525534
+|cant|p2a: Alakazam|par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|25
+|
+|t:|1773525537
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|54/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|100/100 par
+|
+|upkeep
+|turn|26
+|j| RBYSD OAK
+|
+|t:|1773525542
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|75/100 par
+|-unboost|p1a: Cheryl|spa|1
+|-unboost|p1a: Cheryl|spd|1
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|69/100 par
+|
+|upkeep
+|turn|27
+|
+|t:|1773525548
+|switch|p1a: Misty|Starmie|75/100 par
+|move|p2a: Alakazam|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|56/100 par
+|
+|upkeep
+|turn|28
+|
+|t:|1773525553
+|move|p2a: Alakazam|Seismic Toss|p1a: Misty
+|-damage|p1a: Misty|25/100 par
+|move|p1a: Misty|Recover|p1a: Misty
+|-heal|p1a: Misty|74/100 par
+|
+|upkeep
+|turn|29
+|
+|t:|1773525559
+|switch|p1a: Cheryl|Chansey|75/100 par
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|60/100 par
+|
+|upkeep
+|turn|30
+|
+|t:|1773525568
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|44/100 par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|31
+|
+|t:|1773525572
+|switch|p2a: Tauros|Tauros|54/100
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|94/100 par
+|
+|upkeep
+|turn|32
+|
+|t:|1773525584
+|switch|p1a: Red|Snorlax|100/100
+|move|p2a: Tauros|Body Slam|p1a: Red
+|-crit|p1a: Red
+|-damage|p1a: Red|48/100
+|
+|upkeep
+|turn|33
+|l| RBYSD ChUwUva
+|
+|t:|1773525602
+|move|p2a: Tauros|Body Slam|p1a: Red
+|-damage|p1a: Red|24/100
+|move|p1a: Red|Self-Destruct|p2a: Tauros
+|-damage|p2a: Tauros|0 fnt
+|faint|p2a: Tauros
+|faint|p1a: Red
+|
+|t:|1773525618
+|switch|p2a: Exeggutor|Exeggutor|59/100
+|switch|p1a: Blue|Tauros|92/100
+|turn|34
+|
+|t:|1773525646
+|switch|p1a: Misty|Starmie|74/100 par
+|move|p2a: Exeggutor|Sleep Powder|p1a: Misty
+|-fail|p1a: Misty
+|
+|upkeep
+|turn|35
+|
+|t:|1773525666
+|switch|p2a: Alakazam|Alakazam|69/100 par
+|cant|p1a: Misty|par
+|
+|upkeep
+|turn|36
+|
+|t:|1773525671
+|switch|p1a: Cheryl|Chansey|94/100 par
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|
+|upkeep
+|turn|37
+|
+|t:|1773525685
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|79/100 par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|38
+|
+|t:|1773525695
+|switch|p2a: Starmie|Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|39
+|
+|t:|1773525700
+|cant|p2a: Starmie|par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|40
+|j| RBYSD ChUwUva
+|
+|t:|1773525730
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|41
+|
+|t:|1773525739
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|42
+|
+|t:|1773525744
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|43
+|
+|t:|1773525749
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|44
+|
+|t:|1773525753
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|45
+|
+|t:|1773525759
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|46
+|
+|t:|1773525764
+|cant|p2a: Starmie|par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|39/100 par
+|
+|upkeep
+|turn|47
+|
+|t:|1773525772
+|switch|p1a: Misty|Starmie|74/100 par
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|88/100 par
+|
+|upkeep
+|turn|48
+|
+|t:|1773525778
+|switch|p1a: Cheryl|Chansey|79/100 par
+|switch|p2a: Alakazam|Alakazam|100/100 par
+|
+|upkeep
+|turn|49
+|
+|t:|1773525786
+|switch|p2a: Starmie|Starmie|88/100 par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|50
+|
+|t:|1773525792
+|cant|p2a: Starmie|par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|57/100 par
+|
+|upkeep
+|turn|51
+|
+|t:|1773525797
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|
+|upkeep
+|turn|52
+|
+|t:|1773525805
+|cant|p2a: Starmie|par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|39/100 par
+|
+|upkeep
+|turn|53
+|
+|t:|1773525810
+|switch|p1a: Misty|Starmie|74/100 par
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|54
+|
+|t:|1773525813
+|switch|p2a: Alakazam|Alakazam|100/100 par
+|move|p1a: Misty|Thunderbolt|p2a: Alakazam
+|-damage|p2a: Alakazam|81/100 par
+|
+|upkeep
+|turn|55
+|
+|t:|1773525818
+|cant|p2a: Alakazam|par
+|move|p1a: Misty|Recover|p1a: Misty
+|-heal|p1a: Misty|100/100 par
+|
+|upkeep
+|turn|56
+|
+|t:|1773525828
+|switch|p1a: Cheryl|Chansey|79/100 par
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|65/100 par
+|
+|upkeep
+|turn|57
+|
+|t:|1773525838
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|47/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|49/100 par
+|
+|upkeep
+|turn|58
+|
+|t:|1773525843
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|99/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|97/100 par
+|
+|upkeep
+|turn|59
+|
+|t:|1773525848
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|83/100 par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|60
+|
+|t:|1773525853
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|69/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|67/100 par
+|
+|upkeep
+|turn|61
+|
+|t:|1773525859
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|100/100 par
+|
+|upkeep
+|turn|62
+|
+|t:|1773525866
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|86/100 par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|63
+|
+|t:|1773525869
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|72/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|69/100 par
+|
+|upkeep
+|turn|64
+|
+|t:|1773525875
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|69/100 par
+|
+|upkeep
+|turn|65
+|l| RBYSD OAK
+|
+|t:|1773525884
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|66
+|
+|t:|1773525890
+|switch|p2a: Starmie|Starmie|39/100 par
+|move|p1a: Cheryl|Thunder Wave|p2a: Starmie
+|-fail|p2a: Starmie|par
+|
+|upkeep
+|turn|67
+|
+|t:|1773525894
+|switch|p1a: Misty|Starmie|100/100 par
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|88/100 par
+|
+|upkeep
+|turn|68
+|
+|t:|1773525905
+|switch|p2a: Alakazam|Alakazam|100/100 par
+|cant|p1a: Misty|par
+|
+|upkeep
+|turn|69
+|
+|t:|1773525910
+|switch|p1a: Cheryl|Chansey|72/100 par
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|58/100 par
+|
+|upkeep
+|turn|70
+|
+|t:|1773525914
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-crit|p1a: Cheryl
+|-damage|p1a: Cheryl|22/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|72/100 par
+|
+|upkeep
+|turn|71
+|
+|t:|1773525919
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|58/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|100/100 par
+|
+|upkeep
+|turn|72
+|
+|t:|1773525929
+|switch|p2a: Starmie|Starmie|88/100 par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|73
+|
+|t:|1773525934
+|move|p2a: Starmie|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|86/100 par
+|-unboost|p1a: Cheryl|spa|1
+|-unboost|p1a: Cheryl|spd|1
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|57/100 par
+|
+|upkeep
+|turn|74
+|
+|t:|1773525941
+|switch|p1a: Misty|Starmie|100/100 par
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|75
+|
+|t:|1773525945
+|switch|p2a: Alakazam|Alakazam|100/100 par
+|move|p1a: Misty|Thunderbolt|p2a: Alakazam
+|-crit|p2a: Alakazam
+|-damage|p2a: Alakazam|64/100 par
+|
+|upkeep
+|turn|76
+|
+|t:|1773525952
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|move|p1a: Misty|Blizzard|p2a: Alakazam
+|-damage|p2a: Alakazam|76/100 par
+|
+|upkeep
+|turn|77
+|
+|t:|1773525957
+|switch|p1a: Cheryl|Chansey|86/100 par
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|
+|upkeep
+|turn|78
+|
+|t:|1773525965
+|cant|p2a: Alakazam|par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|79
+|
+|t:|1773525968
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|72/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|69/100 par
+|
+|upkeep
+|turn|80
+|
+|t:|1773525974
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|69/100 par
+|
+|upkeep
+|turn|81
+|
+|t:|1773525984
+|cant|p2a: Alakazam|par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|82
+|
+|t:|1773525987
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Alakazam
+|-damage|p2a: Alakazam|69/100 par
+|
+|upkeep
+|turn|83
+|
+|t:|1773525993
+|switch|p1a: Blue|Tauros|92/100
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|
+|upkeep
+|turn|84
+|
+|t:|1773525998
+|switch|p1a: Cheryl|Chansey|72/100 par
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|
+|upkeep
+|turn|85
+|
+|t:|1773526005
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|57/100 par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|86
+|
+|t:|1773526009
+|switch|p2a: Starmie|Starmie|57/100 par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|100/100 par
+|
+|upkeep
+|turn|87
+|
+|t:|1773526013
+|switch|p1a: Misty|Starmie|100/100 par
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|88
+|
+|t:|1773526019
+|switch|p2a: Alakazam|Alakazam|100/100 par
+|move|p1a: Misty|Thunderbolt|p2a: Alakazam
+|-damage|p2a: Alakazam|80/100 par
+|
+|upkeep
+|turn|89
+|
+|t:|1773526024
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|100/100 par
+|cant|p1a: Misty|par
+|
+|upkeep
+|turn|90
+|
+|t:|1773526031
+|switch|p1a: Cheryl|Chansey|100/100 par
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|86/100 par
+|
+|upkeep
+|turn|91
+|
+|t:|1773526039
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|72/100 par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|92
+|
+|t:|1773526044
+|switch|p2a: Starmie|Starmie|57/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|27/100 par
+|
+|upkeep
+|turn|93
+|
+|t:|1773526050
+|cant|p2a: Starmie|par
+|move|p1a: Cheryl|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|0 fnt
+|faint|p2a: Starmie
+|
+|t:|1773526053
+|switch|p2a: Exeggutor|Exeggutor|59/100
+|turn|94
+|
+|t:|1773526062
+|move|p2a: Exeggutor|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|55/100 par
+|move|p1a: Cheryl|Seismic Toss|p2a: Exeggutor
+|-damage|p2a: Exeggutor|34/100
+|
+|upkeep
+|turn|95
+|
+|t:|1773526071
+|move|p2a: Exeggutor|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|37/100 par
+|-unboost|p1a: Cheryl|spa|1
+|-unboost|p1a: Cheryl|spd|1
+|move|p1a: Cheryl|Thunder Wave|p2a: Exeggutor
+|-status|p2a: Exeggutor|par
+|
+|upkeep
+|turn|96
+|
+|t:|1773526078
+|move|p2a: Exeggutor|Rest|p2a: Exeggutor
+|-status|p2a: Exeggutor|slp|[from] move: Rest
+|-heal|p2a: Exeggutor|100/100 slp|[silent]
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|87/100 par
+|
+|upkeep
+|turn|97
+|
+|t:|1773526091
+|switch|p1a: Blue|Tauros|92/100
+|cant|p2a: Exeggutor|slp
+|
+|upkeep
+|turn|98
+|
+|t:|1773526103
+|move|p1a: Blue|Blizzard|p2a: Exeggutor
+|-supereffective|p2a: Exeggutor
+|-damage|p2a: Exeggutor|66/100 slp
+|-curestatus|p2a: Exeggutor|slp|[msg]
+|
+|upkeep
+|turn|99
+|
+|t:|1773526108
+|switch|p1a: Cheryl|Chansey|87/100 par
+|move|p2a: Exeggutor|Sleep Powder|p1a: Cheryl
+|-fail|p1a: Cheryl
+|
+|upkeep
+|turn|100
+|
+|t:|1773526114
+|switch|p2a: Alakazam|Alakazam|100/100 par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|101
+|
+|t:|1773526120
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|73/100 par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-start|p1a: Cheryl|Reflect
+|
+|upkeep
+|turn|102
+|
+|t:|1773526125
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|103
+|
+|t:|1773526128
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|104
+|
+|t:|1773526131
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|105
+|
+|t:|1773526147
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|106
+|
+|t:|1773526154
+|cant|p2a: Alakazam|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|107
+|
+|t:|1773526157
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|108
+|
+|t:|1773526161
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|109
+|
+|t:|1773526166
+|cant|p2a: Alakazam|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|110
+|
+|t:|1773526169
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|111
+|
+|t:|1773526172
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|112
+|
+|t:|1773526174
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-fail|p1a: Cheryl
+|
+|upkeep
+|turn|113
+|
+|t:|1773526179
+|cant|p2a: Alakazam|par
+|move|p1a: Cheryl|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam|par
+|
+|upkeep
+|turn|114
+|
+|t:|1773526182
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|55/100 par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|115
+|
+|t:|1773526186
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|41/100 par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|116
+|
+|t:|1773526190
+|cant|p2a: Alakazam|par
+|move|p1a: Cheryl|Soft-Boiled|p1a: Cheryl
+|-heal|p1a: Cheryl|91/100 par
+|
+|upkeep
+|turn|117
+|
+|t:|1773526203
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|77/100 par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-fail|p1a: Cheryl
+|
+|upkeep
+|turn|118
+|
+|t:|1773526208
+|cant|p2a: Alakazam|par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|119
+|
+|t:|1773526212
+|cant|p2a: Alakazam|par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|120
+|
+|t:|1773526215
+|move|p2a: Alakazam|Seismic Toss|p1a: Cheryl
+|-damage|p1a: Cheryl|62/100 par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|121
+|
+|t:|1773526220
+|move|p2a: Alakazam|Thunder Wave|p1a: Cheryl
+|-fail|p1a: Cheryl|par
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-fail|p1a: Cheryl
+|
+|upkeep
+|turn|122
+|
+|t:|1773526223
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|44/100 par
+|-unboost|p1a: Cheryl|spa|1
+|-unboost|p1a: Cheryl|spd|1
+|move|p1a: Cheryl|Reflect|p1a: Cheryl
+|-fail|p1a: Cheryl
+|
+|upkeep
+|turn|123
+|
+|t:|1773526228
+|move|p2a: Alakazam|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|15/100 par
+|cant|p1a: Cheryl|par
+|
+|upkeep
+|turn|124
+|
+|t:|1773526245
+|switch|p1a: Misty|Starmie|100/100 par
+|move|p2a: Alakazam|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|79/100 par
+|
+|upkeep
+|turn|125
+|
+|t:|1773526257
+|move|p2a: Alakazam|Seismic Toss|p1a: Misty
+|-damage|p1a: Misty|48/100 par
+|move|p1a: Misty|Recover|p1a: Misty
+|-heal|p1a: Misty|98/100 par
+|
+|upkeep
+|turn|126
+|
+|t:|1773526276
+|switch|p1a: Blue|Tauros|92/100
+|move|p2a: Alakazam|Seismic Toss|p1a: Blue
+|-damage|p1a: Blue|63/100
+|
+|upkeep
+|turn|127
+|
+|t:|1773526289
+|move|p1a: Blue|Double-Edge|p2a: Alakazam
+|-damage|p2a: Alakazam|37/100 par
+|-damage|p1a: Blue|50/100|[from] Recoil|[of] p2a: Alakazam
+|cant|p2a: Alakazam|par
+|
+|upkeep
+|turn|128
+|
+|t:|1773526302
+|move|p1a: Blue|Double-Edge|p2a: Alakazam
+|-damage|p2a: Alakazam|0 fnt
+|-damage|p1a: Blue|42/100|[from] Recoil|[of] p2a: Alakazam
+|faint|p2a: Alakazam
+|
+|t:|1773526305
+|switch|p2a: Exeggutor|Exeggutor|66/100
+|turn|129
+|c|☆rby sd sweep|this mfer gets every fp
+|
+|t:|1773526353
+|switch|p1a: Misty|Starmie|98/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|79/100 par
+|
+|upkeep
+|turn|130
+|
+|t:|1773526363
+|move|p2a: Exeggutor|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|60/100 par
+|-unboost|p1a: Misty|spa|1
+|-unboost|p1a: Misty|spd|1
+|cant|p1a: Misty|par
+|
+|upkeep
+|turn|131
+|
+|t:|1773526401
+|move|p2a: Exeggutor|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|34/100 par
+|cant|p1a: Misty|par
+|
+|upkeep
+|turn|132
+|
+|t:|1773526408
+|move|p2a: Exeggutor|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|6/100 par
+|-unboost|p1a: Misty|spa|1
+|-unboost|p1a: Misty|spd|1
+|move|p1a: Misty|Recover|p1a: Misty
+|-heal|p1a: Misty|56/100 par
+|
+|upkeep
+|turn|133
+|
+|t:|1773526426
+|switch|p1a: Cheryl|Chansey|15/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Cheryl
+|-damage|p1a: Cheryl|0 fnt
+|faint|p1a: Cheryl
+|
+|t:|1773526429
+|switch|p1a: Misty|Starmie|56/100 par
+|turn|134
+|
+|t:|1773526433
+|move|p2a: Exeggutor|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|36/100 par
+|move|p1a: Misty|Recover|p1a: Misty
+|-heal|p1a: Misty|86/100 par
+|
+|upkeep
+|turn|135
+|
+|t:|1773526439
+|move|p2a: Exeggutor|Psychic|p1a: Misty
+|-resisted|p1a: Misty
+|-damage|p1a: Misty|65/100 par
+|move|p1a: Misty|Thunder Wave|p2a: Exeggutor
+|-status|p2a: Exeggutor|par
+|
+|upkeep
+|turn|136
+|
+|t:|1773526444
+|cant|p1a: Misty|par
+|move|p2a: Exeggutor|Rest|p2a: Exeggutor
+|-status|p2a: Exeggutor|slp|[from] move: Rest
+|-heal|p2a: Exeggutor|100/100 slp|[silent]
+|
+|upkeep
+|turn|137
+|
+|t:|1773526449
+|move|p1a: Misty|Recover|p1a: Misty
+|-heal|p1a: Misty|100/100 par
+|cant|p2a: Exeggutor|slp
+|
+|upkeep
+|turn|138
+|
+|t:|1773526457
+|move|p1a: Misty|Blizzard|p2a: Exeggutor
+|-supereffective|p2a: Exeggutor
+|-damage|p2a: Exeggutor|62/100 slp
+|-curestatus|p2a: Exeggutor|slp|[msg]
+|
+|upkeep
+|turn|139
+|
+|t:|1773526461
+|move|p1a: Misty|Thunder Wave|p2a: Exeggutor
+|-status|p2a: Exeggutor|par
+|move|p2a: Exeggutor|Rest|p2a: Exeggutor
+|-status|p2a: Exeggutor|slp|[from] move: Rest
+|-heal|p2a: Exeggutor|100/100 slp|[silent]
+|
+|upkeep
+|turn|140
+|
+|t:|1773526480
+|move|p1a: Misty|Blizzard|p2a: Exeggutor
+|-crit|p2a: Exeggutor
+|-supereffective|p2a: Exeggutor
+|-damage|p2a: Exeggutor|17/100 slp
+|cant|p2a: Exeggutor|slp
+|
+|upkeep
+|turn|141
+|
+|t:|1773526485
+|switch|p1a: Blue|Tauros|42/100
+|-curestatus|p2a: Exeggutor|slp|[msg]
+|
+|upkeep
+|turn|142
+|
+|t:|1773526489
+|move|p1a: Blue|Double-Edge|p2a: Exeggutor
+|-damage|p2a: Exeggutor|0 fnt
+|-damage|p1a: Blue|37/100|[from] Recoil|[of] p2a: Exeggutor
+|faint|p2a: Exeggutor
+|
+|win|jst lutra
+|raw|jst lutra's rating: 1284 &rarr; <strong>1318</strong><br />(+34 for winning)
+|raw|rby sd sweep's rating: 1418 &rarr; <strong>1391</strong><br />(-27 for losing)
+|l|☆rby sd sweep
+|player|p2|
+|l| RBYSD ChUwUva
+|c|☆jst lutra|elo is dropping so low tonight

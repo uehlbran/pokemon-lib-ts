@@ -1,0 +1,417 @@
+|j|☆genderfluid icon
+|j|☆lubbu
+|t:|1773525944
+|gametype|singles
+|player|p1|genderfluid icon|roxie|1102
+|player|p2|lubbu|1|1063
+|gen|1
+|tier|[Gen 1] OU
+|rated|
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773525944
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: The Thin Ice|Jynx|100/100
+|switch|p2a: Snorlax|Snorlax|100/100
+|turn|1
+|
+|t:|1773525951
+|move|p1a: The Thin Ice|Lovely Kiss|p2a: Snorlax
+|-status|p2a: Snorlax|slp|[from] move: Lovely Kiss
+|cant|p2a: Snorlax|slp
+|
+|upkeep
+|turn|2
+|
+|t:|1773525964
+|switch|p1a: THRAK!|Aerodactyl|100/100
+|cant|p2a: Snorlax|slp
+|
+|upkeep
+|turn|3
+|
+|t:|1773525970
+|move|p1a: THRAK!|Substitute|p1a: THRAK!
+|-start|p1a: THRAK!|Substitute
+|-damage|p1a: THRAK!|76/100
+|cant|p2a: Snorlax|slp
+|
+|upkeep
+|turn|4
+|
+|t:|1773525977
+|move|p1a: THRAK!|Wing Attack|p2a: Snorlax
+|-damage|p2a: Snorlax|91/100 slp
+|-curestatus|p2a: Snorlax|slp|[msg]
+|
+|upkeep
+|turn|5
+|
+|t:|1773525984
+|move|p1a: THRAK!|Fire Blast|p2a: Snorlax
+|-damage|p2a: Snorlax|74/100
+|move|p2a: Snorlax|Surf|p1a: THRAK!
+|-supereffective|p1a: THRAK!
+|-end|p1a: THRAK!|Substitute
+|
+|upkeep
+|turn|6
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up. (requested by lubbu)
+|
+|t:|1773526025
+|move|p1a: THRAK!|Fire Blast|p2a: Snorlax
+|-crit|p2a: Snorlax
+|-damage|p2a: Snorlax|43/100
+|move|p2a: Snorlax|Ice Beam|p1a: THRAK!
+|-supereffective|p1a: THRAK!
+|-damage|p1a: THRAK!|32/100
+|-status|p1a: THRAK!|frz
+|
+|upkeep
+|turn|7
+|c|☆genderfluid icon|you're fucking kidding
+|
+|t:|1773526038
+|switch|p1a: The Thin Ice|Jynx|100/100
+|move|p2a: Snorlax|Surf|p1a: The Thin Ice
+|-damage|p1a: The Thin Ice|84/100
+|
+|upkeep
+|turn|8
+|
+|t:|1773526045
+|move|p1a: The Thin Ice|Lovely Kiss|p2a: Snorlax|[miss]
+|-miss|p1a: The Thin Ice
+|move|p2a: Snorlax|Amnesia|p2a: Snorlax
+|-boost|p2a: Snorlax|spa|2
+|-boost|p2a: Snorlax|spd|2
+|
+|upkeep
+|turn|9
+|
+|t:|1773526051
+|move|p1a: The Thin Ice|Lovely Kiss|p2a: Snorlax|[miss]
+|-miss|p1a: The Thin Ice
+|move|p2a: Snorlax|Fire Blast|p1a: The Thin Ice
+|-supereffective|p1a: The Thin Ice
+|-damage|p1a: The Thin Ice|0 fnt
+|faint|p1a: The Thin Ice
+|
+|t:|1773526071
+|switch|p1a: Melody Lane|Chansey|100/100
+|turn|10
+|
+|t:|1773526076
+|move|p1a: Melody Lane|Thunder Wave|p2a: Snorlax
+|-status|p2a: Snorlax|par
+|move|p2a: Snorlax|Amnesia|p2a: Snorlax
+|-boost|p2a: Snorlax|spa|2
+|-boost|p2a: Snorlax|spd|2
+|
+|upkeep
+|turn|11
+|
+|t:|1773526085
+|move|p1a: Melody Lane|Seismic Toss|p2a: Snorlax
+|-damage|p2a: Snorlax|23/100 par
+|move|p2a: Snorlax|Surf|p1a: Melody Lane
+|-damage|p1a: Melody Lane|77/100
+|
+|upkeep
+|turn|12
+|
+|t:|1773526092
+|move|p1a: Melody Lane|Seismic Toss|p2a: Snorlax
+|-damage|p2a: Snorlax|4/100 par
+|move|p2a: Snorlax|Ice Beam|p1a: Melody Lane
+|-damage|p1a: Melody Lane|53/100
+|
+|upkeep
+|turn|13
+|
+|t:|1773526100
+|move|p1a: Melody Lane|Seismic Toss|p2a: Snorlax
+|-damage|p2a: Snorlax|0 fnt
+|faint|p2a: Snorlax
+|
+|t:|1773526112
+|switch|p2a: Starmie|Starmie|100/100
+|turn|14
+|
+|t:|1773526117
+|move|p2a: Starmie|Psychic|p1a: Melody Lane
+|-damage|p1a: Melody Lane|39/100
+|move|p1a: Melody Lane|Soft-Boiled|p1a: Melody Lane
+|-heal|p1a: Melody Lane|89/100
+|
+|upkeep
+|turn|15
+|
+|t:|1773526125
+|move|p2a: Starmie|Surf|p1a: Melody Lane
+|-damage|p1a: Melody Lane|73/100
+|move|p1a: Melody Lane|Thunder Wave|p2a: Starmie
+|-status|p2a: Starmie|par
+|
+|upkeep
+|turn|16
+|
+|t:|1773526134
+|move|p1a: Melody Lane|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|70/100 par
+|move|p2a: Starmie|Psychic|p1a: Melody Lane
+|-damage|p1a: Melody Lane|59/100
+|
+|upkeep
+|turn|17
+|
+|t:|1773526148
+|move|p1a: Melody Lane|Soft-Boiled|p1a: Melody Lane
+|-heal|p1a: Melody Lane|100/100
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|18
+|
+|t:|1773526156
+|move|p1a: Melody Lane|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|39/100 par
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|88/100 par
+|
+|upkeep
+|turn|19
+|
+|t:|1773526169
+|move|p1a: Melody Lane|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|57/100 par
+|move|p2a: Starmie|Blizzard|p1a: Melody Lane
+|-crit|p1a: Melody Lane
+|-damage|p1a: Melody Lane|74/100
+|
+|upkeep
+|turn|20
+|
+|t:|1773526179
+|switch|p1a: Pigs on the Wing|Snorlax|100/100
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|21
+|
+|t:|1773526198
+|move|p1a: Pigs on the Wing|Body Slam|p2a: Starmie
+|-damage|p2a: Starmie|19/100 par
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|22
+|
+|t:|1773526210
+|move|p1a: Pigs on the Wing|Body Slam|p2a: Starmie
+|-damage|p2a: Starmie|0 fnt
+|faint|p2a: Starmie
+|
+|t:|1773526215
+|switch|p2a: Tauros|Tauros|100/100
+|turn|23
+|
+|t:|1773526228
+|move|p2a: Tauros|Body Slam|p1a: Pigs on the Wing
+|-damage|p1a: Pigs on the Wing|75/100
+|move|p1a: Pigs on the Wing|Body Slam|p2a: Tauros
+|-damage|p2a: Tauros|69/100
+|
+|upkeep
+|turn|24
+|
+|t:|1773526236
+|move|p2a: Tauros|Body Slam|p1a: Pigs on the Wing
+|-damage|p1a: Pigs on the Wing|48/100
+|move|p1a: Pigs on the Wing|Body Slam|p2a: Tauros
+|-damage|p2a: Tauros|38/100
+|
+|upkeep
+|turn|25
+|
+|t:|1773526243
+|switch|p1a: THRAK!|Aerodactyl|32/100 frz
+|move|p2a: Tauros|Hyper Beam|p1a: THRAK!
+|-resisted|p1a: THRAK!
+|-damage|p1a: THRAK!|1/100 frz
+|-mustrecharge|p2a: Tauros
+|
+|upkeep
+|turn|26
+|
+|t:|1773526251
+|switch|p1a: Mr. Pink|Alakazam|100/100
+|cant|p2a: Tauros|recharge
+|
+|upkeep
+|turn|27
+|
+|t:|1773526258
+|move|p1a: Mr. Pink|Thunder Wave|p2a: Tauros
+|-status|p2a: Tauros|par
+|cant|p2a: Tauros|par
+|
+|upkeep
+|turn|28
+|
+|t:|1773526264
+|move|p1a: Mr. Pink|Psychic|p2a: Tauros
+|-damage|p2a: Tauros|0 fnt
+|faint|p2a: Tauros
+|
+|t:|1773526270
+|switch|p2a: Jolteon|Jolteon|100/100
+|turn|29
+|
+|t:|1773526282
+|move|p2a: Jolteon|Pin Missile|p1a: Mr. Pink
+|-supereffective|p1a: Mr. Pink
+|-damage|p1a: Mr. Pink|91/100
+|-damage|p1a: Mr. Pink|82/100
+|-hitcount|p1a: Mr. Pink|2
+|move|p1a: Mr. Pink|Thunder Wave|p2a: Jolteon
+|-status|p2a: Jolteon|par
+|
+|upkeep
+|turn|30
+|
+|t:|1773526294
+|switch|p1a: Pigs on the Wing|Snorlax|48/100
+|cant|p2a: Jolteon|par
+|
+|upkeep
+|turn|31
+|
+|t:|1773526300
+|move|p1a: Pigs on the Wing|Earthquake|p2a: Jolteon
+|-supereffective|p2a: Jolteon
+|-damage|p2a: Jolteon|32/100 par
+|move|p2a: Jolteon|Toxic|p1a: Pigs on the Wing
+|-status|p1a: Pigs on the Wing|tox
+|
+|upkeep
+|turn|32
+|
+|t:|1773526310
+|move|p1a: Pigs on the Wing|Earthquake|p2a: Jolteon
+|-supereffective|p2a: Jolteon
+|-damage|p2a: Jolteon|0 fnt
+|faint|p2a: Jolteon
+|
+|t:|1773526327
+|switch|p2a: Jynx|Jynx|100/100
+|turn|33
+|
+|t:|1773526347
+|move|p2a: Jynx|Psychic|p1a: Pigs on the Wing
+|-damage|p1a: Pigs on the Wing|21/100 tox
+|move|p1a: Pigs on the Wing|Rest|p1a: Pigs on the Wing
+|-status|p1a: Pigs on the Wing|slp|[from] move: Rest
+|-heal|p1a: Pigs on the Wing|100/100 slp|[silent]
+|
+|upkeep
+|turn|34
+|
+|t:|1773526367
+|move|p2a: Jynx|Psychic|p1a: Pigs on the Wing
+|-damage|p1a: Pigs on the Wing|74/100 slp
+|cant|p1a: Pigs on the Wing|slp
+|
+|upkeep
+|turn|35
+|
+|t:|1773526376
+|move|p2a: Jynx|Psychic|p1a: Pigs on the Wing
+|-damage|p1a: Pigs on the Wing|49/100 slp
+|-unboost|p1a: Pigs on the Wing|spa|1
+|-unboost|p1a: Pigs on the Wing|spd|1
+|-curestatus|p1a: Pigs on the Wing|slp|[msg]
+|
+|upkeep
+|turn|36
+|
+|t:|1773526383
+|switch|p1a: THRAK!|Aerodactyl|1/100 frz
+|move|p2a: Jynx|Lovely Kiss|p1a: THRAK!|[miss]
+|-miss|p2a: Jynx
+|
+|upkeep
+|turn|37
+|
+|t:|1773526390
+|cant|p1a: THRAK!|frz
+|move|p2a: Jynx|Ice Beam|p1a: THRAK!
+|-supereffective|p1a: THRAK!
+|-damage|p1a: THRAK!|0 fnt
+|faint|p1a: THRAK!
+|
+|t:|1773526404
+|switch|p1a: Pigs on the Wing|Snorlax|49/100
+|turn|38
+|
+|t:|1773526429
+|move|p2a: Jynx|Toxic|p1a: Pigs on the Wing|[miss]
+|-miss|p2a: Jynx
+|move|p1a: Pigs on the Wing|Body Slam|p2a: Jynx
+|-damage|p2a: Jynx|44/100
+|
+|upkeep
+|turn|39
+|
+|t:|1773526440
+|move|p2a: Jynx|Toxic|p1a: Pigs on the Wing
+|-status|p1a: Pigs on the Wing|tox
+|move|p1a: Pigs on the Wing|Body Slam|p2a: Jynx
+|-damage|p2a: Jynx|0 fnt
+|faint|p2a: Jynx
+|
+|t:|1773526449
+|switch|p2a: Alakazam|Alakazam|100/100
+|turn|40
+|
+|t:|1773526454
+|move|p1a: Pigs on the Wing|Body Slam|p2a: Alakazam
+|-damage|p2a: Alakazam|43/100
+|-damage|p1a: Pigs on the Wing|43/100 tox|[from] psn
+|move|p2a: Alakazam|Counter|p1a: Pigs on the Wing
+|-damage|p1a: Pigs on the Wing|0 fnt
+|faint|p1a: Pigs on the Wing
+|
+|t:|1773526460
+|switch|p1a: Breathe(IntheAir)|Tauros|100/100
+|turn|41
+|
+|t:|1773526466
+|move|p2a: Alakazam|Recover|p2a: Alakazam
+|-heal|p2a: Alakazam|93/100
+|move|p1a: Breathe(IntheAir)|Earthquake|p2a: Alakazam
+|-crit|p2a: Alakazam
+|-damage|p2a: Alakazam|19/100
+|
+|upkeep
+|turn|42
+|
+|t:|1773526477
+|move|p1a: Breathe(IntheAir)|Earthquake|p2a: Alakazam
+|-damage|p2a: Alakazam|0 fnt
+|faint|p2a: Alakazam
+|
+|win|genderfluid icon
+|raw|genderfluid icon's rating: 1102 &rarr; <strong>1124</strong><br />(+22 for winning)
+|raw|lubbu's rating: 1063 &rarr; <strong>1046</strong><br />(-17 for losing)
+|l|☆lubbu
+|player|p2|
