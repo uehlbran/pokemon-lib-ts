@@ -420,8 +420,8 @@ describe("Gen 2 Held Items", () => {
   // --- King's Rock ---
 
   describe("Given King's Rock held item", () => {
-    it("given a Pokemon holding King's Rock and RNG succeeds (10% chance), when on-hit triggers, then returns flinch effect", () => {
-      // Arrange: RNG chance returns true (10% proc)
+    it("given a Pokemon holding King's Rock and RNG succeeds (30/256 chance), when on-hit triggers, then returns flinch effect", () => {
+      // Arrange: RNG chance returns true (30/256 proc)
       const context = createItemContext({
         heldItem: "kings-rock",
         chanceResult: true,

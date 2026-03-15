@@ -19,7 +19,7 @@ const NO_ACTIVATION: ItemResult = {
  * - PSNCureBerry: cure poison/badly-poisoned at end of turn (consumed)
  * - Berry Juice: heal 20 HP when HP <= 50% (consumed)
  * - Focus Band: 12% chance to survive a KO at 1 HP (on-damage-taken)
- * - King's Rock: 10% flinch on damaging moves (on-hit)
+ * - King's Rock: 30/256 (~11.72%) flinch on damaging moves (on-hit)
  * - Type-boosting items: 10% damage boost (handled in damage calc, not here)
  *
  * @param trigger - When the item check occurs ("end-of-turn", "on-damage-taken", "on-hit")
