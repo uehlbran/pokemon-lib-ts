@@ -83,7 +83,7 @@ const GEN2_CRIT_RATE_TABLE: readonly number[] = [
  * - Entry hazards (Spikes only, 1 layer, 1/8 HP)
  * - Physical/Special determined by type, not by move
  * - Critical hits use stage-based system (Focus Energy fixed)
- * - 20% freeze thaw chance per turn
+ * - 25/256 (~9.8%) freeze thaw chance per turn
  * - Dark and Steel types added (17 types total)
  * - SpAttack and SpDefense are now separate stats
  */
