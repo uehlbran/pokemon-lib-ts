@@ -7,8 +7,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@pokemon-lib-ts/battle": "*",
     "@pokemon-lib-ts/core": "*",
-    "@pokemon-lib-ts/gen1": "*"
+    "@pokemon-lib-ts/gen1": "*",
+    "@pokemon-lib-ts/gen2": "*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.0.0",

@@ -1,4 +1,5 @@
 import type { ValidationResult, ValidationSeverity } from "./replay-types.js";
+import type { SimulationResult } from "./simulation/types.js";
 
 // ANSI color codes
 const ANSI = {
@@ -114,4 +115,70 @@ export function formatCombinedReport(
   ].join("\n");
 
   return [...parts, overallSummary].join("\n\n");
+}
+
+export function formatSimulationReport(
+  result: SimulationResult,
+  opts?: { json?: boolean; noColor?: boolean; verbose?: boolean },
+): string {
+  const { report } = result;
+  const noColor = opts?.noColor ?? false;
+
+  if (opts?.json) {
+    return JSON.stringify(report, null, 2);
+  }
+
+  const lines: string[] = [];
+
+  // Header
+  lines.push(`Battle Simulation: Gen ${report.config.generation}`);
+  lines.push("=".repeat(40));
+  lines.push(
+    `Battles: ${report.totalBattles} | Teams: ${report.config.teamSize}v${report.config.teamSize} | Max turns: ${report.config.maxTurns} | Seed: ${report.config.seed}`,
+  );
+  lines.push("");
+
+  // Summary line
+  const completedStr = colorize(`✓ ${report.completed} completed`, "green", noColor);
+  const violationsCount = report.violations.length;
+  const violStr =
+    violationsCount > 0
+      ? colorize(`✗ ${violationsCount} violations`, "red", noColor)
+      : colorize(`✓ 0 violations`, "green", noColor);
+  const timeoutStr =
+    report.timedOut > 0
+      ? colorize(
+          `⚠ ${report.timedOut} timeout${report.timedOut !== 1 ? "s" : ""}`,
+          "yellow",
+          noColor,
+        )
+      : null;
+  const crashStr =
+    report.crashed > 0
+      ? colorize(`✗ ${report.crashed} crash${report.crashed !== 1 ? "es" : ""}`, "red", noColor)
+      : null;
+
+  const summaryParts = [completedStr, violStr];
+  if (timeoutStr) summaryParts.push(timeoutStr);
+  if (crashStr) summaryParts.push(crashStr);
+  lines.push(`  ${summaryParts.join("    ")}`);
+  lines.push("");
+
+  // Violations
+  if (report.violations.length > 0) {
+    lines.push("Failures:");
+    for (const v of report.violations.slice(0, 20)) {
+      const label = `[${v.invariant}]`.padEnd(30);
+      const turn = v.turnNumber !== null ? `, turn ${v.turnNumber}` : "";
+      lines.push(
+        `  ${colorize(label, "red", noColor)} Seed ${report.config.seed}${turn}: ${v.message}`,
+      );
+    }
+    if (report.violations.length > 20) {
+      lines.push(`  ... and ${report.violations.length - 20} more`);
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n");
 }
