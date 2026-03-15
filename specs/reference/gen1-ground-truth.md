@@ -67,6 +67,19 @@ Formula: `numerator / denominator` where numerator = max(2, 2 + stage), denomina
 
 Applied as: `floor(stat * numerator / denominator)`.
 
+### Unified Special Stat — Stage Changes (CRITICAL Gen 1 mechanic)
+
+Gen 1 has a **single Special stat** used for both special attack and special defense. There is no Sp.Atk/Sp.Def split.
+
+**Consequence for stat stage changes:** When any move modifies the Special stage (Amnesia, Growth, etc.), it must modify **both** the attacker and defender roles of the Special stat simultaneously:
+- `Amnesia` raises Special by +2 — this means both the offense side and defense side go up by +2
+- `Growth` raises Special by +1 — same: both sides up by +1
+- Moves that lower Special (Psych Up effects, opponent's stat drops) — both sides affected
+
+**Implementation rule:** The stat stage data structure must treat Special as a single unified stage. Any code that separately tracks `spAttack` and `spDefense` stages will produce incorrect behavior. Amnesia/Growth will appear to do nothing to defense (or offense) if they are tracked separately.
+
+Source: pret/pokered — there is only one special stat and one stat stage slot for it.
+
 ### Badge Boosts
 
 | Badge | Stat |
@@ -275,6 +288,17 @@ If `threshold` computes to 256 (or higher after stage modifiers on a 100% move),
 
 ## 7. Move Mechanics
 
+### Secondary Effect Chance
+
+Moves with secondary effects (stat drops, status infliction, flinch) have a `chance` field in their move data. This probability **must be rolled before the effect is applied**, not after.
+
+- Roll: `random(0..255) < floor(chance * 256 / 100)` — i.e., a chance of 10% = threshold 25
+- If the roll fails, the secondary effect does not occur
+- The chance roll is independent of the damage roll
+- **Stat-drop secondaries:** e.g., Psychic has 33% to lower Sp.Def by 1, Blizzard has 10% to freeze, etc.
+
+An implementation that always applies secondary effects (ignoring the chance field) will produce wildly incorrect battle behavior for moves like Psychic, Blizzard, Fire Blast, Body Slam, etc.
+
 ### Trapping Moves (Wrap, Bind, Fire Spin, Clamp)
 
 - Duration: 2-5 turns
@@ -354,6 +378,57 @@ Ends immediately if it breaks Substitute.
 - **No turn limit in Gen 1** — lasts until the Pokemon switches out or faints
 - Ignored by critical hits
 
+### Rest
+
+- Fully heals the user's HP
+- Sets primary status to sleep with exactly 2 turns remaining
+- Cures any existing status condition before applying sleep
+- User wakes at the start of turn 3 (cannot act on the wake turn, same as normal sleep)
+
+### Thrash / Petal Dance
+
+- Locks user into the move for 2-3 turns
+- After the lock ends, user becomes confused (confusion applied automatically)
+- Cannot switch while locked in
+
+### Mist
+
+- Protects the user's stats from being lowered by the opponent for 5 turns
+- Does **not** protect against the user's own stat reductions
+- Does **not** protect against Haze (Haze bypasses Mist)
+- One layer only — does not stack
+
+### Teleport
+
+- Fails when used by a trainer Pokemon in a trainer battle (no escape from trainer battles)
+- In wild battles, functions as an escape attempt (always succeeds for trainer-commanded Pokemon)
+- No damage; purely an escape/flee mechanic
+
+### Mimic
+
+- Copies the last move used by the opponent
+- Replaces the Mimic slot for the duration of the battle (or until switch)
+- The copied move has 5 PP regardless of the original's max PP
+- Cannot Mimic: Mimic, Transform, Metronome, Struggle
+
+### Mirror Move
+
+- Calls the last move the opponent used against the user
+- Fails if the opponent has not yet used a move, or used a move that cannot be Mirrored
+- Cannot mirror: Mirror Move itself
+
+### Transform
+
+- User transforms into the target: copies types, stats, moves (with 5 PP each), and stat stages at the time of transformation
+- DVs (for crit rate) do NOT change — user keeps their own DVs
+- HP does NOT change — user keeps current HP total
+- Stat stages at the moment of transformation are copied, but subsequent stage changes on either side are independent
+
+### Splash
+
+- Has no effect whatsoever
+- Displays a message but does nothing to battle state
+
 ### Conversion (Gen 1 version)
 
 - Changes user's type to **opponent's type** (not based on user's moves like later gens)
@@ -397,7 +472,9 @@ All other moves: priority 0.
 3. Leech Seed drain (1/16 max HP)
 4. Check fainting
 
-Note: The exact ordering of these may vary. The toxic counter bug means burn, poison, and Leech Seed share a counter.
+The toxic counter bug means burn, poison, and Leech Seed share a counter — the N counter increments across all three effects, not just Toxic.
+
+**Leech Seed position:** Leech Seed always triggers after poison/burn damage and before the faint check. This ordering is fixed — any implementation must list 'leech-seed' as a distinct step between poison and faint-check in `getEndOfTurnOrder()`.
 
 ### What Resets on Switch-Out
 

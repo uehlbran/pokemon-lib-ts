@@ -138,11 +138,10 @@ describe("Gen 1 Moves Data Validation", () => {
     // Act
     const allMoves = dm.getAllMoves();
 
-    // Assert: Gen 1 has 165 moves (numbered 1-165), but Struggle may or may not be included
-    // The actual count in our data is 164
+    // Assert: Gen 1 has 165 moves (Sharpen was missing and added in bug fix #105)
     expect(allMoves.length).toBeGreaterThanOrEqual(160);
     expect(allMoves.length).toBeLessThanOrEqual(166);
-    expect(allMoves.length).toBe(164);
+    expect(allMoves.length).toBe(165);
   });
 
   // --- No Excluded Type Moves ---
