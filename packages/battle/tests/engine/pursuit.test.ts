@@ -307,20 +307,17 @@ describe("Pursuit — pre-switch execution", () => {
 
       // The first move-start from the action phase must precede side 1's switch-out
       // (side 1 starts with a switch-in at battle start, so we look at the post-start switch-out)
-      const _postStartSwitchOut = switchOuts.find(({ e }) => {
+      const postStartSwitchOut = switchOuts.find(({ e }) => {
         const se = e as { type: string; side?: number };
         return se.side === 1;
       });
-      // May be undefined if event doesn't carry side; just verify ordering of first move-start vs last switch-out
       const firstActionMoveStart = moveStarts[0];
-      const lastSwitchOut = switchOuts[switchOuts.length - 1];
 
-      if (firstActionMoveStart && lastSwitchOut) {
-        // Pursuit (move-start) should appear at or before the switch-out
-        expect(firstActionMoveStart.i).toBeLessThanOrEqual(lastSwitchOut.i);
-      } else {
-        // At minimum Pursuit fired (move-start exists)
-        expect(moveStarts.length).toBeGreaterThan(0);
+      expect(firstActionMoveStart).toBeDefined();
+      expect(postStartSwitchOut).toBeDefined();
+      if (firstActionMoveStart && postStartSwitchOut) {
+        // Pursuit (move-start) should appear at or before side 1's switch-out
+        expect(firstActionMoveStart.i).toBeLessThanOrEqual(postStartSwitchOut.i);
       }
     });
 
