@@ -1907,7 +1907,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "explosion",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1934,7 +1934,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "self-destruct",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1961,7 +1961,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "tackle",
         effect: null,
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({

@@ -203,7 +203,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         value: string | boolean;
       }> = [];
       if (hasPrimaryStatus) {
-        effects.push({ type: "status-cure", target: "self", value: status! });
+        effects.push({ type: "status-cure", target: "self", value: status as string });
       }
       if (hasConfusion) {
         effects.push({ type: "volatile-cure", target: "self", value: "confusion" });

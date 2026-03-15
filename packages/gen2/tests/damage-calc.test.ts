@@ -1675,7 +1675,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: "metal-powder",
       });
-      (pikachuWithPowder.pokemon as any).speciesId = 25;
+      (pikachuWithPowder.pokemon as unknown as { speciesId: number }).speciesId = 25;
 
       const pikachuNoPowder = createActivePokemon({
         level: 50,
@@ -1686,7 +1686,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: null,
       });
-      (pikachuNoPowder.pokemon as any).speciesId = 25;
+      (pikachuNoPowder.pokemon as unknown as { speciesId: number }).speciesId = 25;
 
       const move = createMove("normal", 80);
       const chart = createNeutralTypeChart();

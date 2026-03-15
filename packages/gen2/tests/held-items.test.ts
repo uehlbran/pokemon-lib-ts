@@ -197,7 +197,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      expect(healEffect!.value).toBe(10);
+      expect(healEffect?.value).toBe(10);
     });
 
     it("given a Pokemon at 50% HP holding Berry, when end-of-turn triggers, then Berry is consumed", () => {
@@ -215,7 +215,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect!.value).toBe("berry");
+      expect(consumeEffect?.value).toBe("berry");
     });
 
     it("given a Pokemon above 50% HP holding Berry, when end-of-turn triggers, then no activation", () => {
@@ -268,7 +268,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect!.value).toBe("prz-cure-berry");
+      expect(consumeEffect?.value).toBe("prz-cure-berry");
     });
 
     it("given a non-paralyzed Pokemon holding PRZCureBerry, when end-of-turn triggers, then no activation", () => {
@@ -318,7 +318,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      expect(healEffect!.value).toBe(30);
+      expect(healEffect?.value).toBe(30);
     });
 
     it("given a Pokemon at 50% HP holding Gold Berry, when end-of-turn triggers, then Gold Berry is consumed", () => {
@@ -336,7 +336,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect!.value).toBe("gold-berry");
+      expect(consumeEffect?.value).toBe("gold-berry");
     });
 
     it("given a Pokemon above 50% HP holding Gold Berry, when end-of-turn triggers, then no activation", () => {
@@ -370,7 +370,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      expect(healEffect!.value).toBe(30);
+      expect(healEffect?.value).toBe(30);
     });
 
     it("given Gold Berry and HP stays above 50% after damage, when on-damage-taken triggers, then no activation", () => {
@@ -425,7 +425,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure).toBeDefined();
-      expect(volatileCure!.value).toBe("confusion");
+      expect(volatileCure?.value).toBe("confusion");
     });
 
     it("given a confused Pokemon holding Bitter Berry, when end-of-turn triggers, then Bitter Berry is consumed", () => {
@@ -442,7 +442,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect!.value).toBe("bitter-berry");
+      expect(consumeEffect?.value).toBe("bitter-berry");
     });
 
     it("given a non-confused Pokemon holding Bitter Berry, when end-of-turn triggers, then no activation", () => {
@@ -477,7 +477,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const statusCure = result.effects.find((e) => e.type === "status-cure");
       expect(statusCure).toBeDefined();
-      expect(statusCure!.value).toBe("burn");
+      expect(statusCure?.value).toBe("burn");
     });
 
     it("given a paralyzed Pokemon holding Miracle Berry, when end-of-turn triggers, then cures paralysis", () => {
@@ -494,7 +494,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const statusCure = result.effects.find((e) => e.type === "status-cure");
       expect(statusCure).toBeDefined();
-      expect(statusCure!.value).toBe("paralysis");
+      expect(statusCure?.value).toBe("paralysis");
     });
 
     it("given a sleeping Pokemon holding Miracle Berry, when end-of-turn triggers, then cures sleep", () => {
@@ -511,7 +511,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const statusCure = result.effects.find((e) => e.type === "status-cure");
       expect(statusCure).toBeDefined();
-      expect(statusCure!.value).toBe("sleep");
+      expect(statusCure?.value).toBe("sleep");
     });
 
     it("given a poisoned Pokemon holding Miracle Berry, when end-of-turn triggers, then cures poison", () => {
@@ -528,7 +528,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const statusCure = result.effects.find((e) => e.type === "status-cure");
       expect(statusCure).toBeDefined();
-      expect(statusCure!.value).toBe("poison");
+      expect(statusCure?.value).toBe("poison");
     });
 
     it("given a Pokemon with no status holding Miracle Berry, when end-of-turn triggers, then no activation", () => {
@@ -559,7 +559,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect!.value).toBe("miracle-berry");
+      expect(consumeEffect?.value).toBe("miracle-berry");
     });
 
     it("given a confused Pokemon holding Miracle Berry with no primary status, when end-of-turn triggers, then cures confusion", () => {
@@ -577,7 +577,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure).toBeDefined();
-      expect(volatileCure!.value).toBe("confusion");
+      expect(volatileCure?.value).toBe("confusion");
     });
 
     it("given a confused Pokemon holding Miracle Berry with primary status, when end-of-turn triggers, then cures both", () => {
@@ -595,13 +595,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const statusCure = result.effects.find((e) => e.type === "status-cure");
       expect(statusCure).toBeDefined();
-      expect(statusCure!.value).toBe("burn");
+      expect(statusCure?.value).toBe("burn");
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure).toBeDefined();
-      expect(volatileCure!.value).toBe("confusion");
+      expect(volatileCure?.value).toBe("confusion");
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect!.value).toBe("miracle-berry");
+      expect(consumeEffect?.value).toBe("miracle-berry");
     });
   });
 
