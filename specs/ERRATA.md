@@ -105,7 +105,8 @@ final_damage = floor(100 * 1.0) = 100
 
 **Burn damage**:
 - Gen 1: 1/16 max HP per turn
-- Gen 2+: 1/8 max HP per turn
+- Gen 2-6: 1/8 max HP per turn
+- Gen 7+: 1/16 max HP per turn (nerfed back in Gen 7)
 
 **Poison damage (regular)**:
 - Gen 1: 1/16 max HP per turn

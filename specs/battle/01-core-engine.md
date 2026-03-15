@@ -982,10 +982,10 @@ The `'bound'` volatile status is set on the target. End-of-turn processing is ha
 
 ## 13. End-of-Turn Status Damage Reference
 
-| Status | Gen 1 | Gen 2-4 | Gen 5+ |
+| Status | Gen 1 | Gen 2-6 | Gen 7+ |
 |--------|-------|---------|--------|
-| Burn | 1/16 max HP | 1/16 max HP | 1/16 max HP |
-| Poison | 1/16 max HP | 1/16 max HP | 1/8 max HP |
+| Burn | 1/16 max HP | 1/8 max HP | 1/16 max HP |
+| Poison | 1/16 max HP | 1/8 max HP | 1/8 max HP |
 | Toxic (N=1) | 1/16 max HP | 1/16 max HP | 1/16 max HP |
 | Toxic (max) | 16/16 max HP | 15/16 max HP | 15/16 max HP |
 | Leech Seed | 1/16 max HP* | 1/8 max HP | 1/8 max HP |
