@@ -1,0 +1,48 @@
+# Changelog
+
+All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.2.3] - 2026-03-14
+
+### Fixed
+- Burn damage corrected to 1/16 max HP per turn (was 1/8 — Showdown-verified) (this PR)
+
+## [0.2.2] - 2026-03-14
+
+### Fixed
+- Implemented `applyStatusDamage`, `checkFreezeThaw`, `rollSleepTurns`,
+  `rollConfusionSelfHit`, and `processSleepTurn` to satisfy updated `GenerationRuleset`
+  interface after status mechanics were delegated from the engine (PR #13)
+- `critRate` renamed to `critStageBonus` on move effects (PR #13)
+
+## [0.2.1] - 2025-11-15
+
+### Fixed
+- Stat formula: Gen 1 uses `floor((2 * base + iv + floor(ev/4)) * level / 100) + 5`
+  (was applying wrong EV divisor) (PR #6)
+- Damage calc: critical hits ignore stat stage modifiers in Gen 1 (PR #6)
+- Burn: halves attack in damage calc (was not applied) (PR #6)
+- Accuracy stages: correct Gen 1 multiplier table (PR #6)
+
+## [0.2.0] - 2025-11-15
+
+### Changed
+- Renamed npm scope `@pokemon-lib` → `@pokemon-lib-ts` (PR #8)
+- Updated all cross-package peer dependency references
+
+## [0.1.1] - 2025-10-15
+
+### Fixed
+- Charizard base stats corrected (was using wrong data) (PR #1)
+- 257 tests added, 80%+ coverage enforced (PR #1)
+
+## [0.1.0] - 2025-10-01
+
+### Added
+- Initial release: Gen 1 ruleset (`Gen1Ruleset`) implementing `GenerationRuleset`
+- Complete Gen 1 data: 151 Pokémon, 165 moves, 15-type chart
+- Gen 1-specific damage formula, stat formula, type chart
+- No abilities, no held items, no weather
