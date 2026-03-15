@@ -1212,7 +1212,7 @@ export class BattleEngine implements BattleEventEmitter {
       );
       if (result.customDamage.target === "defender") {
         customTarget.lastDamageTaken = result.customDamage.amount;
-        customTarget.lastDamageType = null;
+        customTarget.lastDamageType = result.customDamage.type ?? null;
       }
       this.emit({
         type: "damage",

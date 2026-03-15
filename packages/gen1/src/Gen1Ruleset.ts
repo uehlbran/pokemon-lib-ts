@@ -278,7 +278,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
       selfFaint?: boolean;
       noRecharge?: boolean;
-      customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
+      customDamage?: { target: "attacker" | "defender"; amount: number; source: string; type?: PokemonType | null } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
@@ -325,7 +325,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
       selfFaint?: boolean;
       noRecharge?: boolean;
-      customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
+      customDamage?: { target: "attacker" | "defender"; amount: number; source: string; type?: PokemonType | null } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
@@ -422,6 +422,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           target: "defender",
           amount: effect.damage,
           source: move.id,
+          type: move.type,
         };
         break;
       }
@@ -432,6 +433,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           target: "defender",
           amount: attacker.pokemon.level,
           source: move.id,
+          type: move.type,
         };
         break;
       }
@@ -443,6 +445,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           target: "defender",
           amount: defender.pokemon.currentHp, // Deal exactly current HP to KO
           source: move.id,
+          type: move.type,
         };
         result.messages.push("It's a one-hit KO!");
         break;
@@ -498,6 +501,7 @@ export class Gen1Ruleset implements GenerationRuleset {
               target: "defender",
               amount: lastDamage * 2,
               source: "counter",
+              type: move.type,
             };
           } else {
             result.messages.push("Counter failed!");

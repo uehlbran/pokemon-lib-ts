@@ -94,6 +94,8 @@ export interface MoveEffectResult {
     target: "attacker" | "defender";
     amount: number;
     source: string;
+    /** The type of the move dealing this damage, for lastDamageType tracking */
+    type?: PokemonType | null;
   } | null;
   /** Wave 1: Cure the specified pokemon's status (e.g., Haze clears both sides) */
   readonly statusCured?: { target: "attacker" | "defender" | "both" } | null;
