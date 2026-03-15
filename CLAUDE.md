@@ -148,6 +148,13 @@ Independent semantic versioning per package. A Gen 1 bug fix doesn't bump Gen 9.
 - When implementing a plan with independent steps, dispatch those steps as parallel subagents rather than executing them sequentially in the main context
 - Only serialize work when there is a true dependency (e.g., must read output of step 1 to inform step 2)
 
+### Branch Discipline
+- **Always branch from latest main**: `git fetch origin main && git checkout -b <branch> origin/main`
+- **Never reuse branch names** for unrelated work — if a branch was used in a prior PR, create a new one
+- **Use descriptive, unique names**: include the scope (e.g., `fix/gen1-crit-calc`, not `fix/gen1-corrections`)
+- **Rebase before PR**: before opening a PR, rebase onto `origin/main` to minimize conflicts
+- **Never checkout a branch owned by another worktree**: if `git checkout <branch>` fails with "already used by worktree", work in that worktree's directory instead (using `git -C <path>`) or create a new branch
+
 ## PR Workflow
 
 - Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use `/loop` or manual polling.
@@ -161,3 +168,7 @@ Independent semantic versioning per package. A Gen 1 bug fix doesn't bump Gen 9.
   - You've attempted a fix 2+ times and it's still failing
   - The reviewer's feedback is ambiguous and could be interpreted multiple ways
   - A decision requires trade-offs only the user can weigh
+- **Check PR state before acting**: run `gh pr view <number> --json state` before investigating review comments or doing work on a PR. If `MERGED` or `CLOSED`, stop
+- **After `gh pr merge --auto`**: always verify with `gh pr view <number> --json state` — the command produces no output on success
+- **CodeRabbit and Qodo are advisory only** — not required checks. Do not block merge on them. Required checks: `build`, `test`, `typecheck`, `lint`
+- **`gh pr checks` exit code 8 means pending**, not failure

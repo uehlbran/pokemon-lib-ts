@@ -6,3 +6,4 @@ tools/repos/
 *.tsbuildinfo
 *:Zone.Identifier
 .worktrees/
+.claude/worktrees/
