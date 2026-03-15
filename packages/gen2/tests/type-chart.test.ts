@@ -146,4 +146,425 @@ describe("Gen 2 Type Chart", () => {
       }
     }
   });
+
+  // --- Steel defensive matchups (all 17 attacking types) ---
+
+  describe("Steel defensive matchups", () => {
+    it("given normal attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "normal", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given fire attacking steel, when checking effectiveness, then returns 2x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "fire", "steel");
+      // Assert
+      expect(effectiveness).toBe(2);
+    });
+
+    it("given water attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "water", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given electric attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "electric", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given grass attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "grass", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given ice attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ice", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given fighting attacking steel, when checking effectiveness, then returns 2x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "fighting", "steel");
+      // Assert
+      expect(effectiveness).toBe(2);
+    });
+
+    it("given poison attacking steel, when checking effectiveness, then returns 0x (Steel is immune to Poison)", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "poison", "steel");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given ground attacking steel, when checking effectiveness, then returns 2x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ground", "steel");
+      // Assert
+      expect(effectiveness).toBe(2);
+    });
+
+    it("given flying attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "flying", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given psychic attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "psychic", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given bug attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "bug", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given rock attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "rock", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given ghost attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ghost", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given dragon attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "dragon", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given dark attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "dark", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given steel attacking steel, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "steel", "steel");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+  });
+
+  // --- Dark defensive matchups (all 17 attacking types) ---
+
+  describe("Dark defensive matchups", () => {
+    it("given normal attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "normal", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given fire attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "fire", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given water attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "water", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given electric attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "electric", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given grass attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "grass", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given ice attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ice", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given fighting attacking dark, when checking effectiveness, then returns 2x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "fighting", "dark");
+      // Assert
+      expect(effectiveness).toBe(2);
+    });
+
+    it("given poison attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "poison", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given ground attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ground", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given flying attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "flying", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given psychic attacking dark, when checking effectiveness, then returns 0x (Dark is immune to Psychic)", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "psychic", "dark");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given bug attacking dark, when checking effectiveness, then returns 2x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "bug", "dark");
+      // Assert
+      expect(effectiveness).toBe(2);
+    });
+
+    it("given rock attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "rock", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given ghost attacking dark, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ghost", "dark");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given dragon attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "dragon", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given dark attacking dark, when checking effectiveness, then returns 0.5x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "dark", "dark");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given steel attacking dark, when checking effectiveness, then returns 1x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "steel", "dark");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+  });
+
+  // --- Gen 1 -> Gen 2 type chart changes ---
+
+  describe("Gen 1 to Gen 2 type chart changes", () => {
+    it("given ghost attacking psychic, when checking effectiveness, then returns 2x (was 0x bug in Gen 1)", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ghost", "psychic");
+      // Assert
+      expect(effectiveness).toBe(2);
+    });
+
+    it("given bug attacking poison, when checking effectiveness, then returns 0.5x (was 2x in Gen 1)", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "bug", "poison");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+
+    it("given poison attacking bug, when checking effectiveness, then returns 1x (was 2x in Gen 1)", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "poison", "bug");
+      // Assert
+      expect(effectiveness).toBe(1);
+    });
+
+    it("given ice attacking fire, when checking effectiveness, then returns 0.5x (was 1x in Gen 1)", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ice", "fire");
+      // Assert
+      expect(effectiveness).toBe(0.5);
+    });
+  });
+
+  // --- All Gen 2 type immunities ---
+
+  describe("All Gen 2 type immunities", () => {
+    it("given normal attacking ghost, when checking effectiveness, then returns 0x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "normal", "ghost");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given ghost attacking normal, when checking effectiveness, then returns 0x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ghost", "normal");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given fighting attacking ghost, when checking effectiveness, then returns 0x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "fighting", "ghost");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given electric attacking ground, when checking effectiveness, then returns 0x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "electric", "ground");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given ground attacking flying, when checking effectiveness, then returns 0x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "ground", "flying");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given poison attacking steel, when checking effectiveness, then returns 0x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "poison", "steel");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+
+    it("given psychic attacking dark, when checking effectiveness, then returns 0x", () => {
+      // Arrange
+      const chart = GEN2_TYPE_CHART;
+      // Act
+      const effectiveness = getEffectiveness(chart, "psychic", "dark");
+      // Assert
+      expect(effectiveness).toBe(0);
+    });
+  });
 });
