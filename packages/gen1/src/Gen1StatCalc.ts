@@ -22,7 +22,7 @@ export function calculateStatExpContribution(statExp: number): number {
  */
 function calculateGen1Stat(base: number, dv: number, statExp: number, level: number): number {
   const statExpContrib = calculateStatExpContribution(statExp);
-  return Math.floor(((base + dv) * 2 + statExpContrib) * (level / 100)) + 5;
+  return Math.floor(((base + dv) * 2 + statExpContrib) * level / 100) + 5;
 }
 
 /**
@@ -32,7 +32,7 @@ function calculateGen1Stat(base: number, dv: number, statExp: number, level: num
  */
 function calculateGen1Hp(base: number, dv: number, statExp: number, level: number): number {
   const statExpContrib = calculateStatExpContribution(statExp);
-  return Math.floor(((base + dv) * 2 + statExpContrib) * (level / 100)) + level + 10;
+  return Math.floor(((base + dv) * 2 + statExpContrib) * level / 100) + level + 10;
 }
 
 /**
