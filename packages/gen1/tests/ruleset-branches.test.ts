@@ -2082,3 +2082,137 @@ describe("Gen1Ruleset calculateExpGain", () => {
     expect(trainerExp).toBeGreaterThan(wildExp);
   });
 });
+
+// ============================================================================
+// Gen 1 checkFullParalysis (63/256 rate)
+// ============================================================================
+
+describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
+  it("given Gen 1 rules and rng producing 62 (< 63), when checkFullParalysis called, then returns true (63/256 rate)", () => {
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "paralysis" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    // Mock RNG: int(0, 255) returns 62 → 62 < 63 → true
+    const rng = {
+      next: () => 0,
+      int: (_min: number, _max: number) => 62,
+      chance: () => true,
+    } as any;
+
+    // Act
+    const result = ruleset.checkFullParalysis(pokemon, rng);
+
+    // Assert
+    expect(result).toBe(true);
+  });
+
+  it("given Gen 1 rules and rng producing 63 (not < 63), when checkFullParalysis called, then returns false", () => {
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "paralysis" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    // Mock RNG: int(0, 255) returns 63 → 63 < 63 → false
+    const rng = {
+      next: () => 0.9999,
+      int: (_min: number, _max: number) => 63,
+      chance: () => false,
+    } as any;
+
+    // Act
+    const result = ruleset.checkFullParalysis(pokemon, rng);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it("given Gen 1 rules, when checkFullParalysis is called many times, then paralysis rate is ~24.6% (63/256)", () => {
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "paralysis" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    const rng = new SeededRandom(42);
+
+    // Act
+    let paralyzed = 0;
+    for (let i = 0; i < 1000; i++) {
+      if (ruleset.checkFullParalysis(pokemon, rng)) paralyzed++;
+    }
+
+    // Assert — ~63/256 ≈ 24.6%, allow tolerance
+    expect(paralyzed).toBeGreaterThan(180);
+    expect(paralyzed).toBeLessThan(310);
+  });
+});
+
+// ============================================================================
+// Gen 1 processSleepTurn (cannot act on wake turn)
+// ============================================================================
+
+describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => {
+  it("given Gen 1 rules and a pokemon with turnsLeft = 1, when processSleepTurn called, then wakes up but returns false (cannot act on wake turn)", () => {
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "sleep" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    pokemon.volatileStatuses.set("sleep" as any, { turnsLeft: 1 });
+
+    // Act
+    const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
+
+    // Assert — Gen 1: cannot act on the wake turn (returns false even on wake)
+    expect(canAct).toBe(false);
+    expect(pokemon.pokemon.status).toBeNull();
+    expect(pokemon.volatileStatuses.has("sleep" as any)).toBe(false);
+  });
+
+  it("given Gen 1 rules and a pokemon with turnsLeft > 1, when processSleepTurn called, then stays sleeping and returns false", () => {
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "sleep" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    pokemon.volatileStatuses.set("sleep" as any, { turnsLeft: 3 });
+
+    // Act
+    const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
+
+    // Assert — still sleeping, counter decremented
+    expect(canAct).toBe(false);
+    expect(pokemon.pokemon.status).toBe("sleep");
+    expect((pokemon.volatileStatuses.get("sleep" as any) as any).turnsLeft).toBe(2);
+  });
+
+  it("given Gen 1 rules and a pokemon with turnsLeft = 0, when processSleepTurn called, then wakes up but returns false (cannot act)", () => {
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "sleep" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    pokemon.volatileStatuses.set("sleep" as any, { turnsLeft: 0 });
+
+    // Act
+    const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
+
+    // Assert — Gen 1: wakes up but still cannot act this turn
+    expect(canAct).toBe(false);
+    expect(pokemon.pokemon.status).toBeNull();
+    expect(pokemon.volatileStatuses.has("sleep" as any)).toBe(false);
+  });
+});

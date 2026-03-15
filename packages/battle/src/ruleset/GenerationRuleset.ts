@@ -123,7 +123,7 @@ export interface GenerationRuleset {
 
   /**
    * Check if a frozen Pokemon thaws this turn.
-   * Thaw chance: Gen 1 = never (only via move), Gen 2+ = 20%/turn.
+   * Thaw chance: Gen 1 = never (only via move), Gen 2 = 25/256 (~9.77%), Gen 3+ = 20%/turn.
    */
   checkFreezeThaw(pokemon: ActivePokemon, rng: SeededRandom): boolean;
 
@@ -132,6 +132,26 @@ export interface GenerationRuleset {
    * Gen 1: 1-7, Gen 5+: 1-3.
    */
   rollSleepTurns(rng: SeededRandom): number;
+
+  /**
+   * Check if a paralyzed Pokemon is fully paralyzed this turn.
+   * Gen 1-2: 63/256 (~24.6%), Gen 3+: 1/4 (exact 25%).
+   */
+  checkFullParalysis(pokemon: ActivePokemon, rng: SeededRandom): boolean;
+
+  /**
+   * Roll whether a confused Pokemon hits itself this turn.
+   * Gen 1-6: 1/2 (50%), Gen 7+: 1/3 (~33%).
+   */
+  rollConfusionSelfHit(rng: SeededRandom): boolean;
+
+  /**
+   * Process one turn of sleep for a Pokemon.
+   * Decrements the sleep counter and wakes the Pokemon if it reaches 0.
+   * Returns true if the Pokemon can act this turn (Gen 5+: can act on wake turn).
+   * Returns false if still sleeping, or woke up but cannot act (Gen 1-4).
+   */
+  processSleepTurn(pokemon: ActivePokemon, state: BattleState): boolean;
 
   // --- Abilities ---
 

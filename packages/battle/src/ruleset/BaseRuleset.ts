@@ -194,6 +194,35 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return rng.int(1, 3);
   }
 
+  checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
+    // Gen 3+: exact 25% chance to be fully paralyzed
+    return rng.chance(0.25);
+  }
+
+  rollConfusionSelfHit(rng: SeededRandom): boolean {
+    // Gen 1-6: 50% chance to hit itself in confusion
+    return rng.chance(0.5);
+  }
+
+  processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
+    // Look up the sleep counter in volatile statuses
+    const sleepState = pokemon.volatileStatuses.get("sleep" as any);
+    if (!sleepState || sleepState.turnsLeft <= 0) {
+      // No counter found or already at 0 — wake up
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep" as any);
+      return true; // Can act this turn (Gen 2+ behavior)
+    }
+    sleepState.turnsLeft--;
+    if (sleepState.turnsLeft <= 0) {
+      // Just reached 0 — wake up, can act this turn
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep" as any);
+      return true;
+    }
+    return false; // Still sleeping
+  }
+
   hasAbilities(): boolean {
     return true;
   }

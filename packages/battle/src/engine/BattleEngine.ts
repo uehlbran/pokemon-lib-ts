@@ -792,24 +792,23 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Sleep check
     if (actor.pokemon.status === "sleep") {
-      const sleepState = actor.volatileStatuses.get("sleep" as any);
-      if (sleepState && sleepState.turnsLeft > 0) {
-        sleepState.turnsLeft--;
+      const canAct = this.ruleset.processSleepTurn(actor, this.state);
+      if (actor.pokemon.status === null) {
+        // Pokemon woke up (status cleared by processSleepTurn)
+        this.emit({
+          type: "status-cure",
+          side,
+          pokemon: getPokemonName(actor),
+          status: "sleep",
+        });
+      } else {
+        // Still sleeping
         this.emit({
           type: "message",
           text: `${getPokemonName(actor)} is fast asleep!`,
         });
-        return false;
       }
-      // Woke up
-      actor.pokemon.status = null;
-      actor.volatileStatuses.delete("sleep" as any);
-      this.emit({
-        type: "status-cure",
-        side,
-        pokemon: getPokemonName(actor),
-        status: "sleep",
-      });
+      if (!canAct) return false;
     }
 
     // Freeze check
@@ -831,9 +830,9 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // Paralysis check (25% chance to not move)
+    // Paralysis check
     if (actor.pokemon.status === "paralysis") {
-      if (this.state.rng.chance(0.25)) {
+      if (this.ruleset.checkFullParalysis(actor, this.state.rng)) {
         this.emit({
           type: "message",
           text: `${getPokemonName(actor)} is fully paralyzed!`,
@@ -859,7 +858,7 @@ export class BattleEngine implements BattleEventEmitter {
           type: "message",
           text: `${getPokemonName(actor)} is confused!`,
         });
-        if (this.state.rng.chance(this.ruleset.getConfusionSelfHitChance())) {
+        if (this.ruleset.rollConfusionSelfHit(this.state.rng)) {
           // Self-hit confusion damage — chance and formula delegated to ruleset
           const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
           const selfDamage = this.ruleset.calculateConfusionDamage(
