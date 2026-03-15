@@ -40,15 +40,19 @@ This file is the trust map for all spec documents. It tells you which specs are 
 
 ## Code Bugs Found During Audits
 
-These bugs were found during spec audits but NOT fixed in spec cleanup work. Each requires a separate PR touching `packages/`.
+Bugs found during spec audits are tracked as GitHub issues. See the full list:
 
-| Bug | File | Line (approx) | Issue | Severity |
-|-----|------|----------------|-------|---------|
-| Leech Seed hardcoded | `packages/battle/src/engine/BattleEngine.ts` | ~1588 | Hardcodes `maxHp/8`; Gen 1 should be `maxHp/16`. Should delegate to `ruleset.calculateLeechSeedDrain()` | HIGH |
-| Curse damage hardcoded | `packages/battle/src/engine/BattleEngine.ts` | ~1658 | Hardcodes `maxHp/4`; should delegate to `ruleset.calculateCurseDamage()` | MEDIUM |
-| Nightmare damage hardcoded | `packages/battle/src/engine/BattleEngine.ts` | ~1681 | Hardcodes `maxHp/4`; should delegate to `ruleset.calculateNightmareDamage()` | MEDIUM |
-| Gen 1 leech seed missing | `packages/gen1/src/Gen1Ruleset.ts` | ~872 | `getEndOfTurnOrder()` returns only `["status-damage"]`, missing `"leech-seed"` | HIGH |
-| Gen 1 type effectiveness | `packages/gen1/src/Gen1DamageCalc.ts` | ~159 | Uses combined float multiplier instead of sequential per-type with floor between | HIGH |
+**[`gh issue list --label bug`](https://github.com/uehlbran/pokemon-lib-ts/issues?q=is%3Aissue+is%3Aopen+label%3Abug)**
+
+Key open issues from the initial audit (filed 2026-03-15):
+
+| Issue | Severity | Description |
+|-------|----------|-------------|
+| [#51](https://github.com/uehlbran/pokemon-lib-ts/issues/51) | HIGH | Leech Seed hardcoded `maxHp/8` — wrong for Gen 1, should delegate |
+| [#54](https://github.com/uehlbran/pokemon-lib-ts/issues/54) | HIGH | Gen 1 `getEndOfTurnOrder()` missing `"leech-seed"` — never triggers |
+| [#55](https://github.com/uehlbran/pokemon-lib-ts/issues/55) | HIGH | Gen 1 type effectiveness uses combined float multiplier instead of sequential |
+| [#52](https://github.com/uehlbran/pokemon-lib-ts/issues/52) | MEDIUM | Curse damage hardcoded in engine — should delegate |
+| [#53](https://github.com/uehlbran/pokemon-lib-ts/issues/53) | MEDIUM | Nightmare damage hardcoded in engine — should delegate |
 
 ---
 
@@ -61,4 +65,4 @@ These bugs were found during spec audits but NOT fixed in spec cleanup work. Eac
 
 **Found a new spec error?** Update the spec file's "Known Spec Issues" table and note it in this index.
 
-**Fixed a code bug from the table above?** Remove or mark it resolved.
+**Fixed a code bug?** Close the GitHub issue in the PR with `Closes #N` in the PR body.

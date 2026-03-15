@@ -1,6 +1,11 @@
 ## Summary
 <!-- What does this PR do and why? -->
 
+## Related Issue
+<!-- Bug fix or feature? Link the issue. Use "Closes #N" to auto-close on merge. -->
+<!-- No related issue? Write "N/A" and briefly explain why. -->
+Closes #
+
 ## Changes
 -
 
@@ -27,3 +32,4 @@
 - [ ] Types pass (`npm run typecheck`)
 - [ ] Lint passes (`npm run lint:check`)
 - [ ] Coverage >= 80%
+- [ ] `/review` run locally (falcon + kestrel + sentinel)
