@@ -15,7 +15,7 @@ A TypeScript monorepo producing open-source Pokemon libraries for building games
 |---------|---------|-------------|
 | [`@pokemon-lib-ts/core`](./packages/core) | 0.1.0 | Entity types, stat calc, type effectiveness, EXP curves, DataManager, SeededRandom |
 | [`@pokemon-lib-ts/battle`](./packages/battle) | 0.1.0 | Pluggable battle engine with GenerationRuleset interface, event system, AI controllers |
-| [`@pokemon-lib-ts/gen1`](./packages/gen1) | 0.1.0 | Gen 1 (Red/Blue/Yellow) ruleset + complete data (151 Pokemon, 164 moves, 15-type chart) |
+| [`@pokemon-lib-ts/gen1`](./packages/gen1) | 0.1.0 | Gen 1 (Red/Blue/Yellow) ruleset + complete data (151 Pokemon, 165 moves, 15-type chart) |
 
 ## Architecture
 
