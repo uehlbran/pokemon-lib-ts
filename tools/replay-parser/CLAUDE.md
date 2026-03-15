@@ -6,18 +6,20 @@ Tool for downloading Showdown battle replays and validating our Gen 1 battle eng
 
 ## Commands
 
+Run from the repo root:
+
 ```bash
 # Download replays
 npx tsx tools/replay-parser/src/index.ts download --format gen1ou --count 15
 
 # Parse a single replay log
-npx tsx tools/replay-parser/src/index.ts parse replays/gen1/some-replay.log
+npx tsx tools/replay-parser/src/index.ts parse tools/replay-parser/replays/gen1/some-replay.log
 
 # Validate a single replay
-npx tsx tools/replay-parser/src/index.ts validate replays/gen1/some-replay.log
+npx tsx tools/replay-parser/src/index.ts validate tools/replay-parser/replays/gen1/some-replay.log
 
 # Validate all replays in a directory
-npx tsx tools/replay-parser/src/index.ts validate-all replays/gen1/
+npx tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/
 ```
 
 ## What This Does
@@ -36,7 +38,7 @@ We cannot replicate Showdown's RNG seed, so exact damage won't match. Instead we
 
 ## Source Layout
 
-```
+```text
 src/
   replay-types.ts  # All TypeScript types
   parser.ts        # Parse Showdown log → ParsedReplay
