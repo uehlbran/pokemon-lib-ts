@@ -1302,6 +1302,7 @@ export class BattleEngine implements BattleEventEmitter {
   private processScreenCountdown(): void {
     for (const side of this.state.sides) {
       side.screens = side.screens.filter((screen) => {
+        if (screen.turnsLeft < 0) return true; // permanent sentinel — never expires
         screen.turnsLeft--;
         if (screen.turnsLeft <= 0) {
           this.emit({

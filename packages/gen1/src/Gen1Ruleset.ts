@@ -401,10 +401,11 @@ export class Gen1Ruleset implements GenerationRuleset {
       case "screen": {
         // Reflect / Light Screen: set a screen on the attacker's side
         // Gen 1: screens are permanent — they last until removed by Haze or the setter switches out.
-        // turnsLeft: 9999 signals "indefinite" to the engine (no natural countdown in Gen 1).
+        // turnsLeft: -1 is the permanent sentinel — never expires by countdown.
         result.screenSet = {
           screen: effect.screen,
-          turnsLeft: 9999,
+          turnsLeft: -1, // Gen 1: screens are permanent — never expire by countdown.
+          // Removed by Haze or when the setter switches out.
           side: "attacker",
         };
         result.messages.push(

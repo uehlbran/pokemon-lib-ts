@@ -305,9 +305,9 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
 // ============================================================================
 
 describe("Gen 1 Reflect and Light Screen", () => {
-  it("given Reflect is used, when the effect resolves, then screenSet contains reflect with permanent duration (9999)", () => {
+  it("given Reflect is used, when the effect resolves, then screenSet contains reflect with permanent duration (-1)", () => {
     // Gen 1: Reflect is permanent — lasts until Haze or setter switches out, not 5 turns.
-    // turnsLeft: 9999 signals indefinite duration. (Showdown gen1 moves.ts: no duration field)
+    // turnsLeft: -1 is the permanent sentinel — never expires by countdown. (Showdown gen1 moves.ts: no duration field)
     // Arrange
     const screenMove = makeMove({
       id: "reflect",
@@ -320,11 +320,12 @@ describe("Gen 1 Reflect and Light Screen", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.screenSet?.screen).toBe("reflect");
-    expect(result.screenSet?.turnsLeft).toBe(9999);
+    expect(result.screenSet?.turnsLeft).toBe(-1);
   });
 
-  it("given Light Screen is used, when the effect resolves, then screenSet contains light-screen with permanent duration (9999)", () => {
+  it("given Light Screen is used, when the effect resolves, then screenSet contains light-screen with permanent duration (-1)", () => {
     // Gen 1: Light Screen is permanent — no 5-turn countdown. (Showdown gen1 moves.ts)
+    // turnsLeft: -1 is the permanent sentinel — never expires by countdown.
     // Arrange
     const screenMove = makeMove({
       id: "light-screen",
@@ -337,7 +338,7 @@ describe("Gen 1 Reflect and Light Screen", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.screenSet?.screen).toBe("light-screen");
-    expect(result.screenSet?.turnsLeft).toBe(9999);
+    expect(result.screenSet?.turnsLeft).toBe(-1);
   });
 
   it.todo(
