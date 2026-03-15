@@ -18,15 +18,6 @@ src/
   index.ts     # Public API barrel export
 ```
 
-## Commands
-
-```bash
-npm run build       # tsup → dist/ (ESM + CJS)
-npm run test        # vitest run
-npm run typecheck   # tsc --noEmit
-npx vitest run --coverage  # with v8 coverage (80% threshold)
-```
-
 ## Entity Conventions
 
 - **Readonly interfaces** for data (Pokemon, Move, etc.). Mutable versions only where needed (runtime stat blocks).

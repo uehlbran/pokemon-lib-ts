@@ -46,15 +46,6 @@ data/
   natures.json     # Stub (empty array — no natures in Gen 1)
 ```
 
-## Commands
-
-```bash
-npm run build       # tsup → dist/ (ESM + CJS)
-npm run test        # vitest run
-npm run typecheck   # tsc --noEmit
-npx vitest run --coverage  # with v8 coverage (80% threshold)
-```
-
 ## Testing
 
 - Every quirk listed above must have a dedicated test proving the behavior

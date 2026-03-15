@@ -44,15 +44,6 @@ TURN_START → action selection → priority sort
 
 The engine emits `BattleEvent[]` per turn. No UI coupling. Consumers (Phaser, CLI, Discord bot) render events however they want. The engine never logs, prints, or calls external code — it only returns events.
 
-## Commands
-
-```bash
-npm run build       # tsup → dist/ (ESM + CJS)
-npm run test        # vitest run
-npm run typecheck   # tsc --noEmit
-npx vitest run --coverage  # with v8 coverage (80% threshold)
-```
-
 ## Testing Strategy
 
 - **Engine unit tests**: Use mock rulesets (stubs that return predictable values). Test turn flow, action resolution, win conditions.

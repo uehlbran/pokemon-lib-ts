@@ -42,6 +42,14 @@ packages/genN/data/
 - All effectiveness values are in {0, 0.5, 1, 2}
 - Known matchups correct (e.g., Water > Fire = 2, Normal > Ghost = 0)
 
+## Context Files
+
+- **Specs**: `specs/core/03-data-pipeline.md` — authoritative source for data pipeline and expected output formats
+- **Data importer CLAUDE.md**: `tools/data-importer/CLAUDE.md` — run commands, input/output paths, source details
+- **Gen CLAUDE.md**: `packages/genN/CLAUDE.md` — gen-specific data constraints (e.g., Gen 1 has 151 Pokemon, stub files)
+
+Read the relevant CLAUDE.md and spec files before writing validation tests.
+
 ## Commands
 
 ```bash

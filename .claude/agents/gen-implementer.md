@@ -39,9 +39,12 @@ GenerationRuleset (interface, ~20 methods)
 10. Implement abilities (Gen 3+) and items (Gen 2+) if applicable
 11. Write tests for each of the above
 
+## Cardinal Rule
+
+**The battle engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
+
 ## Key Principles
 
-- **Never put gen-specific logic in the battle engine** — it all goes in the ruleset
 - **Use the gen's actual formulas** — don't approximate or simplify
 - **Test against known values** — Showdown/Bulbapedia are ground truth
 - **Every quirk gets a test** — if a gen does something weird, prove it with a test
@@ -54,6 +57,14 @@ npm run test        # Test all packages
 npm run typecheck   # Type check all packages
 npx vitest run      # Run tests (from package dir)
 ```
+
+## Context Files
+
+- **Specs**: `specs/battle/NN-genN.md` — authoritative source for gen-specific mechanics
+- **Battle CLAUDE.md**: `packages/battle/CLAUDE.md` — cardinal delegation rule, turn flow, engine architecture
+- **Gen CLAUDE.md**: `packages/genN/CLAUDE.md` — gen-specific quirks and constraints
+
+Read the relevant CLAUDE.md and spec files before implementing.
 
 ## Key Files
 

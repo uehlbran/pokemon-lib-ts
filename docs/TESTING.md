@@ -1,33 +1,8 @@
-# Testing Guide
+# Testing Examples
 
-## Philosophy
+Code examples for each test type used in this project. For testing philosophy, coverage thresholds, AAA pattern, naming conventions, and determinism requirements, see root `CLAUDE.md`.
 
-Tests are the primary way we prove correctness. Pokemon battle mechanics are well-documented — if our implementation disagrees with Bulbapedia or Pokemon Showdown, our implementation is wrong.
-
-## Test Framework
-
-**Vitest** with v8 coverage provider. Configuration in each package's `vitest.config.ts`.
-
-```bash
-npx vitest run                    # Run all tests
-npx vitest run --coverage         # With coverage report
-npx vitest run -t "pattern"       # Tests matching pattern
-npx vitest run src/__tests__/     # Specific directory
-```
-
-## Coverage Requirements
-
-**80% minimum** across all metrics:
-- Lines
-- Branches
-- Functions
-- Statements
-
-CI enforces these thresholds. PRs below 80% will fail checks.
-
-## Test Types
-
-### Unit Tests
+## Unit Tests
 
 Test individual functions in isolation. Most of the test suite.
 
@@ -46,7 +21,7 @@ describe('calculateHP', () => {
 })
 ```
 
-### Integration Tests
+## Integration Tests
 
 Test components working together. Used for battle engine + ruleset combinations.
 
@@ -60,7 +35,7 @@ describe('Gen 1 Battle Integration', () => {
 })
 ```
 
-### Data Validation Tests
+## Data Validation Tests
 
 Verify imported data files have correct shapes and counts.
 
@@ -73,7 +48,7 @@ describe('Gen 1 Pokemon Data', () => {
 })
 ```
 
-### Property-Based Tests
+## Property-Based Tests
 
 Verify invariants that must always hold, regardless of inputs.
 
@@ -91,53 +66,9 @@ it('should always return a positive stat value given any valid inputs', () => {
 })
 ```
 
-### Replay Tests
+## Replay Tests
 
 Compare engine output against Pokemon Showdown battle logs. Used for end-to-end validation.
-
-## AAA Pattern
-
-Every test follows **Arrange, Act, Assert**:
-
-```typescript
-it('should [expected behavior] given [condition] when [action]', () => {
-  // Arrange — set up test data and dependencies
-  const pokemon = createTestPokemon({ species: 'Charizard', level: 50 })
-  const move = createTestMove({ type: 'fire', power: 120 })
-
-  // Act — perform the action being tested
-  const damage = calculateDamage(pokemon, move, target)
-
-  // Assert — verify the result
-  expect(damage).toBe(expectedValue)
-})
-```
-
-Keep sections visually separated with comments. One logical assertion per test (multiple `expect` calls are fine if they verify one behavior).
-
-## Naming Convention
-
-Use **Given/When/Then** in test names:
-
-```
-should [expected behavior] given [precondition] when [action]
-```
-
-Examples:
-- `should return 153 HP given level 50 Charizard with max IVs when calculating HP`
-- `should miss given 100% accuracy move when 1/256 roll triggers`
-- `should divide crit rate by 4 given Focus Energy is active when calculating crit`
-
-## Determinism
-
-All battle tests must be deterministic. Use `SeededRandom` with known seeds:
-
-```typescript
-const rng = new SeededRandom(12345)
-// Same seed always produces the same sequence
-```
-
-Never use `Math.random()` in tests or battle code.
 
 ## Authoritative Sources
 

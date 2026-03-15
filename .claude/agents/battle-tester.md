@@ -37,9 +37,21 @@ npx vitest run -t "damage"        # Run tests matching pattern
 - `packages/gen1/src/` — Gen 1 ruleset implementation
 - `specs/battle/` — Battle mechanic specifications
 
+## Determinism Requirement
+
+All battle tests must use `SeededRandom` with known seeds. Same seed + same actions = same events, always. Never use `Math.random()` in tests or battle code.
+
+## Context Files
+
+- **Specs**: `specs/battle/` — authoritative source for all battle mechanics per generation
+- **Battle CLAUDE.md**: `packages/battle/CLAUDE.md` — cardinal delegation rule, turn flow, testing strategy
+- **Gen CLAUDE.md**: `packages/genN/CLAUDE.md` — gen-specific quirks and constraints
+
+Read the relevant CLAUDE.md and spec files before writing tests.
+
 ## When Writing Tests
 
-1. Read the relevant spec document first
+1. Read the relevant spec document (`specs/battle/NN-genN.md`) and package CLAUDE.md first
 2. Identify the mechanic being tested
 3. Find known values from Bulbapedia/Showdown
 4. Write the test with clear setup, execution, and assertions

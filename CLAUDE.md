@@ -32,6 +32,11 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 - **Seeded PRNG**: Mulberry32. Deterministic battles for testing and replay.
 - **Fully separate per-gen data**: Each gen package bundles complete pokemon.json, moves.json, abilities.json, items.json, type-chart.json, natures.json. No overlays or diffs between gens.
 
+### Key Rules
+- **Core has zero runtime dependencies.** This is a hard rule. If you need an external library, it doesn't belong in core.
+- **The battle engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
+- **Turn flow**: `TURN_START → action selection → priority sort → TURN_RESOLVE (accuracy check → move execution → damage/effects → ability triggers) → TURN_END → weather/status ticks → FAINT_CHECK → next turn or game over`
+
 ## Tech Stack
 
 - **Language**: TypeScript 5.4+ with strict mode
@@ -102,6 +107,17 @@ Every PR gets reviewed by two AI tools plus a human approver:
 AI reviews are advisory (comments only, never formal approvals). See `.github/AI_REVIEWERS.md` for interaction commands.
 
 Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agents).
+
+## How to Add a New Generation
+
+1. Create `packages/genN/` with standard package structure
+2. Generate data: `npx tsx tools/data-importer/src/import-gen.ts --gen N`
+3. Implement the ruleset:
+   - Gen 1-2: Implement `GenerationRuleset` directly
+   - Gen 3-9: Extend `BaseRuleset`, override gen-specific methods
+4. Read the spec: `specs/battle/NN-genN.md`
+5. Write tests for every gen-specific mechanic
+6. Export from `packages/genN/src/index.ts`
 
 ## Implementation Phases
 
