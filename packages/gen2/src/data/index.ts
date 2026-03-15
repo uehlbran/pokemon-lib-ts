@@ -12,6 +12,16 @@ import naturesData from "../../data/natures.json";
 import pokemonData from "../../data/pokemon.json";
 import typeChartData from "../../data/type-chart.json";
 
+/**
+ * Creates a `DataManager` pre-loaded with complete Gen 2 data:
+ * 251 Pokémon, 251 moves, 17-type chart (adds Dark and Steel),
+ * Gen 2 held items (Leftovers, berries, type-boosting items), and a
+ * stub empty array for natures (Gen 2 has no natures).
+ *
+ * Pass the returned instance to `BattleEngine` alongside `Gen2Ruleset`.
+ *
+ * @returns A `DataManager` instance ready for use with `Gen2Ruleset`.
+ */
 export function createGen2DataManager(): DataManager {
   const dm = new DataManager();
   dm.loadFromObjects({

@@ -83,14 +83,32 @@ export class BattleEngine implements BattleEventEmitter {
 
   // --- Event Emitter ---
 
+  /**
+   * Subscribes a listener to receive every `BattleEvent` as it is emitted.
+   * The listener is called synchronously within `submitAction()` / `start()`.
+   *
+   * @param listener - Callback that receives each event in emission order.
+   */
   on(listener: BattleEventListener): void {
     this.listeners.add(listener);
   }
 
+  /**
+   * Removes a previously registered event listener.
+   * If `listener` was never registered, this is a no-op.
+   *
+   * @param listener - The same function reference passed to `on()`.
+   */
   off(listener: BattleEventListener): void {
     this.listeners.delete(listener);
   }
 
+  /**
+   * Returns the ordered log of all events emitted since `start()` was called.
+   * Useful for replay, undo, and post-battle analysis.
+   *
+   * @returns An immutable view of the event log; safe to iterate or serialize.
+   */
   getEventLog(): readonly BattleEvent[] {
     return this.eventLog;
   }
@@ -104,7 +122,14 @@ export class BattleEngine implements BattleEventEmitter {
 
   // --- Battle Flow ---
 
-  /** Start the battle (transitions from BATTLE_START -> ACTION_SELECT) */
+  /**
+   * Starts the battle, transitioning from `BATTLE_START` to `ACTION_SELECT`.
+   *
+   * Sends out the lead Pokémon for each side, triggers on-entry abilities
+   * (in Speed order), and emits a `BattleStartEvent` followed by `SwitchInEvent`s.
+   *
+   * @throws If the battle is not in `BATTLE_START` phase (i.e., already started).
+   */
   start(): void {
     if (this.state.phase !== "BATTLE_START") {
       throw new Error(`Cannot start battle in phase ${this.state.phase}`);
@@ -157,7 +182,19 @@ export class BattleEngine implements BattleEventEmitter {
     this.transitionTo("ACTION_SELECT");
   }
 
-  /** Submit an action for a side. When both sides have submitted, turn resolves. */
+  /**
+   * Submits an action for a side during the `ACTION_SELECT` phase.
+   *
+   * When both sides have submitted their actions, turn resolution begins automatically:
+   * actions are sorted by priority, then executed in order. The engine transitions through
+   * `TURN_RESOLVE` → `TURN_END` → `FAINT_CHECK`, and then back to `ACTION_SELECT`
+   * (or `SWITCH_PROMPT` / `BATTLE_END` as appropriate).
+   *
+   * @param side - Which side is submitting (0 = player, 1 = opponent).
+   * @param action - The action to perform this turn (move, switch, item, run, etc.).
+   * @throws If the current phase is not `ACTION_SELECT`.
+   * @throws If the battle has already ended.
+   */
   submitAction(side: 0 | 1, action: BattleAction): void {
     if (this.state.phase !== "ACTION_SELECT") {
       throw new Error(`Cannot submit action in phase ${this.state.phase}`);
@@ -175,7 +212,19 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
-  /** Submit a switch choice for a fainted pokemon replacement. */
+  /**
+   * Submits a forced switch choice after a Pokémon has fainted (`SWITCH_PROMPT` phase).
+   *
+   * When all sides that need to switch have submitted their choices, the replacement
+   * Pokémon are sent out and the battle transitions back to `ACTION_SELECT`
+   * (or `BATTLE_END` if the switch reveals no valid replacements).
+   *
+   * @param side - Which side is submitting the switch (0 or 1).
+   * @param teamSlot - Index in the side's `team` array of the Pokémon to send in.
+   *   Must be a living (HP > 0) Pokémon that is not already on the field.
+   * @throws If the current phase is not `SWITCH_PROMPT`.
+   * @throws If the given side does not need to switch.
+   */
   submitSwitch(side: 0 | 1, teamSlot: number): void {
     if (this.state.phase !== "SWITCH_PROMPT") {
       throw new Error(`Cannot submit switch in phase ${this.state.phase}`);
@@ -205,12 +254,25 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
-  /** Get the current phase */
+  /**
+   * Returns the current phase of the battle state machine.
+   *
+   * @returns The current `BattlePhase` string literal.
+   */
   getPhase(): BattlePhase {
     return this.state.phase;
   }
 
-  /** Get available moves for the active pokemon on a side */
+  /**
+   * Returns the list of selectable moves for the active Pokémon on the given side.
+   *
+   * Each entry in the returned array includes PP, type, category, and whether the
+   * move is currently disabled (0 PP, Disable, Encore, Taunt, etc.).
+   * Returns an empty array if there is no active Pokémon in slot 0.
+   *
+   * @param side - Which side to query (0 = player, 1 = opponent).
+   * @returns An array of `AvailableMove` objects, one per move slot (typically 4).
+   */
   getAvailableMoves(side: 0 | 1): AvailableMove[] {
     const active = this.state.sides[side].active[0];
     if (!active) return [];
@@ -246,7 +308,16 @@ export class BattleEngine implements BattleEventEmitter {
     });
   }
 
-  /** Get valid switch targets for a side */
+  /**
+   * Returns the team indices of Pokémon that can be switched in for the given side.
+   *
+   * Excludes fainted Pokémon, the currently active Pokémon, and any cases where
+   * the ruleset prevents switching (e.g., Mean Look, Shadow Tag, trapping moves).
+   *
+   * @param side - Which side to query (0 = player, 1 = opponent).
+   * @returns An array of `team` indices (0-based) for valid switch targets.
+   *   Returns an empty array if switching is not possible (trapping) or no valid targets exist.
+   */
   getAvailableSwitches(side: 0 | 1): number[] {
     const sideState = this.state.sides[side];
     const active = sideState.active[0];
@@ -263,12 +334,21 @@ export class BattleEngine implements BattleEventEmitter {
       .map((t) => t.index);
   }
 
-  /** Check if the battle has ended */
+  /**
+   * Returns `true` if the battle has concluded (phase is `BATTLE_END`).
+   *
+   * @returns `true` after a `BattleEndEvent` has been emitted; `false` otherwise.
+   */
   isEnded(): boolean {
     return this.state.ended;
   }
 
-  /** Get the winner (null if not ended) */
+  /**
+   * Returns the winning side after the battle has ended.
+   *
+   * @returns `0` if side 0 won, `1` if side 1 won, or `null` if the battle ended in a draw
+   *   or has not yet ended.
+   */
   getWinner(): 0 | 1 | null {
     return this.state.winner;
   }
