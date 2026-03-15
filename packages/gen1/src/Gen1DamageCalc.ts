@@ -191,7 +191,8 @@ export function calculateGen1Damage(
   const finalDamage = Math.floor((baseDamage * randomRoll) / 255);
 
   const breakdown: DamageBreakdown = {
-    baseDamage: Math.min(997, Math.floor(Math.floor(levelFactor * power * attack) / defense / 50)) + 2,
+    baseDamage:
+      Math.min(997, Math.floor(Math.floor(levelFactor * power * attack) / defense / 50)) + 2,
     weatherMod: 1,
     critMod: 1, // Crit handled via level doubling in levelFactor, not a separate multiplier
     randomMod: randomFactor,

@@ -725,13 +725,13 @@ describe("Gen 1 trapping move duration (weighted)", () => {
 
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     // Allow ±10% tolerance on proportions
-    expect(counts[2]! / total).toBeGreaterThan(0.27);
-    expect(counts[2]! / total).toBeLessThan(0.48);
-    expect(counts[3]! / total).toBeGreaterThan(0.27);
-    expect(counts[3]! / total).toBeLessThan(0.48);
-    expect(counts[4]! / total).toBeGreaterThan(0.05);
-    expect(counts[4]! / total).toBeLessThan(0.2);
-    expect(counts[5]! / total).toBeGreaterThan(0.05);
-    expect(counts[5]! / total).toBeLessThan(0.2);
+    expect((counts[2] ?? 0) / total).toBeGreaterThan(0.27);
+    expect((counts[2] ?? 0) / total).toBeLessThan(0.48);
+    expect((counts[3] ?? 0) / total).toBeGreaterThan(0.27);
+    expect((counts[3] ?? 0) / total).toBeLessThan(0.48);
+    expect((counts[4] ?? 0) / total).toBeGreaterThan(0.05);
+    expect((counts[4] ?? 0) / total).toBeLessThan(0.2);
+    expect((counts[5] ?? 0) / total).toBeGreaterThan(0.05);
+    expect((counts[5] ?? 0) / total).toBeLessThan(0.2);
   });
 });
