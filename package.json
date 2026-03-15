@@ -2,7 +2,7 @@
   "name": "pokemon-lib",
   "private": true,
   "packageManager": "npm@11.9.0",
-  "workspaces": ["packages/*"],
+  "workspaces": ["packages/*", "tools/*"],
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
