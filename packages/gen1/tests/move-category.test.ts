@@ -2,7 +2,7 @@ import type { PokemonType } from "@pokemon-lib-ts/core";
 import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen1DataManager } from "../src/data";
-import { isPhysicalInGen1 } from "../src/Gen1DamageCalc";
+import { isGen1PhysicalType } from "../src/Gen1DamageCalc";
 import { GEN1_TYPE_CHART } from "../src/Gen1TypeChart";
 
 /**
@@ -270,19 +270,19 @@ describe("Gen 1 Type Chart Utilities", () => {
     ];
     // Act / Assert
     for (const t of physicalTypes) {
-      expect(isPhysicalInGen1(t)).toBe(true);
+      expect(isGen1PhysicalType(t)).toBe(true);
     }
     for (const t of specialTypes) {
-      expect(isPhysicalInGen1(t)).toBe(false);
+      expect(isGen1PhysicalType(t)).toBe(false);
     }
   });
 
-  it("given isPhysicalInGen1, when checking individual types, then correctly identifies physical types", () => {
+  it("given isGen1PhysicalType, when checking individual types, then correctly identifies physical types", () => {
     // Arrange / Act / Assert
-    expect(isPhysicalInGen1("normal")).toBe(true);
-    expect(isPhysicalInGen1("fighting")).toBe(true);
-    expect(isPhysicalInGen1("fire")).toBe(false);
-    expect(isPhysicalInGen1("water")).toBe(false);
-    expect(isPhysicalInGen1("psychic")).toBe(false);
+    expect(isGen1PhysicalType("normal")).toBe(true);
+    expect(isGen1PhysicalType("fighting")).toBe(true);
+    expect(isGen1PhysicalType("fire")).toBe(false);
+    expect(isGen1PhysicalType("water")).toBe(false);
+    expect(isGen1PhysicalType("psychic")).toBe(false);
   });
 });

@@ -4,11 +4,11 @@ import type { PokemonType } from "../../src/entities/types";
 import {
   classifyEffectiveness,
   getTypeEffectiveness,
-  getTypeFactor,
+  getTypeMultiplier,
 } from "../../src/logic/type-effectiveness";
 
 // Full Gen 6+ type chart (18x18)
-// Only stores non-1.0 values; getTypeFactor defaults missing entries to 1.
+// Only stores non-1.0 values; getTypeMultiplier defaults missing entries to 1.
 const ALL_TYPES: PokemonType[] = [
   "normal",
   "fire",
@@ -187,33 +187,33 @@ function buildDefaultTypeChart(): TypeChart {
 
 const TYPE_CHART = buildDefaultTypeChart();
 
-describe("getTypeFactor", () => {
+describe("getTypeMultiplier", () => {
   it("should return 2.0 for Fire > Grass", () => {
-    expect(getTypeFactor("fire", "grass", TYPE_CHART)).toBe(2.0);
+    expect(getTypeMultiplier("fire", "grass", TYPE_CHART)).toBe(2.0);
   });
 
   it("should return 0.5 for Fire > Water", () => {
-    expect(getTypeFactor("fire", "water", TYPE_CHART)).toBe(0.5);
+    expect(getTypeMultiplier("fire", "water", TYPE_CHART)).toBe(0.5);
   });
 
   it("should return 0 for Normal > Ghost", () => {
-    expect(getTypeFactor("normal", "ghost", TYPE_CHART)).toBe(0);
+    expect(getTypeMultiplier("normal", "ghost", TYPE_CHART)).toBe(0);
   });
 
   it("should return 1.0 for Normal > Normal", () => {
-    expect(getTypeFactor("normal", "normal", TYPE_CHART)).toBe(1.0);
+    expect(getTypeMultiplier("normal", "normal", TYPE_CHART)).toBe(1.0);
   });
 
   it("should return 2.0 for Ghost > Psychic", () => {
-    expect(getTypeFactor("ghost", "psychic", TYPE_CHART)).toBe(2.0);
+    expect(getTypeMultiplier("ghost", "psychic", TYPE_CHART)).toBe(2.0);
   });
 
   it("should return 0 for Dragon > Fairy", () => {
-    expect(getTypeFactor("dragon", "fairy", TYPE_CHART)).toBe(0);
+    expect(getTypeMultiplier("dragon", "fairy", TYPE_CHART)).toBe(0);
   });
 
   it("should return 2.0 for Fairy > Dragon", () => {
-    expect(getTypeFactor("fairy", "dragon", TYPE_CHART)).toBe(2.0);
+    expect(getTypeMultiplier("fairy", "dragon", TYPE_CHART)).toBe(2.0);
   });
 });
 

@@ -626,7 +626,7 @@
     },
     "effect": {
       "type": "switch-out",
-      "who": "foe"
+      "target": "foe"
     },
     "description": "The target is blown away and replaced by another Pokemon in its party.",
     "generation": 1
@@ -1647,7 +1647,7 @@
     },
     "effect": {
       "type": "switch-out",
-      "who": "foe"
+      "target": "foe"
     },
     "description": "The target is scared off and replaced by another Pokemon in its party.",
     "generation": 1

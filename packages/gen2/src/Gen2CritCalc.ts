@@ -12,7 +12,7 @@ import type { MoveData, SeededRandom } from "@pokemon-lib-ts/core";
  * | 3     | 85/256   |
  * | 4+    | 128/256  |
  */
-export const GEN2_CRIT_STAGES: readonly number[] = [
+export const GEN2_CRIT_RATES: readonly number[] = [
   17 / 256,
   32 / 256,
   64 / 256,
@@ -49,7 +49,7 @@ function isHighCritMove(move: MoveData): boolean {
  * - Focus Energy: +1 (FIXED in Gen 2 — not bugged like Gen 1)
  * - Scope Lens item: +1
  *
- * The stage is clamped to [0, 4] (index into GEN2_CRIT_STAGES).
+ * The stage is clamped to [0, 4] (index into GEN2_CRIT_RATES).
  *
  * @param attacker - The active attacking Pokemon
  * @param move - The move being used
@@ -74,7 +74,7 @@ export function getGen2CritStage(attacker: ActivePokemon, move: MoveData): numbe
   }
 
   // Clamp to max stage
-  return Math.min(stage, GEN2_CRIT_STAGES.length - 1);
+  return Math.min(stage, GEN2_CRIT_RATES.length - 1);
 }
 
 /**
@@ -94,6 +94,6 @@ export function rollGen2Critical(
   rng: SeededRandom,
 ): boolean {
   const stage = getGen2CritStage(attacker, move);
-  const critRate = GEN2_CRIT_STAGES[stage] as number;
+  const critRate = GEN2_CRIT_RATES[stage] as number;
   return rng.chance(critRate);
 }

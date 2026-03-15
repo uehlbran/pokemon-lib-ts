@@ -490,7 +490,7 @@
     },
     "effect": {
       "type": "switch-out",
-      "who": "self"
+      "target": "self"
     },
     "description": "The user is replaced with another Pokemon in its party. The selected Pokemon has the user's stat stage changes transferred to it, as well as the effects of confusion, Curse, Defense Curl, Focus Energy, Foresight, Leech Seed, Lock-On (Mind Reader), Minimize, Mist, Perish Song, the trapper or trapped effects of Mean Look (Spider Web), and a substitute with its remaining HP.",
     "generation": 2

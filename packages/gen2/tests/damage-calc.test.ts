@@ -8,7 +8,7 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen2Damage, isPhysicalInGen2 } from "../src/Gen2DamageCalc";
+import { calculateGen2Damage, isGen2PhysicalType } from "../src/Gen2DamageCalc";
 
 /**
  * Gen 2 Damage Formula Tests
@@ -240,37 +240,37 @@ function createMockState(weather?: { type: string; turnsLeft: number; source: st
 describe("Gen 2 Damage Calculation", () => {
   // --- Physical vs Special Type Detection ---
 
-  describe("isPhysicalInGen2", () => {
+  describe("isGen2PhysicalType", () => {
     it("given steel type, when checking if physical, then returns true", () => {
-      expect(isPhysicalInGen2("steel")).toBe(true);
+      expect(isGen2PhysicalType("steel")).toBe(true);
     });
 
     it("given dark type, when checking if physical, then returns false (dark is special)", () => {
-      expect(isPhysicalInGen2("dark")).toBe(false);
+      expect(isGen2PhysicalType("dark")).toBe(false);
     });
 
     it("given normal type, when checking if physical, then returns true", () => {
-      expect(isPhysicalInGen2("normal")).toBe(true);
+      expect(isGen2PhysicalType("normal")).toBe(true);
     });
 
     it("given fighting type, when checking if physical, then returns true", () => {
-      expect(isPhysicalInGen2("fighting")).toBe(true);
+      expect(isGen2PhysicalType("fighting")).toBe(true);
     });
 
     it("given fire type, when checking if physical, then returns false (fire is special)", () => {
-      expect(isPhysicalInGen2("fire")).toBe(false);
+      expect(isGen2PhysicalType("fire")).toBe(false);
     });
 
     it("given water type, when checking if physical, then returns false (water is special)", () => {
-      expect(isPhysicalInGen2("water")).toBe(false);
+      expect(isGen2PhysicalType("water")).toBe(false);
     });
 
     it("given ghost type, when checking if physical, then returns true", () => {
-      expect(isPhysicalInGen2("ghost")).toBe(true);
+      expect(isGen2PhysicalType("ghost")).toBe(true);
     });
 
     it("given poison type, when checking if physical, then returns true", () => {
-      expect(isPhysicalInGen2("poison")).toBe(true);
+      expect(isGen2PhysicalType("poison")).toBe(true);
     });
   });
 

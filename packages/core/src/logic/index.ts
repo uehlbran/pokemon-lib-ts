@@ -12,10 +12,10 @@ export {
   getCritRate,
 } from "./critical-hit";
 export {
-  applyModifier,
-  applyModifierChain,
+  applyDamageModifier,
+  applyDamageModifierChain,
   getStabModifier,
-  getWeatherModifier,
+  getWeatherDamageModifier,
 } from "./damage-utils";
 export {
   calculateExpGain,
@@ -39,5 +39,5 @@ export {
   classifyEffectiveness,
   type EffectivenessCategory,
   getTypeEffectiveness,
-  getTypeFactor,
+  getTypeMultiplier,
 } from "./type-effectiveness";

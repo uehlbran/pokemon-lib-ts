@@ -55,7 +55,7 @@ export function getGen1CritRate(
 /**
  * Determine if a move is a high critical hit ratio move in Gen 1.
  */
-export function isHighCritMove(move: MoveData): boolean {
+export function isGen1HighCritMove(move: MoveData): boolean {
   return HIGH_CRIT_MOVES.includes(move.id);
 }
 
@@ -75,7 +75,7 @@ export function rollGen1Critical(
   rng: SeededRandom,
 ): boolean {
   const hasFocusEnergy = attacker.volatileStatuses.has("focus-energy");
-  const highCrit = isHighCritMove(move);
+  const highCrit = isGen1HighCritMove(move);
   const critRate = getGen1CritRate(attackerSpecies.baseStats.speed, hasFocusEnergy, highCrit);
 
   return rng.chance(critRate);

@@ -62,7 +62,7 @@ export class MockRuleset implements GenerationRuleset {
 
   getTypeChart(): TypeChart {
     // Minimal type chart — everything is neutral
-    const types = this.getValidTypes();
+    const types = this.getAvailableTypes();
     const chart: Record<string, Record<string, number>> = {};
     for (const atk of types) {
       chart[atk] = {};
@@ -73,7 +73,7 @@ export class MockRuleset implements GenerationRuleset {
     return chart as TypeChart;
   }
 
-  getValidTypes(): readonly PokemonType[] {
+  getAvailableTypes(): readonly PokemonType[] {
     return [
       "normal",
       "fire",

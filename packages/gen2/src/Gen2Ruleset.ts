@@ -42,7 +42,7 @@ import {
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 import { createGen2DataManager } from "./data";
-import { GEN2_CRIT_STAGES, rollGen2Critical } from "./Gen2CritCalc";
+import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";
 import { calculateGen2Damage } from "./Gen2DamageCalc";
 import { applyGen2HeldItem } from "./Gen2Items";
 import { calculateGen2Stats } from "./Gen2StatCalc";
@@ -50,8 +50,8 @@ import { calculateGen2StatusDamage, canInflictGen2Status } from "./Gen2Status";
 import { GEN2_TYPE_CHART, GEN2_TYPES } from "./Gen2TypeChart";
 import { applyGen2WeatherEffects } from "./Gen2Weather";
 
-// Single source of truth for Gen 2 crit rates — use GEN2_CRIT_STAGES from Gen2CritCalc
-const GEN2_CRIT_RATE_TABLE: readonly number[] = GEN2_CRIT_STAGES;
+// Single source of truth for Gen 2 crit rates — use GEN2_CRIT_RATES from Gen2CritCalc
+const GEN2_CRIT_RATE_TABLE: readonly number[] = GEN2_CRIT_RATES;
 
 /**
  * Gen2Ruleset — implements GenerationRuleset directly (not extending BaseRuleset).
@@ -82,7 +82,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     return GEN2_TYPE_CHART;
   }
 
-  getValidTypes(): readonly PokemonType[] {
+  getAvailableTypes(): readonly PokemonType[] {
     return GEN2_TYPES;
   }
 
@@ -465,7 +465,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       }
 
       case "switch-out": {
-        if (effect.who === "self") {
+        if (effect.target === "self") {
           // Baton Pass — switch out preserving stat changes and volatile statuses
           result.switchOut = true;
         }

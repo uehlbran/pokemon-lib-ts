@@ -2,7 +2,7 @@ import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN2_CRIT_STAGES, getGen2CritStage, rollGen2Critical } from "../src/Gen2CritCalc";
+import { GEN2_CRIT_RATES, getGen2CritStage, rollGen2Critical } from "../src/Gen2CritCalc";
 
 /**
  * Helper to create a minimal ActivePokemon for crit calc testing.
@@ -132,16 +132,16 @@ describe("Gen2CritCalc", () => {
   describe("Given the crit stage table", () => {
     it("should have 5 stages defined", () => {
       // Assert
-      expect(GEN2_CRIT_STAGES).toHaveLength(5);
+      expect(GEN2_CRIT_RATES).toHaveLength(5);
     });
 
     it("should have correct rate values", () => {
       // Assert
-      expect(GEN2_CRIT_STAGES[0]).toBeCloseTo(17 / 256, 6);
-      expect(GEN2_CRIT_STAGES[1]).toBeCloseTo(32 / 256, 6);
-      expect(GEN2_CRIT_STAGES[2]).toBeCloseTo(64 / 256, 6);
-      expect(GEN2_CRIT_STAGES[3]).toBeCloseTo(85 / 256, 6);
-      expect(GEN2_CRIT_STAGES[4]).toBeCloseTo(128 / 256, 6);
+      expect(GEN2_CRIT_RATES[0]).toBeCloseTo(17 / 256, 6);
+      expect(GEN2_CRIT_RATES[1]).toBeCloseTo(32 / 256, 6);
+      expect(GEN2_CRIT_RATES[2]).toBeCloseTo(64 / 256, 6);
+      expect(GEN2_CRIT_RATES[3]).toBeCloseTo(85 / 256, 6);
+      expect(GEN2_CRIT_RATES[4]).toBeCloseTo(128 / 256, 6);
     });
   });
 
@@ -295,11 +295,11 @@ describe("Gen2CritCalc", () => {
 
       // Act — stage 3 is max from these modifiers, but verify capping logic
       const stage = getGen2CritStage(attacker, move);
-      const cappedStage = Math.min(stage, GEN2_CRIT_STAGES.length - 1);
+      const cappedStage = Math.min(stage, GEN2_CRIT_RATES.length - 1);
 
       // Assert
       expect(cappedStage).toBeLessThanOrEqual(4);
-      expect(GEN2_CRIT_STAGES[cappedStage]).toBeLessThanOrEqual(255 / 256);
+      expect(GEN2_CRIT_RATES[cappedStage]).toBeLessThanOrEqual(255 / 256);
     });
   });
 

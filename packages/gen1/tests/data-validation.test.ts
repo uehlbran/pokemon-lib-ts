@@ -564,12 +564,12 @@ describe("Gen 1 Ruleset Feature Flags", () => {
     expect(result).toEqual([]);
   });
 
-  it("given Gen1Ruleset, when checking getValidTypes, then returns exactly 15 types", () => {
+  it("given Gen1Ruleset, when checking getAvailableTypes, then returns exactly 15 types", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
 
     // Act
-    const types = ruleset.getValidTypes();
+    const types = ruleset.getAvailableTypes();
 
     // Assert
     expect(types.length).toBe(15);

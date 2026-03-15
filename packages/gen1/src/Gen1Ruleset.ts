@@ -77,7 +77,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     return GEN1_TYPE_CHART;
   }
 
-  getValidTypes(): readonly PokemonType[] {
+  getAvailableTypes(): readonly PokemonType[] {
     return GEN1_TYPES;
   }
 

@@ -24,7 +24,7 @@ class TestRuleset extends BaseRuleset {
   readonly name = "Test Gen 3";
 
   getTypeChart(): TypeChart {
-    const types = this.getValidTypes();
+    const types = this.getAvailableTypes();
     const chart: Record<string, Record<string, number>> = {};
     for (const atk of types) {
       const row: Record<string, number> = {};
@@ -36,7 +36,7 @@ class TestRuleset extends BaseRuleset {
     return chart as TypeChart;
   }
 
-  getValidTypes(): readonly PokemonType[] {
+  getAvailableTypes(): readonly PokemonType[] {
     return [
       "normal",
       "fire",
