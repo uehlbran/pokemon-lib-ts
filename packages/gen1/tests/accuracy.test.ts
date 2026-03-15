@@ -103,6 +103,8 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
     types: ["electric"] as PokemonType[],
     ability: "",
     lastMoveUsed: null,
+    lastDamageTaken: 0,
+    lastDamageType: null,
     turnsOnField: 1,
     movedThisTurn: false,
     consecutiveProtects: 0,
