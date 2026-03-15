@@ -109,91 +109,75 @@ describe("BattleEngine — branch coverage", () => {
   });
 
   describe("constructor with unknown species", () => {
-    it("given a pokemon with unknown species and no calculatedStats, when engine is created, then defaults are assigned", () => {
+    it("given a pokemon with unknown species, when engine is created, then it throws", () => {
       // Arrange
       const team1 = [
         createTestPokemon(999, 50, {
           uid: "unknown-1",
           nickname: "Unknown",
           currentHp: 150,
-          calculatedStats: undefined,
         }),
       ];
 
-      // Act
-      const { engine } = createEngine({ team1 });
-
-      // Assert — should have default stats
-      const pokemon = engine.getTeam(0)[0] as PokemonInstance;
-      expect(pokemon.calculatedStats).toBeDefined();
-      expect(pokemon.calculatedStats?.hp).toBe(150); // Uses currentHp as fallback
+      // Act & Assert — engine must validate species at construction time
+      expect(() => createEngine({ team1 })).toThrow(/999/);
     });
 
-    it("given a pokemon with unknown species but has calculatedStats, when engine is created, then existing stats are kept", () => {
-      // Arrange
+    it("given all team members have valid species, when engine is created, then stats are calculated", () => {
+      // Arrange — use real species IDs from mock data manager (6 = Charizard)
       const team1 = [
-        createTestPokemon(999, 50, {
-          uid: "unknown-1",
-          nickname: "Unknown",
-          currentHp: 150,
-          calculatedStats: {
-            hp: 300,
-            attack: 150,
-            defense: 150,
-            spAttack: 150,
-            spDefense: 150,
-            speed: 150,
-          },
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          currentHp: 200,
         }),
       ];
 
       // Act
       const { engine } = createEngine({ team1 });
 
-      // Assert — should keep the existing stats
+      // Assert — stats are populated from species data
       const pokemon = engine.getTeam(0)[0] as PokemonInstance;
-      expect(pokemon.calculatedStats?.hp).toBe(300);
+      expect(pokemon.calculatedStats).toBeDefined();
+      expect(pokemon.calculatedStats?.hp).toBeGreaterThan(0);
     });
   });
 
   describe("start with abilities", () => {
     it("given a ruleset with abilities and slower lead, when battle starts, then abilities trigger in speed order", () => {
-      // Arrange — side 1 is faster than side 0
-      // Use species IDs not in the data manager so calculatedStats are preserved
+      // Arrange — side 1 (FastMon, speed 120) should trigger first
+      // Use real species IDs (6=Charizard, 9=Blastoise) and override calculateStats
+      // to return the desired speeds without recalculating from base stats.
       const team1 = [
-        createTestPokemon(998, 50, {
+        createTestPokemon(9, 50, {
           uid: "slow-mon",
           nickname: "SlowMon",
           moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 50,
-          },
           currentHp: 200,
         }),
       ];
       const team2 = [
-        createTestPokemon(999, 50, {
+        createTestPokemon(6, 50, {
           uid: "fast-mon",
           nickname: "FastMon",
           moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 120,
-          },
           currentHp: 200,
         }),
       ];
 
       const ruleset = new MockRuleset();
+      // Override calculateStats so speed values are deterministic for the test
+      (ruleset as unknown as Record<string, unknown>).calculateStats = (
+        pokemon: PokemonInstance,
+      ) => ({
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: pokemon.speciesId === 9 ? 50 : 120,
+      });
       // Override to enable abilities
       (ruleset as unknown as Record<string, unknown>).hasAbilities = () => true;
       const abilityTriggers: number[] = [];
@@ -356,36 +340,27 @@ describe("BattleEngine — branch coverage", () => {
   });
 
   describe("getAvailableMoves with unknown move data", () => {
-    it("given a pokemon with a move not in the data manager, when getAvailableMoves is called, then defaults are used", () => {
+    it("given a pokemon with a move not in the data manager, when getAvailableMoves is called, then the move is skipped and a warning is emitted", () => {
       // Arrange
       const team1 = [
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [{ moveId: "nonexistent-move", currentPP: 10, maxPP: 15, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 120,
-          },
           currentHp: 200,
         }),
       ];
 
-      const { engine } = createEngine({ team1 });
+      const { engine, events } = createEngine({ team1 });
       engine.start();
 
       // Act
       const moves = engine.getAvailableMoves(0);
 
-      // Assert
-      expect(moves[0]?.moveId).toBe("nonexistent-move");
-      expect(moves[0]?.displayName).toBe("nonexistent-move");
-      expect(moves[0]?.type).toBe("normal");
-      expect(moves[0]?.category).toBe("physical");
+      // Assert — unknown move is excluded; engine emits a warning
+      expect(moves).toHaveLength(0);
+      const warning = events.find((e) => e.type === "engine-warning");
+      expect(warning).toBeDefined();
     });
   });
 
@@ -677,44 +652,39 @@ describe("BattleEngine — branch coverage", () => {
 
   describe("speed tiebreak in turn order", () => {
     it("given two pokemon with the same speed, when turn order is resolved, then order is decided by RNG", () => {
-      // Arrange — both at speed 100, use unknown species so stats are preserved
+      // Arrange — both at speed 100; override calculateStats to produce identical speeds
       // Run multiple times with different seeds to get both orderings
       const firstMovers = new Set<string>();
       for (let seed = 0; seed < 50; seed++) {
         const t1 = [
-          createTestPokemon(998, 50, {
+          createTestPokemon(6, 50, {
             uid: "mon-a",
             nickname: "MonA",
             moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-            calculatedStats: {
-              hp: 200,
-              attack: 100,
-              defense: 100,
-              spAttack: 100,
-              spDefense: 100,
-              speed: 100,
-            },
             currentHp: 200,
           }),
         ];
         const t2 = [
-          createTestPokemon(999, 50, {
+          createTestPokemon(9, 50, {
             uid: "mon-b",
             nickname: "MonB",
             moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-            calculatedStats: {
-              hp: 200,
-              attack: 100,
-              defense: 100,
-              spAttack: 100,
-              spDefense: 100,
-              speed: 100,
-            },
             currentHp: 200,
           }),
         ];
 
-        const { engine, events } = createEngine({ team1: t1, team2: t2, seed });
+        // Use a ruleset that gives both pokemon the same speed (100) to force a tie
+        const ruleset = new MockRuleset();
+        (ruleset as unknown as Record<string, unknown>).calculateStats = () => ({
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        });
+
+        const { engine, events } = createEngine({ team1: t1, team2: t2, seed, ruleset });
         engine.start();
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
         engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });

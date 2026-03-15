@@ -1,20 +1,5 @@
 import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
-
-/**
- * Compute the stat experience contribution used in Gen 1 stat formulas.
- *
- * Formula: floor(ceil(sqrt(statExp)) / 4)
- *
- * Examples:
- *   statExp=0     → 0
- *   statExp=1     → floor(ceil(1) / 4)    = floor(1/4)   = 0
- *   statExp=16    → floor(ceil(4) / 4)    = floor(4/4)   = 1
- *   statExp=65535 → floor(ceil(255.998…) / 4) = floor(256/4) = 64
- */
-export function calculateStatExpContribution(statExp: number): number {
-  const clamped = Math.max(0, Math.min(65535, Math.floor(statExp))); // Stat EXP range: 0–65535
-  return Math.floor(Math.ceil(Math.sqrt(clamped)) / 4);
-}
+import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 1 formula for non-HP stats.

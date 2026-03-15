@@ -24,6 +24,12 @@ export {
   getExpToNextLevel,
 } from "./experience";
 export {
+  calculateStatExpContribution,
+  gen12FullParalysisCheck,
+  gen14MultiHitRoll,
+  gen16ConfusionSelfHitRoll,
+} from "./gen12-shared.js";
+export {
   createMoveSlot,
   createPokemonInstance,
   determineGender,

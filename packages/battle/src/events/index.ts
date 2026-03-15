@@ -20,6 +20,7 @@ export type {
   DynamaxEndEvent,
   DynamaxEvent,
   EffectivenessEvent,
+  EngineWarningEvent,
   ExpGainEvent,
   FaintEvent,
   HazardClearEvent,

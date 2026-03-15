@@ -9,6 +9,7 @@ import type {
   MoveAction,
 } from "../events";
 import type { GenerationRuleset } from "../ruleset";
+import { generations } from "../ruleset";
 import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";
 import {
   createActivePokemon,
@@ -23,6 +24,12 @@ import {
  * a stream of BattleEvents for UI/logging consumers.
  */
 export class BattleEngine implements BattleEventEmitter {
+  // ─── State mutation model ───────────────────────────────────────────────────
+  // BattleState is the source of truth. It is mutated in-place during turn
+  // resolution. Events (BattleEvent[]) are emitted as notifications for UI/replay
+  // consumers — do not reconstruct state from events.
+  // ────────────────────────────────────────────────────────────────────────────
+
   readonly state: BattleState;
   private readonly ruleset: GenerationRuleset;
   private readonly dataManager: DataManager;
@@ -60,25 +67,34 @@ export class BattleEngine implements BattleEventEmitter {
     // Calculate initial stats for all pokemon
     for (const side of this.state.sides) {
       for (const pokemon of side.team) {
-        try {
-          const species = this.dataManager.getSpecies(pokemon.speciesId);
-          pokemon.calculatedStats = this.ruleset.calculateStats(pokemon, species);
-          pokemon.currentHp = pokemon.calculatedStats.hp;
-        } catch {
-          // If species lookup fails, use existing calculatedStats or defaults
-          if (!pokemon.calculatedStats) {
-            pokemon.calculatedStats = {
-              hp: pokemon.currentHp,
-              attack: 100,
-              defense: 100,
-              spAttack: 100,
-              spDefense: 100,
-              speed: 100,
-            };
-          }
+        const species = this.dataManager.getSpecies(pokemon.speciesId);
+        if (!species) {
+          throw new Error(
+            `BattleEngine: species "${pokemon.speciesId}" not found in data. ` +
+              `Validate your team before starting a battle.`,
+          );
         }
+        pokemon.calculatedStats = this.ruleset.calculateStats(pokemon, species);
+        pokemon.currentHp = pokemon.calculatedStats.hp;
       }
     }
+  }
+
+  /**
+   * Factory: create a BattleEngine from a registered generation number.
+   *
+   * Requires the gen ruleset to be registered via `generations.register(ruleset)` first.
+   * Useful for consumers who prefer `BattleEngine.fromGeneration(1, config, dm)` over
+   * importing `Gen1Ruleset` directly.
+   *
+   * @param gen - Generation number (1–9)
+   * @param config - Battle configuration
+   * @param dataManager - Data manager for species/move lookups
+   * @throws If the generation is not registered
+   */
+  static fromGeneration(gen: number, config: BattleConfig, dataManager: DataManager): BattleEngine {
+    const ruleset = generations.get(gen as Parameters<typeof generations.get>[0]);
+    return new BattleEngine(config, ruleset, dataManager);
   }
 
   // --- Event Emitter ---
@@ -277,12 +293,16 @@ export class BattleEngine implements BattleEventEmitter {
     const active = this.state.sides[side].active[0];
     if (!active) return [];
 
-    return active.pokemon.moves.map((slot, index) => {
+    return active.pokemon.moves.flatMap((slot, index) => {
       let moveData: MoveData | undefined;
       try {
         moveData = this.dataManager.getMove(slot.moveId);
       } catch {
-        // Move not found in data manager
+        this.emit({
+          type: "engine-warning",
+          message: `Move "${slot.moveId}" not found in data for Pokémon "${active.pokemon.speciesId}". Slot skipped.`,
+        });
+        return [];
       }
 
       const disabled =
@@ -290,21 +310,23 @@ export class BattleEngine implements BattleEventEmitter {
         (active.volatileStatuses.has("disable") &&
           active.volatileStatuses.get("disable")?.data?.moveId === slot.moveId);
 
-      return {
-        index,
-        moveId: slot.moveId,
-        displayName: moveData?.displayName ?? slot.moveId,
-        type: moveData?.type ?? ("normal" as const),
-        category: moveData?.category ?? ("physical" as const),
-        pp: slot.currentPP,
-        maxPp: slot.maxPP,
-        disabled,
-        disabledReason: disabled
-          ? slot.currentPP <= 0
-            ? "No PP remaining"
-            : "Move is disabled"
-          : undefined,
-      };
+      return [
+        {
+          index,
+          moveId: slot.moveId,
+          displayName: moveData?.displayName ?? slot.moveId,
+          type: moveData?.type ?? ("normal" as const),
+          category: moveData?.category ?? ("physical" as const),
+          pp: slot.currentPP,
+          maxPp: slot.maxPP,
+          disabled,
+          disabledReason: disabled
+            ? slot.currentPP <= 0
+              ? "No PP remaining"
+              : "Move is disabled"
+            : undefined,
+        },
+      ];
     });
   }
 
@@ -452,13 +474,14 @@ export class BattleEngine implements BattleEventEmitter {
     const pokemon = side.team[teamSlot];
     if (!pokemon) return;
 
-    let types: import("@pokemon-lib-ts/core").PokemonType[];
-    try {
-      const species = this.dataManager.getSpecies(pokemon.speciesId);
-      types = [...species.types];
-    } catch {
-      types = ["normal"];
+    const species = this.dataManager.getSpecies(pokemon.speciesId);
+    if (!species) {
+      throw new Error(
+        `BattleEngine: species "${pokemon.speciesId}" missing during switch-in. ` +
+          `This should not happen if species was validated at battle start.`,
+      );
     }
+    const types = [...species.types];
 
     const active = createActivePokemon(pokemon, teamSlot, types);
     side.active[0] = active;
@@ -501,6 +524,16 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private resolveTurn(): void {
+    // ─── Turn state machine ──────────────────────────────────────────────────────
+    // BATTLE_START → ACTION_SELECT
+    // ACTION_SELECT → TURN_RESOLVE     (both sides submit actions)
+    // TURN_RESOLVE  → TURN_END         (all actions execute)
+    // TURN_END      → FAINT_CHECK      (end-of-turn effects)
+    // FAINT_CHECK   → SWITCH_PROMPT    (if a Pokémon fainted and replacement needed)
+    //              → ACTION_SELECT     (normal next turn)
+    //              → BATTLE_END        (all Pokémon on one side fainted)
+    // ────────────────────────────────────────────────────────────────────────────
+
     const action0 = this.pendingActions.get(0);
     const action1 = this.pendingActions.get(1);
     if (!action0 || !action1) return;
@@ -533,7 +566,10 @@ export class BattleEngine implements BattleEventEmitter {
         try {
           moveData = this.dataManager.getMove(moveSlot.moveId);
         } catch {
-          // Move not found in data — skip
+          this.emit({
+            type: "engine-warning",
+            message: `Pursuit move data not found. Skipping Pursuit execution.`,
+          });
         }
         if (!moveData || moveData.id !== "pursuit") continue;
 
@@ -644,7 +680,11 @@ export class BattleEngine implements BattleEventEmitter {
     try {
       moveData = this.dataManager.getMove(moveSlot.moveId);
     } catch {
-      // Move not found — treat as a basic normal physical move
+      // Move data missing — this should not happen for pre-validated moves.
+      this.emit({
+        type: "engine-warning",
+        message: `Move "${moveSlot.moveId}" data missing during execution.`,
+      });
       this.emit({
         type: "move-fail",
         side: action.side,

@@ -1,16 +1,5 @@
 import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
-
-/**
- * Calculate the StatExp contribution for Gen 2 stat formulas.
- *
- * StatExp contribution = floor(ceil(sqrt(statExp)) / 4)
- *
- * @param statExp - Stat Experience value (0-65535), stored in `evs` for compatibility
- */
-function calculateStatExpContribution(statExp: number): number {
-  if (statExp === 0) return 0;
-  return Math.floor(Math.ceil(Math.sqrt(statExp)) / 4);
-}
+import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
 
 /**
  * Calculate a Gen 2 HP stat.

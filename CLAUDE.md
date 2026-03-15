@@ -129,7 +129,7 @@ Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agent
 5. Write tests for every gen-specific mechanic
 6. Export from `packages/genN/src/index.ts`
 
-> Gen 1–2 implement `GenerationRuleset` directly. Do **not** make them extend `BaseRuleset` — they are too mechanically different. Bug fixes to shared Gen 1–2 formulas (`checkFullParalysis`, `rollConfusionSelfHit`, `rollMultiHitCount`, stat EXP contribution) must be applied to each gen separately.
+> Gen 1–2 implement `GenerationRuleset` directly. Do **not** make them extend `BaseRuleset` — they are too mechanically different. Shared Gen 1–2 formulas (`gen12FullParalysisCheck`, `gen16ConfusionSelfHitRoll`, `gen14MultiHitRoll`, `calculateStatExpContribution`) live in `packages/core/src/logic/gen12-shared.ts` — fix them there and both gens benefit automatically.
 
 ## Implementation Phases
 

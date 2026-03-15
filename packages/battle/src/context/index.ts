@@ -1,6 +1,8 @@
 export type { TrainerDataRef } from "../state";
 export type {
   AbilityContext,
+  AbilityEffect,
+  AbilityEffectType,
   AbilityResult,
   AccuracyContext,
   AvailableMove,
@@ -14,6 +16,8 @@ export type {
   EntryHazardResult,
   ExpContext,
   ItemContext,
+  ItemEffect,
+  ItemEffectType,
   ItemResult,
   MoveEffectContext,
   MoveEffectResult,
