@@ -147,3 +147,17 @@ Independent semantic versioning per package. A Gen 1 bug fix doesn't bump Gen 9.
 - Examples of parallelizable work: writing tests for different modules, exploring separate areas of the codebase, implementing independent functions/classes, running build + test + typecheck, reviewing different files
 - When implementing a plan with independent steps, dispatch those steps as parallel subagents rather than executing them sequentially in the main context
 - Only serialize work when there is a true dependency (e.g., must read output of step 1 to inform step 2)
+
+## PR Workflow
+
+- Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use `/loop` or manual polling.
+- **Act autonomously.** When handling a PR, agents should:
+  - Push fixes for reviewer feedback without asking permission
+  - Fix CI/lint/test failures independently
+  - Resolve merge conflicts
+  - Re-request reviews after pushing fixes
+- **Only escalate when:**
+  - A reviewer requests an architectural change that conflicts with existing patterns or specs
+  - You've attempted a fix 2+ times and it's still failing
+  - The reviewer's feedback is ambiguous and could be interpreted multiple ways
+  - A decision requires trade-offs only the user can weigh
