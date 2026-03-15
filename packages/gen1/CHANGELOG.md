@@ -5,6 +5,12 @@ All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-15
+
+### Fixed
+- Self-Destruct handler: move ID lookup was `"selfdestruct"` but data uses `"self-destruct"` — user now correctly faints after use
+- Counter: now restricted to Normal and Fighting type moves only (uses new `lastDamageType` field from `@pokemon-lib-ts/battle@0.5.0`)
+
 ## [0.2.4] - 2026-03-15
 
 ### Fixed
