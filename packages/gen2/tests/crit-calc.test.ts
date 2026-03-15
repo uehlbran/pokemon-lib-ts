@@ -1,6 +1,6 @@
-import type { ActivePokemon } from "@pokemon-lib/battle";
-import { SeededRandom } from "@pokemon-lib/core";
-import type { MoveData } from "@pokemon-lib/core";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { MoveData } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN2_CRIT_STAGES, getGen2CritStage, rollGen2Critical } from "../src/Gen2CritCalc";
 

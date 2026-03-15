@@ -1,4 +1,4 @@
-import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib/core";
+import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen2Stats } from "../src/Gen2StatCalc";
 

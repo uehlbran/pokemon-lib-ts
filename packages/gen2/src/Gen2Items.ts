@@ -1,4 +1,4 @@
-import type { ItemContext, ItemResult } from "@pokemon-lib/battle";
+import type { ItemContext, ItemResult } from "@pokemon-lib-ts/battle";
 
 /** No-op result for when an item doesn't activate. */
 const NO_ACTIVATION: ItemResult = {

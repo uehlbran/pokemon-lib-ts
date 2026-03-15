@@ -1,5 +1,5 @@
-import type { ActivePokemon, BattleState } from "@pokemon-lib/battle";
-import type { PokemonType, PrimaryStatus } from "@pokemon-lib/core";
+import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen2StatusDamage, canInflictGen2Status } from "../src/Gen2Status";
 

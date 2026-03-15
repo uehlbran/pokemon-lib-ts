@@ -1,5 +1,5 @@
-import type { ActivePokemon } from "@pokemon-lib/battle";
-import type { DamageContext } from "@pokemon-lib/battle";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import type { DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonInstance,
@@ -7,7 +7,7 @@ import type {
   PokemonType,
   StatBlock,
   TypeChart,
-} from "@pokemon-lib/core";
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen2Damage, isPhysicalInGen2 } from "../src/Gen2DamageCalc";
 

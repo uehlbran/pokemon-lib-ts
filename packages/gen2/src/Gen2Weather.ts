@@ -1,5 +1,5 @@
-import type { ActivePokemon, BattleState, WeatherEffectResult } from "@pokemon-lib/battle";
-import type { PokemonType, WeatherType } from "@pokemon-lib/core";
+import type { ActivePokemon, BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
+import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
 
 /** Types immune to sandstorm damage in Gen 2 */
 const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground", "steel"];

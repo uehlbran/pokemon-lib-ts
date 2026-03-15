@@ -1,5 +1,5 @@
-import type { ActivePokemon, BattleState } from "@pokemon-lib/battle";
-import type { PokemonType, PrimaryStatus } from "@pokemon-lib/core";
+import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 2 type immunities to status conditions.

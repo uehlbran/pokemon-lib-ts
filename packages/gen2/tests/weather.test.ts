@@ -1,5 +1,5 @@
-import type { ActivePokemon, BattleState } from "@pokemon-lib/battle";
-import type { PokemonType } from "@pokemon-lib/core";
+import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   applyGen2WeatherEffects,

@@ -1,5 +1,5 @@
-import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib/battle";
-import { SeededRandom } from "@pokemon-lib/core";
+import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen2Ruleset } from "../src/Gen2Ruleset";
 

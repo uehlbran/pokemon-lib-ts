@@ -1,4 +1,4 @@
-// @pokemon-lib/gen2 — Gen2Ruleset + complete Gen 2 data
+// @pokemon-lib-ts/gen2 — Gen2Ruleset + complete Gen 2 data
 export { createGen2DataManager } from "./data";
 export { Gen2Ruleset } from "./Gen2Ruleset";
 export { calculateGen2Stats } from "./Gen2StatCalc";

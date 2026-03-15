@@ -1,4 +1,4 @@
-import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib/core";
+import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
 
 /**
  * Calculate the StatExp contribution for Gen 2 stat formulas.

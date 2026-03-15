@@ -1,6 +1,6 @@
-import type { ActivePokemon, BattleState } from "@pokemon-lib/battle";
-import type { ItemContext, ItemResult } from "@pokemon-lib/battle";
-import type { PokemonType, StatBlock } from "@pokemon-lib/core";
+import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { ItemContext, ItemResult } from "@pokemon-lib-ts/battle";
+import type { PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { applyGen2HeldItem } from "../src/Gen2Items";
 

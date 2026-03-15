@@ -1,7 +1,11 @@
-import type { DamageBreakdown, DamageContext, DamageResult } from "@pokemon-lib/battle";
-import type { ActivePokemon } from "@pokemon-lib/battle";
-import type { MoveData, PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib/core";
-import { getStabModifier, getStatStageMultiplier, getTypeEffectiveness } from "@pokemon-lib/core";
+import type { DamageBreakdown, DamageContext, DamageResult } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import {
+  getStabModifier,
+  getStatStageMultiplier,
+  getTypeEffectiveness,
+} from "@pokemon-lib-ts/core";
 
 import { getWeatherDamageModifier } from "./Gen2Weather";
 

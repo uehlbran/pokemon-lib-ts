@@ -1055,7 +1055,7 @@ export class BattleEngine implements BattleEventEmitter {
           ? this.state.sides[attackerSide]
           : this.state.sides[defenderSide];
       const screenSideIndex = result.screenSet.side === "attacker" ? attackerSide : defenderSide;
-      const screenType = result.screenSet.screen as import("@pokemon-lib/core").ScreenType;
+      const screenType = result.screenSet.screen as import("@pokemon-lib-ts/core").ScreenType;
       if (!screenSide.screens.some((s) => s.type === screenType)) {
         screenSide.screens.push({ type: screenType, turnsLeft: result.screenSet.turnsLeft });
         this.emit({
