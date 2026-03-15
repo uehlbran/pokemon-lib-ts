@@ -344,6 +344,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return 5;
   }
 
+  calculateBindDamage(pokemon: ActivePokemon): number {
+    // Gen 5+ default: 1/8 max HP per turn
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
+  }
+
   processPerishSong(pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;

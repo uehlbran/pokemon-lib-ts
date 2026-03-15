@@ -1680,10 +1680,6 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private processBindDamage(): void {
-    // Gen 1 handles bind/wrap in canExecuteMove (prevents action), not end-of-turn
-    // Gen 2+: deal end-of-turn damage to bound Pokemon
-    if (this.ruleset.generation === 1) return;
-
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
@@ -1697,9 +1693,9 @@ export class BattleEngine implements BattleEventEmitter {
         boundState.turnsLeft--;
       }
 
-      // Deal end-of-turn damage: 1/8 max HP (Gen 5+)
+      // Deal end-of-turn damage — delegate to ruleset (Gen 2-4: 1/16, Gen 5+: 1/8)
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const damage = Math.max(1, Math.floor(maxHp / 8));
+      const damage = this.ruleset.calculateBindDamage(active);
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
       this.emit({
         type: "damage",

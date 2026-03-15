@@ -312,6 +312,11 @@ export class MockRuleset implements GenerationRuleset {
     return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
   }
 
+  calculateBindDamage(pokemon: ActivePokemon): number {
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
+  }
+
   processPerishSong(pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;

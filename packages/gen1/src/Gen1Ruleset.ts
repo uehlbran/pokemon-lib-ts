@@ -830,6 +830,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
   }
 
+  calculateBindDamage(_pokemon: ActivePokemon): number {
+    // Gen 1 handles bind/trapping in canExecuteMove, not end-of-turn
+    return 0;
+  }
+
   processPerishSong(_pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;
@@ -841,6 +846,6 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    return ["status-damage", "bind"];
+    return ["status-damage"];
   }
 }

@@ -306,6 +306,13 @@ export interface GenerationRuleset {
   rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number;
 
   /**
+   * Calculate bind/trapping end-of-turn damage.
+   * Gen 2-4: 1/16 max HP. Gen 5+: 1/8 max HP.
+   * Gen 1: not used (bind is handled via canExecuteMove instead).
+   */
+  calculateBindDamage(pokemon: ActivePokemon): number;
+
+  /**
    * Process Perish Song countdown for a Pokemon.
    * Returns the new counter value and whether the Pokemon fainted.
    */
