@@ -43,5 +43,4 @@ export type VolatileStatus =
   | "sleep-counter" // Tracks remaining sleep turns
   | "no-retreat" // Gen 8
   | "tar-shot" // Gen 8
-  | "octolock" // Gen 8
-  | "toxic-counter"; // Gen 2 — tracks escalating badly-poisoned damage (N/16 per turn), reset on switch
+  | "octolock"; // Gen 8

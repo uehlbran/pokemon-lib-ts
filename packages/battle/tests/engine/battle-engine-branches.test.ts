@@ -484,6 +484,48 @@ describe("BattleEngine — branch coverage", () => {
       );
       expect(cureEvent).toBeDefined();
     });
+
+    it("given a frozen pokemon using a defrost move, when RNG would never thaw, then the move still thaws the user", () => {
+      // Arrange — ruleset always fails freeze thaw RNG; defrost flag must guarantee thaw
+      const ruleset = new MockRuleset();
+      (ruleset as unknown as Record<string, unknown>).checkFreezeThaw = () => false;
+
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-defrost",
+          nickname: "Charizard",
+          moves: [{ moveId: "flame-wheel", currentPP: 25, maxPP: 25, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+      ];
+
+      const { engine, events } = createEngine({ ruleset, team1 });
+      engine.start();
+
+      // Freeze side 0 (Charizard)
+      engine.getActive(0)!.pokemon.status = "freeze";
+
+      // Act — Charizard uses flame-wheel (defrost move), opponent uses tackle
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert — status-cure for freeze must be emitted despite RNG always failing
+      const cureEvent = events.find(
+        (e) => e.type === "status-cure" && "status" in e && e.status === "freeze",
+      );
+      expect(cureEvent).toBeDefined();
+
+      // Charizard must no longer be frozen
+      expect(engine.getActive(0)?.pokemon.status).toBeNull();
+    });
   });
 
   describe("confusion self-hit", () => {
