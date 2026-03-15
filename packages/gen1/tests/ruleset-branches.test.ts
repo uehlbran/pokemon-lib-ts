@@ -1,7 +1,10 @@
 import type {
+  AbilityContext,
   ActivePokemon,
   BattleAction,
+  BattleSide,
   BattleState,
+  ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type {
@@ -1045,8 +1048,8 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([moveAction, switchAction], state, rng);
     // Assert
-    expect(ordered[0]!.type).toBe("switch");
-    expect(ordered[1]!.type).toBe("move");
+    expect(ordered[0]?.type).toBe("switch");
+    expect(ordered[1]?.type).toBe("move");
   });
 
   it("given a run action and a move action, when resolving turn order, then run goes first", () => {
@@ -1060,8 +1063,8 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([moveAction, runAction], state, rng);
     // Assert
-    expect(ordered[0]!.type).toBe("run");
-    expect(ordered[1]!.type).toBe("move");
+    expect(ordered[0]?.type).toBe("run");
+    expect(ordered[1]?.type).toBe("move");
   });
 
   it("given two move actions with same priority and different speed, when resolving, then faster Pokemon goes first", () => {
@@ -1099,8 +1102,8 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
     // Assert: side 1 (fast) goes first
-    expect(ordered[0]!.side).toBe(1);
-    expect(ordered[1]!.side).toBe(0);
+    expect(ordered[0]?.side).toBe(1);
+    expect(ordered[1]?.side).toBe(0);
   });
 
   it("given two move actions with same priority and same speed, when resolving, then random tiebreak occurs", () => {
@@ -1133,7 +1136,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     for (let seed = 0; seed < 100; seed++) {
       const rng = new SeededRandom(seed);
       const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
-      outcomes.add(ordered[0]!.side);
+      outcomes.add(ordered[0]?.side);
     }
     // Assert: Both sides should appear as first at some point
     expect(outcomes.has(0)).toBe(true);
@@ -1175,7 +1178,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([struggleAction, moveAction], state, rng);
     // Assert: faster (side 1) goes first
-    expect(ordered[0]!.side).toBe(1);
+    expect(ordered[0]?.side).toBe(1);
   });
 
   it("given a recharge action and a move action, when resolving, then uses speed ordering", () => {
@@ -1213,7 +1216,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([rechargeAction, moveAction], state, rng);
     // Assert: faster side goes first
-    expect(ordered[0]!.side).toBe(1);
+    expect(ordered[0]?.side).toBe(1);
   });
 
   it("given two struggle actions with same speed, when resolving, then random tiebreak occurs", () => {
@@ -1246,7 +1249,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     for (let seed = 0; seed < 100; seed++) {
       const rng = new SeededRandom(seed);
       const ordered = ruleset.resolveTurnOrder([struggle0, struggle1], state, rng);
-      outcomes.add(ordered[0]!.side);
+      outcomes.add(ordered[0]?.side);
     }
     // Assert: Both outcomes should occur
     expect(outcomes.has(0)).toBe(true);
@@ -1291,7 +1294,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
     // Assert: Side 1 (100 speed) should go before side 0 (200 * 0.25 = 50 effective speed)
-    expect(ordered[0]!.side).toBe(1);
+    expect(ordered[0]?.side).toBe(1);
   });
 
   it("given two move actions where active Pokemon is null, when resolving, then returns them in stable order", () => {
@@ -1330,8 +1333,8 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const ordered = ruleset.resolveTurnOrder([item0, item1], state, rng);
     // Assert: Should not throw; both are returned
     expect(ordered).toHaveLength(2);
-    expect(ordered[0]!.type).toBe("item");
-    expect(ordered[1]!.type).toBe("item");
+    expect(ordered[0]?.type).toBe("item");
+    expect(ordered[1]?.type).toBe("item");
   });
 
   it("given an item action and a switch action, when resolving, then switch goes first (switch beats everything)", () => {
@@ -1343,7 +1346,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([item, switchAction], state, rng);
     // Assert
-    expect(ordered[0]!.type).toBe("switch");
+    expect(ordered[0]?.type).toBe("switch");
   });
 
   it("given two move actions with different priorities (e.g., Quick Attack vs Tackle), when resolving, then higher priority goes first", () => {
@@ -1386,7 +1389,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
     // Assert: Quick Attack (+1) beats Tackle (0) even though side 0 is slower
-    expect(ordered[0]!.side).toBe(0);
+    expect(ordered[0]?.side).toBe(0);
   });
 
   it("given a move action with an unrecognized move ID, when resolving turn order, then defaults to priority 0 (catch branch)", () => {
@@ -1431,7 +1434,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Assert: Should not throw; defaults to priority 0 for unrecognized move
     expect(ordered).toHaveLength(2);
     // Faster pokemon (side 1, speed 200) should go first since both have priority 0
-    expect(ordered[0]!.side).toBe(1);
+    expect(ordered[0]?.side).toBe(1);
   });
 
   it("given both Pokemon have unrecognized moves, when resolving turn order, then both default to priority 0 (both catch branches)", () => {
@@ -1471,7 +1474,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
     // Assert: Both default to priority 0, so speed decides; side 1 (speed 200) goes first
-    expect(ordered[0]!.side).toBe(1);
+    expect(ordered[0]?.side).toBe(1);
   });
 
   it("given a Pokemon with no calculatedStats, when resolving turn order, then uses default speed of 100", () => {
@@ -1502,7 +1505,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     // Act
     const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
     // Assert: Side 1 (speed 200) should go first since default speed is 100
-    expect(ordered[0]!.side).toBe(1);
+    expect(ordered[0]?.side).toBe(1);
   });
 });
 
@@ -1793,7 +1796,7 @@ describe("Gen1Ruleset applyStatusDamage (toxic escalation)", () => {
 describe("Gen1Ruleset no-op methods", () => {
   it("given Gen1Ruleset, when calling applyAbility, then returns inactive result", () => {
     // Arrange / Act
-    const result = ruleset.applyAbility("switch-in", {} as any);
+    const result = ruleset.applyAbility("switch-in", {} as unknown as AbilityContext);
     // Assert
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
@@ -1802,7 +1805,7 @@ describe("Gen1Ruleset no-op methods", () => {
 
   it("given Gen1Ruleset, when calling applyHeldItem, then returns inactive result", () => {
     // Arrange / Act
-    const result = ruleset.applyHeldItem("end-of-turn", {} as any);
+    const result = ruleset.applyHeldItem("end-of-turn", {} as unknown as ItemContext);
     // Assert
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
@@ -1811,7 +1814,10 @@ describe("Gen1Ruleset no-op methods", () => {
 
   it("given Gen1Ruleset, when calling applyEntryHazards, then returns empty result", () => {
     // Arrange / Act
-    const result = ruleset.applyEntryHazards({} as any, {} as any);
+    const result = ruleset.applyEntryHazards(
+      {} as unknown as ActivePokemon,
+      {} as unknown as BattleSide,
+    );
     // Assert
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();
@@ -1844,11 +1850,11 @@ describe("Gen1Ruleset no-op methods", () => {
   });
 
   it("given Gen1Ruleset, when calling applyWeatherEffects, then returns empty array", () => {
-    expect(ruleset.applyWeatherEffects({} as any)).toEqual([]);
+    expect(ruleset.applyWeatherEffects({} as unknown as BattleState)).toEqual([]);
   });
 
   it("given Gen1Ruleset, when calling applyTerrainEffects, then returns empty array", () => {
-    expect(ruleset.applyTerrainEffects({} as any)).toEqual([]);
+    expect(ruleset.applyTerrainEffects({} as unknown as BattleState)).toEqual([]);
   });
 });
 
@@ -2101,7 +2107,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
       next: () => 0,
       int: (_min: number, _max: number) => 62,
       chance: () => true,
-    } as any;
+    } as unknown as SeededRandom;
 
     // Act
     const result = ruleset.checkFullParalysis(pokemon, rng);
@@ -2123,7 +2129,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
       next: () => 0.9999,
       int: (_min: number, _max: number) => 63,
       chance: () => false,
-    } as any;
+    } as unknown as SeededRandom;
 
     // Act
     const result = ruleset.checkFullParalysis(pokemon, rng);

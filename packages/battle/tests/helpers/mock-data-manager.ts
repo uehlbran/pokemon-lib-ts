@@ -1,5 +1,5 @@
 import { DataManager } from "@pokemon-lib-ts/core";
-import type { MoveData, PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonSpeciesData, TypeChart } from "@pokemon-lib-ts/core";
 
 /**
  * Creates a DataManager pre-loaded with minimal test data.
@@ -277,16 +277,17 @@ export function createMockDataManager(): DataManager {
     "fairy",
   ];
   for (const atk of allTypes) {
-    typeChart[atk] = {};
+    const row: Record<string, number> = {};
+    typeChart[atk] = row;
     for (const def of allTypes) {
-      typeChart[atk]![def] = 1;
+      row[def] = 1;
     }
   }
 
   dm.loadFromObjects({
     pokemon: [charizardSpecies, blastoiseSpecies, pikachuSpecies],
     moves: [tackleMoveData, thunderboltMoveData, scratchMoveData, quickAttackMoveData],
-    typeChart: typeChart as any,
+    typeChart: typeChart as unknown as TypeChart,
   });
 
   return dm;

@@ -154,10 +154,10 @@ describe("getDefaultMoves", () => {
 
     // Assert
     expect(moves).toHaveLength(4);
-    expect(moves[0]!.moveId).toBe("fire-fang");
-    expect(moves[1]!.moveId).toBe("scary-face");
-    expect(moves[2]!.moveId).toBe("dragon-rage");
-    expect(moves[3]!.moveId).toBe("smokescreen");
+    expect(moves[0]?.moveId).toBe("fire-fang");
+    expect(moves[1]?.moveId).toBe("scary-face");
+    expect(moves[2]?.moveId).toBe("dragon-rage");
+    expect(moves[3]?.moveId).toBe("smokescreen");
   });
 
   it("given a learnset and level 7, when called, then returns only 3 eligible moves", () => {
@@ -166,9 +166,9 @@ describe("getDefaultMoves", () => {
 
     // Assert
     expect(moves).toHaveLength(3);
-    expect(moves[0]!.moveId).toBe("ember");
-    expect(moves[1]!.moveId).toBe("growl");
-    expect(moves[2]!.moveId).toBe("scratch");
+    expect(moves[0]?.moveId).toBe("ember");
+    expect(moves[1]?.moveId).toBe("growl");
+    expect(moves[2]?.moveId).toBe("scratch");
   });
 
   it("given a learnset and level 1, when called, then returns only level-1 moves", () => {
@@ -177,8 +177,8 @@ describe("getDefaultMoves", () => {
 
     // Assert
     expect(moves).toHaveLength(2);
-    expect(moves[0]!.moveId).toBe("growl");
-    expect(moves[1]!.moveId).toBe("scratch");
+    expect(moves[0]?.moveId).toBe("growl");
+    expect(moves[1]?.moveId).toBe("scratch");
   });
 
   it("given a learnset with many moves and a high level, when called, then caps at 4 moves", () => {
@@ -442,10 +442,10 @@ describe("createPokemonInstance", () => {
 
     // Assert - level 36: eligible moves up to 36: slash(36), flame-burst(32), fire-fang(28), scary-face(21)
     expect(instance.moves).toHaveLength(4);
-    expect(instance.moves[0]!.moveId).toBe("slash");
-    expect(instance.moves[1]!.moveId).toBe("flame-burst");
-    expect(instance.moves[2]!.moveId).toBe("fire-fang");
-    expect(instance.moves[3]!.moveId).toBe("scary-face");
+    expect(instance.moves[0]?.moveId).toBe("slash");
+    expect(instance.moves[1]?.moveId).toBe("flame-burst");
+    expect(instance.moves[2]?.moveId).toBe("fire-fang");
+    expect(instance.moves[3]?.moveId).toBe("scary-face");
   });
 
   it("given a species, when called with default EVs, then all EVs are 0", () => {
@@ -498,10 +498,10 @@ describe("createPokemonInstance", () => {
     expect(instance.isShiny).toBe(true);
     expect(instance.nickname).toBe("Flame");
     expect(instance.moves).toHaveLength(4);
-    expect(instance.moves[0]!.moveId).toBe("flamethrower");
-    expect(instance.moves[1]!.moveId).toBe("air-slash");
-    expect(instance.moves[2]!.moveId).toBe("dragon-pulse");
-    expect(instance.moves[3]!.moveId).toBe("roost");
+    expect(instance.moves[0]?.moveId).toBe("flamethrower");
+    expect(instance.moves[1]?.moveId).toBe("air-slash");
+    expect(instance.moves[2]?.moveId).toBe("dragon-pulse");
+    expect(instance.moves[3]?.moveId).toBe("roost");
     expect(instance.heldItem).toBe("leftovers");
     expect(instance.friendship).toBe(255);
     expect(instance.metLocation).toBe("pallet-town");

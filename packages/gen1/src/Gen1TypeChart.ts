@@ -6,4 +6,4 @@ import typeChartData from "../data/type-chart.json";
 export const GEN1_TYPE_CHART: TypeChart = typeChartData as unknown as TypeChart;
 
 /** The 15 types available in Generation 1. */
-export const GEN1_TYPES: readonly PokemonType[] = TYPES_BY_GEN[1]!;
+export const GEN1_TYPES: readonly PokemonType[] = TYPES_BY_GEN[1] as readonly PokemonType[];

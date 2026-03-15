@@ -284,8 +284,8 @@ describe("Gen2Weather", () => {
 
       // Assert — 1/8 of 200 = 25
       expect(results.length).toBe(2);
-      expect(results[0]!.damage).toBe(25);
-      expect(results[1]!.damage).toBe(25);
+      expect(results[0]?.damage).toBe(25);
+      expect(results[1]?.damage).toBe(25);
     });
 
     it("should not damage Rock types", () => {
@@ -510,7 +510,7 @@ describe("Gen2Weather", () => {
 
       // Assert: only the non-null active should get damage
       expect(results.length).toBe(1);
-      expect(results[0]!.damage).toBe(25);
+      expect(results[0]?.damage).toBe(25);
     });
   });
 
@@ -519,8 +519,8 @@ describe("Gen2Weather", () => {
       // Arrange: Pokemon with no calculatedStats
       const pokemonNoStats = createMockActivePokemon({ types: ["fire"], maxHp: 160, uid: "p1" });
       // Remove calculatedStats to trigger fallback
-      (pokemonNoStats.pokemon as any).calculatedStats = undefined;
-      (pokemonNoStats.pokemon as any).currentHp = 160;
+      (pokemonNoStats.pokemon as unknown as Record<string, unknown>).calculatedStats = undefined;
+      (pokemonNoStats.pokemon as unknown as Record<string, unknown>).currentHp = 160;
 
       const side0 = {
         index: 0,
@@ -560,7 +560,7 @@ describe("Gen2Weather", () => {
 
       // Assert: should use currentHp (160) as max: floor(160/8) = 20
       expect(results.length).toBe(1);
-      expect(results[0]!.damage).toBe(20);
+      expect(results[0]?.damage).toBe(20);
     });
   });
 

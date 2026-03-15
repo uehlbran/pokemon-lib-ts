@@ -55,9 +55,9 @@ function getAbilityForSlot(
     return species.abilities.hidden;
   }
   if (slot === "normal2" && species.abilities.normal.length > 1) {
-    return species.abilities.normal[1]!;
+    return species.abilities.normal[1] as string;
   }
-  return species.abilities.normal[0]!;
+  return species.abilities.normal[0] as string;
 }
 
 /**

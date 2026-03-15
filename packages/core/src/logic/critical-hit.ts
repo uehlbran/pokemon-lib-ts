@@ -62,7 +62,7 @@ export const CRIT_RATES_GEN3_5: readonly number[] = [
  */
 export function getCritRate(stage: number, rateTable: readonly number[]): number {
   const index = Math.min(Math.max(0, stage), rateTable.length - 1);
-  return rateTable[index]!;
+  return rateTable[index] as number;
 }
 
 /** Critical hit damage multiplier (Gen 6+: 1.5x) */

@@ -1,3 +1,4 @@
+import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import { SeededRandom, TYPES_BY_GEN } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
@@ -153,7 +154,7 @@ describe("Gen1Ruleset", () => {
     // Act / Assert: In Gen 1, frozen Pokemon NEVER thaw naturally
     // They can only be thawed by a Fire-type move hitting them or items
     // Run many checks to verify it always returns false
-    const mockActivePokemon = {} as any; // The function should return false regardless
+    const mockActivePokemon = {} as unknown as ActivePokemon; // The function should return false regardless
     for (let i = 0; i < 100; i++) {
       const thaws = ruleset.checkFreezeThaw(mockActivePokemon, rng);
       expect(thaws).toBe(false);
@@ -237,7 +238,7 @@ describe("Gen1Ruleset", () => {
   it("given Gen1Ruleset, when applying weather effects, then returns empty array", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
-    const mockState = {} as any;
+    const mockState = {} as unknown as BattleState;
     // Act
     const effects = ruleset.applyWeatherEffects(mockState);
     // Assert
@@ -249,7 +250,7 @@ describe("Gen1Ruleset", () => {
   it("given Gen1Ruleset, when applying terrain effects, then returns empty array", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
-    const mockState = {} as any;
+    const mockState = {} as unknown as BattleState;
     // Act
     const effects = ruleset.applyTerrainEffects(mockState);
     // Assert

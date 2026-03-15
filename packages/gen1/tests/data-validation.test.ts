@@ -260,7 +260,7 @@ describe("Gen 1 Type Chart Validation", () => {
     // Each attacking type should have entries for all 15 defending types
     const chartRecord = chart as Record<string, Record<string, number>>;
     for (const attackType of attackingTypes) {
-      const defenseEntries = Object.keys(chartRecord[attackType]!);
+      const defenseEntries = Object.keys(chartRecord[attackType] ?? {});
       expect(defenseEntries.length).toBe(15);
       // Every defending type should be in the set
       for (const defType of defenseEntries) {

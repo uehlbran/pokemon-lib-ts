@@ -3,6 +3,7 @@ import { SeededRandom } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../src/context";
 import { BaseRuleset } from "../../src/ruleset/BaseRuleset";
+import type { BattleState } from "../../src/state";
 import { createActivePokemon, createTestPokemon } from "../../src/utils";
 
 class TestRuleset extends BaseRuleset {
@@ -12,9 +13,10 @@ class TestRuleset extends BaseRuleset {
   getTypeChart(): TypeChart {
     const chart: Record<string, Record<string, number>> = {};
     for (const t of this.getValidTypes()) {
-      chart[t] = {};
+      const row: Record<string, number> = {};
+      chart[t] = row;
       for (const t2 of this.getValidTypes()) {
-        chart[t]![t2] = 1;
+        row[t2] = 1;
       }
     }
     return chart as TypeChart;
@@ -52,7 +54,11 @@ describe("BaseRuleset — additional branches", () => {
       const active = createActivePokemon(pokemon, 0, ["fire"]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "badly-poisoned", {} as any);
+      const damage = ruleset.applyStatusDamage(
+        active,
+        "badly-poisoned",
+        {} as unknown as BattleState,
+      );
 
       // Assert
       expect(damage).toBe(10); // floor(160/16) = 10
@@ -73,7 +79,7 @@ describe("BaseRuleset — additional branches", () => {
       const active = createActivePokemon(pokemon, 0, ["fire"]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "burn", {} as any);
+      const damage = ruleset.applyStatusDamage(active, "burn", {} as unknown as BattleState);
 
       // Assert — min(1, floor(10/16)=0) → max(1, 0) = 1
       expect(damage).toBe(1);
@@ -110,7 +116,7 @@ describe("BaseRuleset — additional branches", () => {
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
         trickRoom: { active: false, turnsLeft: 0 },
-      } as any;
+      } as unknown as BattleState;
 
       const actions = [
         { type: "item" as const, side: 0 as const, itemId: "potion" },
@@ -155,7 +161,7 @@ describe("BaseRuleset — additional branches", () => {
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
         trickRoom: { active: false, turnsLeft: 0 },
-      } as any;
+      } as unknown as BattleState;
 
       const actions = [
         { type: "run" as const, side: 0 as const },
@@ -199,7 +205,7 @@ describe("BaseRuleset — additional branches", () => {
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
         trickRoom: { active: false, turnsLeft: 0 },
-      } as any;
+      } as unknown as BattleState;
 
       const actions = [
         { type: "move" as const, side: 0 as const, moveIndex: 0 },
@@ -265,7 +271,9 @@ describe("BaseRuleset — additional branches", () => {
       // Act — run many times
       let crits = 0;
       for (let i = 0; i < 1000; i++) {
-        if (ruleset.rollCritical({ attacker: active, move, state: {} as any, rng })) {
+        if (
+          ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
+        ) {
           crits++;
         }
       }
