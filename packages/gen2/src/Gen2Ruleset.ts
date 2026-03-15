@@ -609,6 +609,33 @@ export class Gen2Ruleset implements GenerationRuleset {
     return rng.int(1, 7);
   }
 
+  checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
+    // Gen 2: 63/256 chance to be fully paralyzed (~24.6%), same as Gen 1
+    return rng.int(0, 255) < 63;
+  }
+
+  rollConfusionSelfHit(rng: SeededRandom): boolean {
+    // Gen 2: 50% chance to hit itself in confusion
+    return rng.chance(0.5);
+  }
+
+  processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
+    // Gen 2: cannot act on the turn it wakes up
+    const sleepState = pokemon.volatileStatuses.get("sleep" as any);
+    if (!sleepState || sleepState.turnsLeft <= 0) {
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep" as any);
+      return false;
+    }
+    sleepState.turnsLeft--;
+    if (sleepState.turnsLeft <= 0) {
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep" as any);
+      return false;
+    }
+    return false;
+  }
+
   // --- Abilities (not in Gen 2) ---
 
   hasAbilities(): boolean {

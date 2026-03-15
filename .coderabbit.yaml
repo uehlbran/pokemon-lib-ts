@@ -1,18 +1,32 @@
+language: en-US
 reviews:
-  auto_review:
-    enabled: true
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  collapse_walkthrough: false
   path_instructions:
     - path: "packages/core/**"
-      instructions: "Core package must have zero runtime dependencies. Prefer readonly interfaces. Use lowercase string literals, not UPPERCASE enums."
+      instructions: |
+        This is the zero-dependency core package. Flag any runtime dependency additions.
+        All entity types must use lowercase string literals, not enums.
+        Interfaces should be readonly unless explicitly mutable.
     - path: "packages/battle/**"
-      instructions: "Battle engine uses event-driven architecture (BattleEvent[] stream). State must be JSON-serializable. GenerationRuleset is the key interface — gen-specific behavior is delegated through it."
-    - path: "packages/gen1/**"
-      instructions: "Gen 1 implements GenerationRuleset directly (does NOT extend BaseRuleset). Uses unified Special stat (no split SpAtk/SpDef). 15-type chart (no Dark/Steel/Fairy). Verify formulas against Bulbapedia/Showdown."
-    - path: "packages/gen2/**"
-      instructions: "Gen 2 implements GenerationRuleset directly (like Gen 1, does NOT extend BaseRuleset). Uses DVs/StatExp (not IVs/EVs). 17-type chart (adds Dark/Steel). Has held items and weather. Verify formulas against Bulbapedia/Showdown."
-    - path: "packages/gen3/**"
-      instructions: "Gen 3+ extend BaseRuleset. Check that overrides are correct for this generation's mechanics."
-    - path: "tools/replay-parser/**"
-      instructions: "Replay validation tool. Parses Showdown replays and validates structural properties against the battle engine. Not a full replay simulator."
+      instructions: |
+        Battle engine must be event-driven (BattleEvent[] stream).
+        All gen-specific logic must go through GenerationRuleset -- no hardcoded gen behavior.
+    - path: "packages/gen*/**"
+      instructions: |
+        Gen 1-2 implement GenerationRuleset directly (no BaseRuleset).
+        Gen 3-9 extend BaseRuleset.
+        Each gen bundles complete standalone data -- no cross-gen imports.
     - path: "tools/data-importer/**"
-      instructions: "Build-time data pipeline. Transforms Showdown + PokeAPI data into per-gen JSON."
+      instructions: |
+        Data pipeline transforms Showdown + PokeAPI sources into per-gen JSON.
+        Generated JSON is committed to the repo. Flag any changes to generated files
+        that don't come from the importer.
+  auto_review:
+    enabled: true
+    drafts: false
+chat:
+  auto_reply: true
