@@ -1,35 +1,35 @@
 // Raw API response from replay.pokemonshowdown.com/{id}.json
 export interface ShowdownReplayJson {
-  id: string;
-  format: string;
-  formatid: string;
-  log: string;
-  uploadtime: number;
-  views: number;
-  players: string[];
+  readonly id: string;
+  readonly format: string;
+  readonly formatid: string;
+  readonly log: string;
+  readonly uploadtime: number;
+  readonly views: number;
+  readonly players: readonly string[];
 }
 
 // Search result from replay.pokemonshowdown.com/search.json
 export interface ReplaySearchResult {
-  id: string;
-  format: string;
-  uploadtime: number;
-  players: string[];
-  rating?: number;
+  readonly id: string;
+  readonly format: string;
+  readonly uploadtime: number;
+  readonly players: readonly string[];
+  readonly rating?: number;
 }
 
 // Parsed from "p1a: Nickname" format
 export interface PokemonIdent {
-  side: 0 | 1;
-  position: string;
-  nickname: string;
+  readonly side: 0 | 1;
+  readonly position: string;
+  readonly nickname: string;
 }
 
 // Parsed from "64/100 par" format
 export interface ShowdownHp {
-  current: number;
-  max: number;
-  status: string | null;
+  readonly current: number;
+  readonly max: number;
+  readonly status: "par" | "brn" | "frz" | "slp" | "psn" | "tox" | null;
 }
 
 // All Showdown protocol events as discriminated union
@@ -39,7 +39,9 @@ export type ShowdownEvent =
   | DamageEvent
   | HealEvent
   | CritEvent
-  | EffectivenessEvent
+  | SuperEffectiveEvent
+  | ResistedEvent
+  | ImmuneEvent
   | StatusEvent
   | CureStatusEvent
   | BoostEvent
@@ -57,175 +59,185 @@ export type ShowdownEvent =
   | UnknownEvent;
 
 export interface SwitchEvent {
-  type: "switch";
-  ident: PokemonIdent;
-  species: string;
-  level: number;
-  hp: ShowdownHp;
+  readonly type: "switch";
+  readonly ident: PokemonIdent;
+  readonly species: string;
+  readonly level: number;
+  readonly hp: ShowdownHp;
 }
 
 export interface MoveEvent {
-  type: "move";
-  userIdent: PokemonIdent;
-  moveName: string;
-  moveId: string;
-  targetIdent: PokemonIdent | null;
+  readonly type: "move";
+  readonly userIdent: PokemonIdent;
+  readonly moveName: string;
+  readonly moveId: string;
+  readonly targetIdent: PokemonIdent | null;
 }
 
 export interface DamageEvent {
-  type: "damage";
-  ident: PokemonIdent;
-  hp: ShowdownHp;
-  from?: string;
+  readonly type: "damage";
+  readonly ident: PokemonIdent;
+  readonly hp: ShowdownHp;
+  readonly from?: string;
 }
 
 export interface HealEvent {
-  type: "heal";
-  ident: PokemonIdent;
-  hp: ShowdownHp;
-  from?: string;
+  readonly type: "heal";
+  readonly ident: PokemonIdent;
+  readonly hp: ShowdownHp;
+  readonly from?: string;
 }
 
 export interface CritEvent {
-  type: "crit";
-  ident: PokemonIdent;
+  readonly type: "crit";
+  readonly ident: PokemonIdent;
 }
 
-export interface EffectivenessEvent {
-  type: "effectiveness";
-  ident: PokemonIdent;
-  multiplier: 0 | 0.5 | 2;
+export interface SuperEffectiveEvent {
+  readonly type: "supereffective";
+  readonly ident: PokemonIdent;
+}
+
+export interface ResistedEvent {
+  readonly type: "resisted";
+  readonly ident: PokemonIdent;
+}
+
+export interface ImmuneEvent {
+  readonly type: "immune";
+  readonly ident: PokemonIdent;
 }
 
 export interface StatusEvent {
-  type: "status";
-  ident: PokemonIdent;
-  statusId: string;
-  statusName: string;
+  readonly type: "status";
+  readonly ident: PokemonIdent;
+  readonly statusId: string;
+  readonly statusName: string;
 }
 
 export interface CureStatusEvent {
-  type: "curestatus";
-  ident: PokemonIdent;
-  statusId: string;
+  readonly type: "curestatus";
+  readonly ident: PokemonIdent;
+  readonly statusId: string;
 }
 
 export interface BoostEvent {
-  type: "boost";
-  ident: PokemonIdent;
-  stat: string;
-  amount: number;
+  readonly type: "boost";
+  readonly ident: PokemonIdent;
+  readonly stat: "atk" | "def" | "spa" | "spd" | "spe" | "spc" | "accuracy" | "evasion";
+  readonly amount: number;
 }
 
 export interface UnboostEvent {
-  type: "unboost";
-  ident: PokemonIdent;
-  stat: string;
-  amount: number;
+  readonly type: "unboost";
+  readonly ident: PokemonIdent;
+  readonly stat: "atk" | "def" | "spa" | "spd" | "spe" | "spc" | "accuracy" | "evasion";
+  readonly amount: number;
 }
 
 export interface MissEvent {
-  type: "miss";
-  userIdent: PokemonIdent;
-  targetIdent: PokemonIdent | null;
+  readonly type: "miss";
+  readonly userIdent: PokemonIdent;
+  readonly targetIdent: PokemonIdent | null;
 }
 
 export interface FailEvent {
-  type: "fail";
-  ident: PokemonIdent;
-  reason?: string;
+  readonly type: "fail";
+  readonly ident: PokemonIdent;
+  readonly reason?: string;
 }
 
 export interface CantEvent {
-  type: "cant";
-  ident: PokemonIdent;
-  reason: string;
-  moveName?: string;
+  readonly type: "cant";
+  readonly ident: PokemonIdent;
+  readonly reason: string;
+  readonly moveName?: string;
 }
 
 export interface FaintEvent {
-  type: "faint";
-  ident: PokemonIdent;
+  readonly type: "faint";
+  readonly ident: PokemonIdent;
 }
 
 export interface WinEvent {
-  type: "win";
-  winner: string;
+  readonly type: "win";
+  readonly winner: string;
 }
 
 export interface TieEvent {
-  type: "tie";
+  readonly type: "tie";
+  readonly players: readonly [string, string];
 }
 
 export interface TurnEvent {
-  type: "turn";
-  turnNumber: number;
+  readonly type: "turn";
+  readonly turnNumber: number;
 }
 
 export interface HitCountEvent {
-  type: "hitcount";
-  ident: PokemonIdent;
-  count: number;
+  readonly type: "hitcount";
+  readonly ident: PokemonIdent;
+  readonly count: number;
 }
 
 export interface StartEvent {
-  type: "start";
-  ident: PokemonIdent;
-  effect: string;
-  from?: string;
+  readonly type: "start";
+  readonly ident: PokemonIdent;
+  readonly effect: string;
+  readonly from?: string;
 }
 
 export interface EndEvent {
-  type: "end";
-  ident: PokemonIdent;
-  effect: string;
+  readonly type: "end";
+  readonly ident: PokemonIdent;
+  readonly effect: string;
 }
 
 export interface UnknownEvent {
-  type: "unknown";
-  raw: string;
+  readonly type: "unknown";
+  readonly raw: string;
 }
 
 // A single parsed Pokemon seen in the replay
 export interface ReconstructedPokemon {
-  species: string;
-  level: number;
-  knownMoves: string[];
-  nickname: string;
+  readonly species: string;
+  readonly level: number;
+  readonly knownMoves: readonly string[];
+  readonly nickname: string;
 }
 
 // A single turn with all its events
 export interface ParsedTurn {
-  turnNumber: number;
-  events: ShowdownEvent[];
+  readonly turnNumber: number;
+  readonly events: readonly ShowdownEvent[];
 }
 
 // Fully parsed replay
 export interface ParsedReplay {
-  id: string;
-  format: string;
-  generation: number;
-  players: [string, string];
-  teams: [ReconstructedPokemon[], ReconstructedPokemon[]];
-  turns: ParsedTurn[];
-  winner: string | null;
+  readonly id: string;
+  readonly format: string;
+  readonly generation: number;
+  readonly players: readonly [string, string];
+  readonly teams: readonly [readonly ReconstructedPokemon[], readonly ReconstructedPokemon[]];
+  readonly turns: readonly ParsedTurn[];
+  readonly winner: string | null;
 }
 
 // Validation output
 export type ValidationSeverity = "error" | "warning" | "info";
 
 export interface ValidationMismatch {
-  turnNumber: number;
-  severity: ValidationSeverity;
-  check: string;
-  message: string;
+  readonly turnNumber: number;
+  readonly severity: ValidationSeverity;
+  readonly check: string;
+  readonly message: string;
 }
 
 export interface ValidationResult {
-  replayId: string;
-  format: string;
-  totalTurns: number;
-  winner: string | null;
-  passed: number;
-  mismatches: ValidationMismatch[];
+  readonly replayId: string;
+  readonly format: string;
+  readonly totalTurns: number;
+  readonly winner: string | null;
+  readonly passed: number;
+  readonly mismatches: readonly ValidationMismatch[];
 }
