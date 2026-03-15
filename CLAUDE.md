@@ -105,6 +105,71 @@ These specs are reference material. Implementation may deviate where code reveal
 - Snapshot tests for imported data (correct shapes and counts)
 - Validate against Showdown battle logs for battle engine correctness
 
+## Source Authority
+
+When implementing mechanics, use the following per-gen hierarchy (highest authority first):
+
+**Gen 1–2:**
+1. pret disassemblies (`pret/pokered`, `pret/pokecrystal`) — actual cartridge code, final word
+2. Bulbapedia (when citing disassembly or verified testing)
+3. Smogon / Pokemon Showdown
+4. Our specs
+
+**Gen 3 (Ruby/Sapphire/Emerald):**
+1. `pret/pokeemerald` disassembly — complete, usable as ground truth
+2. Pokemon Showdown (Gen 3 mod is mature and well-tested)
+3. Bulbapedia
+4. Our specs
+
+**Gen 4–9:**
+1. Pokemon Showdown — primary authority (no complete disassemblies exist)
+2. Bulbapedia (cross-reference for edge cases)
+3. Smogon research threads (for disputed mechanics with cartridge testing)
+4. Our specs
+
+Design intent is cartridge-accurate behavior. Exception: if cartridge behavior causes a crash or undefined behavior, handle it gracefully and document the divergence in a comment.
+
+This hierarchy applies to mechanics and formulas. For raw data (species stats, move metadata), see the Data Sources section above.
+
+**Ground-truth reference documents:**
+- Currently exist: `specs/reference/gen1-ground-truth.md`, `specs/reference/gen2-ground-truth.md`
+- Will be created per gen as implementation progresses
+- Gen 3 should be sourced from `pret/pokeemerald`; Gen 4–9 primarily from Showdown with Bulbapedia cross-references
+
+When implementing a gen-specific mechanic, check the ground-truth reference first. If none exists for that gen, fall through to the hierarchy directly.
+
+## AI Agent Guidelines
+
+### Before changing formulas or mechanics
+
+1. Check `specs/reference/genN-ground-truth.md` for the gen you're working on. If it exists, it is the authoritative source — do not deviate without a comment explaining why.
+2. If no ground-truth doc exists, consult the Source Authority hierarchy for that gen.
+3. Do not change a formula based on a spec doc alone if it contradicts the source hierarchy. Update the spec to match the authoritative source instead.
+4. Every new or modified formula must include a source comment, e.g.:
+   ```typescript
+   // Source: pret/pokered src/engine/battle/core.asm — damage formula
+   // Source: Showdown sim/battle.ts Gen 4 damage calc
+   ```
+
+### Before changing specs
+
+1. Verify the change against the source hierarchy — specs should reflect ground truth, not the other way around.
+2. If a spec contradicts an authoritative source, the spec is wrong. Fix the spec and note the correction.
+3. Do not "fix" a spec to match existing (potentially buggy) code — fix the code instead.
+
+### Before changing code
+
+1. Confirm you are on the correct branch for this gen/feature.
+2. Run the existing tests first to establish a baseline.
+3. If fixing a mechanic that affects damage output, add a regression test with a known-good value from the source hierarchy before changing anything.
+
+### General rules
+
+- When in doubt about a mechanic, look it up in the source hierarchy rather than guessing or extrapolating.
+- If you discover a discrepancy between the spec and an authoritative source, file a GitHub issue (see Bug Reporting) before or alongside fixing it.
+- Do not implement mechanics that are undocumented in both the spec and the source hierarchy — flag them for human review instead.
+- Parallelizable research (checking multiple sources) should be dispatched as concurrent subagents, not done serially.
+
 ## PR Review
 
 Every PR requires local review before push plus a human approver:
