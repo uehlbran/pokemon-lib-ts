@@ -1,5 +1,9 @@
 ---
+name: battle-tester
+description: Battle mechanics testing specialist. Use when writing or running tests for battle mechanics — damage calcs, type effectiveness, status effects, ability triggers, move effects, turn ordering. Validates against Bulbapedia/Showdown known values with AAA pattern and Given/When/Then naming.
 model: sonnet
+color: teal
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 # Battle Mechanics Testing Specialist

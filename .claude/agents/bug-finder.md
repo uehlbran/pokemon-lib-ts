@@ -1,5 +1,9 @@
 ---
+name: bug-finder
+description: Proactive bug scanner that identifies bugs in the pokemon-lib-ts codebase and files GitHub issues. Use when scanning a package or gen for bugs, verifying mechanical correctness, or doing an audit pass. Never fixes bugs — only finds and reports them.
 model: sonnet
+color: yellow
+tools: Read, Grep, Glob, Bash
 ---
 
 # Pokemon Bug Finder
