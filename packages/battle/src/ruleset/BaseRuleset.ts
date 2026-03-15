@@ -327,6 +327,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
+    // Gen 4+ default: 1/4 of attacker's max HP
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
   processPerishSong(pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;

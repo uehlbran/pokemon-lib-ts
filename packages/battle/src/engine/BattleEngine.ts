@@ -767,8 +767,8 @@ export class BattleEngine implements BattleEventEmitter {
       source: "struggle",
     });
 
-    // Struggle recoil: 1/4 of user's max HP
-    const recoil = Math.max(1, Math.floor(maxHp / 4));
+    // Struggle recoil: delegated to ruleset (Gen 1-2: 1/2 damage, Gen 4+: 1/4 max HP)
+    const recoil = this.ruleset.calculateStruggleRecoil(actor, damage);
     actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - recoil);
     this.emit({
       type: "damage",

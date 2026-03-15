@@ -293,6 +293,12 @@ export interface GenerationRuleset {
   calculateNightmareDamage(pokemon: ActivePokemon): number;
 
   /**
+   * Calculate Struggle recoil damage.
+   * Gen 1-3: 1/2 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
+   */
+  calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
+
+  /**
    * Process Perish Song countdown for a Pokemon.
    * Returns the new counter value and whether the Pokemon fainted.
    */

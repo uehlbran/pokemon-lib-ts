@@ -846,6 +846,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
+    // Gen 2: recoil = 1/2 of damage dealt
+    return Math.max(1, Math.floor(damageDealt / 2));
+  }
+
   processPerishSong(pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;

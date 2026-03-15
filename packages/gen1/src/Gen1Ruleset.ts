@@ -820,6 +820,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     return 0;
   }
 
+  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
+    // Gen 1: recoil = 1/2 of damage dealt
+    return Math.max(1, Math.floor(damageDealt / 2));
+  }
+
   processPerishSong(_pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;
