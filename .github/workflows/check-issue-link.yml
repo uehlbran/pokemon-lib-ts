@@ -24,7 +24,7 @@ jobs:
           fi
 
           # Pass if explicitly marked as no-issue (pure tooling/docs/chore)
-          if echo "$PR_BODY" | grep -qiE 'closes[[:space:]]*:[[:space:]]*n/?a|no.?issue|not.?applicable'; then
+          if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves)[[:space:]]*:[[:space:]]*n/?a|no.?issue|not.?applicable'; then
             echo "Explicitly marked as no related issue."
             exit 0
           fi

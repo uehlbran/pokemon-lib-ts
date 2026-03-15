@@ -27,7 +27,7 @@ core ← battle ← genN ← consumer
 Core has zero runtime dependencies. Battle depends on core. Each gen package depends on core + battle. Consumers install the gen packages they need.
 
 ### Key Design Patterns
-- **GenerationRuleset interface**: ~20 methods (damage calc, stat calc, type chart, turn order, accuracy, move effects, etc.). Each gen implements this. The battle engine delegates all gen-specific behavior to it.
+- **GenerationRuleset interface**: ~40 methods (damage calc, stat calc, type chart, turn order, accuracy, move effects, etc.). Each gen implements this. The battle engine delegates all gen-specific behavior to it.
 - **BaseRuleset abstract class**: Default Gen 3+ implementations. Gen 3-9 extend it. Gen 1-2 implement the interface directly (too mechanically different).
 - **Event-driven battles**: BattleEngine emits a BattleEvent[] stream. No UI coupling. Consumers render events however they want.
 - **Seeded PRNG**: Mulberry32. Deterministic battles for testing and replay.
