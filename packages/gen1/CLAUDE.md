@@ -10,6 +10,7 @@ Gen 1 ruleset + complete Gen 1 data. Implements `GenerationRuleset` directly —
 
 - **151 Pokemon**, **165 moves**, **15 types** (no Dark, Steel, Fairy)
 - **No abilities**, **no held items**, **no natures**
+- **Unified Special stat** — no Special Attack / Special Defense split (single "Special" stat for both)
 - Physical/Special split is **by type**, not per-move (all Fire moves are Special, all Normal moves are Physical)
 - `items.json` and `natures.json` exist as stubs (empty arrays) for interface consistency
 

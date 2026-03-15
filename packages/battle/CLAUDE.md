@@ -12,7 +12,7 @@ Pluggable battle engine: BattleEngine, GenerationRuleset interface, BaseRuleset 
 
 ## Source Layout
 
-```
+```text
 src/
   engine/    # BattleEngine — turn loop, action resolution, win condition checks
   ruleset/   # GenerationRuleset interface, BaseRuleset abstract class
@@ -33,7 +33,7 @@ src/
 
 ## Turn Flow
 
-```
+```text
 TURN_START → action selection → priority sort
   → TURN_RESOLVE (for each action):
     → accuracy check → move execution → damage/effects → ability triggers

@@ -14,7 +14,7 @@ Replace `N` with the generation number (1-9).
 
 ## Data Flow
 
-```
+```text
 Input: tools/repos/ (gitignored, cloned Showdown + PokeAPI repos)
   ↓ parse & transform
 Output: packages/genN/data/*.json (committed to repo, ships with npm packages)

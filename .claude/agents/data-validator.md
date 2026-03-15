@@ -15,7 +15,7 @@ You are a data validation specialist for the pokemon-lib project. Your job is to
 
 ## Data File Locations
 
-```
+```text
 packages/genN/data/
   pokemon.json     # Species data
   moves.json       # Move data

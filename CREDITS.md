@@ -28,7 +28,7 @@ Key pages we reference constantly:
 Used to verify our damage calculation implementation against known-good results. When writing tests, we plug values into this calculator and use the output as expected test values.
 
 ### Pokemon Essentials — [github.com/Maruno17/pokemon-essentials](https://github.com/Maruno17/pokemon-essentials)
-The fan game standard for 10+ years. Its Ruby-based battle system is a valuable cross-reference for edge cases and quirky mechanics that are well-documented in its code. The [RPG Maker MV TypeScript port](https://github.com/pokemon-essentials/pokemon-essentials) is especially useful given our tech stack.
+The fan game standard for 10+ years. Its Ruby-based battle system is a valuable cross-reference for edge cases and quirky mechanics that are well-documented in its code.
 
 ## Community Resources
 
