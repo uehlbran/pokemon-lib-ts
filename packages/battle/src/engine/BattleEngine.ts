@@ -444,6 +444,43 @@ export class BattleEngine implements BattleEventEmitter {
     // Sort actions by priority / speed / random
     const orderedActions = this.ruleset.resolveTurnOrder(actions, this.state, this.state.rng);
 
+    // --- PURSUIT PRE-CHECK (Gen 2-7) ---
+    // If a Pokemon uses Pursuit and the opponent is switching, Pursuit fires first
+    // with doubled base power, before the switch resolves.
+    if (this.ruleset.shouldExecutePursuitPreSwitch()) {
+      for (let i = 0; i < orderedActions.length; i++) {
+        const action = orderedActions[i];
+        if (!action || action.type !== "move") continue;
+        const actor = this.getActive(action.side);
+        if (!actor || actor.pokemon.currentHp <= 0) continue;
+        const moveSlot = actor.pokemon.moves[action.moveIndex];
+        if (!moveSlot) continue;
+        let moveData: ReturnType<typeof this.dataManager.getMove> | null = null;
+        try {
+          moveData = this.dataManager.getMove(moveSlot.moveId);
+        } catch {
+          // Move not found in data — skip
+        }
+        if (!moveData || moveData.id !== "pursuit") continue;
+
+        // Check if the opponent is switching this turn
+        const opponentAction = orderedActions.find((a, j) => j !== i && a.side !== action.side);
+        if (opponentAction?.type !== "switch") continue;
+
+        // Execute Pursuit before the switch (doubled base power for pre-switch Pursuit)
+        this.executeMove(action, actor, 2);
+        this.checkMidTurnFaints();
+        if (this.checkBattleEnd()) {
+          this.transitionTo("BATTLE_END");
+          return;
+        }
+
+        // Remove the Pursuit action from orderedActions so it doesn't fire again
+        orderedActions.splice(i, 1);
+        break; // Only one Pursuit per turn
+      }
+    }
+
     // Execute each action in order
     for (const action of orderedActions) {
       // Check if the acting pokemon fainted before it could act
@@ -525,7 +562,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.transitionTo("ACTION_SELECT");
   }
 
-  private executeMove(action: MoveAction, actor: ActivePokemon): void {
+  private executeMove(action: MoveAction, actor: ActivePokemon, powerMultiplier = 1): void {
     const moveSlot = actor.pokemon.moves[action.moveIndex];
     if (!moveSlot) return;
 
@@ -544,6 +581,12 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
+    // Apply power multiplier (e.g., Pursuit pre-switch doubles power)
+    const effectiveMoveData =
+      powerMultiplier !== 1 && moveData.power !== null
+        ? { ...moveData, power: moveData.power * powerMultiplier }
+        : moveData;
+
     // Pre-move checks: can the pokemon actually move?
     if (!this.canExecuteMove(actor, moveData)) return;
 
@@ -556,6 +599,27 @@ export class BattleEngine implements BattleEventEmitter {
       pokemon: getPokemonName(actor),
       move: moveData.id,
     });
+
+    // Protect consecutive use: delegate the success roll to the ruleset
+    if (moveData.effect?.type === "protect") {
+      if (!this.ruleset.rollProtectSuccess(actor.consecutiveProtects, this.state.rng)) {
+        // Protect failed due to consecutive use
+        actor.consecutiveProtects = 0;
+        this.emit({
+          type: "move-fail",
+          side: action.side,
+          pokemon: getPokemonName(actor),
+          move: moveData.id,
+          reason: "protect failed",
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+    } else {
+      // Non-protect move: reset the consecutive counter
+      actor.consecutiveProtects = 0;
+    }
 
     // Find the target
     const defenderSide = action.side === 0 ? 1 : 0;
@@ -607,10 +671,10 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Damage calculation (for damaging moves)
     let damage = 0;
-    if (moveData.category !== "status" && moveData.power !== null) {
+    if (effectiveMoveData.category !== "status" && effectiveMoveData.power !== null) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
-        move: moveData,
+        move: effectiveMoveData,
         state: this.state,
         rng: this.state.rng,
       });
@@ -618,7 +682,7 @@ export class BattleEngine implements BattleEventEmitter {
       const result = this.ruleset.calculateDamage({
         attacker: actor,
         defender,
-        move: moveData,
+        move: effectiveMoveData,
         state: this.state,
         rng: this.state.rng,
         isCrit,
@@ -627,7 +691,7 @@ export class BattleEngine implements BattleEventEmitter {
       damage = result.damage;
 
       // Apply damage to substitute or pokemon
-      if (defender.substituteHp > 0 && !moveData.flags.bypassSubstitute) {
+      if (defender.substituteHp > 0 && !effectiveMoveData.flags.bypassSubstitute) {
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
         this.emit({
           type: "message",
@@ -652,7 +716,7 @@ export class BattleEngine implements BattleEventEmitter {
           amount: damage,
           currentHp: defender.pokemon.currentHp,
           maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
-          source: moveData.id,
+          source: effectiveMoveData.id,
         });
       }
 
@@ -681,7 +745,7 @@ export class BattleEngine implements BattleEventEmitter {
     const effectResult = this.ruleset.executeMoveEffect({
       attacker: actor,
       defender,
-      move: moveData,
+      move: effectiveMoveData,
       damage,
       state: this.state,
       rng: this.state.rng,
@@ -689,8 +753,13 @@ export class BattleEngine implements BattleEventEmitter {
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
 
+    // Increment consecutiveProtects if protect was successfully used
+    if (effectiveMoveData.effect?.type === "protect") {
+      actor.consecutiveProtects++;
+    }
+
     // Recharge: if the move requires recharge and noRecharge was not set, mark the attacker
-    if (moveData.flags.recharge && !effectResult.noRecharge) {
+    if (effectiveMoveData.flags.recharge && !effectResult.noRecharge) {
       actor.volatileStatuses.set("recharge", { turnsLeft: 1 });
     }
 
@@ -700,7 +769,7 @@ export class BattleEngine implements BattleEventEmitter {
         pokemon: actor,
         state: this.state,
         rng: this.state.rng,
-        move: moveData,
+        move: effectiveMoveData,
       });
       if (atkItemResult.activated) {
         this.processItemResult(atkItemResult, actor, action.side);
@@ -755,6 +824,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Struggle does a fixed amount of typeless damage
     const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
     const damage = Math.max(1, Math.floor(maxHp / 4));
+    const defenderHpBefore = defender.pokemon.currentHp;
 
     defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
     this.emit({
@@ -767,8 +837,10 @@ export class BattleEngine implements BattleEventEmitter {
       source: "struggle",
     });
 
-    // Struggle recoil: 1/4 of user's max HP
-    const recoil = Math.max(1, Math.floor(maxHp / 4));
+    // Struggle recoil: delegated to ruleset (Gen 1-2: 1/2 damage, Gen 4+: 1/4 max HP)
+    // Use actual damage dealt (capped by defender's HP before damage) to avoid overkill recoil
+    const actualDamage = Math.min(damage, defenderHpBefore);
+    const recoil = this.ruleset.calculateStruggleRecoil(actor, actualDamage);
     actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - recoil);
     this.emit({
       type: "damage",
@@ -1220,6 +1292,9 @@ export class BattleEngine implements BattleEventEmitter {
         case "nightmare":
           this.processNightmare();
           break;
+        case "bind":
+          this.processBindDamage();
+          break;
         default:
           // Many effects not yet implemented
           break;
@@ -1611,6 +1686,31 @@ export class BattleEngine implements BattleEventEmitter {
         currentHp: active.pokemon.currentHp,
         maxHp,
         source: "nightmare",
+      });
+    }
+  }
+
+  private processBindDamage(): void {
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (!active.volatileStatuses.has("bound")) continue;
+
+      // Deal end-of-turn damage — delegate to ruleset (Gen 2-4: 1/16, Gen 5+: 1/8)
+      // Counter management (decrement + removal) is handled by canExecuteMove.
+      const damage = this.ruleset.calculateBindDamage(active);
+      if (damage <= 0) continue; // Gen 1 returns 0
+
+      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+      this.emit({
+        type: "damage",
+        side: side.index,
+        pokemon: getPokemonName(active),
+        amount: damage,
+        currentHp: active.pokemon.currentHp,
+        maxHp,
+        source: "bind",
       });
     }
   }

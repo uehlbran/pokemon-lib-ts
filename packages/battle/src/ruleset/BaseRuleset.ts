@@ -303,6 +303,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     pokemon.volatileStatuses.clear();
   }
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    // Gen 3-7 default (override to false in Gen 8+)
+    return true;
+  }
+
   canSwitch(_pokemon: ActivePokemon, _state: BattleState): boolean {
     // Default Gen 3+: no switching restrictions from the ruleset.
     // Shadow Tag, Arena Trap etc. would be checked via abilities, not here.
@@ -325,6 +330,35 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // Gen 2+: 1/4 max HP per turn while asleep
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
+    // Gen 4+ default: 1/4 of attacker's max HP
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number {
+    // Gen 5+ distribution: 35/35/15/15% for 2/3/4/5 hits
+    // Skill Link ability (Gen 5+) always hits 5 times
+    if (attacker.ability === "skill-link") return 5;
+    const roll = rng.int(1, 100);
+    if (roll <= 35) return 2;
+    if (roll <= 70) return 3;
+    if (roll <= 85) return 4;
+    return 5;
+  }
+
+  rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
+    if (consecutiveProtects === 0) return true;
+    const denominator = Math.min(729, 3 ** consecutiveProtects);
+    return rng.chance(1 / denominator);
+  }
+
+  calculateBindDamage(pokemon: ActivePokemon): number {
+    // Gen 5+ default: 1/8 max HP per turn
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
   }
 
   processPerishSong(pokemon: ActivePokemon): {

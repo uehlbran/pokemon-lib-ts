@@ -958,4 +958,92 @@ describe("BaseRuleset", () => {
       expect(order).toContain("status-damage");
     });
   });
+
+  describe("calculateStruggleRecoil", () => {
+    it("given maxHp=100, when calculating recoil, then returns 25 (floor(100/4))", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, {
+        currentHp: 100,
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        },
+      });
+      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(active, 0);
+      // Assert: floor(100 / 4) = 25
+      expect(recoil).toBe(25);
+    });
+
+    it("given maxHp=1, when calculating recoil, then returns 1 (min 1)", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, {
+        currentHp: 1,
+        calculatedStats: {
+          hp: 1,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        },
+      });
+      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(active, 0);
+      // Assert: max(1, floor(1/4)) = max(1, 0) = 1
+      expect(recoil).toBe(1);
+    });
+
+    it("given damageDealt=0, when calculating recoil, then recoil is based on maxHp (not damageDealt)", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, {
+        currentHp: 200,
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        },
+      });
+      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      // Act: pass 0 for damageDealt — BaseRuleset ignores it
+      const recoil = ruleset.calculateStruggleRecoil(active, 0);
+      // Assert: floor(200 / 4) = 50, not 0
+      expect(recoil).toBe(50);
+    });
+  });
+
+  describe("rollMultiHitCount", () => {
+    it("given 1000 rolls, when rolling multi-hit count, then result is always in {2,3,4,5}", () => {
+      // Arrange
+      const rng = new SeededRandom(42);
+      const pokemon = createTestPokemon(6, 50);
+      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      // Act / Assert
+      for (let i = 0; i < 1000; i++) {
+        const count = ruleset.rollMultiHitCount(active, rng);
+        expect([2, 3, 4, 5]).toContain(count);
+      }
+    });
+
+    it("given attacker has Skill Link ability, when rolling multi-hit count, then always returns 5", () => {
+      // Arrange
+      const rng = new SeededRandom(42);
+      const pokemon = createTestPokemon(6, 50, { ability: "skill-link" });
+      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      // Act / Assert
+      for (let i = 0; i < 20; i++) {
+        const count = ruleset.rollMultiHitCount(active, rng);
+        expect(count).toBe(5);
+      }
+    });
+  });
 });

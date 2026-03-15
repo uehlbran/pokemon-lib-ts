@@ -21,7 +21,7 @@ Gen 2 ruleset + complete Gen 2 data. Implements `GenerationRuleset` directly —
 
 - **Critical hits**: Stage-based system (not Speed-based). Focus Energy bug is FIXED.
 - **Freeze**: ~9.8% (25/256) thaw chance per turn (not permanent like Gen 1)
-- **Sleep**: Can't attack on the turn you wake up
+- **Sleep**: CAN attack on the turn you wake up (unlike Gen 1)
 - **Toxic**: Counter resets on switch (unlike Gen 1 where it persisted)
 - **Weather**: New system — Rain/Sun/Sandstorm affect damage, accuracy, and end-of-turn
 - **Held items**: Type-boosting (+10%), Leftovers (1/16 HP/turn), berries (auto-cure status)

@@ -637,18 +637,18 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    // Gen 2: cannot act on the turn it wakes up
+    // Gen 2+: CAN act on the turn it wakes up (unlike Gen 1)
     const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false; // Cannot act on wake turn in Gen 2
+      return true; // Gen 2+: can act on wake turn
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false; // Cannot act on wake turn in Gen 2
+      return true; // Gen 2+: can act on wake turn
     }
     return false; // Still sleeping
   }
@@ -821,6 +821,10 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // --- Switching ---
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    return true;
+  }
+
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 2: Mean Look / Spider Web prevent switching
     return !pokemon.volatileStatuses.has("trapped");
@@ -844,6 +848,28 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Gen 2: 1/4 max HP per turn while asleep
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
+    // Gen 2: recoil = 1/2 of damage dealt
+    return Math.max(1, Math.floor(damageDealt / 2));
+  }
+
+  rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
+    // Gen 1-4: [2,2,2,3,3,3,4,5] weighted distribution
+    return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
+  }
+
+  rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
+    if (consecutiveProtects === 0) return true;
+    const denominator = Math.min(729, 3 ** consecutiveProtects);
+    return rng.chance(1 / denominator);
+  }
+
+  calculateBindDamage(pokemon: ActivePokemon): number {
+    // Gen 2-4: 1/16 max HP per turn
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 16));
   }
 
   processPerishSong(pokemon: ActivePokemon): {
@@ -871,6 +897,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       "weather-damage",
       "leftovers",
       "leech-seed",
+      "bind",
       "status-damage",
       "nightmare",
       "curse",

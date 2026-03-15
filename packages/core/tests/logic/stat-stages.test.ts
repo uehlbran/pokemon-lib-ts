@@ -150,15 +150,21 @@ describe("calculateAccuracy", () => {
     expect(evaded).toBeLessThan(base);
   });
 
-  it("should calculate correctly with opposing stages", () => {
-    // +1 accuracy vs +1 evasion: floor(100 * (4/3) / (4/3))
-    // Due to floating-point truncation: floor(133.33.../1.333...) = floor(99.999...) = 99
+  it("should return base accuracy when accuracy and evasion cancel out", () => {
+    // +1 accuracy vs +1 evasion: net stage = 0, so accuracy is unchanged
     const result = calculateAccuracy(100, 1, 1);
-    expect(result).toBe(99);
+    expect(result).toBe(100);
   });
 
   it("should floor the result", () => {
     // 100 * (4/3) = 133.33... -> floor -> 133
     expect(calculateAccuracy(100, 1, 0)).toBe(133);
+  });
+
+  it("should handle netted stages correctly across stage combinations", () => {
+    // +3 acc vs +2 eva: net +1, floor(100 * 4/3) = 133
+    expect(calculateAccuracy(100, 3, 2)).toBe(133);
+    // +2 acc vs +3 eva: net -1, floor(100 * 3/4) = 75
+    expect(calculateAccuracy(100, 2, 3)).toBe(75);
   });
 });

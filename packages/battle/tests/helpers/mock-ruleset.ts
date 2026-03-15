@@ -285,6 +285,10 @@ export class MockRuleset implements GenerationRuleset {
     // No-op for mock
   }
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    return true;
+  }
+
   canSwitch(_pokemon: ActivePokemon, _state: BattleState): boolean {
     return true;
   }
@@ -302,6 +306,23 @@ export class MockRuleset implements GenerationRuleset {
   calculateNightmareDamage(pokemon: ActivePokemon): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
+    return Math.max(1, Math.floor(damageDealt / 2));
+  }
+
+  rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
+    return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
+  }
+
+  rollProtectSuccess(_consecutiveProtects: number, _rng: SeededRandom): boolean {
+    return true; // Always succeeds in mock
+  }
+
+  calculateBindDamage(pokemon: ActivePokemon): number {
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
   }
 
   processPerishSong(pokemon: ActivePokemon): {

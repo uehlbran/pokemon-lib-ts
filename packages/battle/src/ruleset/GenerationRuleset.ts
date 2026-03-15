@@ -264,6 +264,12 @@ export interface GenerationRuleset {
   // --- Switching ---
 
   /**
+   * Whether Pursuit should execute before an opponent's switch.
+   * Gen 2-7: true. Gen 1, Gen 8+: false.
+   */
+  shouldExecutePursuitPreSwitch(): boolean;
+
+  /**
    * Whether a Pokemon is allowed to switch out.
    * Gen 1: checks for 'trapped' volatile (trapping moves like Wrap/Bind).
    * Gen 2+: checks for Mean Look, Spider Web, Shadow Tag, etc.
@@ -291,6 +297,33 @@ export interface GenerationRuleset {
    * Gen 2+: 1/4 max HP while asleep. Gen 1: N/A.
    */
   calculateNightmareDamage(pokemon: ActivePokemon): number;
+
+  /**
+   * Calculate Struggle recoil damage.
+   * Gen 1-3: 1/2 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
+   */
+  calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
+
+  /**
+   * Roll the number of hits for a multi-hit move.
+   * Gen 1-4: [2,2,2,3,3,3,4,5] weighted (roughly 37.5/37.5/12.5/12.5%).
+   * Gen 5+: 35/35/15/15% for 2/3/4/5 hits.
+   */
+  rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number;
+
+  /**
+   * Roll whether a Protect-type move succeeds.
+   * Returns false if the consecutive use check fails (Gen 2+: 1/3^N chance for N>0).
+   * Gen 1 has no Protect — implement to always return true.
+   */
+  rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean;
+
+  /**
+   * Calculate bind/trapping end-of-turn damage.
+   * Gen 2-4: 1/16 max HP. Gen 5+: 1/8 max HP.
+   * Gen 1: not used (bind is handled via canExecuteMove instead).
+   */
+  calculateBindDamage(pokemon: ActivePokemon): number;
 
   /**
    * Process Perish Song countdown for a Pokemon.

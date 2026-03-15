@@ -288,4 +288,90 @@ describe("Gen1Ruleset", () => {
       expect(specialTypes).toContain(type);
     }
   });
+
+  // --- Struggle Recoil ---
+
+  describe("calculateStruggleRecoil", () => {
+    it("given damage=100, when calculating recoil, then returns 50", () => {
+      // Arrange
+      const ruleset = new Gen1Ruleset();
+      const mockAttacker = {} as unknown as ActivePokemon;
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
+      // Assert: floor(100 / 2) = 50
+      expect(recoil).toBe(50);
+    });
+
+    it("given damage=1, when calculating recoil, then returns 1 (min 1)", () => {
+      // Arrange
+      const ruleset = new Gen1Ruleset();
+      const mockAttacker = {} as unknown as ActivePokemon;
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
+      // Assert: max(1, floor(1/2)) = max(1, 0) = 1
+      expect(recoil).toBe(1);
+    });
+
+    it("given damage=0, when calculating recoil, then returns 1 (max of 1 and floor(0/2))", () => {
+      // Arrange
+      const ruleset = new Gen1Ruleset();
+      const mockAttacker = {} as unknown as ActivePokemon;
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
+      // Assert: max(1, floor(0/2)) = max(1, 0) = 1
+      expect(recoil).toBe(1);
+    });
+
+    it("given damage=101, when calculating recoil, then returns 50 (floor(101/2)=50)", () => {
+      // Arrange
+      const ruleset = new Gen1Ruleset();
+      const mockAttacker = {} as unknown as ActivePokemon;
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
+      // Assert: floor(101 / 2) = 50
+      expect(recoil).toBe(50);
+    });
+  });
+
+  // --- Multi-Hit Count ---
+
+  describe("rollMultiHitCount", () => {
+    it("given seed=0, when rolling multi-hit count, then returns a value from [2,2,2,3,3,3,4,5]", () => {
+      // Arrange
+      const ruleset = new Gen1Ruleset();
+      const rng = new SeededRandom(0);
+      const mockAttacker = {} as unknown as ActivePokemon;
+      // Act
+      const count = ruleset.rollMultiHitCount(mockAttacker, rng);
+      // Assert: must be one of the values in the weighted array
+      expect([2, 3, 4, 5]).toContain(count);
+    });
+
+    it("given 100 rolls, when rolling multi-hit count, then all values are in {2,3,4,5}", () => {
+      // Arrange
+      const ruleset = new Gen1Ruleset();
+      const rng = new SeededRandom(42);
+      const mockAttacker = {} as unknown as ActivePokemon;
+      // Act / Assert
+      for (let i = 0; i < 100; i++) {
+        const count = ruleset.rollMultiHitCount(mockAttacker, rng);
+        expect([2, 3, 4, 5]).toContain(count);
+      }
+    });
+
+    it("given 100 rolls, when rolling multi-hit count, then at least some 2s and some 3s appear", () => {
+      // Arrange
+      const ruleset = new Gen1Ruleset();
+      const rng = new SeededRandom(42);
+      const mockAttacker = {} as unknown as ActivePokemon;
+      const counts = new Set<number>();
+      // Act
+      for (let i = 0; i < 100; i++) {
+        counts.add(ruleset.rollMultiHitCount(mockAttacker, rng));
+      }
+      // Assert: weighted array has 3 twos and 3 threes out of 8, so both should appear
+      expect(counts.has(2)).toBe(true);
+      expect(counts.has(3)).toBe(true);
+    });
+  });
 });

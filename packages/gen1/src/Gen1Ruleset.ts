@@ -797,6 +797,10 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // --- Switching ---
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    return false;
+  }
+
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 1: trapping moves (Wrap, Bind, Fire Spin, Clamp) prevent switching
     return !pokemon.volatileStatuses.has("trapped");
@@ -820,6 +824,25 @@ export class Gen1Ruleset implements GenerationRuleset {
     return 0;
   }
 
+  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
+    // Gen 1: recoil = 1/2 of damage dealt
+    return Math.max(1, Math.floor(damageDealt / 2));
+  }
+
+  rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
+    // Gen 1-4: [2,2,2,3,3,3,4,5] weighted distribution
+    return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
+  }
+
+  rollProtectSuccess(_consecutiveProtects: number, _rng: SeededRandom): boolean {
+    return true; // Gen 1 has no Protect move
+  }
+
+  calculateBindDamage(_pokemon: ActivePokemon): number {
+    // Gen 1 handles bind/trapping in canExecuteMove, not end-of-turn
+    return 0;
+  }
+
   processPerishSong(_pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;
@@ -831,6 +854,6 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    return ["status-damage", "bind"];
+    return ["status-damage"];
   }
 }
