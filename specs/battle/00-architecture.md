@@ -258,8 +258,8 @@ Consumers only pay for the generations they use:
 
 ```typescript
 // Import only Gen 1 and Gen 9
-import { Gen1Ruleset } from '@pokemon-lib-ts/battle/gen/gen1';
-import { Gen9Ruleset } from '@pokemon-lib-ts/battle/gen/gen9';
+import { Gen1Ruleset } from '@pokemon-lib-ts/gen1';
+import { Gen9Ruleset } from '@pokemon-lib-ts/gen9';
 import { generations, BattleEngine } from '@pokemon-lib-ts/battle';
 
 generations.register(new Gen1Ruleset());
