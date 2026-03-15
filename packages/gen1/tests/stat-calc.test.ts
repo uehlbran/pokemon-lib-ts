@@ -167,6 +167,22 @@ describe("calculateStatExpContribution", () => {
       expect(Number.isInteger(result)).toBe(true);
     }
   });
+
+  it("given negative statExp, when calculating contribution, then returns 0 (clamped to 0, not NaN)", () => {
+    // Arrange — negative values are out-of-spec; must not yield NaN
+    const result = calculateStatExpContribution(-1);
+    // Assert
+    expect(result).toBe(0);
+    expect(Number.isNaN(result)).toBe(false);
+  });
+
+  it("given statExp > 65535, when calculating contribution, then result equals statExp=65535 (clamped to max)", () => {
+    // Arrange
+    const atMax = calculateStatExpContribution(65535);
+    const overMax = calculateStatExpContribution(65536);
+    // Assert — out-of-range values must not produce super-spec contributions
+    expect(overMax).toBe(atMax);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -494,6 +510,38 @@ describe("calculateGen1Stats — DV monotonicity", () => {
       const previous = results[i - 1] ?? 0;
       expect(current).toBeGreaterThanOrEqual(previous);
     }
+  });
+
+  it("given DV < 0 (dv=-1), when calculating stats, then result equals DV=0 (clamped to minimum)", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const pokemonDv0 = makeInstance({
+      level: 100,
+      ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      evs: zeroStatExp(),
+    });
+    const pokemonDvNeg = makeInstance({
+      level: 100,
+      ivs: { hp: -1, attack: -1, defense: -1, spAttack: -1, spDefense: -1, speed: -1 },
+      evs: zeroStatExp(),
+    });
+    // Act
+    const statsDv0 = calculateGen1Stats(pokemonDv0, species);
+    const statsDvNeg = calculateGen1Stats(pokemonDvNeg, species);
+    // Assert — negative DV must be clamped to 0
+    expect(statsDvNeg.hp).toBe(statsDv0.hp);
+    expect(statsDvNeg.attack).toBe(statsDv0.attack);
+    expect(statsDvNeg.defense).toBe(statsDv0.defense);
+    expect(statsDvNeg.spAttack).toBe(statsDv0.spAttack);
+    expect(statsDvNeg.spDefense).toBe(statsDv0.spDefense);
+    expect(statsDvNeg.speed).toBe(statsDv0.speed);
   });
 
   it("given DV > 15 (dv=16), when calculating stats, then result equals DV=15", () => {
