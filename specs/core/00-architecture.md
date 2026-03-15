@@ -1,4 +1,10 @@
+<!-- SPEC FRONT-MATTER -->
+<!-- status: IMPLEMENTED -->
+<!-- last-updated: 2026-03-15 -->
+
 # Core Pokémon Library — Architecture
+
+> **Status: IMPLEMENTED** — Code is the source of truth. This spec documents the architecture as built. Check actual `package.json` files for current versions.
 
 > Package overview, monorepo structure, public API surface, versioning strategy, and design principles.
 > This library has ZERO game engine dependencies — pure TypeScript, usable anywhere.
@@ -130,7 +136,7 @@ pokemon-lib-ts/
 │           └── natures.json     # 25 natures
 │
 ├── tools/
-│   ├── data-importer/           # Scripts to import from PokeAPI
+│   ├── data-importer/           # Scripts to import from @pkmn/data + PokeAPI
 │   │   ├── import-gen.ts        # Per-gen importer (takes gen number as arg)
 │   │   └── validate-gen.ts      # Validates a gen's data against its type chart
 │   └── repos/                   # Cloned external repos (gitignored)
@@ -152,7 +158,7 @@ pokemon-lib-ts/
 {
   "name": "pokemon-lib-ts",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": ["packages/*", "tools/*"],
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
@@ -165,7 +171,7 @@ pokemon-lib-ts/
     "turbo": "^2.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.0.0",
-    "@biomejs/biome": "^1.9.0",
+    "@biomejs/biome": "^2.4.0",
     "@types/node": "^20.0.0"
   }
 }
@@ -176,7 +182,7 @@ pokemon-lib-ts/
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
@@ -223,36 +229,20 @@ pokemon-lib-ts/
 ```json
 {
   "name": "@pokemon-lib-ts/core",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Core Pokémon data types, entities, and shared game logic",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./entities": {
-      "types": "./dist/entities/index.d.ts",
-      "import": "./dist/entities/index.js"
-    },
-    "./logic": {
-      "types": "./dist/logic/index.d.ts",
-      "import": "./dist/logic/index.js"
-    },
-    "./data": {
-      "types": "./dist/data/index.d.ts",
-      "import": "./dist/data/index.js"
-    },
-    "./prng": {
-      "types": "./dist/prng/index.d.ts",
-      "import": "./dist/prng/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": ["dist", "data"],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -288,28 +278,20 @@ The battle package is the **engine only** — no gen-specific logic, no data. It
 ```json
 {
   "name": "@pokemon-lib-ts/battle",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "Pokémon battle engine — bring your own generation ruleset",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./ai": {
-      "types": "./dist/ai/index.d.ts",
-      "import": "./dist/ai/index.js"
-    },
-    "./events": {
-      "types": "./dist/events/index.d.ts",
-      "import": "./dist/events/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -336,21 +318,17 @@ Each gen package exports its `GenerationRuleset` implementation AND its complete
   "version": "0.1.0",
   "description": "Gen 1 (Red/Blue/Yellow) battle mechanics and Pokémon data",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./data": {
-      "types": "./dist/data/index.d.ts",
-      "import": "./dist/data/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": ["dist", "data"],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -400,7 +378,7 @@ While in `0.x.x` (pre-stable), MINOR bumps may include breaking changes. This is
 2. Update `CHANGELOG.md` with all changes since last release
 3. Run full test suite (`npm run test` from root)
 4. Build (`npm run build`)
-5. Tag in git (`git tag @pokemon-lib-ts/core@0.1.0`)
+5. Tag in git (`git tag @pokemon-lib-ts/core@0.4.0`)
 6. Publish to npm (`npm publish --access public` from each package dir)
 
 ---
@@ -550,8 +528,8 @@ export function getAccuracyEvasionMultiplier(stage: number): number;
 
 ```typescript
 export class DataManager {
-  async loadFromJSON(paths: DataPaths): Promise<void>;
-  async loadFromObjects(data: RawDataObjects): Promise<void>;
+  // Sync — pass pre-loaded JSON objects directly
+  loadFromObjects(data: RawDataObjects): void;
 
   getSpecies(id: number): PokemonSpeciesData;
   getSpeciesByName(name: string): PokemonSpeciesData;
@@ -560,21 +538,10 @@ export class DataManager {
   getItem(id: string): ItemData;
   getNature(id: NatureId): NatureData;
   getTypeChart(): TypeChart;
-  getExperienceGroup(group: ExperienceGroup): ExperienceCurve;
 
   getAllSpecies(): PokemonSpeciesData[];
   getAllMoves(): MoveData[];
   getAllAbilities(): AbilityData[];
-}
-
-export interface DataPaths {
-  pokemon: string;
-  moves: string;
-  abilities: string;
-  items: string;
-  natures: string;
-  typeChart: string;
-  experienceGroups: string;
 }
 ```
 
@@ -708,7 +675,7 @@ const charizard = data.getSpecies(6);  // Gen 1 Charizard — no abilities, Norm
 import { DataManager } from '@pokemon-lib-ts/core';
 
 const dm = new DataManager();
-await dm.loadFromObjects({
+dm.loadFromObjects({
   pokemon: myCustomPokemonData,  // Your own species definitions
   moves: myCustomMoveData,
   typeChart: myCustomTypeChart,
@@ -718,20 +685,18 @@ await dm.loadFromObjects({
 
 ### Data Import Pipeline
 
-The `tools/data-importer/` scripts generate each gen's data from PokeAPI:
+The `tools/data-importer/` scripts use `@pkmn/data` (Showdown data) as primary source and PokeAPI HTTP as secondary. The generated JSON is committed to the repo.
 
 ```bash
 # Import Gen 1 data (151 species, Gen 1 moves, Gen 1 type chart)
-npx tsx tools/data-importer/import-gen.ts --gen 1
+npx tsx tools/data-importer/src/import-gen.ts --gen 1
 
 # Import Gen 9 data (1025 species, all Gen 9 moves, 18-type chart)
-npx tsx tools/data-importer/import-gen.ts --gen 9
+npx tsx tools/data-importer/src/import-gen.ts --gen 9
 
 # Validate a gen's data (checks cross-references, type chart completeness, etc.)
 npx tsx tools/data-importer/validate-gen.ts --gen 1
 ```
-
-Each import run reads from PokeAPI's `api-data` repo (pre-joined JSON) and filters/transforms to the target generation's version of the data. The version group IDs in PokeAPI map to specific games, so the importer can extract "what did this Pokémon look like in Red/Blue" vs "what does it look like in Scarlet/Violet".
 
 ---
 
@@ -764,3 +729,26 @@ packages/core/tests/
 - **Determinism tests for PRNG**: Same seed must always produce same sequence.
 
 ---
+
+## 10. Implementation Cross-Reference
+
+| Concept | Source File | Notes |
+|---------|-------------|-------|
+| Root workspace config | `package.json` | workspaces: packages/*, tools/* |
+| Turborepo config | `turbo.json` | Uses "tasks" key (v2 format) |
+| TypeScript config | `tsconfig.base.json` | Shared strict config |
+| Biome config | `biome.json` | v2.4+, indent 2, lineWidth 100 |
+| Core package | `packages/core/package.json` | tsup build, ESM+CJS, v0.4.0 |
+| Battle package | `packages/battle/package.json` | tsup build, ESM+CJS, v0.5.0 |
+| DataManager | `packages/core/src/data/DataManager.ts` | loadFromObjects() is sync |
+| SeededRandom | `packages/core/src/prng/SeededRandom.ts` | Mulberry32 PRNG |
+| Data importer | `tools/data-importer/src/import-gen.ts` | @pkmn/dex + HTTP PokeAPI |
+
+---
+
+## Document History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.0 | 2026-03-15 | Updated to match actual implementation: tsup build, turbo v2 tasks format, single exports entry, sync DataManager, correct Biome version, tools/* workspace |
+| 1.0 | 2024 | Initial architecture spec |
