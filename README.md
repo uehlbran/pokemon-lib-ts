@@ -100,8 +100,9 @@ cd packages/core && npx vitest run --coverage
 ## Project Status
 
 - **Phase 1** (current): Core + Battle + Gen 1 — shipped as v0.1.0
-- **Phase 2** (planned): Gen 9 — proves architecture scales to modern mechanics
-- **Phase 3+**: Remaining generations, community-driven
+- **Phase 2** (planned): Gen 2 — held items, weather, Dark/Steel types, Special split
+- **Phase 3**: Gen 9 — proves architecture scales to modern mechanics
+- **Phase 4+**: Remaining generations, community-driven
 
 ## License
 
