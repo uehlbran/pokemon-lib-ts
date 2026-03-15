@@ -5,6 +5,12 @@ All notable changes to `@pokemon-lib-ts/battle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-03-15
+
+### Fixed
+- `BaseRuleset.calculateStats()` now correctly applies nature modifier (1.1x boosted stat, 0.9x decreased stat) — all Gen 3-9 stat calculations were missing this
+- `BaseRuleset.calculateConfusionDamage()` now uses the proper 40 BP formula (Attack vs Defense) instead of the incorrect `maxHP/8` shortcut
+
 ## [0.6.1] - 2026-03-15
 
 ### Fixed

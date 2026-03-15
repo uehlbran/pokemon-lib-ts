@@ -5,6 +5,12 @@ All notable changes to `@pokemon-lib-ts/gen2` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-03-15
+
+### Fixed
+- Razor Wind removed from high-crit moves list (it is not a high-crit move in Gen 2)
+- Metal Powder correctly applies only to physical Defense, not SpDefense (per pret/pokecrystal)
+
 ## [0.2.1] - 2026-03-15
 
 ### Fixed

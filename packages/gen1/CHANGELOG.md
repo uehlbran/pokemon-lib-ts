@@ -5,6 +5,12 @@ All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-03-15
+
+### Fixed
+- Non-immune moves now correctly deal minimum 1 damage when the formula rounds to 0 (per pret/pokered)
+- Haze now correctly clears all volatile statuses (leech-seed, focus-energy, confusion, disable, etc.) for both Pokemon via the engine's event path
+
 ## [0.3.0] - 2026-03-15
 
 ### Fixed
