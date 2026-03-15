@@ -232,7 +232,8 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(table.length).toBe(5);
       expect(table[0]).toBeCloseTo(17 / 256);
-      expect(table[4]).toBeCloseTo(255 / 256);
+      expect(table[3]).toBeCloseTo(85 / 256); // corrected: was 128/256
+      expect(table[4]).toBeCloseTo(128 / 256); // corrected: was 255/256
     });
 
     it("should return crit multiplier of 2.0", () => {

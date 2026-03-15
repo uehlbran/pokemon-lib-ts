@@ -42,7 +42,7 @@ import {
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 
-import { rollGen2Critical } from "./Gen2CritCalc";
+import { GEN2_CRIT_STAGES, rollGen2Critical } from "./Gen2CritCalc";
 import { calculateGen2Damage } from "./Gen2DamageCalc";
 import { applyGen2HeldItem } from "./Gen2Items";
 import { calculateGen2Stats } from "./Gen2StatCalc";
@@ -51,24 +51,8 @@ import { GEN2_TYPES, GEN2_TYPE_CHART } from "./Gen2TypeChart";
 import { applyGen2WeatherEffects } from "./Gen2Weather";
 import { createGen2DataManager } from "./data";
 
-/**
- * Gen 2 critical hit rate table by stage.
- *
- * | Stage | Rate     |
- * |-------|----------|
- * | 0     | 17/256   |
- * | 1     | 32/256   |
- * | 2     | 64/256   |
- * | 3     | 128/256  |
- * | 4+    | 255/256  |
- */
-const GEN2_CRIT_RATE_TABLE: readonly number[] = [
-  17 / 256,
-  32 / 256,
-  64 / 256,
-  128 / 256,
-  255 / 256,
-];
+// Single source of truth for Gen 2 crit rates — use GEN2_CRIT_STAGES from Gen2CritCalc
+const GEN2_CRIT_RATE_TABLE: readonly number[] = GEN2_CRIT_STAGES;
 
 /**
  * Gen2Ruleset — implements GenerationRuleset directly (not extending BaseRuleset).

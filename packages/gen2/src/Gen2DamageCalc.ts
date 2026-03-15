@@ -282,7 +282,7 @@ export function calculateGen2Damage(
 
   const physical = isPhysicalInGen2(move.type);
   const breakdown: DamageBreakdown = {
-    baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / defense / 50) + 2,
+    baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense / 50) + 2,
     weatherMod,
     critMod: isCrit ? 2 : 1,
     randomMod: randomFactor,
