@@ -125,8 +125,22 @@ export function calculateGen1Damage(
   const level = attacker.pokemon.level;
   const power = move.power;
 
-  const attack = getAttackStat(attacker, move.type, isCrit, attackerSpecies);
-  const defense = getDefenseStat(defender, move.type, isCrit);
+  let attack = getAttackStat(attacker, move.type, isCrit, attackerSpecies);
+  let defense = getDefenseStat(defender, move.type, isCrit);
+
+  // Gen 1 stat overflow bug: when either attack or defense >= 256,
+  // both are divided by 4 and taken mod 256 (Showdown scripts.ts:848-860)
+  if (attack >= 256 || defense >= 256) {
+    attack = Math.max(1, Math.floor(attack / 4) % 256);
+    defense = Math.floor(defense / 4) % 256;
+    if (defense === 0) defense = 1;
+  }
+
+  // Explosion / Self-Destruct: halve the target's Defense in the damage calc
+  // (Showdown scripts.ts:863, applies after overflow check)
+  if (isPhysicalInGen1(move.type) && (move.id === "explosion" || move.id === "self-destruct")) {
+    defense = Math.max(1, Math.floor(defense / 2));
+  }
 
   // Step 1: Base damage calculation with nested floors
   // floor(floor(floor((2*Level/5 + 2) * Power * A) / D) / 50) + 2
@@ -134,7 +148,8 @@ export function calculateGen1Damage(
   const effectiveLevel = isCrit ? level * 2 : level;
   const levelFactor = Math.floor((2 * effectiveLevel) / 5) + 2;
   let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / defense);
-  baseDamage = Math.floor(baseDamage / 50) + 2;
+  // Damage is capped at 997 before adding the +2 constant (Showdown scripts.ts)
+  baseDamage = Math.min(997, Math.floor(baseDamage / 50)) + 2;
 
   // Step 2: STAB
   const stabMod = getStabModifier(move.type, attacker.types);
@@ -157,18 +172,27 @@ export function calculateGen1Damage(
 
   baseDamage = Math.floor(baseDamage * effectiveness);
 
+  // Zero-damage check: if damage dropped to 0 after type effectiveness (e.g. 4x-resisted
+  // weak move), the move is treated as a miss (deals 0 damage), not forced to 1.
+  if (baseDamage === 0) {
+    return {
+      damage: 0,
+      effectiveness,
+      isCrit,
+      randomFactor: 1,
+    };
+  }
+
   // Step 4: Random factor (217-255) / 255
   // In Gen 1, the random factor ranges from 217 to 255 (inclusive), then divided by 255
   // Integer math: avoid float intermediate that could cause rounding differences
   const randomRoll = rng.int(217, 255);
   const randomFactor = randomRoll / 255; // keep for DamageBreakdown.randomMod only
-  let finalDamage = Math.floor((baseDamage * randomRoll) / 255);
-
-  // Minimum 1 damage (if the move hits and isn't immune)
-  finalDamage = Math.max(1, finalDamage);
+  const finalDamage = Math.floor((baseDamage * randomRoll) / 255);
 
   const breakdown: DamageBreakdown = {
-    baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / defense / 50) + 2,
+    baseDamage:
+      Math.min(997, Math.floor(Math.floor(levelFactor * power * attack) / defense / 50)) + 2,
     weatherMod: 1,
     critMod: 1, // Crit handled via level doubling in levelFactor, not a separate multiplier
     randomMod: randomFactor,

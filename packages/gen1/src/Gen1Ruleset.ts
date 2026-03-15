@@ -242,10 +242,12 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     // Gen 1 1/256 miss bug: even 100% accuracy moves use < comparison
     // against a 0-255 random roll, meaning 255/256 max hit chance.
-    // The roll is 0-255 inclusive. If roll < threshold, it hits.
-    // For a 100% accurate move: threshold = floor(255 * 100/100) = 255
-    // roll of 255 out of 0-255 misses (1/256 chance).
-    const threshold = Math.floor((effectiveAccuracy * 255) / 100);
+    // Exception: self-targeting moves get +1 to their threshold, making
+    // 100% accuracy moves always hit (256/256). (Showdown scripts.ts:408)
+    let threshold = Math.min(255, Math.floor((effectiveAccuracy * 255) / 100));
+    if (move.target === "self") {
+      threshold = Math.min(256, threshold + 1);
+    }
     const roll = rng.int(0, 255);
 
     return roll < threshold;
@@ -280,6 +282,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      screensCleared?: "attacker" | "defender" | "both" | null;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -326,6 +329,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      screensCleared?: "attacker" | "defender" | "both" | null;
     },
     context: MoveEffectContext,
   ): void {
@@ -368,13 +372,17 @@ export class Gen1Ruleset implements GenerationRuleset {
 
       case "recoil": {
         // Recoil damage is a fraction of damage dealt
-        result.recoilDamage = Math.max(1, Math.floor(damage * effect.amount));
+        if (damage > 0) {
+          result.recoilDamage = Math.max(1, Math.floor(damage * effect.amount));
+        }
         break;
       }
 
       case "drain": {
         // Drain heals a fraction of damage dealt
-        result.healAmount = Math.max(1, Math.floor(damage * effect.amount));
+        if (damage > 0) {
+          result.healAmount = Math.max(1, Math.floor(damage * effect.amount));
+        }
         break;
       }
 
@@ -394,10 +402,12 @@ export class Gen1Ruleset implements GenerationRuleset {
 
       case "screen": {
         // Reflect / Light Screen: set a screen on the attacker's side
-        // Gen 1: screens last until the pokemon that set them switches out (simplified as 5 turns)
+        // Gen 1: screens are permanent — they last until removed by Haze or the setter switches out.
+        // turnsLeft: -1 is the permanent sentinel — never expires by countdown.
         result.screenSet = {
           screen: effect.screen,
-          turnsLeft: 5,
+          turnsLeft: -1, // Gen 1: screens are permanent — never expire by countdown.
+          // Removed by Haze or when the setter switches out.
           side: "attacker",
         };
         result.messages.push(
@@ -452,12 +462,13 @@ export class Gen1Ruleset implements GenerationRuleset {
           }
         } else if (effect.status === "bound") {
           // Bind, Wrap, Fire Spin, Clamp: trapping moves in Gen 1
-          // Last 2-5 turns
-          if (!defender.volatileStatuses.has("bound")) {
-            const turns = rng.int(2, 5);
-            result.volatileInflicted = "bound";
+          // Duration is weighted: 37.5% × 2 turns, 37.5% × 3 turns, 12.5% × 4, 12.5% × 5
+          // (Showdown conditions.ts:225, same as multi-hit distribution)
+          if (!defender.volatileStatuses.has("trapped")) {
+            const turns = rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
+            result.volatileInflicted = "trapped";
             result.volatileData = { turnsLeft: turns, data: { bindTurns: turns } };
-            result.messages.push(`${defender.pokemon.nickname ?? "The target"} was bound!`);
+            result.messages.push(`${defender.pokemon.nickname ?? "The target"} was trapped!`);
           }
         }
         break;
@@ -471,7 +482,9 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Handle specific custom moves by handler name
         if (effect.handler === "haze") {
           // Haze: clears all stat changes and status conditions for both pokemon
+          // and removes all screens from both sides (Gen 1 only)
           result.statusCured = { target: "both" };
+          result.screensCleared = "both";
           result.messages.push("All stat changes were eliminated!");
         } else if (effect.handler === "explosion" || effect.handler === "selfdestruct") {
           // Explosion / Self-Destruct: user faints after using the move
@@ -498,9 +511,14 @@ export class Gen1Ruleset implements GenerationRuleset {
       case "remove-hazards":
       case "multi-hit":
       case "two-turn":
-      case "switch-out":
       case "protect":
         // These effects are N/A in Gen 1
+        break;
+
+      case "switch-out":
+        // Roar and Whirlwind do nothing in Gen 1 — they have forceSwitch: false.
+        // (Showdown gen1 moves.ts: both moves explicitly fail)
+        result.messages.push("But it failed!");
         break;
     }
   }
@@ -730,21 +748,51 @@ export class Gen1Ruleset implements GenerationRuleset {
     _state: BattleState,
     _rng: SeededRandom,
   ): number {
-    // Gen 1: confusion self-hit is a fixed-power physical typeless attack
-    // Simplified as maxHP/8 for now (actual formula uses Atk/Def stats)
-    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
-    return Math.max(1, Math.floor(maxHp / 8));
+    // Gen 1: confusion self-hit uses 40 base power with the user's own Attack and Defense.
+    // No random variance, no STAB, no critical hit chance, no type effectiveness.
+    // Burn halves physical attack even on confusion self-hits.
+    // (Showdown gen1 conditions.ts:147-149)
+    const level = pokemon.pokemon.level;
+    const calcStats = pokemon.pokemon.calculatedStats;
+    const baseAtk = calcStats?.attack ?? 50;
+    const baseDef = calcStats?.defense ?? 50;
+
+    let atk = Math.max(1, Math.floor(baseAtk * getStatStageMultiplier(pokemon.statStages.attack)));
+    let def = Math.max(1, Math.floor(baseDef * getStatStageMultiplier(pokemon.statStages.defense)));
+
+    // Gen 1 stat overflow: same transform as calculateGen1Damage
+    if (atk >= 256 || def >= 256) {
+      atk = Math.max(1, Math.floor(atk / 4) % 256);
+      def = Math.floor(def / 4) % 256;
+      if (def === 0) def = 1;
+    }
+
+    if (pokemon.pokemon.status === "burn") {
+      atk = Math.floor(atk / 2);
+    }
+
+    const levelFactor = Math.floor((2 * level) / 5) + 2;
+    const damage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
+    return Math.max(1, damage);
   }
 
   // --- Switch Out ---
 
-  onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
+  onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // In Gen 1, Toxic counter persists through switching (unlike Gen 2+).
     // Save it before clearing, then restore it.
     const toxicCounter = pokemon.volatileStatuses.get("toxic-counter");
     pokemon.volatileStatuses.clear();
     if (toxicCounter) {
       pokemon.volatileStatuses.set("toxic-counter", toxicCounter);
+    }
+
+    // Gen 1: screens (Reflect / Light Screen) are cleared when the setter switches out.
+    for (const side of state.sides) {
+      if (side.active.some((active) => active === pokemon)) {
+        side.screens = [];
+        break;
+      }
     }
   }
 

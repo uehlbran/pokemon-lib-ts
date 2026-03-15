@@ -288,7 +288,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.volatileInflicted).toBe("bound");
+    expect(result.volatileInflicted).toBe("trapped");
   });
 
   it.todo(
@@ -305,7 +305,9 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
 // ============================================================================
 
 describe("Gen 1 Reflect and Light Screen", () => {
-  it("given Reflect is used, when the effect resolves, then screenSet contains reflect with 5-turn duration", () => {
+  it("given Reflect is used, when the effect resolves, then screenSet contains reflect with permanent duration (-1)", () => {
+    // Gen 1: Reflect is permanent — lasts until Haze or setter switches out, not 5 turns.
+    // turnsLeft: -1 is the permanent sentinel — never expires by countdown. (Showdown gen1 moves.ts: no duration field)
     // Arrange
     const screenMove = makeMove({
       id: "reflect",
@@ -318,10 +320,12 @@ describe("Gen 1 Reflect and Light Screen", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.screenSet?.screen).toBe("reflect");
-    expect(result.screenSet?.turnsLeft).toBe(5);
+    expect(result.screenSet?.turnsLeft).toBe(-1);
   });
 
-  it("given Light Screen is used, when the effect resolves, then screenSet contains light-screen with 5-turn duration", () => {
+  it("given Light Screen is used, when the effect resolves, then screenSet contains light-screen with permanent duration (-1)", () => {
+    // Gen 1: Light Screen is permanent — no 5-turn countdown. (Showdown gen1 moves.ts)
+    // turnsLeft: -1 is the permanent sentinel — never expires by countdown.
     // Arrange
     const screenMove = makeMove({
       id: "light-screen",
@@ -334,7 +338,7 @@ describe("Gen 1 Reflect and Light Screen", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.screenSet?.screen).toBe("light-screen");
-    expect(result.screenSet?.turnsLeft).toBe(5);
+    expect(result.screenSet?.turnsLeft).toBe(-1);
   });
 
   it.todo(
@@ -566,5 +570,169 @@ describe("Fixed and level damage moves", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.customDamage?.amount).toBe(75);
+  });
+});
+
+// ============================================================================
+// Self-targeting accuracy (1/256 miss exemption)
+// ============================================================================
+
+describe("Gen 1 self-targeting accuracy exemption", () => {
+  it("given a 100% accuracy self-targeting move, when doesMoveHit is rolled with seed that would trigger 1/256 miss, then the move always hits", () => {
+    // Gen 1 1/256 miss bug: roll=255 out of 0-255 misses for normal 100% moves.
+    // Self-targeting moves get +1 to their threshold (255+1=256), so roll<256 is always true.
+    // Use a mock RNG that always returns 255 (the miss-triggering roll for normal moves).
+    const attacker = makeActivePokemon();
+    const defender = makeActivePokemon();
+    const recoverMove = makeMove({
+      id: "recover",
+      category: "status" as const,
+      power: null,
+      accuracy: 100,
+      target: "self" as const,
+      effect: null,
+    });
+    const state = makeBattleState();
+    // Roll 255 of 0-255: would miss a normal 100% move but NOT a self-targeting move
+    const rng = { int: (_min: number, _max: number) => 255, chance: () => false } as ReturnType<
+      typeof makeBattleState
+    >["rng"];
+    // Act
+    const hit = ruleset.doesMoveHit({ attacker, defender, move: recoverMove, state, rng });
+    // Assert — self-targeting moves are exempt from 1/256 miss
+    expect(hit).toBe(true);
+  });
+
+  it("given a 100% accuracy non-self move, when doesMoveHit roll is 255, then the move misses (1/256 bug)", () => {
+    // Normal 100% move: threshold=255, roll 255 is NOT < 255 → miss (1/256 bug)
+    const attacker = makeActivePokemon();
+    const defender = makeActivePokemon();
+    const normalMove = makeMove({ id: "tackle", accuracy: 100, target: "adjacent-foe" });
+    const state = makeBattleState();
+    const rng = { int: (_min: number, _max: number) => 255, chance: () => false } as ReturnType<
+      typeof makeBattleState
+    >["rng"];
+    const hit = ruleset.doesMoveHit({ attacker, defender, move: normalMove, state, rng });
+    // Roll 255 ≥ threshold 255 → miss
+    expect(hit).toBe(false);
+  });
+});
+
+// ============================================================================
+// Confusion self-hit formula
+// ============================================================================
+
+describe("Gen 1 confusion self-hit formula", () => {
+  it("given a level-50 Pokemon with Attack 80 and Defense 60, when calculating confusion damage, then uses proper formula (not maxHP/8)", () => {
+    // Gen 1: confusion self-hit = floor(floor((2*level/5+2) * 40 * atk) / def / 50) + 2
+    // No random, no STAB, no crit, no type effectiveness.
+    // L50, Atk80, Def60: levelFactor = floor(100/5)+2 = 22
+    //   floor(floor(22*40*80)/60/50)+2 = floor(floor(70400)/60/50)+2 = floor(1173/50)+2 = 23+2 = 25
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        level: 50,
+        calculatedStats: {
+          hp: 300,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const state = makeBattleState();
+    const rng = new SeededRandom(42);
+    // Act
+    const damage = ruleset.calculateConfusionDamage(pokemon, state, rng);
+    // Assert: formula-based result, not maxHP/8 (which would be 300/8 = 37)
+    expect(damage).toBe(25);
+    expect(damage).not.toBe(Math.floor(300 / 8)); // ensure not the old formula
+  });
+
+  it("given a burned Pokemon, when calculating confusion self-hit damage, then attack is halved", () => {
+    // Burn halves physical attack even on confusion self-hits
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        level: 50,
+        status: "burn" as const,
+        calculatedStats: {
+          hp: 300,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const pokemonNoBurn = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        level: 50,
+        status: null,
+        calculatedStats: {
+          hp: 300,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const state = makeBattleState();
+    const rng = new SeededRandom(42);
+    const burnedDamage = ruleset.calculateConfusionDamage(pokemon, state, rng);
+    const normalDamage = ruleset.calculateConfusionDamage(pokemonNoBurn, state, rng);
+    // Burned attacker should deal less confusion self-damage
+    expect(burnedDamage).toBeLessThan(normalDamage);
+  });
+});
+
+// ============================================================================
+// Trapping move duration (weighted distribution)
+// ============================================================================
+
+describe("Gen 1 trapping move duration (weighted)", () => {
+  it("given a trapping move across many rolls, when duration is sampled, then distribution matches [2,2,2,3,3,3,4,5] weighting", () => {
+    // Weighted: 37.5% × 2 turns, 37.5% × 3 turns, 12.5% × 4, 12.5% × 5
+    // Run many battles and collect duration counts via SeededRandom
+    const wrapMove = makeMove({
+      id: "wrap",
+      category: "physical" as const,
+      power: 15,
+      effect: { type: "volatile-status" as const, status: "bound", chance: 100 },
+    });
+
+    const counts: Record<number, number> = { 2: 0, 3: 0, 4: 0, 5: 0 };
+    const iterations = 800;
+
+    for (let i = 0; i < iterations; i++) {
+      const attacker = makeActivePokemon();
+      const defender = makeActivePokemon();
+      const context = makeMoveEffectContext({
+        attacker,
+        defender,
+        move: wrapMove,
+        rng: new SeededRandom(i),
+      });
+      const result = ruleset.executeMoveEffect(context);
+      const turns = result.volatileData?.turnsLeft;
+      if (turns !== undefined) counts[turns] = (counts[turns] ?? 0) + 1;
+    }
+
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    // Allow ±10% tolerance on proportions
+    expect((counts[2] ?? 0) / total).toBeGreaterThan(0.27);
+    expect((counts[2] ?? 0) / total).toBeLessThan(0.48);
+    expect((counts[3] ?? 0) / total).toBeGreaterThan(0.27);
+    expect((counts[3] ?? 0) / total).toBeLessThan(0.48);
+    expect((counts[4] ?? 0) / total).toBeGreaterThan(0.05);
+    expect((counts[4] ?? 0) / total).toBeLessThan(0.2);
+    expect((counts[5] ?? 0) / total).toBeGreaterThan(0.05);
+    expect((counts[5] ?? 0) / total).toBeLessThan(0.2);
   });
 });

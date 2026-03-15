@@ -1110,6 +1110,16 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Screen clear (Haze or switch-out removes screens from a side)
+    if (result.screensCleared) {
+      if (result.screensCleared === "attacker" || result.screensCleared === "both") {
+        this.state.sides[attackerSide].screens = [];
+      }
+      if (result.screensCleared === "defender" || result.screensCleared === "both") {
+        this.state.sides[defenderSide].screens = [];
+      }
+    }
+
     // Self-faint (Explosion / Self-Destruct)
     if (result.selfFaint) {
       attacker.pokemon.currentHp = 0;
@@ -1302,6 +1312,7 @@ export class BattleEngine implements BattleEventEmitter {
   private processScreenCountdown(): void {
     for (const side of this.state.sides) {
       side.screens = side.screens.filter((screen) => {
+        if (screen.turnsLeft < 0) return true; // permanent sentinel — never expires
         screen.turnsLeft--;
         if (screen.turnsLeft <= 0) {
           this.emit({

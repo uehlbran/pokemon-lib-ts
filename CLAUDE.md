@@ -132,10 +132,32 @@ Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agent
 
 Independent semantic versioning per package. A Gen 1 bug fix doesn't bump Gen 9. All packages share a minimum compatible core version via peerDependencies.
 
-## Agent Task Sizing
+## Agent Work Patterns
 
+### Task Sizing
 - Agent tasks should be completable within ~50% of context capacity — if a task needs 15+ file reads, split it into narrower agents
 - Explore agents: give specific search targets and file paths, not open-ended "find everything about X"
 - Implementation agents: one vertical slice per agent, not multiple features in one dispatch
 - Front-load context in agent prompts (file paths, line numbers, method names) to reduce discovery overhead
 - If an agent compacts mid-task, the fix is task sizing — break it into smaller agents, not more infrastructure
+
+### Parallelization
+- **Default to parallel.** If 2+ tasks have no data dependency between them, dispatch them as concurrent subagents in a single message — never do sequentially what can be done in parallel
+- Use subagents aggressively to offload work: research, test writing, independent implementations, file exploration, code review. This protects the main context window from bloat and reduces compaction risk
+- Examples of parallelizable work: writing tests for different modules, exploring separate areas of the codebase, implementing independent functions/classes, running build + test + typecheck, reviewing different files
+- When implementing a plan with independent steps, dispatch those steps as parallel subagents rather than executing them sequentially in the main context
+- Only serialize work when there is a true dependency (e.g., must read output of step 1 to inform step 2)
+
+## PR Workflow
+
+- Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use `/loop` or manual polling.
+- **Act autonomously.** When handling a PR, agents should:
+  - Push fixes for reviewer feedback without asking permission
+  - Fix CI/lint/test failures independently
+  - Resolve merge conflicts
+  - Re-request reviews after pushing fixes
+- **Only escalate when:**
+  - A reviewer requests an architectural change that conflicts with existing patterns or specs
+  - You've attempted a fix 2+ times and it's still failing
+  - The reviewer's feedback is ambiguous and could be interpreted multiple ways
+  - A decision requires trade-offs only the user can weigh
