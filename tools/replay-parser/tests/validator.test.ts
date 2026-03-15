@@ -340,8 +340,9 @@ describe("validateReplay — status legality", () => {
     expect(result.passed).toBeGreaterThan(0);
   });
 
-  it("given a replay where an electric-type pokemon gets paralyzed, when validated, then returns error mismatch", () => {
-    // Arrange — Jolteon is Electric-type, should be immune to paralysis
+  it("given a replay where an electric-type pokemon gets paralyzed in Gen 1, when validated, then no error (electric immunity added in Gen 6)", () => {
+    // Arrange — Jolteon is Electric-type; in Gen 1, electric types CAN be paralyzed.
+    // Electric paralysis immunity was introduced in Gen 6, so no immunity rule exists here.
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
       [{ species: "Starmie", level: 100, knownMoves: [], nickname: "Starmie" }],
       [{ species: "Jolteon", level: 100, knownMoves: [], nickname: "Jolteon" }],
@@ -360,14 +361,16 @@ describe("validateReplay — status legality", () => {
     // Act
     const result = validateReplay(buildReplay(turns, teams));
 
-    // Assert
-    const errors = result.mismatches.filter((m) => m.severity === "error");
-    expect(errors.length).toBeGreaterThan(0);
-    expect(errors[0]?.check).toBe("status-legality");
+    // Assert — no error; the validator has no Gen 1 immunity rule for electric + paralysis
+    expect(
+      result.mismatches.filter((m) => m.severity === "error" && m.check === "status-legality"),
+    ).toHaveLength(0);
+    // No immunity rule is registered for "par" in Gen 1, so no check runs and passed stays 0
+    expect(result.mismatches.filter((m) => m.check === "status-legality")).toHaveLength(0);
   });
 
   it("given a replay where a water-type pokemon gets paralyzed, when validated, then no error", () => {
-    // Arrange — Vaporeon (water) can be paralyzed
+    // Arrange — Vaporeon (water) can be paralyzed; no paralysis immunity rule exists in Gen 1
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
       [{ species: "Jolteon", level: 100, knownMoves: [], nickname: "Jolteon" }],
       [{ species: "Vaporeon", level: 100, knownMoves: [], nickname: "Vaporeon" }],
@@ -386,11 +389,11 @@ describe("validateReplay — status legality", () => {
     // Act
     const result = validateReplay(buildReplay(turns, teams));
 
-    // Assert
+    // Assert — no error and no status-legality mismatches at all (no immunity rule for "par" in Gen 1)
     expect(
       result.mismatches.filter((m) => m.severity === "error" && m.check === "status-legality"),
     ).toHaveLength(0);
-    expect(result.passed).toBeGreaterThan(0);
+    expect(result.mismatches.filter((m) => m.check === "status-legality")).toHaveLength(0);
   });
 });
 

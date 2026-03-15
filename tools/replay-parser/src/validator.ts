@@ -15,11 +15,12 @@ function getDataManager(): DataManager {
   return cachedDm;
 }
 
-/** Status IDs that are immune to each status condition */
+/** Status IDs that are immune to each status condition (Gen 1 rules).
+ * Note: Electric paralysis immunity and Ice freeze immunity were introduced
+ * in later generations (Gen 6+ and Gen 2+ respectively), NOT Gen 1.
+ */
 const STATUS_IMMUNE_TYPES: Record<string, string[]> = {
   brn: ["fire"],
-  frz: ["ice"],
-  par: ["electric"],
   psn: ["poison"],
   tox: ["poison"],
 };
