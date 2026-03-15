@@ -126,7 +126,9 @@ export function calculateGen1Damage(
 
   // Step 1: Base damage calculation with nested floors
   // floor(floor(floor((2*Level/5 + 2) * Power * A) / D) / 50) + 2
-  const levelFactor = Math.floor((2 * level) / 5) + 2;
+  // In Gen 1, critical hits double the attacker's level in the formula (not a 2x multiplier)
+  const effectiveLevel = isCrit ? level * 2 : level;
+  const levelFactor = Math.floor((2 * effectiveLevel) / 5) + 2;
   let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / defense);
   baseDamage = Math.floor(baseDamage / 50) + 2;
 
@@ -153,9 +155,10 @@ export function calculateGen1Damage(
 
   // Step 4: Random factor (217-255) / 255
   // In Gen 1, the random factor ranges from 217 to 255 (inclusive), then divided by 255
+  // Integer math: avoid float intermediate that could cause rounding differences
   const randomRoll = rng.int(217, 255);
-  const randomFactor = randomRoll / 255;
-  let finalDamage = Math.floor(baseDamage * randomFactor);
+  const randomFactor = randomRoll / 255; // keep for DamageBreakdown.randomMod only
+  let finalDamage = Math.floor((baseDamage * randomRoll) / 255);
 
   // Minimum 1 damage (if the move hits and isn't immune)
   finalDamage = Math.max(1, finalDamage);
@@ -163,7 +166,7 @@ export function calculateGen1Damage(
   const breakdown: DamageBreakdown = {
     baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / defense / 50) + 2,
     weatherMod: 1,
-    critMod: isCrit ? 1 : 1,
+    critMod: 1, // Crit handled via level doubling in levelFactor, not a separate multiplier
     randomMod: randomFactor,
     stabMod,
     typeMod: effectiveness,

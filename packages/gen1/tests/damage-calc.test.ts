@@ -8,6 +8,7 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib/core";
+import { getStatStageMultiplier } from "@pokemon-lib/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen1Damage } from "../src/Gen1DamageCalc";
 
@@ -725,6 +726,131 @@ describe("Gen 1 Damage Calculation", () => {
       const ratio = stabAndSe / neutral;
       expect(ratio).toBeGreaterThanOrEqual(2.5);
       expect(ratio).toBeLessThanOrEqual(3.5);
+    }
+  });
+
+  // --- Correction 24: Critical Hit Level Doubling ---
+
+  it("given critical hit vs non-critical with same stats, when calculating damage, then crit deals more damage via level doubling (not flat 2x)", () => {
+    // Arrange: Level 50 attacker. levelFactor non-crit = floor(100/5)+2 = 22, crit = floor(200/5)+2 = 42
+    // Ratio = 42/22 ≈ 1.91x — NOT exactly 2x
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      typeEffectiveness: 1.0,
+      randomFactor: 1.0,
+    };
+    // Act
+    const critDamage = calcDamage({ ...params, isCritical: true });
+    const nonCritDamage = calcDamage({ ...params, isCritical: false });
+    // Assert: crit is more damage
+    expect(critDamage).toBeGreaterThan(nonCritDamage);
+    // Ratio should be ~1.91x (level doubling), distinctly NOT exactly 2.0x
+    const ratio = critDamage / nonCritDamage;
+    expect(ratio).toBeGreaterThanOrEqual(1.7);
+    expect(ratio).toBeLessThanOrEqual(2.1);
+    // If it were a flat 2x multiplier, ratio would be exactly 2.0.
+    // Level doubling gives ~1.91x at L50, so confirm it's not suspiciously exactly 2.0
+    expect(ratio).not.toBeCloseTo(2.0, 5);
+  });
+
+  it("given critical hit against super effective target, when calculating damage, then type effectiveness (2x) still applies normally", () => {
+    // Arrange
+    const params = {
+      level: 50,
+      power: 80,
+      attack: 100,
+      defense: 100,
+      stab: false,
+      isCritical: true,
+      randomFactor: 1.0,
+    };
+    // Act
+    const critNeutral = calcDamage({ ...params, typeEffectiveness: 1.0 });
+    const critSuperEffective = calcDamage({ ...params, typeEffectiveness: 2.0 });
+    const nonCritSuperEffective = calcDamage({
+      ...params,
+      isCritical: false,
+      typeEffectiveness: 2.0,
+    });
+    // Assert: both crit and non-crit benefit from 2x type effectiveness
+    expect(critSuperEffective).toBeGreaterThan(critNeutral);
+    expect(nonCritSuperEffective).toBeGreaterThan(0);
+    // Super-effective crit should also beat super-effective non-crit
+    expect(critSuperEffective).toBeGreaterThan(nonCritSuperEffective);
+  });
+
+  // --- Correction 4: Integer Random Factor Math ---
+
+  it("given random roll of 217 (minimum) applied to baseDamage, when computing floor(baseDamage * roll / 255), then result is a positive integer", () => {
+    // Arrange: force rng to return 217 (minimum roll)
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const move = createPhysicalMove(80);
+    const rng = createMockRng(217);
+
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+
+    const context = {
+      attacker,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: rng as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    // Act
+    const result = calculateGen1Damage(context, chart, species);
+
+    // Assert: result is a positive integer (minimum roll still produces valid damage)
+    expect(result.damage).toBeGreaterThanOrEqual(1);
+    expect(Number.isInteger(result.damage)).toBe(true);
+    // Verify randomFactor in return value is 217/255
+    expect(result.randomFactor).toBeCloseTo(217 / 255, 10);
+  });
+
+  // --- Stat Stage Multiplier Table (Correction 22) ---
+
+  it("given stat stage multipliers, when getting each stage from -6 to +6, then they match the Gen 1 table", () => {
+    // Gen 1 stat stage formula: max(2, 2+s) / max(2, 2-s)
+    const expected: Record<number, number> = {
+      [-6]: 2 / 8, // 0.25
+      [-5]: 2 / 7, // ~0.2857
+      [-4]: 2 / 6, // ~0.3333
+      [-3]: 2 / 5, // 0.4
+      [-2]: 2 / 4, // 0.5
+      [-1]: 2 / 3, // ~0.6667
+      [0]: 2 / 2, // 1.0
+      [1]: 3 / 2, // 1.5
+      [2]: 4 / 2, // 2.0
+      [3]: 5 / 2, // 2.5
+      [4]: 6 / 2, // 3.0
+      [5]: 7 / 2, // 3.5
+      [6]: 8 / 2, // 4.0
+    };
+
+    for (const [stageStr, expectedVal] of Object.entries(expected)) {
+      const stage = Number(stageStr);
+      expect(getStatStageMultiplier(stage)).toBeCloseTo(expectedVal, 4);
     }
   });
 });
