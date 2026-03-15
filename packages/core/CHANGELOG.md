@@ -5,6 +5,18 @@ All notable changes to `@pokemon-lib-ts/core` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-15
+
+### Fixed
+
+- Remove duplicate `toxic-counter` member from `VolatileStatus` union (was listed twice with no effect)
+- Make `teraType` and `dynamaxLevel` optional in `PokemonCreationOptions` — these are Gen 8/9-specific fields that should not be required for earlier generations
+
+### Changed
+
+- **Breaking (pre-1.0):** `PokemonCreationOptions.teraType` is now optional (`PokemonType?`)
+- **Breaking (pre-1.0):** `PokemonCreationOptions.dynamaxLevel` is now optional (`number?`)
+
 ## [0.4.0] - 2026-03-14
 
 ### Changed
