@@ -8,6 +8,7 @@ import { Gen1Ruleset, createGen1DataManager } from "../../src";
 describe("Gen 1 Full Battle Integration", () => {
   const dataManager = createGen1DataManager();
   const ruleset = new Gen1Ruleset();
+  let uidCounter = 0;
 
   /**
    * Helper to create a Gen 1 PokemonInstance with specific moves.
@@ -20,7 +21,7 @@ describe("Gen 1 Full Battle Integration", () => {
     nickname?: string,
   ): PokemonInstance {
     return {
-      uid: `gen1-${speciesId}-${level}-${Math.random().toString(36).slice(2, 8)}`,
+      uid: `gen1-${speciesId}-${level}-${++uidCounter}`,
       speciesId,
       nickname: nickname ?? null,
       level,
