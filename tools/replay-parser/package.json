@@ -1,0 +1,13 @@
+{
+  "name": "replay-parser",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "vitest": "^2.0.0"
+  }
+}
