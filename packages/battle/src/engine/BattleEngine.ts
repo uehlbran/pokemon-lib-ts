@@ -709,6 +709,7 @@ export class BattleEngine implements BattleEventEmitter {
       } else {
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
+        defender.lastDamageType = effectiveMoveData.type;
         this.emit({
           type: "damage",
           side: defenderSide as 0 | 1,
@@ -802,6 +803,7 @@ export class BattleEngine implements BattleEventEmitter {
       outgoing.movedThisTurn = false;
       outgoing.lastMoveUsed = null;
       outgoing.lastDamageTaken = 0;
+      outgoing.lastDamageType = null;
     }
 
     // Send in new pokemon
@@ -1210,6 +1212,7 @@ export class BattleEngine implements BattleEventEmitter {
       );
       if (result.customDamage.target === "defender") {
         customTarget.lastDamageTaken = result.customDamage.amount;
+        customTarget.lastDamageType = null;
       }
       this.emit({
         type: "damage",

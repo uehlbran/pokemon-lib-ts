@@ -489,9 +489,11 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Explosion / Self-Destruct: user faints after using the move
           result.selfFaint = true;
         } else if (effect.handler === "counter") {
-          // Counter: deal double the last physical damage received
+          // Counter in Gen 1: only reflects Normal and Fighting type moves
           const lastDamage = attacker.lastDamageTaken ?? 0;
-          if (lastDamage > 0) {
+          const lastType = attacker.lastDamageType;
+          const counterableType = lastType === "normal" || lastType === "fighting";
+          if (lastDamage > 0 && counterableType) {
             result.customDamage = {
               target: "defender",
               amount: lastDamage * 2,

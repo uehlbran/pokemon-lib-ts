@@ -104,6 +104,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
     ability: "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
+    lastDamageType: null,
     turnsOnField: 1,
     movedThisTurn: false,
     consecutiveProtects: 0,
@@ -191,7 +192,10 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 describe("Gen 1 Counter mechanic", () => {
   it("given Normal-type move hit the Pokemon last turn, when Counter is used, then deals 2x that damage", () => {
     // Arrange
-    const attacker = makeActivePokemon({ lastDamageTaken: 50 });
+    const attacker = makeActivePokemon({
+      lastDamageTaken: 50,
+      lastDamageType: "normal" as PokemonType,
+    });
     const defender = makeActivePokemon();
     const counterMove = makeMove({
       id: "counter",
@@ -208,7 +212,10 @@ describe("Gen 1 Counter mechanic", () => {
 
   it("given Fighting-type move hit the Pokemon last turn, when Counter is used, then deals 2x that damage", () => {
     // Arrange
-    const attacker = makeActivePokemon({ lastDamageTaken: 30 });
+    const attacker = makeActivePokemon({
+      lastDamageTaken: 30,
+      lastDamageType: "fighting" as PokemonType,
+    });
     const defender = makeActivePokemon();
     const counterMove = makeMove({
       id: "counter",
@@ -224,12 +231,12 @@ describe("Gen 1 Counter mechanic", () => {
   });
 
   it("given Fire-type move hit the Pokemon last turn, when Counter is used, then Counter fails (no damage)", () => {
-    // Arrange — Counter in Gen1Ruleset checks lastDamageTaken > 0, not move type.
-    // The implementation does not track move type on lastDamageTaken, it's just a number.
-    // Fire damage would still be stored as a non-zero number — however the task spec says
-    // Counter should fail vs special (Fire) damage. The current implementation only checks
-    // if lastDamageTaken > 0, so this tests that 0 damage yields no customDamage.
-    const attacker = makeActivePokemon({ lastDamageTaken: 0 });
+    // Arrange — Counter in Gen 1 only reflects Normal and Fighting type moves.
+    // Fire-type damage should cause Counter to fail even if lastDamageTaken > 0.
+    const attacker = makeActivePokemon({
+      lastDamageTaken: 50,
+      lastDamageType: "fire" as PokemonType,
+    });
     const defender = makeActivePokemon();
     const counterMove = makeMove({
       id: "counter",
@@ -240,13 +247,13 @@ describe("Gen 1 Counter mechanic", () => {
     const context = makeMoveEffectContext({ attacker, defender, move: counterMove });
     // Act
     const result = ruleset.executeMoveEffect(context);
-    // Assert — no customDamage when lastDamageTaken is 0
+    // Assert — no customDamage when last damage was not Normal or Fighting type
     expect(result.customDamage).toBeUndefined();
   });
 
   it("given no prior damage taken, when Counter is used, then Counter fails (no damage)", () => {
     // Arrange
-    const attacker = makeActivePokemon({ lastDamageTaken: 0 });
+    const attacker = makeActivePokemon({ lastDamageTaken: 0, lastDamageType: null });
     const defender = makeActivePokemon();
     const counterMove = makeMove({
       id: "counter",

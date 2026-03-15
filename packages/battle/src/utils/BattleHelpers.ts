@@ -45,6 +45,7 @@ export function createActivePokemon(
     ability: pokemon.ability,
     lastMoveUsed: null,
     lastDamageTaken: 0,
+    lastDamageType: null,
     turnsOnField: 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
