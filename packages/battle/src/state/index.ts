@@ -4,7 +4,7 @@ export type {
   EntryHazardState,
   FutureAttackState,
   ScreenState,
-  TrainerRef,
+  TrainerDataRef,
   VolatileStatusState,
 } from "./BattleSide";
 export type {

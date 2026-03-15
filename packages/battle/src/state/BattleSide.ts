@@ -10,7 +10,7 @@ import type {
 
 export interface BattleSide {
   readonly index: 0 | 1;
-  readonly trainer: TrainerRef | null;
+  readonly trainer: TrainerDataRef | null;
   team: PokemonInstance[];
   active: (ActivePokemon | null)[];
   hazards: EntryHazardState[];
@@ -23,7 +23,7 @@ export interface BattleSide {
   gimmickUsed: boolean;
 }
 
-export interface TrainerRef {
+export interface TrainerDataRef {
   readonly id: string;
   readonly displayName: string;
   readonly trainerClass: string;
