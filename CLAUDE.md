@@ -215,6 +215,19 @@ Rules:
 - Tests, docs, config, `specs/`, `.github/` only → no bump needed
 - Data file changes (`data/*.json`) → patch bump
 
+## Model & Effort Strategy
+
+### Agent Model Tiers
+- **Opus**: Tasks requiring deep reasoning — correctness review (falcon), gen implementation (gen-implementer)
+- **Sonnet**: General-purpose — security review (sentinel), bug finding (bug-finder), architecture review (kestrel), PR review (pokemon-reviewer), test writing (battle-tester), data validation (data-validator)
+- **Haiku**: Simple checks (no current agent assignments)
+
+### Effort Level
+Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claude/settings.json`).
+- Complex implementation/debugging sessions: `high` (default)
+- Simple config/docs/data tasks: use `/effort medium` at session start
+- Effort displays in the status line — verify before starting complex work
+
 ## Agent Work Patterns
 
 ### Task Sizing

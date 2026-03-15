@@ -1,5 +1,9 @@
 ---
+name: data-validator
+description: Data file validator for per-gen JSON data files. Use when verifying data completeness, shapes, and counts after data regeneration or import. Checks pokemon counts, move shapes, type-chart matrices, and writes snapshot tests.
 model: sonnet
+color: cyan
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 # Data File Validation Specialist

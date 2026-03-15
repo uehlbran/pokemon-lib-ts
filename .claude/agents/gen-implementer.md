@@ -1,5 +1,9 @@
 ---
+name: gen-implementer
+description: Generation ruleset implementation specialist. Use when implementing a new generation's battle mechanics — stat calc, damage calc, type chart, status effects, move effects, ability triggers. Gen 1-2 implement GenerationRuleset directly; Gen 3-9 extend BaseRuleset. Uses TDD throughout.
 model: opus
+color: green
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 # Generation Ruleset Implementation Specialist
