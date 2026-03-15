@@ -373,6 +373,24 @@ describe("Gen 2 Held Items", () => {
       // Assert
       expect(result.activated).toBe(false);
     });
+
+    it("given Gold Berry and Pokemon already below 50% HP before damage, when on-damage-taken triggers, then no activation", () => {
+      // Arrange: Gold Berry holder at 80 HP out of 200 max (already below 50%)
+      // When on-damage-taken fires with 10 damage: 80 - 10 = 70, still <= 100
+      // But HP was already below the 50% threshold, not crossing it now
+      const context = createItemContext({
+        heldItem: "gold-berry",
+        currentHp: 80,
+        maxHp: 200,
+        damage: 10, // 80 - 10 = 70, which is <= 100 (50% of 200), but was already below
+      });
+
+      // Act
+      const result = applyGen2HeldItem("on-damage-taken", context);
+
+      // Assert: Item should NOT activate (was already below, not crossing threshold)
+      expect(result.activated).toBe(false);
+    });
   });
 
   // --- Bitter Berry (Confusion Cure) ---

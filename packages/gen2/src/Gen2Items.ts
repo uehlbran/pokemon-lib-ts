@@ -253,7 +253,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     case "gold-berry": {
       const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
       const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp / 2)) {
+      if (
+        hpAfterDamage > 0 &&
+        hpAfterDamage <= Math.floor(maxHp / 2) &&
+        currentHp > Math.floor(maxHp / 2)
+      ) {
         return {
           activated: true,
           effects: [
