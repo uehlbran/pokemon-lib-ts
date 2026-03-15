@@ -370,13 +370,17 @@ export class Gen1Ruleset implements GenerationRuleset {
 
       case "recoil": {
         // Recoil damage is a fraction of damage dealt
-        result.recoilDamage = Math.max(1, Math.floor(damage * effect.amount));
+        if (damage > 0) {
+          result.recoilDamage = Math.max(1, Math.floor(damage * effect.amount));
+        }
         break;
       }
 
       case "drain": {
         // Drain heals a fraction of damage dealt
-        result.healAmount = Math.max(1, Math.floor(damage * effect.amount));
+        if (damage > 0) {
+          result.healAmount = Math.max(1, Math.floor(damage * effect.amount));
+        }
         break;
       }
 

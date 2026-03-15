@@ -619,7 +619,7 @@ describe("Gen 1 Damage Calculation", () => {
       attacker: attackerNormal,
       defender,
       move,
-      state: {} as DamageContext["state"],
+      state: {} as DamageContext["state"], // not accessed by calculateGen1Damage
       rng: rng as DamageContext["rng"],
       isCrit: false,
     } satisfies DamageContext;
@@ -628,7 +628,7 @@ describe("Gen 1 Damage Calculation", () => {
       attacker: attackerBurned,
       defender,
       move,
-      state: {} as DamageContext["state"],
+      state: {} as DamageContext["state"], // not accessed by calculateGen1Damage
       rng: createMockRng(255) as DamageContext["rng"],
       isCrit: false,
     } satisfies DamageContext;
@@ -834,7 +834,7 @@ describe("Gen 1 Damage Calculation", () => {
       attacker,
       defender,
       move,
-      state: {} as DamageContext["state"],
+      state: {} as DamageContext["state"], // not accessed by calculateGen1Damage
       rng: rng as DamageContext["rng"],
       isCrit: false,
     } satisfies DamageContext;
@@ -885,7 +885,7 @@ describe("Gen 1 Damage Calculation", () => {
       attacker,
       defender,
       move,
-      state: {} as DamageContext["state"],
+      state: {} as DamageContext["state"], // not accessed by calculateGen1Damage
       rng: rng as DamageContext["rng"],
       isCrit: false,
     } satisfies DamageContext;
@@ -957,7 +957,7 @@ describe("Gen 1 Damage Calculation", () => {
       attacker,
       defender,
       move,
-      state: {} as DamageContext["state"],
+      state: {} as DamageContext["state"], // not accessed by calculateGen1Damage
       rng: rng as DamageContext["rng"],
       isCrit: false,
     } satisfies DamageContext;
