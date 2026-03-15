@@ -53,7 +53,9 @@ export function getAccuracyEvasionMultiplier(stage: number): number {
 /**
  * Calculate the effective accuracy of a move in battle.
  *
- * EffectiveAccuracy = MoveAccuracy * (AccuracyStage / EvasionStage)
+ * Stages are netted first (accStage - evaStage) to avoid floating-point rounding
+ * artifacts from intermediate division. Formula: acc * (3 + net) / 3 for positive net,
+ * acc * 3 / (3 - net) for negative net.
  *
  * If move accuracy is null, the move never misses (returns Infinity).
  */
@@ -63,7 +65,8 @@ export function calculateAccuracy(
   evasionStage: number,
 ): number {
   if (moveAccuracy === null) return Number.POSITIVE_INFINITY;
-  const accMod = getAccuracyEvasionMultiplier(accuracyStage);
-  const evaMod = getAccuracyEvasionMultiplier(evasionStage);
-  return Math.floor((moveAccuracy * accMod) / evaMod);
+  const netStage = Math.max(-6, Math.min(6, accuracyStage - evasionStage));
+  if (netStage > 0) return Math.floor(moveAccuracy * (3 + netStage) / 3);
+  if (netStage < 0) return Math.floor(moveAccuracy * 3 / (3 - netStage));
+  return moveAccuracy;
 }
