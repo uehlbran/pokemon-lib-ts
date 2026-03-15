@@ -246,7 +246,7 @@ describe("Gen2Ruleset", () => {
   // --- Freeze Thaw ---
 
   describe("Given freeze thaw check", () => {
-    it("should thaw 20% of the time", () => {
+    it("should thaw ~10% of the time (25/256)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockActive = createMockActive({ status: "freeze" });
@@ -261,10 +261,10 @@ describe("Gen2Ruleset", () => {
         }
       }
 
-      // Assert: ~20% thaw rate (+/- 3% tolerance)
+      // Assert: ~10% thaw rate (25/256, +/- 3% tolerance)
       const thawRate = thawCount / trials;
-      expect(thawRate).toBeGreaterThan(0.15);
-      expect(thawRate).toBeLessThan(0.25);
+      expect(thawRate).toBeGreaterThan(0.07);
+      expect(thawRate).toBeLessThan(0.13);
     });
   });
 

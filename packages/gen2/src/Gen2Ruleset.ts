@@ -600,8 +600,8 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   checkFreezeThaw(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    // Gen 2: 20% chance to thaw each turn (unlike Gen 1's permanent freeze)
-    return rng.chance(0.2);
+    // Gen 2: ~10% chance to thaw each turn (25/256, unlike Gen 1's permanent freeze)
+    return rng.int(0, 255) < 25;
   }
 
   rollSleepTurns(rng: SeededRandom): number {
