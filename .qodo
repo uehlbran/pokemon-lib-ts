@@ -1,0 +1,8 @@
+[pr_reviewer]
+extra_instructions = """
+This is a TypeScript monorepo for Pokemon game libraries.
+Key patterns: GenerationRuleset interface, event-driven battles,
+discriminated unions, lowercase string literals (not UPPERCASE enums),
+seeded PRNG (Mulberry32). Biome handles formatting — don't flag style.
+"""
+num_code_suggestions = 3

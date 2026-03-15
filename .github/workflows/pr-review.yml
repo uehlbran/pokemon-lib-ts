@@ -1,0 +1,122 @@
+name: PR Review Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Limit to one review run per PR at a time
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Qodo PR-Agent (best-effort, soft-fail)
+  # ──────────────────────────────────────────────
+  qodo-review:
+    name: "Qodo PR-Agent (optional)"
+    runs-on: ubuntu-latest
+    # Track whether Qodo actually ran successfully
+    outputs:
+      ran: ${{ steps.qodo.outcome == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Qodo PR-Agent
+        id: qodo
+        uses: qodo-ai/pr-agent@main
+        continue-on-error: true  # Don't fail the pipeline on rate limit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "true"
+
+      - name: Log Qodo status
+        if: always()
+        env:
+          QODO_OUTCOME: ${{ steps.qodo.outcome }}
+        run: |
+          if [ "$QODO_OUTCOME" == "success" ]; then
+            echo "::notice::Qodo PR-Agent review completed successfully"
+          else
+            echo "::warning::Qodo PR-Agent skipped (likely rate-limited). Continuing with other reviewers."
+          fi
+
+  # ──────────────────────────────────────────────
+  # Job 2: Claude Code Review (always runs)
+  # ──────────────────────────────────────────────
+  claude-review:
+    name: "Claude Code Review"
+    runs-on: ubuntu-latest
+    needs: [qodo-review]  # Wait for Qodo to finish (or fail) first
+    if: always()           # Run even if Qodo was skipped/failed
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review this pull request thoroughly. You have access to the full repo
+            and the CLAUDE.md file which describes the project architecture.
+
+            Focus on:
+            1. Correctness — logic bugs, off-by-one errors, wrong assumptions
+            2. Type safety — TypeScript strict mode violations, unsafe casts, missing types
+            3. Architecture — does this follow the monorepo patterns (GenerationRuleset,
+               event-driven battles, discriminated unions, lowercase string literals)?
+            4. Testing — are there tests? Do they cover edge cases? Do they match the
+               testing philosophy (known values from Bulbapedia/Showdown, property-based,
+               determinism, snapshots)?
+            5. Performance — unnecessary allocations, O(n²) where O(n) is possible
+            6. Security — no eval, no prototype pollution, safe data handling
+
+            Be specific. Reference line numbers. If something looks good, say so briefly.
+            Don't nitpick formatting — Biome handles that.
+
+            If Qodo PR-Agent also reviewed this PR, avoid repeating the same feedback.
+            Focus on what Qodo might have missed: architectural fit, Pokemon-domain
+            correctness, and cross-package dependency concerns.
+          claude_args: "--model claude-haiku-4-5 --max-turns 5"
+
+  # ──────────────────────────────────────────────
+  # Job 3: Summary status check (for branch protection)
+  # ──────────────────────────────────────────────
+  review-gate:
+    name: "Review Gate"
+    runs-on: ubuntu-latest
+    needs: [qodo-review, claude-review]
+    if: always()
+    steps:
+      - name: Check review results
+        env:
+          CLAUDE_RESULT: ${{ needs.claude-review.result }}
+          QODO_RESULT: ${{ needs.qodo-review.result }}
+        run: |
+          echo "Claude review: $CLAUDE_RESULT"
+          echo "Qodo review: $QODO_RESULT"
+
+          # Claude must succeed. Qodo is optional.
+          if [ "$CLAUDE_RESULT" != "success" ]; then
+            echo "::error::Claude Code review did not complete successfully."
+            exit 1
+          fi
+
+          if [ "$QODO_RESULT" == "success" ]; then
+            echo "::notice::All reviewers completed (CodeRabbit + Qodo + Claude)"
+          else
+            echo "::notice::Claude + CodeRabbit completed. Qodo was skipped (rate-limited)."
+          fi

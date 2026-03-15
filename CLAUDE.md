@@ -99,10 +99,11 @@ These specs are reference material. Implementation may deviate where code reveal
 
 ## PR Review
 
-Every PR gets reviewed by two AI tools plus a human approver:
+Every PR gets reviewed by three AI tools plus a human approver:
 
 - **CodeRabbit** — inline comments, PR summary, security scan. Config: `.coderabbit.yaml`
-- **Qodo Merge** — structured review with severity categories. Free tier (75 PRs/month)
+- **Qodo PR-Agent** — structured review with severity categories. GitHub Action, best-effort (soft-fails on rate limit)
+- **Claude Code Action** — deep code review via `anthropics/claude-code-action`. Required (Review Gate blocks merge). Config: `.github/workflows/pr-review.yml`
 - **Human** — required approval (1 reviewer). Final say on architecture and correctness
 
 AI reviews are advisory (comments only, never formal approvals). See `.github/AI_REVIEWERS.md` for interaction commands.
