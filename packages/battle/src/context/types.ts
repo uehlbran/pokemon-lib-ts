@@ -107,6 +107,8 @@ export interface MoveEffectResult {
   }>;
   readonly clearSideHazards?: "attacker" | "defender";
   readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+  /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
+  readonly screensCleared?: "attacker" | "defender" | "both" | null;
 }
 
 export interface AbilityContext {

@@ -282,6 +282,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      screensCleared?: "attacker" | "defender" | "both" | null;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -480,7 +481,9 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Handle specific custom moves by handler name
         if (effect.handler === "haze") {
           // Haze: clears all stat changes and status conditions for both pokemon
+          // and removes all screens from both sides (Gen 1 only)
           result.statusCured = { target: "both" };
+          result.screensCleared = "both";
           result.messages.push("All stat changes were eliminated!");
         } else if (effect.handler === "explosion" || effect.handler === "selfdestruct") {
           // Explosion / Self-Destruct: user faints after using the move
@@ -774,13 +777,21 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // --- Switch Out ---
 
-  onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
+  onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // In Gen 1, Toxic counter persists through switching (unlike Gen 2+).
     // Save it before clearing, then restore it.
     const toxicCounter = pokemon.volatileStatuses.get("toxic-counter");
     pokemon.volatileStatuses.clear();
     if (toxicCounter) {
       pokemon.volatileStatuses.set("toxic-counter", toxicCounter);
+    }
+
+    // Gen 1: screens (Reflect / Light Screen) are cleared when the setter switches out.
+    for (const side of state.sides) {
+      if (side.active.some((active) => active === pokemon)) {
+        side.screens = [];
+        break;
+      }
     }
   }
 
