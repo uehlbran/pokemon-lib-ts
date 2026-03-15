@@ -1,3 +1,4 @@
+export type { TrainerDataRef } from "../state";
 export type {
   AbilityContext,
   AbilityResult,
@@ -17,7 +18,6 @@ export type {
   MoveEffectContext,
   MoveEffectResult,
   TerrainEffectResult,
-  TrainerDataRef,
   ValidationResult,
   WeatherEffectResult,
 } from "./types";

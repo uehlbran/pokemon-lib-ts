@@ -434,13 +434,7 @@ export class BattleEngine implements BattleEventEmitter {
   ): BattleSide {
     return {
       index,
-      trainer: trainer
-        ? {
-            id: trainer.id,
-            displayName: trainer.displayName,
-            trainerClass: trainer.trainerClass,
-          }
-        : null,
+      trainer,
       team: [...team],
       active: [],
       hazards: [],
