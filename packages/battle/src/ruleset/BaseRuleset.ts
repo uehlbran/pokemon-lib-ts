@@ -297,9 +297,10 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 8));
   }
 
-  onSwitchOut(_pokemon: ActivePokemon, _state: BattleState): void {
-    // Base implementation: no-op.
-    // Override in gens where volatile statuses have special switch-out behavior.
+  onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
+    // Default Gen 3+ behavior: clear all volatile statuses on switch-out.
+    // Gen 1-2 override this to handle generation-specific persistence rules.
+    pokemon.volatileStatuses.clear();
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {

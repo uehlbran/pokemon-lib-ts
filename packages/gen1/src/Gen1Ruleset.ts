@@ -218,6 +218,13 @@ export class Gen1Ruleset implements GenerationRuleset {
   doesMoveHit(context: AccuracyContext): boolean {
     const { attacker, defender, move, rng } = context;
 
+    // OHKO (Fissure, Guillotine, Horn Drill): only hits if user is strictly faster than target
+    if (move.effect?.type === "ohko") {
+      const attackerSpeed = attacker.pokemon.calculatedStats?.speed ?? 0;
+      const defenderSpeed = defender.pokemon.calculatedStats?.speed ?? 0;
+      if (attackerSpeed <= defenderSpeed) return false;
+    }
+
     // Moves with null accuracy never miss (e.g., Swift)
     if (move.accuracy === null) {
       return true;
@@ -727,12 +734,13 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- Switch Out ---
 
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
-    // Gen 1: binding moves stop when the user switches out
-    // The counter is stored in the volatile status
-    pokemon.volatileStatuses.delete("bound");
-
-    // In Gen 1, Toxic counter persists through switching (unlike Gen 2+)
-    // So we do NOT clear the toxic-counter here
+    // In Gen 1, Toxic counter persists through switching (unlike Gen 2+).
+    // Save it before clearing, then restore it.
+    const toxicCounter = pokemon.volatileStatuses.get("toxic-counter" as any);
+    pokemon.volatileStatuses.clear();
+    if (toxicCounter) {
+      pokemon.volatileStatuses.set("toxic-counter" as any, toxicCounter);
+    }
   }
 
   // --- End-of-Turn Order ---

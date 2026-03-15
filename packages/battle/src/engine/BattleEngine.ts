@@ -718,8 +718,8 @@ export class BattleEngine implements BattleEventEmitter {
         pokemon: createPokemonSnapshot(outgoing),
       });
 
-      // Clear volatile statuses
-      outgoing.volatileStatuses.clear();
+      // Ruleset owns volatile cleanup (onSwitchOut already called above).
+      // Reset stat stages and battle-turn bookkeeping.
       outgoing.statStages = createDefaultStatStages();
       outgoing.consecutiveProtects = 0;
       outgoing.turnsOnField = 0;
@@ -885,6 +885,27 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Bound check (Gen 1 trapping — Wrap, Bind, Fire Spin, Clamp)
+    if (actor.volatileStatuses.has("bound")) {
+      const boundState = actor.volatileStatuses.get("bound")!;
+      if (boundState.turnsLeft <= 1) {
+        actor.volatileStatuses.delete("bound");
+        this.emit({
+          type: "volatile-end",
+          side,
+          pokemon: getPokemonName(actor),
+          volatile: "bound",
+        });
+      } else {
+        boundState.turnsLeft--;
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(actor)} is bound and can't move!`,
+        });
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -904,6 +925,13 @@ export class BattleEngine implements BattleEventEmitter {
         pokemon: getPokemonName(defender),
         status: result.statusInflicted,
       });
+      // Initialize toxic counter volatile so end-of-turn damage can scale correctly
+      if (result.statusInflicted === "badly-poisoned") {
+        defender.volatileStatuses.set("toxic-counter" as any, {
+          turnsLeft: -1,
+          data: { counter: 1 },
+        });
+      }
     }
 
     // Volatile status infliction — use volatileData for turnsLeft if provided
@@ -1069,12 +1097,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Self-faint (Explosion / Self-Destruct)
     if (result.selfFaint) {
       attacker.pokemon.currentHp = 0;
-      this.emit({
-        type: "faint",
-        side: attackerSide,
-        pokemon: getPokemonName(attacker),
-      });
-      this.state.sides[attackerSide].faintCount++;
+      // faint event and faintCount increment handled by checkMidTurnFaints()
     }
 
     // Custom damage (OHKO, fixed damage, Counter)
@@ -1102,7 +1125,10 @@ export class BattleEngine implements BattleEventEmitter {
       });
     }
 
-    // Status cure (Haze clears all stat stages and statuses)
+    // Status cure (Haze clears all stat stages and statuses for target(s))
+    // NOTE: statusCured is currently only used by Haze, so resetting stat stages
+    // here is correct. If a move ever cures status without resetting stages,
+    // a separate result field (e.g. statusCuredOnly) should be added.
     if (result.statusCured) {
       const targets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
       if (result.statusCured.target === "attacker" || result.statusCured.target === "both") {
@@ -1122,6 +1148,8 @@ export class BattleEngine implements BattleEventEmitter {
             status: curedStatus,
           });
         }
+        // Reset all stat stages (Haze's primary effect)
+        t.statStages = createDefaultStatStages();
       }
     }
   }
