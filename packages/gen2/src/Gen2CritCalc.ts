@@ -31,7 +31,6 @@ const HIGH_CRIT_MOVES: readonly string[] = [
   "crabhammer",
   "cross-chop",
   "aeroblast",
-  "razor-wind",
 ];
 
 /**

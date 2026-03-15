@@ -120,13 +120,9 @@ function getDefenseStat(
     effective = Math.floor(baseStat * getStatStageMultiplier(stage));
   }
 
-  // Metal Powder doubles Ditto's (132) defense
+  // Metal Powder doubles Ditto's (132) Defense and SpDefense
   // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
-  if (
-    physical &&
-    defender.pokemon.heldItem === "metal-powder" &&
-    defender.pokemon.speciesId === 132
-  ) {
+  if (defender.pokemon.heldItem === "metal-powder" && defender.pokemon.speciesId === 132) {
     effective = effective * 2;
   }
 
