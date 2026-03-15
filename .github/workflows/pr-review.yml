@@ -1,0 +1,44 @@
+name: PR Review (Qodo)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  qodo-review:
+    name: "Qodo PR-Agent (optional)"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Qodo PR-Agent
+        id: qodo
+        uses: qodo-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "true"
+
+      - name: Log Qodo status
+        if: always()
+        env:
+          QODO_OUTCOME: ${{ steps.qodo.outcome }}
+        run: |
+          if [ "$QODO_OUTCOME" == "success" ]; then
+            echo "::notice::Qodo PR-Agent review completed successfully"
+          else
+            echo "::warning::Qodo PR-Agent skipped (likely rate-limited)."
+          fi
