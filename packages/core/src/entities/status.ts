@@ -41,6 +41,7 @@ export type VolatileStatus =
   | "trapped" // Mean Look, Spider Web (Gen 2+) — prevents switching
   | "recharge" // Must recharge next turn (Hyper Beam, etc.)
   | "sleep-counter" // Tracks remaining sleep turns
+  | "toxic-counter" // Tracks escalating Toxic damage (N increments each turn)
   | "no-retreat" // Gen 8
   | "tar-shot" // Gen 8
   | "octolock"; // Gen 8

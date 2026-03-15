@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Remove duplicate `toxic-counter` member from `VolatileStatus` union (was listed twice with no effect)
+- Preserve `toxic-counter` in `VolatileStatus` union — it was accidentally dropped during rebase; now correctly present as a single entry alongside `sleep-counter`
 - Make `teraType` and `dynamaxLevel` optional in `PokemonCreationOptions` — these are Gen 8/9-specific fields that should not be required for earlier generations
 
 ### Changed
