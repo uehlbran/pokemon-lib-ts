@@ -2064,4 +2064,26 @@ describe("Gen2Ruleset", () => {
       expect(result.errors.length).toBe(3);
     });
   });
+
+  // --- Switch Out ---
+
+  describe("Given a Pokemon switching out", () => {
+    it("should remove toxic-counter volatile on switch-out", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const pokemon = createMockActive({ status: "badly-poisoned" });
+      pokemon.volatileStatuses.set("toxic-counter", 4);
+      const state = createMockState(
+        createMockSide(0, pokemon),
+        createMockSide(1, createMockActive()),
+      );
+
+      // Act
+      ruleset.onSwitchOut(pokemon, state);
+
+      // Assert: toxic-counter is cleared but badly-poisoned status persists
+      expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
+      expect(pokemon.pokemon.status).toBe("badly-poisoned");
+    });
+  });
 });

@@ -20,7 +20,7 @@ Gen 2 ruleset + complete Gen 2 data. Implements `GenerationRuleset` directly —
 ## Gen 2 Mechanics (Key Differences from Gen 1)
 
 - **Critical hits**: Stage-based system (not Speed-based). Focus Energy bug is FIXED.
-- **Freeze**: 20% thaw chance per turn (not permanent like Gen 1)
+- **Freeze**: ~9.8% (25/256) thaw chance per turn (not permanent like Gen 1)
 - **Sleep**: Can't attack on the turn you wake up
 - **Toxic**: Counter resets on switch (unlike Gen 1 where it persisted)
 - **Weather**: New system — Rain/Sun/Sandstorm affect damage, accuracy, and end-of-turn
@@ -63,5 +63,5 @@ data/
 - Test weather modifiers and duration
 - Test held item effects (Leftovers 1/16, type-boost 10%, berry consumption)
 - Test critical hit stage system (Focus Energy FIXED)
-- Test freeze thaw (20%), sleep wake mechanics, toxic counter reset on switch
+- Test freeze thaw (~9.8%/25/256), sleep wake mechanics, toxic counter reset on switch
 - All tests use AAA pattern with Given/When/Then naming

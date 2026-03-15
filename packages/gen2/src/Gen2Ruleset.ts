@@ -802,11 +802,14 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
     // Gen 2: clear non-persistent volatiles on switch
+    // Note: toxic-counter resets on switch (damage restarts at 1/16 next time in),
+    // but the badly-poisoned status itself persists.
     pokemon.volatileStatuses.delete("bound");
     pokemon.volatileStatuses.delete("confusion");
     pokemon.volatileStatuses.delete("flinch");
     pokemon.volatileStatuses.delete("focus-energy");
     pokemon.volatileStatuses.delete("leech-seed");
+    pokemon.volatileStatuses.delete("toxic-counter");
   }
 
   // --- Switching ---
