@@ -1134,6 +1134,7 @@ describe("Gen 2 Damage Calculation", () => {
         heldItem: "thick-club",
       });
       // speciesId 105 = Marowak
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (marowakWithClub.pokemon as any).speciesId = 105;
 
       const marowakNoItem = createActivePokemon({
@@ -1145,6 +1146,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["ground"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (marowakNoItem.pokemon as any).speciesId = 105;
 
       const defender = createActivePokemon({
@@ -1201,6 +1203,7 @@ describe("Gen 2 Damage Calculation", () => {
         heldItem: "thick-club",
       });
       // speciesId 104 = Cubone
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (cuboneWithClub.pokemon as any).speciesId = 104;
 
       const cuboneNoItem = createActivePokemon({
@@ -1212,6 +1215,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["ground"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (cuboneNoItem.pokemon as any).speciesId = 104;
 
       const defender = createActivePokemon({
@@ -1267,6 +1271,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["rock"],
         heldItem: "thick-club",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (onixWithClub.pokemon as any).speciesId = 95;
 
       const onixNoItem = createActivePokemon({
@@ -1278,6 +1283,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["rock"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (onixNoItem.pokemon as any).speciesId = 95;
 
       const defender = createActivePokemon({
@@ -1330,6 +1336,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: "light-ball",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (pikachuWithBall.pokemon as any).speciesId = 25;
 
       const pikachuNoBall = createActivePokemon({
@@ -1341,6 +1348,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (pikachuNoBall.pokemon as any).speciesId = 25;
 
       const defender = createActivePokemon({
@@ -1397,6 +1405,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: "light-ball",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (raichuWithBall.pokemon as any).speciesId = 26;
 
       const raichuNoBall = createActivePokemon({
@@ -1408,6 +1417,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (raichuNoBall.pokemon as any).speciesId = 26;
 
       const defender = createActivePokemon({
@@ -1458,6 +1468,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: "light-ball",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (pikachuWithBall.pokemon as any).speciesId = 25;
 
       const pikachuNoBall = createActivePokemon({
@@ -1469,6 +1480,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (pikachuNoBall.pokemon as any).speciesId = 25;
 
       const defender = createActivePokemon({
@@ -1530,6 +1542,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["normal"],
         heldItem: "metal-powder",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (dittoWithPowder.pokemon as any).speciesId = 132;
 
       const dittoNoPowder = createActivePokemon({
@@ -1541,6 +1554,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["normal"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (dittoNoPowder.pokemon as any).speciesId = 132;
 
       const move = createMove("normal", 80);
@@ -1596,6 +1610,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["normal"],
         heldItem: "metal-powder",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (dittoWithPowder.pokemon as any).speciesId = 132;
 
       const dittoNoPowder = createActivePokemon({
@@ -1607,6 +1622,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["normal"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (dittoNoPowder.pokemon as any).speciesId = 132;
 
       // Special move (fire type is special in Gen 2)
@@ -1714,6 +1730,7 @@ describe("Gen 2 Damage Calculation", () => {
         heldItem: "thick-club",
       });
       // speciesId 105 = Marowak
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (marowakWithClub.pokemon as any).speciesId = 105;
 
       const marowakNoItem = createActivePokemon({
@@ -1725,6 +1742,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["ground"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (marowakNoItem.pokemon as any).speciesId = 105;
 
       const defender = createActivePokemon({
@@ -1780,6 +1798,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: "light-ball",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (pikachuWithBall.pokemon as any).speciesId = 25;
 
       const pikachuNoBall = createActivePokemon({
@@ -1791,6 +1810,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["electric"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (pikachuNoBall.pokemon as any).speciesId = 25;
 
       const defender = createActivePokemon({
@@ -1855,6 +1875,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["normal"],
         heldItem: "metal-powder",
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (dittoWithPowder.pokemon as any).speciesId = 132;
 
       const dittoNoPowder = createActivePokemon({
@@ -1866,6 +1887,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: ["normal"],
         heldItem: null,
       });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
       (dittoNoPowder.pokemon as any).speciesId = 132;
 
       const move = createMove("normal", 80);

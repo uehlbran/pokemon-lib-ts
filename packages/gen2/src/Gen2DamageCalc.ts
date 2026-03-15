@@ -65,7 +65,11 @@ function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: b
       baseStat = baseStat * 2;
     }
     // Light Ball doubles Pikachu's (25) SpAtk
-    if (!physical && attacker.pokemon.heldItem === "light-ball" && attacker.pokemon.speciesId === 25) {
+    if (
+      !physical &&
+      attacker.pokemon.heldItem === "light-ball" &&
+      attacker.pokemon.speciesId === 25
+    ) {
       baseStat = baseStat * 2;
     }
     return Math.max(1, baseStat);
@@ -90,7 +94,11 @@ function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: b
   }
 
   // Light Ball doubles Pikachu's (25) SpAtk
-  if (!physical && attacker.pokemon.heldItem === "light-ball" && attacker.pokemon.speciesId === 25) {
+  if (
+    !physical &&
+    attacker.pokemon.heldItem === "light-ball" &&
+    attacker.pokemon.speciesId === 25
+  ) {
     effective = effective * 2;
   }
 
@@ -115,7 +123,11 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
     }
     // Metal Powder doubles Ditto's (132) defense
     // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
-    if (physical && defender.pokemon.heldItem === "metal-powder" && defender.pokemon.speciesId === 132) {
+    if (
+      physical &&
+      defender.pokemon.heldItem === "metal-powder" &&
+      defender.pokemon.speciesId === 132
+    ) {
       baseStat = baseStat * 2;
     }
     return Math.max(1, baseStat);
@@ -127,7 +139,11 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
 
   // Metal Powder doubles Ditto's (132) defense
   // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
-  if (physical && defender.pokemon.heldItem === "metal-powder" && defender.pokemon.speciesId === 132) {
+  if (
+    physical &&
+    defender.pokemon.heldItem === "metal-powder" &&
+    defender.pokemon.speciesId === 132
+  ) {
     effective = effective * 2;
   }
 
