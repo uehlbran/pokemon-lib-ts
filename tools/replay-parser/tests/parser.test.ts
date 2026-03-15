@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   normalizeMoveName,
@@ -88,6 +90,16 @@ describe("parseHp", () => {
 
     // Assert
     expect(result).toEqual({ current: 0, max: 100, status: null });
+  });
+
+  it("given '0 fnt', when parsed, then returns current=0 max=0 and no status", () => {
+    // Arrange / Act
+    const result = parseHp("0 fnt");
+
+    // Assert
+    expect(result.current).toBe(0);
+    expect(result.max).toBe(0);
+    expect(result.status).toBeNull();
   });
 });
 
@@ -750,5 +762,64 @@ describe("parseReplay", () => {
     // Assert
     const turn1 = result.turns.find((t) => t.turnNumber === 1);
     expect(turn1?.events.some((e) => e.type === "status")).toBe(true);
+  });
+
+  it("given log with tie event, then TieEvent players are populated from replay metadata", () => {
+    // Arrange
+    const tieLog = [
+      "|gen|1",
+      "|tier|[Gen 1] OU",
+      "|player|p1|AlicePlayer|1",
+      "|player|p2|BobPlayer|2",
+      "|start",
+      "|turn|1",
+      "|tie",
+    ].join("\n");
+
+    // Act
+    const result = parseReplay(tieLog);
+    const allEvents = result.turns.flatMap((t) => t.events);
+    const tieEvent = allEvents.find((e) => e.type === "tie");
+
+    // Assert
+    expect(tieEvent).toBeDefined();
+    expect(tieEvent?.type).toBe("tie");
+    const ev = tieEvent as Extract<ShowdownEvent, { type: "tie" }>;
+    expect(ev.players[0]).toBe("AlicePlayer");
+    expect(ev.players[1]).toBe("BobPlayer");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration: real replay file
+// ---------------------------------------------------------------------------
+describe("parseReplay (integration)", () => {
+  it("given a real gen1 replay log file, when parsed, then returns valid ParsedReplay with no NaN HP values", () => {
+    // Arrange
+    const replayDir = join(__dirname, "../replays/gen1");
+    const logFiles = readdirSync(replayDir).filter((f) => f.endsWith(".log"));
+    expect(logFiles.length).toBeGreaterThan(0);
+
+    const logText = readFileSync(join(replayDir, "gen1ou-2559142421.log"), "utf-8");
+
+    // Act
+    const result = parseReplay(logText);
+
+    // Assert — basic shape
+    expect(result.generation).toBe(1);
+    expect(result.players[0]).toBeTruthy();
+    expect(result.players[1]).toBeTruthy();
+    expect(result.turns.length).toBeGreaterThan(0);
+
+    // Assert — no NaN HP values anywhere in the replay
+    const allEvents = result.turns.flatMap((t) => t.events);
+    const hpEvents = allEvents.filter(
+      (e) => e.type === "damage" || e.type === "heal" || e.type === "switch",
+    ) as Array<Extract<ShowdownEvent, { type: "damage" | "heal" | "switch" }>>;
+
+    for (const ev of hpEvents) {
+      expect(Number.isNaN(ev.hp.current), `NaN current HP in ${ev.type} event`).toBe(false);
+      expect(Number.isNaN(ev.hp.max), `NaN max HP in ${ev.type} event`).toBe(false);
+    }
   });
 });

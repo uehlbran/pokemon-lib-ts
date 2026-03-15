@@ -37,15 +37,25 @@ const VALID_STATUSES = new Set(["par", "brn", "frz", "slp", "psn", "tox"]);
 
 /**
  * Parse a Showdown HP string like "81/100 par" or "100/100" or "0/100 fnt"
- * into a structured ShowdownHp.
+ * or "0 fnt" (no-slash fainted format) into a structured ShowdownHp.
  */
 export function parseHp(hp: string): ShowdownHp {
   const parts = hp.split(" ");
   const hpPart = parts[0] ?? "0/0";
-  const slashIdx = hpPart.indexOf("/");
-  const current = Number.parseInt(hpPart.slice(0, slashIdx), 10);
-  const max = Number.parseInt(hpPart.slice(slashIdx + 1), 10);
   const rawStatus = parts[1] ?? null;
+
+  let current: number;
+  let max: number;
+
+  const slashIdx = hpPart.indexOf("/");
+  if (slashIdx === -1) {
+    // No-slash format: "0 fnt" — just a bare number with optional status token
+    current = Number.parseInt(hpPart, 10);
+    max = current;
+  } else {
+    current = Number.parseInt(hpPart.slice(0, slashIdx), 10);
+    max = Number.parseInt(hpPart.slice(slashIdx + 1), 10);
+  }
 
   // "fnt" (fainted) is not a status condition - treat as null
   let status: ShowdownHp["status"] = null;
@@ -282,7 +292,8 @@ export function parseLine(line: string): ShowdownEvent | null {
     }
 
     case "tie": {
-      // Players will be filled in by parseReplay; use placeholders here
+      // Players are not available in parseLine context; parseReplay handles
+      // this line directly and injects the real players when building events.
       return { type: "tie", players: ["", ""] };
     }
 
@@ -410,8 +421,11 @@ export function parseReplay(logText: string): ParsedReplay {
       const parts = line.split("|");
       const slot = parts[2];
       const playerName = parts[3];
-      if (slot === "p1" && playerName !== undefined) rawPlayers[0] = playerName;
-      else if (slot === "p2" && playerName !== undefined) rawPlayers[1] = playerName;
+      // Only update if playerName is a non-empty string (trailing empty |player|p2| lines exist in real replays)
+      if (slot === "p1" && playerName !== undefined && playerName !== "")
+        rawPlayers[0] = playerName;
+      else if (slot === "p2" && playerName !== undefined && playerName !== "")
+        rawPlayers[1] = playerName;
     }
   }
 
@@ -428,6 +442,12 @@ export function parseReplay(logText: string): ParsedReplay {
   };
 
   for (const line of lines) {
+    // Handle "|tie|" (and bare "|tie") specially so we can inject real players
+    if (line === "|tie" || line.startsWith("|tie|")) {
+      currentEvents.push({ type: "tie", players: [rawPlayers[0], rawPlayers[1]] });
+      continue;
+    }
+
     const event = parseLine(line);
     if (event === null) continue;
 
