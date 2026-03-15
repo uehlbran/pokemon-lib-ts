@@ -76,7 +76,12 @@ export interface GenerationRuleset {
   /** Critical hit stage table for this gen */
   getCritRateTable(): readonly number[];
 
-  /** Critical hit damage multiplier (Gen 1-5: 2x, Gen 6+: 1.5x) */
+  /**
+   * Critical hit damage multiplier applied after the damage formula.
+   * Gen 2-5: 2x, Gen 6+: 1.5x.
+   * Gen 1: returns 1 — crits are handled via level-doubling inside the damage formula itself,
+   * not as a post-calc multiplier.
+   */
   getCritMultiplier(): number;
 
   /**
