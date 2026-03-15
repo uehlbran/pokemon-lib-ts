@@ -1881,6 +1881,89 @@ describe("Gen2Ruleset", () => {
     });
   });
 
+  // --- Explosion/Selfdestruct User Faints ---
+
+  describe("Given Explosion/Selfdestruct user faints", () => {
+    it("should set selfFaint = true when user uses Explosion", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive({ nickname: "Gengar" });
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const move = {
+        id: "explosion",
+        effect: { type: "custom" },
+      } as any;
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move,
+        damage: 250,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.selfFaint).toBe(true);
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0]).toContain("exploded");
+    });
+
+    it("should set selfFaint = true when user uses Self-Destruct", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive({ nickname: "Electrode" });
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const move = {
+        id: "self-destruct",
+        effect: { type: "custom" },
+      } as any;
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move,
+        damage: 200,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.selfFaint).toBe(true);
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0]).toContain("exploded");
+    });
+
+    it("should not set selfFaint for a regular attacking move", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive();
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const move = {
+        id: "tackle",
+        effect: null,
+      } as any;
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move,
+        damage: 30,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert: non-exploding moves should not set selfFaint
+      expect(result.selfFaint).toBeFalsy();
+    });
+  });
+
   // --- EXP Gain ---
 
   describe("Given EXP gain calculation", () => {

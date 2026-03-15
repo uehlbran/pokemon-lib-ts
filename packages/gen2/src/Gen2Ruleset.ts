@@ -309,6 +309,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+      selfFaint?: boolean;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -354,6 +355,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+      selfFaint?: boolean;
     },
     context: MoveEffectContext,
   ): void {
@@ -527,6 +529,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+      selfFaint?: boolean;
     },
     context: MoveEffectContext,
   ): void {
@@ -584,6 +587,13 @@ export class Gen2Ruleset implements GenerationRuleset {
       case "baton-pass": {
         // Switch out preserving stat changes and volatile statuses
         result.switchOut = true;
+        break;
+      }
+
+      case "explosion":
+      case "self-destruct": {
+        result.selfFaint = true;
+        result.messages.push(`${pokemonName} exploded!`);
         break;
       }
 

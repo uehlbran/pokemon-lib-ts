@@ -224,10 +224,16 @@ export function calculateGen2Damage(
   const attack = getAttackStat(attacker, move.type, isCrit);
   const defense = getDefenseStat(defender, move.type, isCrit);
 
+  // Explosion and Self-Destruct halve the defender's defense stat before damage calc
+  let effectiveDefense = defense;
+  if (move.id === "explosion" || move.id === "self-destruct") {
+    effectiveDefense = Math.max(1, Math.floor(defense / 2));
+  }
+
   // Step 1: Base damage
   // floor(floor(floor((2*Level/5 + 2) * Power * A) / D) / 50) + 2
   const levelFactor = Math.floor((2 * level) / 5) + 2;
-  let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / defense);
+  let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense);
   baseDamage = Math.floor(baseDamage / 50) + 2;
 
   // Step 2: Critical hit doubles damage in Gen 2

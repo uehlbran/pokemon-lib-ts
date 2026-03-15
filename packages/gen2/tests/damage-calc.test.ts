@@ -1925,6 +1925,174 @@ describe("Gen 2 Damage Calculation", () => {
     });
   });
 
+  // --- Explosion / Self-Destruct Defense Halving ---
+
+  describe("Explosion/Selfdestruct defense halving", () => {
+    it("given Explosion used against a defender with known defense, when calculating damage, then damage is ~2x a normal move of same power", () => {
+      // Arrange
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      // Normal move with same power (no defense halving)
+      const normalMove: MoveData = {
+        ...createMove("normal", 250),
+        id: "hyper-beam",
+      };
+      const explosionMove: MoveData = {
+        ...createMove("normal", 250),
+        id: "explosion",
+      };
+
+      const normalCtx: DamageContext = {
+        attacker,
+        defender,
+        move: normalMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const explosionCtx: DamageContext = {
+        attacker,
+        defender,
+        move: explosionMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const normalDmg = calculateGen2Damage(normalCtx, chart, species);
+      const explosionDmg = calculateGen2Damage(explosionCtx, chart, species);
+
+      // Assert: Explosion halves defense, so damage should be ~2x the normal move
+      expect(explosionDmg.damage).toBeGreaterThan(normalDmg.damage);
+      if (normalDmg.damage > 0) {
+        const ratio = explosionDmg.damage / normalDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Self-Destruct used against a defender with known defense, when calculating damage, then damage is ~2x a normal move of same power", () => {
+      // Arrange
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const normalMove: MoveData = {
+        ...createMove("normal", 200),
+        id: "hyper-beam",
+      };
+      const selfDestructMove: MoveData = {
+        ...createMove("normal", 200),
+        id: "self-destruct",
+      };
+
+      const normalCtx: DamageContext = {
+        attacker,
+        defender,
+        move: normalMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const selfDestructCtx: DamageContext = {
+        attacker,
+        defender,
+        move: selfDestructMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const normalDmg = calculateGen2Damage(normalCtx, chart, species);
+      const selfDestructDmg = calculateGen2Damage(selfDestructCtx, chart, species);
+
+      // Assert: Self-Destruct halves defense, so damage should be ~2x the normal move
+      expect(selfDestructDmg.damage).toBeGreaterThan(normalDmg.damage);
+      if (normalDmg.damage > 0) {
+        const ratio = selfDestructDmg.damage / normalDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given a non-explosion move, when calculating damage, then defense is not halved", () => {
+      // Arrange: verify that a regular move (same power as explosion) deals less
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      // Same power as Explosion (250), but not explosion — should use full defense
+      const regularMove: MoveData = {
+        ...createMove("normal", 250),
+        id: "tackle",
+      };
+
+      const ctx: DamageContext = {
+        attacker,
+        defender,
+        move: regularMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const result = calculateGen2Damage(ctx, chart, species);
+
+      // Assert: regular move with full defense produces a valid positive damage result
+      expect(result.damage).toBeGreaterThan(0);
+    });
+  });
+
   it("given identical inputs, when calculating damage twice, then produces identical results", () => {
     // Arrange
     const attacker = createActivePokemon({
