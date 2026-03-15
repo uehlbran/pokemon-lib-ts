@@ -17,6 +17,7 @@ packages/
   gen3/-gen9/ # @pokemon-lib-ts/gen3-gen9 — extend BaseRuleset + complete per-gen data
 tools/
   data-importer/  # Build-time scripts that parse Showdown + PokeAPI data into per-gen JSON
+  replay-parser/  # Showdown replay validation tool — parses replays and validates structural properties
 ```
 
 ### Dependency Graph
@@ -113,7 +114,7 @@ Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agent
 1. Create `packages/genN/` with standard package structure
 2. Generate data: `npx tsx tools/data-importer/src/import-gen.ts --gen N`
 3. Implement the ruleset:
-   - Gen 1-2: Implement `GenerationRuleset` directly
+   - Gen 1-2: Implement `GenerationRuleset` directly (too mechanically different from Gen 3+ defaults)
    - Gen 3-9: Extend `BaseRuleset`, override gen-specific methods
 4. Read the spec: `specs/battle/` (e.g., `02-gen1.md`, `03-gen2.md`, ... `10-gen9.md`)
 5. Write tests for every gen-specific mechanic
@@ -122,8 +123,9 @@ Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agent
 ## Implementation Phases
 
 - **Phase 1**: Core + Battle + Gen 1 (simplest gen — no abilities, no held items, 151 Pokemon, 165 moves, 15-type chart). Ship 0.1.0.
-- **Phase 2**: Gen 9 (most complex — proves architecture scales). Ship 0.2.0.
-- **Phase 3+**: Remaining gens, community-driven.
+- **Phase 2**: Gen 2 (second simplest — no abilities, adds held items, weather, Dark/Steel types, Special split). Ship 0.2.0.
+- **Phase 3**: Gen 9 (most complex — proves architecture scales).
+- **Phase 4+**: Remaining gens, community-driven.
 
 ## Package Versioning
 

@@ -8,6 +8,7 @@
 - [ ] `@pokemon-lib-ts/core`
 - [ ] `@pokemon-lib-ts/battle`
 - [ ] `@pokemon-lib-ts/gen1`
+- [ ] `@pokemon-lib-ts/gen2`
 
 ## Type
 - [ ] Feature
