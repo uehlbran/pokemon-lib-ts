@@ -541,8 +541,31 @@ describe("Gen 1 Damage Calculation", () => {
 
   // --- Low Power Move ---
 
-  it("given very low power move, when calculating damage, then still deals at least 1 damage", () => {
+  it("given very low power move, when calculating damage with neutral type, then deals at least 1 damage", () => {
+    // In Gen 1 there is no forced minimum-1 after the random factor; 0 damage is possible
+    // for extremely weak moves. Use neutral typing (1.0x) so the base damage of 2 survives
+    // the random factor (floor(2 * 217/255) = 1).
     // Arrange
+    const params = {
+      level: 5,
+      power: 10,
+      attack: 10,
+      defense: 200,
+      stab: false,
+      typeEffectiveness: 1.0,
+      isCritical: false,
+      randomFactor: 0.85,
+    };
+    // Act
+    const damage = calcDamage(params);
+    // Assert
+    expect(damage).toBeGreaterThanOrEqual(1);
+  });
+
+  it("given very weak move vs high defense and 0.5x resist, when damage is 0 after random, then deals 0 (Gen 1 zero-damage check)", () => {
+    // Gen 1: if damage reaches 0 before the random factor step, the move is a miss.
+    // After random, 0 is also valid (no forced minimum-1 floor in Gen 1).
+    // L5, P10, Atk10, Def200, 0.5x → baseDamage=1, random 0.85 → floor(1*217/255)=0
     const params = {
       level: 5,
       power: 10,
@@ -553,10 +576,8 @@ describe("Gen 1 Damage Calculation", () => {
       isCritical: false,
       randomFactor: 0.85,
     };
-    // Act
     const damage = calcDamage(params);
-    // Assert: Minimum damage should be 1 (unless type immunity)
-    expect(damage).toBeGreaterThanOrEqual(1);
+    expect(damage).toBe(0);
   });
 
   // --- Burn Effect on Physical Moves ---
@@ -828,14 +849,16 @@ describe("Gen 1 Damage Calculation", () => {
     expect(result.randomFactor).toBeCloseTo(217 / 255, 10);
   });
 
-  it("given high baseDamage scenario, when roll is 219, then damage matches integer-first computation floor(baseDamage * roll / 255)", () => {
-    // This test pins down the exact expected value for a high baseDamage case.
+  it("given baseDamage scenario, when roll is 219, then damage matches integer-first computation floor(baseDamage * roll / 255)", () => {
+    // This test pins down the exact expected value to verify integer-first random math.
     // Integer-first: floor(X * roll / 255) — the correct Gen 1 implementation.
     // Float-first:   floor(X * (roll / 255)) — the incorrect alternative that can differ.
-    // Params: L100, Power 100, Attack 706, Defense 100 → baseDamage = 595
+    // Params: L100, Power 100, Attack 200, Defense 100 → baseDamage = 170
     //   levelFactor = floor((2*100)/5)+2 = 42
-    //   floor(floor(42*100*706)/100)/50 + 2 = floor(29652/50)+2 = 593+2 = 595
-    // Roll = 219 → floor(595 * 219 / 255) = floor(130305/255) = 511
+    //   floor(floor(42*100*200)/100)/50 + 2 = floor(8400/50)+2 = 168+2 = 170
+    //   (170 < 997 so cap does not apply; 200 < 256 so overflow does not apply)
+    // Roll = 219 → floor(170 * 219 / 255) = floor(37230/255) = 146
+    // Float-first would give: floor(170 * 0.8588...) = floor(145.99...) = 145 — different!
     const chart = createNeutralTypeChart();
     const species = createSpecies();
     const move = createPhysicalMove(100);
@@ -843,9 +866,9 @@ describe("Gen 1 Damage Calculation", () => {
 
     const attacker = createActivePokemon({
       level: 100,
-      attack: 706,
+      attack: 200,
       defense: 100,
-      spAttack: 706,
+      spAttack: 200,
       spDefense: 100,
       types: ["fire"], // non-STAB for "normal"-type move
     });
@@ -869,8 +892,8 @@ describe("Gen 1 Damage Calculation", () => {
 
     const result = calculateGen1Damage(context, chart, species);
 
-    // baseDamage = 595, roll = 219 → floor(595 * 219 / 255) = 511
-    expect(result.damage).toBe(511);
+    // baseDamage = 170, roll = 219 → floor(170 * 219 / 255) = 146
+    expect(result.damage).toBe(146);
     expect(Number.isInteger(result.damage)).toBe(true);
   });
 
@@ -898,5 +921,200 @@ describe("Gen 1 Damage Calculation", () => {
       const stage = Number(stageStr);
       expect(getStatStageMultiplier(stage)).toBeCloseTo(expectedVal, 4);
     }
+  });
+
+  // --- Damage Cap at 997 (Correction 5) ---
+
+  it("given extreme attack/power that would exceed 997 before +2, when calculating damage, then intermediate is capped at 997", () => {
+    // Showdown: clamp(floor(baseDamage/50), 0, 997) + 2 — cap before adding 2
+    // L100, Power 150, Attack 255, Defense 1 → baseDamage / 50 > 997
+    //   levelFactor = 42
+    //   floor(42*150*255)/1 = 1606050
+    //   floor(1606050/50) = 32121 → cap to 997 → +2 = 999
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const move = createPhysicalMove(150);
+    const rng = createMockRng(255); // max roll
+
+    const attacker = createActivePokemon({
+      level: 100,
+      attack: 255,
+      defense: 100,
+      spAttack: 255,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 1,
+      defense: 1,
+      spAttack: 1,
+      spDefense: 1,
+      types: ["normal"],
+    });
+
+    const context = {
+      attacker,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: rng as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    const result = calculateGen1Damage(context, chart, species);
+    // Capped at 997 + 2 = 999 (before STAB/type), then random 255/255 → 999
+    expect(result.damage).toBe(999);
+  });
+
+  // --- Stat Overflow Bug (Correction 17) ---
+
+  it("given attack stat of 300 (>= 256), when calculating damage, then overflow divides both by 4 mod 256", () => {
+    // Gen 1 bug: if attack OR defense >= 256, both are divided by 4 and taken mod 256.
+    // attack=300: floor(300/4)%256 = 75%256 = 75
+    // defense=100: floor(100/4)%256 = 25%256 = 25
+    // baseDamage with attack=75, defense=25 vs original attack=300, defense=100
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const move = createPhysicalMove(80);
+    const rng = createMockRng(255);
+
+    const attackerOverflow = createActivePokemon({
+      level: 100,
+      attack: 300, // >= 256 → triggers overflow
+      defense: 100,
+      spAttack: 300,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const attackerNormal = createActivePokemon({
+      level: 100,
+      attack: 75, // floor(300/4)%256 = 75 — the overflowed value
+      defense: 100,
+      spAttack: 75,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100, // floor(100/4)%256 = 25 after overflow
+      spAttack: 100,
+      spDefense: 25, // pre-overflowed to match
+      types: ["normal"],
+    });
+    const defenderOverflowed = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 25,
+      spAttack: 100,
+      spDefense: 25,
+      types: ["normal"],
+    });
+
+    const ctxOverflow = {
+      attacker: attackerOverflow,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: rng as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+    const ctxNormal = {
+      attacker: attackerNormal,
+      defender: defenderOverflowed,
+      move,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    const overflowResult = calculateGen1Damage(ctxOverflow, chart, species);
+    const normalResult = calculateGen1Damage(ctxNormal, chart, species);
+    // Both should produce the same damage since overflow maps 300 → 75, 100 → 25
+    expect(overflowResult.damage).toBe(normalResult.damage);
+  });
+
+  // --- Explosion/Self-Destruct Defense Halving (Correction 16) ---
+
+  it("given Explosion move, when calculating damage, then target defense is halved before damage calc", () => {
+    // Gen 1: Explosion and Self-Destruct halve the target's Defense in the damage formula.
+    // (Showdown scripts.ts:863) This effectively doubles damage vs normal moves.
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const explosionMove: MoveData = {
+      id: "explosion",
+      displayName: "Explosion",
+      type: "normal" as PokemonType,
+      category: "physical",
+      power: 250,
+      accuracy: 100,
+      pp: 5,
+      priority: 0,
+      target: "adjacent-foe",
+      flags: {
+        contact: false,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: false,
+        mirror: true,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: { type: "custom", handler: "explosion" },
+      description: "",
+      generation: 1,
+    };
+    const normalMove = createPhysicalMove(250);
+    const rng = createMockRng(255);
+
+    const attacker = createActivePokemon({
+      level: 100,
+      attack: 200,
+      defense: 100,
+      spAttack: 200,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 200,
+      spAttack: 100,
+      spDefense: 200,
+      types: ["normal"],
+    });
+
+    const ctxExplosion = {
+      attacker,
+      defender,
+      move: explosionMove,
+      state: {} as DamageContext["state"],
+      rng: rng as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+    const ctxNormal = {
+      attacker,
+      defender,
+      move: normalMove,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    const explosionDamage = calculateGen1Damage(ctxExplosion, chart, species).damage;
+    const normalDamage = calculateGen1Damage(ctxNormal, chart, species).damage;
+    // Explosion should deal more damage due to halved defense
+    expect(explosionDamage).toBeGreaterThan(normalDamage);
   });
 });

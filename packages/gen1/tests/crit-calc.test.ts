@@ -121,32 +121,35 @@ describe("Gen 1 Critical Hit", () => {
   // --- Focus Energy Bug ---
 
   it("given Focus Energy active, when calculating crit rate, then rate DECREASES (Gen 1 bug)", () => {
+    // Gen 1 bug: Focus Energy divides critChance by 2 instead of multiplying by 4.
+    // Without FE: floor(100/2)=50, *2=100, /2=50 → 50/256 ~19.5%
+    // With FE:    floor(100/2)=50, /2=25,  /2=12 → 12/256 ~4.7% (lower!)
     // Arrange
     const baseSpeed = 100;
     // Act
     const normalRate = getGen1CritRate(baseSpeed, false, false);
     const focusEnergyRate = getGen1CritRate(baseSpeed, true, false);
-    // Assert: Focus Energy DIVIDES by 4 instead of multiplying by 4
-    // normalRate = 50/256 ~ 0.195
-    // focusEnergyRate = floor(50/4) / 256 = 12/256 ~ 0.047
+    // Assert: Focus Energy reduces crit rate (bugged — should increase it)
     expect(focusEnergyRate).toBeLessThan(normalRate);
   });
 
   it("given Focus Energy active with base speed 100, when calculating crit rate, then rate is approximately 4.7%", () => {
+    // Showdown algorithm: 1→50, FE:/2→25, normal:/2→12 → 12/256 ≈ 0.0469
     // Arrange
     const baseSpeed = 100;
     // Act
     const rate = getGen1CritRate(baseSpeed, true, false);
-    // Assert: floor(floor(100/2) / 4) / 256 = floor(50/4)/256 = 12/256 ~ 0.0469
+    // Assert: 12/256 ~ 0.0469
     expect(rate).toBeCloseTo(12 / 256, 2);
   });
 
   it("given Focus Energy active with low speed, when calculating crit rate, then rate drops to 0 or near-zero", () => {
+    // Showdown algorithm: 1→10, FE:/2→5, normal:/2→2 → 2/256 ≈ 0.0078
     // Arrange
     const baseSpeed = 20;
     // Act
     const rate = getGen1CritRate(baseSpeed, true, false);
-    // Assert: floor(floor(20/2) / 4) / 256 = floor(10/4)/256 = 2/256 ~ 0.0078
+    // Assert: 2/256 ~ 0.0078
     expect(rate).toBeLessThanOrEqual(3 / 256);
   });
 
