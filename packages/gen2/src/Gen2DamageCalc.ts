@@ -39,48 +39,33 @@ export function isPhysicalInGen2(moveType: PokemonType): boolean {
  * Get the effective attack stat for a move in Gen 2.
  * Physical types use Attack; special types use SpAttack.
  * Unlike Gen 1, SpAttack and SpDefense are now separate stats.
+ *
+ * @param ignoreBoosts - When true (crit + atkStage <= defStage), ignore ALL stat stages.
+ * @param ignoreBurn - When true (crit + atkStage <= defStage), skip the burn attack halving.
  */
-function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: boolean): number {
+function getAttackStat(
+  attacker: ActivePokemon,
+  moveType: PokemonType,
+  ignoreBoosts = false,
+  ignoreBurn = false,
+): number {
   const physical = isPhysicalInGen2(moveType);
   const statKey = physical ? "attack" : "spAttack";
   const stats = attacker.pokemon.calculatedStats;
+  const baseStat = stats ? stats[statKey] : 100;
 
-  if (isCrit) {
-    // Critical hits ignore negative stat stages for attacker
+  let effective: number;
+
+  if (ignoreBoosts) {
+    // Crit with atkStage <= defStage: ignore ALL stat stages
+    effective = baseStat;
+  } else {
     const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
-    let baseStat = stats ? stats[statKey] : 100;
-    if (stage > 0) {
-      baseStat = Math.floor(baseStat * getStatStageMultiplier(stage));
-    }
-    // Burn halves physical attack
-    if (physical && attacker.pokemon.status === "burn") {
-      baseStat = Math.floor(baseStat / 2);
-    }
-    // Thick Club doubles attack for Cubone (104) / Marowak (105)
-    if (
-      physical &&
-      attacker.pokemon.heldItem === "thick-club" &&
-      (attacker.pokemon.speciesId === 104 || attacker.pokemon.speciesId === 105)
-    ) {
-      baseStat = baseStat * 2;
-    }
-    // Light Ball doubles Pikachu's (25) SpAtk
-    if (
-      !physical &&
-      attacker.pokemon.heldItem === "light-ball" &&
-      attacker.pokemon.speciesId === 25
-    ) {
-      baseStat = baseStat * 2;
-    }
-    return Math.max(1, baseStat);
+    effective = Math.floor(baseStat * getStatStageMultiplier(stage));
   }
 
-  const baseStat = stats ? stats[statKey] : 100;
-  const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
-  let effective = Math.floor(baseStat * getStatStageMultiplier(stage));
-
-  // Burn halves physical attack
-  if (physical && attacker.pokemon.status === "burn") {
+  // Burn halves physical attack (unless ignored on crit)
+  if (physical && attacker.pokemon.status === "burn" && !ignoreBurn) {
     effective = Math.floor(effective / 2);
   }
 
@@ -102,40 +87,34 @@ function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: b
     effective = effective * 2;
   }
 
-  return Math.max(1, effective);
+  return Math.max(1, Math.min(999, effective));
 }
 
 /**
  * Get the effective defense stat for a move in Gen 2.
  * Physical types use Defense; special types use SpDefense.
+ *
+ * @param ignoreBoosts - When true (crit + atkStage <= defStage), ignore ALL stat stages.
  */
-function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: boolean): number {
+function getDefenseStat(
+  defender: ActivePokemon,
+  moveType: PokemonType,
+  ignoreBoosts = false,
+): number {
   const physical = isPhysicalInGen2(moveType);
   const statKey = physical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
-
-  if (isCrit) {
-    // Critical hits ignore positive stat stages for defender
-    const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
-    let baseStat = stats ? stats[statKey] : 100;
-    if (stage < 0) {
-      baseStat = Math.floor(baseStat * getStatStageMultiplier(stage));
-    }
-    // Metal Powder doubles Ditto's (132) defense
-    // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
-    if (
-      physical &&
-      defender.pokemon.heldItem === "metal-powder" &&
-      defender.pokemon.speciesId === 132
-    ) {
-      baseStat = baseStat * 2;
-    }
-    return Math.max(1, baseStat);
-  }
-
   const baseStat = stats ? stats[statKey] : 100;
-  const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
-  let effective = Math.floor(baseStat * getStatStageMultiplier(stage));
+
+  let effective: number;
+
+  if (ignoreBoosts) {
+    // Crit with atkStage <= defStage: ignore ALL stat stages
+    effective = baseStat;
+  } else {
+    const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
+    effective = Math.floor(baseStat * getStatStageMultiplier(stage));
+  }
 
   // Metal Powder doubles Ditto's (132) defense
   // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
@@ -147,7 +126,7 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
     effective = effective * 2;
   }
 
-  return Math.max(1, effective);
+  return Math.max(1, Math.min(999, effective));
 }
 
 /**
@@ -193,12 +172,23 @@ function getItemModifier(attacker: ActivePokemon, moveType: PokemonType): number
 /**
  * Calculate damage for a move in Gen 2.
  *
- * Formula is similar to Gen 1 but with key differences:
+ * Formula per Showdown scripts.ts:651-714:
+ *   1. baseDamage = floor(floor(floor((2*L/5)+2) * P * A) / D) / 50)  — no +2 yet
+ *   2. Crit: * 2
+ *   3. Item modifier (type-boost items at 1.1x)
+ *   4. Clamp: max(1, min(997, baseDamage))
+ *   5. + 2
+ *   6. Weather: water+rain/fire+sun → floor(* 1.5); opposite → floor(/ 2)
+ *   7. STAB: += floor(damage / 2)
+ *   8. Type effectiveness (multiply, floor each type separately)
+ *   9. Random: floor(damage * rng.int(217,255) / 255)
+ *   10. Minimum 1
+ *
+ * Key differences from Gen 1:
  * - SpAttack and SpDefense are separate stats
  * - Weather modifiers (Rain/Sun)
  * - Held item modifiers (type-boosting items at 1.1x)
- * - Critical hits ignore negative attacker stages and positive defender stages
- *   (not just all stages like Gen 1)
+ * - Critical hits: compare atkStage vs defStage to decide whether to ignore all boosts
  * - Steel and Dark types added
  */
 export function calculateGen2Damage(
@@ -221,40 +211,65 @@ export function calculateGen2Damage(
   const level = attacker.pokemon.level;
   const power = move.power;
 
-  const attack = getAttackStat(attacker, move.type, isCrit);
-  const defense = getDefenseStat(defender, move.type, isCrit);
+  // Determine crit boost interaction (Showdown scripts.ts:589-600)
+  const physical = isPhysicalInGen2(move.type);
+  const atkStage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
+  const defStage = physical ? defender.statStages.defense : defender.statStages.spDefense;
+  // When atkStage <= defStage on a crit: ignore ALL boosts on both sides AND ignore burn
+  const ignoreBoosts = isCrit && atkStage <= defStage;
+  const ignoreBurn = ignoreBoosts;
+
+  let attack = getAttackStat(attacker, move.type, ignoreBoosts, ignoreBurn);
+  let effectiveDefense = getDefenseStat(defender, move.type, ignoreBoosts);
 
   // Explosion and Self-Destruct halve the defender's defense stat before damage calc
-  let effectiveDefense = defense;
   if (move.id === "explosion" || move.id === "self-destruct") {
-    effectiveDefense = Math.max(1, Math.floor(defense / 2));
+    effectiveDefense = Math.max(1, Math.floor(effectiveDefense / 2));
   }
 
-  // Step 1: Base damage
-  // floor(floor(floor((2*Level/5 + 2) * Power * A) / D) / 50) + 2
+  // Gen 2 stat overflow: if either stat >= 256, both wrap around
+  if (attack >= 256 || effectiveDefense >= 256) {
+    attack = Math.max(1, Math.floor(attack / 4) % 256);
+    effectiveDefense = Math.max(1, Math.floor(effectiveDefense / 4) % 256);
+  }
+
+  // Step 1: Base damage (no +2 yet)
+  // floor(floor((floor(2*Level/5)+2) * Power * A) / D) / 50)
   const levelFactor = Math.floor((2 * level) / 5) + 2;
   let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense);
-  baseDamage = Math.floor(baseDamage / 50) + 2;
+  baseDamage = Math.floor(baseDamage / 50);
 
   // Step 2: Critical hit doubles damage in Gen 2
   if (isCrit) {
     baseDamage = Math.floor(baseDamage * 2);
   }
 
-  // Step 3: Weather modifier
+  // Step 3: Item modifier (type-boosting items at 1.1x) — BEFORE clamp
+  const itemMod = getItemModifier(attacker, move.type);
+  if (itemMod !== 1) {
+    baseDamage = Math.floor(baseDamage * itemMod);
+  }
+
+  // Step 4: Clamp to [1, 997]
+  baseDamage = Math.max(1, Math.min(997, baseDamage));
+
+  // Step 5: Add the +2 constant
+  baseDamage += 2;
+
+  // Step 6: Weather modifier
   const weather = state.weather?.type ?? null;
   const weatherMod = weather ? getWeatherDamageModifier(move.type, weather) : 1;
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
   }
 
-  // Step 4: STAB
+  // Step 7: STAB
   const stabMod = getStabModifier(move.type, attacker.types);
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
-  // Step 5: Type effectiveness
+  // Step 8: Type effectiveness
   const effectiveness = getTypeEffectiveness(move.type, defender.types, typeChart);
   if (effectiveness === 0) {
     return {
@@ -266,13 +281,7 @@ export function calculateGen2Damage(
   }
   baseDamage = Math.floor(baseDamage * effectiveness);
 
-  // Step 6: Item modifier (type-boosting items at 1.1x)
-  const itemMod = getItemModifier(attacker, move.type);
-  if (itemMod !== 1) {
-    baseDamage = Math.floor(baseDamage * itemMod);
-  }
-
-  // Step 7: Random factor (217-255) / 255
+  // Step 9: Random factor (217-255) / 255
   const randomRoll = rng.int(217, 255);
   const randomFactor = randomRoll / 255;
   let finalDamage = Math.floor(baseDamage * randomFactor);
@@ -280,7 +289,6 @@ export function calculateGen2Damage(
   // Minimum 1 damage
   finalDamage = Math.max(1, finalDamage);
 
-  const physical = isPhysicalInGen2(move.type);
   const breakdown: DamageBreakdown = {
     baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense / 50) + 2,
     weatherMod,
@@ -288,7 +296,7 @@ export function calculateGen2Damage(
     randomMod: randomFactor,
     stabMod,
     typeMod: effectiveness,
-    burnMod: physical && attacker.pokemon.status === "burn" ? 0.5 : 1,
+    burnMod: physical && attacker.pokemon.status === "burn" && !ignoreBurn ? 0.5 : 1,
     abilityMod: 1, // No abilities in Gen 2
     itemMod,
     otherMod: 1,
