@@ -7,7 +7,7 @@ import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-li
  *
  * @param statExp - Stat Experience value (0-65535), stored in `evs` for compatibility
  */
-function statExpContribution(statExp: number): number {
+function calculateStatExpContribution(statExp: number): number {
   if (statExp === 0) return 0;
   return Math.floor(Math.ceil(Math.sqrt(statExp)) / 4);
 }
@@ -23,7 +23,7 @@ function statExpContribution(statExp: number): number {
  * @param level - Pokemon level (1-100)
  */
 function calculateGen2Hp(base: number, dv: number, statExp: number, level: number): number {
-  const expBonus = statExpContribution(statExp);
+  const expBonus = calculateStatExpContribution(statExp);
   return Math.floor((((base + dv) * 2 + expBonus) * level) / 100) + level + 10;
 }
 
@@ -40,7 +40,7 @@ function calculateGen2Hp(base: number, dv: number, statExp: number, level: numbe
  * @param level - Pokemon level (1-100)
  */
 function calculateGen2Stat(base: number, dv: number, statExp: number, level: number): number {
-  const expBonus = statExpContribution(statExp);
+  const expBonus = calculateStatExpContribution(statExp);
   return Math.floor((((base + dv) * 2 + expBonus) * level) / 100) + 5;
 }
 

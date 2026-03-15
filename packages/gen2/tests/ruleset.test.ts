@@ -164,7 +164,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       // Act
-      const types = ruleset.getValidTypes();
+      const types = ruleset.getAvailableTypes();
       // Assert
       expect(types.length).toBe(17);
       expect(types).toContain("normal");
@@ -1613,7 +1613,7 @@ describe("Gen2Ruleset", () => {
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
         id: "baton-pass",
-        effect: { type: "switch-out", who: "self" },
+        effect: { type: "switch-out", target: "self" },
       } as unknown as MoveData;
 
       // Act

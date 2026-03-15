@@ -995,7 +995,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a switch-out effect, when executing, then no side-effects are recorded (engine-handled)", () => {
     // Arrange
     const move = makeMove({
-      effect: { type: "switch-out", who: "self" },
+      effect: { type: "switch-out", target: "self" },
     });
     const ctx = makeMoveEffectContext({ move });
     // Act
@@ -1995,7 +1995,7 @@ describe("Gen 1 Quirks", () => {
 
   it("given Gen 1 ruleset, when getting valid types, then all 15 Gen 1 types are present (no dark/steel/fairy)", () => {
     // Arrange
-    const types = ruleset.getValidTypes();
+    const types = ruleset.getAvailableTypes();
     // Assert
     expect(types).toHaveLength(15);
     expect(types).not.toContain("dark");

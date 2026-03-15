@@ -61,23 +61,23 @@ export interface DamageBreakdown {
   /** Damage before any multipliers (`floor((2*Level/5 + 2) * Power * Atk/Def / 50) + 2`) */
   readonly baseDamage: number;
   /** Weather modifier (e.g., 1.5 for rain + Water move, 0.5 for rain + Fire move) */
-  readonly weatherMod: number;
+  readonly weatherMultiplier: number;
   /** Critical hit modifier (1.5 in Gen 6+, 2.0 in Gen 1–5) */
-  readonly critMod: number;
+  readonly critMultiplier: number;
   /** Random damage roll (0.85–1.0 in Gen 5+; 217/255–255/255 in Gen 1–4) */
-  readonly randomMod: number;
+  readonly randomMultiplier: number;
   /** STAB (Same-Type Attack Bonus) modifier (1.5, or 2.0 with Adaptability) */
-  readonly stabMod: number;
+  readonly stabMultiplier: number;
   /** Type-effectiveness product (0, 0.25, 0.5, 1, 2, or 4) */
-  readonly typeMod: number;
+  readonly typeMultiplier: number;
   /** Burn modifier (0.5 for burned attacker using a physical move; 1.0 otherwise) */
-  readonly burnMod: number;
+  readonly burnMultiplier: number;
   /** Net ability modifier from attacker and defender abilities */
-  readonly abilityMod: number;
+  readonly abilityMultiplier: number;
   /** Net held-item modifier from attacker and defender items */
-  readonly itemMod: number;
+  readonly itemMultiplier: number;
   /** Catch-all for any additional modifier not covered by the fields above */
-  readonly otherMod: number;
+  readonly otherMultiplier: number;
   /** The damage value after all multipliers are applied (equals `DamageResult.damage`) */
   readonly finalDamage: number;
 }

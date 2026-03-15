@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyModifier,
-  applyModifierChain,
+  applyDamageModifier,
+  applyDamageModifierChain,
   getStabModifier,
-  getWeatherModifier,
+  getWeatherDamageModifier,
 } from "../../src/logic/damage-utils";
 
-// --- applyModifier ---
+// --- applyDamageModifier ---
 
-describe("applyModifier", () => {
+describe("applyDamageModifier", () => {
   it("given a value and modifier of 1.0, when called, then returns the same value", () => {
     // Arrange / Act
-    const result = applyModifier(100, 1.0);
+    const result = applyDamageModifier(100, 1.0);
 
     // Assert
     expect(result).toBe(100);
@@ -19,7 +19,7 @@ describe("applyModifier", () => {
 
   it("given a value and modifier of 1.5, when called, then returns floor of result", () => {
     // Arrange / Act
-    const result = applyModifier(100, 1.5);
+    const result = applyDamageModifier(100, 1.5);
 
     // Assert
     expect(result).toBe(150);
@@ -27,7 +27,7 @@ describe("applyModifier", () => {
 
   it("given a value and modifier of 0.5, when called, then returns half", () => {
     // Arrange / Act
-    const result = applyModifier(100, 0.5);
+    const result = applyDamageModifier(100, 0.5);
 
     // Assert
     expect(result).toBe(50);
@@ -35,7 +35,7 @@ describe("applyModifier", () => {
 
   it("given an odd value and modifier of 1.5, when called, then applies floor truncation", () => {
     // Arrange / Act
-    const result = applyModifier(99, 1.5);
+    const result = applyDamageModifier(99, 1.5);
 
     // Assert
     // 99 * 1.5 = 148.5 -> floor = 148
@@ -44,7 +44,7 @@ describe("applyModifier", () => {
 
   it("given a value and modifier of 0, when called, then returns 0", () => {
     // Arrange / Act
-    const result = applyModifier(100, 0);
+    const result = applyDamageModifier(100, 0);
 
     // Assert
     expect(result).toBe(0);
@@ -52,7 +52,7 @@ describe("applyModifier", () => {
 
   it("given a value of 1 and a small modifier, when called, then applies floor truncation to 0", () => {
     // Arrange / Act
-    const result = applyModifier(1, 0.3);
+    const result = applyDamageModifier(1, 0.3);
 
     // Assert
     // 1 * 0.3 = 0.3 -> floor = 0
@@ -61,27 +61,27 @@ describe("applyModifier", () => {
 
   it("given a large value and modifier of 2.0, when called, then doubles the value", () => {
     // Arrange / Act
-    const result = applyModifier(250, 2.0);
+    const result = applyDamageModifier(250, 2.0);
 
     // Assert
     expect(result).toBe(500);
   });
 });
 
-// --- applyModifierChain ---
+// --- applyDamageModifierChain ---
 
-describe("applyModifierChain", () => {
+describe("applyDamageModifierChain", () => {
   it("given a value and empty modifier chain, when called, then returns the original value", () => {
     // Arrange / Act
-    const result = applyModifierChain(100, []);
+    const result = applyDamageModifierChain(100, []);
 
     // Assert
     expect(result).toBe(100);
   });
 
-  it("given a value and single modifier, when called, then behaves like applyModifier", () => {
+  it("given a value and single modifier, when called, then behaves like applyDamageModifier", () => {
     // Arrange / Act
-    const result = applyModifierChain(100, [1.5]);
+    const result = applyDamageModifierChain(100, [1.5]);
 
     // Assert
     expect(result).toBe(150);
@@ -89,7 +89,7 @@ describe("applyModifierChain", () => {
 
   it("given a value and multiple modifiers, when called, then applies each with floor in sequence", () => {
     // Arrange / Act
-    const result = applyModifierChain(100, [1.5, 0.5]);
+    const result = applyDamageModifierChain(100, [1.5, 0.5]);
 
     // Assert
     // Step 1: floor(100 * 1.5) = 150
@@ -99,7 +99,7 @@ describe("applyModifierChain", () => {
 
   it("given a value with chain causing truncation at each step, when called, then floors at each step", () => {
     // Arrange / Act
-    const result = applyModifierChain(99, [1.5, 1.5]);
+    const result = applyDamageModifierChain(99, [1.5, 1.5]);
 
     // Assert
     // Step 1: floor(99 * 1.5) = floor(148.5) = 148
@@ -109,7 +109,7 @@ describe("applyModifierChain", () => {
 
   it("given three modifiers chained, when called, then applies all three in order", () => {
     // Arrange / Act
-    const result = applyModifierChain(100, [2.0, 0.5, 1.5]);
+    const result = applyDamageModifierChain(100, [2.0, 0.5, 1.5]);
 
     // Assert
     // Step 1: floor(100 * 2.0) = 200
@@ -120,7 +120,7 @@ describe("applyModifierChain", () => {
 
   it("given a modifier of 0 in the chain, when called, then zeroes out the result", () => {
     // Arrange / Act
-    const result = applyModifierChain(100, [1.5, 0, 2.0]);
+    const result = applyDamageModifierChain(100, [1.5, 0, 2.0]);
 
     // Assert
     // Step 1: floor(100 * 1.5) = 150
@@ -182,12 +182,12 @@ describe("getStabModifier", () => {
   });
 });
 
-// --- getWeatherModifier ---
+// --- getWeatherDamageModifier ---
 
-describe("getWeatherModifier", () => {
+describe("getWeatherDamageModifier", () => {
   it("given null weather, when called, then returns 1.0", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("fire", null);
+    const modifier = getWeatherDamageModifier("fire", null);
 
     // Assert
     expect(modifier).toBe(1.0);
@@ -195,7 +195,7 @@ describe("getWeatherModifier", () => {
 
   it("given rain and a water move, when called, then returns 1.5 (boosted)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("water", "rain");
+    const modifier = getWeatherDamageModifier("water", "rain");
 
     // Assert
     expect(modifier).toBe(1.5);
@@ -203,7 +203,7 @@ describe("getWeatherModifier", () => {
 
   it("given rain and a fire move, when called, then returns 0.5 (weakened)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("fire", "rain");
+    const modifier = getWeatherDamageModifier("fire", "rain");
 
     // Assert
     expect(modifier).toBe(0.5);
@@ -211,7 +211,7 @@ describe("getWeatherModifier", () => {
 
   it("given sun and a fire move, when called, then returns 1.5 (boosted)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("fire", "sun");
+    const modifier = getWeatherDamageModifier("fire", "sun");
 
     // Assert
     expect(modifier).toBe(1.5);
@@ -219,7 +219,7 @@ describe("getWeatherModifier", () => {
 
   it("given sun and a water move, when called, then returns 0.5 (weakened)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("water", "sun");
+    const modifier = getWeatherDamageModifier("water", "sun");
 
     // Assert
     expect(modifier).toBe(0.5);
@@ -227,7 +227,7 @@ describe("getWeatherModifier", () => {
 
   it("given rain and a grass move, when called, then returns 1.0 (unaffected)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("grass", "rain");
+    const modifier = getWeatherDamageModifier("grass", "rain");
 
     // Assert
     expect(modifier).toBe(1.0);
@@ -235,7 +235,7 @@ describe("getWeatherModifier", () => {
 
   it("given sun and an electric move, when called, then returns 1.0 (unaffected)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("electric", "sun");
+    const modifier = getWeatherDamageModifier("electric", "sun");
 
     // Assert
     expect(modifier).toBe(1.0);
@@ -243,28 +243,28 @@ describe("getWeatherModifier", () => {
 
   it("given sand weather, when called with any type, then returns 1.0", () => {
     // Arrange / Act / Assert
-    expect(getWeatherModifier("fire", "sand")).toBe(1.0);
-    expect(getWeatherModifier("water", "sand")).toBe(1.0);
-    expect(getWeatherModifier("rock", "sand")).toBe(1.0);
+    expect(getWeatherDamageModifier("fire", "sand")).toBe(1.0);
+    expect(getWeatherDamageModifier("water", "sand")).toBe(1.0);
+    expect(getWeatherDamageModifier("rock", "sand")).toBe(1.0);
   });
 
   it("given hail weather, when called with any type, then returns 1.0", () => {
     // Arrange / Act / Assert
-    expect(getWeatherModifier("fire", "hail")).toBe(1.0);
-    expect(getWeatherModifier("ice", "hail")).toBe(1.0);
+    expect(getWeatherDamageModifier("fire", "hail")).toBe(1.0);
+    expect(getWeatherDamageModifier("ice", "hail")).toBe(1.0);
   });
 
   it("given snow weather, when called with any type, then returns 1.0", () => {
     // Arrange / Act / Assert
-    expect(getWeatherModifier("ice", "snow")).toBe(1.0);
-    expect(getWeatherModifier("water", "snow")).toBe(1.0);
+    expect(getWeatherDamageModifier("ice", "snow")).toBe(1.0);
+    expect(getWeatherDamageModifier("water", "snow")).toBe(1.0);
   });
 
   // --- Extreme weather cases ---
 
   it("given heavy-rain and a water move, when called, then returns 1.5 (boosted)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("water", "heavy-rain");
+    const modifier = getWeatherDamageModifier("water", "heavy-rain");
 
     // Assert
     expect(modifier).toBe(1.5);
@@ -272,7 +272,7 @@ describe("getWeatherModifier", () => {
 
   it("given heavy-rain and a fire move, when called, then returns 0 (completely blocked)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("fire", "heavy-rain");
+    const modifier = getWeatherDamageModifier("fire", "heavy-rain");
 
     // Assert
     expect(modifier).toBe(0);
@@ -280,7 +280,7 @@ describe("getWeatherModifier", () => {
 
   it("given harsh-sun and a fire move, when called, then returns 1.5 (boosted)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("fire", "harsh-sun");
+    const modifier = getWeatherDamageModifier("fire", "harsh-sun");
 
     // Assert
     expect(modifier).toBe(1.5);
@@ -288,7 +288,7 @@ describe("getWeatherModifier", () => {
 
   it("given harsh-sun and a water move, when called, then returns 0 (completely blocked)", () => {
     // Arrange / Act
-    const modifier = getWeatherModifier("water", "harsh-sun");
+    const modifier = getWeatherDamageModifier("water", "harsh-sun");
 
     // Assert
     expect(modifier).toBe(0);
@@ -296,8 +296,8 @@ describe("getWeatherModifier", () => {
 
   it("given strong-winds, when called with any type, then returns 1.0", () => {
     // Arrange / Act / Assert
-    expect(getWeatherModifier("fire", "strong-winds")).toBe(1.0);
-    expect(getWeatherModifier("water", "strong-winds")).toBe(1.0);
-    expect(getWeatherModifier("flying", "strong-winds")).toBe(1.0);
+    expect(getWeatherDamageModifier("fire", "strong-winds")).toBe(1.0);
+    expect(getWeatherDamageModifier("water", "strong-winds")).toBe(1.0);
+    expect(getWeatherDamageModifier("flying", "strong-winds")).toBe(1.0);
   });
 });

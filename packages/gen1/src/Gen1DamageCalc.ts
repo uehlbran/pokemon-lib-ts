@@ -30,7 +30,7 @@ const GEN1_PHYSICAL_TYPES: readonly PokemonType[] = [
 /**
  * Determine whether a move type is physical or special in Gen 1.
  */
-export function isPhysicalInGen1(moveType: PokemonType): boolean {
+export function isGen1PhysicalType(moveType: PokemonType): boolean {
   return (GEN1_PHYSICAL_TYPES as readonly string[]).includes(moveType);
 }
 
@@ -44,7 +44,7 @@ function getAttackStat(
   isCrit: boolean,
   _species: PokemonSpeciesData,
 ): number {
-  const physical = isPhysicalInGen1(moveType);
+  const physical = isGen1PhysicalType(moveType);
   const statKey = physical ? "attack" : "spAttack";
   const stats = attacker.pokemon.calculatedStats;
 
@@ -76,7 +76,7 @@ function getAttackStat(
  * Physical types use Defense; special types use SpDefense (which equals Special).
  */
 function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: boolean): number {
-  const physical = isPhysicalInGen1(moveType);
+  const physical = isGen1PhysicalType(moveType);
   const statKey = physical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
 
@@ -136,7 +136,7 @@ export function calculateGen1Damage(
 
   // Explosion / Self-Destruct: halve the target's Defense in the damage calc
   // (Showdown scripts.ts:863, applies after overflow check)
-  if (isPhysicalInGen1(move.type) && (move.id === "explosion" || move.id === "self-destruct")) {
+  if (isGen1PhysicalType(move.type) && (move.id === "explosion" || move.id === "self-destruct")) {
     defense = Math.max(1, Math.floor(defense / 2));
   }
 
@@ -185,21 +185,21 @@ export function calculateGen1Damage(
   // In Gen 1, the random factor ranges from 217 to 255 (inclusive), then divided by 255
   // Integer math: avoid float intermediate that could cause rounding differences
   const randomRoll = rng.int(217, 255);
-  const randomFactor = randomRoll / 255; // keep for DamageBreakdown.randomMod only
+  const randomFactor = randomRoll / 255; // keep for DamageBreakdown.randomMultiplier only
   const finalDamage = Math.floor((baseDamage * randomRoll) / 255);
 
   const breakdown: DamageBreakdown = {
     baseDamage:
       Math.min(997, Math.floor(Math.floor(levelFactor * power * attack) / defense / 50)) + 2,
-    weatherMod: 1,
-    critMod: 1, // Crit handled via level doubling in levelFactor, not a separate multiplier
-    randomMod: randomFactor,
-    stabMod,
-    typeMod: effectiveness,
-    burnMod: isPhysicalInGen1(move.type) && attacker.pokemon.status === "burn" ? 0.5 : 1,
-    abilityMod: 1,
-    itemMod: 1,
-    otherMod: 1,
+    weatherMultiplier: 1,
+    critMultiplier: 1, // Crit handled via level doubling in levelFactor, not a separate multiplier
+    randomMultiplier: randomFactor,
+    stabMultiplier: stabMod,
+    typeMultiplier: effectiveness,
+    burnMultiplier: isGen1PhysicalType(move.type) && attacker.pokemon.status === "burn" ? 0.5 : 1,
+    abilityMultiplier: 1,
+    itemMultiplier: 1,
+    otherMultiplier: 1,
     finalDamage,
   };
 

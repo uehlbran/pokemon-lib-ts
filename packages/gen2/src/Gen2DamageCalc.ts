@@ -35,7 +35,7 @@ const GEN2_PHYSICAL_TYPES: readonly PokemonType[] = [
  * Same as Gen 1 but Steel (new in Gen 2) is physical.
  * Dark (new in Gen 2) is special (not in this list).
  */
-export function isPhysicalInGen2(moveType: PokemonType): boolean {
+export function isGen2PhysicalType(moveType: PokemonType): boolean {
   return (GEN2_PHYSICAL_TYPES as readonly string[]).includes(moveType);
 }
 
@@ -53,7 +53,7 @@ function getAttackStat(
   ignoreBoosts = false,
   ignoreBurn = false,
 ): number {
-  const physical = isPhysicalInGen2(moveType);
+  const physical = isGen2PhysicalType(moveType);
   const statKey = physical ? "attack" : "spAttack";
   const stats = attacker.pokemon.calculatedStats;
   const baseStat = stats ? stats[statKey] : 100;
@@ -105,7 +105,7 @@ function getDefenseStat(
   moveType: PokemonType,
   ignoreBoosts = false,
 ): number {
-  const physical = isPhysicalInGen2(moveType);
+  const physical = isGen2PhysicalType(moveType);
   const statKey = physical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
   const baseStat = stats ? stats[statKey] : 100;
@@ -216,7 +216,7 @@ export function calculateGen2Damage(
   const power = move.power;
 
   // Determine crit boost interaction (Showdown scripts.ts:589-600)
-  const physical = isPhysicalInGen2(move.type);
+  const physical = isGen2PhysicalType(move.type);
   const atkStage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
   const defStage = physical ? defender.statStages.defense : defender.statStages.spDefense;
   // When atkStage <= defStage on a crit: ignore ALL boosts on both sides AND ignore burn
@@ -295,15 +295,15 @@ export function calculateGen2Damage(
 
   const breakdown: DamageBreakdown = {
     baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense / 50) + 2,
-    weatherMod,
-    critMod: isCrit ? 2 : 1,
-    randomMod: randomFactor,
-    stabMod,
-    typeMod: effectiveness,
-    burnMod: physical && attacker.pokemon.status === "burn" && !ignoreBurn ? 0.5 : 1,
-    abilityMod: 1, // No abilities in Gen 2
-    itemMod,
-    otherMod: 1,
+    weatherMultiplier: weatherMod,
+    critMultiplier: isCrit ? 2 : 1,
+    randomMultiplier: randomFactor,
+    stabMultiplier: stabMod,
+    typeMultiplier: effectiveness,
+    burnMultiplier: physical && attacker.pokemon.status === "burn" && !ignoreBurn ? 0.5 : 1,
+    abilityMultiplier: 1, // No abilities in Gen 2
+    itemMultiplier: itemMod,
+    otherMultiplier: 1,
     finalDamage,
   };
 

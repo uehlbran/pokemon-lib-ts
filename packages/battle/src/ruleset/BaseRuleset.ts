@@ -42,7 +42,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
   abstract readonly name: string;
 
   abstract getTypeChart(): TypeChart;
-  abstract getValidTypes(): readonly PokemonType[];
+  abstract getAvailableTypes(): readonly PokemonType[];
 
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
     // Gen 3+ stat formula: default implementation
@@ -70,11 +70,13 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   abstract calculateDamage(context: DamageContext): DamageResult;
 
+  // Gen 6+ default; Gen 3-5 use a 2-stage table with 1/16 and 1/8 rates
   getCritRateTable(): readonly number[] {
     // Gen 6+: 1/24, 1/8, 1/2, 1/1
     return [24, 8, 2, 1];
   }
 
+  // Gen 6+ default (1.5x); Gen 3-5 must override (2.0x)
   getCritMultiplier(): number {
     // Gen 6+: 1.5x
     return 1.5;
@@ -168,6 +170,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return result;
   }
 
+  // Burn: Gen 7+ default (1/16 max HP); Gen 3-6 must override (1/8 max HP)
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     switch (status) {
@@ -184,11 +187,13 @@ export abstract class BaseRuleset implements GenerationRuleset {
     }
   }
 
+  // Gen 3+ default (20% thaw); Gen 2 must override (25/256 ≈ 9.8%)
   checkFreezeThaw(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
     // Gen 2+: 20% chance to thaw each turn
     return rng.chance(0.2);
   }
 
+  // Gen 5+ default (1-3 turns); Gen 3-4 must override (2-5 turns)
   rollSleepTurns(rng: SeededRandom): number {
     // Gen 5+: 1-3 turns
     return rng.int(1, 3);
@@ -199,6 +204,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return rng.chance(0.25);
   }
 
+  // Gen 3-6 default (50% self-hit); Gen 7+ must override (33%)
   rollConfusionSelfHit(rng: SeededRandom): boolean {
     // Gen 1-6: 50% chance to hit itself in confusion
     return rng.chance(0.5);
@@ -255,6 +261,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return [];
   }
 
+  // Gen 4-5 defaults (spikes, stealth-rock, toxic-spikes); Gen 3 must override (spikes only); Gen 6+ must override (add sticky-web)
   getAvailableHazards(): readonly EntryHazardType[] {
     return ["stealth-rock", "spikes", "toxic-spikes"];
   }
@@ -303,6 +310,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     pokemon.volatileStatuses.clear();
   }
 
+  // Gen 3-7 default (true); Gen 8+ must override (false)
   shouldExecutePursuitPreSwitch(): boolean {
     // Gen 3-7 default (override to false in Gen 8+)
     return true;
@@ -332,12 +340,14 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  // Gen 4+ default (1/4 max HP); Gen 3 must override (1/2 damage dealt)
   calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
     // Gen 4+ default: 1/4 of attacker's max HP
     const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  // Gen 5+ default (uniform 2-5); Gen 3-4 must override ([2,2,2,3,3,3,4,5] weighted)
   rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number {
     // Gen 5+ distribution: 35/35/15/15% for 2/3/4/5 hits
     // Skill Link ability (Gen 5+) always hits 5 times
@@ -355,6 +365,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return rng.chance(1 / denominator);
   }
 
+  // Gen 5+ default (1/8 max HP); Gen 2-4 must override (1/16 max HP)
   calculateBindDamage(pokemon: ActivePokemon): number {
     // Gen 5+ default: 1/8 max HP per turn
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;

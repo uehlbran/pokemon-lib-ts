@@ -110,7 +110,7 @@ describe("Gen1Ruleset", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     // Act
-    const types = ruleset.getValidTypes();
+    const types = ruleset.getAvailableTypes();
     // Assert
     expect(types.length).toBe(15);
     expect(types).toContain("normal");

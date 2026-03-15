@@ -15,7 +15,7 @@ describe("GenerationRuleset interface verification", () => {
     "name",
     // Type system
     "getTypeChart",
-    "getValidTypes",
+    "getAvailableTypes",
     // Stat calculation
     "calculateStats",
     // Damage
@@ -98,12 +98,12 @@ describe("GenerationRuleset interface verification", () => {
       expect(typeof chart[firstKey]?.[innerFirstKey]).toBe("number");
     });
 
-    it("given MockRuleset.getValidTypes, when called, then it returns an array of lowercase string types", () => {
+    it("given MockRuleset.getAvailableTypes, when called, then it returns an array of lowercase string types", () => {
       // Arrange
       const ruleset = new MockRuleset();
 
       // Act
-      const types = ruleset.getValidTypes();
+      const types = ruleset.getAvailableTypes();
 
       // Assert
       expect(Array.isArray(types)).toBe(true);

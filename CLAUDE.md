@@ -129,6 +129,8 @@ Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agent
 5. Write tests for every gen-specific mechanic
 6. Export from `packages/genN/src/index.ts`
 
+> Gen 1–2 implement `GenerationRuleset` directly. Do **not** make them extend `BaseRuleset` — they are too mechanically different. Bug fixes to shared Gen 1–2 formulas (`checkFullParalysis`, `rollConfusionSelfHit`, `rollMultiHitCount`, stat EXP contribution) must be applied to each gen separately.
+
 ## Implementation Phases
 
 - **Phase 1**: Core + Battle + Gen 1 (simplest gen — no abilities, no held items, 151 Pokemon, 165 moves, 15-type chart). Ship 0.1.0.

@@ -17,7 +17,7 @@ export type EffectivenessCategory =
  *
  * @returns 0 (immune), 0.5 (resisted), 1 (neutral), or 2 (super effective)
  */
-export function getTypeFactor(
+export function getTypeMultiplier(
   attackType: PokemonType,
   defendType: PokemonType,
   chart: TypeChart,
@@ -38,7 +38,7 @@ export function getTypeEffectiveness(
 ): number {
   let multiplier = 1;
   for (const defType of defenderTypes) {
-    multiplier *= getTypeFactor(attackType, defType, chart);
+    multiplier *= getTypeMultiplier(attackType, defType, chart);
   }
   return multiplier;
 }

@@ -52,7 +52,7 @@ export interface GenerationRuleset {
   getTypeChart(): TypeChart;
 
   /** Valid types in this generation */
-  getValidTypes(): readonly PokemonType[];
+  getAvailableTypes(): readonly PokemonType[];
 
   // --- Stat Calculation ---
 

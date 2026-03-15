@@ -12,17 +12,17 @@ class TestRuleset extends BaseRuleset {
 
   getTypeChart(): TypeChart {
     const chart: Record<string, Record<string, number>> = {};
-    for (const t of this.getValidTypes()) {
+    for (const t of this.getAvailableTypes()) {
       const row: Record<string, number> = {};
       chart[t] = row;
-      for (const t2 of this.getValidTypes()) {
+      for (const t2 of this.getAvailableTypes()) {
         row[t2] = 1;
       }
     }
     return chart as TypeChart;
   }
 
-  getValidTypes(): readonly PokemonType[] {
+  getAvailableTypes(): readonly PokemonType[] {
     return ["normal", "fire", "water", "electric", "grass"];
   }
 

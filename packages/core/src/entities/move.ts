@@ -241,7 +241,7 @@ export interface TwoTurnEffect {
 
 export interface SwitchOutEffect {
   readonly type: "switch-out";
-  readonly who: "self" | "foe"; // U-turn = self, Dragon Tail = foe
+  readonly target: "self" | "foe"; // U-turn = self, Dragon Tail = foe
 }
 
 export interface ProtectEffect {
