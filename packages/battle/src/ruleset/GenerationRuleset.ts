@@ -264,6 +264,12 @@ export interface GenerationRuleset {
   // --- Switching ---
 
   /**
+   * Whether Pursuit should execute before an opponent's switch.
+   * Gen 2-7: true. Gen 1, Gen 8+: false.
+   */
+  shouldExecutePursuitPreSwitch(): boolean;
+
+  /**
    * Whether a Pokemon is allowed to switch out.
    * Gen 1: checks for 'trapped' volatile (trapping moves like Wrap/Bind).
    * Gen 2+: checks for Mean Look, Spider Web, Shadow Tag, etc.

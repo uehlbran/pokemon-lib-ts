@@ -285,6 +285,10 @@ export class MockRuleset implements GenerationRuleset {
     // No-op for mock
   }
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    return true;
+  }
+
   canSwitch(_pokemon: ActivePokemon, _state: BattleState): boolean {
     return true;
   }

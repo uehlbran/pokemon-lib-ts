@@ -821,6 +821,10 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // --- Switching ---
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    return true;
+  }
+
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 2: Mean Look / Spider Web prevent switching
     return !pokemon.volatileStatuses.has("trapped");

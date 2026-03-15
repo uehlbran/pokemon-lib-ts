@@ -303,6 +303,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     pokemon.volatileStatuses.clear();
   }
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    // Gen 3-7 default (override to false in Gen 8+)
+    return true;
+  }
+
   canSwitch(_pokemon: ActivePokemon, _state: BattleState): boolean {
     // Default Gen 3+: no switching restrictions from the ruleset.
     // Shadow Tag, Arena Trap etc. would be checked via abilities, not here.

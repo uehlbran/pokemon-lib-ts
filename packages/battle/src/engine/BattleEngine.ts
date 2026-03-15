@@ -447,7 +447,7 @@ export class BattleEngine implements BattleEventEmitter {
     // --- PURSUIT PRE-CHECK (Gen 2-7) ---
     // If a Pokemon uses Pursuit and the opponent is switching, Pursuit fires first
     // with doubled base power, before the switch resolves.
-    if (this.ruleset.generation >= 2 && this.ruleset.generation <= 7) {
+    if (this.ruleset.shouldExecutePursuitPreSwitch()) {
       for (let i = 0; i < orderedActions.length; i++) {
         const action = orderedActions[i];
         if (!action || action.type !== "move") continue;
@@ -455,7 +455,12 @@ export class BattleEngine implements BattleEventEmitter {
         if (!actor || actor.pokemon.currentHp <= 0) continue;
         const moveSlot = actor.pokemon.moves[action.moveIndex];
         if (!moveSlot) continue;
-        const moveData = this.dataManager.getMove(moveSlot.moveId);
+        let moveData: ReturnType<typeof this.dataManager.getMove> | null = null;
+        try {
+          moveData = this.dataManager.getMove(moveSlot.moveId);
+        } catch {
+          // Move not found in data — skip
+        }
         if (!moveData || moveData.id !== "pursuit") continue;
 
         // Check if the opponent is switching this turn

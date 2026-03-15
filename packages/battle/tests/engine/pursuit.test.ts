@@ -392,9 +392,13 @@ describe("Pursuit — pre-switch execution", () => {
 
   describe("Gen 1 does NOT trigger Pursuit pre-switch", () => {
     it("given gen=1 ruleset, side 0 uses Pursuit, side 1 switches, when turn resolves, then no pre-switch damage occurs", () => {
-      // Arrange — gen 1 ruleset: Pursuit pre-check only applies to gen >= 2
-      const ruleset = new MockRuleset();
-      // MockRuleset.generation is already 1 by default
+      // Arrange — gen 1 ruleset: shouldExecutePursuitPreSwitch() returns false
+      class Gen1MockRuleset extends MockRuleset {
+        override shouldExecutePursuitPreSwitch(): boolean {
+          return false;
+        }
+      }
+      const ruleset = new Gen1MockRuleset();
       expect(ruleset.generation).toBe(1);
 
       const dataManager = createDataManagerWithPursuit();

@@ -797,6 +797,10 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // --- Switching ---
 
+  shouldExecutePursuitPreSwitch(): boolean {
+    return false;
+  }
+
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 1: trapping moves (Wrap, Bind, Fire Spin, Clamp) prevent switching
     return !pokemon.volatileStatuses.has("trapped");
