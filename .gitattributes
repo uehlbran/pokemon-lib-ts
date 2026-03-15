@@ -1,3 +1,27 @@
-*.sh text eol=lf
+# Normalize all text files to LF in both repo and working tree
+* text=auto eol=lf
+
+# Source code
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+
+# Config & docs
+*.md text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.sh text eol=lf
+
+# Windows batch files (keep CRLF)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
