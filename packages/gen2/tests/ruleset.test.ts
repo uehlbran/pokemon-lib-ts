@@ -1,5 +1,18 @@
-import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleAction,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import { SeededRandom } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  PokemonInstance,
+  PokemonSpeciesData,
+  PokemonType,
+  PrimaryStatus,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen2Ruleset } from "../src/Gen2Ruleset";
 
@@ -30,7 +43,7 @@ function createMockActive(
       speciesId: overrides.speciesId ?? 1,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
-      status: (overrides.status as any) ?? null,
+      status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
       heldItem: overrides.heldItem ?? null,
       nickname: overrides.nickname ?? null,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
@@ -57,7 +70,7 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as any) ?? ["normal"],
+    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
     ability: "",
     lastMoveUsed: null,
     turnsOnField: 0,
@@ -85,7 +98,7 @@ function createMockSide(
   return {
     index,
     trainer: null,
-    team: [active.pokemon as any],
+    team: [active.pokemon as unknown as PokemonInstance],
     active: [active],
     hazards,
     screens: [],
@@ -359,8 +372,8 @@ describe("Gen2Ruleset", () => {
       const pokemon = {
         level: 50,
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      } as any;
-      const species = { id: 251, displayName: "Celebi" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 251, displayName: "Celebi" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -376,8 +389,8 @@ describe("Gen2Ruleset", () => {
       const pokemon = {
         level: 50,
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      } as any;
-      const species = { id: 252, displayName: "Treecko" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 252, displayName: "Treecko" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -394,8 +407,8 @@ describe("Gen2Ruleset", () => {
         level: 50,
         heldItem: "leftovers",
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      } as any;
-      const species = { id: 143, displayName: "Snorlax" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 143, displayName: "Snorlax" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -410,8 +423,8 @@ describe("Gen2Ruleset", () => {
       const pokemon = {
         level: 50,
         moves: [],
-      } as any;
-      const species = { id: 25, displayName: "Pikachu" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -433,8 +446,8 @@ describe("Gen2Ruleset", () => {
           { moveId: "d", pp: 1, maxPp: 1 },
           { moveId: "e", pp: 1, maxPp: 1 },
         ],
-      } as any;
-      const species = { id: 25, displayName: "Pikachu" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -449,8 +462,8 @@ describe("Gen2Ruleset", () => {
       const pokemon = {
         level: 0,
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      } as any;
-      const species = { id: 25, displayName: "Pikachu" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -477,7 +490,7 @@ describe("Gen2Ruleset", () => {
         const rng = new SeededRandom(seed);
         const attacker = createMockActive();
         const defender = createMockActive();
-        const move = { accuracy: 100, id: "tackle" } as any;
+        const move = { accuracy: 100, id: "tackle" } as unknown as MoveData;
         const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
         const hit = ruleset.doesMoveHit({ attacker, defender, move, state, rng });
@@ -494,7 +507,7 @@ describe("Gen2Ruleset", () => {
       const rng = new SeededRandom(42);
       const attacker = createMockActive();
       const defender = createMockActive();
-      const move = { accuracy: 100 } as any;
+      const move = { accuracy: 100 } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       // Act: many trials all should hit
@@ -519,7 +532,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       // Even with -6 evasion stage changes
       defender.statStages.evasion = 6;
-      const move = { accuracy: null } as any;
+      const move = { accuracy: null } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       // Act
@@ -618,7 +631,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
 
       // Act
-      const result = ruleset.applyAbility("on-switch-in" as any, {} as any);
+      const result = ruleset.applyAbility("on-switch-in", {} as unknown as AbilityContext);
 
       // Assert
       expect(result.activated).toBe(false);
@@ -632,7 +645,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
 
       // Act
-      const result = ruleset.applyTerrainEffects({} as any);
+      const result = ruleset.applyTerrainEffects({} as unknown as BattleState);
 
       // Assert
       expect(result).toEqual([]);
@@ -685,7 +698,7 @@ describe("Gen2Ruleset", () => {
         createMockSide(0, attacker),
         createMockSide(1, createMockActive()),
       );
-      const statusMove = { category: "status", id: "toxic" } as any;
+      const statusMove = { category: "status", id: "toxic" } as unknown as MoveData;
 
       // Act
       for (let seed = 0; seed < 100; seed++) {
@@ -717,7 +730,7 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, active1);
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "switch", side: 1, switchTo: 1 },
       ];
@@ -740,7 +753,7 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, active1);
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "run", side: 1 },
       ];
@@ -770,7 +783,7 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, active1);
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
@@ -799,7 +812,7 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, fastActive);
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
@@ -834,7 +847,7 @@ describe("Gen2Ruleset", () => {
         const side1 = createMockSide(1, fastActive);
         const state = createMockState(side0, side1);
 
-        const actions: any[] = [
+        const actions: BattleAction[] = [
           { type: "move", side: 0, moveIndex: 0 },
           { type: "move", side: 1, moveIndex: 0 },
         ];
@@ -872,7 +885,7 @@ describe("Gen2Ruleset", () => {
         const side1 = createMockSide(1, active1);
         const state = createMockState(side0, side1);
 
-        const actions: any[] = [
+        const actions: BattleAction[] = [
           { type: "move", side: 0, moveIndex: 0 },
           { type: "move", side: 1, moveIndex: 0 },
         ];
@@ -896,7 +909,7 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, fastActive);
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "struggle", side: 0 },
         { type: "recharge", side: 1 },
       ];
@@ -931,7 +944,7 @@ describe("Gen2Ruleset", () => {
       } as unknown as BattleSide;
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
@@ -959,7 +972,7 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, active1);
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
@@ -990,7 +1003,7 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, healthyActive);
       const state = createMockState(side0, side1);
 
-      const actions: any[] = [
+      const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
@@ -1013,7 +1026,7 @@ describe("Gen2Ruleset", () => {
       const attacker = createMockActive();
       attacker.statStages.accuracy = 2;
       const defender = createMockActive();
-      const move = { accuracy: 50 } as any;
+      const move = { accuracy: 50 } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       let hits = 0;
@@ -1038,7 +1051,7 @@ describe("Gen2Ruleset", () => {
       const attacker = createMockActive();
       const defender = createMockActive();
       defender.statStages.evasion = 2;
-      const move = { accuracy: 100 } as any;
+      const move = { accuracy: 100 } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       let hits = 0;
@@ -1068,7 +1081,7 @@ describe("Gen2Ruleset", () => {
       const attacker = createMockActive();
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-      const move = { id: "tackle", effect: null } as any;
+      const move = { id: "tackle", effect: null } as unknown as MoveData;
       const rng = new SeededRandom(42);
 
       // Act
@@ -1099,7 +1112,7 @@ describe("Gen2Ruleset", () => {
         id: "ice-beam",
         type: "ice",
         effect: { type: "status-chance", status: "freeze", chance: 100 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act — use chance: 100 so it always triggers
       const result = ruleset.executeMoveEffect({
@@ -1124,7 +1137,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "thunder",
         effect: { type: "status-chance", status: "paralysis", chance: 100 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1149,7 +1162,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "flamethrower",
         effect: { type: "status-chance", status: "burn", chance: 100 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1174,7 +1187,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "toxic",
         effect: { type: "status-guaranteed", status: "badly-poisoned" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1199,7 +1212,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "thunder-wave",
         effect: { type: "status-guaranteed", status: "paralysis" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1229,7 +1242,7 @@ describe("Gen2Ruleset", () => {
           chance: 100,
           changes: [{ stat: "attack", stages: 2 }],
         },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1262,7 +1275,7 @@ describe("Gen2Ruleset", () => {
           chance: 1, // 1% chance — very unlikely to trigger
           changes: [{ stat: "spDefense", stages: -1 }],
         },
-      } as any;
+      } as unknown as MoveData;
 
       // Most seeds will fail the 1% chance
       let noChangeCount = 0;
@@ -1292,7 +1305,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "double-edge",
         effect: { type: "recoil", amount: 0.25 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1317,7 +1330,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "giga-drain",
         effect: { type: "drain", amount: 0.5 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1342,7 +1355,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "recover",
         effect: { type: "heal", amount: 0.5 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1378,7 +1391,7 @@ describe("Gen2Ruleset", () => {
             },
           ],
         },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1404,7 +1417,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "confuse-ray",
         effect: { type: "volatile-status", status: "confusion", chance: 100 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1429,7 +1442,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "headbutt",
         effect: { type: "volatile-status", status: "flinch", chance: 1 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act: Most seeds should fail the 1% chance
       let noFlinchCount = 0;
@@ -1459,7 +1472,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "rain-dance",
         effect: { type: "weather", weather: "rain", turns: 5 },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1473,9 +1486,9 @@ describe("Gen2Ruleset", () => {
 
       // Assert
       expect(result.weatherSet).toBeDefined();
-      expect(result.weatherSet!.weather).toBe("rain");
-      expect(result.weatherSet!.turns).toBe(5);
-      expect(result.weatherSet!.source).toBe("rain-dance");
+      expect(result.weatherSet?.weather).toBe("rain");
+      expect(result.weatherSet?.turns).toBe(5);
+      expect(result.weatherSet?.source).toBe("rain-dance");
     });
 
     it("should set entry hazard from entry-hazard effect", () => {
@@ -1489,7 +1502,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "spikes",
         effect: { type: "entry-hazard", hazard: "spikes" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1503,8 +1516,8 @@ describe("Gen2Ruleset", () => {
 
       // Assert: hazard should be placed on opponent's side (side 1)
       expect(result.hazardSet).toBeDefined();
-      expect(result.hazardSet!.hazard).toBe("spikes");
-      expect(result.hazardSet!.targetSide).toBe(1);
+      expect(result.hazardSet?.hazard).toBe("spikes");
+      expect(result.hazardSet?.targetSide).toBe(1);
     });
 
     it("should set switchOut true from switch-out effect with self target", () => {
@@ -1516,7 +1529,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "baton-pass",
         effect: { type: "switch-out", who: "self" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1541,7 +1554,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "protect",
         effect: { type: "protect" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1566,7 +1579,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "rapid-spin-generic",
         effect: { type: "remove-hazards" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1595,7 +1608,7 @@ describe("Gen2Ruleset", () => {
         const move = {
           id: "test-move",
           effect: { type: effectType },
-        } as any;
+        } as unknown as MoveData;
 
         // Act
         const result = ruleset.executeMoveEffect({
@@ -1625,7 +1638,7 @@ describe("Gen2Ruleset", () => {
         const move = {
           id: "test-move",
           effect: { type: effectType },
-        } as any;
+        } as unknown as MoveData;
 
         // Act
         const result = ruleset.executeMoveEffect({
@@ -1656,7 +1669,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "belly-drum",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1685,7 +1698,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "belly-drum",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1712,7 +1725,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "rapid-spin",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1737,7 +1750,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "mean-look",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1762,7 +1775,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "spider-web",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1787,7 +1800,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "thief",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1814,7 +1827,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "thief",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1839,7 +1852,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "baton-pass",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1864,7 +1877,7 @@ describe("Gen2Ruleset", () => {
       const move = {
         id: "some-unknown-move",
         effect: { type: "custom" },
-      } as any;
+      } as unknown as MoveData;
 
       // Act
       const result = ruleset.executeMoveEffect({
@@ -1972,7 +1985,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const context = {
-        defeatedSpecies: { baseExp: 200 } as any,
+        defeatedSpecies: { baseExp: 200 } as unknown as PokemonSpeciesData,
         defeatedLevel: 50,
         participantLevel: 50,
         isTrainerBattle: true,
@@ -1993,7 +2006,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const context = {
-        defeatedSpecies: { baseExp: 200 } as any,
+        defeatedSpecies: { baseExp: 200 } as unknown as PokemonSpeciesData,
         defeatedLevel: 30,
         participantLevel: 50,
         isTrainerBattle: false,
@@ -2020,8 +2033,8 @@ describe("Gen2Ruleset", () => {
       const pokemon = {
         level: 101,
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      } as any;
-      const species = { id: 25, displayName: "Pikachu" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -2037,8 +2050,8 @@ describe("Gen2Ruleset", () => {
       const pokemon = {
         level: 50,
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      } as any;
-      const species = { id: 0, displayName: "MissingNo" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 0, displayName: "MissingNo" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -2054,8 +2067,8 @@ describe("Gen2Ruleset", () => {
       const pokemon = {
         level: 0,
         moves: [],
-      } as any;
-      const species = { id: 999, displayName: "FutureMon" } as any;
+      } as unknown as PokemonInstance;
+      const species = { id: 999, displayName: "FutureMon" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);

@@ -317,7 +317,7 @@ describe("Gen2StatCalc", () => {
 
       // Assert
       for (let i = 1; i < results.length; i++) {
-        expect(results[i]).toBeGreaterThanOrEqual(results[i - 1]!);
+        expect(results[i]).toBeGreaterThanOrEqual(results[i - 1] ?? 0);
       }
     });
 
@@ -347,7 +347,7 @@ describe("Gen2StatCalc", () => {
 
       // Assert
       for (let i = 1; i < results.length; i++) {
-        expect(results[i]).toBeGreaterThanOrEqual(results[i - 1]!);
+        expect(results[i]).toBeGreaterThanOrEqual(results[i - 1] ?? 0);
       }
     });
 
