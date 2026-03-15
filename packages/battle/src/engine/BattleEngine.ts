@@ -467,7 +467,10 @@ export class BattleEngine implements BattleEventEmitter {
         // Execute Pursuit before the switch (doubled power is a TODO — currently uses base power)
         this.executeMove(action, actor);
         this.checkMidTurnFaints();
-        if (this.state.ended) return;
+        if (this.checkBattleEnd()) {
+          this.transitionTo("BATTLE_END");
+          return;
+        }
 
         // Remove the Pursuit action from orderedActions so it doesn't fire again
         orderedActions.splice(i, 1);
