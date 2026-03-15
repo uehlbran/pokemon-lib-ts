@@ -291,8 +291,8 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
     });
     // Act
     const result = ruleset.executeMoveEffect(context);
-    // Assert
-    expect(result.volatileInflicted).toBe("trapped");
+    // Assert — volatile key is "bound" (bug #101 fix: engine checks "bound" for immobilization)
+    expect(result.volatileInflicted).toBe("bound");
   });
 
   it.todo(

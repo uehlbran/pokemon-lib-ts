@@ -61,9 +61,9 @@ describe("Gen 1 Data Integration", () => {
     // Act
     const allMoves = dm.getAllMoves();
 
-    // Assert: Gen 1 has 164 moves
+    // Assert: Gen 1 has 165 moves (Sharpen added in bug fix #105)
     expect(allMoves.length).toBeGreaterThanOrEqual(100);
-    expect(allMoves.length).toBe(164);
+    expect(allMoves.length).toBe(165);
   });
 
   it("given Gen 1 data, when checking Flamethrower, then it is Fire type and special category", () => {

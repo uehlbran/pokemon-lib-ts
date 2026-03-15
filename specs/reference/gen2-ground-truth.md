@@ -358,9 +358,12 @@ All give **1.1x (10%) boost** to matching type moves. See §3 for full list.
 
 - First use: always succeeds
 - Success rate: `1/(X)` where X starts at 1 and multiplies by 3 each consecutive use
-  - Use 1: 100%, Use 2: ~33% (255/256), Use 3: ~11%, Use 4: ~4%
+  - Use 1: 100%, Use 2: ~33% (85/256), Use 3: ~11% (28/256), Use 4: ~4% (9/256)
 - Counter resets when a different move is used
-- X caps at 255 (not 729 — verify against pokecrystal)
+- **Denominator cap: 255** — after enough consecutive uses, X is capped at 255. It does NOT reach 729 (3^6). The cap prevents the denominator from exceeding a single byte (0xFF).
+- Implementation: `successThreshold = max(1, floor(255 / X))` where X is capped at 255. Crit if `random(0..255) < successThreshold`.
+
+Source: pret/pokecrystal — the consecutive use counter is a single byte and is capped at 255.
 
 ### Pursuit
 
@@ -413,8 +416,11 @@ Does NOT pass: primary status conditions (burn, sleep, etc.)
 ### Mean Look / Spider Web
 
 - Prevents target from switching
-- Effect ends when user switches out
-- Baton Pass passes the trapping effect
+- Effect ends when **the user (the Pokemon that used Mean Look/Spider Web) switches out** — the volatile is removed from the target at that point
+- Baton Pass passes the trapping effect to the replacement (target remains trapped)
+- **Trapped Pokemon's volatile on switch-out:** The `trapped` volatile on the target should be cleared when the trapper switches out. If the trapper faints, the trap also ends. The target cannot voluntarily switch while trapped; the volatile is removed from the trapped Pokemon when the trapper leaves the field.
+
+Source: pret/pokecrystal — MeanLook/SpiderWeb tracking is tied to the trapper's presence on the field.
 
 ### Return / Frustration
 
@@ -432,6 +438,16 @@ Does NOT pass: primary status conditions (burn, sleep, etc.)
 - Counter: reflects **physical** damage at 2x (priority -1)
 - Mirror Coat: reflects **special** damage at 2x (priority -1, new in Gen 2)
 - In Gen 2, Counter works against any physical-type move (including Dark, Ghost, etc.)
+
+### Struggle
+
+- 50 power, Normal type, no PP cost
+- **Recoil: 1/4 of the user's max HP** — formula: `floor(maxHp / 4)`
+- This is different from Gen 1 where Struggle recoil = 50% of damage dealt
+- The recoil is based on max HP, NOT on the damage Struggle dealt
+- Affected by Substitute? No — recoil bypasses the target's substitute but the user still takes full 1/4 HP recoil
+
+Source: pret/pokecrystal — Struggle recoil uses the user's max HP divided by 4, not a fraction of damage dealt.
 
 ### Hyper Beam
 
@@ -505,7 +521,7 @@ The exact end-of-turn order in Gen 2 (GSC):
 | Present heal | Present can heal the opponent (random damage/healing move) |
 | Beat Up | Each hit uses a different party member's Attack stat |
 | Thick Club + Transform | If Ditto transforms into Cubone/Marowak and holds Thick Club, gets double Attack |
-| Struggle | 50 power, Normal type, 1/4 max HP recoil (changed from Gen 1's 50% damage dealt) — VERIFY this |
+| Struggle | 50 power, Normal type, **1/4 max HP recoil** (changed from Gen 1's 50% of damage dealt). Formula: `floor(maxHp / 4)`. |
 | Sleep Talk | Can call any move including two-turn moves (but won't charge) |
 
 ---

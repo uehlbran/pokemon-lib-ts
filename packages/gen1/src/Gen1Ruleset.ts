@@ -259,7 +259,7 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    const { move } = context;
+    const { move, damage, defender } = context;
 
     const result: {
       statusInflicted: PrimaryStatus | null;
@@ -303,6 +303,13 @@ export class Gen1Ruleset implements GenerationRuleset {
       switchOut: false,
       messages: [],
     };
+
+    // Source: gen1-ground-truth.md §7 — Hyper Beam
+    // In Gen 1, Hyper Beam skips recharge if it KOs the target, breaks a Substitute, or misses.
+    // The recharge flag on the move is handled by the engine; we signal skip via noRecharge.
+    if (move.flags.recharge && damage >= defender.pokemon.currentHp && damage > 0) {
+      result.noRecharge = true;
+    }
 
     if (!move.effect) return result;
 
@@ -377,12 +384,45 @@ export class Gen1Ruleset implements GenerationRuleset {
       }
 
       case "stat-change": {
+        // Source: gen1-ground-truth.md §7 — Secondary Effect Chance
+        // Stat-drop secondaries (e.g. Psychic's SpDef drop) must roll chance before applying.
+        // chance=100 means always apply; chance<100 requires a dice roll.
+        const chanceToApply = effect.chance ?? 100;
+        const isSecondaryEffect = effect.target === "foe";
+        if (isSecondaryEffect && chanceToApply < 100) {
+          // Roll: random(0..255) < floor(chance * 256 / 100)
+          const threshold = Math.floor((chanceToApply * 256) / 100);
+          if (rng.int(0, 255) >= threshold) {
+            // Chance roll failed — do not apply stat change
+            break;
+          }
+        }
+
         for (const change of effect.changes) {
-          result.statChanges.push({
-            target: effect.target === "self" ? "attacker" : "defender",
-            stat: change.stat,
-            stages: change.stages,
-          });
+          const resolvedTarget = effect.target === "self" ? "attacker" : "defender";
+
+          // Source: gen1-ground-truth.md §1 — Unified Special Stat
+          // Gen 1 has a single Special stat for both offense and defense.
+          // Any change to spAttack or spDefense must apply equally to BOTH,
+          // because they represent the same unified stat.
+          if (change.stat === "spAttack" || change.stat === "spDefense") {
+            result.statChanges.push({
+              target: resolvedTarget,
+              stat: "spAttack",
+              stages: change.stages,
+            });
+            result.statChanges.push({
+              target: resolvedTarget,
+              stat: "spDefense",
+              stages: change.stages,
+            });
+          } else {
+            result.statChanges.push({
+              target: resolvedTarget,
+              stat: change.stat,
+              stages: change.stages,
+            });
+          }
         }
         break;
       }
@@ -484,9 +524,11 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Bind, Wrap, Fire Spin, Clamp: trapping moves in Gen 1
           // Duration is weighted: 37.5% × 2 turns, 37.5% × 3 turns, 12.5% × 4, 12.5% × 5
           // (Showdown conditions.ts:225, same as multi-hit distribution)
-          if (!defender.volatileStatuses.has("trapped")) {
+          // Source: gen1-ground-truth.md §7 — Trapping Moves
+          // The volatile key must be "bound" — the engine checks "bound" to determine immobilization.
+          if (!defender.volatileStatuses.has("bound")) {
             const turns = rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
-            result.volatileInflicted = "trapped";
+            result.volatileInflicted = "bound";
             result.volatileData = { turnsLeft: turns, data: { bindTurns: turns } };
             result.messages.push(`${defender.pokemon.nickname ?? "The target"} was trapped!`);
           }
@@ -814,12 +856,26 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- Switch Out ---
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
-    // In Gen 1, Toxic counter persists through switching (unlike Gen 2+).
-    // Save it before clearing, then restore it.
-    const toxicCounter = pokemon.volatileStatuses.get("toxic-counter");
+    // Source: gen1-ground-truth.md §8 — What Persists on Switch-Out
+    // Sleep counter persists (does NOT reset on switch-out — it is stored in party data).
+    // Source: gen1-ground-truth.md §8 — What Resets on Switch-Out
+    // Toxic counter resets to 0 on switch-out, and status reverts to regular poison.
+    // (In Gen 1, Toxic'd Pokemon become regular-poisoned when they switch out.)
+
+    // Preserve the sleep counter through the volatile clear
+    const sleepCounter = pokemon.volatileStatuses.get("sleep-counter");
+
     pokemon.volatileStatuses.clear();
-    if (toxicCounter) {
-      pokemon.volatileStatuses.set("toxic-counter", toxicCounter);
+
+    // Restore sleep counter — sleep persists through switching
+    if (sleepCounter) {
+      pokemon.volatileStatuses.set("sleep-counter", sleepCounter);
+    }
+
+    // Toxic counter reset: if the Pokemon has badly-poisoned status, revert to regular poison.
+    // The toxic-counter volatile is NOT restored (it was cleared above).
+    if (pokemon.pokemon.status === "badly-poisoned") {
+      pokemon.pokemon.status = "poison";
     }
 
     // Gen 1: screens (Reflect / Light Screen) are cleared when the setter switches out.
@@ -839,7 +895,8 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 1: trapping moves (Wrap, Bind, Fire Spin, Clamp) prevent switching
-    return !pokemon.volatileStatuses.has("trapped");
+    // Source: gen1-ground-truth.md §7 — Trapping Moves; volatile key is "bound"
+    return !pokemon.volatileStatuses.has("bound");
   }
 
   // --- End-of-Turn Formulas ---
@@ -889,6 +946,11 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    return ["status-damage"];
+    // Source: gen1-ground-truth.md §8 — End-of-Turn Order
+    // 1. Burn/poison damage (status-damage)
+    // 2. Leech Seed drain (leech-seed)
+    // 3. Faint check (handled by engine after this array)
+    // Leech Seed triggers after poison/burn and before the faint check.
+    return ["status-damage", "leech-seed"];
   }
 }

@@ -1,5 +1,6 @@
 import type {
   ActivePokemon,
+  BattleState,
   DamageBreakdown,
   DamageContext,
   DamageResult,
@@ -72,22 +73,55 @@ function getAttackStat(
 }
 
 /**
+ * Find the BattleSide that contains the given ActivePokemon.
+ * Returns the side or undefined if not found (gracefully handles missing/empty state).
+ */
+function findSideForPokemon(
+  state: BattleState,
+  pokemon: ActivePokemon,
+): BattleState["sides"][number] | undefined {
+  if (!state?.sides) return undefined;
+  return state.sides.find((side) => side.active.includes(pokemon));
+}
+
+/**
  * Get the effective defense stat for a move in Gen 1.
  * Physical types use Defense; special types use SpDefense (which equals Special).
+ *
+ * Source: gen1-ground-truth.md §7 — Reflect / Light Screen
+ * Reflect doubles Defense for physical moves; Light Screen doubles SpDefense for special moves.
+ * Both are ignored on critical hits.
  */
-function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: boolean): number {
+function getDefenseStat(
+  defender: ActivePokemon,
+  moveType: PokemonType,
+  isCrit: boolean,
+  state: BattleState,
+): number {
   const physical = isGen1PhysicalType(moveType);
   const statKey = physical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
 
   if (isCrit) {
-    // Critical hits ignore the defender's stat stages
+    // Source: gen1-ground-truth.md §3 — Crit ignores ALL stat stages, Reflect, Light Screen
     return Math.max(1, stats ? stats[statKey] : 100);
   }
 
   const baseStat = stats ? stats[statKey] : 100;
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
-  return Math.max(1, Math.floor(baseStat * getStatStageMultiplier(stage)));
+  let effective = Math.max(1, Math.floor(baseStat * getStatStageMultiplier(stage)));
+
+  // Source: gen1-ground-truth.md §7 — Reflect / Light Screen doubles the relevant defense stat
+  const defenderSide = findSideForPokemon(state, defender);
+  if (defenderSide) {
+    const screenType = physical ? "reflect" : "light-screen";
+    const hasScreen = defenderSide.screens.some((s) => s.type === screenType);
+    if (hasScreen) {
+      effective *= 2;
+    }
+  }
+
+  return Math.max(1, effective);
 }
 
 /**
@@ -108,7 +142,7 @@ export function calculateGen1Damage(
   typeChart: TypeChart,
   attackerSpecies: PokemonSpeciesData,
 ): DamageResult {
-  const { attacker, defender, move, rng, isCrit } = context;
+  const { attacker, defender, move, rng, isCrit, state } = context;
 
   // Status moves do no damage
   if (move.category === "status" || move.power === null || move.power === 0) {
@@ -124,7 +158,7 @@ export function calculateGen1Damage(
   const power = move.power;
 
   let attack = getAttackStat(attacker, move.type, isCrit, attackerSpecies);
-  let defense = getDefenseStat(defender, move.type, isCrit);
+  let defense = getDefenseStat(defender, move.type, isCrit, state);
 
   // Gen 1 stat overflow bug: when either attack or defense >= 256,
   // both are divided by 4 and taken mod 256 (Showdown scripts.ts:848-860)
@@ -155,7 +189,10 @@ export function calculateGen1Damage(
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
-  // Step 3: Type effectiveness
+  // Step 3: Type effectiveness — applied sequentially per defender type with floor between each
+  // Source: gen1-ground-truth.md §3 — Type effectiveness applied sequentially for dual types.
+  // Each type multiplier is applied one at a time with Math.floor() between each.
+  // e.g. 2x vs Water AND 2x vs Rock = floor(damage * 2) then floor(result * 2), not floor(damage * 4).
   const effectiveness = getTypeEffectiveness(move.type, defender.types, typeChart);
 
   // If immune, return 0 damage
@@ -168,7 +205,25 @@ export function calculateGen1Damage(
     };
   }
 
-  baseDamage = Math.floor(baseDamage * effectiveness);
+  // Apply effectiveness per type sequentially with floor after each type.
+  // Source: gen1-ground-truth.md §3 — Type effectiveness: Applied sequentially for dual types.
+  // Standard chart values: 2x or 0.5x per individual type interaction.
+  // Gen 1 integer math: 2x = floor(damage * 20 / 10), 0.5x = floor(damage * 5 / 10).
+  // Each factor is floored individually before applying the next.
+  for (const defType of defender.types) {
+    const factor = typeChart[move.type]?.[defType] ?? 1;
+    if (factor === 0) {
+      baseDamage = 0;
+    } else if (factor === 0.5) {
+      baseDamage = Math.floor((baseDamage * 5) / 10);
+    } else if (factor === 2) {
+      baseDamage = Math.floor((baseDamage * 20) / 10);
+    } else if (factor !== 1) {
+      // Non-standard chart value (e.g. 4x in a custom test chart): apply with floor
+      baseDamage = Math.floor(baseDamage * factor);
+    }
+    // factor === 1: no-op
+  }
 
   // Source: pret/pokered src/engine/battle/core_battle_start.asm — non-immune moves deal minimum 1 damage
 

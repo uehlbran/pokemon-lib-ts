@@ -6017,5 +6017,48 @@
     },
     "description": "The user bites hard on the target with its sharp front fangs. This may also make the target flinch.",
     "generation": 1
+  },
+  {
+    "id": "sharpen",
+    "displayName": "Sharpen",
+    "type": "normal",
+    "category": "status",
+    "power": null,
+    "accuracy": null,
+    "pp": 30,
+    "priority": 0,
+    "target": "self",
+    "flags": {
+      "contact": false,
+      "sound": false,
+      "bullet": false,
+      "pulse": false,
+      "punch": false,
+      "bite": false,
+      "wind": false,
+      "slicing": false,
+      "powder": false,
+      "protect": false,
+      "mirror": false,
+      "snatch": true,
+      "gravity": false,
+      "defrost": false,
+      "recharge": false,
+      "charge": false,
+      "bypassSubstitute": false
+    },
+    "effect": {
+      "type": "stat-change",
+      "changes": [
+        {
+          "stat": "attack",
+          "stages": 1
+        }
+      ],
+      "target": "self",
+      "chance": 100
+    },
+    "description": "The user reduces its polygon data to raise its Attack stat.",
+    "generation": 1
   }
 ]

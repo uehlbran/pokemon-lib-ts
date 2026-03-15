@@ -256,8 +256,8 @@ describe("Gen 1 Data Loading", () => {
     const dm = createGen1DataManager();
     // Act
     const allMoves = dm.getAllMoves();
-    // Assert
-    expect(allMoves.length).toBe(164);
+    // Assert — Gen 1 has 165 moves (Sharpen was added in bug fix #105)
+    expect(allMoves.length).toBe(165);
   });
 
   it("given Gen 1 data, when loading Flamethrower, then is special category fire type", () => {
