@@ -5,6 +5,20 @@ All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-03-15
+
+### Fixed
+- Focus Energy crit algorithm: rewrite to exact Showdown steps (crit/2, not crit/4; non-FE ×2 step differs for high-crit+FE combos)
+- Damage formula: add 997 cap before +2 additive constant
+- Damage formula: zero-damage check after type effectiveness now treats result as miss (removes incorrect `Math.max(1,…)` floor)
+- Stat overflow bug: attack/defense ≥ 256 → both divided by 4 mod 256
+- Explosion/Self-Destruct: halve defender's Defense in damage calc
+- Reflect/Light Screen: permanent (`turnsLeft: 9999`) not 5-turn countdown
+- 1/256 miss exemption: self-targeting moves get +1 accuracy threshold (no miss)
+- Roar/Whirlwind: explicit "But it failed!" message (N/A in Gen 1)
+- Trapping duration: weighted [2,2,2,3,3,3,4,5] instead of uniform int(2,5)
+- Confusion self-hit: proper formula (40 BP, Atk/Def with stages, burn penalty applied)
+
 ## [0.2.3] - 2026-03-14
 
 ### Fixed
