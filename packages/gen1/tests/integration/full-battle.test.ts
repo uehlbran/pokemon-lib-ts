@@ -27,7 +27,8 @@ describe("Gen 1 Full Battle Integration", () => {
       level,
       experience: 0,
       nature: "adamant",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+      // In Gen 1, IVs are DVs (0-15) and EVs are StatExp (0-65535)
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
       moves: moveIds.map((id) => {

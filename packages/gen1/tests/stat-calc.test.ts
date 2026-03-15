@@ -1,264 +1,731 @@
-import { calculateHp, calculateStat } from "@pokemon-lib/core";
+import type { PokemonInstance, PokemonSpeciesData } from "@pokemon-lib/core";
 import { describe, expect, it } from "vitest";
+import { calculateGen1Stats, calculateStatExpContribution } from "../src/Gen1StatCalc";
 
-/** Nature modifier is always 1.0 in Gen 1 (natures don't exist). */
-const GEN1_NATURE_MOD = 1.0;
+// ---------------------------------------------------------------------------
+// Minimal mock helpers
+// ---------------------------------------------------------------------------
 
-/**
- * Gen 1 Stat Calculation Tests
- *
- * Gen 1 uses different formulas from Gen 3+:
- * - IVs are 0-15 (not 0-31)
- * - EVs can go up to 65535 (not capped at 252)
- * - No natures
- * - Special is a unified stat (spAttack === spDefense)
- *
- * HP formula:  floor(((2 * Base + IV + floor(EV / 4)) * Level) / 100) + Level + 5
- * Stat formula: floor(((2 * Base + IV + floor(EV / 4)) * Level) / 100) + 5
- *
- * Note: Some implementations use the modern Gen 3+ formula with nature=1.0 for Gen 1.
- * These tests verify the Gen 1 stat calculation produces correct values regardless
- * of which approach is taken internally.
- */
-describe("Gen 1 Stat Calculation", () => {
-  // --- HP Calculation ---
+function makeSpecies(baseStats: {
+  hp: number;
+  attack: number;
+  defense: number;
+  spAttack: number;
+  spDefense: number;
+  speed: number;
+}): PokemonSpeciesData {
+  return {
+    id: 0,
+    name: "mock",
+    displayName: "Mock",
+    types: ["normal"],
+    baseStats,
+    abilities: { normal: [], hidden: null },
+    genderRatio: 50,
+    catchRate: 45,
+    baseExp: 64,
+    expGroup: "medium-slow",
+    evYield: {},
+    eggGroups: [],
+    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
+    evolution: null,
+    dimensions: { height: 0.7, weight: 6.9 },
+    spriteKey: "mock",
+    baseFriendship: 70,
+    generation: 1,
+    isLegendary: false,
+    isMythical: false,
+  } as unknown as PokemonSpeciesData;
+}
 
-  it("given base HP 45 (Bulbasaur) at level 50 with 0 IVs and 0 EVs, when calculating HP, then returns correct value", () => {
+function makeInstance(opts: {
+  level: number;
+  ivs: {
+    hp: number;
+    attack: number;
+    defense: number;
+    spAttack: number;
+    spDefense: number;
+    speed: number;
+  };
+  evs: {
+    hp: number;
+    attack: number;
+    defense: number;
+    spAttack: number;
+    spDefense: number;
+    speed: number;
+  };
+}): PokemonInstance {
+  return {
+    uid: "test-uid",
+    speciesId: 0,
+    nickname: null,
+    level: opts.level,
+    experience: 0,
+    nature: "hardy",
+    ivs: opts.ivs,
+    evs: opts.evs,
+    currentHp: 1,
+    moves: [],
+    ability: "",
+    abilitySlot: "normal1",
+    heldItem: null,
+    status: null,
+    friendship: 70,
+    gender: "male",
+    isShiny: false,
+    metLocation: "pallet-town",
+    metLevel: opts.level,
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: "poke-ball",
+  } as unknown as PokemonInstance;
+}
+
+function zeroDvs() {
+  return { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+}
+
+function maxDvs() {
+  return { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 };
+}
+
+function zeroStatExp() {
+  return { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+}
+
+function maxStatExp() {
+  return {
+    hp: 65535,
+    attack: 65535,
+    defense: 65535,
+    spAttack: 65535,
+    spDefense: 65535,
+    speed: 65535,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// calculateStatExpContribution
+// ---------------------------------------------------------------------------
+
+describe("calculateStatExpContribution", () => {
+  it("given statExp=0, when calculating contribution, then returns 0", () => {
     // Arrange
-    const base = 45;
-    const iv = 0;
-    const ev = 0;
-    const level = 50;
+    const statExp = 0;
     // Act
-    // Gen 1 HP formula: floor(((2*45 + 0 + 0) * 50) / 100) + 50 + 5 = floor(4500/100) + 55 = 45 + 55 = 100
-    // ... but if using Gen 3+ formula: floor(((2*45 + 0 + 0) * 50) / 100) + 50 + 10 = 45 + 60 = 105
-    // We test both possibilities
-    const result = calculateHp(base, iv, ev, level);
+    const result = calculateStatExpContribution(statExp);
     // Assert
-    expect(result).toBeGreaterThan(0);
-    expect(result).toBeTypeOf("number");
-    expect(Number.isInteger(result)).toBe(true);
+    expect(result).toBe(0);
   });
 
-  it("given base HP 78 (Charizard) at level 100 with max IVs and max EVs, when calculating HP, then returns expected high value", () => {
+  it("given statExp=1, when calculating contribution, then returns 0 (floor(ceil(1)/4)=0)", () => {
     // Arrange
-    const base = 78;
-    const iv = 15; // Gen 1 max IV
-    const ev = 65535; // Gen 1 max EV
-    const level = 100;
+    const statExp = 1;
     // Act
-    const result = calculateHp(base, iv, ev, level);
-    // Assert: Should be a high HP value
-    // Gen 1 formula: floor(((2*78 + 15 + floor(65535/4)) * 100) / 100) + 100 + 5
-    //             = floor((156 + 15 + 16383) * 1) + 105 = 16554 + 105 = 16659
-    // However if using floor(EV/4) with cap at 252 (modern), result would be much lower.
-    // Either way, it should be a valid positive integer
-    expect(result).toBeGreaterThan(0);
-    expect(Number.isInteger(result)).toBe(true);
+    const result = calculateStatExpContribution(statExp);
+    // Assert — ceil(sqrt(1))=1, floor(1/4)=0
+    expect(result).toBe(0);
   });
 
-  it("given base HP 1 (Shedinja-like), when calculating HP, then returns 1", () => {
+  it("given statExp=4, when calculating contribution, then returns 0 (sqrt=2, ceil=2, floor(2/4)=0)", () => {
     // Arrange
-    const base = 1;
-    const iv = 15;
-    const ev = 65535;
-    const level = 100;
+    const statExp = 4;
     // Act
-    const result = calculateHp(base, iv, ev, level);
-    // Assert: Special case - Shedinja always has 1 HP
-    // Note: Gen 1 doesn't have Shedinja, but the stat calc may still handle this edge case
+    const result = calculateStatExpContribution(statExp);
+    // Assert — sqrt(4)=2 exactly, ceil(2)=2, floor(2/4)=0
+    expect(result).toBe(0);
+  });
+
+  it("given statExp=16, when calculating contribution, then returns 1 (sqrt=4, ceil=4, floor(4/4)=1)", () => {
+    // Arrange
+    const statExp = 16;
+    // Act
+    const result = calculateStatExpContribution(statExp);
+    // Assert — sqrt(16)=4 exactly, ceil(4)=4, floor(4/4)=1
     expect(result).toBe(1);
   });
 
-  it("given level 1 Pokemon, when calculating HP, then returns a small value", () => {
+  it("given statExp=65535 (Gen 1 max), when calculating contribution, then returns 64", () => {
     // Arrange
-    const base = 45;
-    const iv = 0;
-    const ev = 0;
-    const level = 1;
+    const statExp = 65535;
     // Act
-    const result = calculateHp(base, iv, ev, level);
-    // Assert
-    expect(result).toBeGreaterThan(0);
-    expect(result).toBeLessThan(20);
+    const result = calculateStatExpContribution(statExp);
+    // Assert — sqrt(65535)≈255.998, ceil=256, floor(256/4)=64
+    expect(result).toBe(64);
   });
 
-  // --- Non-HP Stat Calculation ---
-
-  it("given base Attack 84 (Charizard) at level 50 with 0 IVs and 0 EVs, when calculating stat, then returns correct value", () => {
+  it("given statExp values, when calculated, then result is always a non-negative integer", () => {
     // Arrange
-    const base = 84;
-    const iv = 0;
-    const ev = 0;
-    const level = 50;
-    // Act
-    // Gen 1 stat formula: floor(((2*84 + 0 + 0) * 50) / 100) + 5 = floor(8400/100) + 5 = 84 + 5 = 89
-    const result = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
-    // Assert
-    expect(result).toBeGreaterThan(0);
-    expect(Number.isInteger(result)).toBe(true);
-  });
-
-  it("given base Speed 100 (Charizard) at level 50, when calculating stat, then returns expected value", () => {
-    // Arrange
-    const base = 100;
-    const iv = 0;
-    const ev = 0;
-    const level = 50;
-    // Act
-    // Gen 1: floor(((2*100 + 0 + 0) * 50) / 100) + 5 = 100 + 5 = 105
-    const result = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
-    // Assert
-    expect(result).toBeGreaterThan(0);
-    expect(Number.isInteger(result)).toBe(true);
-  });
-
-  it("given maximum base stat (255) with max IVs and EVs at level 100, when calculating stat, then returns maximum possible value", () => {
-    // Arrange
-    const base = 255;
-    const iv = 15;
-    const ev = 65535;
-    const level = 100;
-    // Act
-    const result = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
-    // Assert: Should be a very high stat value
-    expect(result).toBeGreaterThan(0);
-    expect(Number.isInteger(result)).toBe(true);
-  });
-
-  it("given minimum base stat at level 1 with no IVs or EVs, when calculating stat, then returns minimal value", () => {
-    // Arrange
-    const base = 5;
-    const iv = 0;
-    const ev = 0;
-    const level = 1;
-    // Act
-    const result = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
-    // Assert
-    expect(result).toBeGreaterThanOrEqual(5); // At least the +5 constant
-    expect(Number.isInteger(result)).toBe(true);
-  });
-
-  // --- Unified Special Stat ---
-
-  it("given same base Special stat, when calculating spAttack and spDefense, then they are equal", () => {
-    // Arrange: In Gen 1, Special was unified so the base stat for SpAtk and SpDef are the same
-    const base = 85; // Charizard's Special
-    const iv = 10;
-    const ev = 1000;
-    const level = 50;
-    // Act
-    const spAttack = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
-    const spDefense = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
-    // Assert: Both should produce the same value since they use the same base
-    expect(spAttack).toBe(spDefense);
-  });
-
-  // --- IV Range Tests ---
-
-  it("given increasing IV values, when calculating stat, then stat value increases monotonically", () => {
-    // Arrange
-    const base = 100;
-    const ev = 0;
-    const level = 100;
-    const results: number[] = [];
-    // Act
-    for (let iv = 0; iv <= 15; iv++) {
-      results.push(calculateStat(base, iv, ev, level, GEN1_NATURE_MOD));
-    }
-    // Assert: Each value should be >= the previous value
-    for (let i = 1; i < results.length; i++) {
-      expect(results[i]).toBeGreaterThanOrEqual(results[i - 1]!);
+    const samples = [0, 1, 4, 16, 100, 1000, 10000, 65535];
+    for (const statExp of samples) {
+      // Act
+      const result = calculateStatExpContribution(statExp);
+      // Assert
+      expect(result).toBeGreaterThanOrEqual(0);
+      expect(Number.isInteger(result)).toBe(true);
     }
   });
 
-  // --- EV Range Tests ---
-
-  it("given increasing EV values, when calculating stat, then stat value increases monotonically", () => {
-    // Arrange
-    const base = 100;
-    const iv = 15;
-    const level = 100;
-    const evValues = [0, 100, 1000, 10000, 65535];
-    const results: number[] = [];
-    // Act
-    for (const ev of evValues) {
-      results.push(calculateStat(base, iv, ev, level, GEN1_NATURE_MOD));
-    }
-    // Assert: Each value should be >= the previous value
-    for (let i = 1; i < results.length; i++) {
-      expect(results[i]).toBeGreaterThanOrEqual(results[i - 1]!);
-    }
-  });
-
-  // --- Level Scaling ---
-
-  it("given same base/IV/EV, when increasing level, then stat increases", () => {
-    // Arrange
-    const base = 100;
-    const iv = 15;
-    const ev = 0;
-    // Act
-    const stat10 = calculateStat(base, iv, ev, 10, GEN1_NATURE_MOD);
-    const stat50 = calculateStat(base, iv, ev, 50, GEN1_NATURE_MOD);
-    const stat100 = calculateStat(base, iv, ev, 100, GEN1_NATURE_MOD);
+  it("given negative statExp, when calculating contribution, then returns 0 (clamped to 0, not NaN)", () => {
+    // Arrange — negative values are out-of-spec; must not yield NaN
+    const result = calculateStatExpContribution(-1);
     // Assert
-    expect(stat50).toBeGreaterThan(stat10);
-    expect(stat100).toBeGreaterThan(stat50);
+    expect(result).toBe(0);
+    expect(Number.isNaN(result)).toBe(false);
   });
 
-  it("given same base/IV/EV, when increasing level for HP, then HP increases", () => {
+  it("given statExp > 65535, when calculating contribution, then result equals statExp=65535 (clamped to max)", () => {
     // Arrange
-    const base = 100;
-    const iv = 15;
-    const ev = 0;
+    const atMax = calculateStatExpContribution(65535);
+    const overMax = calculateStatExpContribution(65536);
+    // Assert — out-of-range values must not produce super-spec contributions
+    expect(overMax).toBe(atMax);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HP formula — known Gen 1 values
+// ---------------------------------------------------------------------------
+
+describe("calculateGen1Stats — HP formula", () => {
+  it("given Mewtwo (base HP 106, DV 15, StatExp 65535) at level 100, when calculating HP, then returns 416", () => {
+    // Arrange — (106+15)*2 + 64 = 306; floor(306*100/100)+100+10 = 306+110 = 416
+    const species = makeSpecies({
+      hp: 106,
+      attack: 110,
+      defense: 90,
+      spAttack: 154,
+      spDefense: 90,
+      speed: 130,
+    });
+    const pokemon = makeInstance({ level: 100, ivs: maxDvs(), evs: maxStatExp() });
     // Act
-    const hp10 = calculateHp(base, iv, ev, 10);
-    const hp50 = calculateHp(base, iv, ev, 50);
-    const hp100 = calculateHp(base, iv, ev, 100);
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    expect(stats.hp).toBe(416);
+  });
+
+  it("given Bulbasaur (base HP 45, DV 0, StatExp 0) at level 50, when calculating HP, then returns 105", () => {
+    // Arrange — floor(((45+0)*2+0)*50/100)+50+10 = floor(45)+60 = 105
+    const species = makeSpecies({
+      hp: 45,
+      attack: 49,
+      defense: 49,
+      spAttack: 65,
+      spDefense: 65,
+      speed: 45,
+    });
+    const pokemon = makeInstance({ level: 50, ivs: zeroDvs(), evs: zeroStatExp() });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    expect(stats.hp).toBe(105);
+  });
+
+  it("given any base/DV/StatExp, when calculating HP at level 100 vs same non-HP stat, then HP is strictly greater", () => {
+    // Arrange — HP adds Level+10 vs +5 for non-HP, so diff = Level+10-5 = level+5 > 0
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const pokemon = makeInstance({
+      level: 100,
+      ivs: { hp: 8, attack: 8, defense: 8, spAttack: 8, spDefense: 8, speed: 8 },
+      evs: { hp: 1000, attack: 1000, defense: 1000, spAttack: 1000, spDefense: 1000, speed: 1000 },
+    });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    expect(stats.hp).toBeGreaterThan(stats.attack);
+  });
+
+  it("given HP formula, when result involves non-integer division, then result is a floored integer", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 45,
+      attack: 49,
+      defense: 49,
+      spAttack: 65,
+      spDefense: 65,
+      speed: 45,
+    });
+    const pokemon = makeInstance({
+      level: 37,
+      ivs: { hp: 7, attack: 7, defense: 7, spAttack: 7, spDefense: 7, speed: 7 },
+      evs: { hp: 127, attack: 127, defense: 127, spAttack: 127, spDefense: 127, speed: 127 },
+    });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    expect(Number.isInteger(stats.hp)).toBe(true);
+  });
+
+  it("given increasing level, when calculating HP, then HP increases monotonically", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const base = makeInstance({ level: 1, ivs: maxDvs(), evs: zeroStatExp() });
+    // Act
+    const hp10 = calculateGen1Stats({ ...base, level: 10 } as PokemonInstance, species).hp;
+    const hp50 = calculateGen1Stats({ ...base, level: 50 } as PokemonInstance, species).hp;
+    const hp100 = calculateGen1Stats({ ...base, level: 100 } as PokemonInstance, species).hp;
     // Assert
     expect(hp50).toBeGreaterThan(hp10);
     expect(hp100).toBeGreaterThan(hp50);
   });
+});
 
-  // --- Integer Division Behavior ---
+// ---------------------------------------------------------------------------
+// Non-HP stat formula — known Gen 1 values
+// ---------------------------------------------------------------------------
 
-  it("given stat calculation, when result involves integer division, then result is floored", () => {
-    // Arrange: Pick values where the division isn't clean
-    const base = 45;
-    const iv = 7;
-    const ev = 127;
-    const level = 37;
+describe("calculateGen1Stats — non-HP stat formula", () => {
+  it("given Mewtwo (base Attack 110, DV 15, StatExp 65535) at level 100, when calculating Attack, then returns 319", () => {
+    // Arrange — (110+15)*2+64=314; floor(314*100/100)+5 = 314+5 = 319
+    const species = makeSpecies({
+      hp: 106,
+      attack: 110,
+      defense: 90,
+      spAttack: 154,
+      spDefense: 90,
+      speed: 130,
+    });
+    const pokemon = makeInstance({ level: 100, ivs: maxDvs(), evs: maxStatExp() });
     // Act
-    const result = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
+    const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(Number.isInteger(result)).toBe(true);
+    expect(stats.attack).toBe(319);
   });
 
-  it("given HP calculation, when result involves integer division, then result is floored", () => {
+  it("given Charizard (base Speed 100, DV 0, StatExp 0) at level 50, when calculating Speed, then returns 105", () => {
+    // Arrange — floor(((100+0)*2+0)*50/100)+5 = floor(100)+5 = 105
+    const species = makeSpecies({
+      hp: 78,
+      attack: 84,
+      defense: 78,
+      spAttack: 85,
+      spDefense: 85,
+      speed: 100,
+    });
+    const pokemon = makeInstance({ level: 50, ivs: zeroDvs(), evs: zeroStatExp() });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    expect(stats.speed).toBe(105);
+  });
+
+  it("given stat formula, when result involves non-integer division, then result is a floored integer", () => {
     // Arrange
-    const base = 45;
-    const iv = 7;
-    const ev = 127;
-    const level = 37;
+    const species = makeSpecies({
+      hp: 45,
+      attack: 45,
+      defense: 45,
+      spAttack: 45,
+      spDefense: 45,
+      speed: 45,
+    });
+    const pokemon = makeInstance({
+      level: 37,
+      ivs: { hp: 7, attack: 7, defense: 7, spAttack: 7, spDefense: 7, speed: 7 },
+      evs: { hp: 127, attack: 127, defense: 127, spAttack: 127, spDefense: 127, speed: 127 },
+    });
     // Act
-    const result = calculateHp(base, iv, ev, level);
+    const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(Number.isInteger(result)).toBe(true);
+    expect(Number.isInteger(stats.attack)).toBe(true);
+    expect(Number.isInteger(stats.defense)).toBe(true);
+    expect(Number.isInteger(stats.speed)).toBe(true);
   });
 
-  // --- HP is always higher than non-HP stat with same inputs ---
+  it("given increasing level, when calculating non-HP stat, then stat increases monotonically", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const base = makeInstance({ level: 1, ivs: maxDvs(), evs: zeroStatExp() });
+    // Act
+    const atk10 = calculateGen1Stats({ ...base, level: 10 } as PokemonInstance, species).attack;
+    const atk50 = calculateGen1Stats({ ...base, level: 50 } as PokemonInstance, species).attack;
+    const atk100 = calculateGen1Stats({ ...base, level: 100 } as PokemonInstance, species).attack;
+    // Assert
+    expect(atk50).toBeGreaterThan(atk10);
+    expect(atk100).toBeGreaterThan(atk50);
+  });
+});
 
-  it("given same inputs, when calculating HP vs non-HP stat, then HP is always higher", () => {
+// ---------------------------------------------------------------------------
+// Gen 1 Unified Special stat
+// ---------------------------------------------------------------------------
+
+describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
+  it("given same base spAttack and spDefense (Charizard Special=85), when calculating stats, then spAttack equals spDefense", () => {
+    // Arrange — In Gen 1 Special is unified; both fields use base=85
+    const species = makeSpecies({
+      hp: 78,
+      attack: 84,
+      defense: 78,
+      spAttack: 85,
+      spDefense: 85,
+      speed: 100,
+    });
+    const pokemon = makeInstance({
+      level: 50,
+      ivs: { hp: 10, attack: 10, defense: 10, spAttack: 10, spDefense: 10, speed: 10 },
+      evs: { hp: 1000, attack: 1000, defense: 1000, spAttack: 1000, spDefense: 1000, speed: 1000 },
+    });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    expect(stats.spAttack).toBe(stats.spDefense);
+  });
+
+  it("given same base/DV/StatExp for all special inputs, when calculating spAttack and spDefense independently, then they are equal", () => {
     // Arrange
     const base = 100;
-    const iv = 15;
-    const ev = 1000;
-    const level = 50;
+    const dv = 12;
+    const statExp = 30000;
+    const level = 75;
+    const species = makeSpecies({
+      hp: base,
+      attack: base,
+      defense: base,
+      spAttack: base,
+      spDefense: base,
+      speed: base,
+    });
+    const pokemon = makeInstance({
+      level,
+      ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
+      evs: {
+        hp: statExp,
+        attack: statExp,
+        defense: statExp,
+        spAttack: statExp,
+        spDefense: statExp,
+        speed: statExp,
+      },
+    });
     // Act
-    const hp = calculateHp(base, iv, ev, level);
-    const stat = calculateStat(base, iv, ev, level, GEN1_NATURE_MOD);
-    // Assert: HP formula adds Level + 5 vs just +5 for non-HP, so HP > non-HP stat
-    expect(hp).toBeGreaterThan(stat);
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    expect(stats.spAttack).toBe(stats.spDefense);
+  });
+
+  it("given DIFFERENT species spAttack (85) vs spDefense (100) base stats, when calculating stats, then spAttack still equals spDefense (spAttack inputs used for both)", () => {
+    // Arrange — if the old independent calculation were used, different base stats would produce
+    // different values; this test only passes after Fix 2 forces a unified Special
+    const species = makeSpecies({
+      hp: 78,
+      attack: 84,
+      defense: 78,
+      spAttack: 85,
+      spDefense: 100,
+      speed: 100,
+    });
+    const pokemon = makeInstance({
+      level: 50,
+      ivs: { hp: 10, attack: 10, defense: 10, spAttack: 10, spDefense: 10, speed: 10 },
+      evs: { hp: 1000, attack: 1000, defense: 1000, spAttack: 1000, spDefense: 1000, speed: 1000 },
+    });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert — Gen 1 has a single Special stat; spDefense must mirror spAttack regardless of base stat differences
+    expect(stats.spAttack).toBe(stats.spDefense);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Monotonicity — DV range
+// ---------------------------------------------------------------------------
+
+describe("calculateGen1Stats — DV monotonicity", () => {
+  it("given increasing DV from 0 to 15, when calculating non-HP stat, then stat is non-decreasing", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const results: number[] = [];
+    // Act
+    for (let dv = 0; dv <= 15; dv++) {
+      const pokemon = makeInstance({
+        level: 100,
+        ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
+        evs: zeroStatExp(),
+      });
+      results.push(calculateGen1Stats(pokemon, species).attack);
+    }
+    // Assert — each step must be >= previous
+    for (let i = 1; i < results.length; i++) {
+      const current = results[i] ?? 0;
+      const previous = results[i - 1] ?? 0;
+      expect(current).toBeGreaterThanOrEqual(previous);
+    }
+  });
+
+  it("given increasing DV from 0 to 15, when calculating HP, then HP is non-decreasing", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const results: number[] = [];
+    // Act
+    for (let dv = 0; dv <= 15; dv++) {
+      const pokemon = makeInstance({
+        level: 100,
+        ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
+        evs: zeroStatExp(),
+      });
+      results.push(calculateGen1Stats(pokemon, species).hp);
+    }
+    // Assert
+    for (let i = 1; i < results.length; i++) {
+      const current = results[i] ?? 0;
+      const previous = results[i - 1] ?? 0;
+      expect(current).toBeGreaterThanOrEqual(previous);
+    }
+  });
+
+  it("given DV < 0 (dv=-1), when calculating stats, then result equals DV=0 (clamped to minimum)", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const pokemonDv0 = makeInstance({
+      level: 100,
+      ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      evs: zeroStatExp(),
+    });
+    const pokemonDvNeg = makeInstance({
+      level: 100,
+      ivs: { hp: -1, attack: -1, defense: -1, spAttack: -1, spDefense: -1, speed: -1 },
+      evs: zeroStatExp(),
+    });
+    // Act
+    const statsDv0 = calculateGen1Stats(pokemonDv0, species);
+    const statsDvNeg = calculateGen1Stats(pokemonDvNeg, species);
+    // Assert — negative DV must be clamped to 0
+    expect(statsDvNeg.hp).toBe(statsDv0.hp);
+    expect(statsDvNeg.attack).toBe(statsDv0.attack);
+    expect(statsDvNeg.defense).toBe(statsDv0.defense);
+    expect(statsDvNeg.spAttack).toBe(statsDv0.spAttack);
+    expect(statsDvNeg.spDefense).toBe(statsDv0.spDefense);
+    expect(statsDvNeg.speed).toBe(statsDv0.speed);
+  });
+
+  it("given DV > 15 (dv=16), when calculating stats, then result equals DV=15", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const pokemonDv15 = makeInstance({
+      level: 100,
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+      evs: zeroStatExp(),
+    });
+    const pokemonDv16 = makeInstance({
+      level: 100,
+      ivs: { hp: 16, attack: 16, defense: 16, spAttack: 16, spDefense: 16, speed: 16 },
+      evs: zeroStatExp(),
+    });
+    // Act
+    const statsDv15 = calculateGen1Stats(pokemonDv15, species);
+    const statsDv16 = calculateGen1Stats(pokemonDv16, species);
+    // Assert — DV 16 must be clamped to 15 at the formula level
+    expect(statsDv16.hp).toBe(statsDv15.hp);
+    expect(statsDv16.attack).toBe(statsDv15.attack);
+    expect(statsDv16.defense).toBe(statsDv15.defense);
+    expect(statsDv16.spAttack).toBe(statsDv15.spAttack);
+    expect(statsDv16.spDefense).toBe(statsDv15.spDefense);
+    expect(statsDv16.speed).toBe(statsDv15.speed);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Monotonicity — StatExp range
+// ---------------------------------------------------------------------------
+
+describe("calculateGen1Stats — StatExp monotonicity", () => {
+  it("given increasing StatExp values, when calculating non-HP stat, then stat is non-decreasing", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const statExpValues = [0, 1, 100, 1000, 10000, 65535];
+    const results: number[] = [];
+    // Act
+    for (const se of statExpValues) {
+      const pokemon = makeInstance({
+        level: 100,
+        ivs: maxDvs(),
+        evs: { hp: se, attack: se, defense: se, spAttack: se, spDefense: se, speed: se },
+      });
+      results.push(calculateGen1Stats(pokemon, species).attack);
+    }
+    // Assert
+    for (let i = 1; i < results.length; i++) {
+      const current = results[i] ?? 0;
+      const previous = results[i - 1] ?? 0;
+      expect(current).toBeGreaterThanOrEqual(previous);
+    }
+  });
+
+  it("given increasing StatExp values, when calculating HP, then HP is non-decreasing", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 100,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    });
+    const statExpValues = [0, 1, 100, 1000, 10000, 65535];
+    const results: number[] = [];
+    // Act
+    for (const se of statExpValues) {
+      const pokemon = makeInstance({
+        level: 100,
+        ivs: maxDvs(),
+        evs: { hp: se, attack: se, defense: se, spAttack: se, spDefense: se, speed: se },
+      });
+      results.push(calculateGen1Stats(pokemon, species).hp);
+    }
+    // Assert
+    for (let i = 1; i < results.length; i++) {
+      const current = results[i] ?? 0;
+      const previous = results[i - 1] ?? 0;
+      expect(current).toBeGreaterThanOrEqual(previous);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HP always greater than corresponding non-HP stat (same base)
+// ---------------------------------------------------------------------------
+
+describe("calculateGen1Stats — HP vs non-HP offset", () => {
+  it("given same base/DV/StatExp/level, when comparing HP to any non-HP stat, then HP is always strictly greater", () => {
+    // Arrange — HP adds Level+10 instead of +5, so diff = Level+5, always > 0
+    const cases = [
+      { level: 1, dv: 0, statExp: 0 },
+      { level: 50, dv: 8, statExp: 10000 },
+      { level: 100, dv: 15, statExp: 65535 },
+    ];
+    for (const { level, dv, statExp } of cases) {
+      const species = makeSpecies({
+        hp: 100,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 100,
+      });
+      const pokemon = makeInstance({
+        level,
+        ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
+        evs: {
+          hp: statExp,
+          attack: statExp,
+          defense: statExp,
+          spAttack: statExp,
+          spDefense: statExp,
+          speed: statExp,
+        },
+      });
+      // Act
+      const stats = calculateGen1Stats(pokemon, species);
+      // Assert
+      expect(stats.hp).toBeGreaterThan(stats.attack);
+      expect(stats.hp).toBeGreaterThan(stats.defense);
+      expect(stats.hp).toBeGreaterThan(stats.speed);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// All stats are always positive integers
+// ---------------------------------------------------------------------------
+
+describe("calculateGen1Stats — output validity", () => {
+  it("given any valid Gen 1 inputs, when calculating stats, then all six stats are positive integers", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 45,
+      attack: 49,
+      defense: 49,
+      spAttack: 65,
+      spDefense: 65,
+      speed: 45,
+    });
+    const pokemon = makeInstance({ level: 50, ivs: zeroDvs(), evs: zeroStatExp() });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    for (const key of ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const) {
+      expect(stats[key]).toBeGreaterThan(0);
+      expect(Number.isInteger(stats[key])).toBe(true);
+    }
+  });
+
+  it("given minimum possible inputs (base 5, DV 0, StatExp 0, level 1), when calculating stats, then all stats are positive integers", () => {
+    // Arrange
+    const species = makeSpecies({
+      hp: 5,
+      attack: 5,
+      defense: 5,
+      spAttack: 5,
+      spDefense: 5,
+      speed: 5,
+    });
+    const pokemon = makeInstance({ level: 1, ivs: zeroDvs(), evs: zeroStatExp() });
+    // Act
+    const stats = calculateGen1Stats(pokemon, species);
+    // Assert
+    for (const key of ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const) {
+      expect(stats[key]).toBeGreaterThan(0);
+      expect(Number.isInteger(stats[key])).toBe(true);
+    }
   });
 });
