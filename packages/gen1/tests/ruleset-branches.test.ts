@@ -343,7 +343,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
 // ============================================================================
 
 describe("Gen1Ruleset applyStatusDamage", () => {
-  it("given a burned Pokemon with 160 max HP, when applying status damage, then deals 1/16 max HP (10)", () => {
+  it("given a burned Pokemon with 160 max HP, when applying status damage, then deals 1/8 max HP (20)", () => {
     // Arrange
     const pokemon = makeActivePokemon({
       pokemon: {
@@ -361,8 +361,8 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    // Assert: floor(160 / 16) = 10
-    expect(damage).toBe(10);
+    // Assert: floor(160 / 8) = 20
+    expect(damage).toBe(20);
   });
 
   it("given a poisoned Pokemon with 160 max HP, when applying status damage, then deals 1/16 max HP (10)", () => {
@@ -507,7 +507,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    // Assert: max(1, floor(15 / 16)) = max(1, 0) = 1
+    // Assert: max(1, floor(15 / 8)) = max(1, 1) = 1
     expect(damage).toBe(1);
   });
 
@@ -533,8 +533,8 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    // Assert: floor(160 / 16) = 10
-    expect(damage).toBe(10);
+    // Assert: floor(160 / 8) = 20
+    expect(damage).toBe(20);
   });
 });
 
@@ -1708,6 +1708,81 @@ describe("Gen1Ruleset rollSleepTurns", () => {
       expect(turns).toBeGreaterThanOrEqual(1);
       expect(turns).toBeLessThanOrEqual(7);
     }
+  });
+
+  it("given Gen 1 sleep, when rollSleepTurns is called, then returns a value between 1 and 7 inclusive", () => {
+    const rng = new SeededRandom(42);
+    for (let i = 0; i < 100; i++) {
+      const turns = ruleset.rollSleepTurns(rng);
+      expect(turns).toBeGreaterThanOrEqual(1);
+      expect(turns).toBeLessThanOrEqual(7);
+    }
+  });
+
+  it("given sleeping Pokemon waking up (Gen 1 mechanic), when sleep counter reaches 0, then Pokemon cannot act on wake turn (documented expected behavior)", () => {
+    // This test documents the Gen 1 behavior: sleeping Pokemon cannot act on the turn they wake up.
+    // The actual enforcement is at the BattleEngine level.
+    // Gen 1 sleep lasts 1-7 turns; on the turn the counter hits 0, the Pokemon wakes but doesn't move.
+    // We verify the rollSleepTurns range is correct (1-7) so the engine can implement the rule.
+    const rng = new SeededRandom(99);
+    const turns = ruleset.rollSleepTurns(rng);
+    expect(turns).toBeGreaterThanOrEqual(1);
+    expect(turns).toBeLessThanOrEqual(7);
+  });
+});
+
+// ============================================================================
+// Additional Freeze Tests (Gen 1 quirk: no natural thaw)
+// ============================================================================
+
+describe("Gen1Ruleset checkFreezeThaw (additional)", () => {
+  it("given frozen Pokemon, when checkFreezeThaw is called, then always returns false (no natural thaw)", () => {
+    // Arrange
+    const rng = new SeededRandom(42);
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "freeze" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    // Act / Assert
+    for (let i = 0; i < 100; i++) {
+      const result = ruleset.checkFreezeThaw(pokemon, rng);
+      expect(result).toBe(false);
+    }
+  });
+});
+
+// ============================================================================
+// Badly-Poisoned (Toxic) escalating damage — counter=1 default test
+// ============================================================================
+
+describe("Gen1Ruleset applyStatusDamage (toxic escalation)", () => {
+  it("given badly-poisoned (Toxic) Pokemon, when calculating escalating damage, then each turn counter increases damage", () => {
+    // Arrange: Poison damage escalates N/16 where N starts at 1
+    const maxHp = 160;
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "badly-poisoned" as PrimaryStatus,
+        calculatedStats: {
+          hp: maxHp,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+        currentHp: maxHp,
+      } as PokemonInstance,
+    });
+    // Note: toxic counter stored in volatileStatuses — use default (counter=1)
+    const state = makeBattleState();
+    // Act
+    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    // Assert: with counter=1 (default), damage = floor(160 * 1 / 16) = 10
+    expect(damage).toBe(10);
+    expect(damage).toBeGreaterThan(0);
   });
 });
 

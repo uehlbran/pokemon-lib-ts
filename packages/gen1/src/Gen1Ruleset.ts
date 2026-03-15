@@ -34,12 +34,7 @@ import type {
   TypeChart,
 } from "@pokemon-lib/core";
 import type { SeededRandom } from "@pokemon-lib/core";
-import {
-  CRIT_MULTIPLIER_CLASSIC,
-  calculateExpGainClassic,
-  getAccuracyEvasionMultiplier,
-  getStatStageMultiplier,
-} from "@pokemon-lib/core";
+import { calculateExpGainClassic, getStatStageMultiplier } from "@pokemon-lib/core";
 
 import { rollGen1Critical } from "./Gen1CritCalc";
 import { calculateGen1Damage, isPhysicalInGen1 } from "./Gen1DamageCalc";
@@ -106,7 +101,8 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   getCritMultiplier(): number {
-    return CRIT_MULTIPLIER_CLASSIC; // 2.0x in Gen 1-5
+    // Gen 1 crits are handled by level doubling in Gen1DamageCalc.ts, not a flat multiplier
+    return 1;
   }
 
   rollCritical(context: CritContext): boolean {
@@ -226,9 +222,9 @@ export class Gen1Ruleset implements GenerationRuleset {
       return true;
     }
 
-    // Apply accuracy and evasion stages
-    const accMod = getAccuracyEvasionMultiplier(attacker.statStages.accuracy);
-    const evaMod = getAccuracyEvasionMultiplier(defender.statStages.evasion);
+    // Apply accuracy and evasion stages (Gen 1 uses the 2-based scale: +1=3/2, -6=2/8)
+    const accMod = getStatStageMultiplier(attacker.statStages.accuracy);
+    const evaMod = getStatStageMultiplier(defender.statStages.evasion);
 
     // Calculate effective accuracy
     let effectiveAccuracy = Math.floor((move.accuracy * accMod) / evaMod);
@@ -429,8 +425,8 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     switch (status) {
       case "burn":
-        // Burn deals 1/16 max HP per turn in Gen 1
-        return Math.max(1, Math.floor(maxHp / 16));
+        // Burn deals 1/8 max HP per turn in Gen 1
+        return Math.max(1, Math.floor(maxHp / 8));
 
       case "poison":
         // Regular poison deals 1/16 max HP per turn in Gen 1

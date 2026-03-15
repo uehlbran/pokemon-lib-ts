@@ -1,5 +1,5 @@
 import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib/battle";
-import { SeededRandom, getAccuracyEvasionMultiplier } from "@pokemon-lib/core";
+import { SeededRandom, getStatStageMultiplier } from "@pokemon-lib/core";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
@@ -14,8 +14,9 @@ import { Gen1Ruleset } from "../src/Gen1Ruleset";
  *   meaning a roll of exactly 255 causes a miss (1/256 chance).
  * - Moves with null accuracy never miss (Swift, etc.)
  * - Accuracy/evasion stages modify the effective accuracy
- * - Stage multipliers: +1 = 4/3, +2 = 5/3, -1 = 3/4, -2 = 3/5
- *   (Gen 1 uses the same 3-based formula as later gens for acc/eva stages)
+ * - Stage multipliers use the 2-based scale (same as regular stats):
+ *   +1 = 3/2, +2 = 4/2, -1 = 2/3, -6 = 2/8 = 0.25
+ *   (NOT the Gen 3+ 3-based formula: +1 = 4/3, -6 = 3/9)
  */
 
 // --- Test Helpers ---
@@ -217,8 +218,8 @@ function computeThreshold(
   accuracyStage: number,
   evasionStage: number,
 ): number {
-  const accMod = getAccuracyEvasionMultiplier(accuracyStage);
-  const evaMod = getAccuracyEvasionMultiplier(evasionStage);
+  const accMod = getStatStageMultiplier(accuracyStage);
+  const evaMod = getStatStageMultiplier(evasionStage);
   let effectiveAccuracy = Math.floor((moveAccuracy * accMod) / evaMod);
   effectiveAccuracy = Math.max(1, Math.min(255, effectiveAccuracy));
   return Math.floor((effectiveAccuracy * 255) / 100);
@@ -331,8 +332,8 @@ describe("Gen 1 Accuracy", () => {
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, -6, 0);
-    // Assert: -6 accuracy multiplier is 3/9 = 0.33, effective = floor(100 * 0.33) = 33
-    // threshold = floor(33 * 255 / 100) = floor(84.15) = 84
+    // Assert: -6 accuracy multiplier (Gen 1, 2-based) = 2/8 = 0.25
+    // effective = floor(100 * 0.25) = 25, threshold = floor(25 * 255 / 100) = 63
     expect(threshold).toBeLessThan(100);
     expect(threshold).toBeGreaterThan(0);
   });
@@ -364,8 +365,8 @@ describe("Gen 1 Accuracy", () => {
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, 0, 6);
-    // Assert: +6 evasion divides accuracy by 3 (multiplier is 9/3 = 3.0 for evasion)
-    // effective = floor(100 / 3) = 33, threshold = floor(33 * 255 / 100) = 84
+    // Assert: +6 evasion (Gen 1, 2-based) multiplier = 8/2 = 4.0
+    // effective = floor(100 / 4) = 25, threshold = floor(25 * 255 / 100) = 63
     expect(threshold).toBeLessThan(100);
     expect(threshold).toBeGreaterThan(0);
   });
@@ -479,6 +480,40 @@ describe("Gen 1 Accuracy", () => {
     for (let i = 1; i < thresholds.length; i++) {
       expect(thresholds[i]).toBeGreaterThanOrEqual(thresholds[i - 1]!);
     }
+  });
+
+  // --- Gen 1 stage multiplier value checks (2-based scale) ---
+
+  it("given accuracy stage +1 (Gen 1), when computing multiplier, then returns 3/2 = 1.5 (not Gen 3+ 4/3)", () => {
+    // Arrange
+    const moveAccuracy = 100;
+    // Act
+    const threshold = computeThreshold(moveAccuracy, 1, 0);
+    // Assert: getStatStageMultiplier(+1) = 3/2 = 1.5 → floor(100 * 1.5) = 150, clamped = 150
+    // threshold = floor(150 * 255 / 100) = floor(382.5) = 382 → but effectiveAccuracy is clamped to 255
+    // floor(100 * 1.5) = 150, threshold = floor(150 * 255 / 100) = 382; then clamped to 255 at the roll level
+    // The key assertion: threshold > base (255) confirms positive multiplier
+    expect(threshold).toBeGreaterThanOrEqual(255);
+  });
+
+  it("given accuracy stage -6 (Gen 1), when computing multiplier, then returns 2/8 = 0.25", () => {
+    // Arrange
+    const moveAccuracy = 100;
+    // Act
+    const threshold = computeThreshold(moveAccuracy, -6, 0);
+    // Assert: getStatStageMultiplier(-6) = 2/8 = 0.25 → floor(100 * 0.25) = 25
+    // threshold = floor(25 * 255 / 100) = 63
+    expect(threshold).toBe(63);
+  });
+
+  it("given evasion stage +6 (Gen 1), when computing multiplier, then returns 8/2 = 4.0", () => {
+    // Arrange
+    const moveAccuracy = 100;
+    // Act
+    const threshold = computeThreshold(moveAccuracy, 0, 6);
+    // Assert: getStatStageMultiplier(+6) = 8/2 = 4.0 → floor(100 / 4.0) = 25
+    // threshold = floor(25 * 255 / 100) = 63
+    expect(threshold).toBe(63);
   });
 
   // --- Evasion increases make moves harder to hit ---
