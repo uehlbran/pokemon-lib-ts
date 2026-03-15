@@ -150,7 +150,8 @@ Independent semantic versioning per package. A Gen 1 bug fix doesn't bump Gen 9.
 
 ## PR Workflow
 
-- Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use `/loop` or manual polling.
+- Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use manual polling.
+- **Always use `/loop` with `/babysit-pr`** for any PR that needs to wait for CI or reviews: `/loop 5m babysit-pr <number> --auto-merge`. A single `/babysit-pr` invocation runs once and exits — it does not poll.
 - **Act autonomously.** When handling a PR, agents should:
   - Push fixes for reviewer feedback without asking permission
   - Fix CI/lint/test failures independently
