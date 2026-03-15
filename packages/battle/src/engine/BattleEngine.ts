@@ -1278,6 +1278,9 @@ export class BattleEngine implements BattleEventEmitter {
         case "nightmare":
           this.processNightmare();
           break;
+        case "bind":
+          this.processBindDamage();
+          break;
         default:
           // Many effects not yet implemented
           break;
@@ -1670,6 +1673,51 @@ export class BattleEngine implements BattleEventEmitter {
         maxHp,
         source: "nightmare",
       });
+    }
+  }
+
+  private processBindDamage(): void {
+    // Gen 1 handles bind/wrap in canExecuteMove (prevents action), not end-of-turn
+    // Gen 2+: deal end-of-turn damage to bound Pokemon
+    if (this.ruleset.generation === 1) return;
+
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (!active.volatileStatuses.has("bound")) continue;
+
+      const boundState = active.volatileStatuses.get("bound");
+      if (!boundState) continue;
+
+      // Decrement the bind counter
+      if (boundState.turnsLeft > 0) {
+        boundState.turnsLeft--;
+      }
+
+      // Deal end-of-turn damage: 1/8 max HP (Gen 5+)
+      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      const damage = Math.max(1, Math.floor(maxHp / 8));
+      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+      this.emit({
+        type: "damage",
+        side: side.index,
+        pokemon: getPokemonName(active),
+        amount: damage,
+        currentHp: active.pokemon.currentHp,
+        maxHp,
+        source: "bind",
+      });
+
+      // If bind expired, remove the volatile
+      if (boundState.turnsLeft <= 0) {
+        active.volatileStatuses.delete("bound");
+        this.emit({
+          type: "volatile-end",
+          side: side.index,
+          pokemon: getPokemonName(active),
+          volatile: "bound",
+        });
+      }
     }
   }
 }
