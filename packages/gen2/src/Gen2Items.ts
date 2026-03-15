@@ -190,19 +190,30 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Miracle Berry: Cures any primary status (consumed)
+    // Miracle Berry: Cures any primary status OR confusion (consumed)
     case "miracle-berry": {
-      if (status != null) {
-        return {
-          activated: true,
-          effects: [
-            { type: "status-cure", target: "self", value: status },
-            { type: "consume", target: "self", value: "miracle-berry" },
-          ],
-          messages: [`${pokemonName}'s Miracle Berry cured its ${status}!`],
-        };
+      const hasConfusion = pokemon.volatileStatuses.has("confusion");
+      const hasPrimaryStatus = status != null;
+      if (!hasPrimaryStatus && !hasConfusion) {
+        return NO_ACTIVATION;
       }
-      return NO_ACTIVATION;
+      const effects: Array<{
+        type: string;
+        target: string;
+        value: string | boolean;
+      }> = [];
+      if (hasPrimaryStatus) {
+        effects.push({ type: "status-cure", target: "self", value: status! });
+      }
+      if (hasConfusion) {
+        effects.push({ type: "volatile-cure", target: "self", value: "confusion" });
+      }
+      effects.push({ type: "consume", target: "self", value: "miracle-berry" });
+      return {
+        activated: true,
+        effects,
+        messages: [`${pokemonName}'s Miracle Berry cured its status!`],
+      };
     }
 
     // Berry Juice: Heal 20 HP when HP <= 50% max (consumed)

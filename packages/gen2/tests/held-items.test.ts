@@ -215,6 +215,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
+      expect(consumeEffect!.value).toBe("berry");
     });
 
     it("given a Pokemon above 50% HP holding Berry, when end-of-turn triggers, then no activation", () => {
@@ -275,6 +276,20 @@ describe("Gen 2 Held Items", () => {
       const context = createItemContext({
         heldItem: "prz-cure-berry",
         status: null,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(false);
+    });
+
+    it("given a burned Pokemon holding PRZCureBerry, when end-of-turn triggers, then no activation", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "prz-cure-berry",
+        status: "burn",
       });
 
       // Act
@@ -542,6 +557,48 @@ describe("Gen 2 Held Items", () => {
 
       // Assert
       expect(result.activated).toBe(true);
+      const consumeEffect = result.effects.find((e) => e.type === "consume");
+      expect(consumeEffect).toBeDefined();
+      expect(consumeEffect!.value).toBe("miracle-berry");
+    });
+
+    it("given a confused Pokemon holding Miracle Berry with no primary status, when end-of-turn triggers, then cures confusion", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: null,
+        hasConfusion: true,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
+      expect(volatileCure).toBeDefined();
+      expect(volatileCure!.value).toBe("confusion");
+    });
+
+    it("given a confused Pokemon holding Miracle Berry with primary status, when end-of-turn triggers, then cures both", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: "burn",
+        hasConfusion: true,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const statusCure = result.effects.find((e) => e.type === "status-cure");
+      expect(statusCure).toBeDefined();
+      expect(statusCure!.value).toBe("burn");
+      const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
+      expect(volatileCure).toBeDefined();
+      expect(volatileCure!.value).toBe("confusion");
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
       expect(consumeEffect!.value).toBe("miracle-berry");
