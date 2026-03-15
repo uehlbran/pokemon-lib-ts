@@ -400,9 +400,12 @@ describe("BattleEngine — branch coverage", () => {
       engine.getActive(1)!.pokemon.status = "sleep";
       // Use a volatile to track sleep turns (the engine checks for this)
       // biome-ignore lint/style/noNonNullAssertion: test setup
-      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set("sleep-counter", {
-        turnsLeft: 3,
-      });
+      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set(
+        "sleep-counter",
+        {
+          turnsLeft: 3,
+        },
+      );
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -423,9 +426,12 @@ describe("BattleEngine — branch coverage", () => {
       // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "sleep";
       // biome-ignore lint/style/noNonNullAssertion: test setup
-      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set("sleep-counter", {
-        turnsLeft: 0,
-      });
+      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set(
+        "sleep-counter",
+        {
+          turnsLeft: 0,
+        },
+      );
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
