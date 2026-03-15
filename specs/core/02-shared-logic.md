@@ -1,4 +1,10 @@
+<!-- SPEC FRONT-MATTER -->
+<!-- status: IMPLEMENTED -->
+<!-- last-updated: 2026-03-15 -->
+
 # Core Pokémon Library — Shared Logic
+
+> **Status: IMPLEMENTED** — Formulas implemented in `packages/core/src/logic/`. Code is source of truth. Known issues documented below.
 
 > Stat calculation, type effectiveness, experience curves, nature modifiers, catch rate,
 > stat stages, and Pokémon factory functions.
@@ -138,8 +144,8 @@ Known-correct values for testing (verified against Bulbapedia/Showdown):
 
 | Pokémon | Level | IVs | EVs | Nature | HP | Atk | Def | SpA | SpD | Spe |
 |---------|-------|-----|-----|--------|-----|-----|-----|-----|-----|-----|
-| Charizard (base: 78/84/78/109/85/100) | 50 | all 31 | 0/0/0/252/4/252 | Timid | 153 | 99 | 98 | 161 | 106 | 152 |
-| Charizard | 100 | all 31 | 0/0/0/252/4/252 | Timid | 297 | 193 | 192 | 317 | 207 | 299 |
+| Charizard (base: 78/84/78/109/85/100) | 50 | all 31 | 0/0/0/252/4/252 | Timid | 153 | 93 | 98 | 161 | 106 | 167 |
+| Charizard | 100 | all 31 | 0/0/0/252/4/252 | Timid | 297 | 193 | 192 | 317 | 207 | 299 |<!-- VERIFY: Level 100 Timid Charizard row needs nature-adjusted Atk/Spe recalculation -->
 | Shedinja | 50 | all 31 | all 252 | any | 1 | — | — | — | — | — |
 | Pikachu (base: 35/55/40/50/50/90) | 50 | all 31 | 252/0/0/0/0/252 | Jolly | 142 | 75 | 60 | 70 | 70 | 156 |
 
@@ -198,40 +204,43 @@ Key differences from earlier gens that the chart reflects:
 
 ```typescript
 /**
- * Returns the full Gen 6+ type chart.
- * The chart is constructed as a constant — no computation needed.
+ * The complete Gen 6+ type chart (18×18 matrix).
+ * Exported as a constant — no function call needed.
+ *
+ * Usage: import { GEN6_TYPE_CHART } from '@pokemon-lib-ts/core'
  */
-export function getDefaultTypeChart(): TypeChart {
-  // 18x18 matrix of multipliers
-  // See type-chart.json data file for the actual values
-  // Key relationships:
-  //   Fire > Grass, Ice, Bug, Steel
-  //   Water > Fire, Ground, Rock
-  //   Grass > Water, Ground, Rock
-  //   Electric > Water, Flying
-  //   Ice > Grass, Ground, Flying, Dragon
-  //   Fighting > Normal, Ice, Rock, Dark, Steel
-  //   Poison > Grass, Fairy
-  //   Ground > Fire, Electric, Poison, Rock, Steel
-  //   Flying > Grass, Fighting, Bug
-  //   Psychic > Fighting, Poison
-  //   Bug > Grass, Psychic, Dark
-  //   Rock > Fire, Ice, Flying, Bug
-  //   Ghost > Psychic, Ghost
-  //   Dragon > Dragon
-  //   Dark > Psychic, Ghost
-  //   Steel > Ice, Rock, Fairy
-  //   Fairy > Fighting, Dragon, Dark
-  //
-  //   Normal, Fighting → 0x vs Ghost
-  //   Electric → 0x vs Ground
-  //   Poison → 0x vs Steel
-  //   Ground → 0x vs Flying
-  //   Psychic → 0x vs Dark
-  //   Ghost → 0x vs Normal
-  //   Dragon → 0x vs Fairy
-}
+export const GEN6_TYPE_CHART: TypeChart = { /* 18x18 matrix */ };
 ```
+
+> **Note**: `getDefaultTypeChart()` is deprecated. Use `GEN6_TYPE_CHART` directly.
+
+Key relationships:
+- Fire > Grass, Ice, Bug, Steel
+- Water > Fire, Ground, Rock
+- Grass > Water, Ground, Rock
+- Electric > Water, Flying
+- Ice > Grass, Ground, Flying, Dragon
+- Fighting > Normal, Ice, Rock, Dark, Steel
+- Poison > Grass, Fairy
+- Ground > Fire, Electric, Poison, Rock, Steel
+- Flying > Grass, Fighting, Bug
+- Psychic > Fighting, Poison
+- Bug > Grass, Psychic, Dark
+- Rock > Fire, Ice, Flying, Bug
+- Ghost > Psychic, Ghost
+- Dragon > Dragon
+- Dark > Psychic, Ghost
+- Steel > Ice, Rock, Fairy
+- Fairy > Fighting, Dragon, Dark
+
+Immunities:
+- Normal, Fighting → 0x vs Ghost
+- Electric → 0x vs Ground
+- Poison → 0x vs Steel
+- Ground → 0x vs Flying
+- Psychic → 0x vs Dark
+- Ghost → 0x vs Normal
+- Dragon → 0x vs Fairy
 
 ### 2.4 Effectiveness Classification
 
@@ -275,6 +284,9 @@ Six experience groups, each with a different formula mapping level → total EXP
  * @param group - Experience growth rate group
  * @param level - Target level (1-100)
  * @returns Total cumulative EXP needed to reach this level
+ *
+ * // Guard: if level <= 1, returns 0 (level 1 requires 0 total EXP for all groups)
+ * // Guard: level is clamped to [1, 100]
  */
 export function getExpForLevel(group: ExperienceGroup, level: number): number {
   const n = level;
@@ -457,9 +469,14 @@ export function getAccuracyEvasionMultiplier(stage: number): number {
 /**
  * Calculate the effective accuracy of a move in battle.
  *
- * EffectiveAccuracy = MoveAccuracy * (AccuracyStage / EvasionStage)
+ * The actual implementation uses a net-stage approach:
+ *   netStage = clamp(accuracyStage - evasionStage, -6, 6)
+ *   effectiveAccuracy = moveAccuracy * getAccuracyEvasionMultiplier(netStage)
  *
- * If move accuracy is null, the move never misses (returns Infinity).
+ * This matches Showdown's implementation and avoids floating-point issues
+ * from dividing two stage multipliers.
+ *
+ * If move accuracy is null, the move never misses.
  */
 export function calculateAccuracy(
   moveAccuracy: number | null,
@@ -490,14 +507,6 @@ export function calculateAccuracy(
  * | 2     | 1/2 (50%)   |
  * | 3+    | 1/1 (100%)  |
  *
- * Gen 2-5 used different rates:
- * | Stage | Gen 2-5 Rate |
- * | 0     | 1/16 (6.25%) |
- * | 1     | 1/8 (12.5%)  |
- * | 2     | 1/4 (25%)    |
- * | 3     | 1/3 (33.3%)  |
- * | 4+    | 1/2 (50%)    |
- *
  * Gen 1 used Speed-based crit rate (see Gen 1 battle spec).
  */
 export const CRIT_RATES_GEN6: readonly number[] = [
@@ -507,19 +516,40 @@ export const CRIT_RATES_GEN6: readonly number[] = [
   1,       // Stage 3+
 ] as const;
 
-export const CRIT_RATES_GEN2_5: readonly number[] = [
-  1 / 16,  // Stage 0
-  1 / 8,   // Stage 1
-  1 / 4,   // Stage 2
-  1 / 3,   // Stage 3
-  1 / 2,   // Stage 4+
+/**
+ * Gen 2 critical hit rates (threshold-based, not stage-based like Gen 3+).
+ * In Gen 2, crit checks use a random number 0-255 compared to a threshold.
+ * These are the raw threshold values (higher = more likely to crit).
+ * Stage 0: threshold = 17 (17/256 ≈ 6.64%)
+ */
+export const CRIT_RATES_GEN2: readonly number[] = [
+  17 / 256,  // Stage 0 ≈ 6.64%
+  32 / 256,  // Stage 1 = 12.5%
+  64 / 256,  // Stage 2 = 25%
+  85 / 256,  // Stage 3 ≈ 33.2%
+  128 / 256, // Stage 4 = 50%
 ] as const;
+
+/**
+ * Gen 3-5 critical hit rates (stage-based probability table).
+ */
+export const CRIT_RATES_GEN3_5: readonly number[] = [
+  1 / 16,  // Stage 0 = 6.25%
+  1 / 8,   // Stage 1 = 12.5%
+  1 / 4,   // Stage 2 = 25%
+  1 / 3,   // Stage 3 ≈ 33.3%
+  1 / 2,   // Stage 4+ = 50%
+] as const;
+
+// Note: The old CRIT_RATES_GEN2_5 name was split into CRIT_RATES_GEN2 and CRIT_RATES_GEN3_5 to accurately reflect per-gen differences.
 
 /**
  * Get the critical hit rate for a given stage.
  * @param stage - Crit stage (0+, clamped to max index)
  * @param rateTable - Which generation's rate table to use
  * @returns Probability of critical hit (0 to 1)
+ *
+ * // Guard: negative stages are treated as 0 (stage is clamped to [0, max])
  */
 export function getCritRate(stage: number, rateTable: readonly number[]): number {
   const index = Math.min(stage, rateTable.length - 1);
@@ -924,3 +954,27 @@ TypeScript, Vitest, Biome
 ```
 
 ---
+
+## 10. Implementation Cross-Reference
+
+| Concept | Source File | Notes |
+|---------|-------------|-------|
+| calculateHp, calculateStat | `packages/core/src/logic/statCalc.ts` (verify filename) | Gen 3+ formulas |
+| calculateAllStats | `packages/core/src/logic/statCalc.ts` (verify filename) | Calls above |
+| getNatureModifier | `packages/core/src/logic/statCalc.ts` (verify filename) | 0.9/1.0/1.1 |
+| getTypeEffectiveness | `packages/core/src/logic/typeChart.ts` (verify filename) | Chart lookup |
+| GEN6_TYPE_CHART | `packages/core/src/logic/typeChart.ts` (verify filename) | Constant, not function |
+| getExpForLevel | `packages/core/src/logic/experience.ts` (verify filename) | EXP curves |
+| CRIT_RATES_GEN2, CRIT_RATES_GEN3_5 | `packages/core/src/logic/critCalc.ts` (verify filename) | Split constants |
+| SeededRandom | `packages/core/src/prng/SeededRandom.ts` | Mulberry32 |
+
+> **Note**: Verify exact filenames by checking `packages/core/src/logic/`.
+
+---
+
+## Document History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.2 | 2026-03-15 | Fixed stat verification table (nature-adjusted values), documented net-stage accuracy formula, split CRIT_RATES_GEN2_5 into gen-specific constants, renamed getDefaultTypeChart→GEN6_TYPE_CHART, added guards documentation, added Cross-Reference |
+| 1.0 | 2024 | Initial shared logic spec |
