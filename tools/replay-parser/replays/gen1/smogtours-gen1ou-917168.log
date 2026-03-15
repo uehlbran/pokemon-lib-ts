@@ -1,0 +1,535 @@
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up.
+|t:|1773534936
+|gametype|singles
+|player|p1|violet river|#rbtt9moons2|
+|player|p2|dangerk1d|pokemonrangerf-gen4|
+|gen|1
+|tier|[Gen 1] OU
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773534936
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Alakazam|Alakazam|100/100
+|switch|p2a: Jynx|Jynx|100/100
+|turn|1
+|c|☆dangerk1d|hf
+|
+|t:|1773534944
+|move|p1a: Alakazam|Thunder Wave|p2a: Jynx
+|-status|p2a: Jynx|par
+|move|p2a: Jynx|Lovely Kiss|p1a: Alakazam
+|-status|p1a: Alakazam|slp|[from] move: Lovely Kiss
+|
+|upkeep
+|turn|2
+|
+|t:|1773534952
+|cant|p1a: Alakazam|slp
+|move|p2a: Jynx|Blizzard|p1a: Alakazam
+|-damage|p1a: Alakazam|63/100 slp
+|
+|upkeep
+|turn|3
+|
+|t:|1773534958
+|switch|p1a: Chansey|Chansey|100/100
+|move|p2a: Jynx|Blizzard|p1a: Chansey
+|-damage|p1a: Chansey|80/100
+|
+|upkeep
+|turn|4
+|c|☆violet river|hfhf
+|
+|t:|1773534964
+|move|p1a: Chansey|Thunderbolt|p2a: Jynx
+|-damage|p2a: Jynx|78/100 par
+|move|p2a: Jynx|Blizzard|p1a: Chansey
+|-damage|p1a: Chansey|60/100
+|
+|upkeep
+|turn|5
+|
+|t:|1773534969
+|move|p1a: Chansey|Thunderbolt|p2a: Jynx
+|-damage|p2a: Jynx|53/100 par
+|move|p2a: Jynx|Blizzard|p1a: Chansey
+|-damage|p1a: Chansey|41/100
+|
+|upkeep
+|turn|6
+|
+|t:|1773534978
+|move|p1a: Chansey|Soft-Boiled|p1a: Chansey
+|-heal|p1a: Chansey|91/100
+|move|p2a: Jynx|Blizzard|p1a: Chansey
+|-damage|p1a: Chansey|73/100
+|
+|upkeep
+|turn|7
+|
+|t:|1773534985
+|move|p1a: Chansey|Thunderbolt|p2a: Jynx
+|-crit|p2a: Jynx
+|-damage|p2a: Jynx|3/100 par
+|move|p2a: Jynx|Blizzard|p1a: Chansey
+|-damage|p1a: Chansey|53/100
+|
+|upkeep
+|turn|8
+|inactive|dangerk1d has 270 seconds left.
+|
+|t:|1773535025
+|switch|p2a: Chansey|Chansey|100/100
+|move|p1a: Chansey|Ice Beam|p2a: Chansey
+|-damage|p2a: Chansey|90/100
+|
+|upkeep
+|turn|9
+|
+|t:|1773535036
+|move|p2a: Chansey|Ice Beam|p1a: Chansey
+|-damage|p1a: Chansey|43/100
+|move|p1a: Chansey|Ice Beam|p2a: Chansey
+|-damage|p2a: Chansey|78/100
+|
+|upkeep
+|turn|10
+|
+|t:|1773535040
+|move|p2a: Chansey|Ice Beam|p1a: Chansey
+|-damage|p1a: Chansey|32/100
+|move|p1a: Chansey|Ice Beam|p2a: Chansey
+|-damage|p2a: Chansey|69/100
+|
+|upkeep
+|turn|11
+|
+|t:|1773535045
+|move|p2a: Chansey|Ice Beam|p1a: Chansey
+|-damage|p1a: Chansey|23/100
+|move|p1a: Chansey|Soft-Boiled|p1a: Chansey
+|-heal|p1a: Chansey|72/100
+|
+|upkeep
+|turn|12
+|
+|t:|1773535052
+|move|p1a: Chansey|Ice Beam|p2a: Chansey
+|-damage|p2a: Chansey|57/100
+|move|p2a: Chansey|Ice Beam|p1a: Chansey
+|-damage|p1a: Chansey|62/100
+|
+|upkeep
+|turn|13
+|
+|t:|1773535055
+|move|p1a: Chansey|Ice Beam|p2a: Chansey
+|-damage|p2a: Chansey|47/100
+|move|p2a: Chansey|Ice Beam|p1a: Chansey
+|-damage|p1a: Chansey|52/100
+|
+|upkeep
+|turn|14
+|
+|t:|1773535060
+|move|p2a: Chansey|Ice Beam|p1a: Chansey
+|-damage|p1a: Chansey|40/100
+|move|p1a: Chansey|Ice Beam|p2a: Chansey
+|-crit|p2a: Chansey
+|-damage|p2a: Chansey|26/100
+|
+|upkeep
+|turn|15
+|
+|t:|1773535065
+|switch|p1a: Exeggutor|Exeggutor|100/100
+|move|p2a: Chansey|Soft-Boiled|p2a: Chansey
+|-heal|p2a: Chansey|76/100
+|
+|upkeep
+|turn|16
+|
+|t:|1773535090
+|move|p1a: Exeggutor|Sleep Powder|p2a: Chansey
+|-status|p2a: Chansey|slp|[from] move: Sleep Powder
+|-curestatus|p2a: Chansey|slp|[msg]
+|
+|upkeep
+|turn|17
+|
+|t:|1773535093
+|move|p1a: Exeggutor|Sleep Powder|p2a: Chansey
+|-status|p2a: Chansey|slp|[from] move: Sleep Powder
+|cant|p2a: Chansey|slp
+|
+|upkeep
+|turn|18
+|
+|t:|1773535097
+|switch|p1a: Snorlax|Snorlax|100/100
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|
+|upkeep
+|turn|19
+|
+|t:|1773535102
+|switch|p1a: Chansey|Chansey|40/100
+|move|p2a: Exeggutor|Stun Spore|p1a: Chansey
+|-status|p1a: Chansey|par
+|
+|upkeep
+|turn|20
+|
+|t:|1773535110
+|switch|p2a: Jynx|Jynx|3/100 par
+|cant|p1a: Chansey|par
+|
+|upkeep
+|turn|21
+|
+|t:|1773535115
+|move|p2a: Jynx|Rest|p2a: Jynx
+|-status|p2a: Jynx|slp|[from] move: Rest
+|-heal|p2a: Jynx|100/100 slp|[silent]
+|move|p1a: Chansey|Soft-Boiled|p1a: Chansey
+|-heal|p1a: Chansey|90/100 par
+|
+|upkeep
+|turn|22
+|
+|t:|1773535120
+|switch|p1a: Tauros|Tauros|100/100
+|cant|p2a: Jynx|slp
+|
+|upkeep
+|turn|23
+|
+|t:|1773535123
+|switch|p2a: Snorlax|Snorlax|100/100
+|move|p1a: Tauros|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|75/100
+|
+|upkeep
+|turn|24
+|
+|t:|1773535127
+|move|p1a: Tauros|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|49/100
+|move|p2a: Snorlax|Counter|p1a: Tauros
+|-damage|p1a: Tauros|23/100
+|
+|upkeep
+|turn|25
+|
+|t:|1773535135
+|switch|p1a: Gengar|Gengar|100/100
+|move|p2a: Snorlax|Body Slam|p1a: Gengar
+|-immune|p1a: Gengar
+|
+|upkeep
+|turn|26
+|
+|t:|1773535145
+|switch|p1a: Exeggutor|Exeggutor|100/100
+|move|p2a: Snorlax|Earthquake|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|88/100
+|
+|upkeep
+|turn|27
+|
+|t:|1773535161
+|switch|p1a: Gengar|Gengar|100/100
+|switch|p2a: Jynx|Jynx|100/100 slp
+|
+|upkeep
+|turn|28
+|
+|t:|1773535174
+|move|p1a: Gengar|Thunderbolt|p2a: Jynx
+|-damage|p2a: Jynx|70/100 slp
+|-curestatus|p2a: Jynx|slp|[msg]
+|
+|upkeep
+|turn|29
+|
+|t:|1773535184
+|switch|p1a: Chansey|Chansey|90/100 par
+|switch|p2a: Snorlax|Snorlax|49/100
+|
+|upkeep
+|turn|30
+|
+|t:|1773535199
+|move|p2a: Snorlax|Body Slam|p1a: Chansey
+|-damage|p1a: Chansey|46/100 par
+|move|p1a: Chansey|Ice Beam|p2a: Snorlax
+|-damage|p2a: Snorlax|30/100
+|
+|upkeep
+|turn|31
+|
+|t:|1773535215
+|switch|p1a: Gengar|Gengar|100/100
+|move|p2a: Snorlax|Self-Destruct|p1a: Gengar
+|-immune|p1a: Gengar
+|faint|p2a: Snorlax
+|
+|t:|1773535223
+|switch|p2a: Jynx|Jynx|70/100
+|turn|32
+|
+|t:|1773535245
+|switch|p1a: Chansey|Chansey|46/100 par
+|move|p2a: Jynx|Psychic|p1a: Chansey
+|-damage|p1a: Chansey|31/100 par
+|
+|upkeep
+|turn|33
+|
+|t:|1773535252
+|move|p2a: Jynx|Psychic|p1a: Chansey
+|-damage|p1a: Chansey|16/100 par
+|cant|p1a: Chansey|par
+|
+|upkeep
+|turn|34
+|
+|t:|1773535263
+|move|p2a: Jynx|Blizzard|p1a: Chansey
+|-crit|p1a: Chansey
+|-damage|p1a: Chansey|0 fnt
+|faint|p1a: Chansey
+|
+|t:|1773535266
+|switch|p1a: Tauros|Tauros|23/100
+|turn|35
+|
+|t:|1773535294
+|move|p1a: Tauros|Body Slam|p2a: Jynx
+|-damage|p2a: Jynx|21/100
+|-status|p2a: Jynx|par
+|move|p2a: Jynx|Psychic|p1a: Tauros
+|-damage|p1a: Tauros|0 fnt
+|faint|p1a: Tauros
+|
+|t:|1773535302
+|switch|p1a: Snorlax|Snorlax|100/100
+|turn|36
+|
+|t:|1773535310
+|move|p1a: Snorlax|Body Slam|p2a: Jynx
+|-damage|p2a: Jynx|0 fnt
+|faint|p2a: Jynx
+|
+|t:|1773535312
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|turn|37
+|
+|t:|1773535316
+|move|p2a: Exeggutor|Psychic|p1a: Snorlax
+|-damage|p1a: Snorlax|71/100
+|-unboost|p1a: Snorlax|spa|1
+|-unboost|p1a: Snorlax|spd|1
+|move|p1a: Snorlax|Body Slam|p2a: Exeggutor
+|-damage|p2a: Exeggutor|68/100
+|
+|upkeep
+|turn|38
+|
+|t:|1773535321
+|switch|p1a: Exeggutor|Exeggutor|88/100
+|move|p2a: Exeggutor|Psychic|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|75/100
+|-unboost|p1a: Exeggutor|spa|1
+|-unboost|p1a: Exeggutor|spd|1
+|
+|upkeep
+|turn|39
+|
+|t:|1773535329
+|move|p2a: Exeggutor|Stun Spore|p1a: Exeggutor
+|-status|p1a: Exeggutor|par
+|move|p1a: Exeggutor|Psychic|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|59/100
+|-unboost|p2a: Exeggutor|spa|1
+|-unboost|p2a: Exeggutor|spd|1
+|
+|upkeep
+|turn|40
+|
+|t:|1773535340
+|move|p2a: Exeggutor|Psychic|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|63/100 par
+|-unboost|p1a: Exeggutor|spa|1
+|-unboost|p1a: Exeggutor|spd|1
+|cant|p1a: Exeggutor|par
+|
+|upkeep
+|turn|41
+|
+|t:|1773535366
+|switch|p2a: Chansey|Chansey|76/100 slp
+|switch|p1a: Alakazam|Alakazam|63/100 slp
+|
+|upkeep
+|turn|42
+|inactive|violet river has 270 seconds left.
+|
+|t:|1773535402
+|switch|p1a: Snorlax|Snorlax|71/100
+|switch|p2a: Tauros|Tauros|100/100
+|
+|upkeep
+|turn|43
+|inactive|dangerk1d has 270 seconds left.
+|
+|t:|1773535419
+|move|p2a: Tauros|Body Slam|p1a: Snorlax
+|-damage|p1a: Snorlax|44/100
+|move|p1a: Snorlax|Body Slam|p2a: Tauros
+|-damage|p2a: Tauros|69/100
+|
+|upkeep
+|turn|44
+|inactive|dangerk1d has 270 seconds left.
+|inactive|violet river has 270 seconds left.
+|inactive|dangerk1d has 240 seconds left.
+|
+|t:|1773535461
+|move|p2a: Tauros|Body Slam|p1a: Snorlax
+|-damage|p1a: Snorlax|20/100
+|move|p1a: Snorlax|Self-Destruct|p2a: Tauros
+|-damage|p2a: Tauros|0 fnt
+|faint|p2a: Tauros
+|faint|p1a: Snorlax
+|inactive|dangerk1d has 240 seconds left.
+|
+|t:|1773535471
+|switch|p2a: Exeggutor|Exeggutor|59/100
+|switch|p1a: Alakazam|Alakazam|63/100 slp
+|turn|45
+|
+|t:|1773535475
+|cant|p1a: Alakazam|slp
+|move|p2a: Exeggutor|Psychic|p1a: Alakazam
+|-resisted|p1a: Alakazam
+|-damage|p1a: Alakazam|47/100 slp
+|
+|upkeep
+|turn|46
+|
+|t:|1773535478
+|cant|p1a: Alakazam|slp
+|move|p2a: Exeggutor|Psychic|p1a: Alakazam
+|-resisted|p1a: Alakazam
+|-damage|p1a: Alakazam|32/100 slp
+|-unboost|p1a: Alakazam|spa|1
+|-unboost|p1a: Alakazam|spd|1
+|
+|upkeep
+|turn|47
+|
+|t:|1773535480
+|-curestatus|p1a: Alakazam|slp|[msg]
+|move|p2a: Exeggutor|Psychic|p1a: Alakazam
+|-resisted|p1a: Alakazam
+|-damage|p1a: Alakazam|9/100
+|
+|upkeep
+|turn|48
+|
+|t:|1773535488
+|switch|p1a: Exeggutor|Exeggutor|63/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|49/100 par
+|
+|upkeep
+|turn|49
+|
+|t:|1773535497
+|move|p2a: Exeggutor|Psychic|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|36/100 par
+|-unboost|p1a: Exeggutor|spa|1
+|-unboost|p1a: Exeggutor|spd|1
+|cant|p1a: Exeggutor|par
+|
+|upkeep
+|turn|50
+|
+|t:|1773535502
+|switch|p2a: Chansey|Chansey|76/100 slp
+|move|p1a: Exeggutor|Explosion|p2a: Chansey
+|-damage|p2a: Chansey|0 fnt
+|faint|p2a: Chansey
+|faint|p1a: Exeggutor
+|
+|t:|1773535508
+|switch|p2a: Starmie|Starmie|100/100
+|switch|p1a: Gengar|Gengar|100/100
+|turn|51
+|
+|t:|1773535511
+|move|p2a: Starmie|Psychic|p1a: Gengar
+|-supereffective|p1a: Gengar
+|-damage|p1a: Gengar|45/100
+|move|p1a: Gengar|Hypnosis|p2a: Starmie
+|-status|p2a: Starmie|slp|[from] move: Hypnosis
+|
+|upkeep
+|turn|52
+|
+|t:|1773535520
+|-curestatus|p2a: Starmie|slp|[msg]
+|move|p1a: Gengar|Thunderbolt|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|48/100
+|
+|upkeep
+|turn|53
+|c|☆violet river|k gg
+|
+|t:|1773535528
+|move|p2a: Starmie|Psychic|p1a: Gengar
+|-supereffective|p1a: Gengar
+|-damage|p1a: Gengar|0 fnt
+|faint|p1a: Gengar
+|
+|t:|1773535529
+|switch|p1a: Alakazam|Alakazam|9/100
+|turn|54
+|c|☆dangerk1d|gg, sry bout these ones
+|
+|t:|1773535540
+|move|p1a: Alakazam|Psychic|p2a: Starmie
+|-resisted|p2a: Starmie
+|-damage|p2a: Starmie|29/100
+|move|p2a: Starmie|Thunder Wave|p1a: Alakazam
+|-status|p1a: Alakazam|par
+|
+|upkeep
+|turn|55
+|c|☆violet river|i played on my phone so its whatever
+|
+|t:|1773535551
+|move|p2a: Starmie|Psychic|p1a: Alakazam
+|-resisted|p1a: Alakazam
+|-damage|p1a: Alakazam|0 fnt
+|faint|p1a: Alakazam
+|
+|win|dangerk1d
+|player|p1|

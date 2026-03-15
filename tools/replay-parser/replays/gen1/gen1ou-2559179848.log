@@ -1,0 +1,289 @@
+|raw|<div class="broadcast-blue"><strong>This battle is required to be public due to a player having a name starting with 'rbysd'.</div>
+|j|☆rby sd sweep
+|j|☆rbysd dsybr
+|t:|1773529494
+|gametype|singles
+|player|p1|rby sd sweep|1|1400
+|player|p2|rbysd dsybr|lucas|1475
+|gen|1
+|tier|[Gen 1] OU
+|rated|
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773529494
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Alakazam|Alakazam|100/100
+|switch|p2a: Gengar|Gengar|100/100
+|turn|1
+|
+|t:|1773529505
+|move|p1a: Alakazam|Thunder Wave|p2a: Gengar
+|-status|p2a: Gengar|par
+|move|p2a: Gengar|Hypnosis|p1a: Alakazam
+|-status|p1a: Alakazam|slp|[from] move: Hypnosis
+|
+|upkeep
+|turn|2
+|
+|t:|1773529509
+|switch|p1a: Exeggutor|Exeggutor|100/100
+|move|p2a: Gengar|Night Shade|p1a: Exeggutor
+|-damage|p1a: Exeggutor|75/100
+|
+|upkeep
+|turn|3
+|
+|t:|1773529512
+|move|p1a: Exeggutor|Psychic|p2a: Gengar
+|-crit|p2a: Gengar
+|-supereffective|p2a: Gengar
+|-damage|p2a: Gengar|0 fnt
+|faint|p2a: Gengar
+|
+|t:|1773529516
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|turn|4
+|
+|t:|1773529518
+|move|p2a: Exeggutor|Explosion|p1a: Exeggutor
+|-damage|p1a: Exeggutor|0 fnt
+|faint|p1a: Exeggutor
+|faint|p2a: Exeggutor
+|
+|t:|1773529524
+|switch|p1a: Snorlax|Snorlax|100/100
+|switch|p2a: Snorlax|Snorlax|100/100
+|turn|5
+|
+|t:|1773529526
+|move|p1a: Snorlax|Reflect|p1a: Snorlax
+|-start|p1a: Snorlax|Reflect
+|move|p2a: Snorlax|Reflect|p2a: Snorlax
+|-start|p2a: Snorlax|Reflect
+|
+|upkeep
+|turn|6
+|
+|t:|1773529529
+|move|p2a: Snorlax|Body Slam|p1a: Snorlax
+|-damage|p1a: Snorlax|87/100
+|move|p1a: Snorlax|Body Slam|p2a: Snorlax
+|-crit|p2a: Snorlax
+|-damage|p2a: Snorlax|53/100
+|
+|upkeep
+|turn|7
+|
+|t:|1773529532
+|move|p2a: Snorlax|Body Slam|p1a: Snorlax
+|-damage|p1a: Snorlax|73/100
+|move|p1a: Snorlax|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|38/100
+|
+|upkeep
+|turn|8
+|
+|t:|1773529536
+|move|p2a: Snorlax|Body Slam|p1a: Snorlax
+|-damage|p1a: Snorlax|60/100
+|move|p1a: Snorlax|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|26/100
+|
+|upkeep
+|turn|9
+|
+|t:|1773529540
+|switch|p1a: Starmie|Starmie|100/100
+|move|p2a: Snorlax|Self-Destruct|p1a: Starmie
+|-damage|p1a: Starmie|0 fnt
+|faint|p1a: Starmie
+|faint|p2a: Snorlax
+|
+|t:|1773529549
+|switch|p1a: Snorlax|Snorlax|60/100
+|switch|p2a: Jynx|Jynx|100/100
+|turn|10
+|
+|t:|1773529574
+|move|p2a: Jynx|Blizzard|p1a: Snorlax
+|-damage|p1a: Snorlax|28/100
+|move|p1a: Snorlax|Body Slam|p2a: Jynx
+|-damage|p2a: Jynx|42/100
+|
+|upkeep
+|turn|11
+|
+|t:|1773529581
+|move|p2a: Jynx|Blizzard|p1a: Snorlax|[miss]
+|-miss|p2a: Jynx
+|move|p1a: Snorlax|Body Slam|p2a: Jynx
+|-damage|p2a: Jynx|0 fnt
+|faint|p2a: Jynx
+|
+|t:|1773529582
+|switch|p2a: Tauros|Tauros|100/100
+|turn|12
+|
+|t:|1773529585
+|switch|p1a: Rhydon|Rhydon|100/100
+|move|p2a: Tauros|Hyper Beam|p1a: Rhydon
+|-resisted|p1a: Rhydon
+|-damage|p1a: Rhydon|83/100
+|-mustrecharge|p2a: Tauros
+|
+|upkeep
+|turn|13
+|
+|t:|1773529588
+|cant|p2a: Tauros|recharge
+|move|p1a: Rhydon|Earthquake|p2a: Tauros
+|-damage|p2a: Tauros|59/100
+|
+|upkeep
+|turn|14
+|
+|t:|1773529594
+|switch|p2a: Articuno|Articuno|100/100
+|move|p1a: Rhydon|Earthquake|p2a: Articuno
+|-immune|p2a: Articuno
+|
+|upkeep
+|turn|15
+|
+|t:|1773529599
+|switch|p1a: Snorlax|Snorlax|28/100
+|move|p2a: Articuno|Blizzard|p1a: Snorlax
+|-crit|p1a: Snorlax
+|-damage|p1a: Snorlax|0 fnt
+|faint|p1a: Snorlax
+|
+|t:|1773529601
+|switch|p1a: Tauros|Tauros|100/100
+|turn|16
+|
+|t:|1773529604
+|move|p1a: Tauros|Body Slam|p2a: Articuno
+|-damage|p2a: Articuno|74/100
+|move|p2a: Articuno|Blizzard|p1a: Tauros
+|-crit|p1a: Tauros
+|-damage|p1a: Tauros|0 fnt
+|faint|p1a: Tauros
+|
+|t:|1773529622
+|switch|p1a: Alakazam|Alakazam|100/100 slp
+|turn|17
+|
+|t:|1773529627
+|cant|p1a: Alakazam|slp
+|move|p2a: Articuno|Blizzard|p1a: Alakazam
+|-damage|p1a: Alakazam|57/100 slp
+|
+|upkeep
+|turn|18
+|c|☆rby sd sweep|ok this one i got cooked.
+|
+|t:|1773529632
+|-curestatus|p1a: Alakazam|slp|[msg]
+|move|p2a: Articuno|Blizzard|p1a: Alakazam
+|-damage|p1a: Alakazam|13/100
+|
+|upkeep
+|turn|19
+|
+|t:|1773529636
+|move|p1a: Alakazam|Recover|p1a: Alakazam
+|-heal|p1a: Alakazam|63/100
+|move|p2a: Articuno|Agility|p2a: Articuno
+|-boost|p2a: Articuno|spe|2
+|
+|upkeep
+|turn|20
+|
+|t:|1773529638
+|move|p2a: Articuno|Blizzard|p1a: Alakazam
+|-damage|p1a: Alakazam|21/100
+|move|p1a: Alakazam|Thunder Wave|p2a: Articuno
+|-status|p2a: Articuno|par
+|
+|upkeep
+|turn|21
+|
+|t:|1773529657
+|move|p1a: Alakazam|Recover|p1a: Alakazam
+|-heal|p1a: Alakazam|71/100
+|move|p2a: Articuno|Agility|p2a: Articuno
+|-boost|p2a: Articuno|spe|2
+|
+|upkeep
+|turn|22
+|
+|t:|1773529660
+|cant|p2a: Articuno|par
+|move|p1a: Alakazam|Recover|p1a: Alakazam
+|-heal|p1a: Alakazam|100/100
+|
+|upkeep
+|turn|23
+|
+|t:|1773529663
+|move|p2a: Articuno|Blizzard|p1a: Alakazam
+|-damage|p1a: Alakazam|56/100
+|move|p1a: Alakazam|Recover|p1a: Alakazam
+|-heal|p1a: Alakazam|100/100
+|
+|upkeep
+|turn|24
+|
+|t:|1773529666
+|move|p2a: Articuno|Blizzard|p1a: Alakazam
+|-damage|p1a: Alakazam|61/100
+|move|p1a: Alakazam|Recover|p1a: Alakazam
+|-heal|p1a: Alakazam|100/100
+|
+|upkeep
+|turn|25
+|
+|t:|1773529674
+|move|p2a: Articuno|Ice Beam|p1a: Alakazam
+|-crit|p1a: Alakazam
+|-damage|p1a: Alakazam|31/100
+|-status|p1a: Alakazam|frz
+|cant|p1a: Alakazam|frz
+|
+|upkeep
+|turn|26
+|
+|t:|1773529682
+|move|p2a: Articuno|Ice Beam|p1a: Alakazam
+|-damage|p1a: Alakazam|0 fnt
+|faint|p1a: Alakazam
+|
+|t:|1773529692
+|switch|p1a: Rhydon|Rhydon|83/100
+|turn|27
+|c|☆rbysd dsybr|Just sub up
+|
+|t:|1773529698
+|move|p2a: Articuno|Ice Beam|p1a: Rhydon
+|-crit|p1a: Rhydon
+|-supereffective|p1a: Rhydon
+|-damage|p1a: Rhydon|0 fnt
+|faint|p1a: Rhydon
+|
+|win|rbysd dsybr
+|raw|rby sd sweep's rating: 1400 &rarr; <strong>1384</strong><br />(-16 for losing)
+|raw|rbysd dsybr's rating: 1475 &rarr; <strong>1491</strong><br />(+16 for winning)
+|l|☆rby sd sweep
+|player|p1|
+|c|☆rbysd dsybr|Oops
+|l|☆rbysd dsybr
+|player|p2|

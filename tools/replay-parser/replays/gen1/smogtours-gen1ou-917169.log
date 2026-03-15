@@ -1,0 +1,408 @@
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up.
+|t:|1773534945
+|gametype|singles
+|player|p1|BeeOrSomething|#beeorsomething|
+|player|p2|Isza|#wcop2025usnortheast2|
+|gen|1
+|tier|[Gen 1] OU
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773534945
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Queen|Jynx|100/100
+|switch|p2a: Gengar|Gengar|100/100
+|turn|1
+|c|☆BeeOrSomething|glhf
+|c|☆Isza|Hf
+|
+|t:|1773534963
+|move|p2a: Gengar|Hypnosis|p1a: Queen
+|-status|p1a: Queen|slp|[from] move: Hypnosis
+|cant|p1a: Queen|slp
+|
+|upkeep
+|turn|2
+|
+|t:|1773534968
+|switch|p1a: Kin Priest|Exeggutor|100/100
+|move|p2a: Gengar|Night Shade|p1a: Kin Priest
+|-damage|p1a: Kin Priest|75/100
+|
+|upkeep
+|turn|3
+|
+|t:|1773534971
+|move|p2a: Gengar|Night Shade|p1a: Kin Priest
+|-damage|p1a: Kin Priest|50/100
+|move|p1a: Kin Priest|Sleep Powder|p2a: Gengar
+|-status|p2a: Gengar|slp|[from] move: Sleep Powder
+|
+|upkeep
+|turn|4
+|rated|Smogon Premier League
+|
+|t:|1773534989
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|move|p1a: Kin Priest|Stun Spore|p2a: Exeggutor
+|-status|p2a: Exeggutor|par
+|
+|upkeep
+|turn|5
+|
+|t:|1773534992
+|move|p1a: Kin Priest|Psychic|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|88/100 par
+|-unboost|p2a: Exeggutor|spa|1
+|-unboost|p2a: Exeggutor|spd|1
+|move|p2a: Exeggutor|Psychic|p1a: Kin Priest
+|-resisted|p1a: Kin Priest
+|-damage|p1a: Kin Priest|40/100
+|-unboost|p1a: Kin Priest|spa|1
+|-unboost|p1a: Kin Priest|spd|1
+|
+|upkeep
+|turn|6
+|
+|t:|1773534996
+|switch|p2a: Starmie|Starmie|100/100
+|move|p1a: Kin Priest|Psychic|p2a: Starmie
+|-resisted|p2a: Starmie
+|-damage|p2a: Starmie|88/100
+|-unboost|p2a: Starmie|spa|1
+|-unboost|p2a: Starmie|spd|1
+|
+|upkeep
+|turn|7
+|
+|t:|1773535001
+|switch|p2a: Exeggutor|Exeggutor|88/100 par
+|switch|p1a: Queen|Jynx|100/100 slp
+|
+|upkeep
+|turn|8
+|
+|t:|1773535006
+|switch|p1a: Knowledge Demon|Alakazam|100/100
+|switch|p2a: Starmie|Starmie|88/100
+|
+|upkeep
+|turn|9
+|
+|t:|1773535015
+|move|p1a: Knowledge Demon|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|57/100
+|move|p2a: Starmie|Thunder Wave|p1a: Knowledge Demon
+|-status|p1a: Knowledge Demon|par
+|
+|upkeep
+|turn|10
+|
+|t:|1773535044
+|switch|p2a: Snorlax|Snorlax|100/100
+|move|p1a: Knowledge Demon|Thunder Wave|p2a: Snorlax
+|-status|p2a: Snorlax|par
+|
+|upkeep
+|turn|11
+|
+|t:|1773535054
+|switch|p1a: The Insatiable|Snorlax|100/100
+|move|p2a: Snorlax|Body Slam|p1a: The Insatiable
+|-damage|p1a: The Insatiable|72/100
+|
+|upkeep
+|turn|12
+|
+|t:|1773535059
+|move|p2a: Snorlax|Reflect|p2a: Snorlax
+|-start|p2a: Snorlax|Reflect
+|move|p1a: The Insatiable|Counter|p2a: Snorlax
+|-fail|p1a: The Insatiable
+|
+|upkeep
+|turn|13
+|
+|t:|1773535066
+|move|p2a: Snorlax|Body Slam|p1a: The Insatiable
+|-damage|p1a: The Insatiable|48/100
+|move|p1a: The Insatiable|Counter|p2a: Snorlax
+|-damage|p2a: Snorlax|52/100 par
+|
+|upkeep
+|turn|14
+|
+|t:|1773535072
+|switch|p1a: Kin Priest|Exeggutor|40/100
+|move|p2a: Snorlax|Rest|p2a: Snorlax
+|-status|p2a: Snorlax|slp|[from] move: Rest
+|-heal|p2a: Snorlax|100/100 slp|[silent]
+|
+|upkeep
+|turn|15
+|
+|t:|1773535079
+|switch|p2a: Exeggutor|Exeggutor|88/100 par
+|move|p1a: Kin Priest|Psychic|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|76/100 par
+|
+|upkeep
+|turn|16
+|
+|t:|1773535083
+|move|p1a: Kin Priest|Psychic|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|62/100 par
+|-unboost|p2a: Exeggutor|spa|1
+|-unboost|p2a: Exeggutor|spd|1
+|cant|p2a: Exeggutor|par
+|
+|upkeep
+|turn|17
+|
+|t:|1773535086
+|move|p1a: Kin Priest|Psychic|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|43/100 par
+|move|p2a: Exeggutor|Stun Spore|p1a: Kin Priest
+|-status|p1a: Kin Priest|par
+|
+|upkeep
+|turn|18
+|
+|t:|1773535091
+|move|p1a: Kin Priest|Psychic|p2a: Exeggutor
+|-crit|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|15/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Kin Priest
+|-resisted|p1a: Kin Priest
+|-damage|p1a: Kin Priest|32/100 par
+|
+|upkeep
+|turn|19
+|
+|t:|1773535097
+|switch|p2a: Starmie|Starmie|57/100
+|move|p1a: Kin Priest|Psychic|p2a: Starmie
+|-resisted|p2a: Starmie
+|-damage|p2a: Starmie|39/100
+|
+|upkeep
+|turn|20
+|
+|t:|1773535106
+|switch|p1a: Knowledge Demon|Alakazam|100/100 par
+|move|p2a: Starmie|Blizzard|p1a: Knowledge Demon
+|-damage|p1a: Knowledge Demon|76/100 par
+|
+|upkeep
+|turn|21
+|
+|t:|1773535112
+|switch|p2a: Snorlax|Snorlax|100/100 slp
+|move|p1a: Knowledge Demon|Thunder Wave|p2a: Snorlax
+|-fail|p2a: Snorlax
+|
+|upkeep
+|turn|22
+|
+|t:|1773535115
+|cant|p2a: Snorlax|slp
+|move|p1a: Knowledge Demon|Psychic|p2a: Snorlax
+|-damage|p2a: Snorlax|69/100 slp
+|-unboost|p2a: Snorlax|spa|1
+|-unboost|p2a: Snorlax|spd|1
+|
+|upkeep
+|turn|23
+|
+|t:|1773535122
+|-curestatus|p2a: Snorlax|slp|[msg]
+|move|p1a: Knowledge Demon|Psychic|p2a: Snorlax
+|-damage|p2a: Snorlax|17/100
+|
+|upkeep
+|turn|24
+|
+|t:|1773535127
+|switch|p1a: Kin Priest|Exeggutor|32/100 par
+|move|p2a: Snorlax|Hyper Beam|p1a: Kin Priest
+|-damage|p1a: Kin Priest|0 fnt
+|faint|p1a: Kin Priest
+|
+|t:|1773535132
+|switch|p1a: Ceremonial Beast|Tauros|100/100
+|turn|25
+|
+|t:|1773535135
+|switch|p2a: Exeggutor|Exeggutor|15/100 par
+|move|p1a: Ceremonial Beast|Body Slam|p2a: Exeggutor
+|-damage|p2a: Exeggutor|0 fnt
+|faint|p2a: Exeggutor
+|
+|t:|1773535152
+|switch|p2a: Tauros|Tauros|100/100
+|turn|26
+|
+|t:|1773535155
+|move|p2a: Tauros|Body Slam|p1a: Ceremonial Beast
+|-damage|p1a: Ceremonial Beast|73/100
+|move|p1a: Ceremonial Beast|Body Slam|p2a: Tauros
+|-damage|p2a: Tauros|72/100
+|
+|upkeep
+|turn|27
+|
+|t:|1773535159
+|move|p2a: Tauros|Body Slam|p1a: Ceremonial Beast
+|-damage|p1a: Ceremonial Beast|46/100
+|move|p1a: Ceremonial Beast|Body Slam|p2a: Tauros
+|-crit|p2a: Tauros
+|-damage|p2a: Tauros|12/100
+|
+|upkeep
+|turn|28
+|
+|t:|1773535185
+|switch|p1a: Queen|Jynx|100/100 slp
+|move|p2a: Tauros|Body Slam|p1a: Queen
+|-damage|p1a: Queen|50/100 slp
+|
+|upkeep
+|turn|29
+|inactive|Isza has 270 seconds left.
+|inactive|Isza has 240 seconds left.
+|
+|t:|1773535248
+|move|p2a: Tauros|Body Slam|p1a: Queen
+|-crit|p1a: Queen
+|-damage|p1a: Queen|0 fnt
+|faint|p1a: Queen
+|
+|t:|1773535251
+|switch|p1a: The Insatiable|Snorlax|48/100
+|turn|30
+|inactive|Isza has 210 seconds left.
+|inactive|Isza has 180 seconds left.
+|
+|t:|1773535322
+|switch|p2a: Gengar|Gengar|100/100 slp
+|move|p1a: The Insatiable|Earthquake|p2a: Gengar
+|-supereffective|p2a: Gengar
+|-damage|p2a: Gengar|26/100 slp
+|
+|upkeep
+|turn|31
+|
+|t:|1773535329
+|switch|p2a: Chansey|Chansey|100/100
+|move|p1a: The Insatiable|Earthquake|p2a: Chansey
+|-damage|p2a: Chansey|68/100
+|
+|upkeep
+|turn|32
+|inactive|Isza has 180 seconds left.
+|inactive|BeeOrSomething has 270 seconds left.
+|inactive|Isza has 150 seconds left.
+|inactive|Isza has 120 seconds left.
+|inactive|BeeOrSomething has 240 seconds left.
+|
+|t:|1773535418
+|move|p2a: Chansey|Thunder Wave|p1a: The Insatiable
+|-status|p1a: The Insatiable|par
+|move|p1a: The Insatiable|Body Slam|p2a: Chansey
+|-damage|p2a: Chansey|28/100
+|
+|upkeep
+|turn|33
+|
+|t:|1773535423
+|move|p2a: Chansey|Soft-Boiled|p2a: Chansey
+|-hint|In Gen 1, recovery moves fail if (user's maximum HP - user's current HP + 1) is divisible by 256, unless the current hp is also divisible by 256.
+|-fail|p2a: Chansey
+|move|p1a: The Insatiable|Self-Destruct|p2a: Chansey
+|-damage|p2a: Chansey|0 fnt
+|faint|p2a: Chansey
+|faint|p1a: The Insatiable
+|inactive|BeeOrSomething has 240 seconds left.
+|
+|t:|1773535441
+|switch|p2a: Starmie|Starmie|39/100
+|switch|p1a: Doormaker|Zapdos|100/100
+|turn|34
+|
+|t:|1773535446
+|move|p2a: Starmie|Thunder Wave|p1a: Doormaker
+|-status|p1a: Doormaker|par
+|move|p1a: Doormaker|Agility|p1a: Doormaker
+|-boost|p1a: Doormaker|spe|2
+|
+|upkeep
+|turn|35
+|
+|t:|1773535448
+|move|p1a: Doormaker|Thunderbolt|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|0 fnt
+|faint|p2a: Starmie
+|
+|t:|1773535450
+|switch|p2a: Snorlax|Snorlax|17/100
+|turn|36
+|
+|t:|1773535451
+|cant|p1a: Doormaker|par
+|move|p2a: Snorlax|Rest|p2a: Snorlax
+|-status|p2a: Snorlax|slp|[from] move: Rest
+|-heal|p2a: Snorlax|100/100 slp|[silent]
+|
+|upkeep
+|turn|37
+|
+|t:|1773535454
+|move|p1a: Doormaker|Thunderbolt|p2a: Snorlax
+|-crit|p2a: Snorlax
+|-damage|p2a: Snorlax|35/100 slp
+|cant|p2a: Snorlax|slp
+|
+|upkeep
+|turn|38
+|
+|t:|1773535456
+|move|p1a: Doormaker|Thunderbolt|p2a: Snorlax
+|-damage|p2a: Snorlax|0 fnt
+|faint|p2a: Snorlax
+|
+|t:|1773535458
+|switch|p2a: Tauros|Tauros|12/100
+|turn|39
+|
+|t:|1773535460
+|move|p1a: Doormaker|Thunderbolt|p2a: Tauros
+|-damage|p2a: Tauros|0 fnt
+|faint|p2a: Tauros
+|
+|t:|1773535462
+|switch|p2a: Gengar|Gengar|26/100 slp
+|turn|40
+|
+|t:|1773535465
+|move|p1a: Doormaker|Thunderbolt|p2a: Gengar
+|-crit|p2a: Gengar
+|-damage|p2a: Gengar|0 fnt
+|faint|p2a: Gengar
+|
+|win|BeeOrSomething
+|c|☆Isza|Ggs
+|c|☆BeeOrSomething|ggs

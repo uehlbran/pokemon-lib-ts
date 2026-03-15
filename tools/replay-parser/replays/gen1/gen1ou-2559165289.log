@@ -1,0 +1,641 @@
+|raw|<div class="broadcast-blue"><strong>This battle is required to be public due to a player having a name starting with 'rbysd'.</div>
+|j|☆RBYSD_Blue
+|j|☆rby sd sweep
+|t:|1773527859
+|gametype|singles
+|player|p1|RBYSD_Blue|blue|1447
+|player|p2|rby sd sweep|1|1458
+|gen|1
+|tier|[Gen 1] OU
+|rated|
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773527859
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Jynx|Jynx|100/100
+|switch|p2a: Alakazam|Alakazam|100/100
+|turn|1
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up. (requested by RBYSD_Blue)
+|
+|t:|1773527869
+|move|p2a: Alakazam|Thunder Wave|p1a: Jynx
+|-status|p1a: Jynx|par
+|move|p1a: Jynx|Lovely Kiss|p2a: Alakazam
+|-status|p2a: Alakazam|slp|[from] move: Lovely Kiss
+|
+|upkeep
+|turn|2
+|
+|t:|1773527888
+|switch|p2a: Starmie|Starmie|100/100
+|switch|p1a: Alakazam|Alakazam|100/100
+|
+|upkeep
+|turn|3
+|
+|t:|1773527908
+|move|p1a: Alakazam|Thunder Wave|p2a: Starmie
+|-status|p2a: Starmie|par
+|move|p2a: Starmie|Thunder Wave|p1a: Alakazam
+|-status|p1a: Alakazam|par
+|
+|upkeep
+|turn|4
+|
+|t:|1773527911
+|move|p1a: Alakazam|Psychic|p2a: Starmie
+|-resisted|p2a: Starmie
+|-damage|p2a: Starmie|79/100 par
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|5
+|
+|t:|1773527915
+|move|p1a: Alakazam|Seismic Toss|p2a: Starmie
+|-damage|p2a: Starmie|48/100 par
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|98/100 par
+|
+|upkeep
+|turn|6
+|
+|t:|1773527927
+|move|p1a: Alakazam|Psychic|p2a: Starmie
+|-resisted|p2a: Starmie
+|-damage|p2a: Starmie|78/100 par
+|-unboost|p2a: Starmie|spa|1
+|-unboost|p2a: Starmie|spd|1
+|move|p2a: Starmie|Psychic|p1a: Alakazam
+|-crit|p1a: Alakazam
+|-resisted|p1a: Alakazam
+|-damage|p1a: Alakazam|73/100 par
+|
+|upkeep
+|turn|7
+|
+|t:|1773527930
+|cant|p1a: Alakazam|par
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|100/100 par
+|
+|upkeep
+|turn|8
+|
+|t:|1773527955
+|switch|p2a: Snorlax|Snorlax|100/100
+|move|p1a: Alakazam|Recover|p1a: Alakazam
+|-heal|p1a: Alakazam|100/100 par
+|
+|upkeep
+|turn|9
+|
+|t:|1773527958
+|move|p2a: Snorlax|Body Slam|p1a: Alakazam
+|-damage|p1a: Alakazam|47/100 par
+|move|p1a: Alakazam|Thunder Wave|p2a: Snorlax
+|-status|p2a: Snorlax|par
+|
+|upkeep
+|turn|10
+|
+|t:|1773527970
+|switch|p1a: Rhydon|Rhydon|100/100
+|move|p2a: Snorlax|Body Slam|p1a: Rhydon
+|-resisted|p1a: Rhydon
+|-damage|p1a: Rhydon|89/100
+|-status|p1a: Rhydon|par
+|
+|upkeep
+|turn|11
+|
+|t:|1773527974
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|move|p1a: Rhydon|Body Slam|p2a: Exeggutor
+|-damage|p2a: Exeggutor|78/100
+|-status|p2a: Exeggutor|par
+|
+|upkeep
+|turn|12
+|
+|t:|1773527976
+|switch|p1a: Alakazam|Alakazam|47/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Alakazam
+|-resisted|p1a: Alakazam
+|-damage|p1a: Alakazam|32/100 par
+|
+|upkeep
+|turn|13
+|
+|t:|1773527980
+|switch|p2a: Rhydon|Rhydon|100/100
+|move|p1a: Alakazam|Recover|p1a: Alakazam
+|-heal|p1a: Alakazam|82/100 par
+|
+|upkeep
+|turn|14
+|j| RBYSD ChUwUva
+|
+|t:|1773527984
+|move|p2a: Rhydon|Rock Slide|p1a: Alakazam
+|-damage|p1a: Alakazam|29/100 par
+|move|p1a: Alakazam|Psychic|p2a: Rhydon
+|-damage|p2a: Rhydon|52/100
+|-unboost|p2a: Rhydon|spa|1
+|-unboost|p2a: Rhydon|spd|1
+|
+|upkeep
+|turn|15
+|
+|t:|1773527992
+|switch|p1a: Exeggutor|Exeggutor|100/100
+|move|p2a: Rhydon|Rock Slide|p1a: Exeggutor
+|-damage|p1a: Exeggutor|70/100
+|
+|upkeep
+|turn|16
+|
+|t:|1773528019
+|switch|p2a: Exeggutor|Exeggutor|78/100 par
+|move|p1a: Exeggutor|Psychic|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|64/100 par
+|
+|upkeep
+|turn|17
+|
+|t:|1773528022
+|move|p1a: Exeggutor|Psychic|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|51/100 par
+|-unboost|p2a: Exeggutor|spa|1
+|-unboost|p2a: Exeggutor|spd|1
+|move|p2a: Exeggutor|Rest|p2a: Exeggutor
+|-status|p2a: Exeggutor|slp|[from] move: Rest
+|-heal|p2a: Exeggutor|100/100 slp|[silent]
+|
+|upkeep
+|turn|18
+|
+|t:|1773528029
+|switch|p1a: Alakazam|Alakazam|29/100 par
+|cant|p2a: Exeggutor|slp
+|
+|upkeep
+|turn|19
+|
+|t:|1773528033
+|cant|p1a: Alakazam|par
+|-curestatus|p2a: Exeggutor|slp|[msg]
+|
+|upkeep
+|turn|20
+|
+|t:|1773528040
+|switch|p2a: Tauros|Tauros|100/100
+|cant|p1a: Alakazam|par
+|
+|upkeep
+|turn|21
+|
+|t:|1773528044
+|switch|p1a: Slowbro|Slowbro|100/100
+|move|p2a: Tauros|Body Slam|p1a: Slowbro
+|-damage|p1a: Slowbro|78/100
+|
+|upkeep
+|turn|22
+|
+|t:|1773528051
+|switch|p2a: Starmie|Starmie|100/100 par
+|move|p1a: Slowbro|Amnesia|p1a: Slowbro
+|-boost|p1a: Slowbro|spa|2
+|-boost|p1a: Slowbro|spd|2
+|
+|upkeep
+|turn|23
+|
+|t:|1773528063
+|move|p1a: Slowbro|Amnesia|p1a: Slowbro
+|-boost|p1a: Slowbro|spa|2
+|-boost|p1a: Slowbro|spd|2
+|move|p2a: Starmie|Thunderbolt|p1a: Slowbro
+|-supereffective|p1a: Slowbro
+|-damage|p1a: Slowbro|63/100
+|
+|upkeep
+|turn|24
+|j| RBYSD OAK
+|
+|t:|1773528072
+|move|p1a: Slowbro|Amnesia|p1a: Slowbro
+|-boost|p1a: Slowbro|spa|2
+|-boost|p1a: Slowbro|spd|2
+|move|p2a: Starmie|Thunder Wave|p1a: Slowbro
+|-status|p1a: Slowbro|par
+|
+|upkeep
+|turn|25
+|
+|t:|1773528078
+|move|p1a: Slowbro|Surf|p2a: Starmie
+|-resisted|p2a: Starmie
+|-damage|p2a: Starmie|38/100 par
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|26
+|c|☆rby sd sweep|damn im noob
+|c|☆rby sd sweep|need to stop playing too many at once
+|
+|t:|1773528101
+|switch|p2a: Alakazam|Alakazam|100/100 slp
+|move|p1a: Slowbro|Surf|p2a: Alakazam
+|-crit|p2a: Alakazam
+|-damage|p2a: Alakazam|53/100 slp
+|
+|upkeep
+|turn|27
+|
+|t:|1773528107
+|-curestatus|p2a: Alakazam|slp|[msg]
+|move|p1a: Slowbro|Surf|p2a: Alakazam
+|-damage|p2a: Alakazam|0 fnt
+|faint|p2a: Alakazam
+|
+|t:|1773528122
+|switch|p2a: Rhydon|Rhydon|52/100
+|turn|28
+|
+|t:|1773528127
+|move|p2a: Rhydon|Substitute|p2a: Rhydon
+|-start|p2a: Rhydon|Substitute
+|-damage|p2a: Rhydon|27/100
+|move|p1a: Slowbro|Surf|p2a: Rhydon
+|-supereffective|p2a: Rhydon
+|-end|p2a: Rhydon|Substitute
+|
+|upkeep
+|turn|29
+|
+|t:|1773528137
+|move|p2a: Rhydon|Substitute|p2a: Rhydon
+|-start|p2a: Rhydon|Substitute
+|-damage|p2a: Rhydon|2/100
+|cant|p1a: Slowbro|par
+|
+|upkeep
+|turn|30
+|
+|t:|1773528140
+|switch|p1a: Exeggutor|Exeggutor|70/100
+|move|p2a: Rhydon|Earthquake|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|51/100
+|
+|upkeep
+|turn|31
+|
+|t:|1773528145
+|move|p1a: Exeggutor|Sleep Powder|p2a: Rhydon|[miss]
+|-miss|p1a: Exeggutor
+|move|p2a: Rhydon|Rock Slide|p1a: Exeggutor
+|-damage|p1a: Exeggutor|21/100
+|
+|upkeep
+|turn|32
+|
+|t:|1773528150
+|switch|p2a: Starmie|Starmie|38/100 par
+|move|p1a: Exeggutor|Sleep Powder|p2a: Starmie
+|-fail|p2a: Starmie
+|
+|upkeep
+|turn|33
+|
+|t:|1773528153
+|move|p1a: Exeggutor|Mega Drain|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|2/100 par
+|-heal|p1a: Exeggutor|35/100|[from] drain|[of] p2a: Starmie
+|move|p2a: Starmie|Recover|p2a: Starmie
+|-heal|p2a: Starmie|52/100 par
+|
+|upkeep
+|turn|34
+|
+|t:|1773528156
+|move|p1a: Exeggutor|Mega Drain|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|20/100 par
+|-heal|p1a: Exeggutor|49/100|[from] drain|[of] p2a: Starmie
+|cant|p2a: Starmie|par
+|
+|upkeep
+|turn|35
+|
+|t:|1773528159
+|move|p1a: Exeggutor|Mega Drain|p2a: Starmie
+|-supereffective|p2a: Starmie
+|-damage|p2a: Starmie|0 fnt
+|-heal|p1a: Exeggutor|56/100|[from] drain|[of] p2a: Starmie
+|faint|p2a: Starmie
+|
+|t:|1773528162
+|switch|p2a: Tauros|Tauros|100/100
+|turn|36
+|
+|t:|1773528176
+|move|p2a: Tauros|Body Slam|p1a: Exeggutor
+|-damage|p1a: Exeggutor|30/100
+|move|p1a: Exeggutor|Sleep Powder|p2a: Tauros
+|-status|p2a: Tauros|slp|[from] move: Sleep Powder
+|
+|upkeep
+|turn|37
+|
+|t:|1773528184
+|switch|p2a: Exeggutor|Exeggutor|100/100
+|move|p1a: Exeggutor|Mega Drain|p2a: Exeggutor
+|-resisted|p2a: Exeggutor
+|-damage|p2a: Exeggutor|95/100
+|-heal|p1a: Exeggutor|33/100|[from] drain|[of] p2a: Exeggutor
+|
+|upkeep
+|turn|38
+|
+|t:|1773528189
+|switch|p1a: Jynx|Jynx|100/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Jynx
+|-resisted|p1a: Jynx
+|-damage|p1a: Jynx|83/100 par
+|
+|upkeep
+|turn|39
+|
+|t:|1773528213
+|switch|p2a: Tauros|Tauros|100/100 slp
+|cant|p1a: Jynx|par
+|
+|upkeep
+|turn|40
+|
+|t:|1773528220
+|switch|p1a: Tauros|Tauros|100/100
+|cant|p2a: Tauros|slp
+|
+|upkeep
+|turn|41
+|
+|t:|1773528226
+|switch|p2a: Snorlax|Snorlax|100/100 par
+|move|p1a: Tauros|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|78/100 par
+|
+|upkeep
+|turn|42
+|
+|t:|1773528244
+|move|p1a: Tauros|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|53/100 par
+|move|p2a: Snorlax|Body Slam|p1a: Tauros
+|-damage|p1a: Tauros|67/100
+|
+|upkeep
+|turn|43
+|
+|t:|1773528251
+|switch|p1a: Rhydon|Rhydon|89/100 par
+|move|p2a: Snorlax|Rest|p2a: Snorlax
+|-status|p2a: Snorlax|slp|[from] move: Rest
+|-heal|p2a: Snorlax|100/100 slp|[silent]
+|
+|upkeep
+|turn|44
+|
+|t:|1773528258
+|move|p1a: Rhydon|Earthquake|p2a: Snorlax
+|-damage|p2a: Snorlax|66/100 slp
+|cant|p2a: Snorlax|slp
+|
+|upkeep
+|turn|45
+|
+|t:|1773528261
+|move|p1a: Rhydon|Earthquake|p2a: Snorlax
+|-damage|p2a: Snorlax|31/100 slp
+|-curestatus|p2a: Snorlax|slp|[msg]
+|
+|upkeep
+|turn|46
+|
+|t:|1773528264
+|switch|p1a: Tauros|Tauros|67/100
+|switch|p2a: Exeggutor|Exeggutor|95/100
+|
+|upkeep
+|turn|47
+|
+|t:|1773528269
+|switch|p1a: Jynx|Jynx|83/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Jynx
+|-resisted|p1a: Jynx
+|-damage|p1a: Jynx|63/100 par
+|
+|upkeep
+|turn|48
+|
+|t:|1773528274
+|switch|p2a: Tauros|Tauros|100/100 slp
+|move|p1a: Jynx|Blizzard|p2a: Tauros
+|-damage|p2a: Tauros|55/100 slp
+|
+|upkeep
+|turn|49
+|
+|t:|1773528289
+|cant|p2a: Tauros|slp
+|cant|p1a: Jynx|par
+|
+|upkeep
+|turn|50
+|
+|t:|1773528295
+|cant|p2a: Tauros|slp
+|move|p1a: Jynx|Blizzard|p2a: Tauros
+|-damage|p2a: Tauros|8/100 slp
+|
+|upkeep
+|turn|51
+|
+|t:|1773528300
+|cant|p2a: Tauros|slp
+|move|p1a: Jynx|Psychic|p2a: Tauros
+|-crit|p2a: Tauros
+|-damage|p2a: Tauros|0 fnt
+|faint|p2a: Tauros
+|
+|t:|1773528318
+|switch|p2a: Rhydon|Rhydon|2/100
+|turn|52
+|
+|t:|1773528325
+|switch|p1a: Alakazam|Alakazam|29/100 par
+|move|p2a: Rhydon|Earthquake|p1a: Alakazam
+|-damage|p1a: Alakazam|0 fnt
+|faint|p1a: Alakazam
+|
+|t:|1773528328
+|switch|p1a: Exeggutor|Exeggutor|33/100
+|turn|53
+|
+|t:|1773528349
+|move|p1a: Exeggutor|Mega Drain|p2a: Rhydon
+|-supereffective|p2a: Rhydon
+|-damage|p2a: Rhydon|0 fnt
+|-heal|p1a: Exeggutor|34/100|[from] drain|[of] p2a: Rhydon
+|faint|p2a: Rhydon
+|
+|t:|1773528352
+|switch|p2a: Exeggutor|Exeggutor|95/100
+|turn|54
+|
+|t:|1773528360
+|switch|p1a: Jynx|Jynx|63/100 par
+|move|p2a: Exeggutor|Sleep Powder|p1a: Jynx
+|-fail|p1a: Jynx
+|
+|upkeep
+|turn|55
+|
+|t:|1773528372
+|switch|p2a: Snorlax|Snorlax|31/100
+|move|p1a: Jynx|Blizzard|p2a: Snorlax
+|-damage|p2a: Snorlax|0 fnt
+|faint|p2a: Snorlax
+|
+|t:|1773528376
+|switch|p2a: Exeggutor|Exeggutor|95/100
+|turn|56
+|
+|t:|1773528383
+|move|p2a: Exeggutor|Psychic|p1a: Jynx
+|-resisted|p1a: Jynx
+|-damage|p1a: Jynx|43/100 par
+|-unboost|p1a: Jynx|spa|1
+|-unboost|p1a: Jynx|spd|1
+|move|p1a: Jynx|Lovely Kiss|p2a: Exeggutor|[miss]
+|-miss|p1a: Jynx
+|
+|upkeep
+|turn|57
+|
+|t:|1773528389
+|switch|p1a: Slowbro|Slowbro|63/100 par
+|move|p2a: Exeggutor|Psychic|p1a: Slowbro
+|-resisted|p1a: Slowbro
+|-damage|p1a: Slowbro|45/100 par
+|
+|upkeep
+|turn|58
+|
+|t:|1773528391
+|move|p2a: Exeggutor|Psychic|p1a: Slowbro
+|-resisted|p1a: Slowbro
+|-damage|p1a: Slowbro|27/100 par
+|move|p1a: Slowbro|Rest|p1a: Slowbro
+|-status|p1a: Slowbro|slp|[from] move: Rest
+|-heal|p1a: Slowbro|100/100 slp|[silent]
+|
+|upkeep
+|turn|59
+|
+|t:|1773528395
+|move|p2a: Exeggutor|Psychic|p1a: Slowbro
+|-resisted|p1a: Slowbro
+|-damage|p1a: Slowbro|82/100 slp
+|-unboost|p1a: Slowbro|spa|1
+|-unboost|p1a: Slowbro|spd|1
+|cant|p1a: Slowbro|slp
+|
+|upkeep
+|turn|60
+|
+|t:|1773528399
+|move|p2a: Exeggutor|Psychic|p1a: Slowbro
+|-resisted|p1a: Slowbro
+|-damage|p1a: Slowbro|54/100 slp
+|-unboost|p1a: Slowbro|spa|1
+|-unboost|p1a: Slowbro|spd|1
+|-curestatus|p1a: Slowbro|slp|[msg]
+|
+|upkeep
+|turn|61
+|
+|t:|1773528401
+|switch|p1a: Exeggutor|Exeggutor|34/100
+|move|p2a: Exeggutor|Sleep Powder|p1a: Exeggutor|[miss]
+|-miss|p2a: Exeggutor
+|
+|upkeep
+|turn|62
+|
+|t:|1773528403
+|switch|p1a: Jynx|Jynx|43/100 par
+|move|p2a: Exeggutor|Sleep Powder|p1a: Jynx|[miss]
+|-miss|p2a: Exeggutor
+|
+|upkeep
+|turn|63
+|
+|t:|1773528407
+|move|p2a: Exeggutor|Psychic|p1a: Jynx
+|-resisted|p1a: Jynx
+|-damage|p1a: Jynx|24/100 par
+|-unboost|p1a: Jynx|spa|1
+|-unboost|p1a: Jynx|spd|1
+|cant|p1a: Jynx|par
+|
+|upkeep
+|turn|64
+|
+|t:|1773528413
+|switch|p1a: Exeggutor|Exeggutor|34/100
+|move|p2a: Exeggutor|Psychic|p1a: Exeggutor
+|-crit|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|9/100
+|
+|upkeep
+|turn|65
+|c|☆rby sd sweep|not the best management champ
+|
+|t:|1773528426
+|move|p1a: Exeggutor|Explosion|p2a: Exeggutor
+|-damage|p2a: Exeggutor|24/100
+|faint|p1a: Exeggutor
+|c|☆rby sd sweep|but ull get thru it
+|c|☆rby sd sweep|yea
+|
+|t:|1773528429
+|switch|p1a: Tauros|Tauros|67/100
+|turn|66
+|c|☆RBYSD_Blue|I panicked :-(
+|
+|t:|1773528449
+|move|p1a: Tauros|Body Slam|p2a: Exeggutor
+|-damage|p2a: Exeggutor|0 fnt
+|faint|p2a: Exeggutor
+|
+|win|RBYSD_Blue
+|raw|RBYSD_Blue's rating: 1447 &rarr; <strong>1468</strong><br />(+21 for winning)
+|raw|rby sd sweep's rating: 1458 &rarr; <strong>1437</strong><br />(-21 for losing)

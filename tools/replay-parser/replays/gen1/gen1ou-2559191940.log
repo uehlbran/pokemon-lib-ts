@@ -1,0 +1,361 @@
+|j|☆rby sd sweep
+|j|☆genderfluid icon
+|t:|1773530841
+|gametype|singles
+|player|p1|rby sd sweep|1|1385
+|player|p2|genderfluid icon|roxie|1117
+|gen|1
+|tier|[Gen 1] OU
+|rated|
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773530841
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Jolteon|Jolteon|100/100
+|switch|p2a: The Thin Ice|Jynx|100/100
+|turn|1
+|
+|t:|1773530848
+|move|p1a: Jolteon|Thunder Wave|p2a: The Thin Ice
+|-status|p2a: The Thin Ice|par
+|cant|p2a: The Thin Ice|par
+|
+|upkeep
+|turn|2
+|
+|t:|1773530852
+|move|p1a: Jolteon|Thunderbolt|p2a: The Thin Ice
+|-damage|p2a: The Thin Ice|65/100 par
+|move|p2a: The Thin Ice|Lovely Kiss|p1a: Jolteon
+|-status|p1a: Jolteon|slp|[from] move: Lovely Kiss
+|
+|upkeep
+|turn|3
+|
+|t:|1773530858
+|switch|p1a: Starmie|Starmie|100/100
+|move|p2a: The Thin Ice|Blizzard|p1a: Starmie
+|-crit|p1a: Starmie
+|-resisted|p1a: Starmie
+|-damage|p1a: Starmie|61/100
+|
+|upkeep
+|turn|4
+|
+|t:|1773530866
+|switch|p2a: Melody Lane|Chansey|100/100
+|move|p1a: Starmie|Recover|p1a: Starmie
+|-heal|p1a: Starmie|100/100
+|
+|upkeep
+|turn|5
+|
+|t:|1773530871
+|switch|p1a: Jolteon|Jolteon|100/100 slp
+|move|p2a: Melody Lane|Thunder Wave|p1a: Jolteon
+|-fail|p1a: Jolteon
+|
+|upkeep
+|turn|6
+|c|☆rby sd sweep|im playing this wrong mb
+|c|☆rby sd sweep|dif team
+|
+|t:|1773530881
+|cant|p1a: Jolteon|slp
+|move|p2a: Melody Lane|Reflect|p2a: Melody Lane
+|-start|p2a: Melody Lane|Reflect
+|
+|upkeep
+|turn|7
+|
+|t:|1773530886
+|cant|p1a: Jolteon|slp
+|move|p2a: Melody Lane|Seismic Toss|p1a: Jolteon
+|-damage|p1a: Jolteon|70/100 slp
+|
+|upkeep
+|turn|8
+|c|☆genderfluid icon|lmfao its fine
+|
+|t:|1773530893
+|switch|p1a: Jynx|Jynx|100/100
+|move|p2a: Melody Lane|Seismic Toss|p1a: Jynx
+|-damage|p1a: Jynx|70/100
+|
+|upkeep
+|turn|9
+|
+|t:|1773530911
+|switch|p2a: The Thin Ice|Jynx|65/100 par
+|move|p1a: Jynx|Body Slam|p2a: The Thin Ice
+|-damage|p2a: The Thin Ice|43/100 par
+|
+|upkeep
+|turn|10
+|
+|t:|1773530929
+|move|p1a: Jynx|Body Slam|p2a: The Thin Ice
+|-damage|p2a: The Thin Ice|20/100 par
+|cant|p2a: The Thin Ice|par
+|
+|upkeep
+|turn|11
+|
+|t:|1773530934
+|move|p1a: Jynx|Body Slam|p2a: The Thin Ice
+|-damage|p2a: The Thin Ice|0 fnt
+|faint|p2a: The Thin Ice
+|c|☆genderfluid icon|rip my jynx i forgot you dont run lovely kiss
+|
+|t:|1773530983
+|switch|p2a: Mr. Pink|Alakazam|100/100
+|turn|12
+|c|☆rby sd sweep|yea who needs lk
+|
+|t:|1773530989
+|switch|p1a: Jolteon|Jolteon|70/100 slp
+|move|p2a: Mr. Pink|Thunder Wave|p1a: Jolteon
+|-fail|p1a: Jolteon
+|
+|upkeep
+|turn|13
+|c|☆genderfluid icon|i do
+|
+|t:|1773530994
+|switch|p1a: Exeggutor|Exeggutor|100/100
+|move|p2a: Mr. Pink|Psychic|p1a: Exeggutor
+|-crit|p1a: Exeggutor
+|-resisted|p1a: Exeggutor
+|-damage|p1a: Exeggutor|73/100
+|
+|upkeep
+|turn|14
+|
+|t:|1773531001
+|move|p2a: Mr. Pink|Body Slam|p1a: Exeggutor
+|-damage|p1a: Exeggutor|60/100
+|-status|p1a: Exeggutor|par
+|move|p1a: Exeggutor|Explosion|p2a: Mr. Pink
+|-damage|p2a: Mr. Pink|0 fnt
+|faint|p2a: Mr. Pink
+|faint|p1a: Exeggutor
+|
+|t:|1773531012
+|switch|p2a: THRAK|Aerodactyl|100/100
+|switch|p1a: Jynx|Jynx|70/100
+|turn|15
+|
+|t:|1773531023
+|switch|p1a: Starmie|Starmie|100/100
+|move|p2a: THRAK|Wing Attack|p1a: Starmie
+|-crit|p1a: Starmie
+|-damage|p1a: Starmie|72/100
+|
+|upkeep
+|turn|16
+|c|☆rby sd sweep|crut
+|
+|t:|1773531036
+|switch|p2a: Melody Lane|Chansey|100/100
+|switch|p1a: Jynx|Jynx|70/100
+|
+|upkeep
+|turn|17
+|
+|t:|1773531044
+|move|p1a: Jynx|Lovely Kiss|p2a: Melody Lane
+|-status|p2a: Melody Lane|slp|[from] move: Lovely Kiss
+|cant|p2a: Melody Lane|slp
+|
+|upkeep
+|turn|18
+|c|☆rby sd sweep|any jynx switch?
+|c|☆genderfluid icon|is this body slam lovely kiss psychic blizzard jynx
+|c|☆genderfluid icon|my last is rest, i probably need to change it to slam
+|
+|t:|1773531082
+|switch|p2a: Pigs on the Wing|Snorlax|100/100
+|move|p1a: Jynx|Blizzard|p2a: Pigs on the Wing
+|-damage|p2a: Pigs on the Wing|68/100
+|-status|p2a: Pigs on the Wing|frz
+|
+|upkeep
+|turn|19
+|c|☆genderfluid icon|oh my god
+|c|☆rby sd sweep|yea not the best jynx switch
+|
+|t:|1773531103
+|switch|p2a: THRAK|Aerodactyl|100/100
+|move|p1a: Jynx|Blizzard|p2a: THRAK|[miss]
+|-miss|p1a: Jynx
+|
+|upkeep
+|turn|20
+|c|☆rby sd sweep|that ones even worse man
+|c|☆genderfluid icon|my team is basically dead
+|c|☆genderfluid icon|dude its this or my tauros
+|
+|t:|1773531121
+|switch|p1a: Jolteon|Jolteon|70/100 slp
+|move|p2a: THRAK|Hyper Beam|p1a: Jolteon
+|-crit|p1a: Jolteon
+|-damage|p1a: Jolteon|0 fnt
+|faint|p1a: Jolteon
+|
+|t:|1773531140
+|switch|p1a: Starmie|Starmie|72/100
+|turn|21
+|
+|t:|1773531146
+|move|p2a: THRAK|Substitute|p2a: THRAK
+|-start|p2a: THRAK|Substitute
+|-damage|p2a: THRAK|76/100
+|move|p1a: Starmie|Thunder Wave|p2a: THRAK
+|-status|p2a: THRAK|par
+|
+|upkeep
+|turn|22
+|
+|t:|1773531176
+|move|p1a: Starmie|Recover|p1a: Starmie
+|-heal|p1a: Starmie|100/100
+|cant|p2a: THRAK|par
+|
+|upkeep
+|turn|23
+|
+|t:|1773531185
+|move|p1a: Starmie|Psychic|p2a: THRAK
+|-crit|p2a: THRAK
+|-end|p2a: THRAK|Substitute
+|move|p2a: THRAK|Wing Attack|p1a: Starmie
+|-crit|p1a: Starmie
+|-damage|p1a: Starmie|74/100
+|
+|upkeep
+|turn|24
+|
+|t:|1773531207
+|move|p1a: Starmie|Thunderbolt|p2a: THRAK
+|-crit|p2a: THRAK
+|-supereffective|p2a: THRAK
+|-damage|p2a: THRAK|0 fnt
+|faint|p2a: THRAK
+|
+|t:|1773531214
+|switch|p2a: Melody Lane|Chansey|100/100 slp
+|turn|25
+|c|☆genderfluid icon|i can at least try to wake chansey up
+|
+|t:|1773531231
+|switch|p1a: Tauros|Tauros|100/100
+|cant|p2a: Melody Lane|slp
+|
+|upkeep
+|turn|26
+|
+|t:|1773531239
+|move|p1a: Tauros|Body Slam|p2a: Melody Lane
+|-damage|p2a: Melody Lane|61/100 slp
+|cant|p2a: Melody Lane|slp
+|
+|upkeep
+|turn|27
+|
+|t:|1773531244
+|switch|p2a: Pigs on the Wing|Snorlax|68/100 frz
+|move|p1a: Tauros|Body Slam|p2a: Pigs on the Wing
+|-crit|p2a: Pigs on the Wing
+|-damage|p2a: Pigs on the Wing|18/100 frz
+|
+|upkeep
+|turn|28
+|
+|t:|1773531250
+|move|p1a: Tauros|Body Slam|p2a: Pigs on the Wing
+|-damage|p2a: Pigs on the Wing|0 fnt
+|faint|p2a: Pigs on the Wing
+|
+|t:|1773531253
+|switch|p2a: Melody Lane|Chansey|61/100 slp
+|turn|29
+|
+|t:|1773531257
+|move|p1a: Tauros|Body Slam|p2a: Melody Lane
+|-damage|p2a: Melody Lane|19/100 slp
+|-curestatus|p2a: Melody Lane|slp|[msg]
+|
+|upkeep
+|turn|30
+|
+|t:|1773531262
+|move|p1a: Tauros|Body Slam|p2a: Melody Lane
+|-damage|p2a: Melody Lane|0 fnt
+|faint|p2a: Melody Lane
+|
+|t:|1773531267
+|switch|p2a: Breathe(IntheAir)|Tauros|100/100
+|turn|31
+|
+|t:|1773531275
+|switch|p1a: Jynx|Jynx|70/100
+|move|p2a: Breathe(IntheAir)|Body Slam|p1a: Jynx
+|-damage|p1a: Jynx|16/100
+|
+|upkeep
+|turn|32
+|
+|t:|1773531292
+|move|p2a: Breathe(IntheAir)|Body Slam|p1a: Jynx
+|-crit|p1a: Jynx
+|-damage|p1a: Jynx|0 fnt
+|faint|p1a: Jynx
+|
+|t:|1773531344
+|switch|p1a: Starmie|Starmie|74/100
+|turn|33
+|
+|t:|1773531366
+|move|p1a: Starmie|Thunder Wave|p2a: Breathe(IntheAir)
+|-status|p2a: Breathe(IntheAir)|par
+|move|p2a: Breathe(IntheAir)|Body Slam|p1a: Starmie
+|-damage|p1a: Starmie|37/100
+|
+|upkeep
+|turn|34
+|
+|t:|1773531402
+|move|p1a: Starmie|Psychic|p2a: Breathe(IntheAir)
+|-crit|p2a: Breathe(IntheAir)
+|-damage|p2a: Breathe(IntheAir)|30/100 par
+|move|p2a: Breathe(IntheAir)|Hyper Beam|p1a: Starmie
+|-crit|p1a: Starmie
+|-damage|p1a: Starmie|0 fnt
+|faint|p1a: Starmie
+|
+|t:|1773531405
+|switch|p1a: Snorlax|Snorlax|100/100
+|turn|35
+|c|☆genderfluid icon|im gonna crit
+|
+|t:|1773531420
+|move|p1a: Snorlax|Self-Destruct|p2a: Breathe(IntheAir)
+|-damage|p2a: Breathe(IntheAir)|0 fnt
+|faint|p2a: Breathe(IntheAir)
+|faint|p1a: Snorlax
+|
+|win|rby sd sweep
+|raw|rby sd sweep's rating: 1397 &rarr; <strong>1404</strong><br />(+7 for winning)
+|raw|genderfluid icon's rating: 1117 &rarr; <strong>1109</strong><br />(-8 for losing)
+|c|☆genderfluid icon|nvm ggs
+|l|☆genderfluid icon
+|player|p2|

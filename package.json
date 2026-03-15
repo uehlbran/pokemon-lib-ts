@@ -2,17 +2,21 @@
   "name": "pokemon-lib",
   "private": true,
   "packageManager": "npm@11.9.0",
-  "workspaces": ["packages/*"],
+  "workspaces": ["packages/*", "tools/*"],
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "npx @biomejs/biome check --write .",
     "lint:check": "npx @biomejs/biome check .",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "replay:download": "tsx tools/replay-parser/src/index.ts download --format gen1ou --count 30",
+    "replay:validate": "tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/",
+    "replay:report": "tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/ --json"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
+    "tsx": "^4.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.0.0",
     "@biomejs/biome": "^1.9.0",

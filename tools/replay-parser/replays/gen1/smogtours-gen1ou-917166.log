@@ -1,0 +1,527 @@
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up.
+|t:|1773534175
+|gametype|singles
+|player|p1|BeeOrSomething|#beeorsomething|
+|player|p2|Isza|#wcop2025usnortheast2|
+|gen|1
+|tier|[Gen 1] OU
+|rule|Desync Clause Mod: Desyncs changed to move failure.
+|rule|HP Percentage Mod: HP is shown in percentages
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Sleep Clause Mod: Limit one foe put to sleep
+|rule|Freeze Clause Mod: Limit one foe frozen
+|rule|Species Clause: Limit one of each Pokémon
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|
+|t:|1773534175
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Spear Of Longinus|Tauros|100/100
+|switch|p2a: Alakazam|Alakazam|100/100
+|turn|1
+|c|☆BeeOrSomething|glhf
+|c|☆Isza|Hf
+|inactive|Isza disconnected and has 300 seconds to reconnect!
+|player|p2|
+|inactive|BeeOrSomething has 270 seconds left.
+|inactive|Isza has 270 seconds to reconnect!
+|inactive|Isza reconnected and has 290 seconds left.
+|player|p2|Isza|#wcop2025usnortheast2|
+|inactive|BeeOrSomething has 240 seconds left.
+|inactive|Isza has 270 seconds left.
+|rated|Smogon Premier League
+|inactive|BeeOrSomething has 210 seconds left.
+|inactive|Isza has 240 seconds left.
+|inactive|Isza disconnected and has 270 seconds to reconnect!
+|player|p2|
+|inactive|Isza reconnected and has 235 seconds left.
+|player|p2|Isza|#wcop2025usnortheast2|
+|inactive|BeeOrSomething has 180 seconds left.
+|inactive|Isza has 210 seconds left.
+|
+|t:|1773534305
+|switch|p1a: Terminal Dogma|Chansey|100/100
+|move|p2a: Alakazam|Psychic|p1a: Terminal Dogma
+|-damage|p1a: Terminal Dogma|82/100
+|-unboost|p1a: Terminal Dogma|spa|1
+|-unboost|p1a: Terminal Dogma|spd|1
+|
+|upkeep
+|turn|2
+|inactive|BeeOrSomething has 240 seconds left.
+|
+|t:|1773534312
+|move|p2a: Alakazam|Thunder Wave|p1a: Terminal Dogma
+|-status|p1a: Terminal Dogma|par
+|move|p1a: Terminal Dogma|Sing|p2a: Alakazam|[miss]
+|-miss|p1a: Terminal Dogma
+|
+|upkeep
+|turn|3
+|
+|t:|1773534317
+|move|p2a: Alakazam|Psychic|p1a: Terminal Dogma
+|-crit|p1a: Terminal Dogma
+|-damage|p1a: Terminal Dogma|45/100 par
+|-unboost|p1a: Terminal Dogma|spa|1
+|-unboost|p1a: Terminal Dogma|spd|1
+|move|p1a: Terminal Dogma|Sing|p2a: Alakazam
+|-status|p2a: Alakazam|slp|[from] move: Sing
+|
+|upkeep
+|turn|4
+|
+|t:|1773534324
+|cant|p2a: Alakazam|slp
+|cant|p1a: Terminal Dogma|par
+|
+|upkeep
+|turn|5
+|
+|t:|1773534327
+|cant|p2a: Alakazam|slp
+|move|p1a: Terminal Dogma|Soft-Boiled|p1a: Terminal Dogma
+|-heal|p1a: Terminal Dogma|95/100 par
+|
+|upkeep
+|turn|6
+|
+|t:|1773534330
+|switch|p1a: Spear Of Longinus|Tauros|100/100
+|cant|p2a: Alakazam|slp
+|
+|upkeep
+|turn|7
+|
+|t:|1773534333
+|switch|p2a: Snorlax|Snorlax|100/100
+|move|p1a: Spear Of Longinus|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|77/100
+|
+|upkeep
+|turn|8
+|
+|t:|1773534338
+|move|p1a: Spear Of Longinus|Body Slam|p2a: Snorlax
+|-damage|p2a: Snorlax|53/100
+|move|p2a: Snorlax|Counter|p1a: Spear Of Longinus
+|-damage|p1a: Spear Of Longinus|30/100
+|
+|upkeep
+|turn|9
+|inactive|Isza has 270 seconds left.
+|inactive|Isza has 240 seconds left.
+|inactive|Isza has 210 seconds left.
+|
+|t:|1773534438
+|switch|p1a: Chamber Of Guf|Cloyster|100/100
+|move|p2a: Snorlax|Self-Destruct|p1a: Chamber Of Guf
+|-damage|p1a: Chamber Of Guf|25/100
+|faint|p2a: Snorlax
+|inactive|Isza has 180 seconds left.
+|inactive|Isza has 150 seconds left.
+|inactive|Isza has 120 seconds left.
+|
+|t:|1773534529
+|switch|p2a: Zapdos|Zapdos|100/100
+|turn|10
+|
+|t:|1773534535
+|move|p2a: Zapdos|Thunderbolt|p1a: Chamber Of Guf
+|-supereffective|p1a: Chamber Of Guf
+|-damage|p1a: Chamber Of Guf|0 fnt
+|faint|p1a: Chamber Of Guf
+|
+|t:|1773534536
+|switch|p1a: Black Moon|Rhydon|100/100
+|turn|11
+|
+|t:|1773534541
+|switch|p2a: Slowbro|Slowbro|100/100
+|move|p1a: Black Moon|Body Slam|p2a: Slowbro
+|-crit|p2a: Slowbro
+|-damage|p2a: Slowbro|62/100
+|-status|p2a: Slowbro|par
+|
+|upkeep
+|turn|12
+|
+|t:|1773534547
+|switch|p1a: Terminal Dogma|Chansey|95/100 par
+|move|p2a: Slowbro|Surf|p1a: Terminal Dogma
+|-damage|p1a: Terminal Dogma|81/100 par
+|
+|upkeep
+|turn|13
+|
+|t:|1773534552
+|move|p1a: Terminal Dogma|Seismic Toss|p2a: Slowbro
+|-damage|p2a: Slowbro|37/100 par
+|move|p2a: Slowbro|Amnesia|p2a: Slowbro
+|-boost|p2a: Slowbro|spa|2
+|-boost|p2a: Slowbro|spd|2
+|
+|upkeep
+|turn|14
+|
+|t:|1773534558
+|move|p2a: Slowbro|Rest|p2a: Slowbro
+|-status|p2a: Slowbro|slp|[from] move: Rest
+|-heal|p2a: Slowbro|100/100 slp|[silent]
+|move|p1a: Terminal Dogma|Seismic Toss|p2a: Slowbro
+|-damage|p2a: Slowbro|75/100 slp
+|
+|upkeep
+|turn|15
+|
+|t:|1773534563
+|cant|p2a: Slowbro|slp
+|move|p1a: Terminal Dogma|Seismic Toss|p2a: Slowbro
+|-damage|p2a: Slowbro|50/100 slp
+|
+|upkeep
+|turn|16
+|
+|t:|1773534566
+|-curestatus|p2a: Slowbro|slp|[msg]
+|move|p1a: Terminal Dogma|Thunder Wave|p2a: Slowbro
+|-status|p2a: Slowbro|par
+|
+|upkeep
+|turn|17
+|
+|t:|1773534569
+|move|p1a: Terminal Dogma|Seismic Toss|p2a: Slowbro
+|-damage|p2a: Slowbro|24/100 par
+|move|p2a: Slowbro|Rest|p2a: Slowbro
+|-status|p2a: Slowbro|slp|[from] move: Rest
+|-heal|p2a: Slowbro|100/100 slp|[silent]
+|
+|upkeep
+|turn|18
+|
+|t:|1773534576
+|cant|p1a: Terminal Dogma|par
+|cant|p2a: Slowbro|slp
+|
+|upkeep
+|turn|19
+|
+|t:|1773534578
+|move|p1a: Terminal Dogma|Seismic Toss|p2a: Slowbro
+|-damage|p2a: Slowbro|75/100 slp
+|-curestatus|p2a: Slowbro|slp|[msg]
+|
+|upkeep
+|turn|20
+|
+|t:|1773534580
+|move|p1a: Terminal Dogma|Thunder Wave|p2a: Slowbro
+|-status|p2a: Slowbro|par
+|move|p2a: Slowbro|Amnesia|p2a: Slowbro
+|-boost|p2a: Slowbro|spa|2
+|-boost|p2a: Slowbro|spd|2
+|
+|upkeep
+|turn|21
+|
+|t:|1773534584
+|move|p1a: Terminal Dogma|Seismic Toss|p2a: Slowbro
+|-damage|p2a: Slowbro|50/100 par
+|cant|p2a: Slowbro|par
+|
+|upkeep
+|turn|22
+|
+|t:|1773534593
+|switch|p1a: Spear Of Longinus|Tauros|30/100
+|cant|p2a: Slowbro|par
+|
+|upkeep
+|turn|23
+|
+|t:|1773534597
+|move|p1a: Spear Of Longinus|Body Slam|p2a: Slowbro
+|-damage|p2a: Slowbro|28/100 par
+|move|p2a: Slowbro|Surf|p1a: Spear Of Longinus
+|-crit|p1a: Spear Of Longinus
+|-damage|p1a: Spear Of Longinus|0 fnt
+|faint|p1a: Spear Of Longinus
+|
+|t:|1773534600
+|switch|p1a: Black Moon|Rhydon|100/100
+|turn|24
+|
+|t:|1773534608
+|move|p1a: Black Moon|Earthquake|p2a: Slowbro
+|-damage|p2a: Slowbro|0 fnt
+|faint|p2a: Slowbro
+|
+|t:|1773534612
+|switch|p2a: Victreebel|Victreebel|100/100
+|turn|25
+|
+|t:|1773534615
+|switch|p1a: Terminal Dogma|Chansey|81/100 par
+|move|p2a: Victreebel|Razor Leaf|p1a: Terminal Dogma
+|-crit|p1a: Terminal Dogma
+|-damage|p1a: Terminal Dogma|62/100 par
+|
+|upkeep
+|turn|26
+|
+|t:|1773534618
+|move|p2a: Victreebel|Wrap|p1a: Terminal Dogma
+|-damage|p1a: Terminal Dogma|58/100 par
+|cant|p1a: Terminal Dogma|partiallytrapped
+|
+|upkeep
+|turn|27
+|
+|t:|1773534621
+|switch|p1a: Dead Sea Scrolls|Starmie|100/100
+|move|p2a: Victreebel|Wrap|p1a: Dead Sea Scrolls
+|-damage|p1a: Dead Sea Scrolls|96/100
+|
+|upkeep
+|turn|28
+|
+|t:|1773534624
+|cant|p1a: Dead Sea Scrolls|partiallytrapped
+|move|p2a: Victreebel|Wrap|p1a: Dead Sea Scrolls|[from] Wrap
+|-damage|p1a: Dead Sea Scrolls|92/100
+|
+|upkeep
+|turn|29
+|
+|t:|1773534628
+|cant|p1a: Dead Sea Scrolls|partiallytrapped
+|move|p2a: Victreebel|Wrap|p1a: Dead Sea Scrolls|[from] Wrap
+|-damage|p1a: Dead Sea Scrolls|88/100
+|
+|upkeep
+|turn|30
+|
+|t:|1773534636
+|cant|p1a: Dead Sea Scrolls|partiallytrapped
+|move|p2a: Victreebel|Wrap|p1a: Dead Sea Scrolls|[from] Wrap
+|-damage|p1a: Dead Sea Scrolls|84/100
+|
+|upkeep
+|turn|31
+|
+|t:|1773534663
+|cant|p1a: Dead Sea Scrolls|partiallytrapped
+|move|p2a: Victreebel|Wrap|p1a: Dead Sea Scrolls|[from] Wrap
+|-damage|p1a: Dead Sea Scrolls|80/100
+|
+|upkeep
+|turn|32
+|inactive|Isza has 270 seconds left.
+|
+|t:|1773534706
+|switch|p2a: Alakazam|Alakazam|100/100 slp
+|move|p1a: Dead Sea Scrolls|Thunder Wave|p2a: Alakazam
+|-fail|p2a: Alakazam
+|
+|upkeep
+|turn|33
+|
+|t:|1773534716
+|switch|p1a: Terminal Dogma|Chansey|58/100 par
+|-curestatus|p2a: Alakazam|slp|[msg]
+|
+|upkeep
+|turn|34
+|
+|t:|1773534723
+|switch|p2a: Tauros|Tauros|100/100
+|move|p1a: Terminal Dogma|Soft-Boiled|p1a: Terminal Dogma
+|-heal|p1a: Terminal Dogma|100/100 par
+|
+|upkeep
+|turn|35
+|inactive|Isza has 240 seconds left.
+|inactive|BeeOrSomething has 270 seconds left.
+|inactive|Isza disconnected and has 265 seconds to reconnect!
+|player|p2|
+|inactive|Isza reconnected and has 220 seconds left.
+|player|p2|Isza|#wcop2025usnortheast2|
+|inactive|BeeOrSomething has 240 seconds left.
+|inactive|Isza has 210 seconds left.
+|
+|t:|1773534792
+|move|p2a: Tauros|Body Slam|p1a: Terminal Dogma
+|-crit|p1a: Terminal Dogma
+|-damage|p1a: Terminal Dogma|25/100 par
+|move|p1a: Terminal Dogma|Thunder Wave|p2a: Tauros
+|-status|p2a: Tauros|par
+|
+|upkeep
+|turn|36
+|inactive|BeeOrSomething has 240 seconds left.
+|
+|t:|1773534799
+|move|p2a: Tauros|Body Slam|p1a: Terminal Dogma
+|-crit|p1a: Terminal Dogma
+|-damage|p1a: Terminal Dogma|0 fnt
+|faint|p1a: Terminal Dogma
+|
+|t:|1773534800
+|switch|p1a: Tree Of Life|Exeggutor|100/100
+|turn|37
+|
+|t:|1773534819
+|move|p1a: Tree Of Life|Psychic|p2a: Tauros
+|-crit|p2a: Tauros
+|-damage|p2a: Tauros|10/100 par
+|-unboost|p2a: Tauros|spa|1
+|-unboost|p2a: Tauros|spd|1
+|cant|p2a: Tauros|par
+|
+|upkeep
+|turn|38
+|
+|t:|1773534826
+|switch|p2a: Zapdos|Zapdos|100/100
+|move|p1a: Tree Of Life|Psychic|p2a: Zapdos
+|-damage|p2a: Zapdos|71/100
+|
+|upkeep
+|turn|39
+|inactive|BeeOrSomething has 270 seconds left.
+|
+|t:|1773534838
+|switch|p2a: Tauros|Tauros|10/100 par
+|move|p1a: Tree Of Life|Sleep Powder|p2a: Tauros
+|-fail|p2a: Tauros
+|
+|upkeep
+|turn|40
+|inactive|BeeOrSomething has 270 seconds left.
+|
+|t:|1773534848
+|move|p1a: Tree Of Life|Psychic|p2a: Tauros
+|-damage|p2a: Tauros|0 fnt
+|faint|p2a: Tauros
+|
+|t:|1773534850
+|switch|p2a: Victreebel|Victreebel|100/100
+|turn|41
+|
+|t:|1773534852
+|move|p2a: Victreebel|Sleep Powder|p1a: Tree Of Life|[miss]
+|-miss|p2a: Victreebel
+|move|p1a: Tree Of Life|Sleep Powder|p2a: Victreebel|[miss]
+|-miss|p1a: Tree Of Life
+|
+|upkeep
+|turn|42
+|
+|t:|1773534855
+|move|p2a: Victreebel|Sleep Powder|p1a: Tree Of Life
+|-status|p1a: Tree Of Life|slp|[from] move: Sleep Powder
+|-curestatus|p1a: Tree Of Life|slp|[msg]
+|
+|upkeep
+|turn|43
+|
+|t:|1773534857
+|move|p2a: Victreebel|Sleep Powder|p1a: Tree Of Life|[miss]
+|-miss|p2a: Victreebel
+|move|p1a: Tree Of Life|Sleep Powder|p2a: Victreebel
+|-status|p2a: Victreebel|slp|[from] move: Sleep Powder
+|
+|upkeep
+|turn|44
+|
+|t:|1773534861
+|switch|p2a: Zapdos|Zapdos|71/100
+|move|p1a: Tree Of Life|Psychic|p2a: Zapdos
+|-damage|p2a: Zapdos|42/100
+|
+|upkeep
+|turn|45
+|
+|t:|1773534865
+|move|p2a: Zapdos|Drill Peck|p1a: Tree Of Life
+|-supereffective|p1a: Tree Of Life
+|-damage|p1a: Tree Of Life|47/100
+|move|p1a: Tree Of Life|Psychic|p2a: Zapdos
+|-damage|p2a: Zapdos|15/100
+|
+|upkeep
+|turn|46
+|
+|t:|1773534871
+|switch|p1a: Black Moon|Rhydon|100/100
+|move|p2a: Zapdos|Drill Peck|p1a: Black Moon
+|-resisted|p1a: Black Moon
+|-damage|p1a: Black Moon|91/100
+|
+|upkeep
+|turn|47
+|
+|t:|1773534875
+|move|p2a: Zapdos|Drill Peck|p1a: Black Moon
+|-resisted|p1a: Black Moon
+|-damage|p1a: Black Moon|82/100
+|move|p1a: Black Moon|Substitute|p1a: Black Moon
+|-start|p1a: Black Moon|Substitute
+|-damage|p1a: Black Moon|57/100
+|
+|upkeep
+|turn|48
+|
+|t:|1773534876
+|move|p2a: Zapdos|Drill Peck|p1a: Black Moon
+|-resisted|p1a: Black Moon
+|-activate|p1a: Black Moon|Substitute|[damage]
+|move|p1a: Black Moon|Body Slam|p2a: Zapdos
+|-damage|p2a: Zapdos|0 fnt
+|faint|p2a: Zapdos
+|
+|t:|1773534878
+|switch|p2a: Alakazam|Alakazam|100/100
+|turn|49
+|
+|t:|1773534881
+|move|p2a: Alakazam|Psychic|p1a: Black Moon
+|-end|p1a: Black Moon|Substitute
+|move|p1a: Black Moon|Body Slam|p2a: Alakazam
+|-damage|p2a: Alakazam|59/100
+|-status|p2a: Alakazam|par
+|
+|upkeep
+|turn|50
+|
+|t:|1773534886
+|move|p1a: Black Moon|Earthquake|p2a: Alakazam
+|-damage|p2a: Alakazam|0 fnt
+|faint|p2a: Alakazam
+|
+|t:|1773534887
+|switch|p2a: Victreebel|Victreebel|100/100 slp
+|turn|51
+|
+|t:|1773534889
+|cant|p2a: Victreebel|slp
+|move|p1a: Black Moon|Earthquake|p2a: Victreebel
+|-damage|p2a: Victreebel|51/100 slp
+|
+|upkeep
+|turn|52
+|
+|t:|1773534892
+|cant|p2a: Victreebel|slp
+|move|p1a: Black Moon|Earthquake|p2a: Victreebel
+|-crit|p2a: Victreebel
+|-damage|p2a: Victreebel|0 fnt
+|faint|p2a: Victreebel
+|
+|win|BeeOrSomething
+|c|☆BeeOrSomething|gg
+|c|☆Isza|gg
+|player|p1|
