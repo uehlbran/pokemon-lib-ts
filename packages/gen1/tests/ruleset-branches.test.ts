@@ -343,7 +343,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
 // ============================================================================
 
 describe("Gen1Ruleset applyStatusDamage", () => {
-  it("given a burned Pokemon with 160 max HP, when applying status damage, then deals 1/8 max HP (20)", () => {
+  it("given a burned Pokemon with 160 max HP, when applying status damage, then deals 1/16 max HP (10)", () => {
     // Arrange
     const pokemon = makeActivePokemon({
       pokemon: {
@@ -361,8 +361,8 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    // Assert: floor(160 / 8) = 20
-    expect(damage).toBe(20);
+    // Assert: floor(160 / 16) = 10
+    expect(damage).toBe(10);
   });
 
   it("given a poisoned Pokemon with 160 max HP, when applying status damage, then deals 1/16 max HP (10)", () => {
@@ -507,7 +507,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    // Assert: max(1, floor(15 / 8)) = max(1, 1) = 1
+    // Assert: max(1, floor(15 / 16)) = max(1, 0) = 1
     expect(damage).toBe(1);
   });
 
@@ -533,8 +533,8 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    // Assert: floor(160 / 8) = 20
-    expect(damage).toBe(20);
+    // Assert: floor(160 / 16) = 10
+    expect(damage).toBe(10);
   });
 });
 

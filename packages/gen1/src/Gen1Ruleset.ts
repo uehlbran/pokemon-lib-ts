@@ -528,8 +528,8 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     switch (status) {
       case "burn":
-        // Burn deals 1/8 max HP per turn in Gen 1
-        return Math.max(1, Math.floor(maxHp / 8));
+        // Burn deals 1/16 max HP per turn in Gen 1 (same as poison)
+        return Math.max(1, Math.floor(maxHp / 16));
 
       case "poison":
         // Regular poison deals 1/16 max HP per turn in Gen 1
