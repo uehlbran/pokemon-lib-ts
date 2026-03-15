@@ -1,4 +1,10 @@
+<!-- SPEC FRONT-MATTER -->
+<!-- status: IMPLEMENTED -->
+<!-- last-updated: 2026-03-15 -->
+
 # Core Pokémon Library — Entity Definitions
+
+> **Status: IMPLEMENTED** — These interfaces are implemented in `packages/core/src/entities/`. Code is source of truth for any gaps between this spec and reality.
 
 > All TypeScript interfaces, types, and enums for the core data model.
 >
@@ -130,6 +136,10 @@ export type VolatileStatus =
   | 'endure'
   | 'drowsy'           // Gen 9 — from Yawn equivalent
   | 'bound'            // Bind, Wrap, Fire Spin, etc.
+  | 'trapped'          // Wrapped, Bound, Fire Spin, etc. (some sources use 'bound'; verify in code)
+  | 'recharge'         // Must recharge next turn (after Hyper Beam etc.)
+  | 'toxic-counter'    // Tracks escalating Toxic damage (N increments each turn)
+  | 'sleep-counter'    // Tracks remaining sleep turns
   | 'no-retreat'       // Gen 8
   | 'tar-shot'         // Gen 8
   | 'octolock';        // Gen 8
@@ -910,6 +920,8 @@ export interface StatChange {
 }
 ```
 
+> **Implementation note**: All sub-interfaces (`DamageEffect`, `StatusChanceEffect`, etc.) are exported from `packages/core/src/entities/`. They are not internal-only — consumers can import them for type narrowing.
+
 ---
 
 ## 4. Ability Interface
@@ -1180,3 +1192,33 @@ export interface DataValidationWarning {
 ```
 
 ---
+
+## Implementation Cross-Reference
+
+| Concept | Source File | Notes |
+|---------|-------------|-------|
+| All entity types | `packages/core/src/entities/` | Directory contains all type definitions |
+| PokemonType, StatBlock, MutableStatBlock, StatName, NonHpStat, BattleStat | `packages/core/src/entities/stats.ts` | Stat primitives |
+| PokemonType, MoveCategory, MoveTarget, ItemCategory, BagPocket, NatureId, Gender, Generation, ExperienceGroup | `packages/core/src/entities/types.ts` | Primitive types and identifiers |
+| PrimaryStatus, VolatileStatus | `packages/core/src/entities/status.ts` | Status condition types |
+| WeatherType, TerrainType | `packages/core/src/entities/weather.ts` | Weather and terrain types |
+| EntryHazardType, ScreenType, HAZARD_MAX_LAYERS | `packages/core/src/entities/field.ts` | Field effect types |
+| PokemonSpeciesData, Learnset, LevelUpMove, EvolutionData, EvolutionLink, EvolutionMethod, MegaEvolutionData, GigantamaxData, RegionalFormData | `packages/core/src/entities/species.ts` | Species interfaces |
+| PokemonInstance, MoveSlot, PokemonCreationOptions | `packages/core/src/entities/pokemon.ts` | Pokemon instance interfaces |
+| MoveData, MoveFlags, MoveEffect and all sub-interfaces, StatChange | `packages/core/src/entities/move.ts` | Move interfaces and discriminated union |
+| AbilityData, AbilityTrigger | `packages/core/src/entities/ability.ts` | Ability interface |
+| ItemData, ItemUseEffect, HoldEffect | `packages/core/src/entities/item.ts` | Item interfaces |
+| NatureData | `packages/core/src/entities/nature.ts` | Nature interface |
+| TypeChart | `packages/core/src/entities/type-chart.ts` | Type effectiveness record |
+| TrainerData, TrainerPokemon | `packages/core/src/entities/trainer.ts` | Trainer interface |
+| DataValidationResult, DataValidationError, DataValidationWarning | `packages/core/src/entities/validation.ts` | Validation types |
+| Main export | `packages/core/src/index.ts` | All entities re-exported |
+
+---
+
+## Document History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.1 | 2026-03-15 | Added missing VolatileStatus values, MoveEffect export note, Implementation Cross-Reference |
+| 1.0 | 2024 | Initial entity spec |
