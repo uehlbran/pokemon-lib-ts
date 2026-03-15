@@ -1,11 +1,13 @@
 #!/bin/bash
-set -euo pipefail
+# PreToolUse: Block gh pr create unless /review has been run on the current branch + commit.
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+# Defensive jq call: if jq is unavailable or JSON is malformed, default to empty string
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || COMMAND=""
 
-# Only intercept PR creation commands (match at command boundary, not in strings/messages)
-if ! echo "$COMMAND" | grep -qE "(^|;|&&|\|\|)\s*gh pr create"; then
+# Only intercept commands that contain gh pr create (use fixed-string match to avoid bypass via
+# regex anchoring tricks; err on side of blocking since false positives are safe)
+if ! printf '%s\n' "$COMMAND" | grep -qF 'gh pr create'; then
   exit 0
 fi
 
@@ -18,8 +20,8 @@ if [ ! -f "$MARKER" ]; then
 fi
 
 # Read marker and validate it matches current branch + commit
-BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" branch --show-current)
-HEAD=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --short HEAD)
+BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" branch --show-current 2>/dev/null) || BRANCH=""
+HEAD=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --short HEAD 2>/dev/null) || HEAD=""
 MARKER_BRANCH=$(head -1 "$MARKER")
 MARKER_COMMIT=$(sed -n '2p' "$MARKER")
 
