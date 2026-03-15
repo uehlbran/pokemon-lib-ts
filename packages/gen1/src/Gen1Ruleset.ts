@@ -278,7 +278,12 @@ export class Gen1Ruleset implements GenerationRuleset {
       screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
       selfFaint?: boolean;
       noRecharge?: boolean;
-      customDamage?: { target: "attacker" | "defender"; amount: number; source: string; type?: PokemonType | null } | null;
+      customDamage?: {
+        target: "attacker" | "defender";
+        amount: number;
+        source: string;
+        type?: PokemonType | null;
+      } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
@@ -325,7 +330,12 @@ export class Gen1Ruleset implements GenerationRuleset {
       screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
       selfFaint?: boolean;
       noRecharge?: boolean;
-      customDamage?: { target: "attacker" | "defender"; amount: number; source: string; type?: PokemonType | null } | null;
+      customDamage?: {
+        target: "attacker" | "defender";
+        amount: number;
+        source: string;
+        type?: PokemonType | null;
+      } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
