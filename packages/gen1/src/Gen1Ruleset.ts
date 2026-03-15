@@ -32,6 +32,7 @@ import type {
   PrimaryStatus,
   StatBlock,
   TypeChart,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { calculateExpGainClassic, getStatStageMultiplier } from "@pokemon-lib-ts/core";
@@ -244,11 +245,11 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    const { attacker, defender, move, damage, rng } = context;
+    const { move } = context;
 
     const result: {
       statusInflicted: PrimaryStatus | null;
-      volatileInflicted: null;
+      volatileInflicted: VolatileStatus | null;
       statChanges: Array<{
         target: "attacker" | "defender";
         stat:
@@ -266,6 +267,12 @@ export class Gen1Ruleset implements GenerationRuleset {
       healAmount: number;
       switchOut: boolean;
       messages: string[];
+      screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+      selfFaint?: boolean;
+      noRecharge?: boolean;
+      customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
+      statusCured?: { target: "attacker" | "defender" | "both" } | null;
+      volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -288,7 +295,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     move: MoveData,
     result: {
       statusInflicted: PrimaryStatus | null;
-      volatileInflicted: null;
+      volatileInflicted: VolatileStatus | null;
       statChanges: Array<{
         target: "attacker" | "defender";
         stat:
@@ -306,6 +313,12 @@ export class Gen1Ruleset implements GenerationRuleset {
       healAmount: number;
       switchOut: boolean;
       messages: string[];
+      screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+      selfFaint?: boolean;
+      noRecharge?: boolean;
+      customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
+      statusCured?: { target: "attacker" | "defender" | "both" } | null;
+      volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
     },
     context: MoveEffectContext,
   ): void {
@@ -372,25 +385,115 @@ export class Gen1Ruleset implements GenerationRuleset {
         break;
       }
 
-      case "fixed-damage":
-      case "level-damage":
-      case "ohko":
+      case "screen": {
+        // Reflect / Light Screen: set a screen on the attacker's side
+        // Gen 1: screens last until the pokemon that set them switches out (simplified as 5 turns)
+        result.screenSet = {
+          screen: effect.screen,
+          turnsLeft: 5,
+          side: "attacker",
+        };
+        result.messages.push(
+          `${effect.screen === "reflect" ? "Reflect" : "Light Screen"} raised ${attacker.pokemon.nickname ?? "the user"}'s defenses!`,
+        );
+        break;
+      }
+
+      case "fixed-damage": {
+        // Dragon Rage (40 damage), Sonic Boom (20 damage), etc.
+        // Override the damage dealt with a fixed amount
+        result.customDamage = {
+          target: "defender",
+          amount: effect.damage,
+          source: move.id,
+        };
+        break;
+      }
+
+      case "level-damage": {
+        // Night Shade, Seismic Toss: damage = user's level
+        result.customDamage = {
+          target: "defender",
+          amount: attacker.pokemon.level,
+          source: move.id,
+        };
+        break;
+      }
+
+      case "ohko": {
+        // Fissure, Guillotine, Horn Drill: instant KO if it hits
+        // The move only hits if user is faster than target (handled in accuracy check)
+        result.customDamage = {
+          target: "defender",
+          amount: defender.pokemon.currentHp, // Deal exactly current HP to KO
+          source: move.id,
+        };
+        result.messages.push("It's a one-hit KO!");
+        break;
+      }
+
+      case "volatile-status": {
+        // In Gen 1: Confusion, Bind, Wrap, etc.
+        if (effect.status === "confusion") {
+          if (rng.int(1, 100) <= effect.chance) {
+            if (!defender.volatileStatuses.has("confusion")) {
+              // Confusion lasts 1-4 turns in Gen 1
+              const turns = rng.int(1, 4);
+              result.volatileInflicted = "confusion";
+              result.volatileData = { turnsLeft: turns };
+            }
+          }
+        } else if (effect.status === "bound") {
+          // Bind, Wrap, Fire Spin, Clamp: trapping moves in Gen 1
+          // Last 2-5 turns
+          if (!defender.volatileStatuses.has("bound")) {
+            const turns = rng.int(2, 5);
+            result.volatileInflicted = "bound";
+            result.volatileData = { turnsLeft: turns, data: { bindTurns: turns } };
+            result.messages.push(`${defender.pokemon.nickname ?? "The target"} was bound!`);
+          }
+        }
+        break;
+      }
+
       case "damage":
-        // These are handled by the damage calculation itself
+        // Pure damage — handled by the damage calculation itself
         break;
 
-      case "volatile-status":
+      case "custom": {
+        // Handle specific custom moves by handler name
+        if (effect.handler === "haze") {
+          // Haze: clears all stat changes and status conditions for both pokemon
+          result.statusCured = { target: "both" };
+          result.messages.push("All stat changes were eliminated!");
+        } else if (effect.handler === "explosion" || effect.handler === "selfdestruct") {
+          // Explosion / Self-Destruct: user faints after using the move
+          result.selfFaint = true;
+        } else if (effect.handler === "counter") {
+          // Counter: deal double the last physical damage received
+          const lastDamage = attacker.lastDamageTaken ?? 0;
+          if (lastDamage > 0) {
+            result.customDamage = {
+              target: "defender",
+              amount: lastDamage * 2,
+              source: "counter",
+            };
+          } else {
+            result.messages.push("Counter failed!");
+          }
+        }
+        break;
+      }
+
       case "weather":
       case "terrain":
       case "entry-hazard":
       case "remove-hazards":
-      case "screen":
       case "multi-hit":
       case "two-turn":
       case "switch-out":
       case "protect":
-      case "custom":
-        // These effects are either N/A in Gen 1 or handled by the engine
+        // These effects are N/A in Gen 1
         break;
     }
   }
@@ -435,9 +538,9 @@ export class Gen1Ruleset implements GenerationRuleset {
       case "badly-poisoned": {
         // Badly poisoned (Toxic): damage escalates each turn
         // N/16 max HP, where N starts at 1 and increments each turn
-        // The toxic counter is stored in volatile status data
-        const toxicData = pokemon.volatileStatuses.get("bound");
-        const counter = (toxicData?.data?.toxicCounter as number) ?? 1;
+        // The toxic counter is stored under the "toxic-counter" volatile key
+        const toxicState = pokemon.volatileStatuses.get("toxic-counter" as any);
+        const counter = (toxicState?.data?.counter as number) ?? 1;
         return Math.max(1, Math.floor((maxHp * counter) / 16));
       }
 
@@ -572,6 +675,35 @@ export class Gen1Ruleset implements GenerationRuleset {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  // --- Confusion ---
+
+  getConfusionSelfHitChance(): number {
+    // Gen 1: 50% chance to hit itself when confused
+    return 0.5;
+  }
+
+  calculateConfusionDamage(
+    pokemon: ActivePokemon,
+    _state: BattleState,
+    _rng: SeededRandom,
+  ): number {
+    // Gen 1: confusion self-hit is a fixed-power physical typeless attack
+    // Simplified as maxHP/8 for now (actual formula uses Atk/Def stats)
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
+  }
+
+  // --- Switch Out ---
+
+  onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
+    // Gen 1: binding moves stop when the user switches out
+    // The counter is stored in the volatile status
+    pokemon.volatileStatuses.delete("bound");
+
+    // In Gen 1, Toxic counter persists through switching (unlike Gen 2+)
+    // So we do NOT clear the toxic-counter here
   }
 
   // --- End-of-Turn Order ---

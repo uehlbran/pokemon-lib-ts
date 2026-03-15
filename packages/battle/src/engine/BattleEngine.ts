@@ -253,6 +253,11 @@ export class BattleEngine implements BattleEventEmitter {
     const active = sideState.active[0];
     const activeSlot = active?.teamSlot ?? -1;
 
+    // Trapping check: Mean Look, Spider Web prevent switching
+    if (active?.volatileStatuses.has("trapped")) {
+      return [];
+    }
+
     return sideState.team
       .map((p, index) => ({ pokemon: p, index }))
       .filter((t) => t.pokemon.currentHp > 0 && t.index !== activeSlot)
@@ -394,7 +399,31 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Apply entry hazards
     if (this.ruleset.getAvailableHazards().length > 0 && side.hazards.length > 0) {
-      this.ruleset.applyEntryHazards(active, side);
+      const hazardResult = this.ruleset.applyEntryHazards(active, side);
+      if (hazardResult.damage > 0) {
+        active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - hazardResult.damage);
+        this.emit({
+          type: "damage",
+          side: side.index,
+          pokemon: getPokemonName(active),
+          amount: hazardResult.damage,
+          currentHp: active.pokemon.currentHp,
+          maxHp: active.pokemon.calculatedStats?.hp ?? 1,
+          source: "entry-hazard",
+        });
+      }
+      if (hazardResult.statusInflicted && !active.pokemon.status) {
+        active.pokemon.status = hazardResult.statusInflicted;
+        this.emit({
+          type: "status-inflict",
+          side: side.index,
+          pokemon: getPokemonName(active),
+          status: hazardResult.statusInflicted,
+        });
+      }
+      for (const msg of hazardResult.messages) {
+        this.emit({ type: "message", text: msg });
+      }
     }
   }
 
@@ -613,6 +642,7 @@ export class BattleEngine implements BattleEventEmitter {
         }
       } else {
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
+        defender.lastDamageTaken = damage;
         this.emit({
           type: "damage",
           side: defenderSide as 0 | 1,
@@ -630,6 +660,19 @@ export class BattleEngine implements BattleEventEmitter {
       if (result.isCrit) {
         this.emit({ type: "critical-hit" });
       }
+
+      // Held item: on-damage-taken trigger for defender
+      if (this.ruleset.hasHeldItems() && damage > 0) {
+        const defItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
+          pokemon: defender,
+          state: this.state,
+          rng: this.state.rng,
+          damage,
+        });
+        if (defItemResult.activated) {
+          this.processItemResult(defItemResult, defender, defenderSide as 0 | 1);
+        }
+      }
     }
 
     // Apply move effects
@@ -644,6 +687,19 @@ export class BattleEngine implements BattleEventEmitter {
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
 
+    // Held item: on-hit trigger for attacker
+    if (this.ruleset.hasHeldItems() && damage > 0) {
+      const atkItemResult = this.ruleset.applyHeldItem("on-hit", {
+        pokemon: actor,
+        state: this.state,
+        rng: this.state.rng,
+        move: moveData,
+      });
+      if (atkItemResult.activated) {
+        this.processItemResult(atkItemResult, actor, action.side);
+      }
+    }
+
     actor.lastMoveUsed = moveData.id;
     actor.movedThisTurn = true;
   }
@@ -653,6 +709,9 @@ export class BattleEngine implements BattleEventEmitter {
     const outgoing = side.active[0];
 
     if (outgoing) {
+      // Let the ruleset handle any gen-specific switch-out cleanup first
+      this.ruleset.onSwitchOut(outgoing, this.state);
+
       this.emit({
         type: "switch-out",
         side: action.side,
@@ -666,6 +725,7 @@ export class BattleEngine implements BattleEventEmitter {
       outgoing.turnsOnField = 0;
       outgoing.movedThisTurn = false;
       outgoing.lastMoveUsed = null;
+      outgoing.lastDamageTaken = 0;
     }
 
     // Send in new pokemon
@@ -799,10 +859,14 @@ export class BattleEngine implements BattleEventEmitter {
           type: "message",
           text: `${getPokemonName(actor)} is confused!`,
         });
-        if (this.state.rng.chance(1 / 3)) {
-          // Self-hit confusion damage (simplified)
+        if (this.state.rng.chance(this.ruleset.getConfusionSelfHitChance())) {
+          // Self-hit confusion damage — chance and formula delegated to ruleset
           const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
-          const selfDamage = Math.max(1, Math.floor(maxHp / 8));
+          const selfDamage = this.ruleset.calculateConfusionDamage(
+            actor,
+            this.state,
+            this.state.rng,
+          );
           actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
           this.emit({
             type: "message",
@@ -843,10 +907,11 @@ export class BattleEngine implements BattleEventEmitter {
       });
     }
 
-    // Volatile status infliction
+    // Volatile status infliction — use volatileData for turnsLeft if provided
     if (result.volatileInflicted && !defender.volatileStatuses.has(result.volatileInflicted)) {
       defender.volatileStatuses.set(result.volatileInflicted, {
-        turnsLeft: -1,
+        turnsLeft: result.volatileData?.turnsLeft ?? -1,
+        data: result.volatileData?.data,
       });
       this.emit({
         type: "volatile-start",
@@ -910,6 +975,156 @@ export class BattleEngine implements BattleEventEmitter {
     for (const msg of result.messages) {
       this.emit({ type: "message", text: msg });
     }
+
+    // Weather from move effects
+    if (result.weatherSet && this.ruleset.hasWeather()) {
+      this.state.weather = {
+        type: result.weatherSet.weather as any,
+        turnsLeft: result.weatherSet.turns,
+        source: result.weatherSet.source,
+      };
+      this.emit({
+        type: "weather-set",
+        weather: result.weatherSet.weather as any,
+        source: result.weatherSet.source,
+      });
+    }
+
+    // Hazard from move effects
+    if (result.hazardSet) {
+      const targetSide = this.state.sides[result.hazardSet.targetSide];
+      const hazardType = result.hazardSet.hazard as any;
+      const existing = targetSide.hazards.find((h) => h.type === hazardType);
+      if (!existing) {
+        targetSide.hazards.push({ type: hazardType, layers: 1 });
+        this.emit({
+          type: "hazard-set",
+          side: result.hazardSet.targetSide,
+          hazard: hazardType,
+          layers: 1,
+        });
+      }
+    }
+
+    // Clear volatiles from move effects (e.g., Rapid Spin)
+    if (result.volatilesToClear) {
+      for (const clear of result.volatilesToClear) {
+        const target = clear.target === "attacker" ? attacker : defender;
+        const targetSide = clear.target === "attacker" ? attackerSide : defenderSide;
+        if (target.volatileStatuses.has(clear.volatile)) {
+          target.volatileStatuses.delete(clear.volatile);
+          this.emit({
+            type: "volatile-end",
+            side: targetSide,
+            pokemon: getPokemonName(target),
+            volatile: clear.volatile,
+          });
+        }
+      }
+    }
+
+    // Clear side hazards (e.g., Rapid Spin)
+    if (result.clearSideHazards) {
+      const clearSide =
+        result.clearSideHazards === "attacker"
+          ? this.state.sides[attackerSide]
+          : this.state.sides[defenderSide];
+      if (clearSide.hazards.length > 0) {
+        clearSide.hazards = [];
+        this.emit({
+          type: "message",
+          text: "The hazards were cleared!",
+        });
+      }
+    }
+
+    // Item transfer (e.g., Thief)
+    if (result.itemTransfer) {
+      const from = result.itemTransfer.from === "attacker" ? attacker : defender;
+      const to = result.itemTransfer.to === "attacker" ? attacker : defender;
+      if (from.pokemon.heldItem && !to.pokemon.heldItem) {
+        to.pokemon.heldItem = from.pokemon.heldItem;
+        from.pokemon.heldItem = null;
+      }
+    }
+
+    // Screen set (Reflect / Light Screen)
+    if (result.screenSet) {
+      const screenSide =
+        result.screenSet.side === "attacker"
+          ? this.state.sides[attackerSide]
+          : this.state.sides[defenderSide];
+      const screenSideIndex = result.screenSet.side === "attacker" ? attackerSide : defenderSide;
+      const screenType = result.screenSet.screen as import("@pokemon-lib-ts/core").ScreenType;
+      if (!screenSide.screens.some((s) => s.type === screenType)) {
+        screenSide.screens.push({ type: screenType, turnsLeft: result.screenSet.turnsLeft });
+        this.emit({
+          type: "screen-set",
+          side: screenSideIndex,
+          screen: screenType,
+          turns: result.screenSet.turnsLeft,
+        });
+      }
+    }
+
+    // Self-faint (Explosion / Self-Destruct)
+    if (result.selfFaint) {
+      attacker.pokemon.currentHp = 0;
+      this.emit({
+        type: "faint",
+        side: attackerSide,
+        pokemon: getPokemonName(attacker),
+      });
+      this.state.sides[attackerSide].faintCount++;
+    }
+
+    // Custom damage (OHKO, fixed damage, Counter)
+    if (result.customDamage) {
+      const customTarget = result.customDamage.target === "attacker" ? attacker : defender;
+      const customTargetSide =
+        result.customDamage.target === "attacker" ? attackerSide : defenderSide;
+      const customMaxHp =
+        customTarget.pokemon.calculatedStats?.hp ?? customTarget.pokemon.currentHp;
+      customTarget.pokemon.currentHp = Math.max(
+        0,
+        customTarget.pokemon.currentHp - result.customDamage.amount,
+      );
+      if (result.customDamage.target === "defender") {
+        customTarget.lastDamageTaken = result.customDamage.amount;
+      }
+      this.emit({
+        type: "damage",
+        side: customTargetSide,
+        pokemon: getPokemonName(customTarget),
+        amount: result.customDamage.amount,
+        currentHp: customTarget.pokemon.currentHp,
+        maxHp: customMaxHp,
+        source: result.customDamage.source,
+      });
+    }
+
+    // Status cure (Haze clears all stat stages and statuses)
+    if (result.statusCured) {
+      const targets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
+      if (result.statusCured.target === "attacker" || result.statusCured.target === "both") {
+        targets.push({ pokemon: attacker, side: attackerSide });
+      }
+      if (result.statusCured.target === "defender" || result.statusCured.target === "both") {
+        targets.push({ pokemon: defender, side: defenderSide });
+      }
+      for (const { pokemon: t, side: tSide } of targets) {
+        if (t.pokemon.status) {
+          const curedStatus = t.pokemon.status;
+          t.pokemon.status = null;
+          this.emit({
+            type: "status-cure",
+            side: tSide,
+            pokemon: getPokemonName(t),
+            status: curedStatus,
+          });
+        }
+      }
+    }
   }
 
   private processEndOfTurn(): void {
@@ -937,6 +1152,21 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         case "trick-room-countdown":
           this.processTrickRoomCountdown();
+          break;
+        case "leftovers":
+          this.processHeldItemEndOfTurn();
+          break;
+        case "leech-seed":
+          this.processLeechSeed();
+          break;
+        case "perish-song":
+          this.processPerishSong();
+          break;
+        case "curse":
+          this.processCurse();
+          break;
+        case "nightmare":
+          this.processNightmare();
           break;
         default:
           // Many effects not yet implemented
@@ -1020,6 +1250,14 @@ export class BattleEngine implements BattleEventEmitter {
             maxHp: active.pokemon.calculatedStats?.hp ?? 1,
             source: status,
           });
+        }
+        // Increment toxic counter for badly-poisoned pokemon (delegated to ruleset via applyStatusDamage)
+        if (status === "badly-poisoned") {
+          const toxicState = active.volatileStatuses.get("toxic-counter" as any);
+          if (toxicState?.data) {
+            (toxicState.data as Record<string, unknown>).counter =
+              ((toxicState.data.counter as number) ?? 1) + 1;
+          }
         }
       }
     }
@@ -1120,5 +1358,196 @@ export class BattleEngine implements BattleEventEmitter {
       if (side.active[0] === active) return side.index;
     }
     return 0;
+  }
+
+  private processHeldItemEndOfTurn(): void {
+    if (!this.ruleset.hasHeldItems()) return;
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      const itemResult = this.ruleset.applyHeldItem("end-of-turn", {
+        pokemon: active,
+        state: this.state,
+        rng: this.state.rng,
+      });
+      if (itemResult.activated) {
+        this.processItemResult(itemResult, active, side.index);
+      }
+    }
+  }
+
+  private processItemResult(
+    result: import("../context").ItemResult,
+    pokemon: ActivePokemon,
+    side: 0 | 1,
+  ): void {
+    for (const effect of result.effects) {
+      switch (effect.type) {
+        case "heal": {
+          const amount = effect.value as number;
+          const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+          const oldHp = pokemon.pokemon.currentHp;
+          pokemon.pokemon.currentHp = Math.min(maxHp, oldHp + amount);
+          const healed = pokemon.pokemon.currentHp - oldHp;
+          if (healed > 0) {
+            this.emit({
+              type: "heal",
+              side,
+              pokemon: getPokemonName(pokemon),
+              amount: healed,
+              currentHp: pokemon.pokemon.currentHp,
+              maxHp,
+              source: "held-item",
+            });
+          }
+          break;
+        }
+        case "status-cure": {
+          const status = pokemon.pokemon.status;
+          if (status) {
+            pokemon.pokemon.status = null;
+            this.emit({
+              type: "status-cure",
+              side,
+              pokemon: getPokemonName(pokemon),
+              status,
+            });
+          }
+          break;
+        }
+        case "consume": {
+          pokemon.pokemon.heldItem = null;
+          break;
+        }
+        case "survive": {
+          pokemon.pokemon.currentHp = Math.max(1, effect.value as number);
+          break;
+        }
+        case "flinch": {
+          const opponent = this.getOpponentActive(side);
+          if (opponent) {
+            opponent.volatileStatuses.set("flinch", { turnsLeft: 1 });
+          }
+          break;
+        }
+      }
+    }
+    for (const msg of result.messages) {
+      this.emit({ type: "message", text: msg });
+    }
+  }
+
+  private processLeechSeed(): void {
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (!active.volatileStatuses.has("leech-seed")) continue;
+
+      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      const drain = Math.max(1, Math.floor(maxHp / 8));
+      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - drain);
+
+      this.emit({
+        type: "damage",
+        side: side.index,
+        pokemon: getPokemonName(active),
+        amount: drain,
+        currentHp: active.pokemon.currentHp,
+        maxHp,
+        source: "leech-seed",
+      });
+
+      const opponentSide = side.index === 0 ? 1 : 0;
+      const opponent = this.getActive(opponentSide as 0 | 1);
+      if (opponent && opponent.pokemon.currentHp > 0) {
+        const oppMaxHp = opponent.pokemon.calculatedStats?.hp ?? opponent.pokemon.currentHp;
+        const oldHp = opponent.pokemon.currentHp;
+        opponent.pokemon.currentHp = Math.min(oppMaxHp, oldHp + drain);
+        const healed = opponent.pokemon.currentHp - oldHp;
+        if (healed > 0) {
+          this.emit({
+            type: "heal",
+            side: opponentSide as 0 | 1,
+            pokemon: getPokemonName(opponent),
+            amount: healed,
+            currentHp: opponent.pokemon.currentHp,
+            maxHp: oppMaxHp,
+            source: "leech-seed",
+          });
+        }
+      }
+    }
+  }
+
+  private processPerishSong(): void {
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (!active.volatileStatuses.has("perish-song")) continue;
+
+      const perishState = active.volatileStatuses.get("perish-song")!;
+      const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
+
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(active)}'s perish count fell to ${counter - 1}!`,
+      });
+
+      if (counter <= 1) {
+        active.pokemon.currentHp = 0;
+        // Don't emit faint here — checkMidTurnFaints() handles it
+      } else {
+        if (perishState.data) {
+          perishState.data.counter = counter - 1;
+        } else {
+          perishState.turnsLeft = counter - 1;
+        }
+      }
+    }
+  }
+
+  private processCurse(): void {
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (!active.volatileStatuses.has("curse")) continue;
+
+      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      const damage = Math.max(1, Math.floor(maxHp / 4));
+      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+
+      this.emit({
+        type: "damage",
+        side: side.index,
+        pokemon: getPokemonName(active),
+        amount: damage,
+        currentHp: active.pokemon.currentHp,
+        maxHp,
+        source: "curse",
+      });
+    }
+  }
+
+  private processNightmare(): void {
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (!active.volatileStatuses.has("nightmare")) continue;
+      if (active.pokemon.status !== "sleep") continue;
+
+      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      const damage = Math.max(1, Math.floor(maxHp / 4));
+      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+
+      this.emit({
+        type: "damage",
+        side: side.index,
+        pokemon: getPokemonName(active),
+        amount: damage,
+        currentHp: active.pokemon.currentHp,
+        maxHp,
+        source: "nightmare",
+      });
+    }
   }
 }

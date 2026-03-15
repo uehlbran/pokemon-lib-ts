@@ -1,0 +1,939 @@
+[
+  {
+    "id": "berry",
+    "displayName": "Berry",
+    "description": "(Gen 2) Restores 10 HP when at 1/2 max HP or less. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "hp-below-50",
+      "effect": "heal-10-hp"
+    }
+  },
+  {
+    "id": "berry-juice",
+    "displayName": "Berry Juice",
+    "description": "Restores 20 HP when at 1/2 max HP or less. Single use.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "berry-juice"
+  },
+  {
+    "id": "berserk-gene",
+    "displayName": "Berserk Gene",
+    "description": "(Gen 2) On switch-in, raises holder's Attack by 2 and confuses it. Single use.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "berserk-gene",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "berserk-gene"
+    }
+  },
+  {
+    "id": "bitter-berry",
+    "displayName": "Bitter Berry",
+    "description": "(Gen 2) Holder is cured if it is confused. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "bitter-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "confusion",
+      "effect": "cure-confusion"
+    }
+  },
+  {
+    "id": "black-belt",
+    "displayName": "Black Belt",
+    "description": "Holder's Fighting-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "black-belt",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "fighting",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "black-glasses",
+    "displayName": "Black Glasses",
+    "description": "Holder's Dark-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "black-glasses",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "dark",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "bright-powder",
+    "displayName": "Bright Powder",
+    "description": "An attack against the holder has its accuracy out of 255 lowered by 20.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "bright-powder",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "bright-powder"
+    }
+  },
+  {
+    "id": "burnt-berry",
+    "displayName": "Burnt Berry",
+    "description": "(Gen 2) Holder is cured if it is frozen. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "burnt-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "freeze",
+      "effect": "cure-freeze"
+    }
+  },
+  {
+    "id": "charcoal",
+    "displayName": "Charcoal",
+    "description": "Holder's Fire-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "charcoal",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "fire",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "dragon-fang",
+    "displayName": "Dragon Fang",
+    "description": "No competitive use.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "dragon-fang",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "dragon",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "dragon-scale",
+    "displayName": "Dragon Scale",
+    "description": "Holder's Dragon-type attacks have 1.1x power. Evolves Seadra (trade).",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "dragon-scale",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "dragon",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "fast-ball",
+    "displayName": "Fast Ball",
+    "description": "A Poke Ball that makes it easier to catch Pokemon which are quick to run away.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "fast-ball"
+  },
+  {
+    "id": "fire-stone",
+    "displayName": "Fire Stone",
+    "description": "Evolves Vulpix into Ninetales, Growlithe into Arcanine, Eevee into Flareon, and Pansear into Simisear when used.",
+    "category": "evolution-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "fire-stone"
+  },
+  {
+    "id": "focus-band",
+    "displayName": "Focus Band",
+    "description": "Holder has a ~11.7% chance to survive an attack that would KO it with 1 HP.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "focus-band",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "focus-band"
+    }
+  },
+  {
+    "id": "friend-ball",
+    "displayName": "Friend Ball",
+    "description": "A Poke Ball that makes caught Pokemon more friendly.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "friend-ball"
+  },
+  {
+    "id": "gold-berry",
+    "displayName": "Gold Berry",
+    "description": "(Gen 2) Restores 30 HP when at 1/2 max HP or less. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "gold-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "hp-below-50",
+      "effect": "heal-30-hp"
+    }
+  },
+  {
+    "id": "great-ball",
+    "displayName": "Great Ball",
+    "description": "A high-performance Ball that provides a higher catch rate than a Poke Ball.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "great-ball"
+  },
+  {
+    "id": "hard-stone",
+    "displayName": "Hard Stone",
+    "description": "Holder's Rock-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "hard-stone",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "rock",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "heavy-ball",
+    "displayName": "Heavy Ball",
+    "description": "A Poke Ball for catching very heavy Pokemon.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "heavy-ball"
+  },
+  {
+    "id": "ice-berry",
+    "displayName": "Ice Berry",
+    "description": "(Gen 2) Holder is cured if it is burned. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "ice-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "burn",
+      "effect": "cure-burn"
+    }
+  },
+  {
+    "id": "kings-rock",
+    "displayName": "King's Rock",
+    "description": "Holder's attacks without a chance to make the target flinch gain a 10% chance to make the target flinch. Evolves Poliwhirl into Politoed and Slowpoke into Slowking when traded.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "kings-rock",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "kings-rock"
+    }
+  },
+  {
+    "id": "leaf-stone",
+    "displayName": "Leaf Stone",
+    "description": "Evolves Gloom into Vileplume, Weepinbell into Victreebel, Exeggcute into Exeggutor or Alolan Exeggutor, Nuzleaf into Shiftry, and Pansage into Simisage when used.",
+    "category": "evolution-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "leaf-stone"
+  },
+  {
+    "id": "leftovers",
+    "displayName": "Leftovers",
+    "description": "At the end of every turn, holder restores 1/16 of its max HP.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "leftovers",
+    "holdEffect": {
+      "type": "leftovers",
+      "healFraction": 0.0625
+    }
+  },
+  {
+    "id": "level-ball",
+    "displayName": "Level Ball",
+    "description": "A Poke Ball for catching Pokemon that are a lower level than your own.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "level-ball"
+  },
+  {
+    "id": "light-ball",
+    "displayName": "Light Ball",
+    "description": "If held by a Pikachu, its Special Attack is doubled.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "light-ball",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "light-ball"
+    }
+  },
+  {
+    "id": "love-ball",
+    "displayName": "Love Ball",
+    "description": "Poke Ball for catching Pokemon that are the opposite gender of your Pokemon.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "love-ball"
+  },
+  {
+    "id": "lucky-punch",
+    "displayName": "Lucky Punch",
+    "description": "If held by a Chansey, its critical hit ratio is always at stage 2. (25% crit rate)",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "lucky-punch",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "lucky-punch"
+    }
+  },
+  {
+    "id": "lure-ball",
+    "displayName": "Lure Ball",
+    "description": "A Poke Ball for catching Pokemon hooked by a Rod when fishing.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "lure-ball"
+  },
+  {
+    "id": "magnet",
+    "displayName": "Magnet",
+    "description": "Holder's Electric-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "magnet",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "electric",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "mail",
+    "displayName": "Mail",
+    "description": "Cannot be given to or taken from a Pokemon, except by Covet/Knock Off/Thief.",
+    "category": "mail",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "mail"
+  },
+  {
+    "id": "master-ball",
+    "displayName": "Master Ball",
+    "description": "The best Ball with the ultimate performance. It will catch any wild Pokemon.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "master-ball"
+  },
+  {
+    "id": "metal-coat",
+    "displayName": "Metal Coat",
+    "description": "Holder's Steel-type attacks have 1.1x power. Evolves Onix into Steelix and Scyther into Scizor when traded.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "metal-coat",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "steel",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "metal-powder",
+    "displayName": "Metal Powder",
+    "description": "If held by a Ditto, its Defense and Sp. Def are 1.5x, even while Transformed.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "metal-powder",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "metal-powder"
+    }
+  },
+  {
+    "id": "mint-berry",
+    "displayName": "Mint Berry",
+    "description": "(Gen 2) Holder wakes up if it is asleep. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "mint-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "sleep",
+      "effect": "cure-sleep"
+    }
+  },
+  {
+    "id": "miracle-berry",
+    "displayName": "Miracle Berry",
+    "description": "(Gen 2) Holder cures itself if it is confused or has a status condition. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "miracle-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "any-status",
+      "effect": "cure-all"
+    }
+  },
+  {
+    "id": "miracle-seed",
+    "displayName": "Miracle Seed",
+    "description": "Holder's Grass-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "miracle-seed",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "grass",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "moon-ball",
+    "displayName": "Moon Ball",
+    "description": "A Poke Ball for catching Pokemon that evolve using the Moon Stone.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "moon-ball"
+  },
+  {
+    "id": "moon-stone",
+    "displayName": "Moon Stone",
+    "description": "Evolves Nidorina into Nidoqueen, Nidorino into Nidoking, Clefairy into Clefable, Jigglypuff into Wigglytuff, Skitty into Delcatty, and Munna into Musharna when used.",
+    "category": "evolution-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "moon-stone"
+  },
+  {
+    "id": "mystery-berry",
+    "displayName": "Mystery Berry",
+    "description": "(Gen 2) Restores 5 PP to the first of the holder's moves to reach 0 PP. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "mystery-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "pp-zero",
+      "effect": "restore-5-pp"
+    }
+  },
+  {
+    "id": "mystic-water",
+    "displayName": "Mystic Water",
+    "description": "Holder's Water-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "mystic-water",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "water",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "never-melt-ice",
+    "displayName": "Never-Melt Ice",
+    "description": "Holder's Ice-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "never-melt-ice",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "ice",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "pink-bow",
+    "displayName": "Pink Bow",
+    "description": "(Gen 2) Holder's Normal-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "pink-bow",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "normal",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "poison-barb",
+    "displayName": "Poison Barb",
+    "description": "Holder's Poison-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "poison-barb",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "poison",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "poke-ball",
+    "displayName": "Poke Ball",
+    "description": "A device for catching wild Pokemon. It is designed as a capsule system.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "poke-ball"
+  },
+  {
+    "id": "polkadot-bow",
+    "displayName": "Polkadot Bow",
+    "description": "(Gen 2) Holder's Normal-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "polkadot-bow",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "normal",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "prz-cure-berry",
+    "displayName": "PRZ Cure Berry",
+    "description": "(Gen 2) Holder cures itself if it is paralyzed. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "prz-cure-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "paralysis",
+      "effect": "cure-paralysis"
+    }
+  },
+  {
+    "id": "psn-cure-berry",
+    "displayName": "PSN Cure Berry",
+    "description": "(Gen 2) Holder is cured if it is poisoned. Single use.",
+    "category": "berry",
+    "pocket": "berries",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "psn-cure-berry",
+    "holdEffect": {
+      "type": "berry",
+      "trigger": "poison",
+      "effect": "cure-poison"
+    }
+  },
+  {
+    "id": "quick-claw",
+    "displayName": "Quick Claw",
+    "description": "Each turn, holder has a ~23.4% chance to move first in its priority bracket.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "quick-claw",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "quick-claw"
+    }
+  },
+  {
+    "id": "scope-lens",
+    "displayName": "Scope Lens",
+    "description": "Holder's critical hit ratio is raised by 1 stage.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "scope-lens",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "scope-lens"
+    }
+  },
+  {
+    "id": "sharp-beak",
+    "displayName": "Sharp Beak",
+    "description": "Holder's Flying-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "sharp-beak",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "flying",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "silver-powder",
+    "displayName": "Silver Powder",
+    "description": "Holder's Bug-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "silver-powder",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "bug",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "soft-sand",
+    "displayName": "Soft Sand",
+    "description": "Holder's Ground-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "soft-sand",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "ground",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "spell-tag",
+    "displayName": "Spell Tag",
+    "description": "Holder's Ghost-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "spell-tag",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "ghost",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "sport-ball",
+    "displayName": "Sport Ball",
+    "description": "A special Poke Ball for the Bug-Catching Contest.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "sport-ball"
+  },
+  {
+    "id": "stick",
+    "displayName": "Stick",
+    "description": "If held by a Farfetch’d, its critical hit ratio is always at stage 2. (25% crit rate)",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "stick",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "stick"
+    }
+  },
+  {
+    "id": "sun-stone",
+    "displayName": "Sun Stone",
+    "description": "Evolves Gloom into Bellossom, Sunkern into Sunflora, Cottonee into Whimsicott, Petilil into Lilligant, and Helioptile into Heliolisk when used.",
+    "category": "evolution-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "sun-stone"
+  },
+  {
+    "id": "thick-club",
+    "displayName": "Thick Club",
+    "description": "If held by a Cubone or a Marowak, its Attack is doubled.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "thick-club",
+    "holdEffect": {
+      "type": "custom",
+      "handler": "thick-club"
+    }
+  },
+  {
+    "id": "thunder-stone",
+    "displayName": "Thunder Stone",
+    "description": "Evolves Pikachu into Raichu or Alolan Raichu, Eevee into Jolteon, and Eelektrik into Eelektross when used.",
+    "category": "evolution-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "thunder-stone"
+  },
+  {
+    "id": "twisted-spoon",
+    "displayName": "Twisted Spoon",
+    "description": "Holder's Psychic-type attacks have 1.1x power.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": true,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "twisted-spoon",
+    "holdEffect": {
+      "type": "type-boost",
+      "moveType": "psychic",
+      "multiplier": 1.1
+    }
+  },
+  {
+    "id": "ultra-ball",
+    "displayName": "Ultra Ball",
+    "description": "An ultra-performance Ball that provides a higher catch rate than a Great Ball.",
+    "category": "pokeball",
+    "pocket": "pokeballs",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "ultra-ball"
+  },
+  {
+    "id": "up-grade",
+    "displayName": "Up-Grade",
+    "description": "Evolves Porygon into Porygon2 when traded.",
+    "category": "held-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 2,
+    "spriteKey": "up-grade"
+  },
+  {
+    "id": "water-stone",
+    "displayName": "Water Stone",
+    "description": "Evolves Poliwhirl into Poliwrath, Shellder into Cloyster, Staryu into Starmie, Eevee into Vaporeon, Lombre into Ludicolo, and Panpour into Simipour when used.",
+    "category": "evolution-item",
+    "pocket": "items",
+    "price": 0,
+    "battleUsable": false,
+    "fieldUsable": false,
+    "generation": 1,
+    "spriteKey": "water-stone"
+  }
+]

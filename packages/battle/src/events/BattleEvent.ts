@@ -217,6 +217,7 @@ export interface HazardSetEvent {
   readonly type: "hazard-set";
   readonly side: 0 | 1;
   readonly hazard: EntryHazardType;
+  readonly layers?: number;
 }
 
 export interface HazardClearEvent {
