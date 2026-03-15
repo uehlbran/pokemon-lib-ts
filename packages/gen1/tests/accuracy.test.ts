@@ -478,7 +478,7 @@ describe("Gen 1 Accuracy", () => {
     }
     // Assert: Should be non-decreasing
     for (let i = 1; i < thresholds.length; i++) {
-      expect(thresholds[i]).toBeGreaterThanOrEqual(thresholds[i - 1]!);
+      expect(thresholds[i]).toBeGreaterThanOrEqual(thresholds[i - 1] ?? 0);
     }
   });
 
@@ -528,7 +528,7 @@ describe("Gen 1 Accuracy", () => {
     }
     // Assert: Should be non-increasing (higher evasion = lower threshold)
     for (let i = 1; i < thresholds.length; i++) {
-      expect(thresholds[i]).toBeLessThanOrEqual(thresholds[i - 1]!);
+      expect(thresholds[i]).toBeLessThanOrEqual(thresholds[i - 1] ?? Number.POSITIVE_INFINITY);
     }
   });
 });
