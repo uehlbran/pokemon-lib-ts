@@ -320,6 +320,13 @@ export class Gen2Ruleset implements GenerationRuleset {
       messages: [],
     };
 
+    // Explosion and Self-Destruct have effect: null in move data but must still set selfFaint
+    if (context.move.id === "explosion" || context.move.id === "self-destruct") {
+      result.selfFaint = true;
+      const pokemonName = context.attacker.pokemon.nickname ?? "The Pokemon";
+      result.messages.push(`${pokemonName} exploded!`);
+    }
+
     if (!context.move.effect) return result;
 
     this.applyMoveEffect(context.move.effect, context.move, result, context);
