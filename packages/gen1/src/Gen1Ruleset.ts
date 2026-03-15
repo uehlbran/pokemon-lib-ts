@@ -244,7 +244,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     // against a 0-255 random roll, meaning 255/256 max hit chance.
     // Exception: self-targeting moves get +1 to their threshold, making
     // 100% accuracy moves always hit (256/256). (Showdown scripts.ts:408)
-    let threshold = Math.floor((effectiveAccuracy * 255) / 100);
+    let threshold = Math.min(255, Math.floor((effectiveAccuracy * 255) / 100));
     if (move.target === "self") {
       threshold = Math.min(256, threshold + 1);
     }
@@ -457,11 +457,11 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Bind, Wrap, Fire Spin, Clamp: trapping moves in Gen 1
           // Duration is weighted: 37.5% × 2 turns, 37.5% × 3 turns, 12.5% × 4, 12.5% × 5
           // (Showdown conditions.ts:225, same as multi-hit distribution)
-          if (!defender.volatileStatuses.has("bound")) {
+          if (!defender.volatileStatuses.has("trapped")) {
             const turns = rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
-            result.volatileInflicted = "bound";
+            result.volatileInflicted = "trapped";
             result.volatileData = { turnsLeft: turns, data: { bindTurns: turns } };
-            result.messages.push(`${defender.pokemon.nickname ?? "The target"} was bound!`);
+            result.messages.push(`${defender.pokemon.nickname ?? "The target"} was trapped!`);
           }
         }
         break;
@@ -749,10 +749,14 @@ export class Gen1Ruleset implements GenerationRuleset {
     const baseDef = calcStats?.defense ?? 50;
 
     let atk = Math.max(1, Math.floor(baseAtk * getStatStageMultiplier(pokemon.statStages.attack)));
-    const def = Math.max(
-      1,
-      Math.floor(baseDef * getStatStageMultiplier(pokemon.statStages.defense)),
-    );
+    let def = Math.max(1, Math.floor(baseDef * getStatStageMultiplier(pokemon.statStages.defense)));
+
+    // Gen 1 stat overflow: same transform as calculateGen1Damage
+    if (atk >= 256 || def >= 256) {
+      atk = Math.max(1, Math.floor(atk / 4) % 256);
+      def = Math.floor(def / 4) % 256;
+      if (def === 0) def = 1;
+    }
 
     if (pokemon.pokemon.status === "burn") {
       atk = Math.max(1, Math.floor(atk / 2));
