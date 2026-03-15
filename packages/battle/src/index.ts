@@ -6,6 +6,8 @@ export { RandomAI } from "./ai";
 // Context
 export type {
   AbilityContext,
+  AbilityEffect,
+  AbilityEffectType,
   AbilityResult,
   AccuracyContext,
   AvailableMove,
@@ -19,6 +21,8 @@ export type {
   EntryHazardResult,
   ExpContext,
   ItemContext,
+  ItemEffect,
+  ItemEffectType,
   ItemResult,
   MoveEffectContext,
   MoveEffectResult,
@@ -44,6 +48,7 @@ export type {
   DynamaxEndEvent,
   DynamaxEvent,
   EffectivenessEvent,
+  EngineWarningEvent,
   ExpGainEvent,
   FaintEvent,
   HazardClearEvent,
@@ -82,7 +87,24 @@ export type {
   ZMoveEvent,
 } from "./events";
 // Ruleset
-export type { GenerationRuleset } from "./ruleset";
+export type {
+  AbilitySystem,
+  CriticalHitSystem,
+  DamageSystem,
+  EndOfTurnSystem,
+  GenerationRuleset,
+  HazardSystem,
+  ItemSystem,
+  MoveSystem,
+  StatCalculator,
+  StatusSystem,
+  SwitchSystem,
+  TerrainSystem,
+  TurnOrderSystem,
+  TypeSystem,
+  ValidationSystem,
+  WeatherSystem,
+} from "./ruleset";
 export { BaseRuleset, GenerationRegistry, generations } from "./ruleset";
 // State
 export type {

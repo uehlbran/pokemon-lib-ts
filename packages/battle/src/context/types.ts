@@ -219,18 +219,29 @@ export interface AbilityContext {
  * Result of an ability trigger.
  * Returned by `GenerationRuleset.applyAbility()`.
  */
+/** Discriminated union of ability effect categories. */
+export type AbilityEffectType =
+  | "stat-change"
+  | "status-cure"
+  | "damage-reduction"
+  | "type-change"
+  | "weather-immunity"
+  | "ability-change"
+  | "none";
+
+/** A single effect produced by an ability trigger. */
+export interface AbilityEffect {
+  /** Effect category — narrows the discriminated union */
+  readonly effectType: AbilityEffectType;
+  /** Which entity the effect applies to */
+  readonly target: "self" | "opponent" | "field";
+}
+
 export interface AbilityResult {
   /** `true` if the ability actually activated and produced effects */
   readonly activated: boolean;
   /** Ordered list of effects the engine should apply to the battle state */
-  readonly effects: ReadonlyArray<{
-    /** Effect category identifier (e.g., `"stat-change"`, `"heal"`, `"status"`) */
-    type: string;
-    /** Which entity the effect applies to */
-    target: "self" | "opponent" | "field";
-    /** Effect payload; shape depends on `type` */
-    value: unknown;
-  }>;
+  readonly effects: readonly AbilityEffect[];
   /** Freeform messages to emit as `MessageEvent`s */
   readonly messages: readonly string[];
 }
@@ -252,6 +263,30 @@ export interface ItemContext {
   readonly damage?: number;
 }
 
+/** Discriminated union of item effect categories. */
+export type ItemEffectType =
+  | "stat-boost"
+  | "heal"
+  | "damage-boost"
+  | "status-prevention"
+  | "speed-boost"
+  | "status-cure"
+  | "consume"
+  | "survive"
+  | "flinch"
+  | "volatile-cure"
+  | "none";
+
+/** A single effect produced by an item trigger. */
+export interface ItemEffect {
+  /** Effect category — discriminant for the switch in processItemResult */
+  readonly type: ItemEffectType;
+  /** Payload for effects that carry numeric or string data (e.g., heal amount, volatile name) */
+  readonly value?: number | string;
+  /** Which entity the effect applies to (informational — engine derives target from context) */
+  readonly target?: "self" | "opponent" | "field";
+}
+
 /**
  * Result of a held item trigger.
  * Returned by `GenerationRuleset.applyItem()`.
@@ -260,14 +295,7 @@ export interface ItemResult {
   /** `true` if the item actually activated and produced effects */
   readonly activated: boolean;
   /** Ordered list of effects the engine should apply to the battle state */
-  readonly effects: ReadonlyArray<{
-    /** Effect category identifier */
-    type: string;
-    /** Which entity the effect applies to */
-    target: "self" | "opponent" | "field";
-    /** Effect payload; shape depends on `type` */
-    value: unknown;
-  }>;
+  readonly effects: readonly ItemEffect[];
   /** Freeform messages to emit as `MessageEvent`s */
   readonly messages: readonly string[];
 }

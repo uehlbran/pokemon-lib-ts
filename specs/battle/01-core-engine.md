@@ -739,7 +739,15 @@ private processExpGains(winningSide: 0 | 1): void {
 
 ---
 
-## 6. Serialization
+## 6. Event-Driven Architecture: State vs. Events
+
+> **State is the source of truth. Events are notifications.**
+>
+> `BattleState` is mutated in-place during turn resolution. Events are emitted *after* state mutations,
+> as notifications for UI and replay consumers. Do not reconstruct game state from events — query
+> `BattleState` directly.
+
+## 7. Serialization
 
 ```typescript
 /**

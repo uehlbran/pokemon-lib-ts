@@ -1,4 +1,4 @@
-import type { ItemContext, ItemResult } from "@pokemon-lib-ts/battle";
+import type { ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
 
 /** No-op result for when an item doesn't activate. */
 const NO_ACTIVATION: ItemResult = {
@@ -197,11 +197,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       if (!hasPrimaryStatus && !hasConfusion) {
         return NO_ACTIVATION;
       }
-      const effects: Array<{
-        type: string;
-        target: "self" | "opponent" | "field";
-        value: string | boolean;
-      }> = [];
+      const effects: ItemEffect[] = [];
       if (hasPrimaryStatus) {
         effects.push({ type: "status-cure", target: "self", value: status as string });
       }
@@ -316,7 +312,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
       if (context.rng.chance(30 / 256)) {
         return {
           activated: true,
-          effects: [{ type: "flinch", target: "opponent", value: true }],
+          effects: [{ type: "flinch", target: "opponent" }],
           messages: [`${pokemonName}'s King's Rock caused flinching!`],
         };
       }

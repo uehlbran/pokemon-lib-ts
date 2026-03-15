@@ -1,6 +1,7 @@
 import type { PokemonInstance, PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen1Stats, calculateStatExpContribution } from "../src/Gen1StatCalc";
+import { calculateGen1Stats } from "../src/Gen1StatCalc";
 
 // ---------------------------------------------------------------------------
 // Minimal mock helpers

@@ -35,7 +35,13 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { calculateExpGainClassic, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import {
+  calculateExpGainClassic,
+  gen12FullParalysisCheck,
+  gen14MultiHitRoll,
+  gen16ConfusionSelfHitRoll,
+  getStatStageMultiplier,
+} from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "./data";
 import { rollGen1Critical } from "./Gen1CritCalc";
 import { calculateGen1Damage } from "./Gen1DamageCalc";
@@ -612,13 +618,11 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    // Gen 1: 63/256 chance to be fully paralyzed (~24.6%)
-    return rng.int(0, 255) < 63;
+    return gen12FullParalysisCheck(rng);
   }
 
   rollConfusionSelfHit(rng: SeededRandom): boolean {
-    // Gen 1: 50% chance to hit itself in confusion
-    return rng.chance(0.5);
+    return gen16ConfusionSelfHitRoll(rng);
   }
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
@@ -846,8 +850,7 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
-    // Gen 1-4: [2,2,2,3,3,3,4,5] weighted distribution
-    return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
+    return gen14MultiHitRoll(rng);
   }
 
   rollProtectSuccess(_consecutiveProtects: number, _rng: SeededRandom): boolean {

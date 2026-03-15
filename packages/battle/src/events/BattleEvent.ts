@@ -95,6 +95,7 @@ export type BattleEvent =
   | ExpGainEvent
   | LevelUpEvent
   | MessageEvent
+  | EngineWarningEvent
   | BattleEndEvent;
 
 /**
@@ -637,6 +638,17 @@ export interface MessageEvent {
   readonly type: "message";
   /** The text to display to the player */
   readonly text: string;
+}
+
+/**
+ * Emitted when the engine encounters a recoverable data error.
+ * Signals a missing move or species that does not halt the battle but should be investigated.
+ */
+export interface EngineWarningEvent {
+  /** Discriminant: always `"engine-warning"` */
+  readonly type: "engine-warning";
+  /** Human-readable description of the warning */
+  readonly message: string;
 }
 
 /**
