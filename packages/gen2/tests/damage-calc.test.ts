@@ -1699,6 +1699,208 @@ describe("Gen 2 Damage Calculation", () => {
       // Assert: Pikachu gets no Metal Powder bonus
       expect(withPowderDmg.damage).toBe(noPowderDmg.damage);
     });
+
+    // --- Critical hit branch tests for held item stat modifiers ---
+
+    it("given Marowak holding Thick Club with isCrit: true, when using a physical move, then attack is doubled and critical hit applied (damage ~2x)", () => {
+      // Arrange
+      const marowakWithClub = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: "thick-club",
+      });
+      // speciesId 105 = Marowak
+      (marowakWithClub.pokemon as any).speciesId = 105;
+
+      const marowakNoItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: null,
+      });
+      (marowakNoItem.pokemon as any).speciesId = 105;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["ground"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: marowakWithClub,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: marowakNoItem,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Thick Club doubles attack with critical hit, damage should be ~2x
+      expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
+      if (noItemDmg.damage > 0) {
+        const ratio = withItemDmg.damage / noItemDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Pikachu holding Light Ball with isCrit: true, when using a special move, then SpAtk is doubled and critical hit applied (damage ~2x)", () => {
+      // Arrange: speciesId 25 = Pikachu
+      const pikachuWithBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: "light-ball",
+      });
+      (pikachuWithBall.pokemon as any).speciesId = 25;
+
+      const pikachuNoBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: null,
+      });
+      (pikachuNoBall.pokemon as any).speciesId = 25;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      // Special move (water type is special in Gen 2)
+      const move = createMove("water", 80, "special");
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["electric"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: pikachuWithBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: pikachuNoBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Light Ball doubles SpAtk with critical hit, damage should be ~2x
+      expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
+      if (noItemDmg.damage > 0) {
+        const ratio = withItemDmg.damage / noItemDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Ditto holding Metal Powder with isCrit: true, when attacked with a physical move, then defense is doubled and critical hit applied (damage ~halved)", () => {
+      // Arrange: speciesId 132 = Ditto
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const dittoWithPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 48,
+        types: ["normal"],
+        heldItem: "metal-powder",
+      });
+      (dittoWithPowder.pokemon as any).speciesId = 132;
+
+      const dittoNoPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 48,
+        types: ["normal"],
+        heldItem: null,
+      });
+      (dittoNoPowder.pokemon as any).speciesId = 132;
+
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const withPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoWithPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+      const noPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoNoPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+
+      // Act
+      const withPowderDmg = calculateGen2Damage(withPowderCtx, chart, species);
+      const noPowderDmg = calculateGen2Damage(noPowderCtx, chart, species);
+
+      // Assert: Metal Powder doubles defense with critical hit, damage roughly halved
+      expect(withPowderDmg.damage).toBeLessThan(noPowderDmg.damage);
+      if (withPowderDmg.damage > 0) {
+        const ratio = noPowderDmg.damage / withPowderDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
   });
 
   it("given identical inputs, when calculating damage twice, then produces identical results", () => {
