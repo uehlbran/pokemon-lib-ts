@@ -131,3 +131,11 @@ Local pre-PR review: run `/review` in Claude Code (falcon/kestrel/sentinel agent
 ## Package Versioning
 
 Independent semantic versioning per package. A Gen 1 bug fix doesn't bump Gen 9. All packages share a minimum compatible core version via peerDependencies.
+
+## Agent Task Sizing
+
+- Agent tasks should be completable within ~50% of context capacity — if a task needs 15+ file reads, split it into narrower agents
+- Explore agents: give specific search targets and file paths, not open-ended "find everything about X"
+- Implementation agents: one vertical slice per agent, not multiple features in one dispatch
+- Front-load context in agent prompts (file paths, line numbers, method names) to reduce discovery overhead
+- If an agent compacts mid-task, the fix is task sizing — break it into smaller agents, not more infrastructure
