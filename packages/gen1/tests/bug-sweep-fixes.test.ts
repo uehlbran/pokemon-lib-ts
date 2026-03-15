@@ -833,11 +833,13 @@ describe("Bug #101 — Trapping moves use 'bound' volatile key", () => {
 // ============================================================================
 
 describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
-  it("given Hyper Beam damage equals defender's current HP, when executeMoveEffect is called, then noRecharge is true", () => {
+  it("given Hyper Beam KOs the defender, when executeMoveEffect is called post-engine, then noRecharge is true", () => {
     // Source: gen1-ground-truth.md §7 — Hyper Beam skips recharge if it KOs the target.
-    // Arrange — defender has 50 HP, Hyper Beam deals exactly 50 (KO)
+    // The engine applies damage to currentHp BEFORE calling executeMoveEffect, so a KO is
+    // indicated by defender.pokemon.currentHp === 0 at the time executeMoveEffect runs.
+    // Arrange — engine has already reduced defender to 0 HP (was 50, took 50)
     const defender = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, currentHp: 50 } as PokemonInstance,
+      pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
     const hyperBeam = makeMove({
       id: "hyper-beam",
@@ -855,11 +857,11 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
     expect(result.noRecharge).toBe(true);
   });
 
-  it("given Hyper Beam damage exceeds defender's current HP, when executeMoveEffect is called, then noRecharge is true", () => {
-    // Overkill case: damage > currentHp still counts as a KO
-    // Arrange
+  it("given Hyper Beam overkills the defender, when executeMoveEffect is called post-engine, then noRecharge is true", () => {
+    // Overkill case: damage > original HP still counts as a KO; engine clamps currentHp to 0.
+    // Arrange — engine has already reduced defender to 0 HP (was 30, took 50)
     const defender = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, currentHp: 30 } as PokemonInstance,
+      pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
     const hyperBeam = makeMove({
       id: "hyper-beam",
@@ -877,11 +879,12 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
     expect(result.noRecharge).toBe(true);
   });
 
-  it("given Hyper Beam damage is less than defender's current HP, when executeMoveEffect is called, then noRecharge is not set", () => {
+  it("given Hyper Beam does not KO the defender, when executeMoveEffect is called post-engine, then noRecharge is not set", () => {
     // Source: gen1-ground-truth.md §7 — Hyper Beam only skips recharge on KO.
-    // Arrange — defender survives
+    // The engine has already applied damage; defender.currentHp > 0 means it survived.
+    // Arrange — defender had 200 HP, took 50 damage; engine reduced currentHp to 150
     const defender = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, currentHp: 200 } as PokemonInstance,
+      pokemon: { ...makeActivePokemon().pokemon, currentHp: 150 } as PokemonInstance,
     });
     const hyperBeam = makeMove({
       id: "hyper-beam",
