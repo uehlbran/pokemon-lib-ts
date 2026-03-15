@@ -18,7 +18,8 @@ export {
 } from "./stat-stages";
 export {
   CRIT_RATES_GEN6,
-  CRIT_RATES_GEN2_5,
+  CRIT_RATES_GEN2,
+  CRIT_RATES_GEN3_5,
   getCritRate,
   CRIT_MULTIPLIER_MODERN,
   CRIT_MULTIPLIER_CLASSIC,

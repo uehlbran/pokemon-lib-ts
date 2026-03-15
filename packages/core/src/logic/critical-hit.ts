@@ -16,7 +16,27 @@ export const CRIT_RATES_GEN6: readonly number[] = [
 ] as const;
 
 /**
- * Critical hit probability by stage (Gen 2-5).
+ * Critical hit probability by stage (Gen 2).
+ * Gen 2 uses a 256-based lookup table, not the modern stage system.
+ *
+ * | Stage | Threshold | Rate approx    |
+ * |-------|-----------|----------------|
+ * | 0     | 17/256    | ~6.64%         |
+ * | 1     | 32/256    | 12.5%          |
+ * | 2     | 64/256    | 25%            |
+ * | 3     | 85/256    | ~33.2%         |
+ * | 4+    | 128/256   | 50%            |
+ */
+export const CRIT_RATES_GEN2: readonly number[] = [
+  17 / 256, // Stage 0
+  32 / 256, // Stage 1
+  64 / 256, // Stage 2
+  85 / 256, // Stage 3
+  128 / 256, // Stage 4+
+] as const;
+
+/**
+ * Critical hit probability by stage (Gen 3-5).
  *
  * | Stage | Rate           |
  * |-------|----------------|
@@ -26,7 +46,7 @@ export const CRIT_RATES_GEN6: readonly number[] = [
  * | 3     | 1/3 (33.3%)    |
  * | 4+    | 1/2 (50%)      |
  */
-export const CRIT_RATES_GEN2_5: readonly number[] = [
+export const CRIT_RATES_GEN3_5: readonly number[] = [
   1 / 16, // Stage 0
   1 / 8, // Stage 1
   1 / 4, // Stage 2
