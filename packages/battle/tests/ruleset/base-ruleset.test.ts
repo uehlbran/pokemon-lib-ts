@@ -760,14 +760,14 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: "sleep" });
       const active = createActivePokemon(pokemon, 0, ["fire"]);
-      active.volatileStatuses.set("sleep" as any, { turnsLeft: 3 });
+      active.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
 
       // Act
       const canAct = ruleset.processSleepTurn(active, {} as any);
 
       // Assert
       expect(canAct).toBe(false);
-      expect((active.volatileStatuses.get("sleep" as any) as any).turnsLeft).toBe(2);
+      expect(active.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
       expect(active.pokemon.status).toBe("sleep");
     });
 
@@ -775,7 +775,7 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: "sleep" });
       const active = createActivePokemon(pokemon, 0, ["fire"]);
-      active.volatileStatuses.set("sleep" as any, { turnsLeft: 1 });
+      active.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
 
       // Act
       const canAct = ruleset.processSleepTurn(active, {} as any);
@@ -783,14 +783,14 @@ describe("BaseRuleset", () => {
       // Assert
       expect(canAct).toBe(true);
       expect(active.pokemon.status).toBeNull();
-      expect(active.volatileStatuses.has("sleep" as any)).toBe(false);
+      expect(active.volatileStatuses.has("sleep-counter")).toBe(false);
     });
 
     it("given a pokemon with turnsLeft = 0, when called, then wakes up, clears status, and returns true (can act)", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: "sleep" });
       const active = createActivePokemon(pokemon, 0, ["fire"]);
-      active.volatileStatuses.set("sleep" as any, { turnsLeft: 0 });
+      active.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
 
       // Act
       const canAct = ruleset.processSleepTurn(active, {} as any);
@@ -798,7 +798,7 @@ describe("BaseRuleset", () => {
       // Assert
       expect(canAct).toBe(true);
       expect(active.pokemon.status).toBeNull();
-      expect(active.volatileStatuses.has("sleep" as any)).toBe(false);
+      expect(active.volatileStatuses.has("sleep-counter")).toBe(false);
     });
   });
 

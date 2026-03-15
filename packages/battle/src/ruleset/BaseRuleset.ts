@@ -206,18 +206,18 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Look up the sleep counter in volatile statuses
-    const sleepState = pokemon.volatileStatuses.get("sleep" as any);
+    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // No counter found or already at 0 — wake up
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep" as any);
+      pokemon.volatileStatuses.delete("sleep-counter");
       return true; // Can act this turn (Gen 2+ behavior)
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       // Just reached 0 — wake up, can act this turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep" as any);
+      pokemon.volatileStatuses.delete("sleep-counter");
       return true;
     }
     return false; // Still sleeping
@@ -297,9 +297,53 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 8));
   }
 
-  onSwitchOut(_pokemon: ActivePokemon, _state: BattleState): void {
-    // Base implementation: no-op.
-    // Override in gens where volatile statuses have special switch-out behavior.
+  onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
+    // Default Gen 3+ behavior: clear all volatile statuses on switch-out.
+    // Gen 1-2 override this to handle generation-specific persistence rules.
+    pokemon.volatileStatuses.clear();
+  }
+
+  canSwitch(_pokemon: ActivePokemon, _state: BattleState): boolean {
+    // Default Gen 3+: no switching restrictions from the ruleset.
+    // Shadow Tag, Arena Trap etc. would be checked via abilities, not here.
+    return true;
+  }
+
+  calculateLeechSeedDrain(pokemon: ActivePokemon): number {
+    // Gen 2+: 1/8 max HP
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 8));
+  }
+
+  calculateCurseDamage(pokemon: ActivePokemon): number {
+    // Gen 2+: 1/4 max HP per turn
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  calculateNightmareDamage(pokemon: ActivePokemon): number {
+    // Gen 2+: 1/4 max HP per turn while asleep
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
+  processPerishSong(pokemon: ActivePokemon): {
+    readonly newCount: number;
+    readonly fainted: boolean;
+  } {
+    const perishState = pokemon.volatileStatuses.get("perish-song");
+    if (!perishState) return { newCount: 0, fainted: false };
+    const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
+    if (counter <= 1) {
+      return { newCount: 0, fainted: true };
+    }
+    const newCount = counter - 1;
+    if (perishState.data) {
+      perishState.data.counter = newCount;
+    } else {
+      perishState.turnsLeft = newCount;
+    }
+    return { newCount, fainted: false };
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {

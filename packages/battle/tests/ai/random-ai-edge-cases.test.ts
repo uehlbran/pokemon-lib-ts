@@ -1,3 +1,4 @@
+import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { RandomAI } from "../../src/ai/RandomAI";
@@ -80,7 +81,7 @@ function createTestState(
         team: team1,
         active: [
           {
-            pokemon: team1[0]!,
+            pokemon: team1[0] as PokemonInstance,
             teamSlot: 0,
             statStages: {
               hp: 0,
@@ -124,7 +125,7 @@ function createTestState(
         team: team2,
         active: [
           {
-            pokemon: team2[0]!,
+            pokemon: team2[0] as PokemonInstance,
             teamSlot: 0,
             statStages: {
               hp: 0,

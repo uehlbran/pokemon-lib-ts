@@ -261,6 +261,46 @@ export interface GenerationRuleset {
    */
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void;
 
+  // --- Switching ---
+
+  /**
+   * Whether a Pokemon is allowed to switch out.
+   * Gen 1: checks for 'trapped' volatile (trapping moves like Wrap/Bind).
+   * Gen 2+: checks for Mean Look, Spider Web, Shadow Tag, etc.
+   * The engine delegates this check to the ruleset instead of
+   * checking volatile statuses directly.
+   */
+  canSwitch(pokemon: ActivePokemon, state: BattleState): boolean;
+
+  // --- End-of-Turn Formulas ---
+
+  /**
+   * Calculate Leech Seed drain amount.
+   * Gen 1: 1/16 max HP. Gen 2+: 1/8 max HP.
+   */
+  calculateLeechSeedDrain(pokemon: ActivePokemon): number;
+
+  /**
+   * Calculate Curse (Ghost-type) damage per turn.
+   * Gen 2+: 1/4 max HP. Gen 1: N/A (Curse doesn't exist).
+   */
+  calculateCurseDamage(pokemon: ActivePokemon): number;
+
+  /**
+   * Calculate Nightmare damage per turn.
+   * Gen 2+: 1/4 max HP while asleep. Gen 1: N/A.
+   */
+  calculateNightmareDamage(pokemon: ActivePokemon): number;
+
+  /**
+   * Process Perish Song countdown for a Pokemon.
+   * Returns the new counter value and whether the Pokemon fainted.
+   */
+  processPerishSong(pokemon: ActivePokemon): {
+    readonly newCount: number;
+    readonly fainted: boolean;
+  };
+
   // --- End-of-Turn Order ---
 
   /**

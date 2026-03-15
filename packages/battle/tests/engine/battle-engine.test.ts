@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
+import type { ActivePokemon } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -253,8 +254,8 @@ describe("BattleEngine", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const active0 = engine.getActive(0)!;
-      const active1 = engine.getActive(1)!;
+      const active0 = engine.getActive(0) as ActivePokemon;
+      const active1 = engine.getActive(1) as ActivePokemon;
       expect(active0.pokemon.moves[0]?.currentPP).toBe(34);
       expect(active1.pokemon.moves[0]?.currentPP).toBe(34);
     });
@@ -328,7 +329,7 @@ describe("BattleEngine", () => {
       // 2 switch-ins from start + 1 from the switch action
       expect(switchIns.length).toBeGreaterThanOrEqual(3);
 
-      const active = engine.getActive(0)!;
+      const active = engine.getActive(0) as ActivePokemon;
       expect(active.pokemon.uid).toBe("pikachu-1");
     });
 
@@ -650,7 +651,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Set Blastoise HP to 1 (after calculatedStats override in start)
-      const blastoise = engine.getActive(1)!;
+      const blastoise = engine.getActive(1) as ActivePokemon;
       blastoise.pokemon.currentHp = 1;
 
       // Act
@@ -685,7 +686,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Set Blastoise HP to 1
-      const blastoise = engine.getActive(1)!;
+      const blastoise = engine.getActive(1) as ActivePokemon;
       blastoise.pokemon.currentHp = 1;
 
       // Act
@@ -736,7 +737,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Set Blastoise HP to 1
-      const blastoise = engine.getActive(1)!;
+      const blastoise = engine.getActive(1) as ActivePokemon;
       blastoise.pokemon.currentHp = 1;
 
       // Act — turn resolves, Blastoise faints
@@ -862,7 +863,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Inflict burn on side 0's active pokemon
-      const active = engine.getActive(0)!;
+      const active = engine.getActive(0) as ActivePokemon;
       active.pokemon.status = "burn";
 
       // Act — run a turn to trigger end-of-turn
@@ -882,7 +883,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Inflict poison on side 1's active pokemon
-      const active = engine.getActive(1)!;
+      const active = engine.getActive(1) as ActivePokemon;
       active.pokemon.status = "poison";
 
       // Act
