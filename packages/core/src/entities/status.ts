@@ -38,7 +38,7 @@ export type VolatileStatus =
   | "endure"
   | "drowsy" // Gen 9 — from Yawn equivalent
   | "bound" // Bind, Wrap, Fire Spin, etc.
-  | "trapped" // Mean Look, Spider Web (Gen 2+)
+  | "trapped" // Mean Look, Spider Web (Gen 2+) — prevents switching
   | "no-retreat" // Gen 8
   | "tar-shot" // Gen 8
   | "octolock"; // Gen 8
