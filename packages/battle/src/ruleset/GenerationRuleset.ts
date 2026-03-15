@@ -6,10 +6,10 @@ import type {
   PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
+  SeededRandom,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,

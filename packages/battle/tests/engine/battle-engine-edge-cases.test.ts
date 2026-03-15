@@ -129,9 +129,7 @@ describe("BattleEngine — edge cases", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(0)!.pokemon.currentHp = 5;
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 5;
 
       // Act
@@ -186,9 +184,7 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Set HP low enough that struggle + recoil will KO
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(0)!.pokemon.currentHp = 10;
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 10;
 
       // Act
@@ -344,13 +340,9 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Set both to very low HP and inflict burn — they'll take damage at end of turn
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(0)!.pokemon.currentHp = 1;
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(0)!.pokemon.status = "burn";
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 1;
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "burn";
 
       // Both miss so no mid-turn faint — faint happens from burn at end of turn
@@ -359,13 +351,9 @@ describe("BattleEngine — edge cases", () => {
       // Reconstruct with no-hit ruleset
       const { engine: engine2 } = createEngine({ team1, team2, ruleset });
       engine2.start();
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine2.getActive(0)!.pokemon.currentHp = 1;
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine2.getActive(0)!.pokemon.status = "burn";
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine2.getActive(1)!.pokemon.currentHp = 1;
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine2.getActive(1)!.pokemon.status = "burn";
 
       // Act
@@ -417,7 +405,6 @@ describe("BattleEngine — edge cases", () => {
 
       const { engine } = createEngine({ team2 });
       engine.start();
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 1;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -465,7 +452,6 @@ describe("BattleEngine — edge cases", () => {
       // Arrange
       const { engine, events } = createEngine();
       engine.start();
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 1;
 
       // Act
@@ -512,7 +498,7 @@ describe("BattleEngine — edge cases", () => {
       const ruleset = new MockRuleset();
       ruleset.setAlwaysHit(false); // Everything misses
 
-      const { engine, events } = createEngine({ ruleset });
+      const { engine } = createEngine({ ruleset });
       engine.start();
       const initialHp0 = engine.getActive(0)?.pokemon.currentHp;
       const initialHp1 = engine.getActive(1)?.pokemon.currentHp;
@@ -673,7 +659,6 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Remove side 1's active pokemon by KOing in a previous step
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 1;
 
       // KO defender with regular move first, then side 0 also struggles
@@ -733,7 +718,6 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Pre-inflict burn on Blastoise
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "burn";
 
       // Act
@@ -812,7 +796,7 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — no heal event emitted since HP was already at max
-      const healEvents = events.filter(
+      const _healEvents = events.filter(
         (e) => e.type === "heal" && "pokemon" in e && e.pokemon === "Charizard",
       );
       // Charizard takes 10 damage from Blastoise first (goes to 190), then heals
@@ -864,7 +848,6 @@ describe("BattleEngine — edge cases", () => {
       // Add volatile statuses to Charizard
       engine.getActive(0)?.volatileStatuses.set("confusion", { turnsLeft: 3 });
       // Modify stat stages
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(0)!.statStages.attack = 3;
 
       // Act — switch out Charizard

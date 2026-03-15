@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GEN1_TYPES, GEN1_TYPE_CHART, createGen1DataManager } from "../../src";
+import { createGen1DataManager, GEN1_TYPE_CHART, GEN1_TYPES } from "../../src";
 
 describe("Gen 1 Data Integration", () => {
   // --- Species Data ---

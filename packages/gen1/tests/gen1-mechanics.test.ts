@@ -120,10 +120,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
 }
 
 function makeBattleState(
-  overrides: {
-    side0Active?: ActivePokemon | null;
-    side1Active?: ActivePokemon | null;
-  } = {},
+  overrides: { side0Active?: ActivePokemon | null; side1Active?: ActivePokemon | null } = {},
 ): BattleState {
   const rng = new SeededRandom(42);
   return {

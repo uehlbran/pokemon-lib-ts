@@ -1,34 +1,16 @@
-export { calculateHp, calculateStat, calculateAllStats, getNatureModifier } from "./stat-calc";
-export {
-  getTypeFactor,
-  getTypeEffectiveness,
-  classifyEffectiveness,
-  type EffectivenessCategory,
-} from "./type-effectiveness";
-export {
-  getExpForLevel,
-  getExpToNextLevel,
-  calculateExpGain,
-  calculateExpGainClassic,
-} from "./experience";
-export {
-  getStatStageMultiplier,
-  getAccuracyEvasionMultiplier,
-  calculateAccuracy,
-} from "./stat-stages";
-export {
-  CRIT_RATES_GEN6,
-  CRIT_RATES_GEN2,
-  CRIT_RATES_GEN3_5,
-  getCritRate,
-  CRIT_MULTIPLIER_MODERN,
-  CRIT_MULTIPLIER_CLASSIC,
-} from "./critical-hit";
 export {
   calculateModifiedCatchRate,
-  STATUS_CATCH_MODIFIERS,
   calculateShakeChecks,
+  STATUS_CATCH_MODIFIERS,
 } from "./catch-rate";
+export {
+  CRIT_MULTIPLIER_CLASSIC,
+  CRIT_MULTIPLIER_MODERN,
+  CRIT_RATES_GEN2,
+  CRIT_RATES_GEN3_5,
+  CRIT_RATES_GEN6,
+  getCritRate,
+} from "./critical-hit";
 export {
   applyModifier,
   applyModifierChain,
@@ -36,8 +18,26 @@ export {
   getWeatherModifier,
 } from "./damage-utils";
 export {
+  calculateExpGain,
+  calculateExpGainClassic,
+  getExpForLevel,
+  getExpToNextLevel,
+} from "./experience";
+export {
+  createMoveSlot,
   createPokemonInstance,
   determineGender,
   getDefaultMoves,
-  createMoveSlot,
 } from "./pokemon-factory";
+export { calculateAllStats, calculateHp, calculateStat, getNatureModifier } from "./stat-calc";
+export {
+  calculateAccuracy,
+  getAccuracyEvasionMultiplier,
+  getStatStageMultiplier,
+} from "./stat-stages";
+export {
+  classifyEffectiveness,
+  type EffectivenessCategory,
+  getTypeEffectiveness,
+  getTypeFactor,
+} from "./type-effectiveness";

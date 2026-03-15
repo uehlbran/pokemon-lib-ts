@@ -30,26 +30,25 @@ import type {
   PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
+  SeededRandom,
   StatBlock,
   TypeChart,
   VolatileStatus,
   WeatherType,
 } from "@pokemon-lib-ts/core";
-import type { SeededRandom } from "@pokemon-lib-ts/core";
 import {
   CRIT_MULTIPLIER_CLASSIC,
   calculateExpGainClassic,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
-
+import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_STAGES, rollGen2Critical } from "./Gen2CritCalc";
 import { calculateGen2Damage } from "./Gen2DamageCalc";
 import { applyGen2HeldItem } from "./Gen2Items";
 import { calculateGen2Stats } from "./Gen2StatCalc";
 import { calculateGen2StatusDamage, canInflictGen2Status } from "./Gen2Status";
-import { GEN2_TYPES, GEN2_TYPE_CHART } from "./Gen2TypeChart";
+import { GEN2_TYPE_CHART, GEN2_TYPES } from "./Gen2TypeChart";
 import { applyGen2WeatherEffects } from "./Gen2Weather";
-import { createGen2DataManager } from "./data";
 
 // Single source of truth for Gen 2 crit rates — use GEN2_CRIT_STAGES from Gen2CritCalc
 const GEN2_CRIT_RATE_TABLE: readonly number[] = GEN2_CRIT_STAGES;

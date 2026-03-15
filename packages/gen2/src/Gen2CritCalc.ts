@@ -1,6 +1,5 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { MoveData } from "@pokemon-lib-ts/core";
-import type { SeededRandom } from "@pokemon-lib-ts/core";
+import type { MoveData, SeededRandom } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 2 critical hit rate table by stage.

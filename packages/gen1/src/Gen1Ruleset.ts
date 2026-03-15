@@ -30,18 +30,17 @@ import type {
   PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
+  SeededRandom,
   StatBlock,
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { calculateExpGainClassic, getStatStageMultiplier } from "@pokemon-lib-ts/core";
-
-import { rollGen1Critical } from "./Gen1CritCalc";
-import { calculateGen1Damage, isPhysicalInGen1 } from "./Gen1DamageCalc";
-import { calculateGen1Stats } from "./Gen1StatCalc";
-import { GEN1_TYPES, GEN1_TYPE_CHART } from "./Gen1TypeChart";
 import { createGen1DataManager } from "./data";
+import { rollGen1Critical } from "./Gen1CritCalc";
+import { calculateGen1Damage } from "./Gen1DamageCalc";
+import { calculateGen1Stats } from "./Gen1StatCalc";
+import { GEN1_TYPE_CHART, GEN1_TYPES } from "./Gen1TypeChart";
 
 /**
  * Gen 1 critical hit rate "table".
@@ -548,7 +547,7 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // --- Status Conditions ---
 
-  applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, state: BattleState): number {
+  applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
 
     switch (status) {

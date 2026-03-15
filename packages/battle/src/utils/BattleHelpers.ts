@@ -1,9 +1,4 @@
-import type {
-  BattleStat,
-  PokemonInstance,
-  PokemonSpeciesData,
-  PokemonType,
-} from "@pokemon-lib-ts/core";
+import type { BattleStat, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import type { PokemonSnapshot } from "../events";
 import type { ActivePokemon } from "../state";
 

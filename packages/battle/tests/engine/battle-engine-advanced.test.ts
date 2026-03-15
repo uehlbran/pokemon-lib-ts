@@ -2,7 +2,7 @@ import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
-import type { BattleEvent, MoveAction } from "../../src/events";
+import type { BattleEvent } from "../../src/events";
 import type { ActivePokemon } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
@@ -87,7 +87,7 @@ describe("BattleEngine — advanced scenarios", () => {
       // Arrange
       const ruleset = new MockRuleset();
       ruleset.setAlwaysHit(false);
-      const { engine, events } = createEngine({ ruleset });
+      const { engine } = createEngine({ ruleset });
       engine.start();
 
       const initialHp0 = engine.getActive(0)?.pokemon.currentHp;
@@ -157,13 +157,11 @@ describe("BattleEngine — advanced scenarios", () => {
         }),
       ];
 
-      const { engine, events } = createEngine({ team1, team2 });
+      const { engine } = createEngine({ team1, team2 });
       engine.start();
 
       // Manually set HP to 1 after start (start recalculates)
-      // biome-ignore lint/style/noNonNullAssertion: test setup — getActive is guaranteed non-null after start
       engine.getActive(0)!.pokemon.currentHp = 1;
-      // biome-ignore lint/style/noNonNullAssertion: test setup — getActive is guaranteed non-null after start
       engine.getActive(1)!.pokemon.currentHp = 1;
 
       // Act
@@ -182,7 +180,6 @@ describe("BattleEngine — advanced scenarios", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(0)!.pokemon.status = "badly-poisoned";
 
       // Act
@@ -295,7 +292,7 @@ describe("BattleEngine — advanced scenarios", () => {
       const patchedRuleset = Object.create(ruleset) as MockRuleset;
       patchedRuleset.getEndOfTurnOrder = () => ["tailwind-countdown" as const, ...originalOrder];
 
-      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      const { engine } = createEngine({ ruleset: patchedRuleset });
       engine.start();
 
       engine.state.sides[0].tailwind = { active: true, turnsLeft: 1 };
@@ -395,7 +392,6 @@ describe("BattleEngine — advanced scenarios", () => {
         const { engine, events } = createEngine({ seed });
         engine.start();
 
-        // biome-ignore lint/style/noNonNullAssertion: test setup
         engine.getActive(1)!.pokemon.status = "paralysis";
 
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -467,7 +463,6 @@ describe("BattleEngine — advanced scenarios", () => {
       ];
       const { engine } = createEngine({ team2 });
       engine.start();
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 1;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -562,7 +557,7 @@ describe("BattleEngine — advanced scenarios", () => {
     it("given a move that inflicts status, when the effect result has status, then status is applied", () => {
       // Arrange — patch the mock ruleset to return a status effect
       const ruleset = new MockRuleset();
-      const originalExecute = ruleset.executeMoveEffect.bind(ruleset);
+      const _originalExecute = ruleset.executeMoveEffect.bind(ruleset);
       ruleset.executeMoveEffect = () => ({
         statusInflicted: "burn" as const,
         volatileInflicted: null,
@@ -679,7 +674,6 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Lower Charizard's HP to 150
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(0)!.pokemon.currentHp = 150;
 
       // Act

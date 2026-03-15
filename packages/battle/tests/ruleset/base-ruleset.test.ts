@@ -16,7 +16,7 @@ import type {
 } from "../../src/context";
 import { BaseRuleset } from "../../src/ruleset/BaseRuleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
-import { createActivePokemon, createDefaultStatStages, createTestPokemon } from "../../src/utils";
+import { createActivePokemon, createTestPokemon } from "../../src/utils";
 
 // Concrete implementation of BaseRuleset for testing
 class TestRuleset extends BaseRuleset {

@@ -1,6 +1,6 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import type { MoveData } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN2_CRIT_STAGES, getGen2CritStage, rollGen2Critical } from "../src/Gen2CritCalc";
 
@@ -8,10 +8,7 @@ import { GEN2_CRIT_STAGES, getGen2CritStage, rollGen2Critical } from "../src/Gen
  * Helper to create a minimal ActivePokemon for crit calc testing.
  */
 function createMockActivePokemon(
-  overrides: {
-    volatileStatuses?: Map<string, unknown>;
-    heldItem?: string | null;
-  } = {},
+  overrides: { volatileStatuses?: Map<string, unknown>; heldItem?: string | null } = {},
 ): ActivePokemon {
   return {
     pokemon: {

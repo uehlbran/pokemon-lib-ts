@@ -1,17 +1,17 @@
 export type {
-  BattleSide,
-  TrainerRef,
   ActivePokemon,
-  VolatileStatusState,
+  BattleSide,
   EntryHazardState,
-  ScreenState,
   FutureAttackState,
+  ScreenState,
+  TrainerRef,
+  VolatileStatusState,
 } from "./BattleSide";
 export type {
-  BattleState,
-  BattlePhase,
   BattleFormat,
-  WeatherState,
+  BattlePhase,
+  BattleState,
   TerrainState,
   TurnRecord,
+  WeatherState,
 } from "./BattleState";

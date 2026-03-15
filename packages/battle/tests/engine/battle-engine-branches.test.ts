@@ -396,10 +396,8 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Put Blastoise to sleep with turns remaining
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "sleep";
       // Use a volatile to track sleep turns (the engine checks for this)
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set(
         "sleep-counter",
         {
@@ -423,9 +421,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "sleep";
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set(
         "sleep-counter",
         {
@@ -455,7 +451,6 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "freeze";
 
       // Act
@@ -477,7 +472,6 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.status = "freeze";
 
       // Act
@@ -567,7 +561,6 @@ describe("BattleEngine — branch coverage", () => {
 
       const { engine, events } = createEngine({ team2 });
       engine.start();
-      // biome-ignore lint/style/noNonNullAssertion: test setup
       engine.getActive(1)!.pokemon.currentHp = 1;
 
       // Act

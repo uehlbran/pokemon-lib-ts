@@ -1,6 +1,10 @@
-import type { DamageBreakdown, DamageContext, DamageResult } from "@pokemon-lib-ts/battle";
-import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type {
+  ActivePokemon,
+  DamageBreakdown,
+  DamageContext,
+  DamageResult,
+} from "@pokemon-lib-ts/battle";
+import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   getStabModifier,
   getStatStageMultiplier,
@@ -194,7 +198,7 @@ function getItemModifier(attacker: ActivePokemon, moveType: PokemonType): number
 export function calculateGen2Damage(
   context: DamageContext,
   typeChart: TypeChart,
-  attackerSpecies: PokemonSpeciesData,
+  _attackerSpecies: PokemonSpeciesData,
 ): DamageResult {
   const { attacker, defender, move, state, rng, isCrit } = context;
 

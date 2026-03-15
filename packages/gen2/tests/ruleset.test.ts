@@ -5,7 +5,6 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import type {
   MoveData,
   PokemonInstance,
@@ -13,6 +12,7 @@ import type {
   PokemonType,
   PrimaryStatus,
 } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen2Ruleset } from "../src/Gen2Ruleset";
 
@@ -504,7 +504,7 @@ describe("Gen2Ruleset", () => {
     it("should allow 100% accurate moves to always hit (unlike Gen 1)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const rng = new SeededRandom(42);
+      const _rng = new SeededRandom(42);
       const attacker = createMockActive();
       const defender = createMockActive();
       const move = { accuracy: 100 } as unknown as MoveData;

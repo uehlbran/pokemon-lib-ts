@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GEN1_TYPES, GEN1_TYPE_CHART, Gen1Ruleset, createGen1DataManager } from "../src";
+import { createGen1DataManager, GEN1_TYPE_CHART, Gen1Ruleset } from "../src";
 
 /**
  * Comprehensive data validation tests for Gen 1.

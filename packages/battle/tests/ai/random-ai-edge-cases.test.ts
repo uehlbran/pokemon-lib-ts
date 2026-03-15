@@ -201,7 +201,7 @@ describe("RandomAI — edge cases", () => {
       const ai = new RandomAI();
       const state = createTestState({ team1Pp: [0, 35] });
       const ruleset = new MockRuleset();
-      const rng = new SeededRandom(42);
+      const _rng = new SeededRandom(42);
 
       const moveIndices = new Set<number>();
 

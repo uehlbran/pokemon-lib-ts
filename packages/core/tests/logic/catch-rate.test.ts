@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  STATUS_CATCH_MODIFIERS,
   calculateModifiedCatchRate,
   calculateShakeChecks,
+  STATUS_CATCH_MODIFIERS,
 } from "../../src/logic/catch-rate";
 import { SeededRandom } from "../../src/prng/seeded-random";
 

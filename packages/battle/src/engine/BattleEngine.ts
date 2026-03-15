@@ -1,13 +1,12 @@
 import type { DataManager, MoveData } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
-import type { AvailableMove, BattleConfig, EndOfTurnEffect, MoveEffectResult } from "../context";
+import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
   BattleAction,
   BattleEvent,
   BattleEventEmitter,
   BattleEventListener,
   MoveAction,
-  PokemonSnapshot,
 } from "../events";
 import type { GenerationRuleset } from "../ruleset";
 import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";

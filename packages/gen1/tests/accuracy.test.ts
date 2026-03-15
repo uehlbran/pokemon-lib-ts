@@ -1,6 +1,6 @@
 import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import { SeededRandom, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import { getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 
@@ -245,14 +245,14 @@ describe("Gen 1 Accuracy", () => {
     // Arrange
     const rng = new SeededRandom(12345);
     let hits = 0;
-    let misses = 0;
+    let _misses = 0;
     const trials = 10000;
     // Act
     for (let i = 0; i < trials; i++) {
       const ctx = makeContext({ moveAccuracy: 100, rng });
       const result = ruleset.doesMoveHit(ctx);
       if (result) hits++;
-      else misses++;
+      else _misses++;
     }
     // Assert: Only ~1/256 (~0.39%) should miss, so at least 99% should hit
     expect(hits).toBeGreaterThan(trials * 0.99);
@@ -420,7 +420,7 @@ describe("Gen 1 Accuracy", () => {
     const rng = new SeededRandom(42);
     // Act / Assert
     for (let i = 0; i < 100; i++) {
-      const ctx = makeContext({ moveAccuracy: 0, rng });
+      const _ctx = makeContext({ moveAccuracy: 0, rng });
       // 0% accuracy -> effectiveAccuracy clamped to 1 -> threshold = floor(1 * 255 / 100) = 2
       // So there's a tiny chance of hitting (2/256), but effectively near-zero.
       // The original test expects always-miss, but with clamping to 1,
