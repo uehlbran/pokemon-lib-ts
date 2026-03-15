@@ -199,7 +199,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       const effects: Array<{
         type: string;
-        target: string;
+        target: "self" | "opponent" | "field";
         value: string | boolean;
       }> = [];
       if (hasPrimaryStatus) {
