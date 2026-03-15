@@ -295,7 +295,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=100, when calculating recoil, then returns 50", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as any;
+      const mockAttacker = {} as unknown as ActivePokemon;
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
       // Assert: floor(100 / 2) = 50
@@ -305,7 +305,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=1, when calculating recoil, then returns 1 (min 1)", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as any;
+      const mockAttacker = {} as unknown as ActivePokemon;
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
       // Assert: max(1, floor(1/2)) = max(1, 0) = 1
@@ -315,7 +315,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=0, when calculating recoil, then returns 1 (max of 1 and floor(0/2))", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as any;
+      const mockAttacker = {} as unknown as ActivePokemon;
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
       // Assert: max(1, floor(0/2)) = max(1, 0) = 1
@@ -325,7 +325,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=101, when calculating recoil, then returns 50 (floor(101/2)=50)", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as any;
+      const mockAttacker = {} as unknown as ActivePokemon;
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
       // Assert: floor(101 / 2) = 50
@@ -340,7 +340,7 @@ describe("Gen1Ruleset", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
       const rng = new SeededRandom(0);
-      const mockAttacker = {} as any;
+      const mockAttacker = {} as unknown as ActivePokemon;
       // Act
       const count = ruleset.rollMultiHitCount(mockAttacker, rng);
       // Assert: must be one of the values in the weighted array
@@ -351,7 +351,7 @@ describe("Gen1Ruleset", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
       const rng = new SeededRandom(42);
-      const mockAttacker = {} as any;
+      const mockAttacker = {} as unknown as ActivePokemon;
       // Act / Assert
       for (let i = 0; i < 100; i++) {
         const count = ruleset.rollMultiHitCount(mockAttacker, rng);
@@ -363,7 +363,7 @@ describe("Gen1Ruleset", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
       const rng = new SeededRandom(42);
-      const mockAttacker = {} as any;
+      const mockAttacker = {} as unknown as ActivePokemon;
       const counts = new Set<number>();
       // Act
       for (let i = 0; i < 100; i++) {

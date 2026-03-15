@@ -66,7 +66,7 @@ export function calculateAccuracy(
 ): number {
   if (moveAccuracy === null) return Number.POSITIVE_INFINITY;
   const netStage = Math.max(-6, Math.min(6, accuracyStage - evasionStage));
-  if (netStage > 0) return Math.floor(moveAccuracy * (3 + netStage) / 3);
-  if (netStage < 0) return Math.floor(moveAccuracy * 3 / (3 - netStage));
+  if (netStage > 0) return Math.floor((moveAccuracy * (3 + netStage)) / 3);
+  if (netStage < 0) return Math.floor((moveAccuracy * 3) / (3 - netStage));
   return moveAccuracy;
 }

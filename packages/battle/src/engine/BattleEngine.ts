@@ -459,9 +459,7 @@ export class BattleEngine implements BattleEventEmitter {
         if (!moveData || moveData.id !== "pursuit") continue;
 
         // Check if the opponent is switching this turn
-        const opponentAction = orderedActions.find(
-          (a, j) => j !== i && a.side !== action.side,
-        );
+        const opponentAction = orderedActions.find((a, j) => j !== i && a.side !== action.side);
         if (opponentAction?.type !== "switch") continue;
 
         // Execute Pursuit before the switch (doubled power is a TODO — currently uses base power)

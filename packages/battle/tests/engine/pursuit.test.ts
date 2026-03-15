@@ -82,10 +82,11 @@ function createDataManagerWithPursuit(): DataManager {
   ];
   const typeChart: Record<string, Record<string, number>> = {};
   for (const atk of allTypes) {
-    typeChart[atk] = {};
+    const row: Record<string, number> = {};
     for (const def of allTypes) {
-      typeChart[atk]![def] = 1;
+      row[def] = 1;
     }
+    typeChart[atk] = row;
   }
 
   const charizardSpecies = {
@@ -482,8 +483,10 @@ describe("Pursuit — pre-switch execution", () => {
 
       if (moveStartIndices.length > 0 && lastSwitchOutIndex !== undefined) {
         // In gen 1, the switch occurs before Pursuit fires (no pre-check)
-        const firstMoveStart = moveStartIndices[0]!;
-        expect(firstMoveStart).toBeGreaterThan(lastSwitchOutIndex);
+        const firstMoveStart = moveStartIndices.at(0);
+        if (firstMoveStart !== undefined) {
+          expect(firstMoveStart).toBeGreaterThan(lastSwitchOutIndex);
+        }
       }
     });
   });
