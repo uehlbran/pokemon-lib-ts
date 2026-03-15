@@ -12,11 +12,15 @@ const NO_ACTIVATION: ItemResult = {
  *
  * Gen 2 held items:
  * - Leftovers: restore 1/16 max HP at end of turn (NOT consumed)
- * - Berry: cure paralysis at end of turn (consumed)
+ * - Berry: restore 10 HP when HP <= 50% max HP at end of turn (consumed)
+ * - PRZCureBerry: cure paralysis at end of turn (consumed)
+ * - Gold Berry: restore 30 HP when HP <= 50% max HP (consumed, end-of-turn and on-damage-taken)
  * - Ice Berry: cure burn at end of turn (consumed)
  * - Mint Berry: cure sleep at end of turn (consumed)
  * - Burnt Berry: cure freeze at end of turn (consumed)
  * - PSNCureBerry: cure poison/badly-poisoned at end of turn (consumed)
+ * - Bitter Berry: cure confusion at end of turn (consumed)
+ * - Miracle Berry: cure any primary status at end of turn (consumed)
  * - Berry Juice: heal 20 HP when HP <= 50% (consumed)
  * - Focus Band: 12% chance to survive a KO at 1 HP (on-damage-taken)
  * - King's Rock: 30/256 (~11.72%) flinch on damaging moves (on-hit)
@@ -66,16 +70,46 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       };
     }
 
-    // Berry: Cures paralysis (consumed)
+    // Berry: Restore 10 HP when HP <= 50% max HP (consumed)
     case "berry": {
+      if (currentHp <= Math.floor(maxHp / 2)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "heal", target: "self", value: 10 },
+            { type: "consume", target: "self", value: "berry" },
+          ],
+          messages: [`${pokemonName}'s Berry restored 10 HP!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // PRZCureBerry: Cures paralysis (consumed)
+    case "prz-cure-berry": {
       if (status === "paralysis") {
         return {
           activated: true,
           effects: [
             { type: "status-cure", target: "self", value: "paralysis" },
-            { type: "consume", target: "self", value: "berry" },
+            { type: "consume", target: "self", value: "prz-cure-berry" },
           ],
-          messages: [`${pokemonName}'s Berry cured its paralysis!`],
+          messages: [`${pokemonName}'s PRZCureBerry cured its paralysis!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Gold Berry: Restore 30 HP when HP <= 50% max HP (consumed)
+    case "gold-berry": {
+      if (currentHp <= Math.floor(maxHp / 2)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "heal", target: "self", value: 30 },
+            { type: "consume", target: "self", value: "gold-berry" },
+          ],
+          messages: [`${pokemonName}'s Gold Berry restored 30 HP!`],
         };
       }
       return NO_ACTIVATION;
@@ -141,6 +175,36 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
+    // Bitter Berry: Cures confusion volatile status (consumed)
+    case "bitter-berry": {
+      if (pokemon.volatileStatuses.has("confusion")) {
+        return {
+          activated: true,
+          effects: [
+            { type: "volatile-cure", target: "self", value: "confusion" },
+            { type: "consume", target: "self", value: "bitter-berry" },
+          ],
+          messages: [`${pokemonName}'s Bitter Berry snapped it out of confusion!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Miracle Berry: Cures any primary status (consumed)
+    case "miracle-berry": {
+      if (status != null) {
+        return {
+          activated: true,
+          effects: [
+            { type: "status-cure", target: "self", value: status },
+            { type: "consume", target: "self", value: "miracle-berry" },
+          ],
+          messages: [`${pokemonName}'s Miracle Berry cured its ${status}!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
     // Berry Juice: Heal 20 HP when HP <= 50% max (consumed)
     case "berry-juice": {
       if (currentHp <= Math.floor(maxHp / 2)) {
@@ -181,6 +245,23 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             messages: [`${pokemonName} hung on using its Focus Band!`],
           };
         }
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Gold Berry: Heal 30 HP when HP drops to <= 50%
+    case "gold-berry": {
+      const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
+      const hpAfterDamage = currentHp - damage;
+      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp / 2)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "heal", target: "self", value: 30 },
+            { type: "consume", target: "self", value: "gold-berry" },
+          ],
+          messages: [`${pokemonName}'s Gold Berry restored 30 HP!`],
+        };
       }
       return NO_ACTIVATION;
     }

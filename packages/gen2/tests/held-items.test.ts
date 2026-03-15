@@ -35,6 +35,7 @@ function createMockPokemon(opts: {
   maxHp?: number;
   status?: string | null;
   types?: PokemonType[];
+  hasConfusion?: boolean;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
   const stats: StatBlock = {
@@ -72,6 +73,11 @@ function createMockPokemon(opts: {
     calculatedStats: stats,
   };
 
+  const volatileStatuses: Map<string, { turnsLeft: number }> = new Map();
+  if (opts.hasConfusion) {
+    volatileStatuses.set("confusion", { turnsLeft: 3 });
+  }
+
   return {
     pokemon,
     teamSlot: 0,
@@ -85,7 +91,7 @@ function createMockPokemon(opts: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: new Map(),
+    volatileStatuses,
     types: opts.types ?? ["normal"],
     ability: "",
     lastMoveUsed: null,
@@ -111,12 +117,14 @@ function createItemContext(opts: {
   status?: string | null;
   chanceResult?: boolean;
   damage?: number;
+  hasConfusion?: boolean;
 }): ItemContext {
   const pokemon = createMockPokemon({
     heldItem: opts.heldItem,
     currentHp: opts.currentHp,
     maxHp: opts.maxHp,
     status: opts.status,
+    hasConfusion: opts.hasConfusion,
   });
 
   return {
@@ -171,13 +179,67 @@ describe("Gen 2 Held Items", () => {
     });
   });
 
-  // --- Berry (Paralysis Cure) ---
+  // --- Berry (10 HP heal at <= 50% HP) ---
 
-  describe("Given Berry held item (paralysis cure)", () => {
-    it("given a paralyzed Pokemon holding Berry, when end-of-turn triggers, then cures paralysis", () => {
+  describe("Given Berry held item (10 HP heal at <= 50% HP)", () => {
+    it("given a Pokemon at 50% HP holding Berry, when end-of-turn triggers, then heals 10 HP", () => {
       // Arrange
       const context = createItemContext({
         heldItem: "berry",
+        currentHp: 100,
+        maxHp: 200,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const healEffect = result.effects.find((e) => e.type === "heal");
+      expect(healEffect).toBeDefined();
+      expect(healEffect!.value).toBe(10);
+    });
+
+    it("given a Pokemon at 50% HP holding Berry, when end-of-turn triggers, then Berry is consumed", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "berry",
+        currentHp: 100,
+        maxHp: 200,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const consumeEffect = result.effects.find((e) => e.type === "consume");
+      expect(consumeEffect).toBeDefined();
+    });
+
+    it("given a Pokemon above 50% HP holding Berry, when end-of-turn triggers, then no activation", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "berry",
+        currentHp: 150,
+        maxHp: 200,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(false);
+    });
+  });
+
+  // --- PRZCureBerry (Paralysis Cure) ---
+
+  describe("Given PRZCureBerry held item (paralysis cure)", () => {
+    it("given a paralyzed Pokemon holding PRZCureBerry, when end-of-turn triggers, then cures paralysis", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "prz-cure-berry",
         status: "paralysis",
       });
 
@@ -191,10 +253,10 @@ describe("Gen 2 Held Items", () => {
       expect(statusCure!.value).toBe("paralysis");
     });
 
-    it("given a paralyzed Pokemon holding Berry, when end-of-turn triggers, then Berry is consumed", () => {
+    it("given a paralyzed Pokemon holding PRZCureBerry, when end-of-turn triggers, then PRZCureBerry is consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry",
+        heldItem: "prz-cure-berry",
         status: "paralysis",
       });
 
@@ -205,12 +267,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
+      expect(consumeEffect!.value).toBe("prz-cure-berry");
     });
 
-    it("given a non-paralyzed Pokemon holding Berry, when end-of-turn triggers, then no activation", () => {
+    it("given a non-paralyzed Pokemon holding PRZCureBerry, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry",
+        heldItem: "prz-cure-berry",
         status: null,
       });
 
@@ -219,6 +282,251 @@ describe("Gen 2 Held Items", () => {
 
       // Assert
       expect(result.activated).toBe(false);
+    });
+  });
+
+  // --- Gold Berry (30 HP heal at <= 50% HP) ---
+
+  describe("Given Gold Berry held item (30 HP heal at <= 50% HP)", () => {
+    it("given a Pokemon at 50% HP holding Gold Berry, when end-of-turn triggers, then heals 30 HP", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "gold-berry",
+        currentHp: 100,
+        maxHp: 200,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const healEffect = result.effects.find((e) => e.type === "heal");
+      expect(healEffect).toBeDefined();
+      expect(healEffect!.value).toBe(30);
+    });
+
+    it("given a Pokemon at 50% HP holding Gold Berry, when end-of-turn triggers, then Gold Berry is consumed", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "gold-berry",
+        currentHp: 100,
+        maxHp: 200,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const consumeEffect = result.effects.find((e) => e.type === "consume");
+      expect(consumeEffect).toBeDefined();
+      expect(consumeEffect!.value).toBe("gold-berry");
+    });
+
+    it("given a Pokemon above 50% HP holding Gold Berry, when end-of-turn triggers, then no activation", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "gold-berry",
+        currentHp: 150,
+        maxHp: 200,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(false);
+    });
+
+    it("given Gold Berry and HP drops to <= 50% after damage, when on-damage-taken triggers, then heals 30 HP", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "gold-berry",
+        currentHp: 120,
+        maxHp: 200,
+        damage: 30, // 120 - 30 = 90, which is <= 100 (50% of 200)
+      });
+
+      // Act
+      const result = applyGen2HeldItem("on-damage-taken", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const healEffect = result.effects.find((e) => e.type === "heal");
+      expect(healEffect).toBeDefined();
+      expect(healEffect!.value).toBe(30);
+    });
+
+    it("given Gold Berry and HP stays above 50% after damage, when on-damage-taken triggers, then no activation", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "gold-berry",
+        currentHp: 180,
+        maxHp: 200,
+        damage: 10, // 180 - 10 = 170, which is > 100 (50% of 200)
+      });
+
+      // Act
+      const result = applyGen2HeldItem("on-damage-taken", context);
+
+      // Assert
+      expect(result.activated).toBe(false);
+    });
+  });
+
+  // --- Bitter Berry (Confusion Cure) ---
+
+  describe("Given Bitter Berry held item (confusion cure)", () => {
+    it("given a confused Pokemon holding Bitter Berry, when end-of-turn triggers, then cures confusion", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "bitter-berry",
+        hasConfusion: true,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
+      expect(volatileCure).toBeDefined();
+      expect(volatileCure!.value).toBe("confusion");
+    });
+
+    it("given a confused Pokemon holding Bitter Berry, when end-of-turn triggers, then Bitter Berry is consumed", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "bitter-berry",
+        hasConfusion: true,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const consumeEffect = result.effects.find((e) => e.type === "consume");
+      expect(consumeEffect).toBeDefined();
+      expect(consumeEffect!.value).toBe("bitter-berry");
+    });
+
+    it("given a non-confused Pokemon holding Bitter Berry, when end-of-turn triggers, then no activation", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "bitter-berry",
+        hasConfusion: false,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(false);
+    });
+  });
+
+  // --- Miracle Berry (Any Primary Status Cure) ---
+
+  describe("Given Miracle Berry held item (any primary status cure)", () => {
+    it("given a burned Pokemon holding Miracle Berry, when end-of-turn triggers, then cures burn", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: "burn",
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const statusCure = result.effects.find((e) => e.type === "status-cure");
+      expect(statusCure).toBeDefined();
+      expect(statusCure!.value).toBe("burn");
+    });
+
+    it("given a paralyzed Pokemon holding Miracle Berry, when end-of-turn triggers, then cures paralysis", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: "paralysis",
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const statusCure = result.effects.find((e) => e.type === "status-cure");
+      expect(statusCure).toBeDefined();
+      expect(statusCure!.value).toBe("paralysis");
+    });
+
+    it("given a sleeping Pokemon holding Miracle Berry, when end-of-turn triggers, then cures sleep", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: "sleep",
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const statusCure = result.effects.find((e) => e.type === "status-cure");
+      expect(statusCure).toBeDefined();
+      expect(statusCure!.value).toBe("sleep");
+    });
+
+    it("given a poisoned Pokemon holding Miracle Berry, when end-of-turn triggers, then cures poison", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: "poison",
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const statusCure = result.effects.find((e) => e.type === "status-cure");
+      expect(statusCure).toBeDefined();
+      expect(statusCure!.value).toBe("poison");
+    });
+
+    it("given a Pokemon with no status holding Miracle Berry, when end-of-turn triggers, then no activation", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: null,
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(false);
+    });
+
+    it("given a Pokemon holding Miracle Berry, when it activates, then Miracle Berry is consumed", () => {
+      // Arrange
+      const context = createItemContext({
+        heldItem: "miracle-berry",
+        status: "freeze",
+      });
+
+      // Act
+      const result = applyGen2HeldItem("end-of-turn", context);
+
+      // Assert
+      expect(result.activated).toBe(true);
+      const consumeEffect = result.effects.find((e) => e.type === "consume");
+      expect(consumeEffect).toBeDefined();
+      expect(consumeEffect!.value).toBe("miracle-berry");
     });
   });
 
