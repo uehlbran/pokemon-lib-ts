@@ -6,10 +6,10 @@ import type {
   PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
+  SeededRandom,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,
@@ -29,7 +29,7 @@ import type {
   ValidationResult,
   WeatherEffectResult,
 } from "../../src/context";
-import type { BattleAction, MoveAction } from "../../src/events";
+import type { BattleAction } from "../../src/events";
 import type { GenerationRuleset } from "../../src/ruleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
 

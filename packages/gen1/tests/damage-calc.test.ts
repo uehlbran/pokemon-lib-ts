@@ -1,5 +1,4 @@
-import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { DamageContext } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonInstance,
@@ -910,13 +909,13 @@ describe("Gen 1 Damage Calculation", () => {
       [-3]: 2 / 5, // 0.4
       [-2]: 2 / 4, // 0.5
       [-1]: 2 / 3, // ~0.6667
-      [0]: 2 / 2, // 1.0
-      [1]: 3 / 2, // 1.5
-      [2]: 4 / 2, // 2.0
-      [3]: 5 / 2, // 2.5
-      [4]: 6 / 2, // 3.0
-      [5]: 7 / 2, // 3.5
-      [6]: 8 / 2, // 4.0
+      0: 2 / 2, // 1.0
+      1: 3 / 2, // 1.5
+      2: 4 / 2, // 2.0
+      3: 5 / 2, // 2.5
+      4: 6 / 2, // 3.0
+      5: 7 / 2, // 3.5
+      6: 8 / 2, // 4.0
     };
 
     for (const [stageStr, expectedVal] of Object.entries(expected)) {

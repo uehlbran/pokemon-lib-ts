@@ -1,9 +1,9 @@
+import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
-import type { BattleAction, BattleConfig, BattleEvent } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen1Ruleset, createGen1DataManager } from "../../src";
+import { createGen1DataManager, Gen1Ruleset } from "../../src";
 
 describe("Gen 1 Full Battle Integration", () => {
   const dataManager = createGen1DataManager();

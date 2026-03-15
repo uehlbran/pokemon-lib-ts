@@ -6,10 +6,10 @@ import type {
   PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
+  SeededRandom,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import type { SeededRandom } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,
@@ -107,8 +107,8 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
       // For moves, compare priority
       if (a.type === "move" && b.type === "move") {
-        const aPriority = (a as MoveAction).moveIndex;
-        const bPriority = (b as MoveAction).moveIndex;
+        const _aPriority = (a as MoveAction).moveIndex;
+        const _bPriority = (b as MoveAction).moveIndex;
         // In the base implementation, we just compare by speed
         // The actual priority comes from the move data, which the engine resolves
       }
@@ -155,7 +155,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return context.rng.int(1, 100) <= finalAccuracy;
   }
 
-  executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+  executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {
     const result: MoveEffectResult = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -168,7 +168,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return result;
   }
 
-  applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, state: BattleState): number {
+  applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     switch (status) {
       case "burn":

@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import { SeededRandom, TYPES_BY_GEN } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 

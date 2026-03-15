@@ -1,4 +1,4 @@
-import type { ValidationMismatch, ValidationResult, ValidationSeverity } from "./replay-types.js";
+import type { ValidationResult, ValidationSeverity } from "./replay-types.js";
 
 // ANSI color codes
 const ANSI = {

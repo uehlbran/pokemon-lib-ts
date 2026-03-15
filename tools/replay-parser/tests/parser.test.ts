@@ -1,9 +1,10 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
 import {
   normalizeMoveName,
   parseHp,
@@ -818,7 +819,7 @@ describe("parseReplay (integration)", () => {
     const allEvents = result.turns.flatMap((t) => t.events);
     const hpEvents = allEvents.filter(
       (e) => e.type === "damage" || e.type === "heal" || e.type === "switch",
-    ) as Array<Extract<ShowdownEvent, { type: "damage" | "heal" | "switch" }>>;
+    ) as Extract<ShowdownEvent, { type: "damage" | "heal" | "switch" }>[];
 
     for (const ev of hpEvents) {
       expect(Number.isNaN(ev.hp.current), `NaN current HP in ${ev.type} event`).toBe(false);

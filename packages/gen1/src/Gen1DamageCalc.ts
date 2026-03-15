@@ -1,12 +1,10 @@
-import type { DamageBreakdown, DamageContext, DamageResult } from "@pokemon-lib-ts/battle";
-import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type {
-  MoveData,
-  PokemonSpeciesData,
-  PokemonType,
-  StatBlock,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
+  ActivePokemon,
+  DamageBreakdown,
+  DamageContext,
+  DamageResult,
+} from "@pokemon-lib-ts/battle";
+import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   getStabModifier,
   getStatStageMultiplier,
@@ -44,7 +42,7 @@ function getAttackStat(
   attacker: ActivePokemon,
   moveType: PokemonType,
   isCrit: boolean,
-  species: PokemonSpeciesData,
+  _species: PokemonSpeciesData,
 ): number {
   const physical = isPhysicalInGen1(moveType);
   const statKey = physical ? "attack" : "spAttack";

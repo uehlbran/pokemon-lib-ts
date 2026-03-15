@@ -11,8 +11,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import type { Generation, Move, Specie } from "@pkmn/data";
 import { Generations } from "@pkmn/data";
-import type { Generation, Item, Move, Specie, Type } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
 
 // ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ function toKebab(str: string): string {
 }
 
 /** Convert Showdown move ID (lowercasenoseparators) to kebab-case */
-function moveIdToKebab(showdownId: string, displayName: string): string {
+function moveIdToKebab(_showdownId: string, displayName: string): string {
   // Use displayName for reliable kebab conversion
   return displayName
     .replace(/['']/g, "")
@@ -325,7 +325,7 @@ function mapEvoType(sdEvoType: string | undefined, sdEvoCondition: string | unde
   }
 }
 
-function buildEvolutionLink(targetSpecies: Specie, gen: Generation): EvolutionLink {
+function buildEvolutionLink(targetSpecies: Specie, _gen: Generation): EvolutionLink {
   const method = mapEvoType(
     targetSpecies.evoType as string | undefined,
     targetSpecies.evoCondition as string | undefined,
@@ -1037,7 +1037,7 @@ function buildTypeChart() {
   // Gen 6-9 add fairy
   for (let g = 6; g <= 9; g++) GEN_TYPES[g] = [...GEN_TYPES[2], "fairy"];
 
-  const validTypes = new Set(GEN_TYPES[GEN_NUM]);
+  const _validTypes = new Set(GEN_TYPES[GEN_NUM]);
   const chart: Record<string, Record<string, number>> = {};
 
   for (const attackType of GEN_TYPES[GEN_NUM]) {

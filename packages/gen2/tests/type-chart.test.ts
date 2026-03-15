@@ -1,6 +1,6 @@
 import type { TypeChart } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN2_TYPES, GEN2_TYPE_CHART } from "../src/Gen2TypeChart";
+import { GEN2_TYPE_CHART, GEN2_TYPES } from "../src/Gen2TypeChart";
 
 /**
  * Helper to get a type effectiveness multiplier from the chart.
