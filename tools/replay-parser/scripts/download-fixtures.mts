@@ -1,5 +1,5 @@
-import { searchReplays, downloadAndSave } from "../src/downloader.js";
 import { mkdir } from "node:fs/promises";
+import { downloadAndSave, searchReplays } from "../src/downloader.js";
 
 const outputDir = "tools/replay-parser/replays/gen1";
 await mkdir(outputDir, { recursive: true });
