@@ -5,6 +5,16 @@ All notable changes to `@pokemon-lib-ts/gen2` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-03-15
+
+### Fixed
+- Gen2CritCalc: Stick now correctly grants +2 crit stage for Farfetch'd (#83 only); Lucky Punch now correctly grants +2 crit stage for Chansey (#113 only) (fixes #95)
+- Gen2Ruleset: `onSwitchOut()` now clears the `"trapped"` volatile from the opposing active Pokemon when the trapper switches out, implementing Mean Look/Spider Web release per pret/pokecrystal (fixes #96)
+- Gen2DamageCalc: STAB is now applied before weather modifier (correct order per ground truth §3: `STAB → type_effectiveness → weather`) (fixes #97)
+- Gen2DamageCalc: Type effectiveness for dual-type defenders now applied sequentially with `Math.floor` after each type (fixes #98)
+- Gen2Ruleset: `rollProtectSuccess()` denominator now caps at 255 (single byte, per pret/pokecrystal), not 729 (fixes #99)
+- Gen2Ruleset: `calculateStruggleRecoil()` now returns `floor(maxHp / 4)` instead of `floor(damageDealt / 2)` — Gen 2 Struggle recoil is based on attacker max HP (fixes #100)
+
 ## [0.3.2] - 2026-03-15
 
 ### Fixed

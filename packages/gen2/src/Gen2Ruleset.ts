@@ -808,7 +808,7 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // --- Switch Out ---
 
-  onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
+  onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Gen 2: clear non-persistent volatiles on switch
     // Note: toxic-counter resets on switch (damage restarts at 1/16 next time in),
     // but the badly-poisoned status itself persists.
@@ -818,6 +818,24 @@ export class Gen2Ruleset implements GenerationRuleset {
     pokemon.volatileStatuses.delete("focus-energy");
     pokemon.volatileStatuses.delete("leech-seed");
     pokemon.volatileStatuses.delete("toxic-counter");
+
+    // If the switching Pokemon had applied trapping (Mean Look / Spider Web),
+    // clear the "trapped" volatile from the opposing active Pokemon.
+    // Source: gen2-ground-truth.md §9 — Mean Look / Spider Web:
+    //   "Effect ends when the user (the Pokemon that used Mean Look/Spider Web) switches out"
+    // Source: pret/pokecrystal — MeanLook/SpiderWeb tracking tied to trapper's presence on field
+    const switchingSideIndex = state.sides.findIndex((side) =>
+      side.active.some((a) => a?.pokemon === pokemon.pokemon),
+    );
+    if (switchingSideIndex !== -1) {
+      const opposingSideIndex = switchingSideIndex === 0 ? 1 : 0;
+      const opposingSide = state.sides[opposingSideIndex];
+      for (const opposingActive of opposingSide?.active ?? []) {
+        if (opposingActive) {
+          opposingActive.volatileStatuses.delete("trapped");
+        }
+      }
+    }
   }
 
   // --- Switching ---
@@ -851,9 +869,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
-  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
-    // Gen 2: recoil = 1/2 of damage dealt (same as Gen 1; changed to 1/4 max HP in Gen 4)
-    return Math.max(1, Math.floor(damageDealt / 2));
+  calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
+    // Gen 2: recoil = 1/4 of the user's MAX HP (not damage dealt)
+    // Source: gen2-ground-truth.md §9 — Struggle: "floor(maxHp / 4)"
+    // Source: pret/pokecrystal — Struggle recoil uses user's max HP divided by 4
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
   }
 
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
@@ -861,9 +882,14 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
+    // Source: gen2-ground-truth.md §9 — Protect/Detect
+    // "Denominator cap: 255 — after enough consecutive uses, X is capped at 255.
+    //  It does NOT reach 729 (3^6). The cap prevents the denominator from exceeding a single byte (0xFF)."
+    // Source: pret/pokecrystal — consecutive use counter is a single byte capped at 255
     if (consecutiveProtects === 0) return true;
-    const denominator = Math.min(729, 3 ** consecutiveProtects);
-    return rng.chance(1 / denominator);
+    const denominator = Math.min(255, 3 ** consecutiveProtects);
+    const successThreshold = Math.max(1, Math.floor(255 / denominator));
+    return rng.int(0, 255) < successThreshold;
   }
 
   calculateBindDamage(pokemon: ActivePokemon): number {

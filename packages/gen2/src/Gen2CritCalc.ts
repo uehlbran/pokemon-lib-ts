@@ -43,12 +43,16 @@ function isHighCritMove(move: MoveData): boolean {
 /**
  * Calculate the critical hit stage for a Gen 2 attack.
  *
- * Modifiers that add +1 stage each (they stack):
+ * Modifiers that add stages (they stack):
  * - High crit moves (Slash, Cross Chop, etc.): +1
  * - Focus Energy: +1 (FIXED in Gen 2 — not bugged like Gen 1)
  * - Scope Lens item: +1
+ * - Stick (Farfetch'd only): +2
+ * - Lucky Punch (Chansey only): +2
  *
  * The stage is clamped to [0, 4] (index into GEN2_CRIT_RATES).
+ *
+ * Source: gen2-ground-truth.md §4 — Crit Stage Sources table
  *
  * @param attacker - The active attacking Pokemon
  * @param move - The move being used
@@ -68,8 +72,21 @@ export function getGen2CritStage(attacker: ActivePokemon, move: MoveData): numbe
   }
 
   // Scope Lens held item: +1
+  // Source: gen2-ground-truth.md §4 — Crit Stage Sources
   if (attacker.pokemon.heldItem === "scope-lens") {
     stage += 1;
+  }
+
+  // Stick (Farfetch'd #83 only): +2
+  // Source: gen2-ground-truth.md §4 — Crit Stage Sources
+  if (attacker.pokemon.heldItem === "stick" && attacker.pokemon.speciesId === 83) {
+    stage += 2;
+  }
+
+  // Lucky Punch (Chansey #113 only): +2
+  // Source: gen2-ground-truth.md §4 — Crit Stage Sources
+  if (attacker.pokemon.heldItem === "lucky-punch" && attacker.pokemon.speciesId === 113) {
+    stage += 2;
   }
 
   // Clamp to max stage
