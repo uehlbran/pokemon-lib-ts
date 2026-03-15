@@ -6,15 +6,17 @@ import type { PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
  *
  * - Fire types: immune to burn
  * - Ice types: immune to freeze
- * - Electric types: immune to paralysis (NEW in Gen 2 — Gen 1 allowed it!)
  * - Poison types: immune to poison and badly-poisoned
  * - Steel types: immune to poison and badly-poisoned (new type in Gen 2)
+ *
+ * Note: Electric types are NOT immune to paralysis in Gen 2. That immunity
+ * was introduced in Gen 6. Both Gen 1 and Gen 2 allow Electric types to
+ * be paralyzed.
  */
 const STATUS_IMMUNITIES: Record<string, readonly PokemonType[]> = {
   burn: ["fire"],
   poison: ["poison", "steel"],
   "badly-poisoned": ["poison", "steel"],
-  paralysis: ["electric"],
   freeze: ["ice"],
 };
 
@@ -82,8 +84,10 @@ export function calculateGen2StatusDamage(
  * Type immunities (Gen 2):
  * - Fire: immune to burn
  * - Ice: immune to freeze
- * - Electric: immune to paralysis (new in Gen 2!)
  * - Poison/Steel: immune to poison and badly-poisoned
+ *
+ * Note: Electric types are NOT immune to paralysis in Gen 2 (that immunity
+ * was added in Gen 6). No type is immune to paralysis in Gen 2.
  *
  * @param status - The status to attempt to inflict
  * @param target - The target Pokemon

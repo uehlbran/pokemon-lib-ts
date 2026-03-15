@@ -622,8 +622,8 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollSleepTurns(rng: SeededRandom): number {
-    // Gen 2: Sleep lasts 1-6 turns
-    return rng.int(1, 6);
+    // Gen 2: Sleep lasts 1-7 turns (Showdown Gen 2 confirmed)
+    return rng.int(1, 7);
   }
 
   checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
@@ -851,7 +851,7 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
-    // Gen 2: recoil = 1/2 of damage dealt
+    // Gen 2: recoil = 1/2 of damage dealt (same as Gen 1; changed to 1/4 max HP in Gen 4)
     return Math.max(1, Math.floor(damageDealt / 2));
   }
 
@@ -892,18 +892,21 @@ export class Gen2Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    // Order per pret/pokecrystal ground truth:
+    // future-attack → leftovers → status-damage → leech-seed → nightmare →
+    // curse → bind → weather-damage → perish-song → screen-countdown → weather-countdown
     return [
       "future-attack",
-      "weather-damage",
       "leftovers",
-      "leech-seed",
-      "bind",
       "status-damage",
+      "leech-seed",
       "nightmare",
       "curse",
+      "bind",
+      "weather-damage",
       "perish-song",
-      "weather-countdown",
       "screen-countdown",
+      "weather-countdown",
     ] as const;
   }
 }
