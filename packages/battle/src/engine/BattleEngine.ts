@@ -444,6 +444,37 @@ export class BattleEngine implements BattleEventEmitter {
     // Sort actions by priority / speed / random
     const orderedActions = this.ruleset.resolveTurnOrder(actions, this.state, this.state.rng);
 
+    // --- PURSUIT PRE-CHECK (Gen 2-7) ---
+    // If a Pokemon uses Pursuit and the opponent is switching, Pursuit fires first
+    // with doubled base power, before the switch resolves.
+    if (this.ruleset.generation >= 2 && this.ruleset.generation <= 7) {
+      for (let i = 0; i < orderedActions.length; i++) {
+        const action = orderedActions[i];
+        if (!action || action.type !== "move") continue;
+        const actor = this.getActive(action.side);
+        if (!actor || actor.pokemon.currentHp <= 0) continue;
+        const moveSlot = actor.pokemon.moves[action.moveIndex];
+        if (!moveSlot) continue;
+        const moveData = this.dataManager.getMove(moveSlot.moveId);
+        if (!moveData || moveData.id !== "pursuit") continue;
+
+        // Check if the opponent is switching this turn
+        const opponentAction = orderedActions.find(
+          (a, j) => j !== i && a.side !== action.side,
+        );
+        if (opponentAction?.type !== "switch") continue;
+
+        // Execute Pursuit before the switch (doubled power is a TODO — currently uses base power)
+        this.executeMove(action, actor);
+        this.checkMidTurnFaints();
+        if (this.state.ended) return;
+
+        // Remove the Pursuit action from orderedActions so it doesn't fire again
+        orderedActions.splice(i, 1);
+        break; // Only one Pursuit per turn
+      }
+    }
+
     // Execute each action in order
     for (const action of orderedActions) {
       // Check if the acting pokemon fainted before it could act
