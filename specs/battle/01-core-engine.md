@@ -1,10 +1,33 @@
+<!-- SPEC FRONT-MATTER -->
+<!-- status: IMPLEMENTED -->
+<!-- last-updated: 2026-03-15 -->
+
 # Battle Library — Core Engine
+
+> **Status: IMPLEMENTED** — Turn loop and mechanics implemented in `packages/battle/src/engine/BattleEngine.ts`. Known delegation bugs flagged below.
 
 > The shared battle engine that all generations use. Covers the state machine implementation,
 > turn resolution loop, switch handling, end-of-turn processing, and win condition checks.
 >
 > This file describes the engine's "skeleton" — the parts that DON'T change between generations.
 > Generation-specific behavior is delegated to the `GenerationRuleset` interface (see 00-architecture.md).
+
+---
+
+## Quick Start for AI Agents
+
+**Entry point**: `packages/battle/src/engine/BattleEngine.ts`
+
+**Turn flow**: `TURN_START → action selection → priority sort → TURN_RESOLVE (accuracy check → move execution → damage/effects → ability triggers) → TURN_END → weather/status ticks → FAINT_CHECK → next turn or game over`
+
+**Key delegation pattern**: The engine delegates ALL gen-specific behavior to `GenerationRuleset`. Never add gen-specific code to the engine.
+
+**End-of-turn delegation**: `ruleset.getEndOfTurnOrder()` returns an array like `["status-damage", "leech-seed", "weather"]`. The engine iterates this array in order.
+
+**Known delegation bugs** (flagged for separate fix):
+- Leech Seed drain: hardcoded to `maxHp/8` at ~line 1588; Gen 1 should be `maxHp/16`. Should call `ruleset.calculateLeechSeedDrain()`.
+- Curse damage: hardcoded to `maxHp/4` at ~line 1658; should call `ruleset.calculateCurseDamage()`.
+- Nightmare damage: hardcoded to `maxHp/4` at ~line 1681; should call `ruleset.calculateNightmareDamage()`.
 
 ---
 
@@ -370,15 +393,15 @@ private canExecuteMove(actor: ActivePokemon, move: MoveData): boolean {
     }
   }
 
-  // Paralysis check (25% chance to not move, Gen 1 uses different rate)
+  // Paralysis check — delegated to ruleset (see implementation note below)
   if (actor.pokemon.status === 'paralysis') {
-    if (this.state.rng.chance(0.25)) {
+    if (this.ruleset.checkFullParalysis(actor, this.state.rng)) {
       this.emit({ type: 'message', text: `${this.getName(actor)} is fully paralyzed!` });
       return false;
     }
   }
 
-  // Confusion check
+  // Confusion check — delegated to ruleset (see implementation note below)
   if (actor.volatileStatuses.has('confusion')) {
     const confState = actor.volatileStatuses.get('confusion')!;
     if (confState.turnsLeft <= 0) {
@@ -387,9 +410,9 @@ private canExecuteMove(actor: ActivePokemon, move: MoveData): boolean {
     } else {
       confState.turnsLeft--;
       this.emit({ type: 'message', text: `${this.getName(actor)} is confused!` });
-      if (this.state.rng.chance(1/3)) { // Gen 7+: 1/3 chance to hit self
-        // Self-hit: 40 power physical typeless move
-        const selfDamage = this.calculateConfusionDamage(actor);
+      if (this.ruleset.rollConfusionSelfHit(this.state.rng)) {
+        // Self-hit: damage formula delegated to ruleset
+        const selfDamage = this.ruleset.calculateConfusionDamage(actor);
         actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
         this.emit({ type: 'message', text: "It hurt itself in its confusion!" });
         this.emit({
@@ -430,6 +453,13 @@ private canExecuteMove(actor: ActivePokemon, move: MoveData): boolean {
   return true;
 }
 ```
+
+> **Implementation note**: Paralysis, confusion, and sleep chance checks are delegated to the ruleset:
+> - `ruleset.checkFullParalysis(actor, rng)` — Gen 1: 25%, Gen 2-5: 25%, Gen 6+: 25% (mechanism differs internally)
+> - `ruleset.rollConfusionSelfHit(rng)` — Gen 1-6: 50%, Gen 7+: 33%
+> - `ruleset.getSleepDuration(rng)` — Gen 1-2: 1-7 turns, Gen 3-4: 2-5, Gen 5+: 1-3
+>
+> Never hardcode these rates in the engine.
 
 ---
 
@@ -532,6 +562,26 @@ private processEndOfTurn(): void {
   }
 }
 ```
+
+## End-of-Turn Processing (Delegation Pattern)
+
+The engine calls `ruleset.getEndOfTurnOrder()` to get a generation-specific array of effect identifiers, then processes each in order.
+
+Example arrays:
+- Gen 1: `["status-damage", "leech-seed"]` (no weather)
+- Gen 2: `["weather-damage", "status-damage", "leech-seed", "future-sight"]`
+- Gen 3+: `["weather-damage", "status-damage", "leech-seed", "nightmare", "curse", "future-sight", "wish", "weather-end"]`
+
+Valid effect identifiers include:
+- `"weather-damage"` — Sandstorm/Hail chip damage
+- `"status-damage"` — Burn/Poison/Toxic damage
+- `"leech-seed"` — Leech Seed drain
+- `"nightmare"` — Nightmare damage (1/4 max HP if asleep)
+- `"curse"` — Curse damage (Ghost-type curse, 1/4 max HP)
+- `"weather-end"` — Decrement weather counter, clear if expired
+- `"future-sight"` — Execute Future Sight/Doom Desire hits
+- `"wish"` — Heal from Wish
+- `"perish-song"` — Decrement Perish Song counter, faint if 0
 
 ---
 
@@ -848,3 +898,120 @@ describe('BattleEngine', () => {
 ```
 
 ---
+
+## 8. Struggle
+
+When a Pokémon has 0 PP remaining in all move slots, it uses Struggle:
+- Always hits (no accuracy check)
+- Base power: 50
+- Type: Normal (Gen 1-3), Typeless (Gen 4+)
+- Recoil: 1/4 of damage dealt (Gen 4+), 1/2 of user's max HP (Gen 1-3)
+- Cannot be blocked by Protect
+- Cannot be reflected by Magic Coat
+- PP loss: None (Struggle costs no PP)
+
+> **Delegation**: `ruleset.getStruggleRecoilFraction()` returns the recoil fraction for this gen.
+
+> **Cross-ref**: `BattleEngine.ts` `executeStruggle()` method (search for `executeStruggle`).
+
+---
+
+## 9. Multi-Hit Moves
+
+Multi-hit moves (Fury Attack, Pin Missile, etc.) hit 2-5 times:
+- Hit count: 2 or 3 hits each with 37.5% probability; 4 or 5 hits each with 12.5% probability
+- Each hit is checked for crit independently
+- Each hit deals damage and applies contact effects independently
+- If the target faints mid-sequence, remaining hits are skipped
+
+Double-hit moves (Bonemerang, Double Kick, etc.):
+- Always hit exactly twice
+- Each hit is checked for accuracy independently (Gen 1-4)
+- Gen 5+: second hit cannot miss if first hit landed
+
+> **Cross-ref**: `BattleEngine.ts` `executeMultiHitMove()` (search for this method)
+
+---
+
+## 10. Protect/Detect Success Rate
+
+The chance that Protect/Detect succeeds decreases with consecutive uses:
+- Gen 3+: success rate = 1/N where N doubles each consecutive use (100%, 50%, 25%, ..., minimum 1/65536)
+- Gen 1-2: Protect does not exist; Endure does not exist
+
+> **Delegation**: `ruleset.rollProtectSuccess(consecutiveUses, rng)` returns whether the protection attempt succeeds. Search `BattleEngine.ts` for `rollProtectSuccess` to see the call site.
+
+---
+
+## 11. Pursuit Pre-Switch Interaction
+
+Pursuit is a special move that intercepts a Pokémon attempting to switch out:
+- If the target selects Switch this turn, Pursuit executes first (before the switch)
+- If Pursuit hits a switching Pokémon, its power is doubled
+- If the target faints from Pursuit damage, the switch still occurs (the new Pokémon comes in)
+- Priority: Pursuit normally has 0 priority, but the switch-intercept check overrides turn order
+
+> **Cross-ref**: Search `BattleEngine.ts` for `"pursuit"` to find the implementation.
+
+---
+
+## 12. Partial Trapping (Bind, Wrap, Fire Spin, etc.)
+
+Partial trapping moves deal damage and prevent switching for multiple turns:
+- The trapped Pokémon takes end-of-turn damage at the end of each turn it is trapped
+- The Pokémon cannot switch out while trapped (but can use moves normally)
+- Duration: 4-5 turns randomly (Gen 1: 2-5 turns, with 3/8 chance each for 2 and 3, and 1/8 each for 4 and 5)
+- Gen 5+: Binding Band item extends duration and damage
+- Gen 6+: damage increases to 1/8 max HP with Binding Band
+
+The `'bound'` volatile status is set on the target. End-of-turn processing is handled by the `"bind"` effect identifier in `getEndOfTurnOrder()`.
+
+> **Delegation**: `ruleset.getTrappingDuration(rng)` and `ruleset.getTrappingDamage(active)` for gen-specific values.
+
+> **Cross-ref**: Search `BattleEngine.ts` for `processBindDamage` to find the implementation.
+
+---
+
+## 13. End-of-Turn Status Damage Reference
+
+| Status | Gen 1 | Gen 2-4 | Gen 5+ |
+|--------|-------|---------|--------|
+| Burn | 1/16 max HP | 1/16 max HP | 1/16 max HP |
+| Poison | 1/16 max HP | 1/16 max HP | 1/8 max HP |
+| Toxic (N=1) | 1/16 max HP | 1/16 max HP | 1/16 max HP |
+| Toxic (max) | 16/16 max HP | 15/16 max HP | 15/16 max HP |
+| Leech Seed | 1/16 max HP* | 1/8 max HP | 1/8 max HP |
+
+*Gen 1 Leech Seed drains from MAX HP (not current HP). The drained HP is added to the Leech Seeder's current HP (capped at max).
+
+**Note**: The current engine hardcodes some of these values (see Known Delegation Bugs in Quick Start). The table above is correct per spec; the bugs are in the code, not the spec.
+
+> **Delegation**: `ruleset.getEndOfTurnOrder()` controls what effects apply and in what order. Individual damage fractions should be queried via per-effect ruleset methods (e.g., `ruleset.calculateLeechSeedDrain()`).
+
+---
+
+## Implementation Cross-Reference
+
+| Concept | Source File | Approximate Location |
+|---------|-------------|---------------------|
+| Turn loop | `packages/battle/src/engine/BattleEngine.ts` | `executeTurn()` method |
+| Turn order resolution | `packages/battle/src/engine/BattleEngine.ts` | `resolveTurnOrder()` |
+| Accuracy check | `packages/battle/src/engine/BattleEngine.ts` | `doesMoveHit()` |
+| Damage calculation | `packages/battle/src/engine/BattleEngine.ts` | delegates to `ruleset.calculateDamage()` |
+| End-of-turn loop | `packages/battle/src/engine/BattleEngine.ts` | search `getEndOfTurnOrder` |
+| Leech Seed (BUG) | `packages/battle/src/engine/BattleEngine.ts` | ~line 1588, hardcoded maxHp/8 |
+| Curse (BUG) | `packages/battle/src/engine/BattleEngine.ts` | ~line 1658, hardcoded maxHp/4 |
+| Nightmare (BUG) | `packages/battle/src/engine/BattleEngine.ts` | ~line 1681, hardcoded maxHp/4 |
+| Struggle | `packages/battle/src/engine/BattleEngine.ts` | `executeStruggle()` |
+| Pursuit intercept | `packages/battle/src/engine/BattleEngine.ts` | search `"pursuit"` |
+| Protect success roll | `packages/battle/src/engine/BattleEngine.ts` | search `rollProtectSuccess` |
+| Partial trapping damage | `packages/battle/src/engine/BattleEngine.ts` | `processBindDamage()` |
+
+---
+
+## Document History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.0 | 2026-03-15 | Added Quick Start with delegation bugs, added 6 missing sections (Struggle, Multi-Hit, Protect formula, Pursuit, Partial Trapping, Status Reference), documented end-of-turn delegation pattern, added Cross-Reference, fixed paralysis/confusion delegation documentation |
+| 1.0 | 2024 | Initial core engine spec |
