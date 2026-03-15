@@ -157,11 +157,18 @@ Rules:
 - When implementing a plan with independent steps, dispatch those steps as parallel subagents rather than executing them sequentially in the main context
 - Only serialize work when there is a true dependency (e.g., must read output of step 1 to inform step 2)
 
+### Git Safety with Worktrees
+- **Verify before mutating.** Before any mutating git command (`rebase`, `reset`, `merge`, `commit`, `checkout`), run `git branch --show-current` (or `git -C <path> branch --show-current`) and confirm it matches the expected branch
+- **Always use `git -C <worktree-path>`** for ALL git commands when a worktree exists for the task — even read-only commands like `log` and `status`. Never run bare `git` in the main repo for worktree work
+- **Verify PR state first.** Before acting on a PR, run `gh pr view <number> --json state` to confirm it's still open
+- **Post-mutation verification.** After any `rebase`/`merge`/`reset`, run `git log --oneline -5` and confirm the result matches expectations before continuing
+- **Never mutate the main worktree for PR work.** If the task involves a PR and a worktree exists, all git operations happen via `git -C <worktree-path>`, period
+
 ## PR Workflow
 
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/`. See Package Versioning above.
 - Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use manual polling.
-- **Always use `/loop` with `/babysit-pr`** for any PR that needs to wait for CI or reviews: `/loop 5m babysit-pr <number> --auto-merge`. A single `/babysit-pr` invocation runs once and exits — it does not poll.
+- **`/babysit-pr` auto-merges by default** and self-polls until complete — no `/loop` wrapper needed. Use `--no-merge` to require confirmation before merging.
 - **Act autonomously.** When handling a PR, agents should:
   - Push fixes for reviewer feedback without asking permission
   - Fix CI/lint/test failures independently
