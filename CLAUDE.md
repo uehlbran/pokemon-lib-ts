@@ -58,11 +58,19 @@ npx vitest run         # Run tests (from package dir)
 npx vitest run --coverage  # Run with coverage
 ```
 
+### Biome Tips
+- `npx @biomejs/biome check --changed --since=main .` — lint only changed files (`--since=main` is required; `vcs.defaultBranch` is not set in biome.json so `--changed` alone errors)
+- `npx @biomejs/biome explain <ruleName>` — understand a rule and whether it has an auto-fix
+- `FIXABLE` tag in diagnostic output means `--write` handles it; no tag = manual fix required
+- `--write --unsafe` applies unsafe fixes (e.g. `noNonNullAssertion` rewrites `foo!` → `foo?`); always `git diff` before committing
+- `noExplicitAny` has **no auto-fix** — replace `any` with a real type manually
+- Test files (`packages/*/tests/**`, `tools/*/tests/**`) have `noNonNullAssertion` and `noExplicitAny` turned off; a diagnostic on those paths for those rules is a false alarm
+
 ## Code Style
 
 - Biome handles all formatting: spaces, indent width 2, line width 100
 - Organize imports enabled
-- Linter with recommended rules, warn on noExplicitAny
+- Linter with recommended rules, `noExplicitAny` is error (not warn) in this project
 - No semicolons in Biome config (use Biome defaults)
 - Prefer readonly interfaces for data. Mutable versions only where needed (runtime stat blocks).
 - Use discriminated unions over class hierarchies (MoveEffect, BattleAction, BattleEvent)
@@ -192,3 +200,15 @@ Rules:
 - **After `gh pr merge --auto`**: always verify with `gh pr view <number> --json state` — the command produces no output on success
 - **CodeRabbit and Qodo are advisory only** — not required checks. Do not block merge on them. Required checks: `build`, `test`, `typecheck`, `lint`
 - **`gh pr checks` exit code 8 means pending**, not failure
+
+### Pre-Push Validation (Mandatory)
+
+Before every `git push`, all agents must run the following validation gate:
+
+1. **Biome**: `npx @biomejs/biome check --write .` — auto-fixes formatting/lint. If any files are modified, stage them before pushing.
+2. **Typecheck**: `npm run typecheck` — catches TypeScript errors.
+3. **Tests**: `npm run test` — ensures nothing is broken.
+
+If typecheck or tests fail, fix the issue and re-run before pushing. Never push failing code.
+
+**Exception:** For docs-only changes (no files under `src/` or `data/` modified), skip typecheck and test — biome check is still required.
