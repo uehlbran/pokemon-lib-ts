@@ -755,7 +755,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     );
 
     if (pokemon.pokemon.status === "burn") {
-      atk = Math.floor(atk / 2);
+      atk = Math.max(1, Math.floor(atk / 2));
     }
 
     const levelFactor = Math.floor((2 * level) / 5) + 2;
