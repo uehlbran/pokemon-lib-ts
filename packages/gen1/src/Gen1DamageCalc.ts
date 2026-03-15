@@ -170,23 +170,14 @@ export function calculateGen1Damage(
 
   baseDamage = Math.floor(baseDamage * effectiveness);
 
-  // Zero-damage check: if damage dropped to 0 after type effectiveness (e.g. 4x-resisted
-  // weak move), the move is treated as a miss (deals 0 damage), not forced to 1.
-  if (baseDamage === 0) {
-    return {
-      damage: 0,
-      effectiveness,
-      isCrit,
-      randomFactor: 1,
-    };
-  }
+  // Source: pret/pokered src/engine/battle/core_battle_start.asm — non-immune moves deal minimum 1 damage
 
   // Step 4: Random factor (217-255) / 255
   // In Gen 1, the random factor ranges from 217 to 255 (inclusive), then divided by 255
   // Integer math: avoid float intermediate that could cause rounding differences
   const randomRoll = rng.int(217, 255);
   const randomFactor = randomRoll / 255; // keep for DamageBreakdown.randomMultiplier only
-  const finalDamage = Math.floor((baseDamage * randomRoll) / 255);
+  const finalDamage = Math.max(1, Math.floor((baseDamage * randomRoll) / 255));
 
   const breakdown: DamageBreakdown = {
     baseDamage:

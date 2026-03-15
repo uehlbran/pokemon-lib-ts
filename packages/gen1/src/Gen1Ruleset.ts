@@ -499,10 +499,16 @@ export class Gen1Ruleset implements GenerationRuleset {
       case "custom": {
         // Handle specific custom moves by handler name
         if (effect.handler === "haze") {
-          // Haze: clears all stat changes and status conditions for both pokemon
-          // and removes all screens from both sides (Gen 1 only)
+          // Haze: clears all stat changes and status conditions for both pokemon,
+          // removes all volatile statuses for both Pokemon, and removes all screens
+          // from both sides (Gen 1 only).
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Haze clears
+          // all volatile statuses (leech-seed, focus-energy, confusion, disable, etc.)
           result.statusCured = { target: "both" };
           result.screensCleared = "both";
+          // Directly clear all volatile statuses for both Pokemon
+          attacker.volatileStatuses.clear();
+          defender.volatileStatuses.clear();
           result.messages.push("All stat changes were eliminated!");
         } else if (effect.handler === "explosion" || effect.handler === "self-destruct") {
           // Explosion / Self-Destruct: user faints after using the move

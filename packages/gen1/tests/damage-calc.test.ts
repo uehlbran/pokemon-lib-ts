@@ -563,10 +563,11 @@ describe("Gen 1 Damage Calculation", () => {
     expect(damage).toBeGreaterThanOrEqual(1);
   });
 
-  it("given very weak move vs high defense and 0.5x resist, when damage is 0 after random, then deals 0 (Gen 1 zero-damage check)", () => {
-    // Gen 1: if damage reaches 0 before the random factor step, the move is a miss.
-    // After random, 0 is also valid (no forced minimum-1 floor in Gen 1).
-    // L5, P10, Atk10, Def200, 0.5x → baseDamage=1, random 0.85 → floor(1*217/255)=0
+  it("given very weak move vs high defense and 0.5x resist, when damage rounds to 0 after random, then deals 1 (Gen 1 min-1 damage for non-immune moves)", () => {
+    // Gen 1 cartridge behavior (pret/pokered core_battle_start.asm): non-immune moves
+    // always deal at least 1 damage. Even if floor(baseDamage * randomRoll / 255) = 0,
+    // the result is clamped to 1.
+    // L5, P10, Atk10, Def200, 0.5x → baseDamage=1, floor(1*217/255)=0 → clamped to 1
     const params = {
       level: 5,
       power: 10,
@@ -578,7 +579,7 @@ describe("Gen 1 Damage Calculation", () => {
       randomFactor: 0.85,
     };
     const damage = calcDamage(params);
-    expect(damage).toBe(0);
+    expect(damage).toBe(1);
   });
 
   // --- Burn Effect on Physical Moves ---
