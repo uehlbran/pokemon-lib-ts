@@ -81,8 +81,30 @@ export interface MoveEffectResult {
   readonly healAmount: number;
   readonly switchOut: boolean;
   readonly messages: readonly string[];
+  /** Wave 1: Set a screen (Reflect/Light Screen) on the attacker's side */
+  readonly screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  /** Wave 1: Attacker faints after using the move (Explosion, Self-Destruct) */
+  readonly selfFaint?: boolean;
+  /** Wave 1: Skip recharge next turn (e.g., Hyper Beam KO'd the target) */
+  readonly noRecharge?: boolean;
+  /** Wave 1: Custom damage to apply to a target (for OHKO, fixed-damage, Counter) */
+  readonly customDamage?: {
+    target: "attacker" | "defender";
+    amount: number;
+    source: string;
+  } | null;
+  /** Wave 1: Cure the specified pokemon's status (e.g., Haze clears both sides) */
+  readonly statusCured?: { target: "attacker" | "defender" | "both" } | null;
+  /** Wave 2/3: Data for volatile status infliction (turnsLeft, etc.) */
+  readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   readonly weatherSet?: { weather: string; turns: number; source: string } | null;
   readonly hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+  readonly volatilesToClear?: ReadonlyArray<{
+    target: "attacker" | "defender";
+    volatile: VolatileStatus;
+  }>;
+  readonly clearSideHazards?: "attacker" | "defender";
+  readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
 }
 
 export interface AbilityContext {

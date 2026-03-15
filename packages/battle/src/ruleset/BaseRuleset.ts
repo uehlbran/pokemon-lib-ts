@@ -254,6 +254,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return { valid: true, errors: [] };
   }
 
+  getConfusionSelfHitChance(): number {
+    // Gen 1-6: 50% chance; Gen 7+ overrides to 33%
+    return 0.5;
+  }
+
   calculateConfusionDamage(
     pokemon: ActivePokemon,
     _state: BattleState,
@@ -261,6 +266,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
   ): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 8));
+  }
+
+  onSwitchOut(_pokemon: ActivePokemon, _state: BattleState): void {
+    // Base implementation: no-op.
+    // Override in gens where volatile statuses have special switch-out behavior.
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {

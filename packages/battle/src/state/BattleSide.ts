@@ -37,6 +37,7 @@ export interface ActivePokemon {
   types: PokemonType[];
   ability: string;
   lastMoveUsed: string | null;
+  lastDamageTaken: number;
   turnsOnField: number;
   movedThisTurn: boolean;
   consecutiveProtects: number;

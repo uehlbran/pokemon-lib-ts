@@ -390,7 +390,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
   it("given a badly-poisoned Pokemon with toxic counter 1, when applying status damage, then deals 1/16 max HP", () => {
     // Arrange
     const volatiles = new Map();
-    volatiles.set("bound", { turnsLeft: 0, data: { toxicCounter: 1 } });
+    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 1 } });
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
@@ -415,7 +415,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
   it("given a badly-poisoned Pokemon with toxic counter 3, when applying status damage, then deals 3/16 max HP (escalating)", () => {
     // Arrange
     const volatiles = new Map();
-    volatiles.set("bound", { turnsLeft: 0, data: { toxicCounter: 3 } });
+    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 3 } });
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,

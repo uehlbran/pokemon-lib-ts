@@ -174,7 +174,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Focus Band: 12% chance to survive with 1 HP when damage would KO
     case "focus-band": {
       if (currentHp - damage <= 0) {
-        if (context.rng.chance(12)) {
+        if (context.rng.chance(0.12)) {
           return {
             activated: true,
             effects: [{ type: "survive", target: "self", value: 1 }],
@@ -217,7 +217,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
   switch (item) {
     // King's Rock: 10% flinch chance on damaging moves
     case "kings-rock": {
-      if (context.rng.chance(10)) {
+      if (context.rng.chance(0.1)) {
         return {
           activated: true,
           effects: [{ type: "flinch", target: "opponent", value: true }],

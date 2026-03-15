@@ -305,6 +305,9 @@ export class Gen2Ruleset implements GenerationRuleset {
       messages: string[];
       weatherSet?: { weather: string; turns: number; source: string } | null;
       hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+      clearSideHazards?: "attacker" | "defender";
+      itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -347,6 +350,9 @@ export class Gen2Ruleset implements GenerationRuleset {
       messages: string[];
       weatherSet?: { weather: string; turns: number; source: string } | null;
       hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+      clearSideHazards?: "attacker" | "defender";
+      itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
     },
     context: MoveEffectContext,
   ): void {
@@ -517,6 +523,9 @@ export class Gen2Ruleset implements GenerationRuleset {
       messages: string[];
       weatherSet?: { weather: string; turns: number; source: string } | null;
       hazardSet?: { hazard: string; targetSide: 0 | 1 } | null;
+      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+      clearSideHazards?: "attacker" | "defender";
+      itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
     },
     context: MoveEffectContext,
   ): void {
@@ -543,7 +552,12 @@ export class Gen2Ruleset implements GenerationRuleset {
       }
 
       case "rapid-spin": {
-        // Remove leech-seed and spikes from user's side
+        // Remove leech-seed and binding volatiles from user, spikes from user's side
+        result.volatilesToClear = [
+          { target: "attacker", volatile: "leech-seed" },
+          { target: "attacker", volatile: "bound" },
+        ];
+        result.clearSideHazards = "attacker";
         result.messages.push(`${pokemonName} blew away leech seed and spikes!`);
         break;
       }
@@ -556,8 +570,9 @@ export class Gen2Ruleset implements GenerationRuleset {
       }
 
       case "thief": {
-        // If user has no item and defender has one, note the theft
+        // Steal defender's item if user has no item
         if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
+          result.itemTransfer = { from: "defender", to: "attacker" };
           result.messages.push(
             `${pokemonName} stole ${defender.pokemon.nickname ?? "the foe"}'s ${defender.pokemon.heldItem}!`,
           );
@@ -713,6 +728,10 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // --- Confusion ---
 
+  getConfusionSelfHitChance(): number {
+    return 0.5; // Gen 2: 50% chance to hit self in confusion
+  }
+
   calculateConfusionDamage(pokemon: ActivePokemon, _state: BattleState, rng: SeededRandom): number {
     const level = pokemon.pokemon.level;
     const stats = pokemon.pokemon.calculatedStats;
@@ -739,6 +758,17 @@ export class Gen2Ruleset implements GenerationRuleset {
     const finalDamage = Math.floor((baseDamage * randomRoll) / 255);
 
     return Math.max(1, finalDamage);
+  }
+
+  // --- Switch Out ---
+
+  onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
+    // Gen 2: clear non-persistent volatiles on switch
+    pokemon.volatileStatuses.delete("bound");
+    pokemon.volatileStatuses.delete("confusion");
+    pokemon.volatileStatuses.delete("flinch");
+    pokemon.volatileStatuses.delete("focus-energy");
+    pokemon.volatileStatuses.delete("leech-seed");
   }
 
   // --- End-of-Turn Order ---

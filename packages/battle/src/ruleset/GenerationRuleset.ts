@@ -217,7 +217,13 @@ export interface GenerationRuleset {
    */
   validatePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData): ValidationResult;
 
-  // --- Confusion Damage ---
+  // --- Confusion ---
+
+  /**
+   * The probability (0-1) that a confused Pokemon hits itself.
+   * Gen 1-6: 1/2 (50%). Gen 7+: 1/3.
+   */
+  getConfusionSelfHitChance(): number;
 
   /**
    * Calculate confusion self-hit damage.
@@ -225,6 +231,15 @@ export interface GenerationRuleset {
    * Gen 2+: actual 40 base power typeless physical damage formula
    */
   calculateConfusionDamage(pokemon: ActivePokemon, state: BattleState, rng: SeededRandom): number;
+
+  // --- Switch Out ---
+
+  /**
+   * Called when a Pokemon is switched out. Used to clear volatile
+   * statuses that don't persist through switching (e.g., bind counter reset).
+   * Gen 1: clears binding moves; Gen 2+: various volatile clears.
+   */
+  onSwitchOut(pokemon: ActivePokemon, state: BattleState): void;
 
   // --- End-of-Turn Order ---
 

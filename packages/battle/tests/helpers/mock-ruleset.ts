@@ -244,9 +244,21 @@ export class MockRuleset implements GenerationRuleset {
     return { valid: true, errors: [] };
   }
 
-  calculateConfusionDamage(pokemon: ActivePokemon): number {
+  getConfusionSelfHitChance(): number {
+    return 0.5;
+  }
+
+  calculateConfusionDamage(
+    pokemon: ActivePokemon,
+    _state: BattleState,
+    _rng: SeededRandom,
+  ): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 8));
+  }
+
+  onSwitchOut(_pokemon: ActivePokemon, _state: BattleState): void {
+    // No-op for mock
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
