@@ -860,6 +860,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
   }
 
+  rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
+    if (consecutiveProtects === 0) return true;
+    const denominator = Math.min(729, 3 ** consecutiveProtects);
+    return rng.chance(1 / denominator);
+  }
+
   calculateBindDamage(pokemon: ActivePokemon): number {
     // Gen 2-4: 1/16 max HP per turn
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
@@ -891,6 +897,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       "weather-damage",
       "leftovers",
       "leech-seed",
+      "bind",
       "status-damage",
       "nightmare",
       "curse",

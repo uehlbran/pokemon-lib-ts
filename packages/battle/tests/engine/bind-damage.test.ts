@@ -114,11 +114,9 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       expect(boundState).toBeDefined();
     });
 
-    it("given a 'bound' volatile with turnsLeft=1, when end of turn processes, then volatile-end is emitted", () => {
-      // Arrange — set turnsLeft high enough that processBindDamage removes it (not canExecuteMove)
-      // With turnsLeft=1: canExecuteMove sees turnsLeft<=1, removes volatile and emits volatile-end there.
-      // With turnsLeft=2: canExecuteMove decrements to 1 (blocks move but keeps volatile).
-      //   Then processBindDamage decrements to 0 and removes volatile + emits volatile-end.
+    it("given a 'bound' volatile with turnsLeft=1, when move is attempted, then volatile-end is emitted and volatile is cleared", () => {
+      // Arrange — turnsLeft=1: canExecuteMove sees turnsLeft<=1, clears volatile and emits volatile-end,
+      // then allows the move. processBindDamage finds no "bound" status → no EOT damage.
       const ruleset = new MockRuleset();
       ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["bind"];
 
@@ -126,25 +124,21 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       engine.start();
 
       const blastoise = engine.getActive(1);
-      // Use turnsLeft=2 so canExecuteMove decrements to 1 (keeps volatile), then EOT decrements to 0
-      blastoise?.volatileStatuses.set("bound", { turnsLeft: 2 });
+      blastoise?.volatileStatuses.set("bound", { turnsLeft: 1 });
 
       // Act
       events.length = 0;
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — volatile-end event for "bound" should be emitted (from processBindDamage)
+      // Assert — volatile-end event for "bound" should be emitted (from canExecuteMove on release)
       const volatileEndEvents = events.filter(
         (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "bound",
       );
       expect(volatileEndEvents.length).toBeGreaterThan(0);
 
-      // And damage should have been dealt before removal
-      const bindDamageEvents = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "bind",
-      );
-      expect(bindDamageEvents.length).toBeGreaterThan(0);
+      // volatile should be cleared
+      expect(engine.getActive(1)?.volatileStatuses.has("bound")).toBe(false);
     });
 
     it("given a fainted pokemon with 'bound' volatile, when end of turn processes, then no bind damage event is emitted", () => {

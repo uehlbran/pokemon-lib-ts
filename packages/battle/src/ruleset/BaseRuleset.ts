@@ -349,6 +349,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return 5;
   }
 
+  rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
+    if (consecutiveProtects === 0) return true;
+    const denominator = Math.min(729, 3 ** consecutiveProtects);
+    return rng.chance(1 / denominator);
+  }
+
   calculateBindDamage(pokemon: ActivePokemon): number {
     // Gen 5+ default: 1/8 max HP per turn
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;

@@ -467,8 +467,8 @@ export class BattleEngine implements BattleEventEmitter {
         const opponentAction = orderedActions.find((a, j) => j !== i && a.side !== action.side);
         if (opponentAction?.type !== "switch") continue;
 
-        // Execute Pursuit before the switch (doubled power is a TODO — currently uses base power)
-        this.executeMove(action, actor);
+        // Execute Pursuit before the switch (doubled base power for pre-switch Pursuit)
+        this.executeMove(action, actor, 2);
         this.checkMidTurnFaints();
         if (this.checkBattleEnd()) {
           this.transitionTo("BATTLE_END");
@@ -562,7 +562,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.transitionTo("ACTION_SELECT");
   }
 
-  private executeMove(action: MoveAction, actor: ActivePokemon): void {
+  private executeMove(action: MoveAction, actor: ActivePokemon, powerMultiplier = 1): void {
     const moveSlot = actor.pokemon.moves[action.moveIndex];
     if (!moveSlot) return;
 
@@ -581,6 +581,12 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
+    // Apply power multiplier (e.g., Pursuit pre-switch doubles power)
+    const effectiveMoveData =
+      powerMultiplier !== 1 && moveData.power !== null
+        ? { ...moveData, power: moveData.power * powerMultiplier }
+        : moveData;
+
     // Pre-move checks: can the pokemon actually move?
     if (!this.canExecuteMove(actor, moveData)) return;
 
@@ -594,10 +600,9 @@ export class BattleEngine implements BattleEventEmitter {
       move: moveData.id,
     });
 
-    // Protect consecutive use: each use after the first has 1/3^N chance of succeeding
+    // Protect consecutive use: delegate the success roll to the ruleset
     if (moveData.effect?.type === "protect") {
-      const denominator = Math.min(729, 3 ** actor.consecutiveProtects);
-      if (actor.consecutiveProtects > 0 && !this.state.rng.chance(1 / denominator)) {
+      if (!this.ruleset.rollProtectSuccess(actor.consecutiveProtects, this.state.rng)) {
         // Protect failed due to consecutive use
         actor.consecutiveProtects = 0;
         this.emit({
@@ -666,10 +671,10 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Damage calculation (for damaging moves)
     let damage = 0;
-    if (moveData.category !== "status" && moveData.power !== null) {
+    if (effectiveMoveData.category !== "status" && effectiveMoveData.power !== null) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
-        move: moveData,
+        move: effectiveMoveData,
         state: this.state,
         rng: this.state.rng,
       });
@@ -677,7 +682,7 @@ export class BattleEngine implements BattleEventEmitter {
       const result = this.ruleset.calculateDamage({
         attacker: actor,
         defender,
-        move: moveData,
+        move: effectiveMoveData,
         state: this.state,
         rng: this.state.rng,
         isCrit,
@@ -686,7 +691,7 @@ export class BattleEngine implements BattleEventEmitter {
       damage = result.damage;
 
       // Apply damage to substitute or pokemon
-      if (defender.substituteHp > 0 && !moveData.flags.bypassSubstitute) {
+      if (defender.substituteHp > 0 && !effectiveMoveData.flags.bypassSubstitute) {
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
         this.emit({
           type: "message",
@@ -711,7 +716,7 @@ export class BattleEngine implements BattleEventEmitter {
           amount: damage,
           currentHp: defender.pokemon.currentHp,
           maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
-          source: moveData.id,
+          source: effectiveMoveData.id,
         });
       }
 
@@ -740,7 +745,7 @@ export class BattleEngine implements BattleEventEmitter {
     const effectResult = this.ruleset.executeMoveEffect({
       attacker: actor,
       defender,
-      move: moveData,
+      move: effectiveMoveData,
       damage,
       state: this.state,
       rng: this.state.rng,
@@ -749,12 +754,12 @@ export class BattleEngine implements BattleEventEmitter {
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
 
     // Increment consecutiveProtects if protect was successfully used
-    if (moveData.effect?.type === "protect") {
+    if (effectiveMoveData.effect?.type === "protect") {
       actor.consecutiveProtects++;
     }
 
     // Recharge: if the move requires recharge and noRecharge was not set, mark the attacker
-    if (moveData.flags.recharge && !effectResult.noRecharge) {
+    if (effectiveMoveData.flags.recharge && !effectResult.noRecharge) {
       actor.volatileStatuses.set("recharge", { turnsLeft: 1 });
     }
 
@@ -764,7 +769,7 @@ export class BattleEngine implements BattleEventEmitter {
         pokemon: actor,
         state: this.state,
         rng: this.state.rng,
-        move: moveData,
+        move: effectiveMoveData,
       });
       if (atkItemResult.activated) {
         this.processItemResult(atkItemResult, actor, action.side);
@@ -819,6 +824,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Struggle does a fixed amount of typeless damage
     const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
     const damage = Math.max(1, Math.floor(maxHp / 4));
+    const defenderHpBefore = defender.pokemon.currentHp;
 
     defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
     this.emit({
@@ -832,7 +838,9 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     // Struggle recoil: delegated to ruleset (Gen 1-2: 1/2 damage, Gen 4+: 1/4 max HP)
-    const recoil = this.ruleset.calculateStruggleRecoil(actor, damage);
+    // Use actual damage dealt (capped by defender's HP before damage) to avoid overkill recoil
+    const actualDamage = Math.min(damage, defenderHpBefore);
+    const recoil = this.ruleset.calculateStruggleRecoil(actor, actualDamage);
     actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - recoil);
     this.emit({
       type: "damage",
@@ -1688,17 +1696,12 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active || active.pokemon.currentHp <= 0) continue;
       if (!active.volatileStatuses.has("bound")) continue;
 
-      const boundState = active.volatileStatuses.get("bound");
-      if (!boundState) continue;
-
-      // Decrement the bind counter
-      if (boundState.turnsLeft > 0) {
-        boundState.turnsLeft--;
-      }
-
       // Deal end-of-turn damage — delegate to ruleset (Gen 2-4: 1/16, Gen 5+: 1/8)
-      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      // Counter management (decrement + removal) is handled by canExecuteMove.
       const damage = this.ruleset.calculateBindDamage(active);
+      if (damage <= 0) continue; // Gen 1 returns 0
+
+      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
       this.emit({
         type: "damage",
@@ -1709,17 +1712,6 @@ export class BattleEngine implements BattleEventEmitter {
         maxHp,
         source: "bind",
       });
-
-      // If bind expired, remove the volatile
-      if (boundState.turnsLeft <= 0) {
-        active.volatileStatuses.delete("bound");
-        this.emit({
-          type: "volatile-end",
-          side: side.index,
-          pokemon: getPokemonName(active),
-          volatile: "bound",
-        });
-      }
     }
   }
 }

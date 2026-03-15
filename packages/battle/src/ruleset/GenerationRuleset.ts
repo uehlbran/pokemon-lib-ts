@@ -312,6 +312,13 @@ export interface GenerationRuleset {
   rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number;
 
   /**
+   * Roll whether a Protect-type move succeeds.
+   * Returns false if the consecutive use check fails (Gen 2+: 1/3^N chance for N>0).
+   * Gen 1 has no Protect — implement to always return true.
+   */
+  rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean;
+
+  /**
    * Calculate bind/trapping end-of-turn damage.
    * Gen 2-4: 1/16 max HP. Gen 5+: 1/8 max HP.
    * Gen 1: not used (bind is handled via canExecuteMove instead).

@@ -316,6 +316,10 @@ export class MockRuleset implements GenerationRuleset {
     return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
   }
 
+  rollProtectSuccess(_consecutiveProtects: number, _rng: SeededRandom): boolean {
+    return true; // Always succeeds in mock
+  }
+
   calculateBindDamage(pokemon: ActivePokemon): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 8));

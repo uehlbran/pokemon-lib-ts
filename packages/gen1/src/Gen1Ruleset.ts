@@ -834,6 +834,10 @@ export class Gen1Ruleset implements GenerationRuleset {
     return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
   }
 
+  rollProtectSuccess(_consecutiveProtects: number, _rng: SeededRandom): boolean {
+    return true; // Gen 1 has no Protect move
+  }
+
   calculateBindDamage(_pokemon: ActivePokemon): number {
     // Gen 1 handles bind/trapping in canExecuteMove, not end-of-turn
     return 0;
