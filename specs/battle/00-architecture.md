@@ -415,6 +415,42 @@ generations.register(new Gen9Ruleset());
 const battle = new BattleEngine({ generation: 1, /* ... */ }, new Gen1Ruleset(), dataManager);
 ```
 
+### 2.4 Turn Order Resolution (`resolveTurnOrder`)
+
+`BaseRuleset.resolveTurnOrder()` implements the default sort for Gen 3+ (and is the reference description for all gens). Gen 1 and Gen 2 override this method where their mechanics differ.
+
+#### Sort Order (highest priority wins)
+
+1. **Action type bracket** — sorted before speed comparison:
+   - Switch actions execute first (switches are simultaneous in Gen 1–5, sequential in Gen 6+)
+   - Item use executes before moves
+   - Run executes before moves
+   - Move vs. move proceeds to step 2
+
+2. **Move priority bracket** — integer priority attached to each move in the data layer (Extreme Speed = +2, Quick Attack = +1, most moves = 0, Trick Room = −7, etc.):
+   - Higher priority bracket goes first
+   - Ties within the same bracket proceed to step 3
+
+3. **Effective Speed** — within the same priority bracket, the faster Pokémon moves first:
+   - Base Speed after stat stage multipliers (`stages −6 … +6 → ×(2/8) … ×(8/2)`)
+   - Full paralysis reduces Speed by ×0.25 (applied to the stat, not the stage)
+   - Held items that modify Speed (e.g., Choice Scarf ×1.5, Iron Ball ×0.5) are applied here
+   - Trick Room reverses the comparison (slower Pokémon moves first)
+
+4. **Speed tie** — when effective Speed values are equal after step 3:
+   - Resolved by coin flip via the battle's `SeededRandom` instance (`rng.chance(0.5)`)
+   - Deterministic with a fixed seed; not truly random
+
+#### Generation-Specific Differences
+
+| Gen | Difference |
+|-----|-----------|
+| Gen 1 | No move-priority brackets (Quick Attack/Agility/Whirlwind all act at +1 but it's hardcoded per-move, not a priority field) |
+| Gen 1 | Speed is compared before any stage modification (stat stages do not affect turn order) |
+| Gen 2 | Priority brackets introduced; otherwise similar to Gen 3+ |
+| Gen 3–4 | Switches are simultaneous within a turn (both Pokémon are considered switched before any entry hazards are applied) |
+| Gen 5+ | Turn order for switches becomes sequential in edge cases (Pursuit interaction) |
+
 ---
 
 ## 3. Battle State Model
