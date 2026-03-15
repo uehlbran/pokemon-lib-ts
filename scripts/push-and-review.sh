@@ -61,12 +61,13 @@ LOG_FILE="$LOG_DIR/review-PR${PR_NUMBER}-$(date +%Y%m%d-%H%M%S).log"
 ls -t "$LOG_DIR"/review-*.log 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
 
 # Launch the reviewer with proper backgrounding
-nohup timeout 300 claude \
+# Timeout 600s — reviews with tool calls can take 5-8 minutes
+nohup timeout 600 claude \
     --agent pokemon-reviewer \
     --print \
     --no-session-persistence \
-    --allowedTools "Read" "Grep" "Glob" "Bash(gh:*)" \
-    "Review PR #$PR_NUMBER on branch $BRANCH. Run gh pr diff to see changes and post your review." \
+    --allowedTools "Read,Grep,Glob,Bash(gh:*)" \
+    -- "Review PR #$PR_NUMBER on branch $BRANCH. Run gh pr diff to see changes and post your review." \
     > "$LOG_FILE" 2>&1 &
 disown
 
