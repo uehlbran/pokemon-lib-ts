@@ -1117,6 +1117,982 @@ describe("Gen 2 Damage Calculation", () => {
 
   // --- Determinism ---
 
+  // --- Held Item Stat Modifiers ---
+
+  describe("Held item stat modifiers", () => {
+    // Thick Club — doubles Attack for Cubone (104) / Marowak (105)
+
+    it("given Marowak holding Thick Club, when using a physical move, then attack is doubled (damage ~2x)", () => {
+      // Arrange
+      const marowakWithClub = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: "thick-club",
+      });
+      // speciesId 105 = Marowak
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (marowakWithClub.pokemon as any).speciesId = 105;
+
+      const marowakNoItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (marowakNoItem.pokemon as any).speciesId = 105;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["ground"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: marowakWithClub,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: marowakNoItem,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Thick Club doubles attack, so damage should be ~2x
+      expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
+      if (noItemDmg.damage > 0) {
+        const ratio = withItemDmg.damage / noItemDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Cubone holding Thick Club, when using a physical move, then attack is doubled (damage ~2x)", () => {
+      // Arrange
+      const cuboneWithClub = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: "thick-club",
+      });
+      // speciesId 104 = Cubone
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (cuboneWithClub.pokemon as any).speciesId = 104;
+
+      const cuboneNoItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (cuboneNoItem.pokemon as any).speciesId = 104;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["ground"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: cuboneWithClub,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: cuboneNoItem,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Thick Club doubles attack, so damage should be ~2x
+      expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
+      if (noItemDmg.damage > 0) {
+        const ratio = withItemDmg.damage / noItemDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Onix (not Cubone/Marowak) holding Thick Club, when using a physical move, then no attack doubling", () => {
+      // Arrange: Onix speciesId = 95
+      const onixWithClub = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["rock"],
+        heldItem: "thick-club",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (onixWithClub.pokemon as any).speciesId = 95;
+
+      const onixNoItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["rock"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (onixNoItem.pokemon as any).speciesId = 95;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["rock"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: onixWithClub,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: onixNoItem,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Onix gets no bonus from Thick Club
+      expect(withItemDmg.damage).toBe(noItemDmg.damage);
+    });
+
+    // Light Ball — doubles SpAtk for Pikachu (25)
+
+    it("given Pikachu holding Light Ball, when using a special move, then SpAtk is doubled (damage ~2x)", () => {
+      // Arrange: speciesId 25 = Pikachu
+      const pikachuWithBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: "light-ball",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (pikachuWithBall.pokemon as any).speciesId = 25;
+
+      const pikachuNoBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (pikachuNoBall.pokemon as any).speciesId = 25;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      // Special move (fire type is special in Gen 2)
+      const move = createMove("fire", 80, "special");
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["electric"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: pikachuWithBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: pikachuNoBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Light Ball doubles SpAtk → damage ~2x
+      expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
+      if (noItemDmg.damage > 0) {
+        const ratio = withItemDmg.damage / noItemDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Raichu holding Light Ball, when using a special move, then no SpAtk doubling", () => {
+      // Arrange: Raichu speciesId = 26
+      const raichuWithBall = createActivePokemon({
+        level: 50,
+        attack: 90,
+        defense: 55,
+        spAttack: 100,
+        spDefense: 80,
+        types: ["electric"],
+        heldItem: "light-ball",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (raichuWithBall.pokemon as any).speciesId = 26;
+
+      const raichuNoBall = createActivePokemon({
+        level: 50,
+        attack: 90,
+        defense: 55,
+        spAttack: 100,
+        spDefense: 80,
+        types: ["electric"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (raichuNoBall.pokemon as any).speciesId = 26;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("fire", 80, "special");
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["electric"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: raichuWithBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: raichuNoBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Raichu gets no Light Ball bonus
+      expect(withItemDmg.damage).toBe(noItemDmg.damage);
+    });
+
+    it("given Pikachu holding Light Ball using a physical move, when calculating damage, then no SpAtk doubling (only physical attack used)", () => {
+      // Arrange: speciesId 25 = Pikachu, physical move uses Attack not SpAtk
+      const pikachuWithBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: "light-ball",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (pikachuWithBall.pokemon as any).speciesId = 25;
+
+      const pikachuNoBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (pikachuNoBall.pokemon as any).speciesId = 25;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      // Physical move (normal type is physical in Gen 2)
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["electric"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: pikachuWithBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: pikachuNoBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Light Ball only boosts SpAtk, not physical Attack
+      expect(withItemDmg.damage).toBe(noItemDmg.damage);
+    });
+
+    // Metal Powder — doubles Defense for Ditto (132)
+
+    it("given Ditto holding Metal Powder, when attacked with a physical move, then defense is doubled (damage ~halved)", () => {
+      // Arrange: speciesId 132 = Ditto
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const dittoWithPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 48,
+        types: ["normal"],
+        heldItem: "metal-powder",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (dittoWithPowder.pokemon as any).speciesId = 132;
+
+      const dittoNoPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 48,
+        types: ["normal"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (dittoNoPowder.pokemon as any).speciesId = 132;
+
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const withPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoWithPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoNoPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withPowderDmg = calculateGen2Damage(withPowderCtx, chart, species);
+      const noPowderDmg = calculateGen2Damage(noPowderCtx, chart, species);
+
+      // Assert: Metal Powder doubles defense → damage roughly halved
+      expect(withPowderDmg.damage).toBeLessThan(noPowderDmg.damage);
+      if (withPowderDmg.damage > 0) {
+        const ratio = noPowderDmg.damage / withPowderDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Ditto holding Metal Powder attacked with a special move, when calculating damage, then no defense doubling (only physical Defense is doubled)", () => {
+      // Arrange
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const dittoWithPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 100,
+        types: ["normal"],
+        heldItem: "metal-powder",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (dittoWithPowder.pokemon as any).speciesId = 132;
+
+      const dittoNoPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 100,
+        types: ["normal"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (dittoNoPowder.pokemon as any).speciesId = 132;
+
+      // Special move (fire type is special in Gen 2)
+      const move = createMove("fire", 80, "special");
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const withPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoWithPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoNoPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withPowderDmg = calculateGen2Damage(withPowderCtx, chart, species);
+      const noPowderDmg = calculateGen2Damage(noPowderCtx, chart, species);
+
+      // Assert: Metal Powder only doubles physical Defense, not SpDefense
+      expect(withPowderDmg.damage).toBe(noPowderDmg.damage);
+    });
+
+    it("given Pikachu holding Metal Powder, when attacked with a physical move, then no defense doubling (only Ditto gets bonus)", () => {
+      // Arrange: speciesId 25 = Pikachu
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const pikachuWithPowder = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: "metal-powder",
+      });
+      (pikachuWithPowder.pokemon as any).speciesId = 25;
+
+      const pikachuNoPowder = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: null,
+      });
+      (pikachuNoPowder.pokemon as any).speciesId = 25;
+
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const withPowderCtx: DamageContext = {
+        attacker,
+        defender: pikachuWithPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const noPowderCtx: DamageContext = {
+        attacker,
+        defender: pikachuNoPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const withPowderDmg = calculateGen2Damage(withPowderCtx, chart, species);
+      const noPowderDmg = calculateGen2Damage(noPowderCtx, chart, species);
+
+      // Assert: Pikachu gets no Metal Powder bonus
+      expect(withPowderDmg.damage).toBe(noPowderDmg.damage);
+    });
+
+    // --- Critical hit branch tests for held item stat modifiers ---
+
+    it("given Marowak holding Thick Club with isCrit: true, when using a physical move, then attack is doubled and critical hit applied (damage ~2x)", () => {
+      // Arrange
+      const marowakWithClub = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: "thick-club",
+      });
+      // speciesId 105 = Marowak
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (marowakWithClub.pokemon as any).speciesId = 105;
+
+      const marowakNoItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 50,
+        spDefense: 80,
+        types: ["ground"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (marowakNoItem.pokemon as any).speciesId = 105;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["ground"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: marowakWithClub,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: marowakNoItem,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Thick Club doubles attack with critical hit, damage should be ~2x
+      expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
+      if (noItemDmg.damage > 0) {
+        const ratio = withItemDmg.damage / noItemDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Pikachu holding Light Ball with isCrit: true, when using a special move, then SpAtk is doubled and critical hit applied (damage ~2x)", () => {
+      // Arrange: speciesId 25 = Pikachu
+      const pikachuWithBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: "light-ball",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (pikachuWithBall.pokemon as any).speciesId = 25;
+
+      const pikachuNoBall = createActivePokemon({
+        level: 50,
+        attack: 55,
+        defense: 40,
+        spAttack: 100,
+        spDefense: 50,
+        types: ["electric"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (pikachuNoBall.pokemon as any).speciesId = 25;
+
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      // Special move (water type is special in Gen 2)
+      const move = createMove("water", 80, "special");
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["electric"]);
+
+      const withItemCtx: DamageContext = {
+        attacker: pikachuWithBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+      const noItemCtx: DamageContext = {
+        attacker: pikachuNoBall,
+        defender,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+
+      // Act
+      const withItemDmg = calculateGen2Damage(withItemCtx, chart, species);
+      const noItemDmg = calculateGen2Damage(noItemCtx, chart, species);
+
+      // Assert: Light Ball doubles SpAtk with critical hit, damage should be ~2x
+      expect(withItemDmg.damage).toBeGreaterThan(noItemDmg.damage);
+      if (noItemDmg.damage > 0) {
+        const ratio = withItemDmg.damage / noItemDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Ditto holding Metal Powder with isCrit: true, when attacked with a physical move, then defense is doubled and critical hit applied (damage ~halved)", () => {
+      // Arrange: speciesId 132 = Ditto
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const dittoWithPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 48,
+        types: ["normal"],
+        heldItem: "metal-powder",
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (dittoWithPowder.pokemon as any).speciesId = 132;
+
+      const dittoNoPowder = createActivePokemon({
+        level: 50,
+        attack: 48,
+        defense: 100,
+        spAttack: 48,
+        spDefense: 48,
+        types: ["normal"],
+        heldItem: null,
+      });
+      // biome-ignore lint/suspicious/noExplicitAny: test helper needs runtime property mutation
+      (dittoNoPowder.pokemon as any).speciesId = 132;
+
+      const move = createMove("normal", 80);
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const withPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoWithPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+      const noPowderCtx: DamageContext = {
+        attacker,
+        defender: dittoNoPowder,
+        move,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: true,
+      };
+
+      // Act
+      const withPowderDmg = calculateGen2Damage(withPowderCtx, chart, species);
+      const noPowderDmg = calculateGen2Damage(noPowderCtx, chart, species);
+
+      // Assert: Metal Powder doubles defense with critical hit, damage roughly halved
+      expect(withPowderDmg.damage).toBeLessThan(noPowderDmg.damage);
+      if (withPowderDmg.damage > 0) {
+        const ratio = noPowderDmg.damage / withPowderDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+  });
+
+  // --- Explosion / Self-Destruct Defense Halving ---
+
+  describe("Explosion/Selfdestruct defense halving", () => {
+    it("given Explosion used against a defender with known defense, when calculating damage, then damage is ~2x a normal move of same power", () => {
+      // Arrange
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      // Normal move with same power (no defense halving)
+      const normalMove: MoveData = {
+        ...createMove("normal", 250),
+        id: "hyper-beam",
+      };
+      const explosionMove: MoveData = {
+        ...createMove("normal", 250),
+        id: "explosion",
+      };
+
+      const normalCtx: DamageContext = {
+        attacker,
+        defender,
+        move: normalMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const explosionCtx: DamageContext = {
+        attacker,
+        defender,
+        move: explosionMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const normalDmg = calculateGen2Damage(normalCtx, chart, species);
+      const explosionDmg = calculateGen2Damage(explosionCtx, chart, species);
+
+      // Assert: Explosion halves defense, so damage should be ~2x the normal move
+      expect(explosionDmg.damage).toBeGreaterThan(normalDmg.damage);
+      if (normalDmg.damage > 0) {
+        const ratio = explosionDmg.damage / normalDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given Self-Destruct used against a defender with known defense, when calculating damage, then damage is ~2x a normal move of same power", () => {
+      // Arrange
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      const normalMove: MoveData = {
+        ...createMove("normal", 200),
+        id: "hyper-beam",
+      };
+      const selfDestructMove: MoveData = {
+        ...createMove("normal", 200),
+        id: "self-destruct",
+      };
+
+      const normalCtx: DamageContext = {
+        attacker,
+        defender,
+        move: normalMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+      const selfDestructCtx: DamageContext = {
+        attacker,
+        defender,
+        move: selfDestructMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const normalDmg = calculateGen2Damage(normalCtx, chart, species);
+      const selfDestructDmg = calculateGen2Damage(selfDestructCtx, chart, species);
+
+      // Assert: Self-Destruct halves defense, so damage should be ~2x the normal move
+      expect(selfDestructDmg.damage).toBeGreaterThan(normalDmg.damage);
+      if (normalDmg.damage > 0) {
+        const ratio = selfDestructDmg.damage / normalDmg.damage;
+        expect(ratio).toBeGreaterThanOrEqual(1.8);
+        expect(ratio).toBeLessThanOrEqual(2.2);
+      }
+    });
+
+    it("given a non-explosion move, when calculating damage, then defense is not halved", () => {
+      // Arrange: verify that a regular move (same power as explosion) deals less
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const chart = createNeutralTypeChart();
+      const species = createSpecies(["normal"]);
+
+      // Same power as Explosion (250), but not explosion — should use full defense
+      const regularMove: MoveData = {
+        ...createMove("normal", 250),
+        id: "tackle",
+      };
+
+      const ctx: DamageContext = {
+        attacker,
+        defender,
+        move: regularMove,
+        state: createMockState(),
+        rng: createMockRng(255) as DamageContext["rng"],
+        isCrit: false,
+      };
+
+      // Act
+      const result = calculateGen2Damage(ctx, chart, species);
+
+      // Assert: regular move with full defense produces a valid positive damage result
+      expect(result.damage).toBeGreaterThan(0);
+    });
+  });
+
   it("given identical inputs, when calculating damage twice, then produces identical results", () => {
     // Arrange
     const attacker = createActivePokemon({

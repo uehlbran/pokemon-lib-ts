@@ -1466,6 +1466,23 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
+        case "volatile-cure": {
+          const volatile = effect.value as string;
+          if (
+            pokemon.volatileStatuses.has(volatile as import("@pokemon-lib-ts/core").VolatileStatus)
+          ) {
+            pokemon.volatileStatuses.delete(
+              volatile as import("@pokemon-lib-ts/core").VolatileStatus,
+            );
+            this.emit({
+              type: "volatile-end",
+              side,
+              pokemon: getPokemonName(pokemon),
+              volatile: volatile as import("@pokemon-lib-ts/core").VolatileStatus,
+            });
+          }
+          break;
+        }
       }
     }
     for (const msg of result.messages) {

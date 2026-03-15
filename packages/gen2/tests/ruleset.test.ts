@@ -232,7 +232,8 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(table.length).toBe(5);
       expect(table[0]).toBeCloseTo(17 / 256);
-      expect(table[4]).toBeCloseTo(255 / 256);
+      expect(table[3]).toBeCloseTo(85 / 256); // corrected: was 128/256
+      expect(table[4]).toBeCloseTo(128 / 256); // corrected: was 255/256
     });
 
     it("should return crit multiplier of 2.0", () => {
@@ -246,7 +247,7 @@ describe("Gen2Ruleset", () => {
   // --- Freeze Thaw ---
 
   describe("Given freeze thaw check", () => {
-    it("should thaw 20% of the time", () => {
+    it("should thaw ~9.8% of the time (25/256)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockActive = createMockActive({ status: "freeze" });
@@ -261,17 +262,17 @@ describe("Gen2Ruleset", () => {
         }
       }
 
-      // Assert: ~20% thaw rate (+/- 3% tolerance)
+      // Assert: ~9.8% thaw rate (25/256)
       const thawRate = thawCount / trials;
-      expect(thawRate).toBeGreaterThan(0.15);
-      expect(thawRate).toBeLessThan(0.25);
+      expect(thawRate).toBeGreaterThan(0.06);
+      expect(thawRate).toBeLessThan(0.15);
     });
   });
 
   // --- Sleep Turns ---
 
   describe("Given sleep turns roll", () => {
-    it("should return 1-7 turns", () => {
+    it("should return 1-6 turns", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const results = new Set<number>();
@@ -282,13 +283,13 @@ describe("Gen2Ruleset", () => {
         const turns = ruleset.rollSleepTurns(rng);
         results.add(turns);
         expect(turns).toBeGreaterThanOrEqual(1);
-        expect(turns).toBeLessThanOrEqual(7);
+        expect(turns).toBeLessThanOrEqual(6);
       }
 
       // Assert: should see multiple different values
       expect(results.size).toBeGreaterThan(1);
       expect(results.has(1)).toBe(true);
-      expect(results.has(7)).toBe(true);
+      expect(results.has(6)).toBe(true);
     });
   });
 
@@ -1881,6 +1882,89 @@ describe("Gen2Ruleset", () => {
     });
   });
 
+  // --- Explosion/Selfdestruct User Faints ---
+
+  describe("Given Explosion/Selfdestruct user faints", () => {
+    it("should set selfFaint = true when user uses Explosion", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive({ nickname: "Gengar" });
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const move = {
+        id: "explosion",
+        effect: { type: "custom" },
+      } as any;
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move,
+        damage: 250,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.selfFaint).toBe(true);
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0]).toContain("exploded");
+    });
+
+    it("should set selfFaint = true when user uses Self-Destruct", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive({ nickname: "Electrode" });
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const move = {
+        id: "self-destruct",
+        effect: { type: "custom" },
+      } as any;
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move,
+        damage: 200,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.selfFaint).toBe(true);
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0]).toContain("exploded");
+    });
+
+    it("should not set selfFaint for a regular attacking move", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const attacker = createMockActive();
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const move = {
+        id: "tackle",
+        effect: null,
+      } as any;
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move,
+        damage: 30,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert: non-exploding moves should not set selfFaint
+      expect(result.selfFaint).toBeFalsy();
+    });
+  });
+
   // --- EXP Gain ---
 
   describe("Given EXP gain calculation", () => {
@@ -1979,6 +2063,28 @@ describe("Gen2Ruleset", () => {
       // Assert: should have 3 errors (level, species, moves)
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(3);
+    });
+  });
+
+  // --- Switch Out ---
+
+  describe("Given a Pokemon switching out", () => {
+    it("should remove toxic-counter volatile on switch-out", () => {
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const pokemon = createMockActive({ status: "badly-poisoned" });
+      pokemon.volatileStatuses.set("toxic-counter", 4);
+      const state = createMockState(
+        createMockSide(0, pokemon),
+        createMockSide(1, createMockActive()),
+      );
+
+      // Act
+      ruleset.onSwitchOut(pokemon, state);
+
+      // Assert: toxic-counter is cleared but badly-poisoned status persists
+      expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
+      expect(pokemon.pokemon.status).toBe("badly-poisoned");
     });
   });
 });

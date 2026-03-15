@@ -784,8 +784,8 @@ describe("Gen 2 Full Battle Integration", () => {
     expect(result.messages.length).toBeGreaterThan(0);
   });
 
-  it("given a Pokemon with a status berry, when applyHeldItem is called at end-of-turn with paralysis, then the status is cured", () => {
-    // Arrange: "berry" cures paralysis in Gen 2
+  it("given a Pokemon at low HP holding Berry, when applyHeldItem is called at end-of-turn, then heals 10 HP and Berry is consumed", () => {
+    // Arrange: "berry" restores 10 HP when HP <= 50% in Gen 2
     const pokemon = createGen2Pokemon(
       197,
       50,
@@ -799,8 +799,8 @@ describe("Gen 2 Full Battle Integration", () => {
     const active = engine.getActive(0);
     if (!active) throw new Error("Expected active pokemon");
 
-    // Inflict paralysis
-    active.pokemon.status = "paralysis";
+    // Set HP to 1 so it is clearly <= 50% of any max HP
+    active.pokemon.currentHp = 1;
 
     // Act
     const result = ruleset.applyHeldItem("end-of-turn", {
@@ -811,9 +811,9 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     expect(result.activated).toBe(true);
-    const cureEffect = result.effects.find((e) => e.type === "status-cure");
-    expect(cureEffect).toBeDefined();
-    expect(cureEffect?.value).toBe("paralysis");
+    const healEffect = result.effects.find((e) => e.type === "heal");
+    expect(healEffect).toBeDefined();
+    expect(healEffect?.value).toBe(10);
     const consumeEffect = result.effects.find((e) => e.type === "consume");
     expect(consumeEffect).toBeDefined();
   });

@@ -56,6 +56,22 @@ function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: b
     if (physical && attacker.pokemon.status === "burn") {
       baseStat = Math.floor(baseStat / 2);
     }
+    // Thick Club doubles attack for Cubone (104) / Marowak (105)
+    if (
+      physical &&
+      attacker.pokemon.heldItem === "thick-club" &&
+      (attacker.pokemon.speciesId === 104 || attacker.pokemon.speciesId === 105)
+    ) {
+      baseStat = baseStat * 2;
+    }
+    // Light Ball doubles Pikachu's (25) SpAtk
+    if (
+      !physical &&
+      attacker.pokemon.heldItem === "light-ball" &&
+      attacker.pokemon.speciesId === 25
+    ) {
+      baseStat = baseStat * 2;
+    }
     return Math.max(1, baseStat);
   }
 
@@ -66,6 +82,24 @@ function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: b
   // Burn halves physical attack
   if (physical && attacker.pokemon.status === "burn") {
     effective = Math.floor(effective / 2);
+  }
+
+  // Thick Club doubles attack for Cubone (104) / Marowak (105)
+  if (
+    physical &&
+    attacker.pokemon.heldItem === "thick-club" &&
+    (attacker.pokemon.speciesId === 104 || attacker.pokemon.speciesId === 105)
+  ) {
+    effective = effective * 2;
+  }
+
+  // Light Ball doubles Pikachu's (25) SpAtk
+  if (
+    !physical &&
+    attacker.pokemon.heldItem === "light-ball" &&
+    attacker.pokemon.speciesId === 25
+  ) {
+    effective = effective * 2;
   }
 
   return Math.max(1, effective);
@@ -87,12 +121,33 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
     if (stage < 0) {
       baseStat = Math.floor(baseStat * getStatStageMultiplier(stage));
     }
+    // Metal Powder doubles Ditto's (132) defense
+    // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
+    if (
+      physical &&
+      defender.pokemon.heldItem === "metal-powder" &&
+      defender.pokemon.speciesId === 132
+    ) {
+      baseStat = baseStat * 2;
+    }
     return Math.max(1, baseStat);
   }
 
   const baseStat = stats ? stats[statKey] : 100;
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
-  return Math.max(1, Math.floor(baseStat * getStatStageMultiplier(stage)));
+  let effective = Math.floor(baseStat * getStatStageMultiplier(stage));
+
+  // Metal Powder doubles Ditto's (132) defense
+  // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
+  if (
+    physical &&
+    defender.pokemon.heldItem === "metal-powder" &&
+    defender.pokemon.speciesId === 132
+  ) {
+    effective = effective * 2;
+  }
+
+  return Math.max(1, effective);
 }
 
 /**
@@ -169,10 +224,16 @@ export function calculateGen2Damage(
   const attack = getAttackStat(attacker, move.type, isCrit);
   const defense = getDefenseStat(defender, move.type, isCrit);
 
+  // Explosion and Self-Destruct halve the defender's defense stat before damage calc
+  let effectiveDefense = defense;
+  if (move.id === "explosion" || move.id === "self-destruct") {
+    effectiveDefense = Math.max(1, Math.floor(defense / 2));
+  }
+
   // Step 1: Base damage
   // floor(floor(floor((2*Level/5 + 2) * Power * A) / D) / 50) + 2
   const levelFactor = Math.floor((2 * level) / 5) + 2;
-  let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / defense);
+  let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense);
   baseDamage = Math.floor(baseDamage / 50) + 2;
 
   // Step 2: Critical hit doubles damage in Gen 2
@@ -221,7 +282,7 @@ export function calculateGen2Damage(
 
   const physical = isPhysicalInGen2(move.type);
   const breakdown: DamageBreakdown = {
-    baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / defense / 50) + 2,
+    baseDamage: Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense / 50) + 2,
     weatherMod,
     critMod: isCrit ? 2 : 1,
     randomMod: randomFactor,

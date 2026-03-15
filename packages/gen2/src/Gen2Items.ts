@@ -12,14 +12,18 @@ const NO_ACTIVATION: ItemResult = {
  *
  * Gen 2 held items:
  * - Leftovers: restore 1/16 max HP at end of turn (NOT consumed)
- * - Berry: cure paralysis at end of turn (consumed)
+ * - Berry: restore 10 HP when HP <= 50% max HP at end of turn (consumed)
+ * - PRZCureBerry: cure paralysis at end of turn (consumed)
+ * - Gold Berry: restore 30 HP when HP <= 50% max HP (consumed, end-of-turn and on-damage-taken)
  * - Ice Berry: cure burn at end of turn (consumed)
  * - Mint Berry: cure sleep at end of turn (consumed)
  * - Burnt Berry: cure freeze at end of turn (consumed)
  * - PSNCureBerry: cure poison/badly-poisoned at end of turn (consumed)
+ * - Bitter Berry: cure confusion at end of turn (consumed)
+ * - Miracle Berry: cure any primary status at end of turn (consumed)
  * - Berry Juice: heal 20 HP when HP <= 50% (consumed)
  * - Focus Band: 12% chance to survive a KO at 1 HP (on-damage-taken)
- * - King's Rock: 10% flinch on damaging moves (on-hit)
+ * - King's Rock: 30/256 (~11.72%) flinch on damaging moves (on-hit)
  * - Type-boosting items: 10% damage boost (handled in damage calc, not here)
  *
  * @param trigger - When the item check occurs ("end-of-turn", "on-damage-taken", "on-hit")
@@ -66,16 +70,46 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       };
     }
 
-    // Berry: Cures paralysis (consumed)
+    // Berry: Restore 10 HP when HP <= 50% max HP (consumed)
     case "berry": {
+      if (currentHp <= Math.floor(maxHp / 2)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "heal", target: "self", value: 10 },
+            { type: "consume", target: "self", value: "berry" },
+          ],
+          messages: [`${pokemonName}'s Berry restored 10 HP!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // PRZCureBerry: Cures paralysis (consumed)
+    case "prz-cure-berry": {
       if (status === "paralysis") {
         return {
           activated: true,
           effects: [
             { type: "status-cure", target: "self", value: "paralysis" },
-            { type: "consume", target: "self", value: "berry" },
+            { type: "consume", target: "self", value: "prz-cure-berry" },
           ],
-          messages: [`${pokemonName}'s Berry cured its paralysis!`],
+          messages: [`${pokemonName}'s PRZCureBerry cured its paralysis!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Gold Berry: Restore 30 HP when HP <= 50% max HP (consumed)
+    case "gold-berry": {
+      if (currentHp <= Math.floor(maxHp / 2)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "heal", target: "self", value: 30 },
+            { type: "consume", target: "self", value: "gold-berry" },
+          ],
+          messages: [`${pokemonName}'s Gold Berry restored 30 HP!`],
         };
       }
       return NO_ACTIVATION;
@@ -127,18 +161,59 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     }
 
     // PSNCureBerry: Cures poison and badly-poisoned (consumed)
-    case "psncureberry": {
+    case "psn-cure-berry": {
       if (status === "poison" || status === "badly-poisoned") {
         return {
           activated: true,
           effects: [
             { type: "status-cure", target: "self", value: status },
-            { type: "consume", target: "self", value: "psncureberry" },
+            { type: "consume", target: "self", value: "psn-cure-berry" },
           ],
           messages: [`${pokemonName}'s PSNCureBerry cured its poisoning!`],
         };
       }
       return NO_ACTIVATION;
+    }
+
+    // Bitter Berry: Cures confusion volatile status (consumed)
+    case "bitter-berry": {
+      if (pokemon.volatileStatuses.has("confusion")) {
+        return {
+          activated: true,
+          effects: [
+            { type: "volatile-cure", target: "self", value: "confusion" },
+            { type: "consume", target: "self", value: "bitter-berry" },
+          ],
+          messages: [`${pokemonName}'s Bitter Berry snapped it out of confusion!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Miracle Berry: Cures any primary status OR confusion (consumed)
+    case "miracle-berry": {
+      const hasConfusion = pokemon.volatileStatuses.has("confusion");
+      const hasPrimaryStatus = status != null;
+      if (!hasPrimaryStatus && !hasConfusion) {
+        return NO_ACTIVATION;
+      }
+      const effects: Array<{
+        type: string;
+        target: "self" | "opponent" | "field";
+        value: string | boolean;
+      }> = [];
+      if (hasPrimaryStatus) {
+        effects.push({ type: "status-cure", target: "self", value: status! });
+      }
+      if (hasConfusion) {
+        effects.push({ type: "volatile-cure", target: "self", value: "confusion" });
+      }
+      effects.push({ type: "consume", target: "self", value: "miracle-berry" });
+      return {
+        activated: true,
+        effects,
+        messages: [`${pokemonName}'s Miracle Berry cured its status!`],
+      };
     }
 
     // Berry Juice: Heal 20 HP when HP <= 50% max (consumed)
@@ -185,6 +260,27 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
+    // Gold Berry: Heal 30 HP when HP drops to <= 50%
+    case "gold-berry": {
+      const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
+      const hpAfterDamage = currentHp - damage;
+      if (
+        hpAfterDamage > 0 &&
+        hpAfterDamage <= Math.floor(maxHp / 2) &&
+        currentHp > Math.floor(maxHp / 2)
+      ) {
+        return {
+          activated: true,
+          effects: [
+            { type: "heal", target: "self", value: 30 },
+            { type: "consume", target: "self", value: "gold-berry" },
+          ],
+          messages: [`${pokemonName}'s Gold Berry restored 30 HP!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
     // Berry Juice: Heal 20 HP when HP drops below 50%
     case "berry-juice": {
       const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
@@ -215,9 +311,9 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
-    // King's Rock: 10% flinch chance on damaging moves
+    // King's Rock: 30/256 (~11.72%) flinch chance on damaging moves
     case "kings-rock": {
-      if (context.rng.chance(0.1)) {
+      if (context.rng.chance(30 / 256)) {
         return {
           activated: true,
           effects: [{ type: "flinch", target: "opponent", value: true }],

@@ -42,7 +42,7 @@ import {
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 
-import { rollGen2Critical } from "./Gen2CritCalc";
+import { GEN2_CRIT_STAGES, rollGen2Critical } from "./Gen2CritCalc";
 import { calculateGen2Damage } from "./Gen2DamageCalc";
 import { applyGen2HeldItem } from "./Gen2Items";
 import { calculateGen2Stats } from "./Gen2StatCalc";
@@ -51,24 +51,8 @@ import { GEN2_TYPES, GEN2_TYPE_CHART } from "./Gen2TypeChart";
 import { applyGen2WeatherEffects } from "./Gen2Weather";
 import { createGen2DataManager } from "./data";
 
-/**
- * Gen 2 critical hit rate table by stage.
- *
- * | Stage | Rate     |
- * |-------|----------|
- * | 0     | 17/256   |
- * | 1     | 32/256   |
- * | 2     | 64/256   |
- * | 3     | 128/256  |
- * | 4+    | 255/256  |
- */
-const GEN2_CRIT_RATE_TABLE: readonly number[] = [
-  17 / 256,
-  32 / 256,
-  64 / 256,
-  128 / 256,
-  255 / 256,
-];
+// Single source of truth for Gen 2 crit rates — use GEN2_CRIT_STAGES from Gen2CritCalc
+const GEN2_CRIT_RATE_TABLE: readonly number[] = GEN2_CRIT_STAGES;
 
 /**
  * Gen2Ruleset — implements GenerationRuleset directly (not extending BaseRuleset).
@@ -83,7 +67,7 @@ const GEN2_CRIT_RATE_TABLE: readonly number[] = [
  * - Entry hazards (Spikes only, 1 layer, 1/8 HP)
  * - Physical/Special determined by type, not by move
  * - Critical hits use stage-based system (Focus Energy fixed)
- * - 20% freeze thaw chance per turn
+ * - 25/256 (~9.8%) freeze thaw chance per turn
  * - Dark and Steel types added (17 types total)
  * - SpAttack and SpDefense are now separate stats
  */
@@ -309,6 +293,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+      selfFaint?: boolean;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -318,6 +303,13 @@ export class Gen2Ruleset implements GenerationRuleset {
       switchOut: false,
       messages: [],
     };
+
+    // Explosion and Self-Destruct have effect: null in move data but must still set selfFaint
+    if (context.move.id === "explosion" || context.move.id === "self-destruct") {
+      result.selfFaint = true;
+      const pokemonName = context.attacker.pokemon.nickname ?? "The Pokemon";
+      result.messages.push(`${pokemonName} exploded!`);
+    }
 
     if (!context.move.effect) return result;
 
@@ -354,6 +346,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+      selfFaint?: boolean;
     },
     context: MoveEffectContext,
   ): void {
@@ -527,6 +520,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
       clearSideHazards?: "attacker" | "defender";
       itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+      selfFaint?: boolean;
     },
     context: MoveEffectContext,
   ): void {
@@ -587,6 +581,13 @@ export class Gen2Ruleset implements GenerationRuleset {
         break;
       }
 
+      case "explosion":
+      case "self-destruct": {
+        result.selfFaint = true;
+        result.messages.push(`${pokemonName} exploded!`);
+        break;
+      }
+
       default: {
         // Unknown custom effect
         break;
@@ -601,13 +602,13 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   checkFreezeThaw(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    // Gen 2: 20% chance to thaw each turn (unlike Gen 1's permanent freeze)
-    return rng.chance(0.2);
+    // Gen 2: 25/256 (~9.77%) chance to thaw each turn (unlike Gen 1's permanent freeze)
+    return rng.chance(25 / 256);
   }
 
   rollSleepTurns(rng: SeededRandom): number {
-    // Gen 2: Sleep lasts 1-7 turns
-    return rng.int(1, 7);
+    // Gen 2: Sleep lasts 1-6 turns
+    return rng.int(1, 6);
   }
 
   checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
@@ -792,11 +793,14 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
     // Gen 2: clear non-persistent volatiles on switch
+    // Note: toxic-counter resets on switch (damage restarts at 1/16 next time in),
+    // but the badly-poisoned status itself persists.
     pokemon.volatileStatuses.delete("bound");
     pokemon.volatileStatuses.delete("confusion");
     pokemon.volatileStatuses.delete("flinch");
     pokemon.volatileStatuses.delete("focus-energy");
     pokemon.volatileStatuses.delete("leech-seed");
+    pokemon.volatileStatuses.delete("toxic-counter");
   }
 
   // --- Switching ---
