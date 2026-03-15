@@ -1,10 +1,32 @@
+<!-- SPEC FRONT-MATTER -->
+<!-- status: IMPLEMENTED -->
+<!-- last-updated: 2026-03-15 -->
+
 # Battle Library — Architecture
+
+> **Status: IMPLEMENTED** — Battle engine and ruleset interface implemented in `packages/battle/src/`. Code is the source of truth for method signatures.
 
 > Pluggable generation system, state machine, event model, and how generation-specific
 > rulesets integrate with the core engine.
 >
 > This library depends on `@pokemon-lib-ts/core` and nothing else.
 > Zero game engine dependencies — pure TypeScript.
+
+---
+
+## Quick Start for AI Agents
+
+**Core files**:
+- `packages/battle/src/engine/BattleEngine.ts` — main engine (state machine, turn loop)
+- `packages/battle/src/ruleset/GenerationRuleset.ts` — interface all gen packages implement
+- `packages/battle/src/ruleset/BaseRuleset.ts` — default Gen 3+ implementations (Gen 3-9 extend this)
+- `packages/battle/src/index.ts` — public exports
+
+**Pattern**: Gen 1-2 implement `GenerationRuleset` directly. Gen 3-9 extend `BaseRuleset`.
+
+**To add a new gen**: Read `specs/battle/0N-genN.md`, implement `GenerationRuleset`, extend `BaseRuleset` if Gen 3+.
+
+**Tests**: `packages/battle/tests/` for engine tests. `packages/genN/tests/` for per-gen tests.
 
 ---
 
@@ -71,7 +93,12 @@ export interface GenerationRuleset {
   /** Critical hit stage table for this gen */
   getCritRateTable(): readonly number[];
 
-  /** Critical hit damage multiplier (Gen 1-5: 2x, Gen 6+: 1.5x) */
+  /**
+   * Critical hit damage multiplier applied after the damage formula.
+   * Gen 2-5: 2x, Gen 6+: 1.5x.
+   * Gen 1: returns 1 — crits are handled via level-doubling inside the damage formula itself,
+   * not as a post-calc multiplier.
+   */
   getCritMultiplier(): number;
 
   /**
@@ -113,7 +140,9 @@ export interface GenerationRuleset {
 
   /**
    * Check if a frozen Pokémon thaws this turn.
-   * Thaw chance: Gen 1 = never (only via move), Gen 2+ = 20%/turn.
+   * Thaw chance: Gen 1 = never (only via move),
+   * Gen 2 freeze thaw: 25/256 (~9.8%) chance per turn, NOT 20%.
+   * Gen 3+: 20%/turn.
    */
   checkFreezeThaw(pokemon: ActivePokemon, rng: SeededRandom): boolean;
 
@@ -122,6 +151,26 @@ export interface GenerationRuleset {
    * Gen 1: 1-7, Gen 5+: 1-3.
    */
   rollSleepTurns(rng: SeededRandom): number;
+
+  /**
+   * Check if a paralyzed Pokémon is fully paralyzed this turn.
+   * Gen 1-2: 63/256 (~24.6%), Gen 3+: 1/4 (exact 25%).
+   */
+  checkFullParalysis(pokemon: ActivePokemon, rng: SeededRandom): boolean;
+
+  /**
+   * Roll whether a confused Pokémon hits itself this turn.
+   * Gen 1-6: 1/2 (50%), Gen 7+: 1/3 (~33%).
+   */
+  rollConfusionSelfHit(rng: SeededRandom): boolean;
+
+  /**
+   * Process one turn of sleep for a Pokémon.
+   * Decrements the sleep counter and wakes the Pokémon if it reaches 0.
+   * Returns true if the Pokémon can act this turn (Gen 5+: can act on wake turn).
+   * Returns false if still sleeping, or woke up but cannot act (Gen 1-4).
+   */
+  processSleepTurn(pokemon: ActivePokemon, state: BattleState): boolean;
 
   // --- Abilities ---
 
@@ -207,6 +256,103 @@ export interface GenerationRuleset {
    */
   validatePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData): ValidationResult;
 
+  // --- Confusion ---
+
+  /**
+   * The probability (0-1) that a confused Pokémon hits itself.
+   * Gen 1-6: 1/2 (50%). Gen 7+: 1/3.
+   */
+  getConfusionSelfHitChance(): number;
+
+  /**
+   * Calculate confusion self-hit damage.
+   * Gen 1: simplified maxHP/8.
+   * Gen 2+: actual 40 base power typeless physical damage formula.
+   */
+  calculateConfusionDamage(pokemon: ActivePokemon, state: BattleState, rng: SeededRandom): number;
+
+  // --- Switch Out ---
+
+  /**
+   * Called when a Pokémon is switched out. Used to clear volatile
+   * statuses that don't persist through switching (e.g., bind counter reset).
+   * Gen 1: clears binding moves; Gen 2+: various volatile clears.
+   */
+  onSwitchOut(pokemon: ActivePokemon, state: BattleState): void;
+
+  // --- Switching ---
+
+  /**
+   * Whether Pursuit should execute before an opponent's switch.
+   * Gen 2-7: true. Gen 1, Gen 8+: false.
+   */
+  shouldExecutePursuitPreSwitch(): boolean;
+
+  /**
+   * Whether a Pokémon is allowed to switch out.
+   * Gen 1: checks for 'trapped' volatile (trapping moves like Wrap/Bind).
+   * Gen 2+: checks for Mean Look, Spider Web, Shadow Tag, etc.
+   * The engine delegates this check to the ruleset instead of
+   * checking volatile statuses directly.
+   */
+  canSwitch(pokemon: ActivePokemon, state: BattleState): boolean;
+
+  // --- End-of-Turn Formulas ---
+
+  /**
+   * Calculate Leech Seed drain amount.
+   * Gen 1: 1/16 max HP. Gen 2+: 1/8 max HP.
+   */
+  calculateLeechSeedDrain(pokemon: ActivePokemon): number;
+
+  /**
+   * Calculate Curse (Ghost-type) damage per turn.
+   * Gen 2+: 1/4 max HP. Gen 1: N/A (Curse doesn't exist).
+   */
+  calculateCurseDamage(pokemon: ActivePokemon): number;
+
+  /**
+   * Calculate Nightmare damage per turn.
+   * Gen 2+: 1/4 max HP while asleep. Gen 1: N/A.
+   */
+  calculateNightmareDamage(pokemon: ActivePokemon): number;
+
+  /**
+   * Calculate Struggle recoil damage.
+   * Gen 1-3: 1/2 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
+   */
+  calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
+
+  /**
+   * Roll the number of hits for a multi-hit move.
+   * Gen 1-4: [2,2,2,3,3,3,4,5] weighted (roughly 37.5/37.5/12.5/12.5%).
+   * Gen 5+: 35/35/15/15% for 2/3/4/5 hits.
+   */
+  rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number;
+
+  /**
+   * Roll whether a Protect-type move succeeds.
+   * Returns false if the consecutive use check fails (Gen 2+: 1/3^N chance for N>0).
+   * Gen 1 has no Protect — implement to always return true.
+   */
+  rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean;
+
+  /**
+   * Calculate bind/trapping end-of-turn damage.
+   * Gen 2-4: 1/16 max HP. Gen 5+: 1/8 max HP.
+   * Gen 1: not used (bind is handled via canExecuteMove instead).
+   */
+  calculateBindDamage(pokemon: ActivePokemon): number;
+
+  /**
+   * Process Perish Song countdown for a Pokémon.
+   * Returns the new counter value and whether the Pokémon fainted.
+   */
+  processPerishSong(pokemon: ActivePokemon): {
+    readonly newCount: number;
+    readonly fainted: boolean;
+  };
+
   // --- End-of-Turn Order ---
 
   /**
@@ -266,7 +412,7 @@ generations.register(new Gen1Ruleset());
 generations.register(new Gen9Ruleset());
 
 // Create a Gen 1 battle
-const battle = new BattleEngine({ generation: 1, /* ... */ });
+const battle = new BattleEngine({ generation: 1, /* ... */ }, new Gen1Ruleset(), dataManager);
 ```
 
 ---
@@ -355,18 +501,24 @@ export interface TerrainState {
 ### 3.2 Battle Side
 
 ```typescript
+export interface TrainerRef {
+  readonly id: string;
+  readonly displayName: string;
+  readonly trainerClass: string;
+}
+
 export interface BattleSide {
   /** Side index (0 = player, 1 = opponent) */
   readonly index: 0 | 1;
 
-  /** Trainer data (null for wild battles) */
-  readonly trainer: TrainerData | null;
+  /** Trainer reference (null for wild battles) */
+  readonly trainer: TrainerRef | null;
 
   /** Full team (up to 6) */
   team: PokemonInstance[];
 
-  /** Currently active Pokémon on the field */
-  active: ActivePokemon[];  // 1 for singles, 2 for doubles, 3 for triples
+  /** Currently active Pokémon on the field (null slots = fainted) */
+  active: (ActivePokemon | null)[];  // 1 for singles, 2 for doubles, 3 for triples
 
   /** Entry hazards on this side */
   hazards: EntryHazardState[];
@@ -414,6 +566,12 @@ export interface ActivePokemon {
 
   /** Last move used (for Encore, Disable, etc.) */
   lastMoveUsed: string | null;
+
+  /** Damage taken this turn (for Counter, Mirror Coat) */
+  lastDamageTaken: number;
+
+  /** Type of last damage received — PokemonType (not MoveCategory); null if no damage taken */
+  lastDamageType: PokemonType | null;
 
   /** Turns this Pokémon has been on the field */
   turnsOnField: number;
@@ -663,7 +821,7 @@ export class BattleEngine implements BattleEventEmitter {
   private listeners: Set<BattleEventListener>;
   private eventLog: BattleEvent[];
 
-  constructor(config: BattleConfig);
+  constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager)
 
   // --- Event Emitter ---
   on(listener: BattleEventListener): void;
@@ -720,7 +878,7 @@ export interface BattleConfig {
   generation: Generation;
   format: BattleFormat;
   teams: [PokemonInstance[], PokemonInstance[]];
-  trainers?: [TrainerData | null, TrainerData | null];
+  trainers?: [TrainerRef | null, TrainerRef | null];
   seed: number;
   isWildBattle?: boolean;
 }
@@ -746,99 +904,127 @@ These are the data bags passed to GenerationRuleset methods.
 
 ```typescript
 export interface DamageContext {
-  attacker: ActivePokemon;
-  defender: ActivePokemon;
-  move: MoveData;
-  state: BattleState;
-  rng: SeededRandom;
-  isCrit: boolean;
+  readonly attacker: ActivePokemon;
+  readonly defender: ActivePokemon;
+  readonly move: MoveData;
+  readonly state: BattleState;
+  readonly rng: SeededRandom;
+  readonly isCrit: boolean;
 }
 
 export interface DamageResult {
-  damage: number;
-  effectiveness: number;
-  isCrit: boolean;
-  randomFactor: number;
-  breakdown?: DamageBreakdown;  // Optional detailed breakdown for debugging
+  readonly damage: number;
+  readonly effectiveness: number;
+  readonly isCrit: boolean;
+  readonly randomFactor: number;
+  readonly breakdown?: DamageBreakdown;  // Optional detailed breakdown for debugging
 }
 
 export interface DamageBreakdown {
-  baseDamage: number;
-  weatherMod: number;
-  critMod: number;
-  randomMod: number;
-  stabMod: number;
-  typeMod: number;
-  burnMod: number;
-  abilityMod: number;
-  itemMod: number;
-  otherMod: number;
-  finalDamage: number;
+  readonly baseDamage: number;
+  readonly weatherMod: number;
+  readonly critMod: number;
+  readonly randomMod: number;
+  readonly stabMod: number;
+  readonly typeMod: number;
+  readonly burnMod: number;
+  readonly abilityMod: number;
+  readonly itemMod: number;
+  readonly otherMod: number;
+  readonly finalDamage: number;
 }
 
 export interface CritContext {
-  attacker: ActivePokemon;
-  move: MoveData;
-  state: BattleState;
-  rng: SeededRandom;
+  readonly attacker: ActivePokemon;
+  readonly move: MoveData;
+  readonly state: BattleState;
+  readonly rng: SeededRandom;
 }
 
 export interface AccuracyContext {
-  attacker: ActivePokemon;
-  defender: ActivePokemon;
-  move: MoveData;
-  state: BattleState;
-  rng: SeededRandom;
+  readonly attacker: ActivePokemon;
+  readonly defender: ActivePokemon;
+  readonly move: MoveData;
+  readonly state: BattleState;
+  readonly rng: SeededRandom;
 }
 
 export interface MoveEffectContext {
-  attacker: ActivePokemon;
-  defender: ActivePokemon;
-  move: MoveData;
-  damage: number;
-  state: BattleState;
-  rng: SeededRandom;
+  readonly attacker: ActivePokemon;
+  readonly defender: ActivePokemon;
+  readonly move: MoveData;
+  readonly damage: number;
+  readonly state: BattleState;
+  readonly rng: SeededRandom;
 }
 
 export interface MoveEffectResult {
-  statusInflicted: PrimaryStatus | null;
-  volatileInflicted: VolatileStatus | null;
-  statChanges: Array<{ target: 'attacker' | 'defender'; stat: BattleStat; stages: number }>;
-  recoilDamage: number;
-  healAmount: number;
-  switchOut: boolean;
-  messages: string[];
+  readonly statusInflicted: PrimaryStatus | null;
+  readonly volatileInflicted: VolatileStatus | null;
+  readonly statChanges: ReadonlyArray<{ target: 'attacker' | 'defender'; stat: BattleStat; stages: number }>;
+  readonly recoilDamage: number;
+  readonly healAmount: number;
+  readonly switchOut: boolean;
+  readonly messages: readonly string[];
+  /** Set a screen (Reflect/Light Screen) on the attacker's or defender's side */
+  readonly screenSet?: { screen: string; turnsLeft: number; side: 'attacker' | 'defender' } | null;
+  /** Attacker faints after using the move (Explosion, Self-Destruct) */
+  readonly selfFaint?: boolean;
+  /** Skip recharge next turn (e.g., Hyper Beam KO'd the target) */
+  readonly noRecharge?: boolean;
+  /** Custom damage to apply to a target (for OHKO, fixed-damage, Counter) */
+  readonly customDamage?: {
+    target: 'attacker' | 'defender';
+    amount: number;
+    source: string;
+    /** The type of the move dealing this damage, for lastDamageType tracking */
+    type?: PokemonType | null;
+  } | null;
+  /** Cure the specified pokemon's status (e.g., Haze clears both sides) */
+  readonly statusCured?: { target: 'attacker' | 'defender' | 'both' } | null;
+  /** Data for volatile status infliction (turnsLeft, extra data) */
+  readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+  readonly weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
+  readonly hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
+  readonly volatilesToClear?: ReadonlyArray<{
+    target: 'attacker' | 'defender';
+    volatile: VolatileStatus;
+  }>;
+  readonly clearSideHazards?: 'attacker' | 'defender';
+  readonly itemTransfer?: { from: 'attacker' | 'defender'; to: 'attacker' | 'defender' };
+  /** Clear screens from the specified side(s) (Haze or setter switching out) */
+  readonly screensCleared?: 'attacker' | 'defender' | 'both' | null;
 }
 
 export interface AbilityContext {
-  pokemon: ActivePokemon;
-  opponent?: ActivePokemon;
-  state: BattleState;
-  rng: SeededRandom;
-  trigger: AbilityTrigger;
-  move?: MoveData;
-  damage?: number;
+  readonly pokemon: ActivePokemon;
+  readonly opponent?: ActivePokemon;
+  readonly state: BattleState;
+  readonly rng: SeededRandom;
+  readonly trigger: AbilityTrigger;
+  readonly move?: MoveData;
+  readonly damage?: number;
 }
 
 export interface AbilityResult {
-  activated: boolean;
-  effects: Array<{
+  readonly activated: boolean;
+  readonly effects: ReadonlyArray<{
     type: string;
     target: 'self' | 'opponent' | 'field';
     value: unknown;
   }>;
-  messages: string[];
+  readonly messages: readonly string[];
 }
 
 export interface ExpContext {
-  defeatedSpecies: PokemonSpeciesData;
-  defeatedLevel: number;
-  participantLevel: number;
-  isTrainerBattle: boolean;
-  participantCount: number;
-  hasLuckyEgg: boolean;
-  hasExpShare: boolean;
-  affectionBonus: boolean;
+  readonly defeatedSpecies: PokemonSpeciesData;
+  readonly defeatedLevel: number;
+  readonly participantLevel: number;
+  readonly isTrainerBattle: boolean;
+  readonly participantCount: number;
+  readonly hasLuckyEgg: boolean;
+  readonly hasExpShare: boolean;
+  readonly affectionBonus: boolean;
 }
 ```
 
@@ -915,26 +1101,30 @@ packages/battle/src/            # @pokemon-lib-ts/battle — engine only
 ├── index.ts                    # Public API barrel export
 ├── engine/
 │   ├── BattleEngine.ts         # Main engine class
-│   ├── BattleState.ts          # State interfaces
-│   ├── PhaseManager.ts         # State machine transitions
-│   ├── TurnResolver.ts         # Turn execution loop
-│   ├── SwitchHandler.ts        # Switch-in/out logic
-│   └── WinCondition.ts         # End-of-battle detection
+│   └── index.ts
 ├── ruleset/
 │   ├── GenerationRuleset.ts    # Interface definition (the contract)
-│   └── BaseRuleset.ts          # Shared defaults (Gen 3+ behavior)
-├── ai/
-│   ├── index.ts
-│   ├── AIController.ts         # Interface
-│   ├── RandomAI.ts
-│   ├── SmartAI.ts
-│   └── CompetitiveAI.ts
+│   ├── GenerationRegistry.ts   # Registry singleton
+│   ├── BaseRuleset.ts          # Shared defaults (Gen 3+ behavior)
+│   └── index.ts
+├── state/
+│   ├── BattleState.ts          # BattleState interface
+│   ├── BattleSide.ts           # BattleSide, ActivePokemon, TrainerRef interfaces
+│   └── index.ts
 ├── events/
 │   ├── BattleEvent.ts          # Event type definitions
-│   └── BattleEventEmitter.ts
+│   ├── BattleAction.ts         # BattleAction discriminated union
+│   └── index.ts
+├── context/
+│   ├── types.ts                # Context objects (DamageContext, MoveEffectResult, etc.)
+│   └── index.ts
+├── ai/
+│   ├── AIController.ts         # Interface
+│   ├── RandomAI.ts
+│   └── index.ts
 └── utils/
     ├── BattleHelpers.ts        # Shared utility functions
-    └── Validators.ts           # Team/move legality checking
+    └── index.ts
 
 packages/gen1/src/              # @pokemon-lib-ts/gen1 — example gen package
 ├── index.ts                    # Exports Gen1Ruleset + createDataManager()
@@ -995,3 +1185,27 @@ packages/gen6/src/              # @pokemon-lib-ts/gen6 — example with gimmick
 Each gen package depends on `@pokemon-lib-ts/battle` (for `BaseRuleset` and `GenerationRuleset`), and `@pokemon-lib-ts/core` (for entity types and shared logic). The gen packages are leaves in the dependency graph — nothing depends on them except the consumer's application.
 
 ---
+
+## Implementation Cross-Reference
+
+| Concept | Source File | Notes |
+|---------|-------------|-------|
+| GenerationRuleset interface | `packages/battle/src/ruleset/GenerationRuleset.ts` | ~43 methods |
+| BaseRuleset abstract class | `packages/battle/src/ruleset/BaseRuleset.ts` | Gen 3+ defaults |
+| BattleEngine | `packages/battle/src/engine/BattleEngine.ts` | Constructor: (config, ruleset, dataManager) |
+| BattleState | `packages/battle/src/state/BattleState.ts` | State interface |
+| BattleSide, ActivePokemon, TrainerRef | `packages/battle/src/state/BattleSide.ts` | Side and active-slot interfaces |
+| BattleEvent types | `packages/battle/src/events/BattleEvent.ts` | Named interface pattern |
+| BattleAction | `packages/battle/src/events/BattleAction.ts` | Discriminated union |
+| Context objects (DamageContext, MoveEffectResult, etc.) | `packages/battle/src/context/types.ts` | Ruleset method parameters |
+| AI controllers | `packages/battle/src/ai/` | RandomAI, interface |
+| Public exports | `packages/battle/src/index.ts` | What consumers import |
+
+---
+
+## Document History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.0 | 2026-03-15 | Added ~20 missing GenerationRuleset methods, fixed constructor signature (ruleset param), fixed TrainerData→TrainerRef, added ActivePokemon combat tracking fields (lastDamageTaken, lastDamageType), fixed freeze thaw rate (20%→~9.8% for Gen 2), added MoveEffectResult fields, added Quick Start and Cross-Reference, updated file structure to match actual layout |
+| 1.0 | 2024 | Initial battle architecture spec |
