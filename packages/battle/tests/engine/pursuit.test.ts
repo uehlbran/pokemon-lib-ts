@@ -1,11 +1,10 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonSpeciesData, TypeChart } from "@pokemon-lib-ts/core";
 import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
-import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
 
 /**
@@ -20,8 +19,6 @@ function createDataManagerWithPursuit(): DataManager {
     typeChart: {},
   });
 
-  // Re-create the standard mock data manager and add pursuit on top
-  const base = createMockDataManager();
   const pursuitMove = {
     id: "pursuit",
     displayName: "Pursuit",
@@ -159,8 +156,11 @@ function createDataManagerWithPursuit(): DataManager {
   };
 
   fullDm.loadFromObjects({
-    // biome-ignore lint/suspicious/noExplicitAny: test helper building dynamic type chart
-    pokemon: [charizardSpecies, blastoiseSpecies, pikachuSpecies] as any,
+    pokemon: [
+      charizardSpecies,
+      blastoiseSpecies,
+      pikachuSpecies,
+    ] as unknown as PokemonSpeciesData[],
     moves: [
       {
         id: "tackle",
@@ -197,12 +197,8 @@ function createDataManagerWithPursuit(): DataManager {
       },
       pursuitMove,
     ],
-    // biome-ignore lint/suspicious/noExplicitAny: test helper building dynamic type chart
-    typeChart: typeChart as any,
+    typeChart: typeChart as unknown as TypeChart,
   });
-
-  // Suppress unused variable warning for `base`
-  void base;
 
   return fullDm;
 }
