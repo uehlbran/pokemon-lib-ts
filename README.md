@@ -18,7 +18,7 @@ Modular TypeScript libraries for building Pokemon battle simulators, fan games, 
 - **Zero-dependency core** — pure TypeScript; `@pokemon-lib-ts/core` has no runtime dependencies
 - **Complete standalone data** — each gen bundles all Pokemon, moves, type charts, items
 - **Dual ESM + CJS** — works in Node, bundlers, and everywhere TypeScript runs
-- **Extensible** — implement `GenerationRuleset` (~20 methods) to plug in a custom battle system
+- **Extensible** — implement `GenerationRuleset` (~43 methods) to plug in a custom battle system
 
 ## Packages
 
@@ -39,11 +39,11 @@ core  <-  battle  <-  gen1  <-  your app
 ```
 
 - **Core** has zero runtime dependencies. Pure TypeScript interfaces, formulas, and utilities.
-- **Battle** provides the engine skeleton — a state machine that delegates all gen-specific behavior to a `GenerationRuleset` interface (~20 methods: damage calc, type chart, accuracy, move effects, turn order, etc.). The engine never contains generation-specific logic.
+- **Battle** provides the engine skeleton — a state machine that delegates all gen-specific behavior to a `GenerationRuleset` interface (~43 methods: damage calc, type chart, accuracy, move effects, turn order, etc.). The engine never contains generation-specific logic.
 - **Gen packages** implement `GenerationRuleset` and bundle complete, standalone data. Gen 1 and 2 implement the interface directly; Gen 3+ extend `BaseRuleset` with overrides.
 - **Tools** (`tools/data-importer`, `tools/replay-parser`) handle the build-time data pipeline and Showdown replay validation.
 
-The engine emits a `BattleEvent[]` stream — 38 typed events covering every battle action. Consumers subscribe and render however they want.
+The engine emits individual `BattleEvent` values to listeners — 38 typed event types covering every battle action. The full event log is available as `BattleEvent[]` via `engine.getEventLog()`. Consumers subscribe and render however they want.
 
 ## Quick Start
 
