@@ -150,6 +150,64 @@ async function cmdValidateAll(args: string[]): Promise<void> {
   if (totalErrors > 0) process.exit(1);
 }
 
+async function cmdSimulate(args: string[]): Promise<void> {
+  const { values } = parseArgs({
+    args,
+    options: {
+      gen: { type: "string" },
+      battles: { type: "string", default: "1000" },
+      seed: { type: "string", default: "42" },
+      "team-size": { type: "string", default: "3" },
+      "max-turns": { type: "string", default: "500" },
+      json: { type: "boolean", default: false },
+      "no-color": { type: "boolean", default: false },
+      verbose: { type: "boolean", default: false },
+      determinism: { type: "boolean", default: false },
+    },
+    strict: false,
+  });
+
+  const genNum = Number.parseInt(String(values.gen ?? ""), 10);
+  if (genNum !== 1 && genNum !== 2) {
+    console.error("Error: --gen must be 1 or 2");
+    process.exit(1);
+  }
+
+  const battleCount = Number.parseInt(String(values.battles ?? "1000"), 10);
+  const seed = Number.parseInt(String(values.seed ?? "42"), 10);
+  const teamSize = Number.parseInt(String(values["team-size"] ?? "3"), 10);
+  const maxTurns = Number.parseInt(String(values["max-turns"] ?? "500"), 10);
+  const json = values.json as boolean;
+  const noColor = values["no-color"] as boolean;
+  const verbose = values.verbose as boolean;
+  const _determinismMode = values.determinism as boolean;
+
+  const { runBatch } = await import("./simulation/index.js");
+  const { formatSimulationReport } = await import("./report.js");
+
+  const config = { generation: genNum as 1 | 2, seed, teamSize, maxTurns };
+
+  console.log(`Running ${battleCount} Gen ${genNum} battles...`);
+
+  let count = 0;
+  const report = runBatch(config, battleCount, (_i) => {
+    count++;
+    if (count % 100 === 0) {
+      process.stdout.write(`  ${count}/${battleCount} battles...\r`);
+    }
+  });
+
+  process.stdout.write("\n");
+
+  const simResult = { type: "simulation" as const, report };
+  const output = formatSimulationReport(simResult, { json, noColor, verbose });
+  process.stdout.write(`${output}\n`);
+
+  if (report.violations.length > 0 || report.crashed > 0) {
+    process.exit(1);
+  }
+}
+
 // Main dispatch
 async function main(): Promise<void> {
   switch (command) {
@@ -165,9 +223,12 @@ async function main(): Promise<void> {
     case "validate-all":
       await cmdValidateAll(rest);
       break;
+    case "simulate":
+      await cmdSimulate(rest);
+      break;
     default:
       console.error(`Unknown command: ${command ?? "(none)"}`);
-      console.error("Commands: download, parse, validate, validate-all");
+      console.error("Commands: download, parse, validate, validate-all, simulate");
       process.exit(1);
   }
 }

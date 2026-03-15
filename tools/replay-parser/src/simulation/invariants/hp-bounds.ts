@@ -57,7 +57,8 @@ export const hpBounds: Invariant = {
 /** Invariant 6: damage.amount >= 0 for all damage events (0 is allowed for edge-case rounding) */
 export const positiveDamage: Invariant = {
   name: "positive-damage",
-  description: "Damage amount must be non-negative (negative damage is clearly wrong; 0 is valid for floor-rounding edge cases)",
+  description:
+    "Damage amount must be non-negative (negative damage is clearly wrong; 0 is valid for floor-rounding edge cases)",
   check(events, _config) {
     const violations: InvariantViolation[] = [];
     let currentTurn: number | null = null;
