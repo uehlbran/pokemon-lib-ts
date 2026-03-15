@@ -329,6 +329,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       customDamage?: { target: "attacker" | "defender"; amount: number; source: string } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      screensCleared?: "attacker" | "defender" | "both" | null;
     },
     context: MoveEffectContext,
   ): void {
