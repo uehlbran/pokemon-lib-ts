@@ -1,55 +1,85 @@
 import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib/core";
-import { calculateHp, calculateStat } from "@pokemon-lib/core";
+
+/**
+ * Compute the stat experience contribution used in Gen 1 stat formulas.
+ *
+ * Formula: floor(ceil(sqrt(statExp)) / 4)
+ *
+ * Examples:
+ *   statExp=0     → 0
+ *   statExp=1     → floor(ceil(1) / 4)    = floor(1/4)   = 0
+ *   statExp=16    → floor(ceil(4) / 4)    = floor(4/4)   = 1
+ *   statExp=65535 → floor(ceil(255.998…) / 4) = floor(256/4) = 64
+ */
+export function calculateStatExpContribution(statExp: number): number {
+  return Math.floor(Math.ceil(Math.sqrt(statExp)) / 4);
+}
+
+/**
+ * Gen 1 formula for non-HP stats.
+ *
+ * floor(((Base + DV) * 2 + statExpContrib) * Level / 100) + 5
+ */
+function calculateGen1Stat(base: number, dv: number, statExp: number, level: number): number {
+  const statExpContrib = calculateStatExpContribution(statExp);
+  return Math.floor(((base + dv) * 2 + statExpContrib) * (level / 100)) + 5;
+}
+
+/**
+ * Gen 1 formula for HP.
+ *
+ * floor(((Base + DV) * 2 + statExpContrib) * Level / 100) + Level + 10
+ */
+function calculateGen1Hp(base: number, dv: number, statExp: number, level: number): number {
+  const statExpContrib = calculateStatExpContribution(statExp);
+  return Math.floor(((base + dv) * 2 + statExpContrib) * (level / 100)) + level + 10;
+}
 
 /**
  * Calculate all six stats for a Gen 1 Pokemon.
  *
- * Gen 1 originally had a single "Special" stat and different IV/EV ranges,
- * but our data already uses the modern 6-stat model with IVs 0-31 and EVs 0-252.
- * The key Gen 1 difference: natures don't exist, so the nature modifier is always 1.0.
- *
- * We reuse the core stat formulas with a neutral nature modifier.
+ * Gen 1 mechanics:
+ * - DVs (Determinant Values) range 0-15, stored in pokemon.ivs.*
+ * - Stat Experience ranges 0-65535, stored in pokemon.evs.*
+ * - No natures (natures were introduced in Gen 3)
+ * - Special is a unified stat; spAttack and spDefense share the same base
+ *   stat in Gen 1 data, so they will be equal when the species data reflects this.
  */
 export function calculateGen1Stats(
   pokemon: PokemonInstance,
   species: PokemonSpeciesData,
 ): StatBlock {
   return {
-    hp: calculateHp(species.baseStats.hp, pokemon.ivs.hp, pokemon.evs.hp, pokemon.level),
-    attack: calculateStat(
+    hp: calculateGen1Hp(species.baseStats.hp, pokemon.ivs.hp, pokemon.evs.hp, pokemon.level),
+    attack: calculateGen1Stat(
       species.baseStats.attack,
       pokemon.ivs.attack,
       pokemon.evs.attack,
       pokemon.level,
-      1.0, // No natures in Gen 1
     ),
-    defense: calculateStat(
+    defense: calculateGen1Stat(
       species.baseStats.defense,
       pokemon.ivs.defense,
       pokemon.evs.defense,
       pokemon.level,
-      1.0,
     ),
-    spAttack: calculateStat(
+    spAttack: calculateGen1Stat(
       species.baseStats.spAttack,
       pokemon.ivs.spAttack,
       pokemon.evs.spAttack,
       pokemon.level,
-      1.0,
     ),
-    spDefense: calculateStat(
+    spDefense: calculateGen1Stat(
       species.baseStats.spDefense,
       pokemon.ivs.spDefense,
       pokemon.evs.spDefense,
       pokemon.level,
-      1.0,
     ),
-    speed: calculateStat(
+    speed: calculateGen1Stat(
       species.baseStats.speed,
       pokemon.ivs.speed,
       pokemon.evs.speed,
       pokemon.level,
-      1.0,
     ),
   };
 }
