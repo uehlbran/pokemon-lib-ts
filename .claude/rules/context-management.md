@@ -6,6 +6,6 @@ When doing research or exploration involving many files:
 - Prefer targeted searches (grep for a specific symbol) over broad directory reads
 
 When doing implementation spanning multiple files:
-- Use PROGRESS.md or the task system to track what's done vs. remaining
+- Prefer the task system; if needed, create a scratch `PROGRESS.md` to track done vs. remaining
 - Commit working code frequently rather than accumulating many uncommitted changes
-- If a task feels like it needs 15+ file reads to complete, stop and return what you've found so the caller can split the work
+- If a task needs 15+ file reads to complete, stop and return findings so the caller can split the work
