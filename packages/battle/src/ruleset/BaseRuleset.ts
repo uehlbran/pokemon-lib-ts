@@ -333,6 +333,17 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number {
+    // Gen 5+ distribution: 35/35/15/15% for 2/3/4/5 hits
+    // Skill Link ability (Gen 5+) always hits 5 times
+    if (attacker.ability === "skill-link") return 5;
+    const roll = rng.int(1, 100);
+    if (roll <= 35) return 2;
+    if (roll <= 70) return 3;
+    if (roll <= 85) return 4;
+    return 5;
+  }
+
   processPerishSong(pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;

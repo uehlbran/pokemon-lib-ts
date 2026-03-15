@@ -299,6 +299,13 @@ export interface GenerationRuleset {
   calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
 
   /**
+   * Roll the number of hits for a multi-hit move.
+   * Gen 1-4: [2,2,2,3,3,3,4,5] weighted (roughly 37.5/37.5/12.5/12.5%).
+   * Gen 5+: 35/35/15/15% for 2/3/4/5 hits.
+   */
+  rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number;
+
+  /**
    * Process Perish Song countdown for a Pokemon.
    * Returns the new counter value and whether the Pokemon fainted.
    */

@@ -851,6 +851,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, Math.floor(damageDealt / 2));
   }
 
+  rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
+    // Gen 1-4: [2,2,2,3,3,3,4,5] weighted distribution
+    return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
+  }
+
   processPerishSong(pokemon: ActivePokemon): {
     readonly newCount: number;
     readonly fainted: boolean;
