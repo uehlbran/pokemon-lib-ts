@@ -99,7 +99,7 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
           // Resolve target species — use side from ident to avoid cross-team nickname collisions
           const targetPokemon = resolvePokemon(
             targetNickname,
-            moveEvent.targetIdent!.side,
+            moveEvent.targetIdent?.side ?? 0,
             replay.teams,
           );
           if (targetPokemon === null) {

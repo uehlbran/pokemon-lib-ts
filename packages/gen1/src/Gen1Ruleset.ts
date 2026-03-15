@@ -218,6 +218,13 @@ export class Gen1Ruleset implements GenerationRuleset {
   doesMoveHit(context: AccuracyContext): boolean {
     const { attacker, defender, move, rng } = context;
 
+    // OHKO (Fissure, Guillotine, Horn Drill): only hits if user is strictly faster than target
+    if (move.effect?.type === "ohko") {
+      const attackerSpeed = attacker.pokemon.calculatedStats?.speed ?? 0;
+      const defenderSpeed = defender.pokemon.calculatedStats?.speed ?? 0;
+      if (attackerSpeed <= defenderSpeed) return false;
+    }
+
     // Moves with null accuracy never miss (e.g., Swift)
     if (move.accuracy === null) {
       return true;
@@ -539,9 +546,14 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Badly poisoned (Toxic): damage escalates each turn
         // N/16 max HP, where N starts at 1 and increments each turn
         // The toxic counter is stored under the "toxic-counter" volatile key
-        const toxicState = pokemon.volatileStatuses.get("toxic-counter" as any);
+        const toxicState = pokemon.volatileStatuses.get("toxic-counter");
         const counter = (toxicState?.data?.counter as number) ?? 1;
-        return Math.max(1, Math.floor((maxHp * counter) / 16));
+        const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
+        // Increment counter for next turn (ruleset owns this state)
+        if (toxicState?.data) {
+          (toxicState.data as Record<string, unknown>).counter = counter + 1;
+        }
+        return damage;
       }
 
       case "freeze":
@@ -578,18 +590,18 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 1: cannot act on the turn it wakes up
-    const sleepState = pokemon.volatileStatuses.get("sleep" as any);
+    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // Wake up — but cannot act this turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep" as any);
+      pokemon.volatileStatuses.delete("sleep-counter");
       return false; // Cannot act on wake turn in Gen 1
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       // Just reached 0 — wake up but can't act this turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep" as any);
+      pokemon.volatileStatuses.delete("sleep-counter");
       return false; // Cannot act on wake turn in Gen 1
     }
     return false; // Still sleeping
@@ -727,12 +739,46 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- Switch Out ---
 
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
-    // Gen 1: binding moves stop when the user switches out
-    // The counter is stored in the volatile status
-    pokemon.volatileStatuses.delete("bound");
+    // In Gen 1, Toxic counter persists through switching (unlike Gen 2+).
+    // Save it before clearing, then restore it.
+    const toxicCounter = pokemon.volatileStatuses.get("toxic-counter");
+    pokemon.volatileStatuses.clear();
+    if (toxicCounter) {
+      pokemon.volatileStatuses.set("toxic-counter", toxicCounter);
+    }
+  }
 
-    // In Gen 1, Toxic counter persists through switching (unlike Gen 2+)
-    // So we do NOT clear the toxic-counter here
+  // --- Switching ---
+
+  canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
+    // Gen 1: trapping moves (Wrap, Bind, Fire Spin, Clamp) prevent switching
+    return !pokemon.volatileStatuses.has("trapped");
+  }
+
+  // --- End-of-Turn Formulas ---
+
+  calculateLeechSeedDrain(pokemon: ActivePokemon): number {
+    // Gen 1: Leech Seed drains 1/16 max HP (not 1/8 like Gen 2+)
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 16));
+  }
+
+  calculateCurseDamage(_pokemon: ActivePokemon): number {
+    // Curse doesn't exist in Gen 1
+    return 0;
+  }
+
+  calculateNightmareDamage(_pokemon: ActivePokemon): number {
+    // Nightmare doesn't exist in Gen 1
+    return 0;
+  }
+
+  processPerishSong(_pokemon: ActivePokemon): {
+    readonly newCount: number;
+    readonly fainted: boolean;
+  } {
+    // Perish Song doesn't exist in Gen 1
+    return { newCount: 0, fainted: false };
   }
 
   // --- End-of-Turn Order ---

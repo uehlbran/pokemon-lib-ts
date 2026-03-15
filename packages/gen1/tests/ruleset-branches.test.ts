@@ -2167,7 +2167,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
         status: "sleep" as PrimaryStatus,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep" as any, { turnsLeft: 1 });
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
@@ -2175,7 +2175,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     // Assert — Gen 1: cannot act on the wake turn (returns false even on wake)
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBeNull();
-    expect(pokemon.volatileStatuses.has("sleep" as any)).toBe(false);
+    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
   });
 
   it("given Gen 1 rules and a pokemon with turnsLeft > 1, when processSleepTurn called, then stays sleeping and returns false", () => {
@@ -2186,7 +2186,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
         status: "sleep" as PrimaryStatus,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep" as any, { turnsLeft: 3 });
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
@@ -2194,7 +2194,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     // Assert — still sleeping, counter decremented
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBe("sleep");
-    expect((pokemon.volatileStatuses.get("sleep" as any) as any).turnsLeft).toBe(2);
+    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
   });
 
   it("given Gen 1 rules and a pokemon with turnsLeft = 0, when processSleepTurn called, then wakes up but returns false (cannot act)", () => {
@@ -2205,7 +2205,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
         status: "sleep" as PrimaryStatus,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep" as any, { turnsLeft: 0 });
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
@@ -2213,6 +2213,6 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     // Assert — Gen 1: wakes up but still cannot act this turn
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBeNull();
-    expect(pokemon.volatileStatuses.has("sleep" as any)).toBe(false);
+    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
   });
 });
