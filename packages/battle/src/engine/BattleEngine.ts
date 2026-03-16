@@ -1708,7 +1708,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active.volatileStatuses.has("leech-seed")) continue;
 
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const drain = Math.max(1, Math.floor(maxHp / 8));
+      const drain = this.ruleset.calculateLeechSeedDrain(active);
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - drain);
 
       this.emit({
@@ -1778,7 +1778,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active.volatileStatuses.has("curse")) continue;
 
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const damage = Math.max(1, Math.floor(maxHp / 4));
+      const damage = this.ruleset.calculateCurseDamage(active);
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
 
       this.emit({
@@ -1801,7 +1801,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (active.pokemon.status !== "sleep") continue;
 
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const damage = Math.max(1, Math.floor(maxHp / 4));
+      const damage = this.ruleset.calculateNightmareDamage(active);
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
 
       this.emit({
