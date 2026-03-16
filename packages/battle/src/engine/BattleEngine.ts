@@ -38,6 +38,10 @@ export class BattleEngine implements BattleEventEmitter {
   private pendingActions: Map<0 | 1, BattleAction> = new Map();
   private pendingSwitches: Map<0 | 1, number> = new Map();
   private sidesNeedingSwitch: Set<0 | 1> = new Set();
+  // Tracks which pokemon have already been processed as fainted during the current turn,
+  // preventing duplicate faint events and double faintCount increments when
+  // checkMidTurnFaints() is called multiple times per turn. Cleared at turn start.
+  private faintedPokemonThisTurn: Set<string> = new Set();
 
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     this.ruleset = ruleset;
@@ -540,6 +544,14 @@ export class BattleEngine implements BattleEventEmitter {
     const actions = [action0, action1];
     this.pendingActions.clear();
 
+    // Reset per-turn faint deduplication set so a new faint on a new turn is
+    // correctly recorded (fixes #78 — duplicate faint events across checkMidTurnFaints calls).
+    this.faintedPokemonThisTurn.clear();
+
+    // Record the event log position before any events are emitted this turn
+    // so that turn history captures only current-turn events (fixes #84).
+    const turnStartIndex = this.eventLog.length;
+
     // --- TURN_START ---
     this.transitionTo("TURN_START");
     this.state.turnNumber++;
@@ -652,11 +664,12 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
-    // Record turn history
+    // Record turn history — slice from turnStartIndex to capture only events
+    // emitted during this turn (fixes #84 — slice(-50) captured cross-turn events).
     this.state.turnHistory.push({
       turn: this.state.turnNumber,
       actions: orderedActions,
-      events: [...this.eventLog.slice(-50)],
+      events: [...this.eventLog.slice(turnStartIndex)],
     });
 
     // Reset move tracking for next turn
@@ -1555,6 +1568,12 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (active && active.pokemon.currentHp <= 0) {
+        // Guard against duplicate faint events when this method is called
+        // multiple times per turn (e.g., after Pursuit and again after the main action).
+        // The set is cleared at the start of each turn in resolveTurn() (#78).
+        const key = `${side.index}-${getPokemonName(active)}`;
+        if (this.faintedPokemonThisTurn.has(key)) continue;
+        this.faintedPokemonThisTurn.add(key);
         this.emit({
           type: "faint",
           side: side.index,
