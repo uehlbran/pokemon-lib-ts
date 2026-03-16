@@ -544,6 +544,15 @@ export class BattleEngine implements BattleEventEmitter {
     const actions = [action0, action1];
     this.pendingActions.clear();
 
+    // Enforce recharge volatile: override submitted action for recharging Pokemon
+    for (let side = 0 as 0 | 1; side <= 1; side = (side + 1) as 0 | 1) {
+      const active = this.getActive(side);
+      if (active && active.pokemon.currentHp > 0 && active.volatileStatuses.has("recharge")) {
+        active.volatileStatuses.delete("recharge");
+        actions[side] = { type: "recharge", side };
+      }
+    }
+
     // Reset per-turn faint deduplication set so a new faint on a new turn is
     // correctly recorded (fixes #78 — duplicate faint events across checkMidTurnFaints calls).
     this.faintedPokemonThisTurn.clear();
@@ -957,9 +966,10 @@ export class BattleEngine implements BattleEventEmitter {
 
     if (!defender) return;
 
-    // Struggle does a fixed amount of typeless damage
+    // Struggle damage: delegated to ruleset (Gen 1: Normal-type, Ghost immune; Gen 2+: typeless 50 BP)
+    // Source: Showdown — Struggle delegates type/damage to the generation ruleset
     const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
-    const damage = Math.max(1, Math.floor(maxHp / 4));
+    const damage = this.ruleset.calculateStruggleDamage(actor, defender, this.state);
     const defenderHpBefore = defender.pokemon.currentHp;
 
     defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
