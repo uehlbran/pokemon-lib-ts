@@ -728,8 +728,12 @@ export class Gen1Ruleset implements GenerationRuleset {
         const counter = (toxicState?.data?.counter as number) ?? 1;
         const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
         // Increment counter for next turn (ruleset owns this state)
-        if (toxicState?.data) {
-          (toxicState.data as Record<string, unknown>).counter = counter + 1;
+        if (toxicState) {
+          if (!toxicState.data) {
+            toxicState.data = { counter: counter + 1 };
+          } else {
+            (toxicState.data as Record<string, unknown>).counter = counter + 1;
+          }
         }
         return damage;
       }

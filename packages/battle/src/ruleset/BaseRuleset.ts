@@ -485,14 +485,14 @@ export abstract class BaseRuleset implements GenerationRuleset {
    * Returns the effective speed of the given active pokemon, accounting for stat stages
    * and the paralysis speed penalty.
    *
-   * Gen 3+ default: paralysis halves speed (×0.5). Gen 1-2 override (×0.25).
+   * Gen 7+ default: paralysis halves speed (×0.5). Gen 3-6 and Gen 1-2 must override (×0.25).
    */
   protected getEffectiveSpeed(active: ActivePokemon): number {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
     // Apply stat stages
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
-    // Gen 3+: paralysis halves speed (×0.5); Gen 1-2 override (×0.25)
+    // Gen 7+ default: paralysis halves speed (×0.5); Gen 1-6 must override (×0.25)
     if (active.pokemon.status === "paralysis") {
       effective = Math.floor(effective * 0.5);
     }
