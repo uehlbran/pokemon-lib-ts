@@ -36,7 +36,7 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 ### Key Rules
 - **Core has zero runtime dependencies.** This is a hard rule. If you need an external library, it doesn't belong in core.
 - **The battle engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
-- **Turn flow**: `TURN_START → action selection → priority sort → TURN_RESOLVE (accuracy check → move execution → damage/effects → ability triggers) → TURN_END → weather/status ticks → FAINT_CHECK → next turn or game over`
+- **Turn flow**: `turn-start → action selection → priority sort → turn-resolve (accuracy check → move execution → damage/effects → ability triggers) → turn-end → weather/status ticks → faint-check → next turn or game over`
 
 ## Tech Stack
 
