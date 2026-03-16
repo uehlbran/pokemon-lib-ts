@@ -5,6 +5,19 @@ All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-03-15
+
+### Added
+
+- Tier 1 move handlers: Splash (message only), Super Fang (halves target HP, min 1), Psywave (random damage 1–floor(level×1.5)−1 per pret/pokered), Teleport (fails with message in trainer battles) (#92)
+- Tier 2 move handlers: Rest (cures status + heals to full + applies 2-turn sleep; fails at full HP with no status), Mist (permanent until switch/Haze; blocks opponent stat drops), Conversion (copies opponent's types — Gen 1 mechanic per pret/pokered) (#92)
+- Mist enforcement in stat-change path: foe-targeted stat drops are blocked when the defending Pokémon has Mist active (#92)
+
+### Fixed
+
+- Psywave damage range corrected to `[1, floor(level×1.5)−1]` per pret/pokered (was off-by-one) (#92)
+- Mist duration corrected to permanent (no turn counter) per pret/pokered — 5-turn timer is a Gen 2+ mechanic (#92)
+
 ## [0.5.1] - 2026-03-15
 
 ### Fixed
