@@ -38,6 +38,10 @@ export class BattleEngine implements BattleEventEmitter {
   private pendingActions: Map<0 | 1, BattleAction> = new Map();
   private pendingSwitches: Map<0 | 1, number> = new Map();
   private sidesNeedingSwitch: Set<0 | 1> = new Set();
+  // Tracks which pokemon have already been processed as fainted during the current turn,
+  // preventing duplicate faint events and double faintCount increments when
+  // checkMidTurnFaints() is called multiple times per turn. Cleared at turn start.
+  private faintedPokemonThisTurn: Set<string> = new Set();
 
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     this.ruleset = ruleset;
@@ -490,7 +494,7 @@ export class BattleEngine implements BattleEventEmitter {
       type: "switch-in",
       side: side.index,
       pokemon: createPokemonSnapshot(active),
-      slot: teamSlot,
+      slot: 0,
     });
 
     // Apply entry hazards
@@ -540,6 +544,14 @@ export class BattleEngine implements BattleEventEmitter {
     const actions = [action0, action1];
     this.pendingActions.clear();
 
+    // Reset per-turn faint deduplication set so a new faint on a new turn is
+    // correctly recorded (fixes #78 — duplicate faint events across checkMidTurnFaints calls).
+    this.faintedPokemonThisTurn.clear();
+
+    // Record the event log position before any events are emitted this turn
+    // so that turn history captures only current-turn events (fixes #84).
+    const turnStartIndex = this.eventLog.length;
+
     // --- TURN_START ---
     this.transitionTo("TURN_START");
     this.state.turnNumber++;
@@ -582,6 +594,7 @@ export class BattleEngine implements BattleEventEmitter {
         this.checkMidTurnFaints();
         if (this.checkBattleEnd()) {
           this.transitionTo("BATTLE_END");
+          this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
           return;
         }
 
@@ -630,34 +643,39 @@ export class BattleEngine implements BattleEventEmitter {
 
       // Check for faints after each action
       this.checkMidTurnFaints();
-      if (this.state.ended) return;
+      if (this.state.ended) {
+        this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+        return;
+      }
     }
 
     // --- TURN_END ---
     this.transitionTo("TURN_END");
     this.processEndOfTurn();
 
-    if (this.state.ended) return;
+    if (this.state.ended) {
+      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      return;
+    }
 
     // --- FAINT_CHECK ---
     this.transitionTo("FAINT_CHECK");
     if (this.checkBattleEnd()) {
       this.transitionTo("BATTLE_END");
+      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
       return;
     }
 
     // If any pokemon need replacement, prompt for switch
     if (this.needsSwitchPrompt()) {
       this.transitionTo("SWITCH_PROMPT");
+      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
       return;
     }
 
-    // Record turn history
-    this.state.turnHistory.push({
-      turn: this.state.turnNumber,
-      actions: orderedActions,
-      events: [...this.eventLog.slice(-50)],
-    });
+    // Record turn history — slice from turnStartIndex to capture only events
+    // emitted during this turn (fixes #84 — slice(-50) captured cross-turn events).
+    this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
 
     // Reset move tracking for next turn
     for (const side of this.state.sides) {
@@ -804,6 +822,15 @@ export class BattleEngine implements BattleEventEmitter {
 
       damage = result.damage;
 
+      // Effectiveness and crit events fire regardless of substitute — emit before
+      // the damage is applied so the ordering matches real cartridge behaviour.
+      if (result.effectiveness !== 1) {
+        this.emit({ type: "effectiveness", multiplier: result.effectiveness });
+      }
+      if (result.isCrit) {
+        this.emit({ type: "critical-hit" });
+      }
+
       // Apply damage to substitute or pokemon
       if (defender.substituteHp > 0 && !effectiveMoveData.flags.bypassSubstitute) {
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
@@ -833,13 +860,6 @@ export class BattleEngine implements BattleEventEmitter {
           maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
           source: effectiveMoveData.id,
         });
-      }
-
-      if (result.effectiveness !== 1) {
-        this.emit({ type: "effectiveness", multiplier: result.effectiveness });
-      }
-      if (result.isCrit) {
-        this.emit({ type: "critical-hit" });
       }
 
       // Held item: on-damage-taken trigger for defender
@@ -1552,10 +1572,29 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  /**
+   * Records the completed turn into `state.turnHistory`.
+   * Called from every exit path of `resolveTurn()` so that turns ending in a KO,
+   * battle end, or switch prompt are captured just like normal turns.
+   */
+  private recordTurnHistory(turn: number, actions: BattleAction[], turnStartIndex: number): void {
+    this.state.turnHistory.push({
+      turn,
+      actions,
+      events: [...this.eventLog.slice(turnStartIndex)],
+    });
+  }
+
   private checkMidTurnFaints(): void {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (active && active.pokemon.currentHp <= 0) {
+        // Guard against duplicate faint events when this method is called
+        // multiple times per turn (e.g., after Pursuit and again after the main action).
+        // The set is cleared at the start of each turn in resolveTurn() (#78).
+        const key = `${side.index}-${active.pokemon.uid}`;
+        if (this.faintedPokemonThisTurn.has(key)) continue;
+        this.faintedPokemonThisTurn.add(key);
         this.emit({
           type: "faint",
           side: side.index,
@@ -1604,7 +1643,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       if (side.active[0] === active) return side.index;
     }
-    return 0;
+    throw new Error(`BattleEngine: ActivePokemon not found in any side`);
   }
 
   private processHeldItemEndOfTurn(): void {
@@ -1708,7 +1747,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active.volatileStatuses.has("leech-seed")) continue;
 
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const drain = Math.max(1, Math.floor(maxHp / 8));
+      const drain = this.ruleset.calculateLeechSeedDrain(active);
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - drain);
 
       this.emit({
@@ -1778,7 +1817,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active.volatileStatuses.has("curse")) continue;
 
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const damage = Math.max(1, Math.floor(maxHp / 4));
+      const damage = this.ruleset.calculateCurseDamage(active);
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
 
       this.emit({
@@ -1801,7 +1840,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (active.pokemon.status !== "sleep") continue;
 
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const damage = Math.max(1, Math.floor(maxHp / 4));
+      const damage = this.ruleset.calculateNightmareDamage(active);
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
 
       this.emit({

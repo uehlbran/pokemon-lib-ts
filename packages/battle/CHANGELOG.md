@@ -5,6 +5,17 @@ All notable changes to `@pokemon-lib-ts/battle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-03-15
+
+### Fixed
+
+- Delegate Leech Seed drain, Curse, and Nightmare damage calculations to `GenerationRuleset` instead of using hardcoded formulas (#51, #52, #53)
+- `sendOut()` now emits `slot: 0` in the `switch-in` event instead of the team roster index (#82)
+- `getSideIndex()` now throws instead of silently returning `0` when an `ActivePokemon` is not found in any side (#83)
+- Effectiveness and critical-hit events now emitted before the `damage` event, and fire for both direct hits and substitute hits (#81)
+- Deduplicated faint events: `checkMidTurnFaints()` uses a per-turn `uid`-keyed Set to prevent double emission and double `faintCount` increment (#78)
+- Turn history now records only the current turn's events (uses `eventLog.slice(turnStartIndex)` instead of `slice(-50)`) and is written on all exit paths including KO, battle end, and switch-prompt turns (#84)
+
 ## [0.7.1] - 2026-03-15
 
 ### Fixed
