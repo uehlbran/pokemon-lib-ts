@@ -192,6 +192,16 @@ export interface MoveEffectResult {
   readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
   /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
   readonly screensCleared?: "attacker" | "defender" | "both" | null;
+  /** Cure the attacker's status WITHOUT resetting stat stages (unlike statusCured which is Haze-only) */
+  readonly statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+  /** Primary status to inflict on the ATTACKER (e.g., Rest's self-sleep) */
+  readonly selfStatusInflicted?: PrimaryStatus | null;
+  /** Volatile status to inflict on the ATTACKER */
+  readonly selfVolatileInflicted?: VolatileStatus | null;
+  /** Data for selfVolatileInflicted (turnsLeft, etc.) */
+  readonly selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+  /** Change the types of the attacker or defender */
+  readonly typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
 }
 
 /**
