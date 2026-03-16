@@ -242,7 +242,7 @@ export interface HealEvent {
 
 /**
  * Emitted when a Pokémon's HP reaches 0. Follows a `damage` event.
- * After this event the battle enters `FAINT_CHECK` phase.
+ * After this event the battle enters `faint-check` phase.
  */
 export interface FaintEvent {
   /** Discriminant: always `"faint"` */
@@ -583,7 +583,7 @@ export interface ZMoveEvent {
  * Emitted when a Poké Ball is thrown at a wild Pokémon.
  * The `shakes` field indicates how many times the ball shook (0–3)
  * before either catching or breaking free. A `caught: true` result
- * transitions the battle to `BATTLE_END`.
+ * transitions the battle to `battle-end`.
  */
 export interface CatchAttemptEvent {
   /** Discriminant: always `"catch-attempt"` */
@@ -653,7 +653,7 @@ export interface EngineWarningEvent {
 
 /**
  * Emitted when the battle concludes. This is always the last event in the log.
- * After this event, the engine transitions to `BATTLE_END` phase.
+ * After this event, the engine transitions to `battle-end` phase.
  */
 export interface BattleEndEvent {
   /** Discriminant: always `"battle-end"` */

@@ -869,6 +869,33 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  calculateStruggleDamage(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    _state: BattleState,
+  ): number {
+    // Source: pret/pokecrystal — Struggle is typeless physical damage with 50 BP in Gen 2.
+    // Type chart does NOT apply — Ghost-type defenders take normal damage.
+    // Formula mirrors confusion self-hit (typeless physical, same base formula, 50 BP vs 40 BP).
+    // Source: gen2-ground-truth.md §9 — Struggle is typeless, 50 BP physical
+    const level = attacker.pokemon.level;
+    const attack = attacker.pokemon.calculatedStats?.attack ?? 100;
+    const defense = defender.pokemon.calculatedStats?.defense ?? 100;
+    const effectiveAttack = Math.max(
+      1,
+      Math.floor(attack * getStatStageMultiplier(attacker.statStages.attack)),
+    );
+    const effectiveDefense = Math.max(
+      1,
+      Math.floor(defense * getStatStageMultiplier(defender.statStages.defense)),
+    );
+    // Gen 2 damage formula: floor(floor(floor((2*L/5)+2) * P * A) / D) / 50) + 2
+    const levelFactor = Math.floor((2 * level) / 5) + 2;
+    let baseDamage = Math.floor(Math.floor(levelFactor * 50 * effectiveAttack) / effectiveDefense);
+    baseDamage = Math.floor(baseDamage / 50) + 2;
+    return Math.max(1, baseDamage);
+  }
+
   calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
     // Gen 2: recoil = 1/4 of the user's MAX HP (not damage dealt)
     // Source: gen2-ground-truth.md §9 — Struggle: "floor(maxHp / 4)"

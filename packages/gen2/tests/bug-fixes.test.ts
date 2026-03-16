@@ -462,7 +462,7 @@ describe("Bug #96 — onSwitchOut clears trapped volatile from opposing Pokemon"
           gimmickUsed: false,
         },
       ],
-      phase: "TURN_RESOLVE",
+      phase: "turn-resolve",
       generation: 2,
       format: "singles",
       turnNumber: 5,

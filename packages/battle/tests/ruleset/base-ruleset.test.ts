@@ -1,11 +1,12 @@
 import type {
   Generation,
+  MoveData,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { DataManager, SeededRandom } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import type {
   AbilityContext,
@@ -956,6 +957,237 @@ describe("BaseRuleset", () => {
       expect(order.length).toBeGreaterThan(0);
       expect(order).toContain("weather-damage");
       expect(order).toContain("status-damage");
+    });
+
+    it("given a base ruleset, when getEndOfTurnOrder is called, then nightmare is included after curse", () => {
+      const order = ruleset.getEndOfTurnOrder();
+      expect(order).toContain("nightmare");
+      const curseIdx = order.indexOf("curse");
+      const nightmareIdx = order.indexOf("nightmare");
+      expect(nightmareIdx).toBeGreaterThan(curseIdx);
+    });
+  });
+
+  describe("applyStatusDamage — badly-poisoned escalation", () => {
+    it("given a badly-poisoned pokemon with toxic-counter at 1, when called twice, then damage escalates", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, {
+        calculatedStats: {
+          hp: 160,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        },
+      });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      // Set up toxic-counter volatile with counter=1
+      active.volatileStatuses.set("toxic-counter", {
+        turnsLeft: -1,
+        data: { counter: 1 },
+      });
+
+      // Act — first call (counter=1): floor(160*1/16) = 10
+      const dmg1 = ruleset.applyStatusDamage(
+        active,
+        "badly-poisoned",
+        {} as unknown as BattleState,
+      );
+      // Act — second call (counter=2): floor(160*2/16) = 20
+      const dmg2 = ruleset.applyStatusDamage(
+        active,
+        "badly-poisoned",
+        {} as unknown as BattleState,
+      );
+      // Act — third call (counter=3): floor(160*3/16) = 30
+      const dmg3 = ruleset.applyStatusDamage(
+        active,
+        "badly-poisoned",
+        {} as unknown as BattleState,
+      );
+
+      // Assert
+      expect(dmg1).toBe(10);
+      expect(dmg2).toBe(20);
+      expect(dmg3).toBe(30);
+    });
+  });
+
+  describe("resolveTurnOrder — move priority", () => {
+    it("given Quick Attack (+1) vs Tackle (0), when resolveTurnOrder is called, then Quick Attack goes first regardless of speed", () => {
+      // Arrange — side 0 is slower but uses Quick Attack (+1 priority)
+      const pokemon1 = createTestPokemon(6, 50, {
+        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 50,
+        },
+      });
+      const pokemon2 = createTestPokemon(9, 50, {
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 200,
+        },
+      });
+      const active1 = createActivePokemon(pokemon1, 0, ["normal"]);
+      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const rng = new SeededRandom(42);
+
+      // Build a DataManager with quick-attack (priority 1) and tackle (priority 0)
+      const dm = new DataManager();
+      const baseFlags: MoveData["flags"] = {
+        contact: true,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: true,
+        mirror: true,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      };
+      dm.loadFromObjects({
+        pokemon: [],
+        moves: [
+          {
+            id: "quick-attack",
+            displayName: "Quick Attack",
+            type: "normal",
+            category: "physical",
+            power: 40,
+            accuracy: 100,
+            pp: 30,
+            priority: 1,
+            target: "adjacent-foe",
+            flags: baseFlags,
+            effect: null,
+            description: "",
+            generation: 1,
+          },
+          {
+            id: "tackle",
+            displayName: "Tackle",
+            type: "normal",
+            category: "physical",
+            power: 40,
+            accuracy: 100,
+            pp: 35,
+            priority: 0,
+            target: "adjacent-foe",
+            flags: baseFlags,
+            effect: null,
+            description: "",
+            generation: 1,
+          },
+        ],
+        typeChart: {} as TypeChart,
+      });
+
+      const rulesetWithDm = new TestRuleset(dm);
+
+      const state = {
+        sides: [{ active: [active1] }, { active: [active2] }],
+        trickRoom: { active: false, turnsLeft: 0 },
+      } as unknown as BattleState;
+
+      const actions = [
+        { type: "move" as const, side: 0 as const, moveIndex: 0 },
+        { type: "move" as const, side: 1 as const, moveIndex: 0 },
+      ];
+
+      // Act
+      const ordered = rulesetWithDm.resolveTurnOrder(actions, state, rng);
+
+      // Assert — side 0 (Quick Attack, priority +1) goes first despite lower speed
+      expect(ordered[0]?.side).toBe(0);
+      expect(ordered[1]?.side).toBe(1);
+    });
+  });
+
+  describe("getEffectiveSpeed", () => {
+    it("given a paralyzed pokemon with speed 100, when getEffectiveSpeed is called, then speed is halved", () => {
+      // Arrange
+      const pokemon = createTestPokemon(6, 50, {
+        status: "paralysis",
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        },
+      });
+      const active = createActivePokemon(pokemon, 0, ["fire"]);
+
+      // Act — access via resolveTurnOrder (getEffectiveSpeed is protected)
+      // We test it indirectly: paralyzed side 0 (base 100) vs healthy side 1 (base 49)
+      // Without paralysis: side 0 wins (100 > 49); with paralysis: side 0 effective = 50 > 49, still wins
+      // But if effective speed < 49, side 1 wins. Use speed 100 → 50 effective vs opponent speed 49.
+      const pokemon2 = createTestPokemon(9, 50, {
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 49,
+        },
+      });
+      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const rng = new SeededRandom(42);
+      const state = {
+        sides: [{ active: [active] }, { active: [active2] }],
+        trickRoom: { active: false, turnsLeft: 0 },
+      } as unknown as BattleState;
+      const actions = [
+        { type: "move" as const, side: 0 as const, moveIndex: 0 },
+        { type: "move" as const, side: 1 as const, moveIndex: 0 },
+      ];
+
+      // side 0: paralyzed, speed=100 → effective=50; side 1: speed=49 → effective=49
+      // side 0 still goes first (50 > 49)
+      const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+      expect(ordered[0]?.side).toBe(0);
+
+      // Now test that side 1 (speed 51) beats paralyzed side 0 (effective 50)
+      const pokemon3 = createTestPokemon(9, 50, {
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 51,
+        },
+      });
+      const active3 = createActivePokemon(pokemon3, 0, ["water"]);
+      const state2 = {
+        sides: [{ active: [active] }, { active: [active3] }],
+        trickRoom: { active: false, turnsLeft: 0 },
+      } as unknown as BattleState;
+      const rng2 = new SeededRandom(42);
+      const ordered2 = ruleset.resolveTurnOrder(actions, state2, rng2);
+      // side 1 (speed 51 effective) beats side 0 (paralyzed, effective 50)
+      expect(ordered2[0]?.side).toBe(1);
     });
   });
 

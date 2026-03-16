@@ -68,12 +68,12 @@ function createTestEngine(overrides?: {
 
 describe("BattleEngine", () => {
   describe("constructor", () => {
-    it("given a valid config, when engine is created, then initial phase is BATTLE_START", () => {
+    it("given a valid config, when engine is created, then initial phase is battle-start", () => {
       // Arrange & Act
       const { engine } = createTestEngine();
 
       // Assert
-      expect(engine.getPhase()).toBe("BATTLE_START");
+      expect(engine.getPhase()).toBe("battle-start");
     });
 
     it("given a valid config, when engine is created, then battle is not ended", () => {
@@ -96,7 +96,7 @@ describe("BattleEngine", () => {
   });
 
   describe("start", () => {
-    it("given a new battle, when start is called, then phase transitions to ACTION_SELECT", () => {
+    it("given a new battle, when start is called, then phase transitions to action-select", () => {
       // Arrange
       const { engine } = createTestEngine();
 
@@ -104,7 +104,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Assert
-      expect(engine.getPhase()).toBe("ACTION_SELECT");
+      expect(engine.getPhase()).toBe("action-select");
     });
 
     it("given a new battle, when start is called, then battle-start event is emitted", () => {
@@ -158,12 +158,12 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Act & Assert
-      expect(() => engine.start()).toThrow("Cannot start battle in phase ACTION_SELECT");
+      expect(() => engine.start()).toThrow("Cannot start battle in phase action-select");
     });
   });
 
   describe("submitAction", () => {
-    it("given battle in ACTION_SELECT, when one side submits, then phase remains ACTION_SELECT", () => {
+    it("given battle in action-select, when one side submits, then phase remains action-select", () => {
       // Arrange
       const { engine } = createTestEngine();
       engine.start();
@@ -172,7 +172,7 @@ describe("BattleEngine", () => {
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
 
       // Assert
-      expect(engine.getPhase()).toBe("ACTION_SELECT");
+      expect(engine.getPhase()).toBe("action-select");
     });
 
     it("given both sides submit moves, when turn resolves, then turn number increments", () => {
@@ -233,14 +233,14 @@ describe("BattleEngine", () => {
       }
     });
 
-    it("given battle not in ACTION_SELECT, when action is submitted, then it throws an error", () => {
+    it("given battle not in action-select, when action is submitted, then it throws an error", () => {
       // Arrange
       const { engine } = createTestEngine();
-      // Don't start the battle — still in BATTLE_START
+      // Don't start the battle — still in battle-start
 
       // Act & Assert
       expect(() => engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 })).toThrow(
-        "Cannot submit action in phase BATTLE_START",
+        "Cannot submit action in phase battle-start",
       );
     });
 
@@ -744,15 +744,15 @@ describe("BattleEngine", () => {
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Should be in SWITCH_PROMPT phase
-      expect(engine.getPhase()).toBe("SWITCH_PROMPT");
+      // Should be in switch-prompt phase
+      expect(engine.getPhase()).toBe("switch-prompt");
 
       // Submit switch
       engine.submitSwitch(1, 1);
 
       // Assert — battle continues
       expect(engine.isEnded()).toBe(false);
-      expect(engine.getPhase()).toBe("ACTION_SELECT");
+      expect(engine.getPhase()).toBe("action-select");
       expect(engine.getActive(1)?.pokemon.uid).toBe("pikachu-1");
     });
   });

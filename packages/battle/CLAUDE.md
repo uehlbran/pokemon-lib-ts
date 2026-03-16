@@ -34,10 +34,10 @@ src/
 ## Turn Flow
 
 ```text
-TURN_START → action selection → priority sort
-  → TURN_RESOLVE (for each action):
+turn-start → action selection → priority sort
+  → turn-resolve (for each action):
     → accuracy check → move execution → damage/effects → ability triggers
-  → TURN_END → weather/status ticks → FAINT_CHECK → next turn or game over
+  → turn-end → weather/status ticks → faint-check → next turn or game over
 ```
 
 ## Event-Driven Architecture

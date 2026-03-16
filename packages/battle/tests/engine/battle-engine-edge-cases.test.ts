@@ -67,7 +67,7 @@ function createEngine(overrides?: {
 
 describe("BattleEngine — edge cases", () => {
   describe("phase transition sequence", () => {
-    it("given both sides submit moves, when turn resolves, then phases transition TURN_START -> TURN_RESOLVE -> TURN_END -> FAINT_CHECK -> ACTION_SELECT", () => {
+    it("given both sides submit moves, when turn resolves, then phases transition turn-start -> turn-resolve -> turn-end -> faint-check -> action-select", () => {
       // Arrange
       const { engine } = createEngine();
       engine.start();
@@ -92,17 +92,17 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — verify the phase sequence
-      expect(phaseLog).toContain("TURN_START");
-      expect(phaseLog).toContain("TURN_RESOLVE");
-      expect(phaseLog).toContain("TURN_END");
-      expect(phaseLog).toContain("FAINT_CHECK");
-      expect(phaseLog).toContain("ACTION_SELECT");
+      expect(phaseLog).toContain("turn-start");
+      expect(phaseLog).toContain("turn-resolve");
+      expect(phaseLog).toContain("turn-end");
+      expect(phaseLog).toContain("faint-check");
+      expect(phaseLog).toContain("action-select");
 
-      const turnStartIdx = phaseLog.indexOf("TURN_START");
-      const turnResolveIdx = phaseLog.indexOf("TURN_RESOLVE");
-      const turnEndIdx = phaseLog.indexOf("TURN_END");
-      const faintCheckIdx = phaseLog.indexOf("FAINT_CHECK");
-      const actionSelectIdx = phaseLog.indexOf("ACTION_SELECT");
+      const turnStartIdx = phaseLog.indexOf("turn-start");
+      const turnResolveIdx = phaseLog.indexOf("turn-resolve");
+      const turnEndIdx = phaseLog.indexOf("turn-end");
+      const faintCheckIdx = phaseLog.indexOf("faint-check");
+      const actionSelectIdx = phaseLog.indexOf("action-select");
 
       expect(turnStartIdx).toBeLessThan(turnResolveIdx);
       expect(turnResolveIdx).toBeLessThan(turnEndIdx);
@@ -272,7 +272,7 @@ describe("BattleEngine — edge cases", () => {
   });
 
   describe("forced switch after KO — both sides", () => {
-    it("given both pokemon faint from end-of-turn damage, when both have reserves, then both sides get SWITCH_PROMPT", () => {
+    it("given both pokemon faint from end-of-turn damage, when both have reserves, then both sides get switch-prompt", () => {
       // Arrange — both at low HP with burn, burn will KO at end of turn
       const team1 = [
         createTestPokemon(6, 50, {
@@ -362,15 +362,15 @@ describe("BattleEngine — edge cases", () => {
 
       // Assert — engine should end or prompt switch since both fainted from burn
       // Since both sides have reserves, if the engine doesn't end the battle
-      // it should be in SWITCH_PROMPT. But checkMidTurnFaints calls checkBattleEnd
-      // when both teams still have alive mons, SWITCH_PROMPT is used.
+      // it should be in switch-prompt. But checkMidTurnFaints calls checkBattleEnd
+      // when both teams still have alive mons, switch-prompt is used.
       const phase = engine2.getPhase();
-      expect(["SWITCH_PROMPT", "BATTLE_END"]).toContain(phase);
+      expect(["switch-prompt", "battle-end"]).toContain(phase);
     });
   });
 
   describe("submitSwitch error — side does not need switch", () => {
-    it("given a side in SWITCH_PROMPT that doesn't need to switch, when submitSwitch is called for that side, then it throws", () => {
+    it("given a side in switch-prompt that doesn't need to switch, when submitSwitch is called for that side, then it throws", () => {
       // Arrange — force only side 1 to need a switch
       const team2 = [
         createTestPokemon(9, 50, {
@@ -410,8 +410,8 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Should now be in SWITCH_PROMPT for side 1
-      expect(engine.getPhase()).toBe("SWITCH_PROMPT");
+      // Should now be in switch-prompt for side 1
+      expect(engine.getPhase()).toBe("switch-prompt");
 
       // Act & Assert — side 0 doesn't need to switch
       expect(() => engine.submitSwitch(0, 0)).toThrow("Side 0 does not need to switch");

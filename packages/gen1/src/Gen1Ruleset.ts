@@ -30,7 +30,6 @@ import type {
   PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
-  SeededRandom,
   StatBlock,
   TypeChart,
   VolatileStatus,
@@ -41,6 +40,7 @@ import {
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
   getStatStageMultiplier,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "./data";
 import { rollGen1Critical } from "./Gen1CritCalc";
@@ -728,8 +728,12 @@ export class Gen1Ruleset implements GenerationRuleset {
         const counter = (toxicState?.data?.counter as number) ?? 1;
         const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
         // Increment counter for next turn (ruleset owns this state)
-        if (toxicState?.data) {
-          (toxicState.data as Record<string, unknown>).counter = counter + 1;
+        if (toxicState) {
+          if (!toxicState.data) {
+            toxicState.data = { counter: counter + 1 };
+          } else {
+            (toxicState.data as Record<string, unknown>).counter = counter + 1;
+          }
         }
         return damage;
       }
@@ -996,6 +1000,63 @@ export class Gen1Ruleset implements GenerationRuleset {
   calculateNightmareDamage(_pokemon: ActivePokemon): number {
     // Nightmare doesn't exist in Gen 1
     return 0;
+  }
+
+  calculateStruggleDamage(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): number {
+    // Source: pret/pokered — Struggle is a Normal-type physical move with 50 BP in Gen 1.
+    // Ghost types are immune to Normal-type moves.
+    // We build a minimal MoveData for Struggle and delegate to calculateDamage.
+    // rng uses a fixed seed so this method is deterministic (no live-battle RNG variance).
+    // The random factor at seed 0 yields a fixed roll (~89%). This is intentional:
+    // calculateStruggleDamage has no rng parameter by interface design. Callers that
+    // need full Gen 1 damage variance (engine turn resolution) call calculateDamage()
+    // directly with a live DamageContext instead.
+    const STRUGGLE_MOVE_GEN1: MoveData = {
+      id: "struggle",
+      displayName: "Struggle",
+      type: "normal",
+      category: "physical",
+      power: 50,
+      accuracy: null,
+      pp: 1,
+      priority: 0,
+      target: "adjacent-foe",
+      flags: {
+        contact: true,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: false,
+        mirror: false,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: null,
+      description: "Struggle",
+      generation: 1,
+    };
+    const result = this.calculateDamage({
+      attacker,
+      defender,
+      move: STRUGGLE_MOVE_GEN1,
+      state,
+      rng: new SeededRandom(0),
+      isCrit: false,
+    });
+    return result.damage;
   }
 
   calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {

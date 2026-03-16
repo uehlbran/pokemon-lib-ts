@@ -5,6 +5,16 @@ All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-03-15
+
+### Added
+
+- `calculateStruggleDamage()` — Gen 1 Struggle uses Normal-type 50 BP physical damage; Ghost-type defenders are immune (#80)
+
+### Fixed
+
+- `applyStatusDamage()` badly-poisoned: toxic counter now increments correctly even when the volatile's `data` property was not pre-initialized (#87)
+
 ## [0.5.3] - 2026-03-15
 
 ### Added

@@ -308,6 +308,16 @@ export class MockRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  calculateStruggleDamage(
+    attacker: ActivePokemon,
+    _defender: ActivePokemon,
+    _state: BattleState,
+  ): number {
+    // Default mock: typeless 1/4 max HP (Gen 3+ style)
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
+  }
+
   calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
     return Math.max(1, Math.floor(damageDealt / 2));
   }

@@ -70,7 +70,7 @@ function createTestState(
   ];
 
   return {
-    phase: "ACTION_SELECT",
+    phase: "action-select",
     generation: 1,
     format: "singles",
     turnNumber: 1,
@@ -343,13 +343,13 @@ describe("RandomAI — edge cases", () => {
 
       // Act — AI loop
       while (!engine.isEnded() && maxTurns > 0) {
-        if (engine.getPhase() === "ACTION_SELECT") {
+        if (engine.getPhase() === "action-select") {
           const action0 = ai.chooseAction(0, engine.getState(), ruleset, aiRng);
           const action1 = ai.chooseAction(1, engine.getState(), ruleset, aiRng);
           engine.submitAction(0, action0);
           engine.submitAction(1, action1);
           maxTurns--;
-        } else if (engine.getPhase() === "SWITCH_PROMPT") {
+        } else if (engine.getPhase() === "switch-prompt") {
           // AI picks a switch for whichever side needs it
           for (const side of [0, 1] as const) {
             const switches = engine.getAvailableSwitches(side);
@@ -362,8 +362,8 @@ describe("RandomAI — edge cases", () => {
               }
             }
           }
-          // If still in SWITCH_PROMPT, break to avoid infinite loop
-          if (engine.getPhase() === "SWITCH_PROMPT") break;
+          // If still in switch-prompt, break to avoid infinite loop
+          if (engine.getPhase() === "switch-prompt") break;
         } else {
           break;
         }

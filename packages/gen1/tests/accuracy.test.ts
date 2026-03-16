@@ -122,7 +122,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
 
 function makeState(rng: SeededRandom): BattleState {
   return {
-    phase: "TURN_RESOLVE",
+    phase: "turn-resolve",
     generation: 1,
     format: "singles",
     turnNumber: 1,

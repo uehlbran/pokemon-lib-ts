@@ -86,13 +86,13 @@ describe("Gen 1 Full Battle Integration", () => {
     while (!engine.isEnded() && turns < maxTurns) {
       const phase = engine.getPhase();
 
-      if (phase === "ACTION_SELECT") {
+      if (phase === "action-select") {
         const action0 = ai.chooseAction(0, engine.getState(), ruleset, aiRng);
         const action1 = ai.chooseAction(1, engine.getState(), ruleset, aiRng);
         engine.submitAction(0, action0);
         engine.submitAction(1, action1);
         turns++;
-      } else if (phase === "SWITCH_PROMPT") {
+      } else if (phase === "switch-prompt") {
         // Handle fainted Pokemon replacements
         for (const sideIdx of [0, 1] as const) {
           const active = engine.getActive(sideIdx);

@@ -260,6 +260,19 @@ export interface EndOfTurnSystem {
    */
   calculateNightmareDamage(pokemon: ActivePokemon): number;
   /**
+   * Calculate Struggle base damage dealt to the defender.
+   * Gen 1: Normal-type physical damage (50 BP, Ghost immune — type chart applies).
+   * Gen 2+: Typeless damage (50 BP physical, type chart does NOT apply, Ghost takes full damage).
+   * @param state - Required for Gen 1 (passed to calculateDamage for Normal-type chart lookup);
+   *   Gen 2+ compute damage inline without consulting state.
+   * @returns damage amount (non-negative integer)
+   */
+  calculateStruggleDamage(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): number;
+  /**
    * Calculate Struggle recoil damage.
    * Gen 1-3: 1/2 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
    */

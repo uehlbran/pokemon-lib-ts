@@ -70,7 +70,7 @@ function createTestState(
   ];
 
   return {
-    phase: "ACTION_SELECT",
+    phase: "action-select",
     generation: 1,
     format: "singles",
     turnNumber: 1,
@@ -359,13 +359,13 @@ describe("RandomAI", () => {
       const aiRng = new SeededRandom(42);
 
       while (!engine.isEnded() && turns < maxTurns) {
-        if (engine.getPhase() === "ACTION_SELECT") {
+        if (engine.getPhase() === "action-select") {
           const action0 = ai.chooseAction(0, engine.getState(), ruleset, aiRng);
           const action1 = ai.chooseAction(1, engine.getState(), ruleset, aiRng);
           engine.submitAction(0, action0);
           engine.submitAction(1, action1);
           turns++;
-        } else if (engine.getPhase() === "SWITCH_PROMPT") {
+        } else if (engine.getPhase() === "switch-prompt") {
           // No bench pokemon, so this shouldn't happen in this test
           break;
         } else {
