@@ -48,7 +48,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.dataManager = dataManager;
 
     this.state = {
-      phase: "BATTLE_START",
+      phase: "battle-start",
       generation: config.generation,
       format: config.format,
       turnNumber: 0,
@@ -143,15 +143,15 @@ export class BattleEngine implements BattleEventEmitter {
   // --- Battle Flow ---
 
   /**
-   * Starts the battle, transitioning from `BATTLE_START` to `ACTION_SELECT`.
+   * Starts the battle, transitioning from `battle-start` to `action-select`.
    *
    * Sends out the lead Pokémon for each side, triggers on-entry abilities
    * (in Speed order), and emits a `BattleStartEvent` followed by `SwitchInEvent`s.
    *
-   * @throws If the battle is not in `BATTLE_START` phase (i.e., already started).
+   * @throws If the battle is not in `battle-start` phase (i.e., already started).
    */
   start(): void {
-    if (this.state.phase !== "BATTLE_START") {
+    if (this.state.phase !== "battle-start") {
       throw new Error(`Cannot start battle in phase ${this.state.phase}`);
     }
 
@@ -199,24 +199,24 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    this.transitionTo("ACTION_SELECT");
+    this.transitionTo("action-select");
   }
 
   /**
-   * Submits an action for a side during the `ACTION_SELECT` phase.
+   * Submits an action for a side during the `action-select` phase.
    *
    * When both sides have submitted their actions, turn resolution begins automatically:
    * actions are sorted by priority, then executed in order. The engine transitions through
-   * `TURN_RESOLVE` → `TURN_END` → `FAINT_CHECK`, and then back to `ACTION_SELECT`
-   * (or `SWITCH_PROMPT` / `BATTLE_END` as appropriate).
+   * `turn-resolve` → `turn-end` → `faint-check`, and then back to `action-select`
+   * (or `switch-prompt` / `battle-end` as appropriate).
    *
    * @param side - Which side is submitting (0 = player, 1 = opponent).
    * @param action - The action to perform this turn (move, switch, item, run, etc.).
-   * @throws If the current phase is not `ACTION_SELECT`.
+   * @throws If the current phase is not `action-select`.
    * @throws If the battle has already ended.
    */
   submitAction(side: 0 | 1, action: BattleAction): void {
-    if (this.state.phase !== "ACTION_SELECT") {
+    if (this.state.phase !== "action-select") {
       throw new Error(`Cannot submit action in phase ${this.state.phase}`);
     }
 
@@ -233,20 +233,20 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   /**
-   * Submits a forced switch choice after a Pokémon has fainted (`SWITCH_PROMPT` phase).
+   * Submits a forced switch choice after a Pokémon has fainted (`switch-prompt` phase).
    *
    * When all sides that need to switch have submitted their choices, the replacement
-   * Pokémon are sent out and the battle transitions back to `ACTION_SELECT`
-   * (or `BATTLE_END` if the switch reveals no valid replacements).
+   * Pokémon are sent out and the battle transitions back to `action-select`
+   * (or `battle-end` if the switch reveals no valid replacements).
    *
    * @param side - Which side is submitting the switch (0 or 1).
    * @param teamSlot - Index in the side's `team` array of the Pokémon to send in.
    *   Must be a living (HP > 0) Pokémon that is not already on the field.
-   * @throws If the current phase is not `SWITCH_PROMPT`.
+   * @throws If the current phase is not `switch-prompt`.
    * @throws If the given side does not need to switch.
    */
   submitSwitch(side: 0 | 1, teamSlot: number): void {
-    if (this.state.phase !== "SWITCH_PROMPT") {
+    if (this.state.phase !== "switch-prompt") {
       throw new Error(`Cannot submit switch in phase ${this.state.phase}`);
     }
 
@@ -266,11 +266,11 @@ export class BattleEngine implements BattleEventEmitter {
 
       // Check again for battle end after switches
       if (this.checkBattleEnd()) {
-        this.transitionTo("BATTLE_END");
+        this.transitionTo("battle-end");
         return;
       }
 
-      this.transitionTo("ACTION_SELECT");
+      this.transitionTo("action-select");
     }
   }
 
@@ -361,7 +361,7 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   /**
-   * Returns `true` if the battle has concluded (phase is `BATTLE_END`).
+   * Returns `true` if the battle has concluded (phase is `battle-end`).
    *
    * @returns `true` after a `BattleEndEvent` has been emitted; `false` otherwise.
    */
@@ -529,13 +529,13 @@ export class BattleEngine implements BattleEventEmitter {
 
   private resolveTurn(): void {
     // ─── Turn state machine ──────────────────────────────────────────────────────
-    // BATTLE_START → ACTION_SELECT
-    // ACTION_SELECT → TURN_RESOLVE     (both sides submit actions)
-    // TURN_RESOLVE  → TURN_END         (all actions execute)
-    // TURN_END      → FAINT_CHECK      (end-of-turn effects)
-    // FAINT_CHECK   → SWITCH_PROMPT    (if a Pokémon fainted and replacement needed)
-    //              → ACTION_SELECT     (normal next turn)
-    //              → BATTLE_END        (all Pokémon on one side fainted)
+    // battle-start → action-select
+    // action-select → turn-resolve     (both sides submit actions)
+    // turn-resolve  → turn-end         (all actions execute)
+    // turn-end      → faint-check      (end-of-turn effects)
+    // faint-check   → switch-prompt    (if a Pokémon fainted and replacement needed)
+    //              → action-select     (normal next turn)
+    //              → battle-end        (all Pokémon on one side fainted)
     // ────────────────────────────────────────────────────────────────────────────
 
     const action0 = this.pendingActions.get(0);
@@ -552,13 +552,13 @@ export class BattleEngine implements BattleEventEmitter {
     // so that turn history captures only current-turn events (fixes #84).
     const turnStartIndex = this.eventLog.length;
 
-    // --- TURN_START ---
-    this.transitionTo("TURN_START");
+    // --- turn-start ---
+    this.transitionTo("turn-start");
     this.state.turnNumber++;
     this.emit({ type: "turn-start", turnNumber: this.state.turnNumber });
 
-    // --- TURN_RESOLVE ---
-    this.transitionTo("TURN_RESOLVE");
+    // --- turn-resolve ---
+    this.transitionTo("turn-resolve");
 
     // Sort actions by priority / speed / random
     const orderedActions = this.ruleset.resolveTurnOrder(actions, this.state, this.state.rng);
@@ -593,7 +593,7 @@ export class BattleEngine implements BattleEventEmitter {
         this.executeMove(action, actor, 2);
         this.checkMidTurnFaints();
         if (this.checkBattleEnd()) {
-          this.transitionTo("BATTLE_END");
+          this.transitionTo("battle-end");
           this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
           return;
         }
@@ -649,8 +649,8 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // --- TURN_END ---
-    this.transitionTo("TURN_END");
+    // --- turn-end ---
+    this.transitionTo("turn-end");
     this.processEndOfTurn();
 
     if (this.state.ended) {
@@ -658,17 +658,17 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
-    // --- FAINT_CHECK ---
-    this.transitionTo("FAINT_CHECK");
+    // --- faint-check ---
+    this.transitionTo("faint-check");
     if (this.checkBattleEnd()) {
-      this.transitionTo("BATTLE_END");
+      this.transitionTo("battle-end");
       this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
       return;
     }
 
     // If any pokemon need replacement, prompt for switch
     if (this.needsSwitchPrompt()) {
-      this.transitionTo("SWITCH_PROMPT");
+      this.transitionTo("switch-prompt");
       this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
       return;
     }
@@ -687,7 +687,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Next turn
-    this.transitionTo("ACTION_SELECT");
+    this.transitionTo("action-select");
   }
 
   private executeMove(action: MoveAction, actor: ActivePokemon, powerMultiplier = 1): void {

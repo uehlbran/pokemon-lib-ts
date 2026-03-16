@@ -18,7 +18,7 @@
 
 **Entry point**: `packages/battle/src/engine/BattleEngine.ts`
 
-**Turn flow**: `TURN_START → action selection → priority sort → TURN_RESOLVE (accuracy check → move execution → damage/effects → ability triggers) → TURN_END → weather/status ticks → FAINT_CHECK → next turn or game over`
+**Turn flow**: `turn-start → action selection → priority sort → turn-resolve (accuracy check → move execution → damage/effects → ability triggers) → turn-end → weather/status ticks → faint-check → next turn or game over`
 
 **Key delegation pattern**: The engine delegates ALL gen-specific behavior to `GenerationRuleset`. Never add gen-specific code to the engine.
 
@@ -49,7 +49,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.dataManager = dataManager;
 
     this.state = {
-      phase: 'BATTLE_START',
+      phase: 'battle-start',
       generation: config.generation,
       format: config.format,
       turnNumber: 0,
@@ -102,7 +102,7 @@ start(): void {
     }
   }
 
-  this.transitionTo('ACTION_SELECT');
+  this.transitionTo('action-select');
 }
 ```
 
@@ -122,13 +122,13 @@ private resolveTurn(): void {
   ];
   this.pendingActions.clear();
 
-  // --- TURN_START ---
-  this.transitionTo('TURN_START');
+  // --- turn-start ---
+  this.transitionTo('turn-start');
   this.state.turnNumber++;
   this.emit({ type: 'turn-start', turnNumber: this.state.turnNumber });
 
-  // --- TURN_RESOLVE ---
-  this.transitionTo('TURN_RESOLVE');
+  // --- turn-resolve ---
+  this.transitionTo('turn-resolve');
 
   // Sort actions by priority → speed → random
   const orderedActions = this.ruleset.resolveTurnOrder(
@@ -168,20 +168,20 @@ private resolveTurn(): void {
     this.checkMidTurnFaints();
   }
 
-  // --- TURN_END ---
-  this.transitionTo('TURN_END');
+  // --- turn-end ---
+  this.transitionTo('turn-end');
   this.processEndOfTurn();
 
-  // --- FAINT_CHECK ---
-  this.transitionTo('FAINT_CHECK');
+  // --- faint-check ---
+  this.transitionTo('faint-check');
   if (this.checkBattleEnd()) {
-    this.transitionTo('BATTLE_END');
+    this.transitionTo('battle-end');
     return;
   }
 
   // If any Pokémon need replacement, prompt for switch
   if (this.needsSwitchPrompt()) {
-    this.transitionTo('SWITCH_PROMPT');
+    this.transitionTo('switch-prompt');
     return;
   }
 
@@ -193,7 +193,7 @@ private resolveTurn(): void {
   });
 
   // Next turn
-  this.transitionTo('ACTION_SELECT');
+  this.transitionTo('action-select');
 }
 ```
 
@@ -872,7 +872,7 @@ describe('BattleEngine', () => {
     battle.on(e => events.push(e));
 
     battle.start();
-    expect(battle.getPhase()).toBe('ACTION_SELECT');
+    expect(battle.getPhase()).toBe('action-select');
 
     // Both sides use their first move
     battle.submitAction(0, { type: 'move', side: 0, moveIndex: 0 });

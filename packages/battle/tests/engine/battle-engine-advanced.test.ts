@@ -423,21 +423,21 @@ describe("BattleEngine — advanced scenarios", () => {
       // Assert
       expect(state.generation).toBe(1);
       expect(state.format).toBe("singles");
-      expect(state.phase).toBe("ACTION_SELECT");
+      expect(state.phase).toBe("action-select");
       expect(state.sides).toHaveLength(2);
       expect(state.turnNumber).toBe(0);
     });
   });
 
   describe("submitSwitch error handling", () => {
-    it("given battle not in SWITCH_PROMPT, when submitSwitch is called, then it throws", () => {
+    it("given battle not in switch-prompt, when submitSwitch is called, then it throws", () => {
       // Arrange
       const { engine } = createEngine();
       engine.start();
 
       // Act & Assert
       expect(() => engine.submitSwitch(0, 1)).toThrow(
-        "Cannot submit switch in phase ACTION_SELECT",
+        "Cannot submit switch in phase action-select",
       );
     });
   });

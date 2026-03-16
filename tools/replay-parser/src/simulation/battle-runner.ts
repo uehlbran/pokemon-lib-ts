@@ -78,14 +78,14 @@ export function runBattle(config: BattleRunConfig): BattleReport {
     while (!engine.isEnded() && turnCount < config.maxTurns) {
       const phase = engine.getPhase();
 
-      if (phase === "ACTION_SELECT") {
+      if (phase === "action-select") {
         const state = engine.getState();
         const action0 = ai.chooseAction(0, state, ruleset, aiRng);
         const action1 = ai.chooseAction(1, state, ruleset, aiRng);
         engine.submitAction(0, action0);
         engine.submitAction(1, action1);
         turnCount++;
-      } else if (phase === "SWITCH_PROMPT") {
+      } else if (phase === "switch-prompt") {
         for (const sideIdx of [0, 1] as const) {
           const active = engine.getActive(sideIdx);
           if (active && active.pokemon.currentHp <= 0) {

@@ -142,7 +142,7 @@ function makeBattleState(
 ): BattleState {
   const rng = new SeededRandom(42);
   return {
-    phase: "TURN_RESOLVE",
+    phase: "turn-resolve",
     generation: 1,
     format: "singles",
     turnNumber: 1,

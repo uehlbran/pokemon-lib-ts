@@ -1,5 +1,5 @@
 /**
- * Discriminated union of all actions a side can submit during `ACTION_SELECT` phase.
+ * Discriminated union of all actions a side can submit during `action-select` phase.
  *
  * Actions are submitted via `BattleEngine.submitAction()`. Once both sides have
  * submitted, the engine resolves them in priority order. The action types are:

@@ -6,24 +6,24 @@ import type { BattleSide } from "./BattleSide";
  * The current phase of the battle state machine.
  *
  * Valid transitions:
- * - `BATTLE_START` → `ACTION_SELECT` (after `BattleEngine.start()`)
- * - `ACTION_SELECT` → `TURN_RESOLVE` (after both sides submit actions)
- * - `TURN_RESOLVE` → `TURN_END` (after all actions are executed)
- * - `TURN_END` → `FAINT_CHECK` (after weather/status end-of-turn ticks)
- * - `FAINT_CHECK` → `SWITCH_PROMPT` (if a side needs to send in a replacement)
- * - `FAINT_CHECK` → `ACTION_SELECT` (no fainted Pokémon requiring replacements)
- * - `FAINT_CHECK` → `BATTLE_END` (all Pokémon on one side have fainted)
- * - `SWITCH_PROMPT` → `ACTION_SELECT` (after all forced switches are submitted)
+ * - `battle-start` → `action-select` (after `BattleEngine.start()`)
+ * - `action-select` → `turn-resolve` (after both sides submit actions)
+ * - `turn-resolve` → `turn-end` (after all actions are executed)
+ * - `turn-end` → `faint-check` (after weather/status end-of-turn ticks)
+ * - `faint-check` → `switch-prompt` (if a side needs to send in a replacement)
+ * - `faint-check` → `action-select` (no fainted Pokémon requiring replacements)
+ * - `faint-check` → `battle-end` (all Pokémon on one side have fainted)
+ * - `switch-prompt` → `action-select` (after all forced switches are submitted)
  */
 export type BattlePhase =
-  | "BATTLE_START"
-  | "TURN_START"
-  | "ACTION_SELECT"
-  | "TURN_RESOLVE"
-  | "TURN_END"
-  | "FAINT_CHECK"
-  | "SWITCH_PROMPT"
-  | "BATTLE_END";
+  | "battle-start"
+  | "turn-start"
+  | "action-select"
+  | "turn-resolve"
+  | "turn-end"
+  | "faint-check"
+  | "switch-prompt"
+  | "battle-end";
 
 /**
  * The battle format determines how many Pokémon are active per side at once.
@@ -68,7 +68,7 @@ export interface TerrainState {
 export interface TurnRecord {
   /** The 1-based turn number this record covers */
   readonly turn: number;
-  /** The actions both sides submitted during `ACTION_SELECT` */
+  /** The actions both sides submitted during `action-select` */
   readonly actions: readonly BattleAction[];
   /** All events emitted between `turn-start` and `turn-end` (inclusive) */
   readonly events: readonly BattleEvent[];

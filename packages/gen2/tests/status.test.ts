@@ -85,7 +85,7 @@ function createMockActivePokemon(
  */
 function createMockBattleState(): BattleState {
   return {
-    phase: "TURN_END",
+    phase: "turn-end",
     generation: 2,
     format: "singles",
     turnNumber: 1,
