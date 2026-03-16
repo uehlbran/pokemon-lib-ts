@@ -800,7 +800,7 @@ export type BattleEvent =
   | { type: 'ability-activate'; side: 0 | 1; pokemon: string; ability: string }
   | { type: 'item-activate'; side: 0 | 1; pokemon: string; item: string }
   | { type: 'item-consumed'; side: 0 | 1; pokemon: string; item: string }
-  | { type: 'hazard-set'; side: 0 | 1; hazard: EntryHazardType }
+  | { type: 'hazard-set'; side: 0 | 1; hazard: EntryHazardType; layers?: number }
   | { type: 'hazard-clear'; side: 0 | 1; hazard: EntryHazardType }
   | { type: 'screen-set'; side: 0 | 1; screen: ScreenType; turns: number }
   | { type: 'screen-end'; side: 0 | 1; screen: ScreenType }
@@ -1030,6 +1030,16 @@ export interface MoveEffectResult {
   readonly itemTransfer?: { from: 'attacker' | 'defender'; to: 'attacker' | 'defender' };
   /** Clear screens from the specified side(s) (Haze or setter switching out) */
   readonly screensCleared?: 'attacker' | 'defender' | 'both' | null;
+  /** True when the move only cured a status condition (no damage, no other effect) */
+  readonly statusCuredOnly?: boolean;
+  /** Status condition inflicted on the user (e.g., via Rest) */
+  readonly selfStatusInflicted?: PrimaryStatus;
+  /** Volatile status inflicted on the user (e.g., recharging after Hyper Beam) */
+  readonly selfVolatileInflicted?: VolatileStatus;
+  /** Data for the self-inflicted volatile */
+  readonly selfVolatileData?: Record<string, unknown>;
+  /** New type(s) for the user after Conversion or similar moves */
+  readonly typeChange?: PokemonType[];
 }
 
 export interface AbilityContext {
