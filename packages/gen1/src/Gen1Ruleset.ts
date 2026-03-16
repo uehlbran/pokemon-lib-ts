@@ -294,6 +294,11 @@ export class Gen1Ruleset implements GenerationRuleset {
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+      statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+      selfStatusInflicted?: PrimaryStatus | null;
+      selfVolatileInflicted?: VolatileStatus | null;
+      selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -357,6 +362,11 @@ export class Gen1Ruleset implements GenerationRuleset {
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+      statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+      selfStatusInflicted?: PrimaryStatus | null;
+      selfVolatileInflicted?: VolatileStatus | null;
+      selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
     },
     context: MoveEffectContext,
   ): void {
@@ -403,6 +413,19 @@ export class Gen1Ruleset implements GenerationRuleset {
 
         for (const change of effect.changes) {
           const resolvedTarget = effect.target === "self" ? "attacker" : "defender";
+
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Mist
+          // Mist blocks all foe-targeted stat drops. If the defender has Mist active,
+          // skip any stat changes targeting the defender with negative stages.
+          if (
+            resolvedTarget === "defender" &&
+            change.stages < 0 &&
+            defender.volatileStatuses.has("mist")
+          ) {
+            const defenderName = defender.pokemon.nickname ?? "The target";
+            result.messages.push(`${defenderName} is protected by the mist!`);
+            continue;
+          }
 
           // Source: gen1-ground-truth.md §1 — Unified Special Stat
           // Gen 1 has a single Special stat for both offense and defense.
@@ -594,6 +617,36 @@ export class Gen1Ruleset implements GenerationRuleset {
         } else if (effect.handler === "explosion" || effect.handler === "self-destruct") {
           // Explosion / Self-Destruct: user faints after using the move
           result.selfFaint = true;
+        } else if (effect.handler === "rest") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Rest
+          // Rest heals to full HP and puts the user to sleep for exactly 2 turns.
+          // Fails if user is at full HP AND has no primary status condition.
+          const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+          const isFullHp = attacker.pokemon.currentHp >= maxHp;
+          const hasStatus =
+            attacker.pokemon.status !== null && attacker.pokemon.status !== undefined;
+          if (isFullHp && !hasStatus) {
+            result.messages.push("But it failed!");
+          } else {
+            result.statusCuredOnly = { target: "attacker" };
+            result.healAmount = maxHp;
+            result.selfStatusInflicted = "sleep";
+            result.selfVolatileData = { turnsLeft: 2 };
+          }
+        } else if (effect.handler === "mist") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Mist
+          // Mist protects the user's stats from foe-inflicted drops for 5 turns.
+          // Fails if user already has Mist active.
+          if (attacker.volatileStatuses.has("mist")) {
+            result.messages.push("But it failed!");
+          } else {
+            result.selfVolatileInflicted = "mist";
+            result.selfVolatileData = { turnsLeft: 5 };
+          }
+        } else if (effect.handler === "conversion") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Conversion
+          // Gen 1 Conversion copies the DEFENDER's types (not based on moves like Gen 2+).
+          result.typeChange = { target: "attacker", types: [...defender.types] };
         } else if (effect.handler === "counter") {
           // Counter in Gen 1: only reflects Normal and Fighting type moves
           const lastDamage = attacker.lastDamageTaken ?? 0;
