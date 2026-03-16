@@ -334,8 +334,8 @@ describe("Gen 1 Psywave handler", () => {
     effect: { type: "custom" as const, handler: "psywave" },
   });
 
-  it("given psywave at level 50, when executeMoveEffect called, then customDamage.amount is in [1, 75]", () => {
-    // Arrange — level 50: max = floor(50 * 1.5) = 75
+  it("given psywave at level 50, when executeMoveEffect called, then customDamage.amount is in [1, 74]", () => {
+    // Arrange — level 50: max = floor(50 * 1.5) = 75, effective range [1, 74] per pret/pokered PsywaveEffect
     const attacker = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, level: 50 } as PokemonInstance,
     });
@@ -345,7 +345,7 @@ describe("Gen 1 Psywave handler", () => {
     // Assert
     expect(result.customDamage).toBeDefined();
     expect(result.customDamage?.amount).toBeGreaterThanOrEqual(1);
-    expect(result.customDamage?.amount).toBeLessThanOrEqual(75);
+    expect(result.customDamage?.amount).toBeLessThanOrEqual(74);
     expect(result.customDamage?.target).toBe("defender");
     expect(result.customDamage?.source).toBe("psywave");
   });
@@ -364,8 +364,8 @@ describe("Gen 1 Psywave handler", () => {
     expect(result.customDamage?.amount).toBe(1);
   });
 
-  it("given psywave at level 100, when executeMoveEffect called, then customDamage.amount is in [1, 150]", () => {
-    // Arrange — level 100: max = floor(100 * 1.5) = 150
+  it("given psywave at level 100, when executeMoveEffect called, then customDamage.amount is in [1, 149]", () => {
+    // Arrange — level 100: max = floor(100 * 1.5) = 150, effective range [1, 149] per pret/pokered PsywaveEffect
     const attacker = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, level: 100 } as PokemonInstance,
     });
@@ -374,7 +374,7 @@ describe("Gen 1 Psywave handler", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.customDamage?.amount).toBeGreaterThanOrEqual(1);
-    expect(result.customDamage?.amount).toBeLessThanOrEqual(150);
+    expect(result.customDamage?.amount).toBeLessThanOrEqual(149);
   });
 
   it("given psywave is used, when executeMoveEffect called, then no status or stat changes", () => {

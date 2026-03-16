@@ -328,7 +328,7 @@ An implementation that always applies secondary effects (ignoring the chance fie
 | Dragon Rage | 40 | Dragon |
 | Sonic Boom | 20 | Normal |
 | Super Fang | 50% current HP | Normal |
-| Psywave | random 1 to 1.5x user's level | Psychic |
+| Psywave | random 1 to floor(1.5x user's level) - 1 | Psychic |
 
 These ignore Attack/Defense stats and type effectiveness.
 Seismic Toss hits Ghost types (despite being Fighting type, it uses fixed damage).
@@ -393,9 +393,11 @@ Ends immediately if it breaks Substitute.
 
 ### Mist
 
-- Protects the user's stats from being lowered by the opponent for 5 turns
+- Protects the user's stats from being lowered by the opponent **permanently** (until switch-out or Haze)
+- Source: pret/pokered — Mist is `SUBSTATUS_MIST`, a substatus bit with no turn counter; it never expires on its own
+- Note: Gen 2+ introduced a 5-turn timer for Mist; Gen 1 has no such timer
 - Does **not** protect against the user's own stat reductions
-- Does **not** protect against Haze (Haze bypasses Mist)
+- Does **not** protect against Haze (Haze bypasses Mist and clears the substatus)
 - One layer only — does not stack
 
 ### Teleport

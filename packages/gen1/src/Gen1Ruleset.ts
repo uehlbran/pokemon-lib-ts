@@ -580,10 +580,9 @@ export class Gen1Ruleset implements GenerationRuleset {
             source: "super-fang",
           };
         } else if (effect.handler === "psywave") {
-          // Source: pret/pokered src/engine/battle/effect_commands.asm — Psywave
-          // Deals random damage from 1 to floor(userLevel * 1.5), minimum 1.
+          // Source: pret/pokered — PsywaveEffect generates [0, floor(level*1.5)-1], rerolls zero → [1, floor(level*1.5)-1]
           const maxDamage = Math.floor(attacker.pokemon.level * 1.5);
-          const amount = Math.max(1, rng.int(1, Math.max(1, maxDamage)));
+          const amount = Math.max(1, rng.int(1, Math.max(1, maxDamage - 1)));
           result.customDamage = {
             target: "defender",
             amount,
@@ -634,14 +633,14 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.selfVolatileData = { turnsLeft: 2 };
           }
         } else if (effect.handler === "mist") {
-          // Source: pret/pokered src/engine/battle/effect_commands.asm — Mist
-          // Mist protects the user's stats from foe-inflicted drops for 5 turns.
+          // Source: pret/pokered — Mist is SUBSTATUS_MIST, a permanent bit with no turn counter (lasts until switch-out or Haze)
+          // Gen 2+ introduced the 5-turn timer; Gen 1 uses -1 (permanent sentinel).
           // Fails if user already has Mist active.
           if (attacker.volatileStatuses.has("mist")) {
             result.messages.push("But it failed!");
           } else {
             result.selfVolatileInflicted = "mist";
-            result.selfVolatileData = { turnsLeft: 5 };
+            result.selfVolatileData = { turnsLeft: -1 };
           }
         } else if (effect.handler === "conversion") {
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Conversion

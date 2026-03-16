@@ -344,8 +344,9 @@ describe("Gen 1 Mist handler", () => {
     effect: { type: "custom" as const, handler: "mist" },
   });
 
-  it("given attacker has no mist volatile, when mist is used, then selfVolatileInflicted=mist and turnsLeft=5", () => {
+  it("given attacker has no mist volatile, when mist is used, then selfVolatileInflicted=mist and turnsLeft=-1 (permanent)", () => {
     // Arrange
+    // Source: pret/pokered — Mist is SUBSTATUS_MIST, permanent until switch-out or Haze (no turn counter in Gen 1)
     const attacker = makeActivePokemon({
       volatileStatuses: new Map(), // no mist
     });
@@ -354,14 +355,14 @@ describe("Gen 1 Mist handler", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.selfVolatileInflicted).toBe("mist");
-    expect(result.selfVolatileData).toEqual({ turnsLeft: 5 });
+    expect(result.selfVolatileData).toEqual({ turnsLeft: -1 });
     expect(result.messages).not.toContain("But it failed!");
   });
 
   it('given attacker already has mist volatile, when mist is used, then messages includes "But it failed!"', () => {
-    // Arrange — mist already active
+    // Arrange — mist already active (permanent in Gen 1, turnsLeft: -1)
     const mistStatuses = new Map();
-    mistStatuses.set("mist", { turnsLeft: 3 });
+    mistStatuses.set("mist", { turnsLeft: -1 });
     const attacker = makeActivePokemon({
       volatileStatuses: mistStatuses,
     });
