@@ -373,6 +373,33 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
+  // Gen 3+ default: typeless physical 50 BP (no type chart, no STAB, no random factor).
+  // Gen 3 and later: Struggle has no type, so Ghost immunity does not apply.
+  // Phase 3A will review whether this default needs per-gen overrides.
+  calculateStruggleDamage(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    _state: BattleState,
+  ): number {
+    // Source: Showdown — Gen 3+ Struggle is typeless physical damage
+    // Formula: same as confusion self-hit but with 50 BP instead of 40 BP.
+    const level = attacker.pokemon.level;
+    const attack = attacker.pokemon.calculatedStats?.attack ?? 100;
+    const defense = defender.pokemon.calculatedStats?.defense ?? 100;
+    const effectiveAttack = Math.max(
+      1,
+      Math.floor(attack * getStatStageMultiplier(attacker.statStages.attack)),
+    );
+    const effectiveDefense = Math.max(
+      1,
+      Math.floor(defense * getStatStageMultiplier(defender.statStages.defense)),
+    );
+    const levelFactor = Math.floor((2 * level) / 5) + 2;
+    let baseDamage = Math.floor(Math.floor(levelFactor * 50 * effectiveAttack) / effectiveDefense);
+    baseDamage = Math.floor(baseDamage / 50) + 2;
+    return Math.max(1, baseDamage);
+  }
+
   // Gen 4+ default (1/4 max HP); Gen 3 must override (1/2 damage dealt)
   calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
     // Gen 4+ default: 1/4 of attacker's max HP
