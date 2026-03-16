@@ -5,6 +5,25 @@ All notable changes to `@pokemon-lib-ts/battle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-03-15
+
+### Added
+
+- `calculateStruggleDamage(attacker, defender, state): number` added to `GenerationRuleset` interface — enables per-gen Struggle base damage (Gen 1: Normal-type, Ghost immune; Gen 2+: typeless) (#80)
+- `BaseRuleset.calculateStruggleDamage()` default implementation: typeless 50 BP physical formula (#80)
+- `BaseRuleset.getEffectiveSpeed()` protected method: applies stat stage multiplier + Gen 7+ paralysis speed halving (×0.5) (#89)
+- `BaseRuleset` constructor now accepts optional `DataManager` for move priority lookups in `resolveTurnOrder()` (#85)
+- `"nightmare"` added to `BaseRuleset.getEndOfTurnOrder()` array (#88)
+
+### Changed
+
+- **Breaking:** `BattlePhase` string literal values renamed from `SCREAMING_SNAKE_CASE` to `kebab-case` (`"BATTLE_START"` → `"battle-start"`, etc.) — update all comparisons and switch cases (#50)
+- `BaseRuleset.resolveTurnOrder()` now correctly compares move priority (via `DataManager.getMove()`) before speed — was previously using a dead placeholder (#85)
+- `BaseRuleset.applyStatusDamage()` badly-poisoned now escalates via `toxic-counter` volatile (1/16, 2/16, 3/16... per turn) instead of flat 1/16 (#87)
+- `BattleEngine.executeStruggle()` now delegates base damage to `ruleset.calculateStruggleDamage()` instead of hardcoded `maxHp / 4` (#80)
+- `BattleEngine.resolveTurn()` now enforces recharge volatile before action resolution — Pokemon with `"recharge"` volatile have their submitted action overridden with a `RechargeAction` (#104)
+- Class doc comment updated: "Gen 6+/7+ defaults" clarifying which gens need to override (#49)
+
 ## [0.8.0] - 2026-03-15
 
 ### Changed
