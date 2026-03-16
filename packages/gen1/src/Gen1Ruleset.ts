@@ -545,7 +545,33 @@ export class Gen1Ruleset implements GenerationRuleset {
 
       case "custom": {
         // Handle specific custom moves by handler name
-        if (effect.handler === "haze") {
+        if (effect.handler === "splash") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Splash does nothing
+          result.messages.push("But nothing happened!");
+        } else if (effect.handler === "super-fang") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Super Fang
+          // Deals damage equal to half the target's current HP, minimum 1.
+          result.customDamage = {
+            target: "defender",
+            amount: Math.max(1, Math.floor(defender.pokemon.currentHp / 2)),
+            source: "super-fang",
+          };
+        } else if (effect.handler === "psywave") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Psywave
+          // Deals random damage from 1 to floor(userLevel * 1.5), minimum 1.
+          const maxDamage = Math.floor(attacker.pokemon.level * 1.5);
+          const amount = Math.max(1, rng.int(1, Math.max(1, maxDamage)));
+          result.customDamage = {
+            target: "defender",
+            amount,
+            source: "psywave",
+          };
+        } else if (effect.handler === "teleport") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Teleport
+          // In Gen 1, Teleport always fails in trainer battles and flees in wild battles.
+          // Flee mechanics are not wired up; always fail for now.
+          result.messages.push("But it failed!");
+        } else if (effect.handler === "haze") {
           // Haze: clears all stat changes and status conditions for both pokemon,
           // removes all volatile statuses for both Pokemon, and removes all screens
           // from both sides (Gen 1 only).
