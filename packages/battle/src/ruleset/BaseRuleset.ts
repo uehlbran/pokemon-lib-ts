@@ -11,7 +11,7 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { ALL_NATURES, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import { ALL_NATURES, DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,
@@ -31,17 +31,24 @@ import type {
   ValidationResult,
   WeatherEffectResult,
 } from "../context";
-import type { BattleAction, MoveAction } from "../events";
+import type { BattleAction } from "../events";
 import type { ActivePokemon, BattleSide, BattleState } from "../state";
 import type { GenerationRuleset } from "./GenerationRuleset";
 
 /**
- * Abstract base class implementing GenerationRuleset with Gen 3+ defaults.
- * Gen 3-9 extend this; Gen 1-2 implement the interface directly.
+ * Abstract base class implementing GenerationRuleset with Gen 6+/7+ defaults.
+ * Gen 6-9 typically extend this directly; Gen 3-5 need to override some methods.
+ * Gen 1-2 implement the interface directly (too mechanically different).
  */
 export abstract class BaseRuleset implements GenerationRuleset {
   abstract readonly generation: Generation;
   abstract readonly name: string;
+
+  protected readonly dataManager: DataManager;
+
+  constructor(dataManager?: DataManager) {
+    this.dataManager = dataManager ?? new DataManager();
+  }
 
   abstract getTypeChart(): TypeChart;
   abstract getAvailableTypes(): readonly PokemonType[];
@@ -119,32 +126,45 @@ export abstract class BaseRuleset implements GenerationRuleset {
       if (a.type === "run" && b.type === "move") return -1;
       if (b.type === "run" && a.type === "move") return 1;
 
-      // For moves, compare priority
+      // For moves, compare priority then speed
       if (a.type === "move" && b.type === "move") {
-        const _aPriority = (a as MoveAction).moveIndex;
-        const _bPriority = (b as MoveAction).moveIndex;
-        // In the base implementation, we just compare by speed
-        // The actual priority comes from the move data, which the engine resolves
-      }
+        const sideA = state.sides[a.side];
+        const sideB = state.sides[b.side];
+        const activeA = sideA?.active[0];
+        const activeB = sideB?.active[0];
+        if (!activeA || !activeB) return 0;
 
-      // Speed tiebreak — higher speed goes first (reversed in Trick Room)
-      const sideA = state.sides[a.side];
-      const sideB = state.sides[b.side];
-      const activeA = sideA?.active[0];
-      const activeB = sideB?.active[0];
+        const moveSlotA = activeA.pokemon.moves[a.moveIndex];
+        const moveSlotB = activeB.pokemon.moves[b.moveIndex];
+        if (!moveSlotA || !moveSlotB) return 0;
 
-      if (activeA && activeB) {
-        const speedA = activeA.pokemon.calculatedStats?.speed ?? 0;
-        const speedB = activeB.pokemon.calculatedStats?.speed ?? 0;
+        let priorityA = 0;
+        let priorityB = 0;
+        try {
+          priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
+        } catch {
+          /* default 0 */
+        }
+        try {
+          priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
+        } catch {
+          /* default 0 */
+        }
 
+        if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
+
+        // Speed tiebreak
+        const speedA = this.getEffectiveSpeed(activeA);
+        const speedB = this.getEffectiveSpeed(activeB);
         if (state.trickRoom.active) {
           if (speedA !== speedB) return speedA - speedB;
         } else {
           if (speedA !== speedB) return speedB - speedA;
         }
+        return rng.chance(0.5) ? -1 : 1;
       }
 
-      // Random tiebreak
+      // Random tiebreak (non-move vs non-move of same type)
       return rng.chance(0.5) ? -1 : 1;
     });
   }
@@ -191,9 +211,16 @@ export abstract class BaseRuleset implements GenerationRuleset {
         return Math.max(1, Math.floor(maxHp / 16));
       case "poison":
         return Math.max(1, Math.floor(maxHp / 8));
-      case "badly-poisoned":
-        // Escalating: 1/16, 2/16, 3/16... per turn
-        return Math.max(1, Math.floor(maxHp / 16));
+      case "badly-poisoned": {
+        // Escalating: 1/16, 2/16, 3/16... per turn, tracked via toxic-counter volatile
+        const toxicState = pokemon.volatileStatuses.get("toxic-counter");
+        const counter = (toxicState?.data?.counter as number) ?? 1;
+        const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
+        if (toxicState?.data) {
+          (toxicState.data as Record<string, unknown>).counter = counter + 1;
+        }
+        return damage;
+      }
       default:
         return 0;
     }
@@ -450,6 +477,24 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return { newCount, fainted: false };
   }
 
+  /**
+   * Returns the effective speed of the given active pokemon, accounting for stat stages
+   * and the paralysis speed penalty.
+   *
+   * Gen 3+ default: paralysis halves speed (×0.5). Gen 1-2 override (×0.25).
+   */
+  protected getEffectiveSpeed(active: ActivePokemon): number {
+    const stats = active.pokemon.calculatedStats;
+    const baseSpeed = stats ? stats.speed : 100;
+    // Apply stat stages
+    let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+    // Gen 3+: paralysis halves speed (×0.5); Gen 1-2 override (×0.25)
+    if (active.pokemon.status === "paralysis") {
+      effective = Math.floor(effective * 0.5);
+    }
+    return Math.max(1, effective);
+  }
+
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     return [
       "weather-damage",
@@ -461,6 +506,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
       "black-sludge",
       "bind",
       "curse",
+      "nightmare",
       "wish",
       "future-attack",
       "perish-song",
