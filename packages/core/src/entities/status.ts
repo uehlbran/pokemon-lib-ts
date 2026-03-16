@@ -44,4 +44,5 @@ export type VolatileStatus =
   | "toxic-counter" // Tracks escalating Toxic damage (N increments each turn)
   | "no-retreat" // Gen 8
   | "tar-shot" // Gen 8
-  | "octolock"; // Gen 8
+  | "octolock" // Gen 8
+  | "mist"; // Gen 1+ — protects the user's team from stat-lowering moves

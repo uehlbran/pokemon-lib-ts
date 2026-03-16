@@ -5,6 +5,13 @@ All notable changes to `@pokemon-lib-ts/battle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-03-15
+
+### Changed
+
+- Added `statusCuredOnly`, `selfStatusInflicted`, `selfVolatileInflicted`, `selfVolatileData`, and `typeChange` optional fields to `MoveEffectResult` — enables Gen 1 move handlers (Rest, Mist, Conversion) to return self-targeting effects and type changes (#92)
+- `BattleEngine.processEffectResult()` now processes the five new `MoveEffectResult` fields: cures status without resetting stat stages, inflicts primary status on the attacker, adds volatile status to the attacker, and mutates attacker/defender types
+
 ## [0.7.2] - 2026-03-15
 
 ### Fixed

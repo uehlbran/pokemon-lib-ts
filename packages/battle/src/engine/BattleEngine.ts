@@ -1395,6 +1395,90 @@ export class BattleEngine implements BattleEventEmitter {
         t.statStages = createDefaultStatStages();
       }
     }
+
+    // statusCuredOnly — cure status without resetting stat stages (for Rest, unlike Haze)
+    if (result.statusCuredOnly) {
+      const targets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
+      if (
+        result.statusCuredOnly.target === "attacker" ||
+        result.statusCuredOnly.target === "both"
+      ) {
+        targets.push({ pokemon: attacker, side: attackerSide });
+      }
+      if (
+        result.statusCuredOnly.target === "defender" ||
+        result.statusCuredOnly.target === "both"
+      ) {
+        targets.push({ pokemon: defender, side: defenderSide });
+      }
+      for (const { pokemon: t, side: tSide } of targets) {
+        if (t.pokemon.status) {
+          const curedStatus = t.pokemon.status;
+          t.pokemon.status = null;
+          this.emit({
+            type: "status-cure",
+            side: tSide,
+            pokemon: getPokemonName(t),
+            status: curedStatus,
+          });
+        }
+        // NOTE: stat stages are intentionally NOT reset here (unlike statusCured/Haze)
+      }
+    }
+
+    // selfStatusInflicted — apply a status condition to the ATTACKER
+    if (result.selfStatusInflicted && !attacker.pokemon.status) {
+      attacker.pokemon.status = result.selfStatusInflicted;
+      this.emit({
+        type: "status-inflict",
+        side: attackerSide,
+        pokemon: getPokemonName(attacker),
+        status: result.selfStatusInflicted,
+      });
+      if (result.selfStatusInflicted === "badly-poisoned") {
+        attacker.volatileStatuses.set("toxic-counter", {
+          turnsLeft: -1,
+          data: { counter: 1 },
+        });
+      }
+      if (result.selfStatusInflicted === "sleep") {
+        // Use selfVolatileData.turnsLeft if provided (e.g., Rest's fixed 2-turn sleep)
+        // otherwise roll normally
+        const sleepTurns =
+          result.selfVolatileData?.turnsLeft ?? this.ruleset.rollSleepTurns(this.state.rng);
+        attacker.volatileStatuses.set("sleep-counter", {
+          turnsLeft: sleepTurns,
+          data: {},
+        });
+      }
+    }
+
+    // selfVolatileInflicted — add a volatile status to the ATTACKER
+    if (
+      result.selfVolatileInflicted &&
+      !attacker.volatileStatuses.has(result.selfVolatileInflicted)
+    ) {
+      attacker.volatileStatuses.set(result.selfVolatileInflicted, {
+        turnsLeft: result.selfVolatileData?.turnsLeft ?? -1,
+        data: result.selfVolatileData?.data,
+      });
+      this.emit({
+        type: "volatile-start",
+        side: attackerSide,
+        pokemon: getPokemonName(attacker),
+        volatile: result.selfVolatileInflicted,
+      });
+    }
+
+    // typeChange — update the types of the attacker or defender
+    if (result.typeChange) {
+      const typeTarget = result.typeChange.target === "attacker" ? attacker : defender;
+      typeTarget.types = [...result.typeChange.types];
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(typeTarget)}'s type changed!`,
+      });
+    }
   }
 
   private processEndOfTurn(): void {

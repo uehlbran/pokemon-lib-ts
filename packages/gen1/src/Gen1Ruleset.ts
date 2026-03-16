@@ -294,6 +294,11 @@ export class Gen1Ruleset implements GenerationRuleset {
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+      statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+      selfStatusInflicted?: PrimaryStatus | null;
+      selfVolatileInflicted?: VolatileStatus | null;
+      selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -357,6 +362,11 @@ export class Gen1Ruleset implements GenerationRuleset {
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+      statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+      selfStatusInflicted?: PrimaryStatus | null;
+      selfVolatileInflicted?: VolatileStatus | null;
+      selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+      typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
     },
     context: MoveEffectContext,
   ): void {
@@ -403,6 +413,19 @@ export class Gen1Ruleset implements GenerationRuleset {
 
         for (const change of effect.changes) {
           const resolvedTarget = effect.target === "self" ? "attacker" : "defender";
+
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Mist
+          // Mist blocks all foe-targeted stat drops. If the defender has Mist active,
+          // skip any stat changes targeting the defender with negative stages.
+          if (
+            resolvedTarget === "defender" &&
+            change.stages < 0 &&
+            defender.volatileStatuses.has("mist")
+          ) {
+            const defenderName = defender.pokemon.nickname ?? "The target";
+            result.messages.push(`${defenderName} is protected by the mist!`);
+            continue;
+          }
 
           // Source: gen1-ground-truth.md §1 — Unified Special Stat
           // Gen 1 has a single Special stat for both offense and defense.
@@ -545,7 +568,32 @@ export class Gen1Ruleset implements GenerationRuleset {
 
       case "custom": {
         // Handle specific custom moves by handler name
-        if (effect.handler === "haze") {
+        if (effect.handler === "splash") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Splash does nothing
+          result.messages.push("But nothing happened!");
+        } else if (effect.handler === "super-fang") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Super Fang
+          // Deals damage equal to half the target's current HP, minimum 1.
+          result.customDamage = {
+            target: "defender",
+            amount: Math.max(1, Math.floor(defender.pokemon.currentHp / 2)),
+            source: "super-fang",
+          };
+        } else if (effect.handler === "psywave") {
+          // Source: pret/pokered — PsywaveEffect generates [0, floor(level*1.5)-1], rerolls zero → [1, floor(level*1.5)-1]
+          const maxDamage = Math.floor(attacker.pokemon.level * 1.5);
+          const amount = Math.max(1, rng.int(1, Math.max(1, maxDamage - 1)));
+          result.customDamage = {
+            target: "defender",
+            amount,
+            source: "psywave",
+          };
+        } else if (effect.handler === "teleport") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Teleport
+          // In Gen 1, Teleport always fails in trainer battles and flees in wild battles.
+          // Flee mechanics are not wired up; always fail for now.
+          result.messages.push("But it failed!");
+        } else if (effect.handler === "haze") {
           // Haze: clears all stat changes and status conditions for both pokemon,
           // removes all volatile statuses for both Pokemon, and removes all screens
           // from both sides (Gen 1 only).
@@ -568,6 +616,36 @@ export class Gen1Ruleset implements GenerationRuleset {
         } else if (effect.handler === "explosion" || effect.handler === "self-destruct") {
           // Explosion / Self-Destruct: user faints after using the move
           result.selfFaint = true;
+        } else if (effect.handler === "rest") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Rest
+          // Rest heals to full HP and puts the user to sleep for exactly 2 turns.
+          // Fails if user is at full HP AND has no primary status condition.
+          const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+          const isFullHp = attacker.pokemon.currentHp >= maxHp;
+          const hasStatus =
+            attacker.pokemon.status !== null && attacker.pokemon.status !== undefined;
+          if (isFullHp && !hasStatus) {
+            result.messages.push("But it failed!");
+          } else {
+            result.statusCuredOnly = { target: "attacker" };
+            result.healAmount = maxHp;
+            result.selfStatusInflicted = "sleep";
+            result.selfVolatileData = { turnsLeft: 2 };
+          }
+        } else if (effect.handler === "mist") {
+          // Source: pret/pokered — Mist is SUBSTATUS_MIST, a permanent bit with no turn counter (lasts until switch-out or Haze)
+          // Gen 2+ introduced the 5-turn timer; Gen 1 uses -1 (permanent sentinel).
+          // Fails if user already has Mist active.
+          if (attacker.volatileStatuses.has("mist")) {
+            result.messages.push("But it failed!");
+          } else {
+            result.selfVolatileInflicted = "mist";
+            result.selfVolatileData = { turnsLeft: -1 };
+          }
+        } else if (effect.handler === "conversion") {
+          // Source: pret/pokered src/engine/battle/effect_commands.asm — Conversion
+          // Gen 1 Conversion copies the DEFENDER's types (not based on moves like Gen 2+).
+          result.typeChange = { target: "attacker", types: [...defender.types] };
         } else if (effect.handler === "counter") {
           // Counter in Gen 1: only reflects Normal and Fighting type moves
           const lastDamage = attacker.lastDamageTaken ?? 0;
