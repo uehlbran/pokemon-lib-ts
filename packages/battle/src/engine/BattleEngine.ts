@@ -490,7 +490,7 @@ export class BattleEngine implements BattleEventEmitter {
       type: "switch-in",
       side: side.index,
       pokemon: createPokemonSnapshot(active),
-      slot: teamSlot,
+      slot: 0,
     });
 
     // Apply entry hazards
@@ -824,6 +824,12 @@ export class BattleEngine implements BattleEventEmitter {
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
         defender.lastDamageType = effectiveMoveData.type;
+        if (result.effectiveness !== 1) {
+          this.emit({ type: "effectiveness", multiplier: result.effectiveness });
+        }
+        if (result.isCrit) {
+          this.emit({ type: "critical-hit" });
+        }
         this.emit({
           type: "damage",
           side: defenderSide as 0 | 1,
@@ -833,13 +839,6 @@ export class BattleEngine implements BattleEventEmitter {
           maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
           source: effectiveMoveData.id,
         });
-      }
-
-      if (result.effectiveness !== 1) {
-        this.emit({ type: "effectiveness", multiplier: result.effectiveness });
-      }
-      if (result.isCrit) {
-        this.emit({ type: "critical-hit" });
       }
 
       // Held item: on-damage-taken trigger for defender
@@ -1604,7 +1603,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       if (side.active[0] === active) return side.index;
     }
-    return 0;
+    throw new Error(`BattleEngine: ActivePokemon not found in any side`);
   }
 
   private processHeldItemEndOfTurn(): void {
