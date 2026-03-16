@@ -594,6 +594,7 @@ export class BattleEngine implements BattleEventEmitter {
         this.checkMidTurnFaints();
         if (this.checkBattleEnd()) {
           this.transitionTo("BATTLE_END");
+          this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
           return;
         }
 
@@ -642,35 +643,39 @@ export class BattleEngine implements BattleEventEmitter {
 
       // Check for faints after each action
       this.checkMidTurnFaints();
-      if (this.state.ended) return;
+      if (this.state.ended) {
+        this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+        return;
+      }
     }
 
     // --- TURN_END ---
     this.transitionTo("TURN_END");
     this.processEndOfTurn();
 
-    if (this.state.ended) return;
+    if (this.state.ended) {
+      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      return;
+    }
 
     // --- FAINT_CHECK ---
     this.transitionTo("FAINT_CHECK");
     if (this.checkBattleEnd()) {
       this.transitionTo("BATTLE_END");
+      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
       return;
     }
 
     // If any pokemon need replacement, prompt for switch
     if (this.needsSwitchPrompt()) {
       this.transitionTo("SWITCH_PROMPT");
+      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
       return;
     }
 
     // Record turn history — slice from turnStartIndex to capture only events
     // emitted during this turn (fixes #84 — slice(-50) captured cross-turn events).
-    this.state.turnHistory.push({
-      turn: this.state.turnNumber,
-      actions: orderedActions,
-      events: [...this.eventLog.slice(turnStartIndex)],
-    });
+    this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
 
     // Reset move tracking for next turn
     for (const side of this.state.sides) {
@@ -817,6 +822,15 @@ export class BattleEngine implements BattleEventEmitter {
 
       damage = result.damage;
 
+      // Effectiveness and crit events fire regardless of substitute — emit before
+      // the damage is applied so the ordering matches real cartridge behaviour.
+      if (result.effectiveness !== 1) {
+        this.emit({ type: "effectiveness", multiplier: result.effectiveness });
+      }
+      if (result.isCrit) {
+        this.emit({ type: "critical-hit" });
+      }
+
       // Apply damage to substitute or pokemon
       if (defender.substituteHp > 0 && !effectiveMoveData.flags.bypassSubstitute) {
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
@@ -837,12 +851,6 @@ export class BattleEngine implements BattleEventEmitter {
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
         defender.lastDamageType = effectiveMoveData.type;
-        if (result.effectiveness !== 1) {
-          this.emit({ type: "effectiveness", multiplier: result.effectiveness });
-        }
-        if (result.isCrit) {
-          this.emit({ type: "critical-hit" });
-        }
         this.emit({
           type: "damage",
           side: defenderSide as 0 | 1,
@@ -1564,6 +1572,19 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  /**
+   * Records the completed turn into `state.turnHistory`.
+   * Called from every exit path of `resolveTurn()` so that turns ending in a KO,
+   * battle end, or switch prompt are captured just like normal turns.
+   */
+  private recordTurnHistory(turn: number, actions: BattleAction[], turnStartIndex: number): void {
+    this.state.turnHistory.push({
+      turn,
+      actions,
+      events: [...this.eventLog.slice(turnStartIndex)],
+    });
+  }
+
   private checkMidTurnFaints(): void {
     for (const side of this.state.sides) {
       const active = side.active[0];
@@ -1571,7 +1592,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Guard against duplicate faint events when this method is called
         // multiple times per turn (e.g., after Pursuit and again after the main action).
         // The set is cleared at the start of each turn in resolveTurn() (#78).
-        const key = `${side.index}-${getPokemonName(active)}`;
+        const key = `${side.index}-${active.pokemon.uid}`;
         if (this.faintedPokemonThisTurn.has(key)) continue;
         this.faintedPokemonThisTurn.add(key);
         this.emit({
