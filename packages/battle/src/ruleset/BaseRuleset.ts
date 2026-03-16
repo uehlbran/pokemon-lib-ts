@@ -373,9 +373,8 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
-  // Gen 3+ default: typeless physical 50 BP (no type chart, no STAB, no random factor).
-  // Gen 3 and later: Struggle has no type, so Ghost immunity does not apply.
-  // Phase 3A will review whether this default needs per-gen overrides.
+  // Gen 2+ default (typeless 50 BP physical, no type chart, no STAB, no variance).
+  // Gen 3+ inherit this directly. Gen 1-2 override with their own implementations.
   calculateStruggleDamage(
     attacker: ActivePokemon,
     defender: ActivePokemon,

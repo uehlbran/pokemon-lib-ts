@@ -1006,10 +1006,12 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Source: pret/pokered — Struggle is a Normal-type physical move with 50 BP in Gen 1.
     // Ghost types are immune to Normal-type moves.
     // We build a minimal MoveData for Struggle and delegate to calculateDamage.
-    // rng uses a fixed seed so this method is pure (no external rng needed);
-    // the random factor at seed 0 will yield a deterministic roll — callers that need
-    // a live rng should use calculateDamage directly. Phase 3B (BattleEngine) will
-    // pass the battle rng via calculateDamage when executing Struggle.
+    // rng uses a fixed seed so this method is pure (no external rng needed).
+    // The random factor at seed 0 yields a deterministic roll (no variance).
+    // TODO(#80): BattleEngine.executeStruggle() calls calculateDamage() directly with the
+    // live battle RNG once Phase 3B delegates Struggle damage to the ruleset.
+    // At that point, the engine will bypass calculateStruggleDamage and use
+    // calculateDamage with a full DamageContext instead.
     const STRUGGLE_MOVE_GEN1: MoveData = {
       id: "struggle",
       displayName: "Struggle",
