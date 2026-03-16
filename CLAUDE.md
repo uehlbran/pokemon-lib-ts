@@ -105,6 +105,18 @@ These specs are reference material. Implementation may deviate where code reveal
 - Snapshot tests for imported data (correct shapes and counts)
 - Validate against Showdown battle logs for battle engine correctness
 
+## Testing Rules
+
+These rules govern **how** tests are written. The Testing Philosophy section above governs **what** to test.
+
+- **Provenance Requirement** — every hardcoded expected value must have a source comment explaining where it comes from (Bulbapedia article, Showdown source, pret disassembly, or an inline formula derivation). "Run the function and check what it returns" is not a valid source.
+- **Triangulation Minimum** — every formula behavior needs at least 2 independent test cases with different inputs (Beck's rule: one test can be satisfied by a constant return; two cannot).
+- **Testing Style by Code Type** — use output-based testing for pure functions (assert return value), state-based testing for stateful objects (assert state after action), and communication-based testing (mocks/spies) only at system boundaries (external I/O, event emission). Do not mock internal domain logic.
+- **Mock Rules** — never mock domain logic (damage calc, stat calc, type chart). `MockRuleset` is for testing engine orchestration only — not for shortcuts in mechanic tests.
+- **Cross-Gen Regression** — if you change a shared utility (e.g., `gen12-shared.ts`), add tests for each consuming gen (gen1 and gen2), not just the one you're working in.
+- **Test Naming** — test names must describe the behavior and the scenario. Good: `"given a L50 Charizard with 31 HP IVs, when calculating HP stat, then returns 153"`. Bad: `"should work"`, `"calculates correctly"`, `"HP test"`. Prefer Given/When/Then framing.
+- **No Weak Assertions for Formulas** — formula tests must use `toBe()`, `toEqual()`, or `toBeCloseTo()`. Never use `toBeTruthy()`, `toBeFalsy()`, `toBeDefined()`, or `toBeGreaterThan(0)` to assert a formula result — these can pass even when the formula is completely wrong.
+
 ## Source Authority
 
 When implementing mechanics, use the following per-gen hierarchy (highest authority first):

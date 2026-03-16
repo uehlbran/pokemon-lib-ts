@@ -1,0 +1,13 @@
+{
+  "name": "test-auditor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audit": "tsx src/static-audit.ts --all",
+    "audit:core": "tsx src/static-audit.ts --package core",
+    "audit:gen1": "tsx src/static-audit.ts --package gen1"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+}
