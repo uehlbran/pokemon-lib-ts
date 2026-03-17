@@ -113,29 +113,39 @@ export abstract class BaseRuleset implements GenerationRuleset {
   }
 
   resolveTurnOrder(actions: BattleAction[], state: BattleState, rng: SeededRandom): BattleAction[] {
-    return [...actions].sort((a, b) => {
+    // Pre-assign one tiebreak key per action BEFORE sorting to ensure deterministic
+    // PRNG consumption. V8's sort algorithm calls comparators a non-deterministic number
+    // of times, so consuming rng inside the comparator breaks replay determinism.
+    // Fix: consume exactly N rng.next() calls upfront, then use keys in comparator.
+    // Source: GitHub issue #120
+    const tagged = actions.map((action) => ({ action, tiebreak: rng.next() }));
+
+    tagged.sort((a, b) => {
+      const actionA = a.action;
+      const actionB = b.action;
+
       // Switches always go first
-      if (a.type === "switch" && b.type !== "switch") return -1;
-      if (b.type === "switch" && a.type !== "switch") return 1;
+      if (actionA.type === "switch" && actionB.type !== "switch") return -1;
+      if (actionB.type === "switch" && actionA.type !== "switch") return 1;
 
       // Item usage goes before moves
-      if (a.type === "item" && b.type === "move") return -1;
-      if (b.type === "item" && a.type === "move") return 1;
+      if (actionA.type === "item" && actionB.type === "move") return -1;
+      if (actionB.type === "item" && actionA.type === "move") return 1;
 
       // Run goes before moves
-      if (a.type === "run" && b.type === "move") return -1;
-      if (b.type === "run" && a.type === "move") return 1;
+      if (actionA.type === "run" && actionB.type === "move") return -1;
+      if (actionB.type === "run" && actionA.type === "move") return 1;
 
       // For moves, compare priority then speed
-      if (a.type === "move" && b.type === "move") {
-        const sideA = state.sides[a.side];
-        const sideB = state.sides[b.side];
+      if (actionA.type === "move" && actionB.type === "move") {
+        const sideA = state.sides[actionA.side];
+        const sideB = state.sides[actionB.side];
         const activeA = sideA?.active[0];
         const activeB = sideB?.active[0];
         if (!activeA || !activeB) return 0;
 
-        const moveSlotA = activeA.pokemon.moves[a.moveIndex];
-        const moveSlotB = activeB.pokemon.moves[b.moveIndex];
+        const moveSlotA = activeA.pokemon.moves[actionA.moveIndex];
+        const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
         if (!moveSlotA || !moveSlotB) return 0;
 
         let priorityA = 0;
@@ -161,12 +171,14 @@ export abstract class BaseRuleset implements GenerationRuleset {
         } else {
           if (speedA !== speedB) return speedB - speedA;
         }
-        return rng.chance(0.5) ? -1 : 1;
+        return a.tiebreak < b.tiebreak ? -1 : 1;
       }
 
-      // Random tiebreak (non-move vs non-move of same type)
-      return rng.chance(0.5) ? -1 : 1;
+      // Deterministic tiebreak (non-move vs non-move of same type)
+      return a.tiebreak < b.tiebreak ? -1 : 1;
     });
+
+    return tagged.map((t) => t.action);
   }
 
   doesMoveHit(context: AccuracyContext): boolean {
