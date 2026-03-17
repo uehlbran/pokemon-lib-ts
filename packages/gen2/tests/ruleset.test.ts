@@ -2460,5 +2460,35 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(priority).toBe(-1);
     });
+
+    it("given Gen 2 ruleset, when getting Endure move priority, then returns +3", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_ENDURE has priority 3
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("endure").priority;
+      // Assert
+      expect(priority).toBe(3);
+    });
+
+    it("given Gen 2 ruleset, when getting Mach Punch move priority, then returns +2", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_MACH_PUNCH has priority 2
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("mach-punch").priority;
+      // Assert
+      expect(priority).toBe(2);
+    });
+
+    it("given Gen 2 ruleset, when getting ExtremeSpeed move priority, then returns +2", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_EXTREMESPEED has priority 2
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("extreme-speed").priority;
+      // Assert
+      expect(priority).toBe(2);
+    });
   });
 });
