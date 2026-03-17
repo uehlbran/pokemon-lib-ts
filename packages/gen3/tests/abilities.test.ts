@@ -1094,6 +1094,91 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
   });
 
+  describe("Snow Warning", () => {
+    it("given Snow Warning user, when switching in, then returns activated=true with hail message", () => {
+      // Source: pret/pokeemerald ABILITY_SNOW_WARNING — sets permanent hail on switch-in
+      const ctx = createAbilityContext({
+        pokemonAbility: "snow-warning",
+        pokemonNickname: "Abomasnow",
+      });
+      const result = applyGen3Ability("on-switch-in", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects.length).toBe(1);
+      expect(result.effects[0]!.target).toBe("field");
+      expect(result.messages[0]).toBe("Abomasnow's Snow Warning: Hail started!");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Tier 2 abilities — require engine hooks not yet implemented
+  // These will be enabled once BattleEngine calls the appropriate triggers.
+  // Engine limitation: BattleEngine only calls applyAbility("on-switch-in") and
+  // discards the return value. It does NOT call on-contact, on-turn-end, or
+  // on-switch-out. See packages/battle/src/engine/BattleEngine.ts.
+  // ---------------------------------------------------------------------------
+
+  describe("Tier 2 abilities — engine-limited stubs (on-contact / on-turn-end / on-switch-out)", () => {
+    // Source: pret/pokeemerald — all of these abilities exist in Gen 3 but require
+    // engine hooks that BattleEngine does not yet call.
+
+    it.todo(
+      "given Static holder and physical contact move, when on-contact fires, then 30% chance to paralyze attacker (requires engine on-contact hook)",
+    );
+    it.todo(
+      "given Flame Body holder and physical contact move, when on-contact fires, then 30% chance to burn attacker (requires engine on-contact hook)",
+    );
+    it.todo(
+      "given Rough Skin holder and contact move, when on-contact fires, then attacker takes 1/16 max HP damage (requires engine on-contact hook)",
+    );
+    it.todo(
+      "given Poison Point holder and contact move, when on-contact fires, then 30% chance to poison attacker (requires engine on-contact hook)",
+    );
+    it.todo(
+      "given Natural Cure holder switches out, when on-switch-out fires, then status is cured (requires engine on-switch-out hook consuming AbilityResult)",
+    );
+    it.todo(
+      "given Shed Skin holder at turn end, when on-turn-end fires, then 1/3 chance to cure status (requires engine on-turn-end hook)",
+    );
+    it.todo(
+      "given Speed Boost holder at turn end, when on-turn-end fires, then Speed +1 stage (requires engine on-turn-end hook)",
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Tier 3 abilities — status immunity, require passive-immunity engine hook
+  // These abilities passively block status conditions being inflicted.
+  // Engine limitation: BattleEngine does not call applyAbility("passive-immunity")
+  // or applyAbility("on-status-inflicted"). Until it does, these cannot activate.
+  // Source: pret/pokeemerald — each of these abilities exists in Gen 3.
+  // ---------------------------------------------------------------------------
+
+  describe("Tier 3 abilities — status immunity stubs (passive-immunity / on-status-inflicted)", () => {
+    it.todo(
+      "given Immunity holder, when poison is inflicted, then poison is blocked (requires engine passive-immunity hook)",
+    );
+    it.todo(
+      "given Limber holder, when paralysis is inflicted, then paralysis is blocked (requires engine passive-immunity hook)",
+    );
+    it.todo(
+      "given Insomnia holder, when sleep is inflicted, then sleep is blocked (requires engine passive-immunity hook)",
+    );
+    it.todo(
+      "given Vital Spirit holder, when sleep is inflicted, then sleep is blocked (requires engine passive-immunity hook)",
+    );
+    it.todo(
+      "given Magma Armor holder, when freeze is inflicted, then freeze is blocked (requires engine passive-immunity hook)",
+    );
+    it.todo(
+      "given Water Veil holder, when burn is inflicted, then burn is blocked (requires engine passive-immunity hook)",
+    );
+    it.todo(
+      "given Own Tempo holder, when confusion is inflicted, then confusion is blocked (requires engine passive-immunity hook)",
+    );
+    it.todo(
+      "given Oblivious holder, when infatuation or taunt is inflicted, then it is blocked (requires engine passive-immunity hook)",
+    );
+  });
+
   describe("Unimplemented abilities", () => {
     it("given an ability with no switch-in effect (e.g., static), when switching in, then returns activated=false", () => {
       // Static is a contact ability, not a switch-in ability
