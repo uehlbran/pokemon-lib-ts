@@ -5,10 +5,13 @@ import type { AbilityTrigger } from "@pokemon-lib-ts/core";
  * Gen 3 Abilities — applyAbility dispatch.
  *
  * Handles triggers that the battle engine currently calls:
- *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream, Snow Warning
+ *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream
  *
  * Other triggers (on-contact, on-turn-end, on-switch-out) require engine hooks
  * not yet implemented. Those abilities are noted as stubs below.
+ *
+ * Note: Snow Warning is NOT a Gen 3 ability. It was introduced in Gen 4 with
+ * Abomasnow in Diamond/Pearl. Do not implement it here.
  *
  * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects
  */
@@ -45,11 +48,16 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
  *   - Drizzle: sets permanent rain
  *   - Drought: sets permanent sun
  *   - Sand Stream: sets permanent sandstorm
- *   - Snow Warning: sets permanent hail
  *
  * Not implemented (require more engine support or volatile state tracking):
  *   - Trace: copies opponent's ability (needs engine to apply ability change)
  *   - Cloud Nine / Air Lock: suppresses weather (needs weather suppression system)
+ *
+ * NOTE on engine limitations: The battle engine currently calls applyAbility("on-switch-in")
+ * at BattleEngine.ts:190 but discards the returned AbilityResult entirely (no variable
+ * assignment). This means returned effects and messages are computed correctly here but
+ * are not acted upon by the engine. Until the engine processes AbilityResult.effects, none
+ * of the switch-in abilities below actually change game state.
  *
  * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects ABILITYEFFECT_ON_SWITCHIN
  */
@@ -57,6 +65,9 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
   switch (abilityId) {
     case "intimidate": {
       // Source: pret/pokeemerald ABILITY_INTIMIDATE — lowers opponent's Attack by 1 stage on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // The -1 Atk effect is returned correctly in this data structure but is not actually applied
+      // until the engine processes AbilityResult.effects.
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const oppName =
@@ -73,6 +84,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "drizzle": {
       // Source: pret/pokeemerald ABILITY_DRIZZLE — sets permanent rain on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       // AbilityEffectType doesn't have "weather-set", so use "none" with a descriptive message.
       // The engine currently ignores effects anyway — the message is the important part.
@@ -86,6 +99,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "drought": {
       // Source: pret/pokeemerald ABILITY_DROUGHT — sets permanent sun on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = { effectType: "none", target: "field" };
       return {
@@ -97,24 +112,14 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "sand-stream": {
       // Source: pret/pokeemerald ABILITY_SAND_STREAM — sets permanent sandstorm on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = { effectType: "none", target: "field" };
       return {
         activated: true,
         effects: [effect],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
-      };
-    }
-
-    case "snow-warning": {
-      // Source: pret/pokeemerald ABILITY_SNOW_WARNING — sets permanent hail on switch-in
-      // Snow Warning was introduced in Gen 4, but included here for completeness per spec.
-      const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-      const effect: AbilityEffect = { effectType: "none", target: "field" };
-      return {
-        activated: true,
-        effects: [effect],
-        messages: [`${name}'s Snow Warning: Hail started!`],
       };
     }
 
