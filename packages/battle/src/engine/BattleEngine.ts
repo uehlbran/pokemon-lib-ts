@@ -1562,8 +1562,13 @@ export class BattleEngine implements BattleEventEmitter {
           this.processCurseForSide(sideIndex);
           break;
         default:
+          // Only status-damage, leech-seed, nightmare, curse are supported in Phase 1.
+          // Other effects (bind, leftovers, etc.) belong in Phase 2 (getEndOfTurnOrder).
           break;
       }
+      // Note: checkMidTurnFaints emits faint events but does not set state.ended.
+      // The state.ended guard is consistent with the processEndOfTurn pattern.
+      // Battle-end detection defers to checkBattleEnd() at the end of resolveTurn().
       this.checkMidTurnFaints();
       if (this.state.ended) return;
     }
