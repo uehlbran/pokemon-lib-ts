@@ -957,21 +957,25 @@ export class Gen2Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    // Order per pret/pokecrystal ground truth:
-    // future-attack → leftovers → status-damage → leech-seed → nightmare →
-    // curse → bind → weather-damage → perish-song → screen-countdown → weather-countdown
+    // Source: pret/pokecrystal engine/battle/core.asm — HandleBetweenTurnEffects
+    // Phase 2: runs once after both Pokemon have acted
+    // Order: future-attack → weather-damage → bind → perish-song → leftovers →
+    // screen-countdown → weather-countdown
     return [
       "future-attack",
-      "leftovers",
-      "status-damage",
-      "leech-seed",
-      "nightmare",
-      "curse",
-      "bind",
       "weather-damage",
+      "bind",
       "perish-song",
+      "leftovers",
       "screen-countdown",
       "weather-countdown",
     ] as const;
+  }
+
+  getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
+    // Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage
+    // Phase 1: runs per-Pokemon after each attack resolves
+    // Order: status-damage → leech-seed → nightmare → curse
+    return ["status-damage", "leech-seed", "nightmare", "curse"];
   }
 }
