@@ -54,7 +54,7 @@
     "ghost": 1,
     "dragon": 0.5,
     "dark": 1,
-    "steel": 1
+    "steel": 0.5
   },
   "electric": {
     "normal": 1,
@@ -73,7 +73,7 @@
     "ghost": 1,
     "dragon": 0.5,
     "dark": 1,
-    "steel": 1
+    "steel": 0.5
   },
   "grass": {
     "normal": 1,
