@@ -374,12 +374,18 @@ While in `0.x.x` (pre-stable), MINOR bumps may include breaking changes. This is
 
 ### Release Checklist
 
-1. Update version in `package.json`
-2. Update `CHANGELOG.md` with all changes since last release
-3. Run full test suite (`npm run test` from root)
-4. Build (`npm run build`)
-5. Tag in git (`git tag @pokemon-lib-ts/core@0.4.0`)
-6. Publish to npm (`npm publish --access public` from each package dir)
+This project uses `@changesets/cli` for collision-free versioning across concurrent agents.
+
+**Per-PR (on feature branches):**
+1. Run `/version` skill — creates `.changeset/<name>.md` declaring which packages changed and the bump type
+2. Do NOT edit `package.json` versions or `CHANGELOG.md` directly on feature branches
+
+**On main (when ready to release):**
+1. Run full test suite (`npm run test` from root)
+2. Build (`npm run build`)
+3. Consume changesets: `npm run version-packages` — bumps `package.json` versions and generates `CHANGELOG.md` entries atomically
+4. Commit the version bump: `git commit -m "chore(release): version packages"`
+5. Publish to npm: `npm run release` (runs `changeset publish` which tags and publishes each package)
 
 ---
 

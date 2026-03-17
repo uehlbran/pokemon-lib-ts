@@ -8,6 +8,10 @@
           {
             "type": "command",
             "command": "./.claude/hooks/enforce-review-gate.sh"
+          },
+          {
+            "type": "command",
+            "command": "./.claude/hooks/enforce-changeset-gate.sh"
           }
         ]
       }

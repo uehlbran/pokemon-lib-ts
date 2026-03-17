@@ -216,16 +216,20 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 
 ## Package Versioning
 
-Independent semantic versioning per package. A Gen 1 bug fix doesn't bump Gen 9. All packages share a minimum compatible core version via peerDependencies.
+Uses `@changesets/cli` for collision-free versioning across concurrent agents.
 
-**Versioning is mandatory on every PR that touches `packages/`.** Use the `/version` skill before creating any PR. Never skip it — missed bumps compound and require retroactive catch-up PRs.
+**On feature branches**: Run `/version` before creating a PR. This creates a `.changeset/<name>.md` file declaring which packages changed and the bump type. Changeset files are separate files that cannot conflict between branches — no more version collision when two agents touch the same package.
 
-Rules:
-- Any `src/` bug fix → patch bump for that package
-- Any new export in `src/index.ts` → minor bump
-- Any breaking interface change → major bump (pre-1.0: treated as minor)
-- Tests, docs, config, `specs/`, `.github/` only → no bump needed
-- Data file changes (`data/*.json`) → patch bump
+**To release**: Run `npm run version-packages` on main. This consumes all pending changesets, bumps `package.json` versions, and generates `CHANGELOG.md` entries atomically.
+
+**Agents NEVER edit `package.json` versions or `CHANGELOG.md` directly.** Changesets handles both.
+
+Bump classification rules (used by `/version`):
+- Any `src/` bug fix → patch
+- Any new export in `src/index.ts` → minor
+- Any breaking interface change → major (pre-1.0: treated as minor)
+- Tests, docs, config, `specs/`, `.github/` only → no changeset needed
+- Data file changes (`data/*.json`) → patch
 
 ## Model & Effort Strategy
 
@@ -275,7 +279,7 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 ## PR Workflow
 
 - **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally. Do not depend on CodeRabbit/Qodo — they can be rate-limited.
-- **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/`. See Package Versioning above.
+- **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/`. Creates a `.changeset/<name>.md` file; does NOT edit `package.json` or `CHANGELOG.md`. See Package Versioning above.
 - **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. GitHub auto-closes the issue when the PR merges. No related issue (pure chore/docs/tooling)? Add `Closes: N/A` — the `check-issue-link` CI workflow requires either a closing reference or an explicit no-issue marker and will fail otherwise. **CRITICAL SYNTAX**: `Closes #50, #80` only closes #50 — each issue needs its own keyword on its own line. See `.claude/rules/issue-closing-syntax.md`.
 - Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use manual polling.
 - **`/babysit-pr` auto-merges by default** and self-polls until complete — no `/loop` wrapper needed. Use `--no-merge` to require confirmation before merging.

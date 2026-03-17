@@ -13,18 +13,22 @@
     "lint": "npx @biomejs/biome check --write .",
     "lint:check": "npx @biomejs/biome check .",
     "clean": "turbo run clean",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish",
     "replay:download": "tsx tools/replay-parser/src/index.ts download --format gen1ou --count 30",
     "replay:validate": "tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/",
     "replay:report": "tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/ --json"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.4.0",
-    "vitest": "^1.0.0",
     "@biomejs/biome": "^2.4.0",
+    "@changesets/cli": "^2.30.0",
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
     "tsup": "^8.0.0",
-    "@vitest/coverage-v8": "^1.0.0"
+    "tsx": "^4.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.0.0"
   }
 }
