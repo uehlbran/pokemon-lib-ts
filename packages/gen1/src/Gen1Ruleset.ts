@@ -1117,7 +1117,7 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
     // Gen 1 keeps existing behavior — per-attack residuals are handled separately in pokered
-    // See GitHub issue for Gen 1 per-attack residual tracking
+    // Tracked in GitHub issue #129 for future implementation
     return [];
   }
 }
