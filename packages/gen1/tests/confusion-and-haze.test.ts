@@ -225,7 +225,6 @@ describe("confusion duration", () => {
     // Source: pokered effects.asm:1143-1147 — `and $3; inc a; inc a` = random(0-3)+2 = [2,5]
 
     // Arrange: use 1000 different seeds to exercise the RNG distribution
-    const defender = makeActivePokemon({ types: ["normal"] });
     const turnsLeftValues: number[] = [];
 
     for (let seed = 0; seed < 1000; seed++) {
@@ -255,9 +254,6 @@ describe("confusion duration", () => {
       expect(turns).toBeGreaterThanOrEqual(2);
       expect(turns).toBeLessThanOrEqual(5);
     }
-
-    // Use _ to avoid linting error for unused variable
-    void defender;
   });
 
   it("given confusion is inflicted, when sampling sufficient seeds, then both min=2 and max=5 are observed", () => {
@@ -397,12 +393,10 @@ describe("Haze handler", () => {
     expect(result.statusCured?.target).toBe("defender");
   });
 
-  // cleanContext: neither Pokemon has volatile statuses — used for triangulation tests below
-  const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
-
   it("given clean-state Pokemon (no volatiles), when Haze is used, then statStagesReset still targets attacker", () => {
     // Source: pokered move_effects/haze.asm:15-43
     // Second independent test case — confirms statStagesReset is unconditional (not contingent on volatile presence)
+    const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
     const result = ruleset.executeMoveEffect(cleanContext);
     expect(result.statStagesReset?.target).toBe("attacker");
   });
@@ -410,6 +404,7 @@ describe("Haze handler", () => {
   it("given clean-state Pokemon (no volatiles), when Haze is used, then screensCleared is still both", () => {
     // Source: pokered move_effects/haze.asm:15-43
     // Second independent test case — confirms screensCleared is unconditional
+    const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
     const result = ruleset.executeMoveEffect(cleanContext);
     expect(result.screensCleared).toBe("both");
   });
@@ -417,6 +412,7 @@ describe("Haze handler", () => {
   it("given clean-state Pokemon (no volatiles), when Haze is used, then message is still 'All stat changes were eliminated!'", () => {
     // Source: pokered move_effects/haze.asm:15-43
     // Second independent test case — confirms message is unconditional
+    const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
     const result = ruleset.executeMoveEffect(cleanContext);
     expect(result.messages).toContain("All stat changes were eliminated!");
   });
