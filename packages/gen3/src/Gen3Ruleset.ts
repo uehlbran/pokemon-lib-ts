@@ -1,10 +1,13 @@
 import {
   type ActivePokemon,
   BaseRuleset,
+  type BattleSide,
   type BattleState,
   type DamageContext,
   type DamageResult,
+  type EntryHazardResult,
   type ExpContext,
+  type WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import type {
   EntryHazardType,
@@ -22,6 +25,7 @@ import {
 import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
 import { calculateGen3Damage } from "./Gen3DamageCalc";
 import { GEN3_TYPE_CHART, GEN3_TYPES } from "./Gen3TypeChart";
+import { applyGen3WeatherEffects } from "./Gen3Weather";
 
 /**
  * Gen 3 (Ruby/Sapphire/Emerald) ruleset.
@@ -174,6 +178,71 @@ export class Gen3Ruleset extends BaseRuleset {
     }
     // All other statuses use the BaseRuleset default logic
     return super.applyStatusDamage(pokemon, status, state);
+  }
+
+  // --- Weather System ---
+
+  /**
+   * Gen 3 weather end-of-turn chip damage.
+   *
+   * Sandstorm: 1/16 max HP to non-Rock/Ground/Steel types.
+   * Hail (new in Gen 3): 1/16 max HP to non-Ice types.
+   * Rain/Sun: no chip damage.
+   *
+   * NOTE: NO SpDef boost for Rock types in sandstorm — that was added in Gen 4 (D/P).
+   *
+   * Source: pret/pokeemerald src/battle_util.c — weather damage = maxHP / 16
+   */
+  applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
+    return applyGen3WeatherEffects(state);
+  }
+
+  // --- Entry Hazard System ---
+
+  /**
+   * Gen 3 entry hazards: only Spikes available (no Stealth Rock, no Toxic Spikes).
+   *
+   * Damage table (per pret/pokeemerald src/battle_util.c):
+   *   1 layer = 1/8 max HP
+   *   2 layers = 1/6 max HP
+   *   3 layers = 1/4 max HP
+   *
+   * Flying-types are immune. Levitate ability is immune.
+   *
+   * Source: pret/pokeemerald src/battle_util.c — SetSpikesDamage routine
+   */
+  applyEntryHazards(pokemon: ActivePokemon, side: BattleSide): EntryHazardResult {
+    // Gen 3: only spikes available — no Stealth Rock (Gen 4) or Toxic Spikes (Gen 4)
+    const spikes = side.hazards.find((h) => h.type === "spikes");
+    if (!spikes) return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+
+    // Flying-types are immune to spikes
+    // Source: pret/pokeemerald — TYPE_FLYING check in hazard application
+    if (pokemon.types.includes("flying")) {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+
+    // Levitate ability grants immunity to ground-affecting effects including spikes
+    // Source: pret/pokeemerald — Levitate ability check in hazard application
+    if (pokemon.ability === "levitate") {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+
+    // Damage fractions: 0 layers (sentinel), 1 layer = 1/8, 2 layers = 1/6, 3 layers = 1/4
+    // Source: pret/pokeemerald src/battle_util.c — SetSpikesDamage fractions table
+    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    const fractions = [0, 1 / 8, 1 / 6, 1 / 4]; // index = layer count
+    const layers = Math.min(spikes.layers, 3);
+    const fraction = fractions[layers] ?? 1 / 8; // fallback to 1/8 (1-layer default)
+    const damage = Math.max(1, Math.floor(maxHp * fraction));
+
+    const pokemonName = pokemon.pokemon.nickname ?? pokemon.pokemon.speciesId.toString();
+    return {
+      damage,
+      statusInflicted: null,
+      statChanges: [],
+      messages: [`${pokemonName} was hurt by the spikes!`],
+    };
   }
 
   /**
