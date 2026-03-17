@@ -124,7 +124,7 @@ export class Gen2Ruleset implements GenerationRuleset {
   // --- Turn Order ---
 
   resolveTurnOrder(actions: BattleAction[], state: BattleState, rng: SeededRandom): BattleAction[] {
-    // Check for Quick Claw activation on move actions
+    // Check for Quick Claw activation on move actions (consumes rng before sorting)
     const quickClawActivated = new Set<number>();
     for (const action of actions) {
       if (action.type === "move" || action.type === "struggle" || action.type === "recharge") {
@@ -138,30 +138,40 @@ export class Gen2Ruleset implements GenerationRuleset {
       }
     }
 
-    return [...actions].sort((a, b) => {
+    // Pre-assign one tiebreak key per action BEFORE sorting to ensure deterministic
+    // PRNG consumption. V8's sort algorithm calls comparators a non-deterministic number
+    // of times, so consuming rng inside the comparator breaks replay determinism.
+    // Fix: consume exactly N rng.next() calls upfront, then use keys in comparator.
+    // Source: GitHub issue #120
+    const tagged = actions.map((action) => ({ action, tiebreak: rng.next() }));
+
+    tagged.sort((a, b) => {
+      const actionA = a.action;
+      const actionB = b.action;
+
       // Switches always go before moves
       // NOTE: Pursuit special ordering is complex and is not yet implemented.
       // In a full implementation, if the opponent is switching and a move action is Pursuit,
       // Pursuit would execute before the switch with doubled base power.
-      if (a.type === "switch" && b.type !== "switch") return -1;
-      if (b.type === "switch" && a.type !== "switch") return 1;
+      if (actionA.type === "switch" && actionB.type !== "switch") return -1;
+      if (actionB.type === "switch" && actionA.type !== "switch") return 1;
 
       // Run actions go first
-      if (a.type === "run" && b.type !== "run") return -1;
-      if (b.type === "run" && a.type !== "run") return 1;
+      if (actionA.type === "run" && actionB.type !== "run") return -1;
+      if (actionB.type === "run" && actionA.type !== "run") return 1;
 
       // If both are moves, compare priority then speed
-      if (a.type === "move" && b.type === "move") {
-        const sideA = state.sides[a.side];
-        const sideB = state.sides[b.side];
+      if (actionA.type === "move" && actionB.type === "move") {
+        const sideA = state.sides[actionA.side];
+        const sideB = state.sides[actionB.side];
         const activeA = sideA?.active[0];
         const activeB = sideB?.active[0];
 
         if (!activeA || !activeB) return 0;
 
         // Get moves for priority comparison
-        const moveSlotA = activeA.pokemon.moves[a.moveIndex];
-        const moveSlotB = activeB.pokemon.moves[b.moveIndex];
+        const moveSlotA = activeA.pokemon.moves[actionA.moveIndex];
+        const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
         if (!moveSlotA || !moveSlotB) return 0;
 
         let priorityA = 0;
@@ -183,8 +193,8 @@ export class Gen2Ruleset implements GenerationRuleset {
         }
 
         // Quick Claw: if one side activated Quick Claw, that side goes first
-        const aQuickClaw = quickClawActivated.has(a.side);
-        const bQuickClaw = quickClawActivated.has(b.side);
+        const aQuickClaw = quickClawActivated.has(actionA.side);
+        const bQuickClaw = quickClawActivated.has(actionB.side);
         if (aQuickClaw && !bQuickClaw) return -1;
         if (bQuickClaw && !aQuickClaw) return 1;
 
@@ -196,17 +206,17 @@ export class Gen2Ruleset implements GenerationRuleset {
           return speedB - speedA; // Higher speed goes first
         }
 
-        // Speed tie: random
-        return rng.chance(0.5) ? -1 : 1;
+        // Speed tie: deterministic tiebreak using pre-assigned key
+        return a.tiebreak < b.tiebreak ? -1 : 1;
       }
 
       // For recharge, struggle, etc., use speed
       if (
-        (a.type === "move" || a.type === "struggle" || a.type === "recharge") &&
-        (b.type === "move" || b.type === "struggle" || b.type === "recharge")
+        (actionA.type === "move" || actionA.type === "struggle" || actionA.type === "recharge") &&
+        (actionB.type === "move" || actionB.type === "struggle" || actionB.type === "recharge")
       ) {
-        const activeA = state.sides[a.side]?.active[0];
-        const activeB = state.sides[b.side]?.active[0];
+        const activeA = state.sides[actionA.side]?.active[0];
+        const activeB = state.sides[actionB.side]?.active[0];
         if (!activeA || !activeB) return 0;
 
         const speedA = this.getEffectiveSpeed(activeA);
@@ -215,11 +225,13 @@ export class Gen2Ruleset implements GenerationRuleset {
         if (speedA !== speedB) {
           return speedB - speedA;
         }
-        return rng.chance(0.5) ? -1 : 1;
+        return a.tiebreak < b.tiebreak ? -1 : 1;
       }
 
       return 0;
     });
+
+    return tagged.map((t) => t.action);
   }
 
   /**
