@@ -1024,6 +1024,9 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
   describe("Intimidate", () => {
     it("given Intimidate user, when switching in with opponent present, then returns activated=true with attack-lowering message", () => {
       // Source: pret/pokeemerald ABILITY_INTIMIDATE — lowers opponent's Attack by 1 stage on switch-in
+      // NOTE: This test verifies the data structure only.
+      // The engine discards AbilityResult from on-switch-in (BattleEngine.ts ~190),
+      // so the -1 Atk effect is NOT actually applied to game state.
       const ctx = createAbilityContext({
         pokemonAbility: "intimidate",
         pokemonNickname: "Gyarados",
@@ -1094,20 +1097,8 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
   });
 
-  describe("Snow Warning", () => {
-    it("given Snow Warning user, when switching in, then returns activated=true with hail message", () => {
-      // Source: pret/pokeemerald ABILITY_SNOW_WARNING — sets permanent hail on switch-in
-      const ctx = createAbilityContext({
-        pokemonAbility: "snow-warning",
-        pokemonNickname: "Abomasnow",
-      });
-      const result = applyGen3Ability("on-switch-in", ctx);
-      expect(result.activated).toBe(true);
-      expect(result.effects.length).toBe(1);
-      expect(result.effects[0]!.target).toBe("field");
-      expect(result.messages[0]).toBe("Abomasnow's Snow Warning: Hail started!");
-    });
-  });
+  // NOTE: Snow Warning is NOT a Gen 3 ability. It was introduced in Gen 4 (Diamond/Pearl)
+  // with Abomasnow. Do not add a Snow Warning test or implementation here.
 
   // ---------------------------------------------------------------------------
   // Tier 2 abilities — require engine hooks not yet implemented
@@ -1141,6 +1132,12 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     );
     it.todo(
       "given Speed Boost holder at turn end, when on-turn-end fires, then Speed +1 stage (requires engine on-turn-end hook)",
+    );
+    it.todo(
+      "given Flash Fire holder hit by Fire move, when absorb activates, then subsequent Fire moves get 1.5x boost (requires volatile state tracking)",
+    );
+    it.todo(
+      "given Hustle holder uses a move, when accuracy is calculated, then accuracy is 0.8x (requires engine to call accuracy check)",
     );
   });
 
