@@ -979,8 +979,6 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      // Burn halves the effective attack, so damage should be roughly half
-      expect(burnedResult.damage).toBeLessThan(healthyResult.damage);
       // Burn halves attack stat (100 -> 50), recalculate:
       // Healthy: floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
       // Burned:  floor(floor(22*80*50/100)/50)+2 = floor(880/50)+2 = 17+2 = 19
@@ -1259,7 +1257,13 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      expect(rainResult.damage).toBeLessThan(clearResult.damage);
+      // Derivation (level=50, spAtk=120, spDef=100, power=80, rng=100, no STAB):
+      //   levelFactor = 22; baseDmg = floor(floor(22*80*120/100)/50)+2 = floor(2112/50)+2 = 42+2 = 44
+      //   clearResult:  no weather mod → 44
+      //   rainResult:   fire in rain → ×0.5 → floor(44*0.5) = 22
+      // Source: pret/pokeemerald — rain weakens Fire moves by 0.5x
+      expect(clearResult.damage).toBe(44);
+      expect(rainResult.damage).toBe(22);
     });
 
     it("given Sun weather and Fire move, when calculating, then damage is boosted by 1.5x", () => {
