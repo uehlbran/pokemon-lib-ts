@@ -74,3 +74,27 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint:check
+
+  changeset-check:
+    name: Changeset Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Check for changeset
+        run: |
+          # Only require a changeset when packages/*/src/ or packages/*/data/ changed.
+          # Docs-only changes (CHANGELOG.md, README.md, tests) do not require a changeset.
+          changed=$(git diff --name-only origin/main...HEAD -- 'packages/*/src/' 'packages/*/data/')
+          if [ -n "$changed" ]; then
+            npx changeset status --since=origin/main
+          else
+            echo "No publishable package source or data files changed — changeset not required."
+          fi
