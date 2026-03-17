@@ -102,14 +102,38 @@ export abstract class BaseRuleset implements GenerationRuleset {
   }
 
   rollCritical(context: CritContext): boolean {
+    const { attacker, move, rng } = context;
     const table = this.getCritRateTable();
-    const stage = Math.min(
-      context.attacker.volatileStatuses.has("focus-energy") ? 2 : 0,
-      table.length - 1,
-    );
+    let stage = 0;
+
+    // Focus Energy: +2 stages
+    // Source: Showdown sim/battle-actions.ts getMoveHit crit stage calc
+    if (attacker.volatileStatuses.has("focus-energy")) stage += 2;
+
+    // High crit-ratio move: from move data (e.g., Slash, Crabhammer = critRatio 1)
+    // Source: Showdown sim/battle-actions.ts — move.critRatio adds to crit stage
+    if (move.critRatio && move.critRatio > 0) stage += move.critRatio;
+
+    // Held item bonuses
+    // Source: Showdown sim/battle-actions.ts — item crit stage modifiers
+    const item = attacker.pokemon.heldItem;
+    if (item === "scope-lens" || item === "razor-claw") stage += 1;
+    if (
+      (item === "leek" || item === "stick") &&
+      (attacker.pokemon.speciesId === 83 || attacker.pokemon.speciesId === 865)
+    ) {
+      stage += 2;
+    }
+    if (item === "lucky-punch" && attacker.pokemon.speciesId === 113) stage += 2;
+
+    // Ability: Super Luck (+1 stage)
+    // Source: Showdown sim/battle-actions.ts — Super Luck ability crit bonus
+    if (attacker.ability === "super-luck") stage += 1;
+
+    stage = Math.min(stage, table.length - 1);
     const rate = table[stage];
     if (rate === undefined) return false;
-    return rate <= 1 || context.rng.int(1, rate) === 1;
+    return rate <= 1 || rng.int(1, rate) === 1;
   }
 
   resolveTurnOrder(actions: BattleAction[], state: BattleState, rng: SeededRandom): BattleAction[] {
