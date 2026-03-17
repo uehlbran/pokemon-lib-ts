@@ -233,6 +233,8 @@ export class Gen3Ruleset extends BaseRuleset {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     const fractions = [0, 1 / 8, 1 / 6, 1 / 4]; // index = layer count
     const layers = Math.min(spikes.layers, 3);
+    // Guard: 0-layer spikes cannot deal damage (engine should never create them, but be defensive)
+    if (layers === 0) return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
     const fraction = fractions[layers] ?? 1 / 8; // fallback to 1/8 (1-layer default)
     const damage = Math.max(1, Math.floor(maxHp * fraction));
 

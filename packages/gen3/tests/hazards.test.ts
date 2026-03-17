@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleSide } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { EntryHazardType, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../src/data";
 import { Gen3Ruleset } from "../src/Gen3Ruleset";
@@ -255,6 +255,27 @@ describe("Gen3 entry hazards — no spikes", () => {
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();
     expect(result.messages).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 0-layer spikes guard
+// ---------------------------------------------------------------------------
+
+describe("Gen3 entry hazards — 0-layer spikes guard", () => {
+  it("given a spikes hazard entry with 0 layers, when Pokemon switches in, then no damage is dealt", () => {
+    // Source: defensive guard — engine should never create 0-layer hazards, but we guard anyway
+    // Derivation: fractions[0] === 0, so Math.max(1, 0) would incorrectly return 1 without the guard
+    const ruleset = makeRuleset();
+    const mon = makeActivePokemon({ types: ["normal"], maxHp: 200 });
+    const side: BattleSide = {
+      ...makeSideWithSpikes(1, 1),
+      hazards: [{ type: "spikes" as EntryHazardType, layers: 0 }],
+    };
+
+    const result = ruleset.applyEntryHazards(mon, side);
+
+    expect(result.damage).toBe(0);
   });
 });
 
