@@ -415,42 +415,6 @@ generations.register(new Gen9Ruleset());
 const battle = new BattleEngine({ generation: 1, /* ... */ }, new Gen1Ruleset(), dataManager);
 ```
 
-### 2.4 Turn Order Resolution (`resolveTurnOrder`)
-
-`BaseRuleset.resolveTurnOrder()` implements the default sort for Gen 3+ (and is the reference description for all gens). Gen 1 and Gen 2 override this method where their mechanics differ.
-
-#### Sort Order (highest priority wins)
-
-1. **Action type bracket** — sorted before speed comparison:
-   - Switch actions execute first (switches are simultaneous in Gen 1–5, sequential in Gen 6+)
-   - Item use executes before moves
-   - Run executes before moves
-   - Move vs. move proceeds to step 2
-
-2. **Move priority bracket** — integer priority attached to each move in the data layer (Extreme Speed = +2, Quick Attack = +1, most moves = 0, Trick Room = −7, etc.):
-   - Higher priority bracket goes first
-   - Ties within the same bracket proceed to step 3
-
-3. **Effective Speed** — within the same priority bracket, the faster Pokémon moves first:
-   - Base Speed after stat stage multipliers (`stages −6 … +6 → ×(2/8) … ×(8/2)`)
-   - Full paralysis reduces Speed by ×0.25 (applied to the stat, not the stage)
-   - Held items that modify Speed (e.g., Choice Scarf ×1.5, Iron Ball ×0.5) are applied here
-   - Trick Room reverses the comparison (slower Pokémon moves first)
-
-4. **Speed tie** — when effective Speed values are equal after step 3:
-   - Resolved by coin flip via the battle's `SeededRandom` instance (`rng.chance(0.5)`)
-   - Deterministic with a fixed seed; not truly random
-
-#### Generation-Specific Differences
-
-| Gen | Difference |
-|-----|-----------|
-| Gen 1 | No move-priority brackets (Quick Attack/Agility/Whirlwind all act at +1 but it's hardcoded per-move, not a priority field) |
-| Gen 1 | Speed is compared before any stage modification (stat stages do not affect turn order) |
-| Gen 2 | Priority brackets introduced; otherwise similar to Gen 3+ |
-| Gen 3–4 | Switches are simultaneous within a turn (both Pokémon are considered switched before any entry hazards are applied) |
-| Gen 5+ | Turn order for switches becomes sequential in edge cases (Pursuit interaction) |
-
 ---
 
 ## 3. Battle State Model
@@ -506,14 +470,14 @@ export interface BattleState {
 }
 
 export type BattlePhase =
-  | 'battle-start'
-  | 'turn-start'
-  | 'action-select'
-  | 'turn-resolve'
-  | 'turn-end'
-  | 'faint-check'
-  | 'switch-prompt'
-  | 'battle-end';
+  | 'BATTLE_START'
+  | 'TURN_START'
+  | 'ACTION_SELECT'
+  | 'TURN_RESOLVE'
+  | 'TURN_END'
+  | 'FAINT_CHECK'
+  | 'SWITCH_PROMPT'
+  | 'BATTLE_END';
 
 export type BattleFormat =
   | 'singles'
@@ -667,7 +631,7 @@ export interface ScreenState {
 
 ```typescript
 /**
- * An action a player/AI can take during action-select.
+ * An action a player/AI can take during ACTION_SELECT.
  */
 export type BattleAction =
   | MoveAction
@@ -725,22 +689,22 @@ interface StruggleAction {
 The state machine is the same across all generations. Only the behavior within each phase changes (via the GenerationRuleset).
 
 ```
-battle-start
+BATTLE_START
     │
     ▼
-turn-start ◄────────────────────────────────┐
+TURN_START ◄────────────────────────────────┐
     │                                        │
     ▼                                        │
-action-select                                │
+ACTION_SELECT                                │
     │                                        │
     ▼                                        │
-turn-resolve                                 │
+TURN_RESOLVE                                 │
     │                                        │
     ▼                                        │
-turn-end                                     │
+TURN_END                                     │
     │                                        │
     ▼                                        │
-faint-check ──── any fainted? ──► switch-prompt
+FAINT_CHECK ──── any fainted? ──► SWITCH_PROMPT
     │                                   │
     │ (no faints or all               │ (switches resolved)
     │  switches done)                   │
@@ -750,21 +714,21 @@ faint-check ──── any fainted? ──► switch-prompt
     ├──── battle continues? ─── yes ────────►┘
     │
     ▼
-battle-end
+BATTLE_END
 ```
 
 ### Phase Details
 
 | Phase | What Happens | Gen Ruleset Calls |
 |-------|-------------|-------------------|
-| `battle-start` | Initialize state, send out lead Pokémon, trigger entry abilities and hazards | `applyAbility('on-switch-in', ...)`, `applyEntryHazards(...)` |
-| `turn-start` | Increment turn counter, decrement field effect counters | (minimal gen-specific logic) |
-| `action-select` | Wait for both sides to submit actions | (none — this is input) |
-| `turn-resolve` | Sort actions by priority/speed, execute each in order | `resolveTurnOrder(...)`, `calculateDamage(...)`, `doesMoveHit(...)`, `executeMoveEffect(...)`, `rollCritical(...)` |
-| `turn-end` | Apply end-of-turn effects in generation-specific order | `getEndOfTurnOrder()`, `applyStatusDamage(...)`, `applyWeatherEffects(...)`, `applyTerrainEffects(...)` |
-| `faint-check` | Check for fainted Pokémon, prompt for switch-in | (state check, no gen logic) |
-| `switch-prompt` | Wait for faint replacement choices | (input, then `applyAbility('on-switch-in', ...)`) |
-| `battle-end` | Determine winner, calculate EXP, EV gains | `calculateExpGain(...)` |
+| `BATTLE_START` | Initialize state, send out lead Pokémon, trigger entry abilities and hazards | `applyAbility('on-switch-in', ...)`, `applyEntryHazards(...)` |
+| `TURN_START` | Increment turn counter, decrement field effect counters | (minimal gen-specific logic) |
+| `ACTION_SELECT` | Wait for both sides to submit actions | (none — this is input) |
+| `TURN_RESOLVE` | Sort actions by priority/speed, execute each in order | `resolveTurnOrder(...)`, `calculateDamage(...)`, `doesMoveHit(...)`, `executeMoveEffect(...)`, `rollCritical(...)` |
+| `TURN_END` | Apply end-of-turn effects in generation-specific order | `getEndOfTurnOrder()`, `applyStatusDamage(...)`, `applyWeatherEffects(...)`, `applyTerrainEffects(...)` |
+| `FAINT_CHECK` | Check for fainted Pokémon, prompt for switch-in | (state check, no gen logic) |
+| `SWITCH_PROMPT` | Wait for faint replacement choices | (input, then `applyAbility('on-switch-in', ...)`) |
+| `BATTLE_END` | Determine winner, calculate EXP, EV gains | `calculateExpGain(...)` |
 
 ---
 
@@ -800,7 +764,7 @@ export type BattleEvent =
   | { type: 'ability-activate'; side: 0 | 1; pokemon: string; ability: string }
   | { type: 'item-activate'; side: 0 | 1; pokemon: string; item: string }
   | { type: 'item-consumed'; side: 0 | 1; pokemon: string; item: string }
-  | { type: 'hazard-set'; side: 0 | 1; hazard: EntryHazardType; layers?: number }
+  | { type: 'hazard-set'; side: 0 | 1; hazard: EntryHazardType }
   | { type: 'hazard-clear'; side: 0 | 1; hazard: EntryHazardType }
   | { type: 'screen-set'; side: 0 | 1; screen: ScreenType; turns: number }
   | { type: 'screen-end'; side: 0 | 1; screen: ScreenType }
@@ -866,7 +830,7 @@ export class BattleEngine implements BattleEventEmitter {
 
   // --- Battle Flow ---
 
-  /** Start the battle (transitions from battle-start → action-select) */
+  /** Start the battle (transitions from BATTLE_START → ACTION_SELECT) */
   start(): void;
 
   /** Submit an action for a side. When both sides have submitted, turn resolves. */
@@ -1030,16 +994,6 @@ export interface MoveEffectResult {
   readonly itemTransfer?: { from: 'attacker' | 'defender'; to: 'attacker' | 'defender' };
   /** Clear screens from the specified side(s) (Haze or setter switching out) */
   readonly screensCleared?: 'attacker' | 'defender' | 'both' | null;
-  /** True when the move only cured a status condition (no damage, no other effect) */
-  readonly statusCuredOnly?: boolean;
-  /** Status condition inflicted on the user (e.g., via Rest) */
-  readonly selfStatusInflicted?: PrimaryStatus;
-  /** Volatile status inflicted on the user (e.g., recharging after Hyper Beam) */
-  readonly selfVolatileInflicted?: VolatileStatus;
-  /** Data for the self-inflicted volatile */
-  readonly selfVolatileData?: Record<string, unknown>;
-  /** New type(s) for the user after Conversion or similar moves */
-  readonly typeChange?: PokemonType[];
 }
 
 export interface AbilityContext {
