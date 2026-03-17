@@ -178,7 +178,7 @@ export interface MoveEffectResult {
     /** The type of the move dealing this damage, for lastDamageType tracking */
     type?: PokemonType | null;
   } | null;
-  /** Wave 1: Cure the specified pokemon's status (e.g., Haze clears both sides) */
+  /** Cure the target's status AND reset their stat stages (e.g., Haze cures defender's status) */
   readonly statusCured?: { target: "attacker" | "defender" | "both" } | null;
   /** Wave 2/3: Data for volatile status infliction (turnsLeft, etc.) */
   readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
@@ -192,6 +192,8 @@ export interface MoveEffectResult {
   readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
   /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
   readonly screensCleared?: "attacker" | "defender" | "both" | null;
+  /** Reset stat stages for target(s) WITHOUT curing status (e.g. Haze resets attacker stages) */
+  readonly statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
   /** Cure the attacker's status WITHOUT resetting stat stages (unlike statusCured which is Haze-only) */
   readonly statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
   /** Primary status to inflict on the ATTACKER (e.g., Rest's self-sleep) */

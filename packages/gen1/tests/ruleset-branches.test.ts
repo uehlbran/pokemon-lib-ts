@@ -896,7 +896,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     expect(result.statusInflicted).toBeNull();
   });
 
-  it("given a volatile-status effect, when executing, then no side-effects are recorded (N/A or engine-handled)", () => {
+  it("given a volatile-status (confusion) effect, when executing, then no primary status is inflicted", () => {
     // Arrange
     const move = makeMove({
       effect: { type: "volatile-status", status: "confusion", chance: 100 },
