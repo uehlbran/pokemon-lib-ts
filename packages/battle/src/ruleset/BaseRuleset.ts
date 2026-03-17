@@ -586,4 +586,8 @@ export abstract class BaseRuleset implements GenerationRuleset {
       "trick-room-countdown",
     ];
   }
+
+  getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
+    return [];
+  }
 }
