@@ -276,7 +276,7 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 
 - **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally. Do not depend on CodeRabbit/Qodo — they can be rate-limited.
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/`. See Package Versioning above.
-- **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. GitHub auto-closes the issue when the PR merges. No related issue (pure chore/docs/tooling)? Add `Closes: N/A` — the `check-issue-link` CI workflow requires either a closing reference or an explicit no-issue marker and will fail otherwise.
+- **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. GitHub auto-closes the issue when the PR merges. No related issue (pure chore/docs/tooling)? Add `Closes: N/A` — the `check-issue-link` CI workflow requires either a closing reference or an explicit no-issue marker and will fail otherwise. **CRITICAL SYNTAX**: `Closes #50, #80` only closes #50 — each issue needs its own keyword on its own line. See `.claude/rules/issue-closing-syntax.md`.
 - Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use manual polling.
 - **`/babysit-pr` auto-merges by default** and self-polls until complete — no `/loop` wrapper needed. Use `--no-merge` to require confirmation before merging.
 - **Act autonomously.** When handling a PR, agents should:
