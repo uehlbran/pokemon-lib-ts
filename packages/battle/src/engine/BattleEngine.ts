@@ -414,7 +414,14 @@ export class BattleEngine implements BattleEventEmitter {
     });
   }
 
-  /** Restore a battle from serialized state */
+  /** Restore a battle from serialized state.
+   *
+   * Uses Object.create to skip the constructor entirely — avoids wasteful
+   * stat recalculation, HP reset, and event emission that would be immediately
+   * overwritten. The serialized state already contains all computed values.
+   *
+   * Fix for: https://github.com/uehlbran/pokemon-lib-ts/issues/79
+   */
   static deserialize(
     data: string,
     ruleset: GenerationRuleset,
@@ -431,18 +438,34 @@ export class BattleEngine implements BattleEventEmitter {
       return value;
     }) as BattleState;
 
-    // Create a minimal config to construct the engine
-    const config: BattleConfig = {
-      generation: parsed.generation,
-      format: parsed.format,
-      teams: [parsed.sides[0].team, parsed.sides[1].team],
-      seed: 0, // Seed doesn't matter — we restore the RNG state
-    };
+    // Create the engine instance without running the constructor.
+    // This avoids: (1) stat recalculation, (2) HP reset to max,
+    // (3) requiring DataManager to have species data loaded.
+    const engine = Object.create(BattleEngine.prototype) as BattleEngine;
 
-    const engine = new BattleEngine(config, ruleset, dataManager);
-
-    // Overwrite the engine state with the deserialized state
-    Object.assign(engine.state, parsed);
+    // Initialize all instance fields. Uses Object.defineProperties to set
+    // private/readonly fields without requiring type casts to `any`.
+    Object.defineProperties(engine, {
+      state: { value: parsed, writable: false, enumerable: true, configurable: false },
+      ruleset: { value: ruleset, writable: false, enumerable: false, configurable: false },
+      dataManager: { value: dataManager, writable: false, enumerable: false, configurable: false },
+      listeners: { value: new Set(), writable: true, enumerable: false, configurable: false },
+      eventLog: { value: [], writable: true, enumerable: false, configurable: false },
+      pendingActions: { value: new Map(), writable: true, enumerable: false, configurable: false },
+      pendingSwitches: { value: new Map(), writable: true, enumerable: false, configurable: false },
+      sidesNeedingSwitch: {
+        value: new Set(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
+      faintedPokemonThisTurn: {
+        value: new Set(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
+    });
 
     return engine;
   }
