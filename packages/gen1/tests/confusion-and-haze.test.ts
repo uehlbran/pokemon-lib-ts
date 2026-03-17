@@ -397,6 +397,30 @@ describe("Haze handler", () => {
     expect(result.statusCured?.target).toBe("defender");
   });
 
+  // cleanContext: neither Pokemon has volatile statuses — used for triangulation tests below
+  const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+
+  it("given clean-state Pokemon (no volatiles), when Haze is used, then statStagesReset still targets attacker", () => {
+    // Source: pokered move_effects/haze.asm:15-43
+    // Second independent test case — confirms statStagesReset is unconditional (not contingent on volatile presence)
+    const result = ruleset.executeMoveEffect(cleanContext);
+    expect(result.statStagesReset?.target).toBe("attacker");
+  });
+
+  it("given clean-state Pokemon (no volatiles), when Haze is used, then screensCleared is still both", () => {
+    // Source: pokered move_effects/haze.asm:15-43
+    // Second independent test case — confirms screensCleared is unconditional
+    const result = ruleset.executeMoveEffect(cleanContext);
+    expect(result.screensCleared).toBe("both");
+  });
+
+  it("given clean-state Pokemon (no volatiles), when Haze is used, then message is still 'All stat changes were eliminated!'", () => {
+    // Source: pokered move_effects/haze.asm:15-43
+    // Second independent test case — confirms message is unconditional
+    const result = ruleset.executeMoveEffect(cleanContext);
+    expect(result.messages).toContain("All stat changes were eliminated!");
+  });
+
   it("given both Pokemon have volatile statuses, when Haze is used, then volatilesToClear includes entries for both", () => {
     // Source: pokered move_effects/haze.asm — all volatile statuses on both sides are cleared
 
@@ -419,7 +443,7 @@ describe("Haze handler", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert: volatilesToClear must have one entry per side
-    expect(result.volatilesToClear).toBeDefined();
+    expect(result.volatilesToClear?.length).toBe(2);
     const clears = result.volatilesToClear ?? [];
 
     const attackerEntry = clears.find((c) => c.target === "attacker" && c.volatile === "confusion");
