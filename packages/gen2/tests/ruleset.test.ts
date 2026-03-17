@@ -861,7 +861,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      // quick-attack has priority +2 (pokecrystal: EFFECT_QUICK_ATTACK = 2), tackle has priority 0
+      // quick-attack has priority +1 (Showdown-compatible scale), tackle has priority 0
       const active0 = createMockActive({
         speed: 50,
         moves: [{ moveId: "quick-attack", pp: 30, maxPp: 30 }],
@@ -882,7 +882,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
-      // Assert: quick-attack (priority 2) goes before tackle (priority 0)
+      // Assert: quick-attack (priority +1) goes before tackle (priority 0)
       expect(sorted[0].side).toBe(0);
       expect(sorted[1].side).toBe(1);
     });
@@ -2398,11 +2398,11 @@ describe("Gen2Ruleset", () => {
     });
   });
 
-  // --- Move Priority Values (pokecrystal data/moves/effects_priorities.asm) ---
+  // --- Move Priority Values (gen2-ground-truth.md §9 — Showdown-compatible scale) ---
 
   describe("Given Gen 2 move priority values from moves.json data", () => {
     it("given Gen 2 ruleset, when getting Protect move priority, then returns +3", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT has priority 3
+      // Source: gen2-ground-truth.md §9 — Protect: +3 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
@@ -2412,7 +2412,7 @@ describe("Gen2Ruleset", () => {
     });
 
     it("given Gen 2 ruleset, when getting Detect move priority, then returns +3", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_DETECT has priority 3
+      // Source: gen2-ground-truth.md §9 — Detect: +3 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
@@ -2421,28 +2421,28 @@ describe("Gen2Ruleset", () => {
       expect(priority).toBe(3);
     });
 
-    it("given Gen 2 ruleset, when getting Quick Attack move priority, then returns +2", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK has priority 2
+    it("given Gen 2 ruleset, when getting Quick Attack move priority, then returns +1", () => {
+      // Source: gen2-ground-truth.md §9 — Quick Attack: +1 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove("quick-attack").priority;
       // Assert
-      expect(priority).toBe(2);
+      expect(priority).toBe(1);
     });
 
-    it("given Gen 2 ruleset, when getting Vital Throw move priority, then returns 0", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — Vital Throw not in exception table, defaults to 0
+    it("given Gen 2 ruleset, when getting Vital Throw move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Vital Throw: -1, never misses, goes last
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove("vital-throw").priority;
       // Assert
-      expect(priority).toBe(0);
+      expect(priority).toBe(-1);
     });
 
     it("given Gen 2 ruleset, when getting Counter move priority, then returns -1", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_COUNTER has priority -1
+      // Source: gen2-ground-truth.md §9 — Counter: -1 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
@@ -2452,7 +2452,7 @@ describe("Gen2Ruleset", () => {
     });
 
     it("given Gen 2 ruleset, when getting Mirror Coat move priority, then returns -1", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_MIRROR_COAT has priority -1
+      // Source: gen2-ground-truth.md §9 — Mirror Coat: -1 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
@@ -2462,7 +2462,7 @@ describe("Gen2Ruleset", () => {
     });
 
     it("given Gen 2 ruleset, when getting Endure move priority, then returns +3", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_ENDURE has priority 3
+      // Source: gen2-ground-truth.md §9 — Endure: +3 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
@@ -2471,24 +2471,38 @@ describe("Gen2Ruleset", () => {
       expect(priority).toBe(3);
     });
 
-    it("given Gen 2 ruleset, when getting Mach Punch move priority, then returns +2", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_MACH_PUNCH has priority 2
+    it("given Gen 2 ruleset, when getting Mach Punch move priority, then returns +1", () => {
+      // Source: gen2-ground-truth.md §9 — Mach Punch: +1 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove("mach-punch").priority;
       // Assert
-      expect(priority).toBe(2);
+      expect(priority).toBe(1);
     });
 
-    it("given Gen 2 ruleset, when getting ExtremeSpeed move priority, then returns +2", () => {
-      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_EXTREMESPEED has priority 2
+    it("given Gen 2 ruleset, when getting ExtremeSpeed move priority, then returns +1", () => {
+      // Source: gen2-ground-truth.md §9 — ExtremeSpeed: +1 (Showdown-compatible scale)
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove("extreme-speed").priority;
       // Assert
-      expect(priority).toBe(2);
+      expect(priority).toBe(1);
+    });
+
+    it("given Gen 2 ruleset, when getting Roar move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Roar: -1, forces opponent to flee
+      const dm = createGen2DataManager();
+      const move = dm.getMove("roar");
+      expect(move?.priority).toBe(-1);
+    });
+
+    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Whirlwind: -1, forces opponent to flee
+      const dm = createGen2DataManager();
+      const move = dm.getMove("whirlwind");
+      expect(move?.priority).toBe(-1);
     });
   });
 });

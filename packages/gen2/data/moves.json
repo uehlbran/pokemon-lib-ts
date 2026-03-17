@@ -2272,7 +2272,7 @@
     "power": 80,
     "accuracy": 100,
     "pp": 5,
-    "priority": 2,
+    "priority": 1,
     "target": "adjacent-foe",
     "flags": {
       "contact": true,
@@ -4737,7 +4737,7 @@
     "power": 40,
     "accuracy": 100,
     "pp": 30,
-    "priority": 2,
+    "priority": 1,
     "target": "adjacent-foe",
     "flags": {
       "contact": true,
@@ -6250,7 +6250,7 @@
     "power": 40,
     "accuracy": 100,
     "pp": 30,
-    "priority": 2,
+    "priority": 1,
     "target": "adjacent-foe",
     "flags": {
       "contact": true,
@@ -6633,7 +6633,7 @@
     "power": null,
     "accuracy": 100,
     "pp": 20,
-    "priority": 0,
+    "priority": -1,
     "target": "adjacent-foe",
     "flags": {
       "contact": false,
@@ -9467,7 +9467,7 @@
     "power": 70,
     "accuracy": null,
     "pp": 10,
-    "priority": 0,
+    "priority": -1,
     "target": "adjacent-foe",
     "flags": {
       "contact": true,
@@ -9599,7 +9599,7 @@
     "power": null,
     "accuracy": 100,
     "pp": 20,
-    "priority": 0,
+    "priority": -1,
     "target": "adjacent-foe",
     "flags": {
       "contact": false,
