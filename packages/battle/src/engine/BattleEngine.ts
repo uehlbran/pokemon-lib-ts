@@ -1401,10 +1401,9 @@ export class BattleEngine implements BattleEventEmitter {
       });
     }
 
-    // Status cure (Haze clears all stat stages and statuses for target(s))
-    // NOTE: statusCured is currently only used by Haze, so resetting stat stages
-    // here is correct. If a move ever cures status without resetting stages,
-    // a separate result field (e.g. statusCuredOnly) should be added.
+    // Status cure: cures status AND resets stat stages for target(s)
+    // statusCuredOnly: cures status WITHOUT resetting stages (e.g. Rest)
+    // statStagesReset: resets stages WITHOUT curing status (e.g. Haze attacker side)
     if (result.statusCured) {
       const targets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
       if (result.statusCured.target === "attacker" || result.statusCured.target === "both") {
@@ -1424,7 +1423,27 @@ export class BattleEngine implements BattleEventEmitter {
             status: curedStatus,
           });
         }
-        // Reset all stat stages (Haze's primary effect)
+        // Reset all stat stages for this target (coupled with status cure)
+        t.statStages = createDefaultStatStages();
+      }
+    }
+
+    // statStagesReset — reset stat stages without curing status (e.g. Haze attacker side)
+    if (result.statStagesReset) {
+      const resetTargets: Array<{ pokemon: ActivePokemon }> = [];
+      if (
+        result.statStagesReset.target === "attacker" ||
+        result.statStagesReset.target === "both"
+      ) {
+        resetTargets.push({ pokemon: attacker });
+      }
+      if (
+        result.statStagesReset.target === "defender" ||
+        result.statStagesReset.target === "both"
+      ) {
+        resetTargets.push({ pokemon: defender });
+      }
+      for (const { pokemon: t } of resetTargets) {
         t.statStages = createDefaultStatStages();
       }
     }

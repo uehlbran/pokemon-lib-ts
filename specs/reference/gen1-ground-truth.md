@@ -438,7 +438,7 @@ Ends immediately if it breaks Substitute.
 ### Haze
 
 - Resets ALL stat stages for both Pokemon
-- Cures both Pokemon's status conditions (including freeze — unique to Gen 1)
+- Cures TARGET's non-volatile status only (user's status is NOT cured) — Source: pokered `move_effects/haze.asm:15-43`
 - Resets Toxic counter
 - Removes Leech Seed, Reflect, Light Screen, Focus Energy, confusion, disable
 
