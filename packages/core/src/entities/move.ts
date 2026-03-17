@@ -77,6 +77,15 @@ export interface MoveData {
   readonly maxMovePower?: number;
 
   /**
+   * Critical hit ratio stage bonus for high-crit-ratio moves.
+   * 0 or undefined = normal crit rate (no bonus).
+   * 1 = +1 stage (Slash, Crabhammer, Razor Leaf, etc.).
+   * 2 = +2 stages (10,000,000 Volt Thunderbolt; always crits at stage 3+).
+   * Source: Showdown sim/battle-actions.ts getMoveHit crit stage calculation
+   */
+  readonly critRatio?: number;
+
+  /**
    * Category override history — some moves changed category across gens.
    * In Gen 1-3, category was determined by TYPE (all Fire moves were Special).
    * In Gen 4+, each move has its own category.
