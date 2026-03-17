@@ -31,32 +31,32 @@ describe("Gen 3 type chart", () => {
     // Source: pret/pokeemerald src/data/battle/type_effectiveness.h
     // Water → Steel = NOT_VERY_EFFECTIVE (0.5x) — Steel resisted Water in Gen 3
     // This resistance was REMOVED in Gen 6
-    expect(GEN3_TYPE_CHART["water"]?.["steel"]).toBe(0.5);
+    expect(GEN3_TYPE_CHART.water?.steel).toBe(0.5);
   });
 
   it("given gen3 type chart, when Electric attacks Steel, then effectiveness is 0.5x", () => {
     // Source: pret/pokeemerald src/data/battle/type_effectiveness.h
     // Electric → Steel = NOT_VERY_EFFECTIVE (0.5x) — Steel resisted Electric in Gen 3
     // This resistance was REMOVED in Gen 6
-    expect(GEN3_TYPE_CHART["electric"]?.["steel"]).toBe(0.5);
+    expect(GEN3_TYPE_CHART.electric?.steel).toBe(0.5);
   });
 
   it("given gen3 type chart, when Ghost attacks Ghost, then effectiveness is 2x", () => {
     // Source: pret/pokeemerald src/data/battle/type_effectiveness.h
     // Ghost → Ghost = SUPER_EFFECTIVE (2x)
-    expect(GEN3_TYPE_CHART["ghost"]?.["ghost"]).toBe(2);
+    expect(GEN3_TYPE_CHART.ghost?.ghost).toBe(2);
   });
 
   it("given gen3 type chart, when Ground attacks Electric, then effectiveness is 2x", () => {
     // Source: pret/pokeemerald src/data/battle/type_effectiveness.h
     // Ground → Electric = SUPER_EFFECTIVE (2x) — Electric is not immune to Ground in any gen
-    expect(GEN3_TYPE_CHART["ground"]?.["electric"]).toBe(2);
+    expect(GEN3_TYPE_CHART.ground?.electric).toBe(2);
   });
 
   it("given gen3 type chart, when Normal attacks Ghost, then effectiveness is 0x (immune)", () => {
     // Source: pret/pokeemerald src/data/battle/type_effectiveness.h
     // Normal → Ghost = IMMUNE (0x)
-    expect(GEN3_TYPE_CHART["normal"]?.["ghost"]).toBe(0);
+    expect(GEN3_TYPE_CHART.normal?.ghost).toBe(0);
   });
 
   it("given gen3 type chart via DataManager, when checking available types, then returns exactly 17 types", () => {
@@ -73,6 +73,6 @@ describe("Gen 3 type chart", () => {
     // This resistance was REMOVED in Gen 6
     const dm = createGen3DataManager();
     const chart = dm.getTypeChart();
-    expect(chart["dark"]?.["steel"]).toBe(0.5);
+    expect(chart.dark?.steel).toBe(0.5);
   });
 });

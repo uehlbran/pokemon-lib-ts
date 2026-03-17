@@ -1,13 +1,11 @@
-import type {
-  ActivePokemon,
+import {
+  type ActivePokemon,
   BaseRuleset,
-  BattleState,
-  DamageContext,
-  DamageResult,
-  ExpContext,
+  type BattleState,
+  type DamageContext,
+  type DamageResult,
+  type ExpContext,
 } from "@pokemon-lib-ts/battle";
-// BaseRuleset is imported as a value (class) for `extends`
-import { BaseRuleset as BaseRulesetClass } from "@pokemon-lib-ts/battle";
 import type {
   EntryHazardType,
   PokemonType,
@@ -45,7 +43,7 @@ import { GEN3_TYPE_CHART, GEN3_TYPES } from "./Gen3TypeChart";
  *
  * Phase 2: calculateDamage will be implemented.
  */
-export class Gen3Ruleset extends (BaseRulesetClass as typeof BaseRuleset) {
+export class Gen3Ruleset extends BaseRuleset {
   readonly generation = 3 as const;
   readonly name = "Gen 3 (Ruby/Sapphire/Emerald)";
 
@@ -202,7 +200,7 @@ export class Gen3Ruleset extends (BaseRulesetClass as typeof BaseRuleset) {
     const baseSpeed = stats ? stats.speed : 100;
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
     if (active.pokemon.status === "paralysis") {
-      // Gen 3-6: paralysis quarterns speed (×0.25)
+      // Gen 3-6: paralysis quarters speed (×0.25)
       // Source: pret/pokeemerald src/battle_util.c
       effective = Math.floor(effective * 0.25);
     }
