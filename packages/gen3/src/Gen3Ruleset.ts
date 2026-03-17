@@ -1,4 +1,6 @@
 import {
+  type AbilityContext,
+  type AbilityResult,
   type ActivePokemon,
   BaseRuleset,
   type BattleSide,
@@ -10,6 +12,7 @@ import {
   type WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import type {
+  AbilityTrigger,
   EntryHazardType,
   PokemonType,
   PrimaryStatus,
@@ -22,6 +25,7 @@ import {
   gen14MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
+import { applyGen3Ability } from "./Gen3Abilities";
 import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
 import { calculateGen3Damage } from "./Gen3DamageCalc";
 import { GEN3_TYPE_CHART, GEN3_TYPES } from "./Gen3TypeChart";
@@ -79,6 +83,21 @@ export class Gen3Ruleset extends BaseRuleset {
    */
   calculateDamage(context: DamageContext): DamageResult {
     return calculateGen3Damage(context, this.getTypeChart());
+  }
+
+  // --- Ability System ---
+
+  /**
+   * Gen 3 ability trigger dispatch.
+   *
+   * Currently only "on-switch-in" is supported (the only trigger the engine calls).
+   * Damage-calc abilities (Huge Power, Thick Fat, Wonder Guard, etc.) are handled
+   * inline in calculateGen3Damage, not through this method.
+   *
+   * Source: pret/pokeemerald src/battle_util.c AbilityBattleEffects
+   */
+  applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+    return applyGen3Ability(trigger, context);
   }
 
   // --- Critical Hit System ---
