@@ -52,6 +52,11 @@ export function isGen3PhysicalType(type: PokemonType): boolean {
  *   - Ignore NEGATIVE attacker attack stages (treat as stage 0)
  *   - Keep POSITIVE attacker attack stages
  *
+ * Ability modifiers applied to the attack stat:
+ *   - Huge Power / Pure Power: Atk x2 (physical only)
+ *   - Hustle: Atk x1.5 (physical only)
+ *   - Guts: Atk x1.5 when statused (physical only), cancels burn penalty
+ *
  * Source: pret/pokeemerald src/battle_util.c CalculateBaseDamage
  */
 function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: boolean): number {
@@ -69,9 +74,28 @@ function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: b
 
   let effective = Math.floor(baseStat * getStatStageMultiplier(effectiveStage));
 
-  // Burn halves physical attack
-  // Source: pret/pokeemerald src/battle_util.c — burn reduces physical attack by half
-  if (physical && attacker.pokemon.status === "burn") {
+  const ability = attacker.ability;
+
+  // Huge Power / Pure Power: doubles physical attack
+  // Source: pret/pokeemerald ABILITY_HUGE_POWER / ABILITY_PURE_POWER — doubles physical attack
+  if (physical && (ability === "huge-power" || ability === "pure-power")) {
+    effective = effective * 2;
+  }
+
+  // Hustle: 1.5x physical attack (accuracy penalty handled by engine)
+  // Source: pret/pokeemerald ABILITY_HUSTLE — boosts physical attack by 50%
+  if (physical && ability === "hustle") {
+    effective = Math.floor(effective * 1.5);
+  }
+
+  // Guts: 1.5x physical attack when statused, AND cancels burn penalty
+  // Source: pret/pokeemerald ABILITY_GUTS — boosts attack by 50% when statused, negates burn penalty
+  if (physical && ability === "guts" && attacker.pokemon.status !== null) {
+    effective = Math.floor(effective * 1.5);
+    // Guts cancels the burn attack penalty — skip the burn halving below
+  } else if (physical && attacker.pokemon.status === "burn") {
+    // Burn halves physical attack (only when Guts is NOT active)
+    // Source: pret/pokeemerald src/battle_util.c — burn reduces physical attack by half
     effective = Math.floor(effective / 2);
   }
 
@@ -143,8 +167,39 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   const level = attacker.pokemon.level;
   const power = move.power;
   const physical = isGen3PhysicalType(move.type);
+  const defenderAbility = defender.ability;
 
-  // Get effective stats (with crit stage ignoring and burn applied)
+  // --- Defender ability type immunities ---
+  // These abilities grant full immunity to specific move types.
+  // They are checked BEFORE the damage formula runs, and return 0 damage with effectiveness 0.
+  // Source: pret/pokeemerald — these abilities nullify damage and set type effectiveness to 0
+
+  // Levitate: immune to ground-type moves
+  // Source: pret/pokeemerald ABILITY_LEVITATE
+  if (defenderAbility === "levitate" && move.type === "ground") {
+    return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+  }
+
+  // Volt Absorb: immune to electric-type moves
+  // Source: pret/pokeemerald ABILITY_VOLT_ABSORB
+  if (defenderAbility === "volt-absorb" && move.type === "electric") {
+    return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+  }
+
+  // Water Absorb: immune to water-type moves
+  // Source: pret/pokeemerald ABILITY_WATER_ABSORB
+  if (defenderAbility === "water-absorb" && move.type === "water") {
+    return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+  }
+
+  // Flash Fire: immune to fire-type moves (boost tracking skipped for now)
+  // Source: pret/pokeemerald ABILITY_FLASH_FIRE
+  // NOTE: The boost to fire moves after absorbing one is a volatile state change, skip for now
+  if (defenderAbility === "flash-fire" && move.type === "fire") {
+    return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+  }
+
+  // Get effective stats (with crit stage ignoring, burn, and ability modifiers applied)
   const attack = getAttackStat(attacker, move.type, isCrit);
   const defense = getDefenseStat(defender, move.type, isCrit);
 
@@ -215,12 +270,56 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     };
   }
 
+  // 2.6a: Wonder Guard — only super-effective moves hit
+  // Source: pret/pokeemerald ABILITY_WONDER_GUARD — only 2x and 4x moves land
+  // Blocks immune (0x), not-very-effective (0.5x/0.25x), and neutral (1x) moves.
+  if (defenderAbility === "wonder-guard" && effectiveness < 2) {
+    return {
+      damage: 0,
+      effectiveness,
+      isCrit,
+      randomFactor,
+      breakdown: {
+        baseDamage: rawBaseDamage,
+        weatherMultiplier: weatherMod,
+        critMultiplier: isCrit ? 2 : 1,
+        randomMultiplier: randomFactor,
+        stabMultiplier: stabMod,
+        typeMultiplier: effectiveness,
+        burnMultiplier: physical && attacker.pokemon.status === "burn" ? 0.5 : 1,
+        abilityMultiplier: 0,
+        itemMultiplier: 1,
+        otherMultiplier: 1,
+        finalDamage: 0,
+      },
+    };
+  }
+
   // Apply type effectiveness as a multiplier
   // For non-integer multipliers (0.25, 0.5, 2, 4), apply with floor
   baseDamage = Math.floor(baseDamage * effectiveness);
 
+  // 2.7: Defender ability damage modifiers (post-type-effectiveness)
+
+  // Track ability multiplier for breakdown
+  let abilityMultiplier = 1;
+
+  // Thick Fat: halves fire and ice damage
+  // Source: pret/pokeemerald ABILITY_THICK_FAT — halves damage from Fire and Ice type moves
+  if (defenderAbility === "thick-fat" && (move.type === "fire" || move.type === "ice")) {
+    baseDamage = Math.floor(baseDamage * 0.5);
+    abilityMultiplier = 0.5;
+  }
+
   // Minimum 1 damage (unless type immune, which returns 0 above)
   const finalDamage = Math.max(1, baseDamage);
+
+  // Calculate burn multiplier for breakdown
+  // Guts negates burn penalty, so when Guts is active with burn, burnMultiplier = 1
+  const attackerAbility = attacker.ability;
+  const hasBurn = physical && attacker.pokemon.status === "burn";
+  const gutsActive = attackerAbility === "guts" && attacker.pokemon.status !== null;
+  const burnMultiplier = hasBurn && !gutsActive ? 0.5 : 1;
 
   const breakdown: DamageBreakdown = {
     baseDamage: rawBaseDamage,
@@ -229,8 +328,8 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     randomMultiplier: randomFactor,
     stabMultiplier: stabMod,
     typeMultiplier: effectiveness,
-    burnMultiplier: physical && attacker.pokemon.status === "burn" ? 0.5 : 1,
-    abilityMultiplier: 1, // Phase 6+
+    burnMultiplier,
+    abilityMultiplier,
     itemMultiplier: 1, // Phase 7+
     otherMultiplier: 1,
     finalDamage,
