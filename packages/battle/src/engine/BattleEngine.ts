@@ -1423,7 +1423,7 @@ export class BattleEngine implements BattleEventEmitter {
             status: curedStatus,
           });
         }
-        // Reset all stat stages (Haze's primary effect)
+        // Reset all stat stages for this target (coupled with status cure)
         t.statStages = createDefaultStatStages();
       }
     }

@@ -178,7 +178,7 @@ export interface MoveEffectResult {
     /** The type of the move dealing this damage, for lastDamageType tracking */
     type?: PokemonType | null;
   } | null;
-  /** Wave 1: Cure the specified pokemon's status (e.g., Haze clears both sides) */
+  /** Cure the target's status AND reset their stat stages (e.g., Haze cures defender's status) */
   readonly statusCured?: { target: "attacker" | "defender" | "both" } | null;
   /** Wave 2/3: Data for volatile status infliction (turnsLeft, etc.) */
   readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
