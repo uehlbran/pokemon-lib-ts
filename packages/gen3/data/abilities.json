@@ -1,0 +1,762 @@
+[
+  {
+    "id": "stench",
+    "displayName": "Stench",
+    "description": "By releasing stench when attacking, this Pokémon may cause the target to flinch.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "drizzle",
+    "displayName": "Drizzle",
+    "description": "The Pokémon makes it rain when it enters a battle.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "speed-boost",
+    "displayName": "Speed Boost",
+    "description": "Its Speed stat is gradually boosted every turn.",
+    "triggers": ["on-turn-end"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "battle-armor",
+    "displayName": "Battle Armor",
+    "description": "The Pokémon is protected against critical hits.",
+    "triggers": ["on-critical-hit", "passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sturdy",
+    "displayName": "Sturdy",
+    "description": "It cannot be knocked out with one hit. One-hit KO moves also fail.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "damp",
+    "displayName": "Damp",
+    "description": "Prevents the use of self-destructing moves like Selfdestruct and Explosion.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "limber",
+    "displayName": "Limber",
+    "description": "Its limber body protects the Pokémon from paralysis.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sand-veil",
+    "displayName": "Sand Veil",
+    "description": "Boosts the Pokémon's evasiveness in a sandstorm.",
+    "triggers": ["passive-immunity", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "static",
+    "displayName": "Static",
+    "description": "The Pokémon is charged with static electricity, so contact with it may cause paralysis.",
+    "triggers": ["on-contact"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "volt-absorb",
+    "displayName": "Volt Absorb",
+    "description": "Restores HP if hit by an Electric-type move instead of taking damage.",
+    "triggers": ["passive-immunity", "on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "water-absorb",
+    "displayName": "Water Absorb",
+    "description": "Restores HP if hit by a Water-type move instead of taking damage.",
+    "triggers": ["passive-immunity", "on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "oblivious",
+    "displayName": "Oblivious",
+    "description": "The Pokémon is oblivious, and that keeps it from being infatuated.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "cloud-nine",
+    "displayName": "Cloud Nine",
+    "description": "Eliminates the effects of weather.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "compound-eyes",
+    "displayName": "Compound Eyes",
+    "description": "The Pokémon's compound eyes boost its accuracy.",
+    "triggers": ["passive-modifier", "on-accuracy-check"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "insomnia",
+    "displayName": "Insomnia",
+    "description": "The Pokémon is suffering from insomnia and cannot fall asleep.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "color-change",
+    "displayName": "Color Change",
+    "description": "The Pokémon's type becomes the type of the move used on it.",
+    "triggers": ["on-damage-taken", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "immunity",
+    "displayName": "Immunity",
+    "description": "The immune system of the Pokémon prevents it from getting poisoned.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "flash-fire",
+    "displayName": "Flash Fire",
+    "description": "It powers up Fire-type moves if it's hit by one.",
+    "triggers": ["passive-immunity", "on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shield-dust",
+    "displayName": "Shield Dust",
+    "description": "This Pokémon's dust blocks the additional effects of attacks taken.",
+    "triggers": ["on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "own-tempo",
+    "displayName": "Own Tempo",
+    "description": "This Pokémon has its own tempo, and that prevents it from becoming confused.",
+    "triggers": ["passive-immunity", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "suction-cups",
+    "displayName": "Suction Cups",
+    "description": "This Pokémon uses suction cups to stay in place and resist all moves that force switching out.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "intimidate",
+    "displayName": "Intimidate",
+    "description": "The Pokémon intimidates opposing Pokémon upon entering battle, lowering their Attack stat.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shadow-tag",
+    "displayName": "Shadow Tag",
+    "description": "This Pokémon steps on the opposing Pokémon's shadow to prevent it from escaping.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "rough-skin",
+    "displayName": "Rough Skin",
+    "description": "This Pokémon inflicts damage with its rough hide on the attacker on contact.",
+    "triggers": ["on-contact", "on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "wonder-guard",
+    "displayName": "Wonder Guard",
+    "description": "Its mysterious power only lets supereffective moves hit the Pokémon.",
+    "triggers": ["on-type-effectiveness"],
+    "generation": 3,
+    "suppressible": false,
+    "copyable": false,
+    "swappable": false
+  },
+  {
+    "id": "levitate",
+    "displayName": "Levitate",
+    "description": "By floating in the air, the Pokémon receives full immunity to all Ground-type moves.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "effect-spore",
+    "displayName": "Effect Spore",
+    "description": "Contact with the Pokémon may inflict poison, sleep, or paralysis on its attacker.",
+    "triggers": ["on-contact"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "synchronize",
+    "displayName": "Synchronize",
+    "description": "The attacker will receive the same status problem if it inflicts a burn, poison, or paralysis to the Pokémon.",
+    "triggers": ["on-status-inflicted"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "clear-body",
+    "displayName": "Clear Body",
+    "description": "Prevents other Pokémon's moves or Abilities from lowering the Pokémon's stats.",
+    "triggers": ["passive-immunity", "on-stat-change"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "natural-cure",
+    "displayName": "Natural Cure",
+    "description": "All status problems heal when the Pokémon switches out.",
+    "triggers": ["on-switch-out"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "lightning-rod",
+    "displayName": "Lightning Rod",
+    "description": "The Pokémon draws in all Electric-type moves. Instead of being hit by Electric-type moves, it boosts its Sp. Atk.",
+    "triggers": ["passive-immunity", "on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "serene-grace",
+    "displayName": "Serene Grace",
+    "description": "Boosts the likelihood of additional effects occurring when attacking.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "swift-swim",
+    "displayName": "Swift Swim",
+    "description": "Boosts the Pokémon's Speed stat in rain.",
+    "triggers": ["on-weather-change", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "chlorophyll",
+    "displayName": "Chlorophyll",
+    "description": "Boosts the Pokémon's Speed stat in harsh sunlight.",
+    "triggers": ["on-weather-change", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "illuminate",
+    "displayName": "Illuminate",
+    "description": "By illuminating its surroundings, the Pokémon raises the likelihood of meeting wild Pokémon.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "trace",
+    "displayName": "Trace",
+    "description": "The Pokémon copies the Ability of an opposing Pokémon.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": false,
+    "swappable": true
+  },
+  {
+    "id": "huge-power",
+    "displayName": "Huge Power",
+    "description": "Doubles the Pokémon's Attack stat.",
+    "triggers": ["on-damage-calc", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "poison-point",
+    "displayName": "Poison Point",
+    "description": "Contact with the Pokémon may poison the attacker.",
+    "triggers": ["on-contact"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "inner-focus",
+    "displayName": "Inner Focus",
+    "description": "The Pokémon's intensely focused, and that protects the Pokémon from flinching.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "magma-armor",
+    "displayName": "Magma Armor",
+    "description": "The Pokémon is covered with hot magma, which prevents the Pokémon from becoming frozen.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "water-veil",
+    "displayName": "Water Veil",
+    "description": "The Pokémon is covered with a water veil, which prevents the Pokémon from getting a burn.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "magnet-pull",
+    "displayName": "Magnet Pull",
+    "description": "Prevents Steel-type Pokémon from escaping using its magnetic force.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "soundproof",
+    "displayName": "Soundproof",
+    "description": "Soundproofing gives the Pokémon full immunity to all sound-based moves.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "rain-dish",
+    "displayName": "Rain Dish",
+    "description": "The Pokémon gradually regains HP in rain.",
+    "triggers": ["on-turn-end"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sand-stream",
+    "displayName": "Sand Stream",
+    "description": "The Pokémon summons a sandstorm when it enters a battle.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "pressure",
+    "displayName": "Pressure",
+    "description": "By putting pressure on the opposing Pokémon, it raises their PP usage.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "thick-fat",
+    "displayName": "Thick Fat",
+    "description": "The Pokémon is protected by a layer of thick fat, which halves the damage taken from Fire- and Ice-type moves.",
+    "triggers": ["on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "early-bird",
+    "displayName": "Early Bird",
+    "description": "The Pokémon awakens quickly from sleep.",
+    "triggers": ["on-status-inflicted"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "flame-body",
+    "displayName": "Flame Body",
+    "description": "Contact with the Pokémon may burn the attacker.",
+    "triggers": ["on-contact"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "run-away",
+    "displayName": "Run Away",
+    "description": "Enables a sure getaway from wild Pokémon.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "keen-eye",
+    "displayName": "Keen Eye",
+    "description": "The Pokémon's keen eyes prevent its accuracy from being lowered.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "hyper-cutter",
+    "displayName": "Hyper Cutter",
+    "description": "The Pokémon's proud of its powerful claws. The Attack stat won't be lowered.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "pickup",
+    "displayName": "Pickup",
+    "description": "The Pokémon may pick up items.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "truant",
+    "displayName": "Truant",
+    "description": "Pokémon can only attack every other turn.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": false,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "hustle",
+    "displayName": "Hustle",
+    "description": "Boosts the Attack stat, but lowers accuracy.",
+    "triggers": ["on-damage-calc", "on-accuracy-check", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "cute-charm",
+    "displayName": "Cute Charm",
+    "description": "Contact with the Pokémon may cause infatuation.",
+    "triggers": ["on-contact"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "plus",
+    "displayName": "Plus",
+    "description": "Boosts the Sp. Atk stat of the Pokémon if an ally with the Minus Ability is also in battle.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "minus",
+    "displayName": "Minus",
+    "description": "Boosts the Sp. Atk stat of the Pokémon if an ally with the Plus Ability is also in battle.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "forecast",
+    "displayName": "Forecast",
+    "description": "The Pokémon transforms with the weather to change its type to Water, Fire, or Ice.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": false,
+    "swappable": true
+  },
+  {
+    "id": "sticky-hold",
+    "displayName": "Sticky Hold",
+    "description": "Protects the Pokémon from item theft because of its sticky body.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shed-skin",
+    "displayName": "Shed Skin",
+    "description": "The Pokémon may cure its own status problems by shedding its skin.",
+    "triggers": ["on-turn-end"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "guts",
+    "displayName": "Guts",
+    "description": "It's so gutsy that having a status problem boosts the Pokémon's Attack stat.",
+    "triggers": ["on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "marvel-scale",
+    "displayName": "Marvel Scale",
+    "description": "The Pokémon's marvelous scales boost the Defense stat if it has a status problem.",
+    "triggers": ["on-damage-calc", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "liquid-ooze",
+    "displayName": "Liquid Ooze",
+    "description": "The oozed liquid has a strong stench, which damages attackers using any draining move.",
+    "triggers": ["on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "overgrow",
+    "displayName": "Overgrow",
+    "description": "Powers up Grass-type moves when the Pokémon's HP is low.",
+    "triggers": ["on-hp-threshold"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "blaze",
+    "displayName": "Blaze",
+    "description": "Powers up Fire-type moves when the Pokémon's HP is low.",
+    "triggers": ["on-hp-threshold"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "torrent",
+    "displayName": "Torrent",
+    "description": "Powers up Water-type moves when the Pokémon's HP is low.",
+    "triggers": ["on-hp-threshold"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "swarm",
+    "displayName": "Swarm",
+    "description": "Powers up Bug-type moves when the Pokémon's HP is low.",
+    "triggers": ["on-hp-threshold"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "rock-head",
+    "displayName": "Rock Head",
+    "description": "Protects the Pokémon from recoil damage.",
+    "triggers": ["on-damage-calc"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "drought",
+    "displayName": "Drought",
+    "description": "Turns the sunlight harsh when the Pokémon enters a battle.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "arena-trap",
+    "displayName": "Arena Trap",
+    "description": "Prevents opposing Pokémon from fleeing by trapping them in the battle.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "vital-spirit",
+    "displayName": "Vital Spirit",
+    "description": "The Pokémon is full of vitality, and that prevents it from falling asleep.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "white-smoke",
+    "displayName": "White Smoke",
+    "description": "The Pokémon is protected by its white smoke, which prevents other Pokémon from lowering its stats.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "pure-power",
+    "displayName": "Pure Power",
+    "description": "Using its pure power, the Pokémon doubles its Attack stat.",
+    "triggers": ["on-damage-calc", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shell-armor",
+    "displayName": "Shell Armor",
+    "description": "The Pokémon is protected by a hard shell, which prevents the Pokémon from being struck by a critical hit.",
+    "triggers": ["on-critical-hit", "passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "air-lock",
+    "displayName": "Air Lock",
+    "description": "Eliminates the effects of weather.",
+    "triggers": ["on-switch-in", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  }
+]
