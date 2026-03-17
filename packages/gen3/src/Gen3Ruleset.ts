@@ -20,6 +20,7 @@ import {
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
+import { calculateGen3Damage } from "./Gen3DamageCalc";
 import { GEN3_TYPE_CHART, GEN3_TYPES } from "./Gen3TypeChart";
 
 /**
@@ -64,12 +65,16 @@ export class Gen3Ruleset extends BaseRuleset {
   // --- Damage Calculation (Phase 2 placeholder) ---
 
   /**
-   * Gen 3 damage formula (to be implemented in Phase 2).
+   * Gen 3 damage formula.
+   *
+   * Delegates to calculateGen3Damage which implements the full pokeemerald formula:
+   *   BaseDamage = floor(floor(floor(2*Level/5+2) * Power * Atk/Def) / 50) + 2
+   *   Modifiers: targets → weather → crit (2.0x) → random (85-100) → STAB → type → burn
    *
    * Source: pret/pokeemerald src/battle_util.c CalculateBaseDamage
    */
-  calculateDamage(_context: DamageContext): DamageResult {
-    throw new Error("Gen3Ruleset.calculateDamage not yet implemented — Phase 2");
+  calculateDamage(context: DamageContext): DamageResult {
+    return calculateGen3Damage(context, this.getTypeChart());
   }
 
   // --- Critical Hit System ---
