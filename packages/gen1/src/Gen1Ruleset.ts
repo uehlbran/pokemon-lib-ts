@@ -1114,4 +1114,10 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Leech Seed triggers after poison/burn and before the faint check.
     return ["status-damage", "leech-seed"];
   }
+
+  getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
+    // Gen 1 keeps existing behavior — per-attack residuals are handled separately in pokered
+    // Tracked in GitHub issue #129 for future implementation
+    return [];
+  }
 }

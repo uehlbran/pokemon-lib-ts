@@ -5,6 +5,12 @@ All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-17
+
+### Added
+
+- `getPostAttackResidualOrder()` implementation returning `[]` — satisfies the new `EndOfTurnSystem` interface method added in `@pokemon-lib-ts/battle@0.10.0`. No behavior change; Gen 1 per-attack residual processing tracked in issue #129.
+
 ## [0.5.6] - 2026-03-16
 
 ### Fixed

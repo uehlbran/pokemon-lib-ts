@@ -355,4 +355,8 @@ export class MockRuleset implements GenerationRuleset {
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     return ["status-damage"];
   }
+
+  getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
+    return [];
+  }
 }

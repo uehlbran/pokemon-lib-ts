@@ -466,22 +466,39 @@ Source: pret/pokecrystal — Struggle recoil uses the user's max HP divided by 4
 
 ## 10. End-of-Turn Order
 
-The exact end-of-turn order in Gen 2 (GSC):
+Gen 2 (GSC) uses a **two-phase** end-of-turn system. The single-pass view previously documented here was incorrect — pokecrystal has two distinct routines.
+
+Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage and HandleBetweenTurnEffects
+
+### Phase 1 — ResidualDamage (runs per-Pokemon AFTER EACH ATTACK)
 
 ```
-1. Leftovers recovery (1/16 max HP)
-2. Burn damage (1/8 max HP)
-3. Poison damage (1/8 max HP) / Toxic damage (N/16 max HP)
-4. Leech Seed drain (1/8 max HP, heals the seeder)
-5. Nightmare damage (1/4 max HP, only while asleep)
-6. Curse damage (1/4 max HP, from Ghost-type Curse)
-7. Sandstorm damage (1/8 max HP for non-Rock/Ground/Steel)
-8. Perish Song countdown (decrement, faint at 0)
-9. Weather turn decrement
-10. Check fainting
+1. Status damage (burn: 1/8 max HP; poison: 1/8 max HP; toxic: N/16 max HP)
+2. Leech Seed drain (1/8 max HP, heals the seeder)
+3. Nightmare damage (1/4 max HP, only while asleep)
+4. Curse damage (1/4 max HP, from Ghost-type Curse)
 ```
 
-**Critical: Leftovers triggers BEFORE status damage.** This is competitively significant — a Pokemon can heal from Leftovers and then take burn/poison damage, potentially surviving when it otherwise wouldn't.
+This phase fires after each individual attack resolves, not once at the end of both Pokemon's turns.
+
+### Phase 2 — HandleBetweenTurnEffects (runs ONCE after both Pokemon have acted)
+
+```
+1. Future Attack activation (Doom Desire / Future Sight — not present in Gen 2 but reserved)
+2. Sandstorm damage (1/8 max HP for non-Rock/Ground/Steel)
+3. Bind/trapping damage (1/16 max HP per turn)
+4. Perish Song countdown (decrement, faint at 0)
+5. Leftovers recovery (1/16 max HP)
+6. Screen countdowns (Reflect, Light Screen — decrement turn counter)
+7. Weather turn decrement
+```
+
+### Important Notes
+
+- **Leftovers fires in Phase 2**, not Phase 1. In the old single-pass model, Leftovers appeared "first" (before status damage). In the correct two-phase model, Leftovers fires in Phase 2 — after all Phase 1 per-attack residual effects.
+- This does NOT mean a Pokemon cannot heal and then take damage in the same turn. The two phases are separated by the attack boundary: Phase 1 fires after each attack, Phase 2 fires once after all attacks.
+- The competitive significance changes: Leftovers recovery happens after both Pokemon have attacked, not before status damage kicks in.
+- Phase 1 effects can cause fainting mid-turn (after an attack); Phase 2 faint checks happen after all Phase 2 effects resolve.
 
 ---
 

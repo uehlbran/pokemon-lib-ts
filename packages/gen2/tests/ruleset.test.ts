@@ -14,6 +14,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager } from "../src/data";
 import { Gen2Ruleset } from "../src/Gen2Ruleset";
 
 /**
@@ -219,27 +220,32 @@ describe("Gen2Ruleset", () => {
       expect(ruleset.getBattleGimmick()).toBeNull();
     });
 
-    it("should return correct end-of-turn order", () => {
+    it("should return correct end-of-turn order (Phase 2: between-turn effects)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       // Act
       const order = ruleset.getEndOfTurnOrder();
-      // Assert: exact order per pret/pokecrystal ground truth
-      // future-attack → leftovers → status-damage → leech-seed → nightmare →
-      // curse → bind → weather-damage → perish-song → screen-countdown → weather-countdown
+      // Assert: Phase 2 only — pret/pokecrystal engine/battle/core.asm HandleBetweenTurnEffects
+      // Note: status-damage, leech-seed, nightmare, curse are Phase 1 (getPostAttackResidualOrder)
       expect(order).toEqual([
         "future-attack",
-        "leftovers",
-        "status-damage",
-        "leech-seed",
-        "nightmare",
-        "curse",
-        "bind",
         "weather-damage",
+        "bind",
         "perish-song",
+        "leftovers",
         "screen-countdown",
         "weather-countdown",
       ]);
+    });
+
+    it("given Gen 2 ruleset, when getting post-attack residual order, then returns Phase 1 effects", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage runs after each attack
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      // Act
+      const order = ruleset.getPostAttackResidualOrder();
+      // Assert
+      expect(order).toEqual(["status-damage", "leech-seed", "nightmare", "curse"]);
     });
 
     it("should return correct crit rate table (5 entries)", () => {
@@ -855,7 +861,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      // quick-attack has priority +1, tackle has priority 0
+      // quick-attack has priority +1 (Showdown-compatible scale), tackle has priority 0
       const active0 = createMockActive({
         speed: 50,
         moves: [{ moveId: "quick-attack", pp: 30, maxPp: 30 }],
@@ -876,7 +882,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
-      // Assert: quick-attack (priority 1) goes before tackle (priority 0)
+      // Assert: quick-attack (priority +1) goes before tackle (priority 0)
       expect(sorted[0].side).toBe(0);
       expect(sorted[1].side).toBe(1);
     });
@@ -2389,6 +2395,114 @@ describe("Gen2Ruleset", () => {
       // Assert: weighted array has 3 twos and 3 threes out of 8, so both should appear
       expect(counts.has(2)).toBe(true);
       expect(counts.has(3)).toBe(true);
+    });
+  });
+
+  // --- Move Priority Values (gen2-ground-truth.md §9 — Showdown-compatible scale) ---
+
+  describe("Given Gen 2 move priority values from moves.json data", () => {
+    it("given Gen 2 ruleset, when getting Protect move priority, then returns +3", () => {
+      // Source: gen2-ground-truth.md §9 — Protect: +3 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("protect").priority;
+      // Assert
+      expect(priority).toBe(3);
+    });
+
+    it("given Gen 2 ruleset, when getting Detect move priority, then returns +3", () => {
+      // Source: gen2-ground-truth.md §9 — Detect: +3 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("detect").priority;
+      // Assert
+      expect(priority).toBe(3);
+    });
+
+    it("given Gen 2 ruleset, when getting Quick Attack move priority, then returns +1", () => {
+      // Source: gen2-ground-truth.md §9 — Quick Attack: +1 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("quick-attack").priority;
+      // Assert
+      expect(priority).toBe(1);
+    });
+
+    it("given Gen 2 ruleset, when getting Vital Throw move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Vital Throw: -1, never misses, goes last
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("vital-throw").priority;
+      // Assert
+      expect(priority).toBe(-1);
+    });
+
+    it("given Gen 2 ruleset, when getting Counter move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Counter: -1 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("counter").priority;
+      // Assert
+      expect(priority).toBe(-1);
+    });
+
+    it("given Gen 2 ruleset, when getting Mirror Coat move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Mirror Coat: -1 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("mirror-coat").priority;
+      // Assert
+      expect(priority).toBe(-1);
+    });
+
+    it("given Gen 2 ruleset, when getting Endure move priority, then returns +3", () => {
+      // Source: gen2-ground-truth.md §9 — Endure: +3 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("endure").priority;
+      // Assert
+      expect(priority).toBe(3);
+    });
+
+    it("given Gen 2 ruleset, when getting Mach Punch move priority, then returns +1", () => {
+      // Source: gen2-ground-truth.md §9 — Mach Punch: +1 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("mach-punch").priority;
+      // Assert
+      expect(priority).toBe(1);
+    });
+
+    it("given Gen 2 ruleset, when getting ExtremeSpeed move priority, then returns +1", () => {
+      // Source: gen2-ground-truth.md §9 — ExtremeSpeed: +1 (Showdown-compatible scale)
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const priority = dm.getMove("extreme-speed").priority;
+      // Assert
+      expect(priority).toBe(1);
+    });
+
+    it("given Gen 2 ruleset, when getting Roar move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Roar: -1, forces opponent to flee
+      const dm = createGen2DataManager();
+      const move = dm.getMove("roar");
+      expect(move?.priority).toBe(-1);
+    });
+
+    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -1", () => {
+      // Source: gen2-ground-truth.md §9 — Whirlwind: -1, forces opponent to flee
+      const dm = createGen2DataManager();
+      const move = dm.getMove("whirlwind");
+      expect(move?.priority).toBe(-1);
     });
   });
 });

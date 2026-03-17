@@ -1585,7 +1585,7 @@
     "power": null,
     "accuracy": null,
     "pp": 5,
-    "priority": 2,
+    "priority": 3,
     "target": "self",
     "flags": {
       "contact": false,
@@ -2203,7 +2203,7 @@
     "power": null,
     "accuracy": null,
     "pp": 10,
-    "priority": 2,
+    "priority": 3,
     "target": "self",
     "flags": {
       "contact": false,
@@ -6029,7 +6029,7 @@
     "power": null,
     "accuracy": null,
     "pp": 10,
-    "priority": 2,
+    "priority": 3,
     "target": "self",
     "flags": {
       "contact": false,
