@@ -5,7 +5,7 @@ import type { AbilityTrigger } from "@pokemon-lib-ts/core";
  * Gen 3 Abilities — applyAbility dispatch.
  *
  * Handles triggers that the battle engine currently calls:
- *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream
+ *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream, Snow Warning
  *
  * Other triggers (on-contact, on-turn-end, on-switch-out) require engine hooks
  * not yet implemented. Those abilities are noted as stubs below.
@@ -45,6 +45,7 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
  *   - Drizzle: sets permanent rain
  *   - Drought: sets permanent sun
  *   - Sand Stream: sets permanent sandstorm
+ *   - Snow Warning: sets permanent hail
  *
  * Not implemented (require more engine support or volatile state tracking):
  *   - Trace: copies opponent's ability (needs engine to apply ability change)
@@ -102,6 +103,18 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
         activated: true,
         effects: [effect],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
+      };
+    }
+
+    case "snow-warning": {
+      // Source: pret/pokeemerald ABILITY_SNOW_WARNING — sets permanent hail on switch-in
+      // Snow Warning was introduced in Gen 4, but included here for completeness per spec.
+      const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+      const effect: AbilityEffect = { effectType: "none", target: "field" };
+      return {
+        activated: true,
+        effects: [effect],
+        messages: [`${name}'s Snow Warning: Hail started!`],
       };
     }
 
