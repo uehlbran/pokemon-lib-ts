@@ -24,13 +24,32 @@ MERGE_BASE=$(git -C "$BASE" merge-base HEAD origin/main 2>/dev/null) || {
 # Check if any packages/*/src/ or packages/*/data/ files changed since merge base
 CHANGED_PACKAGES=$(git -C "$BASE" diff --name-only "$MERGE_BASE"..HEAD -- 'packages/*/src/' 'packages/*/data/' 2>/dev/null)
 
+# Also check staged (not yet committed) package changes
+if [ -z "$CHANGED_PACKAGES" ]; then
+  CHANGED_PACKAGES=$(git -C "$BASE" diff --name-only --cached -- 'packages/*/src/' 'packages/*/data/' 2>/dev/null)
+fi
+
 if [ -z "$CHANGED_PACKAGES" ]; then
   # No package source or data files changed — no changeset required
   exit 0
 fi
 
-# Check if any .changeset/*.md files (excluding config.json and README.md) exist in the diff
-CHANGESETS=$(git -C "$BASE" diff --name-only "$MERGE_BASE"..HEAD -- '.changeset/' 2>/dev/null | grep -E '\.changeset/[^/]+\.md$' | grep -v 'README\.md')
+_changeset_grep() {
+  grep -E '\.changeset/[^/]+\.md$' | grep -v 'README\.md'
+}
+
+# 1. Check committed changeset files
+CHANGESETS=$(git -C "$BASE" diff --name-only "$MERGE_BASE"..HEAD -- '.changeset/' 2>/dev/null | _changeset_grep)
+
+# 2. Fallback: check staged (cached) changeset files — /version stages but doesn't commit
+if [ -z "$CHANGESETS" ]; then
+  CHANGESETS=$(git -C "$BASE" diff --name-only --cached -- '.changeset/' 2>/dev/null | _changeset_grep)
+fi
+
+# 3. Fallback: check untracked changeset files in working tree
+if [ -z "$CHANGESETS" ]; then
+  CHANGESETS=$(git -C "$BASE" ls-files --others --exclude-standard -- '.changeset/*.md' 2>/dev/null | grep -v 'README\.md')
+fi
 
 if [ -z "$CHANGESETS" ]; then
   echo "BLOCKED: packages/ source or data files changed but no changeset found." >&2
