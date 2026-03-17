@@ -11,6 +11,7 @@ import {
   getTypeEffectiveness,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
+import { TYPE_BOOST_ITEMS } from "./Gen3Items";
 
 /**
  * Physical types in Gen 3.
@@ -97,6 +98,13 @@ function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: b
     // Burn halves physical attack (only when Guts is NOT active)
     // Source: pret/pokeemerald src/battle_util.c — burn reduces physical attack by half
     effective = Math.floor(effective / 2);
+  }
+
+  // Choice Band: 1.5x physical attack
+  // Source: pret/pokeemerald HOLD_EFFECT_CHOICE_BAND — multiplies Attack by 1.5
+  // Only affects physical moves (Choice Band only boosts Attack, not SpAtk)
+  if (physical && attacker.pokemon.heldItem === "choice-band") {
+    effective = Math.floor(effective * 1.5);
   }
 
   return Math.max(1, effective);
@@ -243,6 +251,16 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
+  // 2.5b: Type-boosting held items — 1.1x (10%) if item matches move type
+  // Source: pret/pokeemerald HOLD_EFFECT_*_POWER — 10% boost for matching type
+  // Applied after STAB, before type effectiveness (same position as Gen 2)
+  let itemMultiplier = 1;
+  const attackerItem = attacker.pokemon.heldItem;
+  if (attackerItem && TYPE_BOOST_ITEMS[attackerItem] === move.type) {
+    baseDamage = Math.floor(baseDamage * 1.1);
+    itemMultiplier = 1.1;
+  }
+
   // 2.6: Type effectiveness
   // Source: pret/pokeemerald — product of matchups for each defender type
   const effectiveness = getTypeEffectiveness(move.type, defender.types, typeChart);
@@ -263,7 +281,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
         typeMultiplier: 0,
         burnMultiplier: physical && attacker.pokemon.status === "burn" ? 0.5 : 1,
         abilityMultiplier: 1,
-        itemMultiplier: 1,
+        itemMultiplier,
         otherMultiplier: 1,
         finalDamage: 0,
       },
@@ -288,7 +306,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
         typeMultiplier: effectiveness,
         burnMultiplier: physical && attacker.pokemon.status === "burn" ? 0.5 : 1,
         abilityMultiplier: 0,
-        itemMultiplier: 1,
+        itemMultiplier,
         otherMultiplier: 1,
         finalDamage: 0,
       },
@@ -330,7 +348,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     typeMultiplier: effectiveness,
     burnMultiplier,
     abilityMultiplier,
-    itemMultiplier: 1, // Phase 7+
+    itemMultiplier,
     otherMultiplier: 1,
     finalDamage,
   };
