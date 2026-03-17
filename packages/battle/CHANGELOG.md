@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.4] - 2026-03-16
 
 ### Added
+
 - `statStagesReset` field on `MoveEffectResult` — resets stat stages independently of status curing (used by Gen 1 Haze attacker side)
 
 ## [0.9.0] - 2026-03-15
