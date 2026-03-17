@@ -806,8 +806,15 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      // Boosted attacker should deal more damage on a crit
-      expect(boostedCrit.damage).toBeGreaterThan(neutralCrit.damage);
+      // Derivation (level=50, power=80, rng=100, isCrit=true, normal-type STAB 1.5x):
+      //   levelFactor = floor(2*50/5) + 2 = 22
+      //   neutralCrit:  atk=100 (stage 0)  → baseDmg = floor(floor(22*80*100/100)/50)+2 = 37
+      //                 isCrit ×2 = 74, random×1.0 = 74, STAB×1.5 = floor(111) = 111
+      //   boostedCrit:  atk=floor(100*1.5)=150 (stage +1 kept on crit)
+      //                 → baseDmg = floor(floor(22*80*150/100)/50)+2 = floor(2640/50)+2 = 54
+      //                 isCrit ×2 = 108, random×1.0 = 108, STAB×1.5 = floor(162) = 162
+      expect(neutralCrit.damage).toBe(111);
+      expect(boostedCrit.damage).toBe(162);
     });
 
     it("given a crit with defender at +2 Def stage, when calculating, then positive defense stage is ignored", () => {
@@ -916,8 +923,15 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      // Debuffed defender should take MORE damage even on a crit
-      expect(vsDebuffedCrit.damage).toBeGreaterThan(vsNeutralCrit.damage);
+      // Derivation (level=50, power=80, rng=100, isCrit=true, normal-type STAB 1.5x):
+      //   levelFactor = floor(2*50/5) + 2 = 22
+      //   vsNeutralCrit: def=100 (stage 0) → baseDmg=37, ×2 crit=74, ×1.0 random=74, STAB=floor(111)=111
+      //   vsDebuffedCrit: def stage -1 kept (not ignored on crit)
+      //     effectiveDef = floor(100 * 2/3) = 66
+      //     baseDmg = floor(floor(22*80*100/66)/50)+2 = floor(floor(2666)/50)+2 = floor(53.32)+2 = 55
+      //     ×2 crit = 110, ×1.0 random = 110, STAB = floor(165) = 165
+      expect(vsNeutralCrit.damage).toBe(111);
+      expect(vsDebuffedCrit.damage).toBe(165);
     });
   });
 
@@ -1048,8 +1062,12 @@ describe("Gen 3 Damage Calculation", () => {
       const ctx = createDamageContext({ attacker, defender, move, rng: createMockRng(85) });
 
       const result = calculateGen3Damage(ctx, chart);
-      // Damage should be at least 1 (not 0), since the type is not immune
-      expect(result.damage).toBeGreaterThanOrEqual(1);
+      // Derivation: levelFactor = floor(2*1/5)+2 = 2; baseDmg = floor(floor(2*10*1/999)/50)+2
+      //   = floor(floor(0.02)/50)+2 = floor(0/50)+2 = 2
+      //   random roll=85: floor(2 * 0.85) = floor(1.7) = 1
+      //   STAB (normal/normal): floor(1 * 1.5) = 1; type neutral: 1; max(1,1) = 1
+      // Source: pret/pokeemerald — minimum damage is 1 (clamped from Math.max(1, ...))
+      expect(result.damage).toBe(1);
     });
 
     it("given type immune matchup, when calculating, then damage is 0 (not clamped to 1)", () => {
@@ -1196,8 +1214,13 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      // Rain boosts water move damage by 1.5x (applied to base damage before crit/random/STAB/type)
-      expect(rainResult.damage).toBeGreaterThan(clearResult.damage);
+      // Derivation (level=50, spAtk=120, spDef=100, power=80, rng=100, no STAB — attacker is normal-type):
+      //   levelFactor = 22; baseDmg = floor(floor(22*80*120/100)/50)+2 = floor(2112/50)+2 = 42+2 = 44
+      //   clearResult:  no weather mod → random×1.0=44, no STAB=44, type neutral=44
+      //   rainResult:   water in rain → ×1.5 → floor(44*1.5)=66 → random×1.0=66, no STAB=66, type=66
+      // Source: pret/pokeemerald — rain boosts Water moves by 1.5x
+      expect(clearResult.damage).toBe(44);
+      expect(rainResult.damage).toBe(66);
     });
 
     it("given Rain weather and Fire move, when calculating, then damage is reduced by 0.5x", () => {
@@ -1275,7 +1298,13 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      expect(sunResult.damage).toBeGreaterThan(clearResult.damage);
+      // Derivation (level=50, spAtk=120, spDef=100, power=80, rng=100, no STAB — attacker is normal-type):
+      //   levelFactor = 22; baseDmg = floor(floor(22*80*120/100)/50)+2 = 44
+      //   clearResult:  no weather → 44 (same as rain/water clear case)
+      //   sunResult:    fire in sun → ×1.5 → floor(44*1.5)=66 → 66
+      // Source: pret/pokeemerald — sun boosts Fire moves by 1.5x
+      expect(clearResult.damage).toBe(44);
+      expect(sunResult.damage).toBe(66);
     });
   });
 
@@ -1326,8 +1355,15 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      // Fire (special) should use SpAtk, so the high SpAtk attacker deals more damage
-      expect(highSpAtkResult.damage).toBeGreaterThan(highAtkResult.damage);
+      // Derivation (level=50, power=80, rng=100, fire=special, no STAB — attacker is normal-type):
+      //   levelFactor = 22; spDef of defender = 100
+      //   highSpAtkResult (spAtk=200): baseDmg = floor(floor(22*80*200/100)/50)+2 = floor(3520/50)+2 = 72
+      //     random×1.0=72, no STAB=72, type neutral=72
+      //   highAtkResult  (spAtk=50):  baseDmg = floor(floor(22*80*50/100)/50)+2 = floor(880/50)+2 = 19
+      //     random×1.0=19, no STAB=19, type neutral=19
+      // Source: pret/pokeemerald — Fire is special type; uses SpAtk/SpDef
+      expect(highAtkResult.damage).toBe(19);
+      expect(highSpAtkResult.damage).toBe(72);
     });
 
     it("given a Normal move (physical), when calculating, then Atk and Def are used", () => {
@@ -1373,8 +1409,15 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      // Normal (physical) should use Atk, so the high Atk attacker deals more damage
-      expect(highAtkResult.damage).toBeGreaterThan(highSpAtkResult.damage);
+      // Derivation (level=50, power=80, rng=100, normal=physical, STAB 1.5x — attacker is normal-type):
+      //   levelFactor = 22; def of defender = 100
+      //   highAtkResult   (atk=200): baseDmg = floor(floor(22*80*200/100)/50)+2 = 72
+      //     random×1.0=72, STAB×1.5=floor(108)=108, type neutral=108
+      //   highSpAtkResult (atk=50):  baseDmg = floor(floor(22*80*50/100)/50)+2 = 19
+      //     random×1.0=19, STAB×1.5=floor(28.5)=28, type neutral=28
+      // Source: pret/pokeemerald — Normal is physical type; uses Atk/Def
+      expect(highSpAtkResult.damage).toBe(28);
+      expect(highAtkResult.damage).toBe(108);
     });
   });
 
@@ -1550,7 +1593,7 @@ describe("Gen 3 Damage Calculation", () => {
 
       const result = calculateGen3Damage(ctx, chart);
 
-      expect(result.breakdown).toBeDefined();
+      expect(result.breakdown).not.toBeNull();
       expect(result.breakdown!.weatherMultiplier).toBe(1.5);
       expect(result.breakdown!.critMultiplier).toBe(2);
       expect(result.breakdown!.stabMultiplier).toBe(1.5);
