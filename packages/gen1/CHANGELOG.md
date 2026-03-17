@@ -5,6 +5,12 @@ All notable changes to `@pokemon-lib-ts/gen1` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.6] - 2026-03-16
+
+### Fixed
+- Confusion duration corrected to 2-5 turns (was 1-4) — Source: pokered effects.asm:1143-1147
+- Haze now cures non-volatile status for target only, not user — Source: pokered move_effects/haze.asm:15-43
+
 ## [0.5.4] - 2026-03-15
 
 ### Added
