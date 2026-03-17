@@ -302,6 +302,173 @@ describe("processEffectResult — self-targeted effects", () => {
     );
   });
 
+  describe("statStagesReset", () => {
+    // Source: pokered move_effects/haze.asm:15-43 — Haze resets stat stages for one or both
+    // sides independently of status; status is NOT cured by statStagesReset.
+    it(
+      "given attacker has boosted stat stages and burn status and statStagesReset targets attacker," +
+        " when processing, then attacker stages are zeroed but status is preserved",
+      () => {
+        // Arrange — only the first executeMoveEffect call returns statStagesReset;
+        // the second call (Blastoise's move) returns a no-op so Blastoise's own stages
+        // are not reset and we can verify defender stages are unaffected.
+        // Source: pokered move_effects/haze.asm:15-43 — attacker side stages reset independently
+        const ruleset = new MockRuleset();
+        let callCount = 0;
+        ruleset.executeMoveEffect = () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              statusInflicted: null,
+              volatileInflicted: null,
+              statChanges: [],
+              recoilDamage: 0,
+              healAmount: 0,
+              switchOut: false,
+              messages: [],
+              statStagesReset: { target: "attacker" as const },
+            };
+          }
+          return {
+            statusInflicted: null,
+            volatileInflicted: null,
+            statChanges: [],
+            recoilDamage: 0,
+            healAmount: 0,
+            switchOut: false,
+            messages: [],
+          };
+        };
+
+        const { engine } = createEngine({ ruleset });
+        engine.start();
+
+        // Pre-condition: attacker (side 0, Charizard) has +3 attack and burn status
+        // Defender (side 1, Blastoise) has +2 defense — should be unchanged after the turn
+        const attackerActive = engine.state.sides[0].active[0];
+        const defenderActive = engine.state.sides[1].active[0];
+        if (attackerActive) {
+          attackerActive.statStages.attack = 3;
+          attackerActive.pokemon.status = "burn";
+        }
+        if (defenderActive) {
+          defenderActive.statStages.defense = 2;
+        }
+
+        // Act — Charizard is faster (speed 120 > 80), so its move executes first
+        engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+        // Assert — attacker attack stage reset to 0
+        expect(attackerActive?.statStages.attack).toBe(0);
+        // Assert — attacker status NOT cured (statStagesReset never touches status)
+        expect(attackerActive?.pokemon.status).toBe("burn");
+        // Assert — defender defense stage unchanged (Blastoise used a no-op move)
+        expect(defenderActive?.statStages.defense).toBe(2);
+      },
+    );
+
+    it(
+      "given both Pokemon have boosted stat stages and statStagesReset targets both," +
+        " when processing, then both sides stages are zeroed",
+      () => {
+        // Arrange
+        const ruleset = new MockRuleset();
+        ruleset.executeMoveEffect = () => ({
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+          // Source: pokered move_effects/haze.asm:15-43 — Haze clears all stages for both sides
+          statStagesReset: { target: "both" as const },
+        });
+
+        const { engine } = createEngine({ ruleset });
+        engine.start();
+
+        // Pre-condition: attacker +2 attack, defender -1 defense
+        const attackerActive = engine.state.sides[0].active[0];
+        const defenderActive = engine.state.sides[1].active[0];
+        if (attackerActive) {
+          attackerActive.statStages.attack = 2;
+        }
+        if (defenderActive) {
+          defenderActive.statStages.defense = -1;
+        }
+
+        // Act
+        engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+        // Assert — both sides stages zeroed
+        expect(attackerActive?.statStages.attack).toBe(0);
+        expect(defenderActive?.statStages.defense).toBe(0);
+      },
+    );
+
+    it(
+      "given defender has boosted stat stages and statStagesReset targets defender," +
+        " when processing, then defender stages are zeroed but attacker stages unchanged",
+      () => {
+        // Arrange — only the first executeMoveEffect call returns statStagesReset targeting
+        // the defender; the second call (Blastoise's move) returns a no-op so we can
+        // verify that attacker stages are not touched by Blastoise's own action.
+        // Source: pokered move_effects/haze.asm:15-43 — defender side reset independently
+        const ruleset = new MockRuleset();
+        let callCount = 0;
+        ruleset.executeMoveEffect = () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              statusInflicted: null,
+              volatileInflicted: null,
+              statChanges: [],
+              recoilDamage: 0,
+              healAmount: 0,
+              switchOut: false,
+              messages: [],
+              statStagesReset: { target: "defender" as const },
+            };
+          }
+          return {
+            statusInflicted: null,
+            volatileInflicted: null,
+            statChanges: [],
+            recoilDamage: 0,
+            healAmount: 0,
+            switchOut: false,
+            messages: [],
+          };
+        };
+
+        const { engine } = createEngine({ ruleset });
+        engine.start();
+
+        // Pre-condition: attacker (Charizard, side 0) +1 attack; defender (Blastoise, side 1) +3 defense
+        const attackerActive = engine.state.sides[0].active[0];
+        const defenderActive = engine.state.sides[1].active[0];
+        if (attackerActive) {
+          attackerActive.statStages.attack = 1;
+        }
+        if (defenderActive) {
+          defenderActive.statStages.defense = 3;
+        }
+
+        // Act — Charizard moves first (speed 120 > 80), resets defender (Blastoise) stages
+        engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+        // Assert — defender (Blastoise) defense stage zeroed
+        expect(defenderActive?.statStages.defense).toBe(0);
+        // Assert — attacker (Charizard) attack stage unchanged (Blastoise used no-op)
+        expect(attackerActive?.statStages.attack).toBe(1);
+      },
+    );
+  });
+
   describe("statusCuredOnly", () => {
     it(
       "given statusCuredOnly target=attacker and attacker has burn with non-zero stat stages," +
