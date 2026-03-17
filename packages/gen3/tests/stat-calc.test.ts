@@ -115,12 +115,10 @@ describe("Gen 3 Stat Calculation — HP", () => {
     expect(stats.hp).toBe(714);
   });
 
-  it("given L50 Pokemon with 0 IVs and 0 EVs (base HP 50), when calculateStats called, then HP = 110", () => {
-    // Source: Bulbapedia formula
-    // Formula: floor((2*50 + 0 + 0) * 50 / 100) + 50 + 10
-    //        = floor(100 * 0.5) + 60 = 50 + 60 = 110
-    // Using Wobbuffet as the species (base HP 190 — that's too high). Let's use Pikachu (base HP 35).
-    // floor((2*35 + 0 + 0) * 50/100) + 50 + 10 = floor(70*0.5) + 60 = 35 + 60 = 95
+  it("given L50 Pikachu (base HP 35) with 0 IVs and 0 EVs, when calculateStats called, then HP = 95", () => {
+    // Source: Bulbapedia "Statistic#Generation_III_onward"
+    // Formula: floor((2*35 + 0 + 0) * 50 / 100) + 50 + 10
+    //        = floor(70 * 0.5) + 60 = 35 + 60 = 95
     const pikachu = dataManager.getSpecies(25); // Pikachu
     const pokemon = createPokemonInstance(25, 50, "hardy", ZERO_IVS, ZERO_EVS);
 
@@ -216,23 +214,11 @@ describe("Gen 3 Stat Calculation — Zero EVs/IVs", () => {
 });
 
 describe("Gen 3 Stat Calculation — Level 100 verification", () => {
-  it("given L100 Blaziken (base Atk 120) with 31 IVs, 252 EVs, Adamant, then Atk = 394", () => {
-    // Source: Showdown stat calculator
-    // floor((floor((2*120 + 31 + 63) * 100 / 100) + 5) * 1.1)
-    // = floor((floor(333) + 5) * 1.1)
-    // = floor(338 * 1.1) = floor(371.8) = 371
-    // Hmm, Showdown says 394 for Blaziken Adamant 31/252 at L100...
-    // Blaziken base attack is 120:
-    // (2*120 + 31 + 63) = (240 + 31 + 63) = 334
-    // floor(334 * 100 / 100) = 334
-    // 334 + 5 = 339
-    // floor(339 * 1.1) = floor(372.9) = 372
-    // But Showdown might say differently... let me check the standard calculation again.
-    // Actually: for L100 the formula simplifies:
-    // floor((2*base + IV + floor(EV/4)) * level/100) + 5
+  it("given L100 Blaziken (base Atk 120) with 31 IVs, 252 EVs, Adamant, then Atk = 372", () => {
+    // Source: Showdown stat calculator — L100 Blaziken Adamant 31 IV / 252 EV
+    // Formula: floor((2*120 + 31 + floor(252/4)) * 100/100) + 5) * 1.1)
     // = floor((240 + 31 + 63) * 1) + 5 = 334 + 5 = 339
     // Adamant = 1.1x → floor(339 * 1.1) = floor(372.9) = 372
-    // Showdown for Blaziken Adamant 252Atk at L100: Attack = 372
     const blaziken = dataManager.getSpecies(257); // Blaziken
     const evs: StatBlock = { hp: 0, attack: 252, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
     const pokemon = createPokemonInstance(257, 100, "adamant", MAX_IVS, evs);

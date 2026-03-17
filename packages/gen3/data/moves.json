@@ -696,7 +696,7 @@
     },
     "effect": {
       "type": "switch-out",
-      "who": "self"
+      "target": "self"
     },
     "description": "The user is replaced with another Pokemon in its party. The selected Pokemon has the user's stat stage changes transferred to it, as well as the effects of confusion, Curse, Focus Energy, Ingrain, Leech Seed, Lock-On (Mind Reader), Mud Sport, Perish Song, Water Sport, the trapper or trapped effects of Mean Look (Block, Spider Web), and a substitute with its remaining HP.",
     "generation": 2
@@ -3183,7 +3183,10 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": null,
+    "effect": {
+      "type": "custom",
+      "handler": "explosion"
+    },
     "description": "The user faints after using this move. The target's Defense is halved during damage calculation. This move is prevented from executing if any active Pokemon has the Damp Ability.",
     "generation": 1
   },
@@ -9917,7 +9920,10 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": null,
+    "effect": {
+      "type": "custom",
+      "handler": "self-destruct"
+    },
     "description": "The user faints after using this move. The target's Defense is halved during damage calculation. This move is prevented from executing if any active Pokemon has the Damp Ability.",
     "generation": 1
   },
