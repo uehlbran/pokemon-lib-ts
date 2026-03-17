@@ -192,6 +192,8 @@ export interface MoveEffectResult {
   readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
   /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
   readonly screensCleared?: "attacker" | "defender" | "both" | null;
+  /** Reset stat stages for target(s) WITHOUT curing status (e.g. Haze resets attacker stages) */
+  readonly statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
   /** Cure the attacker's status WITHOUT resetting stat stages (unlike statusCured which is Haze-only) */
   readonly statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
   /** Primary status to inflict on the ATTACKER (e.g., Rest's self-sleep) */

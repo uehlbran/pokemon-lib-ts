@@ -303,6 +303,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         type?: PokemonType | null;
       } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
+      statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
@@ -371,6 +372,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         type?: PokemonType | null;
       } | null;
       statusCured?: { target: "attacker" | "defender" | "both" } | null;
+      statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       screensCleared?: "attacker" | "defender" | "both" | null;
       volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
@@ -552,8 +554,9 @@ export class Gen1Ruleset implements GenerationRuleset {
         if (effect.status === "confusion") {
           if (rng.int(1, 100) <= effect.chance) {
             if (!defender.volatileStatuses.has("confusion")) {
-              // Confusion lasts 1-4 turns in Gen 1
-              const turns = rng.int(1, 4);
+              // Confusion lasts 2-5 turns in Gen 1
+              // Source: pokered effects.asm:1143-1147 — `and $3; inc a; inc a` = random(0-3)+2 = [2,5]
+              const turns = rng.int(2, 5);
               result.volatileInflicted = "confusion";
               result.volatileData = { turnsLeft: turns };
             }
@@ -606,12 +609,13 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Flee mechanics are not wired up; always fail for now.
           result.messages.push("But it failed!");
         } else if (effect.handler === "haze") {
-          // Haze: clears all stat changes and status conditions for both pokemon,
-          // removes all volatile statuses for both Pokemon, and removes all screens
-          // from both sides (Gen 1 only).
-          // Source: pret/pokered src/engine/battle/effect_commands.asm — Haze clears
-          // all volatile statuses (leech-seed, focus-energy, confusion, disable, etc.)
-          result.statusCured = { target: "both" };
+          // Haze: resets all stat stages for both pokemon, clears all volatile statuses
+          // for both Pokemon, and removes all screens from both sides (Gen 1 only).
+          // Status cure: DEFENDER ONLY — Source: pokered move_effects/haze.asm:15-43
+          // Non-volatile status (burn/paralysis/etc.) is only cured for the target,
+          // NOT the user. Stat stage reset applies to both (separate operation).
+          result.statusCured = { target: "defender" };
+          result.statStagesReset = { target: "attacker" };
           result.screensCleared = "both";
           // Build volatilesToClear from all current volatile statuses on both Pokemon.
           // The engine will delete each and emit volatile-end events via processEffectResult.
