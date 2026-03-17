@@ -309,9 +309,15 @@ export interface EndOfTurnSystem {
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[];
   /**
-   * Effects that run per-Pokemon after each attack (Phase 1 residuals).
-   * Gen 2: poison/burn, leech-seed, nightmare, curse (pokecrystal ResidualDamage).
-   * Default: empty (all effects in getEndOfTurnOrder).
+   * Effects that fire per-acting-Pokemon after each move or struggle resolves (Phase 1 residuals).
+   * Phase 1 fires once per action (immediately after checkMidTurnFaints for that action).
+   * Phase 2 (`getEndOfTurnOrder`) fires once after ALL actions are resolved.
+   *
+   * Gen 1 and Gen 3+: return `[]` — no per-attack residuals; all effects remain in Phase 2.
+   * Gen 2 (pokecrystal `ResidualDamage`): returns `["status-damage", "leech-seed", "nightmare", "curse"]`.
+   *
+   * Note: `checkMidTurnFaints()` emits faint events but does not set `state.ended`.
+   * Battle-end detection is deferred to the end-of-turn `checkBattleEnd()` call.
    */
   getPostAttackResidualOrder(): readonly EndOfTurnEffect[];
 }

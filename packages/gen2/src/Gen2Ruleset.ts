@@ -959,6 +959,8 @@ export class Gen2Ruleset implements GenerationRuleset {
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     // Source: pret/pokecrystal engine/battle/core.asm — HandleBetweenTurnEffects
     // Phase 2: runs once after both Pokemon have acted
+    // Note: status-damage, leech-seed, nightmare, and curse are intentionally absent here —
+    // they fire per-attack in Phase 1 via getPostAttackResidualOrder().
     // Order: future-attack → weather-damage → bind → perish-song → leftovers →
     // screen-countdown → weather-countdown
     return [
@@ -976,6 +978,6 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage
     // Phase 1: runs per-Pokemon after each attack resolves
     // Order: status-damage → leech-seed → nightmare → curse
-    return ["status-damage", "leech-seed", "nightmare", "curse"];
+    return ["status-damage", "leech-seed", "nightmare", "curse"] as const;
   }
 }
