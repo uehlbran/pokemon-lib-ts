@@ -985,8 +985,8 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
   /** Create a minimal AbilityContext for testing switch-in abilities. */
   function createAbilityContext(opts: {
     pokemonAbility: string;
-    pokemonNickname?: string;
-    opponentNickname?: string;
+    pokemonNickname?: string | null;
+    opponentNickname?: string | null;
     hasOpponent?: boolean;
   }): AbilityContext {
     const pokemon = createActivePokemon({
@@ -997,7 +997,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       spDefense: 100,
       types: ["normal"],
       ability: opts.pokemonAbility,
-      nickname: opts.pokemonNickname ?? "Attacker",
+      nickname: opts.pokemonNickname === null ? null : (opts.pokemonNickname ?? "Attacker"),
     });
     const opponent =
       opts.hasOpponent !== false
@@ -1008,7 +1008,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
             spAttack: 100,
             spDefense: 100,
             types: ["normal"],
-            nickname: opts.opponentNickname ?? "Defender",
+            nickname: opts.opponentNickname === null ? null : (opts.opponentNickname ?? "Defender"),
           })
         : undefined;
 
@@ -1040,6 +1040,19 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       expect(result.messages[0]).toBe("Gyarados's Intimidate cut Machamp's Attack!");
     });
 
+    it("given Intimidate user with no nickname, when switching in, then message uses speciesId", () => {
+      // Source: pret/pokeemerald — nickname fallback to species ID
+      // Covers the `?? String(speciesId)` branch in Gen3Abilities.ts lines 72-74
+      const ctx = createAbilityContext({
+        pokemonAbility: "intimidate",
+        pokemonNickname: null,
+        opponentNickname: null,
+      });
+      const result = applyGen3Ability("on-switch-in", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.messages[0]).toBe("1's Intimidate cut 1's Attack!");
+    });
+
     it("given Intimidate user, when switching in with no opponent, then returns activated=false", () => {
       // Edge case: no opponent present (e.g., all fainted)
       const ctx = createAbilityContext({
@@ -1065,6 +1078,18 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       expect(result.effects[0]!.target).toBe("field");
       expect(result.messages[0]).toBe("Kyogre's Drizzle made it rain!");
     });
+
+    it("given Drizzle user with no nickname, when switching in, then message uses speciesId", () => {
+      // Source: pret/pokeemerald — nickname fallback to species ID
+      // Covers the `?? String(speciesId)` branch in Gen3Abilities.ts line 89
+      const ctx = createAbilityContext({
+        pokemonAbility: "drizzle",
+        pokemonNickname: null,
+      });
+      const result = applyGen3Ability("on-switch-in", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.messages[0]).toBe("1's Drizzle made it rain!");
+    });
   });
 
   describe("Drought", () => {
@@ -1080,6 +1105,18 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       expect(result.effects[0]!.target).toBe("field");
       expect(result.messages[0]).toBe("Groudon's Drought intensified the sun's rays!");
     });
+
+    it("given Drought user with no nickname, when switching in, then message uses speciesId", () => {
+      // Source: pret/pokeemerald — nickname fallback to species ID
+      // Covers the `?? String(speciesId)` branch in Gen3Abilities.ts line 104
+      const ctx = createAbilityContext({
+        pokemonAbility: "drought",
+        pokemonNickname: null,
+      });
+      const result = applyGen3Ability("on-switch-in", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.messages[0]).toBe("1's Drought intensified the sun's rays!");
+    });
   });
 
   describe("Sand Stream", () => {
@@ -1094,6 +1131,18 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       expect(result.effects.length).toBe(1);
       expect(result.effects[0]!.target).toBe("field");
       expect(result.messages[0]).toBe("Tyranitar's Sand Stream whipped up a sandstorm!");
+    });
+
+    it("given Sand Stream user with no nickname, when switching in, then message uses speciesId", () => {
+      // Source: pret/pokeemerald — nickname fallback to species ID
+      // Covers the `?? String(speciesId)` branch in Gen3Abilities.ts line 117
+      const ctx = createAbilityContext({
+        pokemonAbility: "sand-stream",
+        pokemonNickname: null,
+      });
+      const result = applyGen3Ability("on-switch-in", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.messages[0]).toBe("1's Sand Stream whipped up a sandstorm!");
     });
   });
 
