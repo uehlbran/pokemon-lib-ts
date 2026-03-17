@@ -3,12 +3,15 @@ import {
   type AbilityResult,
   type ActivePokemon,
   BaseRuleset,
+  type BattleAction,
   type BattleSide,
   type BattleState,
   type DamageContext,
   type DamageResult,
   type EntryHazardResult,
   type ExpContext,
+  type ItemContext,
+  type ItemResult,
   type WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import type {
@@ -28,6 +31,7 @@ import {
 import { applyGen3Ability } from "./Gen3Abilities";
 import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
 import { calculateGen3Damage } from "./Gen3DamageCalc";
+import { applyGen3HeldItem } from "./Gen3Items";
 import { GEN3_TYPE_CHART, GEN3_TYPES } from "./Gen3TypeChart";
 import { applyGen3WeatherEffects } from "./Gen3Weather";
 
@@ -280,6 +284,132 @@ export class Gen3Ruleset extends BaseRuleset {
       context.isTrainerBattle,
       context.participantCount,
     );
+  }
+
+  // --- Held Item System ---
+
+  /**
+   * Gen 3 has held items (inherited from Gen 2, modernized).
+   */
+  hasHeldItems(): boolean {
+    return true;
+  }
+
+  /**
+   * Gen 3 held item trigger dispatch.
+   *
+   * Delegates to applyGen3HeldItem for end-of-turn, on-damage-taken, and on-hit triggers.
+   * Inline item effects (Choice Band, type boosters) are handled in Gen3DamageCalc.
+   *
+   * Source: pret/pokeemerald src/battle_util.c ItemBattleEffects
+   */
+  applyHeldItem(trigger: string, context: ItemContext): ItemResult {
+    return applyGen3HeldItem(trigger, context);
+  }
+
+  // --- Turn Order (Quick Claw) ---
+
+  /**
+   * Gen 3 turn order with Quick Claw support.
+   *
+   * Quick Claw gives a 18.75% (3/16) chance to move first among same-priority actions.
+   * In pokeemerald, Quick Claw effectively sets the holder's speed to maximum for that turn.
+   *
+   * Source: pret/pokeemerald src/battle_util.c — HOLD_EFFECT_QUICK_CLAW, 20% chance (game uses
+   * a threshold of 60/256 = 23.4%, but Showdown normalizes to 18.75% = 3/16 for Gen 3)
+   * We use the Showdown value (18.75%) as the cross-reference standard.
+   */
+  resolveTurnOrder(actions: BattleAction[], state: BattleState, rng: SeededRandom): BattleAction[] {
+    // Pre-roll Quick Claw for each action before sorting to preserve PRNG determinism.
+    // Source: GitHub issue #120 — tiebreak keys must be pre-assigned
+    const quickClawActivated = new Set<number>();
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+      if (action && action.type === "move") {
+        const side = state.sides[action.side];
+        const active = side?.active[0];
+        if (active?.pokemon.heldItem === "quick-claw") {
+          // 18.75% = 3/16 chance to activate
+          // Source: Showdown sim/battle-actions.ts — Quick Claw 18.75% in Gen 3
+          if (rng.chance(3 / 16)) {
+            quickClawActivated.add(i);
+          }
+        }
+      }
+    }
+
+    // Pre-assign tiebreak keys (same pattern as BaseRuleset)
+    const tagged = actions.map((action, idx) => ({
+      action,
+      idx,
+      tiebreak: rng.next(),
+    }));
+
+    tagged.sort((a, b) => {
+      const actionA = a.action;
+      const actionB = b.action;
+
+      // Switches always go first
+      if (actionA.type === "switch" && actionB.type !== "switch") return -1;
+      if (actionB.type === "switch" && actionA.type !== "switch") return 1;
+
+      // Item usage goes before moves
+      if (actionA.type === "item" && actionB.type === "move") return -1;
+      if (actionB.type === "item" && actionA.type === "move") return 1;
+
+      // Run goes before moves
+      if (actionA.type === "run" && actionB.type === "move") return -1;
+      if (actionB.type === "run" && actionA.type === "move") return 1;
+
+      // For moves, compare priority then speed (with Quick Claw)
+      if (actionA.type === "move" && actionB.type === "move") {
+        const sideA = state.sides[actionA.side];
+        const sideB = state.sides[actionB.side];
+        const activeA = sideA?.active[0];
+        const activeB = sideB?.active[0];
+        if (!activeA || !activeB) return 0;
+
+        const moveSlotA = activeA.pokemon.moves[actionA.moveIndex];
+        const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
+        if (!moveSlotA || !moveSlotB) return 0;
+
+        let priorityA = 0;
+        let priorityB = 0;
+        try {
+          priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
+        } catch {
+          /* default 0 */
+        }
+        try {
+          priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
+        } catch {
+          /* default 0 */
+        }
+
+        if (priorityA !== priorityB) return priorityB - priorityA;
+
+        // Quick Claw: activated holders go first within same priority bracket
+        // Source: pret/pokeemerald — Quick Claw holder acts first if activated
+        const qcA = quickClawActivated.has(a.idx);
+        const qcB = quickClawActivated.has(b.idx);
+        if (qcA && !qcB) return -1;
+        if (qcB && !qcA) return 1;
+
+        // Speed tiebreak
+        const speedA = this.getEffectiveSpeed(activeA);
+        const speedB = this.getEffectiveSpeed(activeB);
+        if (state.trickRoom.active) {
+          if (speedA !== speedB) return speedA - speedB;
+        } else {
+          if (speedA !== speedB) return speedB - speedA;
+        }
+        return a.tiebreak < b.tiebreak ? -1 : 1;
+      }
+
+      return a.tiebreak < b.tiebreak ? -1 : 1;
+    });
+
+    return tagged.map((t) => t.action);
   }
 
   // --- Speed (turn order helper) ---
