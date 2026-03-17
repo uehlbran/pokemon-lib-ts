@@ -250,7 +250,7 @@ describe("confusion duration", () => {
     }
 
     // Assert: every observed turnsLeft must be within [2, 5]
-    expect(turnsLeftValues.length).toBeGreaterThan(0);
+    expect(turnsLeftValues.length).toBe(1000);
     for (const turns of turnsLeftValues) {
       expect(turns).toBeGreaterThanOrEqual(2);
       expect(turns).toBeLessThanOrEqual(5);
@@ -378,6 +378,25 @@ describe("Haze handler", () => {
     expect(result.messages).toContain("All stat changes were eliminated!");
   });
 
+  it("given attacker is burned, when Haze is used, then statusCured targets defender only (not attacker or both)", () => {
+    // Source: pokered move_effects/haze.asm:15-43 — user's (attacker's) status is NOT cured by Haze;
+    // only the opponent's (defender's) status is cured. Second independent test confirming target="defender".
+    const burnedPokemon = {
+      ...makeActivePokemon().pokemon,
+      status: "burn",
+    } as PokemonInstance;
+    const burnedAttacker = makeActivePokemon({ pokemon: burnedPokemon });
+    const context = makeMoveEffectContext({ move: hazeMove, damage: 0, attacker: burnedAttacker });
+
+    // Act
+    const result = ruleset.executeMoveEffect(context);
+
+    // Assert: statusCured must target defender only — never attacker, never both
+    expect(result.statusCured?.target).not.toBe("both");
+    expect(result.statusCured?.target).not.toBe("attacker");
+    expect(result.statusCured?.target).toBe("defender");
+  });
+
   it("given both Pokemon have volatile statuses, when Haze is used, then volatilesToClear includes entries for both", () => {
     // Source: pokered move_effects/haze.asm — all volatile statuses on both sides are cleared
 
@@ -406,7 +425,7 @@ describe("Haze handler", () => {
     const attackerEntry = clears.find((c) => c.target === "attacker" && c.volatile === "confusion");
     const defenderEntry = clears.find((c) => c.target === "defender" && c.volatile === "confusion");
 
-    expect(attackerEntry).toBeDefined();
-    expect(defenderEntry).toBeDefined();
+    expect(attackerEntry?.volatile).toBe("confusion");
+    expect(defenderEntry?.volatile).toBe("confusion");
   });
 });
