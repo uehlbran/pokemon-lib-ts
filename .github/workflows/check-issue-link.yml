@@ -17,23 +17,61 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          # Pass if body contains a closing keyword + issue number
-          if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+'; then
-            echo "Issue reference found."
-            exit 0
-          fi
-
           # Pass if explicitly marked as no-issue (pure tooling/docs/chore)
           if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves)[[:space:]]*:[[:space:]]*n/?a|no.?issue|not.?applicable'; then
             echo "Explicitly marked as no related issue."
             exit 0
           fi
 
-          echo "PR body must include a closing reference (e.g. 'Closes #42') or mark as no-issue."
-          echo ""
-          echo "If this PR fixes a tracked bug or implements a tracked feature:"
-          echo "  Add 'Closes #N' to the PR body so GitHub auto-closes the issue on merge."
-          echo ""
-          echo "If this PR has no related issue (pure chore, docs, tooling):"
-          echo "  Add 'Closes: N/A' to the Related Issue section and explain why."
-          exit 1
+          # Require at least one properly-formed closing reference
+          if ! echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+'; then
+            echo "ERROR: PR body must include a closing reference or a no-issue marker."
+            echo ""
+            echo "To auto-close a tracked issue on merge:"
+            echo "  RIGHT:  Closes #50"
+            echo "  RIGHT:  Closes #80"
+            echo ""
+            echo "No related issue? Add 'Closes: N/A' to the Related Issue section."
+            exit 1
+          fi
+
+          # Detect orphaned issue references.
+          # An orphaned ref is a #N on a closing-keyword line that lacks its own keyword prefix.
+          # Example: "Closes #50, #80" — only #50 is closed; #80 is merely referenced.
+          ORPHAN_FOUND=false
+          ORPHAN_LINES=""
+
+          while IFS= read -r line; do
+            # Only inspect lines that contain a closing keyword
+            if echo "$line" | grep -qiE '(closes|fixes|resolves)'; then
+              # Count closing keyword+issue pairs on this line
+              KEYWORD_PAIRS=$(echo "$line" | grep -oiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+' | wc -l)
+              # Count ALL issue refs (#N) on this line
+              ALL_REFS=$(echo "$line" | grep -oE '#[0-9]+' | wc -l)
+
+              if [ "$ALL_REFS" -gt "$KEYWORD_PAIRS" ]; then
+                ORPHAN_FOUND=true
+                ORPHAN_LINES="${ORPHAN_LINES}  ${line}\n"
+              fi
+            fi
+          done <<< "$PR_BODY"
+
+          if [ "$ORPHAN_FOUND" = "true" ]; then
+            echo "ERROR: Orphaned issue references detected. GitHub only auto-closes the FIRST"
+            echo "issue after a closing keyword. Each issue needs its own keyword."
+            echo ""
+            echo "Offending line(s):"
+            printf '%b' "$ORPHAN_LINES"
+            echo ""
+            echo "WRONG:  Closes #50, #80, #85   <- only closes #50"
+            echo "WRONG:  Closes #50 #80 #85     <- only closes #50"
+            echo ""
+            echo "RIGHT (one keyword per issue):"
+            echo "  Closes #50"
+            echo "  Closes #80"
+            echo "  Closes #85"
+            exit 1
+          fi
+
+          echo "Issue reference(s) valid."
+          exit 0

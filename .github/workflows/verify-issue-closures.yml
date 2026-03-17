@@ -1,0 +1,81 @@
+name: Verify Issue Closures
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  issues: read
+  pull-requests: write
+
+jobs:
+  verify-closures:
+    name: "Verify issue auto-closures"
+    # Only run when the PR was merged (not just closed/abandoned)
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for GitHub to propagate closures
+        run: sleep 15
+
+      - name: Extract and verify closing references
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Extract issue numbers from closing keyword lines (safe: only digits pass through)
+          CLOSING_ISSUES=$(echo "$PR_BODY" | grep -oiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+' | grep -oE '#[0-9]+' | tr -d '#' | sort -u)
+
+          if [ -z "$CLOSING_ISSUES" ]; then
+            echo "No closing references found in PR body. Nothing to verify."
+            exit 0
+          fi
+
+          echo "Closing references found: $(echo "$CLOSING_ISSUES" | tr '\n' ' ')"
+
+          STILL_OPEN=""
+          for ISSUE_NUM in $CLOSING_ISSUES; do
+            STATE=$(gh api "repos/${REPO}/issues/${ISSUE_NUM}" --jq '.state' 2>/dev/null || echo "error")
+            if [ "$STATE" = "open" ]; then
+              STILL_OPEN="${STILL_OPEN} #${ISSUE_NUM}"
+            elif [ "$STATE" = "error" ]; then
+              echo "Warning: could not check state of #${ISSUE_NUM}"
+            else
+              echo "#${ISSUE_NUM} is closed. OK."
+            fi
+          done
+
+          if [ -n "$STILL_OPEN" ]; then
+            COMMENT="## Issue Auto-Close Verification Failed
+
+          The following issues were referenced with closing keywords but are **still open** after merge:
+
+          ${STILL_OPEN}
+
+          This usually means the closing keyword syntax was incorrect.
+
+          **Required format** (one keyword per issue):
+          \`\`\`
+          Closes #N
+          Closes #M
+          \`\`\`
+
+          **Wrong formats** (only closes the first issue):
+          \`\`\`
+          Closes #N, #M     <- only closes #N
+          Closes #N #M      <- only closes #N
+          \`\`\`
+
+          Please close the above issue(s) manually."
+
+            gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+              --method POST \
+              --field "body=${COMMENT}"
+
+            echo "Alert posted on PR #${PR_NUMBER} for unclosed issues:${STILL_OPEN}"
+            exit 0
+          fi
+
+          echo "All referenced issues confirmed closed."
