@@ -1,18 +1,23 @@
 {
-  "name": "@pokemon-lib-ts/battle",
-  "version": "0.10.0",
+  "name": "@pokemon-lib-ts/gen3",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./data": {
+      "import": "./data/index.js",
+      "require": "./data/index.cjs"
     }
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "data"
   ],
   "scripts": {
     "build": "tsup",
@@ -21,6 +26,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pokemon-lib-ts/core": "*"
+    "@pokemon-lib-ts/core": "*",
+    "@pokemon-lib-ts/battle": "*"
   }
 }

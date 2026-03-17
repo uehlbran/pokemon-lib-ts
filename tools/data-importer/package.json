@@ -4,5 +4,9 @@
   "type": "module",
   "devDependencies": {
     "tsx": "^4.0.0"
+  },
+  "dependencies": {
+    "@pkmn/data": "^0.10.7",
+    "@pkmn/dex": "^0.10.7"
   }
 }
