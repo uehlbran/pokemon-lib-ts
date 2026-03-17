@@ -679,6 +679,16 @@ export class BattleEngine implements BattleEventEmitter {
         this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
         return;
       }
+
+      // Phase 1 residuals: per-attack effects for the acting Pokemon
+      // (Gen 2: poison/burn, leech seed, nightmare, curse per pokecrystal ResidualDamage)
+      if (action.type === "move" || action.type === "struggle") {
+        this.processPostAttackResiduals(action.side);
+        if (this.state.ended) {
+          this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+          return;
+        }
+      }
     }
 
     // --- turn-end ---
@@ -1514,6 +1524,32 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private processPostAttackResiduals(sideIndex: 0 | 1): void {
+    // Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage
+    // Phase 1: runs per-Pokemon after each attack resolves
+    const effects = this.ruleset.getPostAttackResidualOrder();
+    for (const effect of effects) {
+      switch (effect) {
+        case "status-damage":
+          this.processStatusDamageForSide(sideIndex);
+          break;
+        case "leech-seed":
+          this.processLeechSeedForSide(sideIndex);
+          break;
+        case "nightmare":
+          this.processNightmareForSide(sideIndex);
+          break;
+        case "curse":
+          this.processCurseForSide(sideIndex);
+          break;
+        default:
+          break;
+      }
+      this.checkMidTurnFaints();
+      if (this.state.ended) return;
+    }
+  }
+
   private processEndOfTurn(): void {
     const effectOrder = this.ruleset.getEndOfTurnOrder();
 
@@ -1620,29 +1656,34 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
-  private processStatusDamage(): void {
-    for (const side of this.state.sides) {
-      const active = side.active[0];
-      if (!active || active.pokemon.currentHp <= 0) continue;
-      if (!active.pokemon.status) continue;
+  private processStatusDamageForSide(sideIndex: 0 | 1): void {
+    const side = this.state.sides[sideIndex];
+    const active = side.active[0];
+    if (!active || active.pokemon.currentHp <= 0) return;
+    if (!active.pokemon.status) return;
 
-      const status = active.pokemon.status;
-      if (status === "burn" || status === "poison" || status === "badly-poisoned") {
-        const damage = this.ruleset.applyStatusDamage(active, status, this.state);
-        if (damage > 0) {
-          active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
-          this.emit({
-            type: "damage",
-            side: side.index,
-            pokemon: getPokemonName(active),
-            amount: damage,
-            currentHp: active.pokemon.currentHp,
-            maxHp: active.pokemon.calculatedStats?.hp ?? 1,
-            source: status,
-          });
-        }
-        // Toxic counter increment is handled by the ruleset's applyStatusDamage
+    const status = active.pokemon.status;
+    if (status === "burn" || status === "poison" || status === "badly-poisoned") {
+      const damage = this.ruleset.applyStatusDamage(active, status, this.state);
+      if (damage > 0) {
+        active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+        this.emit({
+          type: "damage",
+          side: sideIndex,
+          pokemon: getPokemonName(active),
+          amount: damage,
+          currentHp: active.pokemon.currentHp,
+          maxHp: active.pokemon.calculatedStats?.hp ?? 1,
+          source: status,
+        });
       }
+      // Toxic counter increment is handled by the ruleset's applyStatusDamage
+    }
+  }
+
+  private processStatusDamage(): void {
+    for (let i = 0; i < this.state.sides.length; i++) {
+      this.processStatusDamageForSide(i as 0 | 1);
     }
   }
 
@@ -1857,45 +1898,50 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
-  private processLeechSeed(): void {
-    for (const side of this.state.sides) {
-      const active = side.active[0];
-      if (!active || active.pokemon.currentHp <= 0) continue;
-      if (!active.volatileStatuses.has("leech-seed")) continue;
+  private processLeechSeedForSide(sideIndex: 0 | 1): void {
+    const side = this.state.sides[sideIndex];
+    const active = side.active[0];
+    if (!active || active.pokemon.currentHp <= 0) return;
+    if (!active.volatileStatuses.has("leech-seed")) return;
 
-      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const drain = this.ruleset.calculateLeechSeedDrain(active);
-      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - drain);
+    const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+    const drain = this.ruleset.calculateLeechSeedDrain(active);
+    active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - drain);
 
-      this.emit({
-        type: "damage",
-        side: side.index,
-        pokemon: getPokemonName(active),
-        amount: drain,
-        currentHp: active.pokemon.currentHp,
-        maxHp,
-        source: "leech-seed",
-      });
+    this.emit({
+      type: "damage",
+      side: sideIndex,
+      pokemon: getPokemonName(active),
+      amount: drain,
+      currentHp: active.pokemon.currentHp,
+      maxHp,
+      source: "leech-seed",
+    });
 
-      const opponentSide = side.index === 0 ? 1 : 0;
-      const opponent = this.getActive(opponentSide as 0 | 1);
-      if (opponent && opponent.pokemon.currentHp > 0) {
-        const oppMaxHp = opponent.pokemon.calculatedStats?.hp ?? opponent.pokemon.currentHp;
-        const oldHp = opponent.pokemon.currentHp;
-        opponent.pokemon.currentHp = Math.min(oppMaxHp, oldHp + drain);
-        const healed = opponent.pokemon.currentHp - oldHp;
-        if (healed > 0) {
-          this.emit({
-            type: "heal",
-            side: opponentSide as 0 | 1,
-            pokemon: getPokemonName(opponent),
-            amount: healed,
-            currentHp: opponent.pokemon.currentHp,
-            maxHp: oppMaxHp,
-            source: "leech-seed",
-          });
-        }
+    const opponentSide = sideIndex === 0 ? 1 : 0;
+    const opponent = this.getActive(opponentSide);
+    if (opponent && opponent.pokemon.currentHp > 0) {
+      const oppMaxHp = opponent.pokemon.calculatedStats?.hp ?? opponent.pokemon.currentHp;
+      const oldHp = opponent.pokemon.currentHp;
+      opponent.pokemon.currentHp = Math.min(oppMaxHp, oldHp + drain);
+      const healed = opponent.pokemon.currentHp - oldHp;
+      if (healed > 0) {
+        this.emit({
+          type: "heal",
+          side: opponentSide,
+          pokemon: getPokemonName(opponent),
+          amount: healed,
+          currentHp: opponent.pokemon.currentHp,
+          maxHp: oppMaxHp,
+          source: "leech-seed",
+        });
       }
+    }
+  }
+
+  private processLeechSeed(): void {
+    for (let i = 0; i < this.state.sides.length; i++) {
+      this.processLeechSeedForSide(i as 0 | 1);
     }
   }
 
@@ -1927,48 +1973,58 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private processCurseForSide(sideIndex: 0 | 1): void {
+    const side = this.state.sides[sideIndex];
+    const active = side.active[0];
+    if (!active || active.pokemon.currentHp <= 0) return;
+    if (!active.volatileStatuses.has("curse")) return;
+
+    const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+    const damage = this.ruleset.calculateCurseDamage(active);
+    active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+
+    this.emit({
+      type: "damage",
+      side: sideIndex,
+      pokemon: getPokemonName(active),
+      amount: damage,
+      currentHp: active.pokemon.currentHp,
+      maxHp,
+      source: "curse",
+    });
+  }
+
   private processCurse(): void {
-    for (const side of this.state.sides) {
-      const active = side.active[0];
-      if (!active || active.pokemon.currentHp <= 0) continue;
-      if (!active.volatileStatuses.has("curse")) continue;
-
-      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const damage = this.ruleset.calculateCurseDamage(active);
-      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
-
-      this.emit({
-        type: "damage",
-        side: side.index,
-        pokemon: getPokemonName(active),
-        amount: damage,
-        currentHp: active.pokemon.currentHp,
-        maxHp,
-        source: "curse",
-      });
+    for (let i = 0; i < this.state.sides.length; i++) {
+      this.processCurseForSide(i as 0 | 1);
     }
   }
 
+  private processNightmareForSide(sideIndex: 0 | 1): void {
+    const side = this.state.sides[sideIndex];
+    const active = side.active[0];
+    if (!active || active.pokemon.currentHp <= 0) return;
+    if (!active.volatileStatuses.has("nightmare")) return;
+    if (active.pokemon.status !== "sleep") return;
+
+    const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+    const damage = this.ruleset.calculateNightmareDamage(active);
+    active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+
+    this.emit({
+      type: "damage",
+      side: sideIndex,
+      pokemon: getPokemonName(active),
+      amount: damage,
+      currentHp: active.pokemon.currentHp,
+      maxHp,
+      source: "nightmare",
+    });
+  }
+
   private processNightmare(): void {
-    for (const side of this.state.sides) {
-      const active = side.active[0];
-      if (!active || active.pokemon.currentHp <= 0) continue;
-      if (!active.volatileStatuses.has("nightmare")) continue;
-      if (active.pokemon.status !== "sleep") continue;
-
-      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-      const damage = this.ruleset.calculateNightmareDamage(active);
-      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
-
-      this.emit({
-        type: "damage",
-        side: side.index,
-        pokemon: getPokemonName(active),
-        amount: damage,
-        currentHp: active.pokemon.currentHp,
-        maxHp,
-        source: "nightmare",
-      });
+    for (let i = 0; i < this.state.sides.length; i++) {
+      this.processNightmareForSide(i as 0 | 1);
     }
   }
 

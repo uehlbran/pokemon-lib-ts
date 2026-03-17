@@ -308,6 +308,12 @@ export interface EndOfTurnSystem {
    * Returns the ordered list of effect types to process.
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[];
+  /**
+   * Effects that run per-Pokemon after each attack (Phase 1 residuals).
+   * Gen 2: poison/burn, leech-seed, nightmare, curse (pokecrystal ResidualDamage).
+   * Default: empty (all effects in getEndOfTurnOrder).
+   */
+  getPostAttackResidualOrder(): readonly EndOfTurnEffect[];
 }
 
 /** Pokémon validation, EXP gain, and battle gimmick (Mega/Z-Move/Dynamax/Tera). */
