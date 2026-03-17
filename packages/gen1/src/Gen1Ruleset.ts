@@ -563,6 +563,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           }
         } else if (effect.status === "bound") {
           // Bind, Wrap, Fire Spin, Clamp: trapping moves in Gen 1
+          // No chance roll — trapping moves always trap if they hit (accuracy is the filter).
           // Duration is weighted: 37.5% × 2 turns, 37.5% × 3 turns, 12.5% × 4, 12.5% × 5
           // (Showdown conditions.ts:225, same as multi-hit distribution)
           // Source: gen1-ground-truth.md §7 — Trapping Moves
@@ -614,7 +615,9 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Status cure: DEFENDER ONLY — Source: pokered move_effects/haze.asm:15-43
           // Non-volatile status (burn/paralysis/etc.) is only cured for the target,
           // NOT the user. Stat stage reset applies to both (separate operation).
+          // statusCured: resets defender's stat stages AND cures status (engine contract — BattleEngine processEffectResult)
           result.statusCured = { target: "defender" };
+          // statStagesReset: resets attacker's stages only — attacker's status is NOT cured by Haze
           result.statStagesReset = { target: "attacker" };
           result.screensCleared = "both";
           // Build volatilesToClear from all current volatile statuses on both Pokemon.
