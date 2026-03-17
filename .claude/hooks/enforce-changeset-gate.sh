@@ -16,10 +16,17 @@ fi
 BASE="${CLAUDE_PROJECT_DIR:-.}"
 
 # Find the merge base against origin/main
-MERGE_BASE=$(git -C "$BASE" merge-base HEAD origin/main 2>/dev/null) || {
-  # Can't determine merge base — allow through (CI will catch it)
-  exit 0
-}
+MERGE_BASE=$(git -C "$BASE" merge-base HEAD origin/main 2>/dev/null)
+if [ -z "$MERGE_BASE" ]; then
+  # origin/main may not be fetched — try a shallow fetch and retry
+  git -C "$BASE" fetch origin main --depth=1 --quiet 2>/dev/null
+  MERGE_BASE=$(git -C "$BASE" merge-base HEAD origin/main 2>/dev/null)
+fi
+if [ -z "$MERGE_BASE" ]; then
+  echo "BLOCKED: Cannot determine merge base against origin/main." >&2
+  echo "Run 'git fetch origin main' or rebase onto origin/main, then retry." >&2
+  exit 2
+fi
 
 # Check if any packages/*/src/ or packages/*/data/ files changed since merge base
 CHANGED_PACKAGES=$(git -C "$BASE" diff --name-only "$MERGE_BASE"..HEAD -- 'packages/*/src/' 'packages/*/data/' 2>/dev/null)
