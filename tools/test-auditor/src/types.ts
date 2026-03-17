@@ -1,8 +1,7 @@
-export type CheckName = "provenance" | "assertion-strength" | "test-naming" | "test-isolation";
 export type Severity = "error" | "warning" | "info";
 
 export interface Finding {
-  check: CheckName;
+  check: string;
   severity: Severity;
   file: string;
   line: number;
@@ -18,7 +17,7 @@ export interface PackageAudit {
 export interface AuditSummary {
   totalFiles: number;
   totalFindings: number;
-  byCheck: Record<CheckName, { error: number; warning: number; info: number }>;
+  byCheck: Record<string, { error: number; warning: number; info: number }>;
 }
 
 export interface AuditReport {
@@ -32,4 +31,9 @@ export interface FileContext {
   relativePath: string;
   lines: string[];
   content: string;
+}
+
+export interface Check {
+  name: string;
+  run(ctx: FileContext): Finding[];
 }

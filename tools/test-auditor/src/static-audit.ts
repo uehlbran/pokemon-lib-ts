@@ -1,26 +1,9 @@
-import { checkAssertionStrength } from "./checks/assertion-strength.ts";
-import { checkProvenance } from "./checks/provenance.ts";
-import { checkTestIsolation } from "./checks/test-isolation.ts";
-import { checkTestNaming } from "./checks/test-naming.ts";
-import type {
-  AuditReport,
-  AuditSummary,
-  CheckName,
-  Finding,
-  PackageAudit,
-  Severity,
-} from "./types.ts";
-import { discoverTestFiles, loadFile, resolvePackageTestDir } from "./utils.ts";
-
-const ALL_PACKAGES = ["core", "battle", "gen1", "gen2"];
+import { ALL_CHECKS } from "./checks/index.ts";
+import type { AuditReport, AuditSummary, Finding, PackageAudit, Severity } from "./types.ts";
+import { ALL_PACKAGES, discoverTestFiles, loadFile, resolvePackageTestDir } from "./utils.ts";
 
 function runChecksOnFile(ctx: ReturnType<typeof loadFile>): Finding[] {
-  return [
-    ...checkProvenance(ctx),
-    ...checkAssertionStrength(ctx),
-    ...checkTestNaming(ctx),
-    ...checkTestIsolation(ctx),
-  ];
+  return ALL_CHECKS.flatMap((check) => check.run(ctx));
 }
 
 function auditPackage(packageName: string): PackageAudit {
@@ -41,18 +24,17 @@ function auditPackage(packageName: string): PackageAudit {
 }
 
 function buildSummary(packages: PackageAudit[], totalFiles: number): AuditSummary {
-  const byCheck: AuditSummary["byCheck"] = {
-    provenance: { error: 0, warning: 0, info: 0 },
-    "assertion-strength": { error: 0, warning: 0, info: 0 },
-    "test-naming": { error: 0, warning: 0, info: 0 },
-    "test-isolation": { error: 0, warning: 0, info: 0 },
-  };
+  const byCheck: AuditSummary["byCheck"] = {};
+  for (const check of ALL_CHECKS) {
+    byCheck[check.name] = { error: 0, warning: 0, info: 0 };
+  }
 
   let totalFindings = 0;
   for (const pkg of packages) {
     for (const f of pkg.findings) {
       totalFindings++;
-      byCheck[f.check][f.severity]++;
+      const entry = byCheck[f.check];
+      if (entry) entry[f.severity]++;
     }
   }
 
@@ -90,10 +72,7 @@ function printHuman(report: AuditReport): void {
   console.log(`  Files scanned : ${s.totalFiles}`);
   console.log(`  Total findings: ${s.totalFindings}`);
   console.log("");
-  for (const [check, counts] of Object.entries(s.byCheck) as [
-    CheckName,
-    (typeof s.byCheck)[CheckName],
-  ][]) {
+  for (const [check, counts] of Object.entries(s.byCheck)) {
     const total = counts.error + counts.warning + counts.info;
     if (total === 0) continue;
     console.log(

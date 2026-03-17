@@ -18,6 +18,8 @@ const PACKAGE_TEST_DIRS: Record<string, string> = {
   gen9: "packages/gen9/tests",
 };
 
+export const ALL_PACKAGES: string[] = Object.keys(PACKAGE_TEST_DIRS);
+
 export function resolvePackageTestDir(packageName: string): string | null {
   const rel = PACKAGE_TEST_DIRS[packageName];
   if (!rel) return null;

@@ -23,7 +23,7 @@ const CITATION_KEYWORDS = [
 ];
 
 // Matches assertion calls with a numeric literal argument
-const NUMERIC_ASSERTION_RE = /\.(toBe|toEqual|toBeCloseTo)\(\s*(-?\d[\d.]*)\s*\)/;
+const NUMERIC_ASSERTION_RE = /\.(toBe|toEqual|toBeCloseTo)\(\s*(-?\d[\d.]*)\s*[,)]/;
 
 // Matches the start of a test or describe block
 const BLOCK_START_RE = /^\s*(it|test|describe)\s*\(/;

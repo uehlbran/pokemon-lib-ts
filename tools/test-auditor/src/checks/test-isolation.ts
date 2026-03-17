@@ -22,7 +22,7 @@ export function checkTestIsolation(ctx: FileContext): Finding[] {
     // Check if this variable is reassigned inside any it()/test() block
     // Reassignment patterns: `varName =`, `varName.push(`, `varName[`
     const reassignRE = new RegExp(
-      `(?:^|\\s)${escapeRegex(varName)}\\s*=|${escapeRegex(varName)}\\.push\\(|${escapeRegex(varName)}\\[`,
+      `(?:^|\\s)${escapeRegex(varName)}\\s*=|(?:^|\\s)${escapeRegex(varName)}\\.push\\(|(?:^|\\s)${escapeRegex(varName)}\\[`,
       "m",
     );
 
