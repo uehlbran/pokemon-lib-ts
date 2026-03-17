@@ -142,7 +142,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // of times, so consuming rng inside the comparator breaks replay determinism.
     // Fix: consume exactly N rng.next() calls upfront, then use keys in comparator.
     // Source: GitHub issue #120
-    const tagged = actions.map((action) => ({ action, tiebreak: rng.next() }));
+
+    // Allow subclasses (Gen 3+) to pre-roll "go first" items (Quick Claw, etc.) before
+    // tiebreak keys are assigned, preserving PRNG consumption order.
+    const quickClawActivated = this.getQuickClawActivated(actions, state, rng);
+
+    const tagged = actions.map((action, idx) => ({ action, idx, tiebreak: rng.next() }));
 
     tagged.sort((a, b) => {
       const actionA = a.action;
@@ -187,6 +192,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
         if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
 
+        // Quick Claw / go-first item: activated holders go first within same priority bracket
+        const qcA = quickClawActivated.has(a.idx);
+        const qcB = quickClawActivated.has(b.idx);
+        if (qcA && !qcB) return -1;
+        if (qcB && !qcA) return 1;
+
         // Speed tiebreak
         const speedA = this.getEffectiveSpeed(activeA);
         const speedB = this.getEffectiveSpeed(activeB);
@@ -203,6 +214,26 @@ export abstract class BaseRuleset implements GenerationRuleset {
     });
 
     return tagged.map((t) => t.action);
+  }
+
+  /**
+   * Hook for subclasses to pre-roll "go first" item effects (Quick Claw, etc.)
+   * before tiebreak keys are assigned in resolveTurnOrder.
+   *
+   * Called with the PRNG object so subclasses consume their RNG calls BEFORE
+   * the tiebreak rng.next() calls, preserving PRNG consumption order.
+   *
+   * Returns a Set of action indices that have a "go first" item activated.
+   * Default: no items activated (Gen 4+ Quick Claw uses different mechanics).
+   *
+   * Source: pret/pokeemerald HOLD_EFFECT_QUICK_CLAW — Gen 3 Quick Claw pre-roll
+   */
+  protected getQuickClawActivated(
+    _actions: BattleAction[],
+    _state: BattleState,
+    _rng: SeededRandom,
+  ): Set<number> {
+    return new Set();
   }
 
   doesMoveHit(context: AccuracyContext): boolean {

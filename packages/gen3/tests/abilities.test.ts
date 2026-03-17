@@ -558,17 +558,12 @@ describe("Gen 3 Abilities — Damage Calc", () => {
 
   describe("Thick Fat", () => {
     it("given Thick Fat defender, when hit by Fire move, then damage is halved", () => {
-      // Source: pret/pokeemerald ABILITY_THICK_FAT — halves damage from Fire and Ice type moves
-      // Fire is special in Gen 3 (SpAttack vs SpDefense)
-      // Without Thick Fat: floor(floor(22*80*100/100)/50)+2 = 72 (see baseline tests)
-      //   Wait: for special: SpAtk=100 vs SpDef=100
-      //   baseDamage = floor(floor(22*80*100/100)/50) + 2 = floor(1760/50) + 2 = 37
-      //   Then type effectiveness 1x → 37
-      //   Then Thick Fat halves: floor(37 * 0.5) = 18
-      //   Min 1, final = 18
-      // Actually without Thick Fat the base test returns 37 for 80BP L50 100/100:
-      //   The answer there had to be 37 because floor(1760/50)=35, +2=37
-      // With Thick Fat: floor(37 * 0.5) = 18
+      // Source: pret/pokeemerald ABILITY_THICK_FAT / CalculateBaseDamage —
+      //   Thick Fat halves the attacker's SpAtk/Atk BEFORE the damage formula runs.
+      //   Fire is special in Gen 3 (SpAttack vs SpDefense), L50, SpAtk=100, SpDef=100, 80BP:
+      //   Thick Fat halves SpAtk: floor(100 * 0.5) = 50
+      //   levelFactor = floor(2*50/5) + 2 = 22
+      //   baseDamage = floor(floor(22*80*50/100)/50) + 2 = floor(880/50) + 2 = 17 + 2 = 19
       const attacker = createActivePokemon({
         level: 50,
         attack: 100,
@@ -589,13 +584,12 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       const move = createMove("fire", 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
-      expect(result.damage).toBe(18);
+      expect(result.damage).toBe(19);
     });
 
     it("given Thick Fat defender, when hit by Ice move, then damage is halved", () => {
       // Source: pret/pokeemerald ABILITY_THICK_FAT — halves damage from Fire and Ice type moves
-      // Ice is special in Gen 3
-      // Same calc as Fire test above: 37 base → floor(37 * 0.5) = 18
+      // Ice is special in Gen 3 — same pre-formula stat halving as Fire test above: 19
       const attacker = createActivePokemon({
         level: 50,
         attack: 100,
@@ -616,7 +610,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       const move = createMove("ice", 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
-      expect(result.damage).toBe(18);
+      expect(result.damage).toBe(19);
     });
 
     it("given Thick Fat defender, when hit by Water move, then damage is NOT halved", () => {

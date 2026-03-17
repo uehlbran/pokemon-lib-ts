@@ -208,8 +208,20 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // Get effective stats (with crit stage ignoring, burn, and ability modifiers applied)
-  const attack = getAttackStat(attacker, move.type, isCrit);
+  let attack = getAttackStat(attacker, move.type, isCrit);
   const defense = getDefenseStat(defender, move.type, isCrit);
+
+  // Track ability multiplier for breakdown (set before the formula so it's captured correctly)
+  let abilityMultiplier = 1;
+
+  // Thick Fat: halves the attacker's effective SpAtk/Atk stat BEFORE the damage formula runs.
+  // Source: pret/pokeemerald CalculateBaseDamage — modifies spAttack/attack before (2*L/5+2)*P*A/D
+  // Note: halving the stat (with floor truncation inside the formula) differs from halving final
+  // damage by 0–1 points at certain breakpoints; the pre-formula behavior matches pokeemerald.
+  if (defenderAbility === "thick-fat" && (move.type === "fire" || move.type === "ice")) {
+    attack = Math.floor(attack * 0.5);
+    abilityMultiplier = 0.5;
+  }
 
   // Step 1: Base damage
   // Source: pret/pokeemerald — floor(floor(floor(2*Level/5+2) * Power * Atk/Def) / 50) + 2
@@ -316,18 +328,6 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Apply type effectiveness as a multiplier
   // For non-integer multipliers (0.25, 0.5, 2, 4), apply with floor
   baseDamage = Math.floor(baseDamage * effectiveness);
-
-  // 2.7: Defender ability damage modifiers (post-type-effectiveness)
-
-  // Track ability multiplier for breakdown
-  let abilityMultiplier = 1;
-
-  // Thick Fat: halves fire and ice damage
-  // Source: pret/pokeemerald ABILITY_THICK_FAT — halves damage from Fire and Ice type moves
-  if (defenderAbility === "thick-fat" && (move.type === "fire" || move.type === "ice")) {
-    baseDamage = Math.floor(baseDamage * 0.5);
-    abilityMultiplier = 0.5;
-  }
 
   // Minimum 1 damage (unless type immune, which returns 0 above)
   const finalDamage = Math.max(1, baseDamage);
