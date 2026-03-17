@@ -5,6 +5,21 @@ All notable changes to `@pokemon-lib-ts/gen2` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-17
+
+### Added
+
+- `getPostAttackResidualOrder()` returning `["status-damage", "leech-seed", "nightmare", "curse"]` — Phase 1 residuals per pokecrystal `ResidualDamage`. These effects now fire per-Pokemon after each attack, not at end-of-turn.
+
+### Fixed
+
+- `getEndOfTurnOrder()` updated to Phase 2 only (between-turn effects): `future-attack → weather-damage → bind → perish-song → leftovers → screen-countdown → weather-countdown`. Source: pokecrystal `HandleBetweenTurnEffects`.
+- Priority values corrected to Showdown-compatible scale per `gen2-ground-truth.md §9`:
+  - `protect`, `detect`, `endure`: 2 → **3**
+  - `quick-attack`, `mach-punch`, `extreme-speed`: 1 → **1** (unchanged from Showdown scale; raw pokecrystal byte was misread)
+  - `vital-throw`: 0 → **-1** (goes last, never misses)
+  - `roar`, `whirlwind`: 0 → **-1**
+
 ## [0.3.4] - 2026-03-15
 
 ### Added

@@ -5,10 +5,18 @@ All notable changes to `@pokemon-lib-ts/battle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.10.0] - 2026-03-16
+## [0.10.0] - 2026-03-17
 
 ### Added
+
+- `getPostAttackResidualOrder(): readonly EndOfTurnEffect[]` method to `EndOfTurnSystem` interface — enables per-Pokemon Phase 1 residual processing after each move/struggle. Gen 3+ default returns `[]` (no behavior change). Source: pokecrystal `ResidualDamage`.
+- `processPostAttackResiduals(sideIndex)` in `BattleEngine` — dispatches Phase 1 effects per acting Pokemon immediately after each action in the turn loop.
+- Per-side helpers: `processStatusDamageForSide`, `processLeechSeedForSide`, `processCurseForSide`, `processNightmareForSide` — extracted from their both-sides equivalents to support per-Pokemon Phase 1 dispatch.
 - `BaseRuleset.getQuickClawActivated()` protected hook — allows Gen 3+ subclasses to pre-roll "go first" item effects (Quick Claw, etc.) before tiebreak keys are assigned in `resolveTurnOrder`. Default returns empty Set (no activation). Preserves PRNG consumption order for deterministic replays.
+
+### Changed
+
+- `BattleEngine` action loop now calls `processPostAttackResiduals(action.side)` after each `move` or `struggle` action (no-op for Gen 1 and Gen 3+, which return `[]` from `getPostAttackResidualOrder`).
 
 ## [0.9.4] - 2026-03-16
 
