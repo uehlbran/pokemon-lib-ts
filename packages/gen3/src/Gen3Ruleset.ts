@@ -366,14 +366,6 @@ export class Gen3Ruleset extends BaseRuleset {
       messages: [],
     };
 
-    // Explosion and Self-Destruct: selfFaint even without a declared effect
-    // Source: pret/pokeemerald — MOVE_EXPLOSION/SELF_DESTRUCT set MOVE_EFFECT_EXPLOSION
-    if (context.move.id === "explosion" || context.move.id === "self-destruct") {
-      result.selfFaint = true;
-      const pokemonName = context.attacker.pokemon.nickname ?? "The Pokemon";
-      result.messages.push(`${pokemonName} exploded!`);
-    }
-
     // Knock Off: custom handler — move data has effect: null so we handle by ID
     // Source: pret/pokeemerald src/battle_script_commands.c — Knock Off removes item
     if (context.move.id === "knock-off") {
@@ -553,11 +545,7 @@ export class Gen3Ruleset extends BaseRuleset {
       }
 
       case "switch-out": {
-        // Gen 3 data uses "who" instead of "target" for switch-out direction.
-        // Handle both for robustness (TypeScript interface says "target").
-        const switchTarget =
-          (effect as { target?: string }).target ?? (effect as { who?: string }).who;
-        if (switchTarget === "self") {
+        if (effect.target === "self") {
           // Baton Pass — switch out preserving stat changes and volatile statuses
           // Source: pret/pokeemerald — Baton Pass transfers volatiles
           result.switchOut = true;
@@ -578,9 +566,10 @@ export class Gen3Ruleset extends BaseRuleset {
       }
 
       case "remove-hazards": {
-        // Rapid Spin removes hazards from user's side
-        // Source: pret/pokeemerald — Rapid Spin clears Spikes, Leech Seed, Wrap
-        result.messages.push(`${attacker.pokemon.nickname ?? "The Pokemon"} blew away hazards!`);
+        // Intentionally no-op: all Gen 3 remove-hazards effects (Rapid Spin)
+        // are handled via the "custom" case in handleCustomEffect.
+        // clearSideHazards is set there, not here.
+        // Source: pret/pokeemerald — Rapid Spin uses EFFECT_RAPID_SPIN (custom)
         break;
       }
 
