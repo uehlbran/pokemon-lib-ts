@@ -492,6 +492,14 @@ describe("Gen 3 Held Items", () => {
 
       expect(result.activated).toBe(false);
     });
+
+    it("given a paralyzed Pokemon holding Lum Berry, when on-damage-taken fires, then no activation", () => {
+      // Source: pokeemerald ItemBattleEffects — Lum Berry runs at ITEMEFFECT_ON_RESIDUAL (end-of-turn) only
+      const ctx = createItemContext({ heldItem: "lum-berry", status: "paralysis" });
+      const result = applyGen3HeldItem("on-damage-taken", ctx);
+      expect(result.activated).toBe(false);
+      expect(result.effects).toHaveLength(0);
+    });
   });
 
   // =========================================================================
@@ -791,6 +799,10 @@ describe("Gen 3 Held Items", () => {
 
       expect(result.activated).toBe(false);
     });
+
+    it.todo(
+      "given a Pokemon using Bite (inherent 30% flinch) holding King's Rock, when on-hit triggers, then King's Rock does NOT add extra flinch (requires VERIFY_POKEEMERALD confirmation: src/battle_util.c)",
+    );
   });
 
   // =========================================================================
@@ -1294,6 +1306,19 @@ describe("Gen 3 Held Items", () => {
   // =========================================================================
   // Stubs (items that require engine support not yet available)
   // =========================================================================
+
+  // =========================================================================
+  // Accuracy-reducing items — engine-limited stubs
+  // =========================================================================
+
+  describe("Accuracy-reducing items — engine-limited stubs", () => {
+    it.todo(
+      "given Brightpowder holder is targeted, when accuracy check runs, then opponent's accuracy is 0.9x (requires doesMoveHit accuracy modifier hook)",
+    );
+    it.todo(
+      "given Lax Incense holder is targeted, when accuracy check runs, then opponent's accuracy is 0.9x (requires doesMoveHit accuracy modifier hook)",
+    );
+  });
 
   describe("Stubbed items (engine support not available)", () => {
     it.todo(
