@@ -99,6 +99,47 @@ function getAttackStat(
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
+  // 4a. Species-specific held item boosts (applied to raw stat, after Choice Band)
+  // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage
+  const attackerItem = attacker.pokemon.heldItem;
+  const attackerSpecies = attacker.pokemon.speciesId;
+
+  // Soul Dew: 1.5x SpAtk for Latias (380) / Latios (381)
+  // Source: pret/pokeemerald HOLD_EFFECT_SOUL_DEW
+  // Source: Bulbapedia — "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
+  if (
+    !physical &&
+    attackerItem === "soul-dew" &&
+    (attackerSpecies === 380 || attackerSpecies === 381)
+  ) {
+    rawStat = Math.floor((rawStat * 150) / 100);
+  }
+
+  // Deep Sea Tooth: 2x SpAtk for Clamperl (366)
+  // Source: pret/pokeemerald HOLD_EFFECT_DEEP_SEA_TOOTH
+  // Source: Bulbapedia — "When held by Clamperl, doubles its Special Attack."
+  if (!physical && attackerItem === "deep-sea-tooth" && attackerSpecies === 366) {
+    rawStat = rawStat * 2;
+  }
+
+  // Light Ball: 2x SpAtk for Pikachu (25) — Gen 3 is SpAtk ONLY (Attack boost is Gen 4+)
+  // Source: pret/pokeemerald HOLD_EFFECT_LIGHT_BALL
+  // Source: Bulbapedia — "When held by Pikachu, doubles its Special Attack. (Generation III)"
+  if (!physical && attackerItem === "light-ball" && attackerSpecies === 25) {
+    rawStat = rawStat * 2;
+  }
+
+  // Thick Club: 2x Attack for Cubone (104) / Marowak (105)
+  // Source: pret/pokeemerald HOLD_EFFECT_THICK_CLUB
+  // Source: Bulbapedia — "When held by Cubone or Marowak, doubles the holder's Attack."
+  if (
+    physical &&
+    attackerItem === "thick-club" &&
+    (attackerSpecies === 104 || attackerSpecies === 105)
+  ) {
+    rawStat = rawStat * 2;
+  }
+
   // 5. Hustle: 1.5x physical attack (accuracy penalty handled by engine)
   // Source: pret/pokeemerald src/pokemon.c:3205-3206 — (150 * attack) / 100
   if (physical && ability === "hustle") {
@@ -139,7 +180,30 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   const physical = isGen3PhysicalType(moveType);
   const statKey = physical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
-  const baseStat = stats ? stats[statKey] : 100;
+  let baseStat = stats ? stats[statKey] : 100;
+
+  // Species-specific held item boosts on defense side
+  // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage
+  const defenderItem = defender.pokemon.heldItem;
+  const defenderSpecies = defender.pokemon.speciesId;
+
+  // Soul Dew: 1.5x SpDef for Latias (380) / Latios (381)
+  // Source: pret/pokeemerald HOLD_EFFECT_SOUL_DEW
+  // Source: Bulbapedia — "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
+  if (
+    !physical &&
+    defenderItem === "soul-dew" &&
+    (defenderSpecies === 380 || defenderSpecies === 381)
+  ) {
+    baseStat = Math.floor((baseStat * 150) / 100);
+  }
+
+  // Deep Sea Scale: 2x SpDef for Clamperl (366)
+  // Source: pret/pokeemerald HOLD_EFFECT_DEEP_SEA_SCALE
+  // Source: Bulbapedia — "When held by Clamperl, doubles its Special Defense."
+  if (!physical && defenderItem === "deep-sea-scale" && defenderSpecies === 366) {
+    baseStat = baseStat * 2;
+  }
 
   // Get the appropriate stage
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
