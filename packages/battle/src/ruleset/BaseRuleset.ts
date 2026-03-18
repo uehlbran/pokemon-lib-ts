@@ -588,6 +588,9 @@ export abstract class BaseRuleset implements GenerationRuleset {
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    // Note: "defrost" is intentionally absent here. Gen 3+ handle freeze thaw pre-move
+    // via checkFreezeThaw (20% per turn), NOT between turns. Only Gen 2 includes "defrost"
+    // in its EoT order (see Gen2Ruleset.getEndOfTurnOrder and processEndOfTurnDefrost).
     return [
       "weather-damage",
       "weather-countdown",

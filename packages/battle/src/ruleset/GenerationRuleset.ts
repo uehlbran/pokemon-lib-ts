@@ -162,14 +162,6 @@ export interface StatusSystem {
    * @returns `true` if still confused, `false` if confusion ended this turn.
    */
   processConfusionTurn(active: ActivePokemon, state: BattleState): boolean;
-  /**
-   * Process end-of-turn freeze thaw for a Pokemon (called by the "defrost" EoT effect).
-   * Gen 1: always false (frozen Pokemon never thaw naturally).
-   * Gen 2: 25/256 (~9.8%) chance; skip if frozen this turn (wPlayerJustGotFrozen guard).
-   * Gen 3+: always false (thaw is handled pre-move via checkFreezeThaw at 20%).
-   * @returns `true` if the Pokemon thawed this turn.
-   */
-  processEndOfTurnDefrost(pokemon: ActivePokemon, rng: SeededRandom): boolean;
 }
 
 /** Whether this generation has abilities, and how to apply them. */
@@ -349,6 +341,14 @@ export interface EndOfTurnSystem {
    * Battle-end detection is deferred to the end-of-turn `checkBattleEnd()` call.
    */
   getPostAttackResidualOrder(): readonly EndOfTurnEffect[];
+  /**
+   * Process end-of-turn freeze thaw for a Pokemon (called by the "defrost" EoT effect).
+   * Gen 1: always false (frozen Pokemon never thaw naturally).
+   * Gen 2: 25/256 (~9.8%) chance; skip if frozen this turn (wPlayerJustGotFrozen guard).
+   * Gen 3+: always false ("defrost" is not in getEndOfTurnOrder(); thaw is handled pre-move).
+   * @returns `true` if the Pokemon thawed this turn.
+   */
+  processEndOfTurnDefrost(pokemon: ActivePokemon, rng: SeededRandom): boolean;
 }
 
 /** Pokémon validation, EXP gain, and battle gimmick (Mega/Z-Move/Dynamax/Tera). */

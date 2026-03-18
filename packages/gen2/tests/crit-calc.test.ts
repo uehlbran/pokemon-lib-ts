@@ -123,8 +123,8 @@ function createMockMove(overrides: Partial<MoveData> = {}): MoveData {
  * Stage 3: 85/256 (~33.2%)
  * Stage 4+: 128/256 (50%)
  *
- * Modifiers that add +1 stage each (stackable):
- * - High crit moves (Slash, etc.): +1
+ * Modifiers (stackable):
+ * - High crit moves (Slash, etc.): +2 (pokecrystal effect_commands.asm:1182-1184 — inc c; inc c)
  * - Focus Energy: +1 (FIXED — not bugged like Gen 1)
  * - Scope Lens item: +1
  */

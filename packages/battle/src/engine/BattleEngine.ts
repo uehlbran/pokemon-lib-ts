@@ -1252,6 +1252,12 @@ export class BattleEngine implements BattleEventEmitter {
           data: {},
         });
       }
+      // Set just-frozen volatile so EoT processEndOfTurnDefrost skips the thaw check
+      // for the same turn the Pokemon was frozen (wPlayerJustGotFrozen guard).
+      // Source: pret/pokecrystal engine/battle/core.asm:1538-1540 — wPlayerJustGotFrozen
+      if (result.statusInflicted === "freeze") {
+        defender.volatileStatuses.set("just-frozen", { turnsLeft: 1 });
+      }
     }
 
     // Volatile status infliction — use volatileData for turnsLeft if provided
