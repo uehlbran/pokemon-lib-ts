@@ -238,6 +238,7 @@ export type AbilityEffectType =
   | "damage-reduction"
   | "type-change"
   | "weather-immunity"
+  | "weather-set"
   | "ability-change"
   | "none";
 
@@ -247,6 +248,14 @@ export interface AbilityEffect {
   readonly effectType: AbilityEffectType;
   /** Which entity the effect applies to */
   readonly target: "self" | "opponent" | "field";
+  /** For stat-change effects: which stat to modify */
+  readonly stat?: "attack" | "defense" | "spAttack" | "spDefense" | "speed";
+  /** For stat-change effects: number of stages to change (negative = lower) */
+  readonly stages?: number;
+  /** For weather-set effects: which weather to set */
+  readonly weather?: import("@pokemon-lib-ts/core").WeatherType;
+  /** For weather-set effects: how many turns the weather lasts (-1 = indefinite) */
+  readonly weatherTurns?: number;
 }
 
 export interface AbilityResult {
@@ -429,7 +438,13 @@ export type EndOfTurnEffect =
   | "nightmare"
   | "harvest"
   | "pickup"
-  | "poison-heal";
+  | "poison-heal"
+  | "mystery-berry"
+  | "defrost"
+  | "safeguard-countdown"
+  | "stat-boosting-items"
+  | "healing-items"
+  | "encore-countdown";
 
 /**
  * Configuration object passed to the `BattleEngine` constructor.

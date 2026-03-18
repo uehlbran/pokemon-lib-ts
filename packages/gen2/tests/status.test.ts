@@ -509,20 +509,23 @@ describe("Gen2Status", () => {
 });
 
 describe("Comprehensive status mechanics", () => {
-  it("given a frozen Pokemon, when rolling thaw chance 10000 times, then thaws approximately 9.77% of turns", () => {
+  it("given a frozen Pokemon, when calling checkFreezeThaw, then always returns false because Gen 2 thaws between turns", () => {
+    // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
+    // In Gen 2, freeze thaw happens in HandleBetweenTurnEffects (end-of-turn),
+    // NOT pre-move. checkFreezeThaw is called pre-move by the engine, so Gen 2
+    // must always return false here. The actual 25/256 thaw roll fires in the
+    // "defrost" end-of-turn effect instead.
     // Arrange
     const rng = new SeededRandom(12345);
     const ruleset = new Gen2Ruleset();
     const pokemon = createMockActivePokemon({ status: "freeze" });
     let thawCount = 0;
     // Act
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 100; i++) {
       if (ruleset.checkFreezeThaw(pokemon, rng)) thawCount++;
     }
-    const rate = thawCount / 10000;
-    // Assert — 25/256 ≈ 9.77%, allow ±2%
-    expect(rate).toBeGreaterThan(0.0777);
-    expect(rate).toBeLessThan(0.1177);
+    // Assert — pre-move thaw NEVER happens in Gen 2
+    expect(thawCount).toBe(0);
   });
 
   it("given a burned Pokemon with 200 max HP, when calculating status damage, then takes 25 damage per turn", () => {

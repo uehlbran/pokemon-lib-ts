@@ -651,9 +651,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return calculateGen2StatusDamage(pokemon, status, state);
   }
 
-  checkFreezeThaw(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    // Gen 2: 25/256 (~9.77%) chance to thaw each turn (unlike Gen 1's permanent freeze)
-    return rng.chance(25 / 256);
+  checkFreezeThaw(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
+    // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost — thaw happens between
+    // turns (in HandleBetweenTurnEffects), NOT pre-move. The engine calls checkFreezeThaw before
+    // a move executes, so returning false here ensures frozen Pokemon skip their turn.
+    // The actual 25/256 (~9.77%) thaw roll fires in the "defrost" end-of-turn effect instead.
+    return false;
   }
 
   rollSleepTurns(rng: SeededRandom): number {
@@ -685,6 +688,24 @@ export class Gen2Ruleset implements GenerationRuleset {
       return true; // Gen 2+: can act on wake turn
     }
     return false; // Still sleeping
+  }
+
+  // --- Confusion/Bound Turn Processing ---
+
+  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
+    // Source: pret/pokecrystal — confusion counter decrement, same as Gen 3+ default
+    const conf = active.volatileStatuses.get("confusion");
+    if (!conf) return false;
+    conf.turnsLeft--;
+    return conf.turnsLeft > 0;
+  }
+
+  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
+    // Source: pret/pokecrystal — bind/trapping turn decrement
+    const bound = active.volatileStatuses.get("bound");
+    if (!bound) return false;
+    bound.turnsLeft--;
+    return bound.turnsLeft > 0;
   }
 
   // --- Abilities (not in Gen 2) ---
@@ -843,8 +864,8 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Gen 2: clear non-persistent volatiles on switch
-    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus — zeros all substatus bytes,
-    // reverting badly-poisoned to regular poison (SUBSTATUS_TOXIC is cleared on switch-in via NewBattleMonStatus)
+    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus — zeros all
+    // substatus bytes (SubStatus1-5), clearing SUBSTATUS_TOXIC among others.
     pokemon.volatileStatuses.delete("bound");
     pokemon.volatileStatuses.delete("confusion");
     pokemon.volatileStatuses.delete("flinch");
@@ -852,8 +873,9 @@ export class Gen2Ruleset implements GenerationRuleset {
     pokemon.volatileStatuses.delete("leech-seed");
     pokemon.volatileStatuses.delete("toxic-counter");
 
-    // Badly-poisoned reverts to regular poison on switch-out
-    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
+    // Badly-poisoned reverts to regular poison on switch-out.
+    // Source: pret/pokecrystal — In Gen 2, badly-poisoned = PSN + SUBSTATUS_TOXIC. NewBattleMonStatus
+    // clears SubStatus5 (which holds SUBSTATUS_TOXIC), leaving only the PSN status byte = regular poison.
     if (pokemon.pokemon.status === "badly-poisoned") {
       pokemon.pokemon.status = "poison";
     }
@@ -936,9 +958,10 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
-    // Gen 2: recoil = 1/4 of the DAMAGE DEALT (not max HP)
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil — srl b twice = divide by 4
-    // Uses wCurDamage / 4, not max HP
+    // Gen 2: recoil = 1/4 of the DAMAGE DEALT
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil
+    // The asm loads wCurDamage, shifts right twice (srl b; rr c; srl b; rr c) = divide by 4
+    // wBattleMonMaxHP is the HP pointer to write the new HP to, not the damage source
     return Math.max(1, Math.floor(damageDealt / 4));
   }
 
@@ -987,20 +1010,34 @@ export class Gen2Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    // Source: pret/pokecrystal engine/battle/core.asm — HandleBetweenTurnEffects
-    // Phase 2: runs once after both Pokemon have acted
+    // Source: pret/pokecrystal engine/battle/core.asm:250-296 HandleBetweenTurnEffects
+    // Phase 2: runs once after both Pokemon have acted.
     // Note: status-damage, leech-seed, nightmare, and curse are intentionally absent here —
     // they fire per-attack in Phase 1 via getPostAttackResidualOrder().
-    // Order: future-attack → weather-damage → bind → perish-song → leftovers →
-    // screen-countdown → weather-countdown
+    //
+    // Decomp order (lines 256-296):
+    //   HandleFutureSight → HandleWeather (damage+countdown combined) → HandleWrap →
+    //   HandlePerishSong → [faint checks end here] →
+    //   HandleLeftovers → HandleMysteryberry → HandleDefrost → HandleSafeguard →
+    //   HandleScreens → HandleStatBoostingHeldItems → HandleHealingItems → HandleEncore
+    //
+    // Note: HandleWeather in the decomp handles BOTH damage and countdown in a single call.
+    // We split them into two adjacent entries for the engine's switch statement, but they fire
+    // back-to-back to preserve the correct ordering.
     return [
       "future-attack",
       "weather-damage",
+      "weather-countdown",
       "bind",
       "perish-song",
       "leftovers",
+      "mystery-berry",
+      "defrost",
+      "safeguard-countdown",
       "screen-countdown",
-      "weather-countdown",
+      "stat-boosting-items",
+      "healing-items",
+      "encore-countdown",
     ] as const;
   }
 

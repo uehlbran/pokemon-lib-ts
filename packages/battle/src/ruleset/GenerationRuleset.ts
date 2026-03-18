@@ -155,6 +155,13 @@ export interface StatusSystem {
    * Gen 2+: actual 40 base power typeless physical damage formula
    */
   calculateConfusionDamage(pokemon: ActivePokemon, state: BattleState, rng: SeededRandom): number;
+  /**
+   * Process one turn of confusion for a Pokemon.
+   * Decrements the confusion counter and returns whether the Pokemon is still confused.
+   * Gen 1-6: confusion lasts 1-4 turns (after decrement). Gen 7+: 2-5 turns.
+   * @returns `true` if still confused, `false` if confusion ended this turn.
+   */
+  processConfusionTurn(active: ActivePokemon, state: BattleState): boolean;
 }
 
 /** Whether this generation has abilities, and how to apply them. */
@@ -303,6 +310,13 @@ export interface EndOfTurnSystem {
     readonly newCount: number;
     readonly fainted: boolean;
   };
+  /**
+   * Process one turn of bind/trapping for a Pokemon.
+   * Decrements the bind counter and returns whether the Pokemon is still bound.
+   * Trap mechanics vary by generation (e.g., Gen 1 trapping prevents the target from acting).
+   * @returns `true` if still bound, `false` if the binding ended this turn.
+   */
+  processBoundTurn(active: ActivePokemon, state: BattleState): boolean;
   /**
    * The order of end-of-turn effects varies by generation.
    * Returns the ordered list of effect types to process.

@@ -247,34 +247,21 @@ export class Gen1Ruleset implements GenerationRuleset {
       return true;
     }
 
-    // Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance
-    // Two sequential multiply-divide operations on 0-255 scale.
-    // Step 0: Convert move accuracy from 0-100 to 0-255 scale
-    let acc255 = Math.floor((move.accuracy * 255) / 100);
+    // Apply accuracy and evasion stages (Gen 1 uses the 2-based scale: +1=3/2, -6=2/8)
+    const accMod = getStatStageMultiplier(attacker.statStages.accuracy);
+    const evaMod = getStatStageMultiplier(defender.statStages.evasion);
 
-    // Step 1: Apply accuracy stage modifier as integer multiply-divide
-    // Gen 1 stat stage formula: num = max(2, 2+stage), den = max(2, 2-stage)
-    const accStage = attacker.statStages.accuracy;
-    const accNum = Math.max(2, 2 + accStage);
-    const accDen = Math.max(2, 2 - accStage);
-    acc255 = Math.floor((acc255 * accNum) / accDen);
-
-    // Step 2: Apply evasion stage modifier as integer multiply-divide
-    // Evasion is inverted: higher evasion stage = harder to hit
-    // So we multiply by den/num (inverse of the evasion multiplier)
-    const evaStage = defender.statStages.evasion;
-    const evaNum = Math.max(2, 2 + evaStage);
-    const evaDen = Math.max(2, 2 - evaStage);
-    // Evasion reduces accuracy: multiply by evaDen / evaNum (inverse)
-    acc255 = Math.floor((acc255 * evaDen) / evaNum);
+    // Calculate effective accuracy
+    let effectiveAccuracy = Math.floor((move.accuracy * accMod) / evaMod);
 
     // Clamp to 1-255 range
-    let threshold = Math.max(1, Math.min(255, acc255));
+    effectiveAccuracy = Math.max(1, Math.min(255, effectiveAccuracy));
 
     // Gen 1 1/256 miss bug: even 100% accuracy moves use < comparison
     // against a 0-255 random roll, meaning 255/256 max hit chance.
     // Exception: self-targeting moves get +1 to their threshold, making
     // 100% accuracy moves always hit (256/256). (Showdown scripts.ts:408)
+    let threshold = Math.min(255, Math.floor((effectiveAccuracy * 255) / 100));
     if (move.target === "self") {
       threshold = Math.min(256, threshold + 1);
     }
@@ -968,6 +955,24 @@ export class Gen1Ruleset implements GenerationRuleset {
     const levelFactor = Math.floor((2 * level) / 5) + 2;
     const damage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
     return Math.max(1, damage);
+  }
+
+  // --- Confusion/Bound Turn Processing ---
+
+  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
+    // Source: pret/pokered — confusion counter decrement, same as Gen 3+ default
+    const conf = active.volatileStatuses.get("confusion");
+    if (!conf) return false;
+    conf.turnsLeft--;
+    return conf.turnsLeft > 0;
+  }
+
+  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
+    // Source: pret/pokered — bind/trapping turn decrement
+    const bound = active.volatileStatuses.get("bound");
+    if (!bound) return false;
+    bound.turnsLeft--;
+    return bound.turnsLeft > 0;
   }
 
   // --- Switch Out ---

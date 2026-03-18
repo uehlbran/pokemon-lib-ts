@@ -435,6 +435,22 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, damage);
   }
 
+  // Source: default for Gen 3-6; Gen 7+ overrides to 2-5 turn range
+  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const conf = active.volatileStatuses.get("confusion");
+    if (!conf) return false;
+    conf.turnsLeft--;
+    return conf.turnsLeft > 0;
+  }
+
+  // Source: default for Gen 3+
+  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const bound = active.volatileStatuses.get("bound");
+    if (!bound) return false;
+    bound.turnsLeft--;
+    return bound.turnsLeft > 0;
+  }
+
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
     // Default Gen 3+ behavior: clear all volatile statuses on switch-out.
     // Gen 1-2 override this to handle generation-specific persistence rules.

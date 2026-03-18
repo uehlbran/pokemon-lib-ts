@@ -161,9 +161,10 @@ export class BattleEngine implements BattleEventEmitter {
       generation: this.state.generation,
     });
 
-    // Send out lead pokemon for each side
+    // Send out lead pokemon for each side (skipAbility=true: abilities are processed
+    // separately below in speed order after both sides have their leads on the field)
     for (const side of this.state.sides) {
-      this.sendOut(side, 0);
+      this.sendOut(side, 0, true);
     }
 
     // Apply entry abilities (faster pokemon's ability triggers first)
@@ -187,13 +188,14 @@ export class BattleEngine implements BattleEventEmitter {
         for (const entry of order) {
           const opponent = this.getOpponentActive(entry.side);
           if (opponent) {
-            this.ruleset.applyAbility("on-switch-in", {
+            const result = this.ruleset.applyAbility("on-switch-in", {
               pokemon: entry.pokemon,
               opponent,
               state: this.state,
               rng: this.state.rng,
               trigger: "on-switch-in",
             });
+            this.processAbilityResult(result, entry.pokemon, opponent, entry.side);
           }
         }
       }
@@ -497,7 +499,7 @@ export class BattleEngine implements BattleEventEmitter {
     };
   }
 
-  private sendOut(side: BattleSide, teamSlot: number): void {
+  private sendOut(side: BattleSide, teamSlot: number, skipAbility = false): void {
     const pokemon = side.team[teamSlot];
     if (!pokemon) return;
 
@@ -546,6 +548,25 @@ export class BattleEngine implements BattleEventEmitter {
       }
       for (const msg of hazardResult.messages) {
         this.emit({ type: "message", text: msg });
+      }
+    }
+
+    // Apply on-switch-in abilities for the newly sent-out Pokemon
+    // Source: pret/pokeemerald src/battle_util.c AbilityBattleEffects — switch-in abilities
+    // must have their results processed
+    // skipAbility is true during initial battle setup (start()) where abilities are
+    // processed separately in speed order after both sides have sent out their leads.
+    if (!skipAbility && this.ruleset.hasAbilities() && active.pokemon.currentHp > 0) {
+      const opponent = this.getOpponentActive(side.index);
+      if (opponent) {
+        const abilityResult = this.ruleset.applyAbility("on-switch-in", {
+          pokemon: active,
+          opponent,
+          state: this.state,
+          rng: this.state.rng,
+          trigger: "on-switch-in",
+        });
+        this.processAbilityResult(abilityResult, active, opponent, side.index);
       }
     }
   }
@@ -1108,10 +1129,11 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // Confusion check
+    // Confusion check — turn countdown delegated to ruleset (Gen 7+ changed range from 1-4 to 2-5)
     if (actor.volatileStatuses.has("confusion")) {
       const confState = actor.volatileStatuses.get("confusion");
       if (!confState || confState.turnsLeft <= 0) {
+        // Confusion already expired (e.g., turnsLeft was set to 0 before this check)
         actor.volatileStatuses.delete("confusion");
         this.emit({
           type: "volatile-end",
@@ -1120,42 +1142,54 @@ export class BattleEngine implements BattleEventEmitter {
           volatile: "confusion",
         });
       } else {
-        confState.turnsLeft--;
-        this.emit({
-          type: "message",
-          text: `${getPokemonName(actor)} is confused!`,
-        });
-        if (this.ruleset.rollConfusionSelfHit(this.state.rng)) {
-          // Self-hit confusion damage — chance and formula delegated to ruleset
-          const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
-          const selfDamage = this.ruleset.calculateConfusionDamage(
-            actor,
-            this.state,
-            this.state.rng,
-          );
-          actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
+        const stillConfused = this.ruleset.processConfusionTurn(actor, this.state);
+        if (!stillConfused) {
+          // Confusion ended after decrement
+          actor.volatileStatuses.delete("confusion");
           this.emit({
-            type: "message",
-            text: "It hurt itself in its confusion!",
-          });
-          this.emit({
-            type: "damage",
+            type: "volatile-end",
             side,
             pokemon: getPokemonName(actor),
-            amount: selfDamage,
-            currentHp: actor.pokemon.currentHp,
-            maxHp,
-            source: "confusion",
+            volatile: "confusion",
           });
-          return false;
+        } else {
+          this.emit({
+            type: "message",
+            text: `${getPokemonName(actor)} is confused!`,
+          });
+          if (this.ruleset.rollConfusionSelfHit(this.state.rng)) {
+            // Self-hit confusion damage — chance and formula delegated to ruleset
+            const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
+            const selfDamage = this.ruleset.calculateConfusionDamage(
+              actor,
+              this.state,
+              this.state.rng,
+            );
+            actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
+            this.emit({
+              type: "message",
+              text: "It hurt itself in its confusion!",
+            });
+            this.emit({
+              type: "damage",
+              side,
+              pokemon: getPokemonName(actor),
+              amount: selfDamage,
+              currentHp: actor.pokemon.currentHp,
+              maxHp,
+              source: "confusion",
+            });
+            return false;
+          }
         }
       }
     }
 
-    // Bound check (Gen 1 trapping — Wrap, Bind, Fire Spin, Clamp)
+    // Bound check — turn countdown delegated to ruleset (trap mechanics vary by gen)
     if (actor.volatileStatuses.has("bound")) {
       const boundState = actor.volatileStatuses.get("bound");
-      if (!boundState || boundState.turnsLeft <= 1) {
+      if (!boundState || boundState.turnsLeft <= 0) {
+        // Bound already expired
         actor.volatileStatuses.delete("bound");
         this.emit({
           type: "volatile-end",
@@ -1164,12 +1198,23 @@ export class BattleEngine implements BattleEventEmitter {
           volatile: "bound",
         });
       } else {
-        boundState.turnsLeft--;
-        this.emit({
-          type: "message",
-          text: `${getPokemonName(actor)} is bound and can't move!`,
-        });
-        return false;
+        const stillBound = this.ruleset.processBoundTurn(actor, this.state);
+        if (!stillBound) {
+          // Binding ended after decrement
+          actor.volatileStatuses.delete("bound");
+          this.emit({
+            type: "volatile-end",
+            side,
+            pokemon: getPokemonName(actor),
+            volatile: "bound",
+          });
+        } else {
+          this.emit({
+            type: "message",
+            text: `${getPokemonName(actor)} is bound and can't move!`,
+          });
+          return false;
+        }
       }
     }
 
@@ -1618,6 +1663,24 @@ export class BattleEngine implements BattleEventEmitter {
         case "bind":
           this.processBindDamage();
           break;
+        case "defrost":
+          this.processDefrost();
+          break;
+        case "safeguard-countdown":
+          this.processSafeguardCountdown();
+          break;
+        case "mystery-berry":
+          this.processMysteryBerry();
+          break;
+        case "stat-boosting-items":
+          this.processStatBoostingItems();
+          break;
+        case "healing-items":
+          this.processHealingItems();
+          break;
+        case "encore-countdown":
+          this.processEncoreCountdown();
+          break;
         default:
           // Many effects not yet implemented
           break;
@@ -1922,6 +1985,74 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private processAbilityResult(
+    result: import("../context").AbilityResult,
+    pokemon: ActivePokemon,
+    opponent: ActivePokemon,
+    pokemonSide: 0 | 1,
+  ): void {
+    if (!result.activated) return;
+
+    const opponentSide = pokemonSide === 0 ? 1 : 0;
+
+    // Emit ability activation event
+    this.emit({
+      type: "ability-activate",
+      side: pokemonSide,
+      pokemon: getPokemonName(pokemon),
+      ability: pokemon.ability ?? "unknown",
+    });
+
+    // Process each effect
+    for (const effect of result.effects) {
+      switch (effect.effectType) {
+        case "stat-change": {
+          // Apply stat change to the appropriate target
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          const stat = effect.stat ?? "attack";
+          const stages = effect.stages ?? -1;
+          const currentStage = target.statStages[stat];
+          const newStage = Math.max(-6, Math.min(6, currentStage + stages));
+          target.statStages[stat] = newStage;
+          this.emit({
+            type: "stat-change",
+            side: targetSide,
+            pokemon: getPokemonName(target),
+            stat,
+            stages,
+            currentStage: newStage,
+          });
+          break;
+        }
+        case "weather-set": {
+          // Set weather on the field
+          if (effect.weather) {
+            this.state.weather = {
+              type: effect.weather,
+              turnsLeft: effect.weatherTurns ?? -1,
+              source: pokemon.ability ?? "ability",
+            };
+            this.emit({
+              type: "weather-set",
+              weather: effect.weather,
+              source: pokemon.ability ?? "ability",
+            });
+          }
+          break;
+        }
+        default:
+          // Other effect types (status-cure, damage-reduction, etc.) not yet implemented
+          break;
+      }
+    }
+
+    // Emit messages
+    for (const msg of result.messages) {
+      this.emit({ type: "message", text: msg });
+    }
+  }
+
   private processLeechSeedForSide(sideIndex: 0 | 1): void {
     const side = this.state.sides[sideIndex];
     const active = side.active[0];
@@ -2074,6 +2205,181 @@ export class BattleEngine implements BattleEventEmitter {
         maxHp,
         source: "bind",
       });
+    }
+  }
+
+  /**
+   * Process defrost (freeze thaw) end-of-turn.
+   * Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
+   * In Gen 2, frozen Pokemon have a 25/256 (~9.77%) chance to thaw each turn
+   * BETWEEN turns, not before they move. Pokemon frozen this turn (justGotFrozen)
+   * do not get a thaw check.
+   */
+  private processDefrost(): void {
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (active.pokemon.status !== "freeze") continue;
+
+      // Source: pret/pokecrystal core.asm:1538-1540 — wPlayerJustGotFrozen
+      // If the Pokemon was just frozen this turn, skip the thaw check.
+      const justFrozen = active.volatileStatuses.get(
+        "just-frozen" as import("@pokemon-lib-ts/core").VolatileStatus,
+      );
+      if (justFrozen) {
+        // Clear the flag so they can thaw next turn
+        active.volatileStatuses.delete(
+          "just-frozen" as import("@pokemon-lib-ts/core").VolatileStatus,
+        );
+        continue;
+      }
+
+      // 25/256 chance to thaw (~9.77%)
+      // Source: pret/pokecrystal core.asm:1542-1543 — BattleRandom, cp 10 percent
+      if (this.state.rng.chance(25 / 256)) {
+        active.pokemon.status = null;
+        this.emit({
+          type: "status-cure",
+          side: side.index,
+          pokemon: getPokemonName(active),
+          status: "freeze",
+        });
+      }
+    }
+  }
+
+  /**
+   * Process Safeguard countdown.
+   * Source: pret/pokecrystal engine/battle/core.asm:1583-1618 HandleSafeguard
+   * Safeguard lasts 5 turns; decrements each end-of-turn. When counter reaches 0,
+   * the Safeguard screen is removed.
+   *
+   * Implementation note: Safeguard is tracked as a screen of type "safeguard" if present.
+   * If the battle state doesn't model safeguard as a screen, this is a no-op.
+   */
+  private processSafeguardCountdown(): void {
+    for (const side of this.state.sides) {
+      // Safeguard may be stored as a screen with type "safeguard"
+      const safeguardIdx = side.screens.findIndex((s) => (s.type as string) === "safeguard");
+      if (safeguardIdx === -1) continue;
+      const safeguard = side.screens[safeguardIdx];
+      if (!safeguard) continue;
+      safeguard.turnsLeft--;
+      if (safeguard.turnsLeft <= 0) {
+        side.screens.splice(safeguardIdx, 1);
+        this.emit({
+          type: "message",
+          text: `Side ${side.index}'s Safeguard wore off!`,
+        });
+      }
+    }
+  }
+
+  /**
+   * Process Mystery Berry PP restoration.
+   * Source: pret/pokecrystal engine/battle/core.asm:1328-1464 HandleMysteryberry
+   * If a Pokemon holds Mystery Berry (Leppa Berry ancestor) and a move has 0 PP,
+   * restore 5 PP to that move and consume the item.
+   */
+  private processMysteryBerry(): void {
+    if (!this.ruleset.hasHeldItems()) return;
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (active.pokemon.heldItem !== "mystery-berry") continue;
+
+      // Find the first move with 0 PP
+      const moveSlot = active.pokemon.moves.find((m) => m.currentPP === 0 && m.moveId);
+      if (!moveSlot) continue;
+
+      // Restore 5 PP (or 1 for Sketch per decomp, but Sketch is edge-case)
+      const restoreAmount = moveSlot.moveId === "sketch" ? 1 : 5;
+      moveSlot.currentPP = Math.min(moveSlot.maxPP, moveSlot.currentPP + restoreAmount);
+      active.pokemon.heldItem = null;
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(active)}'s Mystery Berry restored PP!`,
+      });
+    }
+  }
+
+  /**
+   * Process stat-boosting held items between turns.
+   * Source: pret/pokecrystal engine/battle/core.asm:4476 HandleStatBoostingHeldItems
+   * Delegates to the ruleset's held item system with "stat-boost-between-turns" trigger.
+   */
+  private processStatBoostingItems(): void {
+    if (!this.ruleset.hasHeldItems()) return;
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      const itemResult = this.ruleset.applyHeldItem("stat-boost-between-turns", {
+        pokemon: active,
+        state: this.state,
+        rng: this.state.rng,
+      });
+      if (itemResult.activated) {
+        this.processItemResult(itemResult, active, side.index);
+      }
+    }
+  }
+
+  /**
+   * Process healing held items between turns.
+   * Source: pret/pokecrystal engine/battle/core.asm:4245 HandleHealingItems
+   * Delegates to the ruleset's held item system with "heal-between-turns" trigger.
+   */
+  private processHealingItems(): void {
+    if (!this.ruleset.hasHeldItems()) return;
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      const itemResult = this.ruleset.applyHeldItem("heal-between-turns", {
+        pokemon: active,
+        state: this.state,
+        rng: this.state.rng,
+      });
+      if (itemResult.activated) {
+        this.processItemResult(itemResult, active, side.index);
+      }
+    }
+  }
+
+  /**
+   * Process Encore countdown.
+   * Source: pret/pokecrystal engine/battle/core.asm:702-757 HandleEncore
+   * Decrements the Encore counter. If it reaches 0, or the encored move has 0 PP,
+   * remove the Encore volatile status.
+   */
+  private processEncoreCountdown(): void {
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      if (!active.volatileStatuses.has("encore")) continue;
+
+      const encoreState = active.volatileStatuses.get("encore");
+      if (!encoreState) continue;
+      encoreState.turnsLeft--;
+
+      // Check if encore should end: counter reached 0 or encored move has 0 PP
+      let shouldEnd = encoreState.turnsLeft <= 0;
+      if (!shouldEnd && encoreState.data?.moveIndex !== undefined) {
+        const moveIdx = encoreState.data.moveIndex as number;
+        const moveSlot = active.pokemon.moves[moveIdx];
+        if (moveSlot && moveSlot.currentPP <= 0) {
+          shouldEnd = true;
+        }
+      }
+
+      if (shouldEnd) {
+        active.volatileStatuses.delete("encore");
+        this.emit({
+          type: "volatile-end",
+          side: side.index,
+          pokemon: getPokemonName(active),
+          volatile: "encore",
+        });
+      }
     }
   }
 }
