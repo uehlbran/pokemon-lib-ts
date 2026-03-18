@@ -101,6 +101,8 @@ export interface CritContext {
   readonly state: BattleState;
   /** PRNG instance for the crit roll */
   readonly rng: SeededRandom;
+  /** The defending Pokémon (optional — used by abilities like Battle Armor / Shell Armor) */
+  readonly defender?: ActivePokemon;
 }
 
 /**
