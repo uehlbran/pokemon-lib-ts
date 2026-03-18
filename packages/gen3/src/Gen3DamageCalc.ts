@@ -205,6 +205,15 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
     baseStat = baseStat * 2;
   }
 
+  // Marvel Scale: 1.5x physical Defense when defender has a non-volatile status condition.
+  // Only affects physical Defense, not SpDef.
+  // Source: pret/pokeemerald src/pokemon.c ABILITY_MARVEL_SCALE
+  // Source: Bulbapedia — "Marvel Scale: If the Pokemon has a status condition, its Defense
+  //   stat is 1.5x."
+  if (physical && defender.ability === "marvel-scale" && defender.pokemon.status !== null) {
+    baseStat = Math.floor(baseStat * 1.5);
+  }
+
   // Get the appropriate stage
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
 
@@ -261,9 +270,30 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   }
 
   const level = attacker.pokemon.level;
-  const power = move.power;
+  let power = move.power;
   const physical = isGen3PhysicalType(move.type);
   const defenderAbility = defender.ability;
+
+  // --- Pinch abilities: Overgrow, Blaze, Torrent, Swarm ---
+  // These multiply move power by 1.5x when the user's HP is at or below floor(maxHP/3)
+  // AND the move type matches the ability's type.
+  // Source: pret/pokeemerald src/battle_util.c ABILITY_OVERGROW/BLAZE/TORRENT/SWARM
+  // Source: Bulbapedia — "When the Pokemon with this Ability has 1/3 or less of its HP
+  //   remaining, moves of the same type get a 50% power boost."
+  const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
+    overgrow: "grass",
+    blaze: "fire",
+    torrent: "water",
+    swarm: "bug",
+  };
+  const pinchType = PINCH_ABILITY_TYPES[attacker.ability];
+  if (pinchType && move.type === pinchType) {
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    const threshold = Math.floor(maxHp / 3);
+    if (attacker.pokemon.currentHp <= threshold) {
+      power = Math.floor(power * 1.5);
+    }
+  }
 
   // --- Defender ability type immunities ---
   // These abilities grant full immunity to specific move types.
