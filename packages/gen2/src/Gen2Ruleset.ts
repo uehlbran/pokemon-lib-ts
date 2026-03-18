@@ -266,17 +266,37 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Convert move accuracy from percentage to 0-255 scale
     let accuracy = Math.floor((move.accuracy * 255) / 100);
 
-    // Gen 2 accuracy boost lookup tables (not formula-based)
-    const GEN2_ACC_BOOST_POS = [1, 4 / 3, 5 / 3, 2, 7 / 3, 8 / 3, 3]; // stages +0 to +6
-    const GEN2_ACC_BOOST_NEG = [1, 3 / 4, 3 / 5, 1 / 2, 3 / 7, 3 / 8, 1 / 3]; // stages -0 to -6
+    // Gen 2 accuracy stage lookup tables — exact numerator/denominator pairs from decomp.
+    // Source: pret/pokecrystal data/battle/accuracy_multipliers.asm
+    // Each entry is [numerator, denominator] for integer math: acc = floor(acc * num / den)
+    const GEN2_ACC_STAGES_POS: ReadonlyArray<readonly [number, number]> = [
+      [100, 100], // +0: 100/100 = 1.0x
+      [133, 100], // +1: 133/100
+      [166, 100], // +2: 166/100
+      [200, 100], // +3: 200/100
+      [233, 100], // +4: 233/100
+      [266, 100], // +5: 266/100
+      [300, 100], // +6: 300/100
+    ];
+    const GEN2_ACC_STAGES_NEG: ReadonlyArray<readonly [number, number]> = [
+      [100, 100], // -0: 100/100 = 1.0x
+      [75, 100], // -1: 75/100
+      [60, 100], // -2: 60/100
+      [50, 100], // -3: 50/100
+      [43, 100], // -4: 43/100
+      [38, 100], // -5: 38/100
+      [33, 100], // -6: 33/100
+    ];
 
     const accStage = attacker.statStages.accuracy;
     const evaStage = defender.statStages.evasion;
     const netStage = Math.max(-6, Math.min(6, accStage - evaStage));
 
-    const multiplier =
-      netStage >= 0 ? (GEN2_ACC_BOOST_POS[netStage] ?? 1) : (GEN2_ACC_BOOST_NEG[-netStage] ?? 1);
-    accuracy = Math.floor(accuracy * multiplier);
+    const [num, den] =
+      netStage >= 0
+        ? (GEN2_ACC_STAGES_POS[netStage] ?? [100, 100])
+        : (GEN2_ACC_STAGES_NEG[-netStage] ?? [100, 100]);
+    accuracy = Math.floor((accuracy * num) / den);
 
     // Cap at [1, 255]
     accuracy = Math.max(1, Math.min(255, accuracy));
@@ -637,8 +657,9 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollSleepTurns(rng: SeededRandom): number {
-    // Gen 2: Sleep lasts 1-7 turns (Showdown Gen 2 confirmed)
-    return rng.int(1, 7);
+    // Gen 2: Sleep lasts 2-7 turns
+    // Source: pret/pokecrystal engine/battle/core.asm:3608-3621 — and SLP_MASK rejects 0, then inc a, so result is 2-7
+    return rng.int(2, 7);
   }
 
   checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
@@ -822,14 +843,20 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Gen 2: clear non-persistent volatiles on switch
-    // Note: toxic-counter resets on switch (damage restarts at 1/16 next time in),
-    // but the badly-poisoned status itself persists.
+    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus — zeros all substatus bytes,
+    // reverting badly-poisoned to regular poison (SUBSTATUS_TOXIC is cleared on switch-in via NewBattleMonStatus)
     pokemon.volatileStatuses.delete("bound");
     pokemon.volatileStatuses.delete("confusion");
     pokemon.volatileStatuses.delete("flinch");
     pokemon.volatileStatuses.delete("focus-energy");
     pokemon.volatileStatuses.delete("leech-seed");
     pokemon.volatileStatuses.delete("toxic-counter");
+
+    // Badly-poisoned reverts to regular poison on switch-out
+    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
+    if (pokemon.pokemon.status === "badly-poisoned") {
+      pokemon.pokemon.status = "poison";
+    }
 
     // If the switching Pokemon had applied trapping (Mean Look / Spider Web),
     // clear the "trapped" volatile from the opposing active Pokemon.
@@ -908,12 +935,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, baseDamage);
   }
 
-  calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
-    // Gen 2: recoil = 1/4 of the user's MAX HP (not damage dealt)
-    // Source: gen2-ground-truth.md §9 — Struggle: "floor(maxHp / 4)"
-    // Source: pret/pokecrystal — Struggle recoil uses user's max HP divided by 4
-    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-    return Math.max(1, Math.floor(maxHp / 4));
+  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
+    // Gen 2: recoil = 1/4 of the DAMAGE DEALT (not max HP)
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil — srl b twice = divide by 4
+    // Uses wCurDamage / 4, not max HP
+    return Math.max(1, Math.floor(damageDealt / 4));
   }
 
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
@@ -921,14 +947,18 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
-    // Source: gen2-ground-truth.md §9 — Protect/Detect
-    // "Denominator cap: 255 — after enough consecutive uses, X is capped at 255.
-    //  It does NOT reach 729 (3^6). The cap prevents the denominator from exceeding a single byte (0xFF)."
-    // Source: pret/pokecrystal — consecutive use counter is a single byte capped at 255
+    // Source: pret/pokecrystal engine/battle/move_effects/protect.asm:14-74 — srl b (halving) each consecutive use
+    // 1st use: 255/255 (always works)
+    // 2nd consecutive: 127/255
+    // 3rd consecutive: 63/255
+    // 4th consecutive: 31/255
+    // etc. — uses bit-shift srl b (halving), not powers of 3
+    // Roll is 1-255 (rejects 0). Success if random <= threshold.
     if (consecutiveProtects === 0) return true;
-    const denominator = Math.min(255, 3 ** consecutiveProtects);
-    const successThreshold = Math.max(1, Math.floor(255 / denominator));
-    return rng.int(0, 255) < successThreshold;
+    const threshold = Math.floor(255 >> consecutiveProtects);
+    if (threshold === 0) return false; // always fails after enough consecutive uses
+    const roll = rng.int(1, 255);
+    return roll <= threshold;
   }
 
   calculateBindDamage(pokemon: ActivePokemon): number {

@@ -22,7 +22,7 @@ const NO_ACTIVATION: ItemResult = {
  * - Bitter Berry: cure confusion at end of turn (consumed)
  * - Miracle Berry: cure any primary status at end of turn (consumed)
  * - Berry Juice: heal 20 HP when HP <= 50% (consumed)
- * - Focus Band: 12% chance to survive a KO at 1 HP (on-damage-taken)
+ * - Focus Band: 30/256 (~11.72%) chance to survive a KO at 1 HP (on-damage-taken)
  * - King's Rock: 30/256 (~11.72%) flinch on damaging moves (on-hit)
  * - Type-boosting items: 10% damage boost (handled in damage calc, not here)
  *
@@ -242,10 +242,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
-    // Focus Band: 12% chance to survive with 1 HP when damage would KO
+    // Focus Band: 30/256 chance (~11.72%) to survive with 1 HP when damage would KO
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:2119-2131 — cp c where c=30 (HELD_FOCUS_BAND), so 30/256 chance
     case "focus-band": {
       if (currentHp - damage <= 0) {
-        if (context.rng.chance(0.12)) {
+        if (context.rng.int(0, 255) < 30) {
           return {
             activated: true,
             effects: [{ type: "survive", target: "self", value: 1 }],

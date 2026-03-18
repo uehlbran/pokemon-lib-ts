@@ -22,7 +22,8 @@ export const GEN2_CRIT_RATES: readonly number[] = [
 
 /**
  * Moves with a high critical hit ratio in Gen 2.
- * These add +1 to the crit stage.
+ * These add +2 to the crit stage (not +1).
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm:1182-1184 — inc c; inc c (increments twice = +2)
  */
 const HIGH_CRIT_MOVES: readonly string[] = [
   "slash",
@@ -31,6 +32,7 @@ const HIGH_CRIT_MOVES: readonly string[] = [
   "crabhammer",
   "cross-chop",
   "aeroblast",
+  "razor-wind",
 ];
 
 /**
@@ -44,7 +46,7 @@ function isHighCritMove(move: MoveData): boolean {
  * Calculate the critical hit stage for a Gen 2 attack.
  *
  * Modifiers that add stages (they stack):
- * - High crit moves (Slash, Cross Chop, etc.): +1
+ * - High crit moves (Slash, Cross Chop, etc.): +2 (inc c; inc c in decomp)
  * - Focus Energy: +1 (FIXED in Gen 2 — not bugged like Gen 1)
  * - Scope Lens item: +1
  * - Stick (Farfetch'd only): +2
@@ -61,9 +63,10 @@ function isHighCritMove(move: MoveData): boolean {
 export function getGen2CritStage(attacker: ActivePokemon, move: MoveData): number {
   let stage = 0;
 
-  // High crit move: +1
+  // High crit move: +2
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm:1182-1184 — high-crit moves add 2 to stage (inc c; inc c)
   if (isHighCritMove(move)) {
-    stage += 1;
+    stage += 2;
   }
 
   // Focus Energy: +1 (fixed in Gen 2)

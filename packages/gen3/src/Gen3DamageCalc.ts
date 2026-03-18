@@ -49,63 +49,78 @@ export function isGen3PhysicalType(type: PokemonType): boolean {
  * Get the effective attack stat for a move in Gen 3.
  * Physical types use Attack; special types use SpAttack.
  *
+ * pokeemerald CalculateBaseDamage modifier order on the raw stat (BEFORE stat stages):
+ *   1. Huge Power / Pure Power: Atk x2 (physical only)
+ *   2. Badge boosts (in-game only, skipped)
+ *   3. Type-boosting items applied to raw stat
+ *   4. Choice Band applied to raw stat (physical only)
+ *   5. Thick Fat, Hustle, Guts applied to raw stat
+ *
+ * Then stat stages are applied via APPLY_STAT_MOD, and the result feeds into
+ * the base damage formula. Burn halving happens AFTER the formula (see calculateGen3Damage).
+ *
  * On a critical hit:
  *   - Ignore NEGATIVE attacker attack stages (treat as stage 0)
  *   - Keep POSITIVE attacker attack stages
  *
- * Ability modifiers applied to the attack stat:
- *   - Huge Power / Pure Power: Atk x2 (physical only)
- *   - Hustle: Atk x1.5 (physical only)
- *   - Guts: Atk x1.5 when statused (physical only), cancels burn penalty
- *
- * Source: pret/pokeemerald src/battle_util.c CalculateBaseDamage
+ * Source: pret/pokeemerald src/pokemon.c:3106-3372 CalculateBaseDamage
  */
-function getAttackStat(attacker: ActivePokemon, moveType: PokemonType, isCrit: boolean): number {
+function getAttackStat(
+  attacker: ActivePokemon,
+  moveType: PokemonType,
+  isCrit: boolean,
+  typeBoostItemType: string | null,
+): number {
   const physical = isGen3PhysicalType(moveType);
   const statKey = physical ? "attack" : "spAttack";
   const stats = attacker.pokemon.calculatedStats;
-  const baseStat = stats ? stats[statKey] : 100;
-
-  // Get the appropriate stage
-  const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
-
-  // On crit: ignore negative attack stages (use 0 instead)
-  // Source: pret/pokeemerald — crit ignores negative atk stages only
-  const effectiveStage = isCrit && stage < 0 ? 0 : stage;
-
-  let effective = Math.floor(baseStat * getStatStageMultiplier(effectiveStage));
+  let rawStat = stats ? stats[statKey] : 100;
 
   const ability = attacker.ability;
 
-  // Huge Power / Pure Power: doubles physical attack
-  // Source: pret/pokeemerald ABILITY_HUGE_POWER / ABILITY_PURE_POWER — doubles physical attack
+  // 1. Huge Power / Pure Power: doubles physical attack (applied to raw stat)
+  // Source: pret/pokeemerald src/pokemon.c:3158-3159
   if (physical && (ability === "huge-power" || ability === "pure-power")) {
-    effective = effective * 2;
+    rawStat = rawStat * 2;
   }
 
-  // Hustle: 1.5x physical attack (accuracy penalty handled by engine)
-  // Source: pret/pokeemerald ABILITY_HUSTLE — boosts physical attack by 50%
-  if (physical && ability === "hustle") {
-    effective = Math.floor(effective * 1.5);
+  // 2. Badge boosts (skipped — link/frontier battles only)
+
+  // 3. Type-boosting held items: applied to raw attack/spAttack stat
+  // Source: pret/pokeemerald src/pokemon.c:3170-3182 — sHoldEffectToType
+  // (attack * (holdEffectParam + 100)) / 100 where holdEffectParam = 10
+  if (typeBoostItemType === moveType) {
+    rawStat = Math.floor((rawStat * 110) / 100);
   }
 
-  // Guts: 1.5x physical attack when statused, AND cancels burn penalty
-  // Source: pret/pokeemerald ABILITY_GUTS — boosts attack by 50% when statused, negates burn penalty
-  if (physical && ability === "guts" && attacker.pokemon.status !== null) {
-    effective = Math.floor(effective * 1.5);
-    // Guts cancels the burn attack penalty — skip the burn halving below
-  } else if (physical && attacker.pokemon.status === "burn") {
-    // Burn halves physical attack (only when Guts is NOT active)
-    // Source: pret/pokeemerald src/battle_util.c — burn reduces physical attack by half
-    effective = Math.floor(effective / 2);
-  }
-
-  // Choice Band: 1.5x physical attack
-  // Source: pret/pokeemerald HOLD_EFFECT_CHOICE_BAND — multiplies Attack by 1.5
-  // Only affects physical moves (Choice Band only boosts Attack, not SpAtk)
+  // 4. Choice Band: 1.5x physical attack (applied to raw stat)
+  // Source: pret/pokeemerald src/pokemon.c:3185-3186 — (150 * attack) / 100
   if (physical && attacker.pokemon.heldItem === "choice-band") {
-    effective = Math.floor(effective * 1.5);
+    rawStat = Math.floor((150 * rawStat) / 100);
   }
+
+  // 5. Hustle: 1.5x physical attack (accuracy penalty handled by engine)
+  // Source: pret/pokeemerald src/pokemon.c:3205-3206 — (150 * attack) / 100
+  if (physical && ability === "hustle") {
+    rawStat = Math.floor((150 * rawStat) / 100);
+  }
+
+  // 6. Guts: 1.5x physical attack when statused (does NOT cancel burn penalty —
+  //    burn halving is applied to damage after formula, and Guts negates that separately)
+  // Source: pret/pokeemerald src/pokemon.c:3211-3212 — (150 * attack) / 100
+  if (physical && ability === "guts" && attacker.pokemon.status !== null) {
+    rawStat = Math.floor((150 * rawStat) / 100);
+  }
+
+  // Now apply stat stages
+  // Source: pret/pokeemerald src/pokemon.c:3232-3243 — APPLY_STAT_MOD
+  const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
+
+  // On crit: ignore negative attack stages (use 0 instead), keep positive
+  // Source: pret/pokeemerald src/pokemon.c:3234-3240
+  const effectiveStage = isCrit && stage < 0 ? 0 : stage;
+
+  const effective = Math.floor(rawStat * getStatStageMultiplier(effectiveStage));
 
   return Math.max(1, effective);
 }
@@ -141,23 +156,32 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
 /**
  * Calculate damage for a move in Gen 3.
  *
- * Formula per pret/pokeemerald src/battle_script_commands.c:
+ * Per pret/pokeemerald src/pokemon.c CalculateBaseDamage + src/battle_script_commands.c Cmd_damagecalc:
  *
- *   Step 1: BaseDamage = floor(floor(floor(2*Level/5+2) * Power * Atk/Def) / 50) + 2
+ * CalculateBaseDamage (src/pokemon.c:3106-3372):
+ *   1. Ability stat mods (Huge Power, Hustle, Guts) applied to raw stat
+ *   2. Badge boosts (skipped — in-game only)
+ *   3. Type-boosting items applied to raw stat
+ *   4. Choice Band applied to raw stat
+ *   5. Thick Fat halves attacker's stat
+ *   6. Stat stages applied (APPLY_STAT_MOD)
+ *   7. Base formula: damage = Atk * Power * (2*L/5+2) / Def / 50
+ *   8. Burn halving (physical only, unless Guts): damage /= 2
+ *   9. Reflect/Light Screen (non-crit only): damage /= 2
+ *  10. Spread move penalty (doubles): damage /= 2
+ *  11. Weather boosts (special types only in CalculateBaseDamage)
+ *  12. return damage + 2
  *
- *   Step 2: Modifier chain (applied in this order per pokeemerald):
- *     1. Targets — 0.5x if spread move hitting multiple targets (doubles)
- *     2. Weather — rain: Water 1.5x / Fire 0.5x; sun: Fire 1.5x / Water 0.5x
- *     3. Critical hit — 2.0x
- *     4. Random factor — integer from 85–100 inclusive, / 100
- *     5. STAB — 1.5x if move type matches attacker's type
- *     6. Type effectiveness — product of matchups for each defender type
- *     7. Burn penalty — already folded into attack stat above (not applied here)
+ * Cmd_damagecalc (src/battle_script_commands.c:1290-1304):
+ *  13. gCritMultiplier (1x or 2x)
  *
- * Note: Burn is applied to the attack stat (Step 1), not as a separate modifier.
- * This matches pokeemerald where burn halves attack before the damage formula runs.
+ * Cmd_adjustnormaldamage / adjustdamage:
+ *  14. Random roll (85-100 / 100)
+ *  15. STAB (1.5x)
+ *  16. Type effectiveness
  *
- * Source: pret/pokeemerald src/battle_script_commands.c Cmd_calculateDamage + Cmd_adjustnormaldamage
+ * Source: pret/pokeemerald src/pokemon.c:3106-3372 CalculateBaseDamage,
+ *         src/battle_script_commands.c:1290-1304 Cmd_damagecalc
  */
 export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart): DamageResult {
   const { attacker, defender, move, rng, isCrit } = context;
@@ -207,75 +231,95 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
-  // Get effective stats (with crit stage ignoring, burn, and ability modifiers applied)
-  let attack = getAttackStat(attacker, move.type, isCrit);
+  // Determine type-boost item match (used in getAttackStat for raw stat application)
+  // Source: pret/pokeemerald src/pokemon.c:3170-3182 — type-boost items modify raw stat
+  const attackerItem = attacker.pokemon.heldItem;
+  const typeBoostItemType = attackerItem ? (TYPE_BOOST_ITEMS[attackerItem] ?? null) : null;
+
+  // Get effective stats (with ability mods, items, and stat stages applied)
+  // Burn is NOT applied here — it's applied AFTER the base formula per pokeemerald
+  let attack = getAttackStat(attacker, move.type, isCrit, typeBoostItemType);
   const defense = getDefenseStat(defender, move.type, isCrit);
 
-  // Track ability multiplier for breakdown (set before the formula so it's captured correctly)
+  // Track multipliers for breakdown
   let abilityMultiplier = 1;
+  const itemMultiplier = typeBoostItemType === move.type ? 1.1 : 1;
 
-  // Thick Fat: halves the attacker's effective SpAtk/Atk stat BEFORE the damage formula runs.
-  // Source: pret/pokeemerald CalculateBaseDamage — modifies spAttack/attack before (2*L/5+2)*P*A/D
-  // Note: halving the stat (with floor truncation inside the formula) differs from halving final
-  // damage by 0–1 points at certain breakpoints; the pre-formula behavior matches pokeemerald.
+  // Thick Fat: halves the attacker's effective stat BEFORE the damage formula runs.
+  // Source: pret/pokeemerald src/pokemon.c:3203-3204 — spAttack /= 2 (or attack for physical)
   if (defenderAbility === "thick-fat" && (move.type === "fire" || move.type === "ice")) {
-    attack = Math.floor(attack * 0.5);
+    attack = Math.floor(attack / 2);
     abilityMultiplier = 0.5;
   }
 
-  // Step 1: Base damage
-  // Source: pret/pokeemerald — floor(floor(floor(2*Level/5+2) * Power * Atk/Def) / 50) + 2
+  // Base formula: damage = Atk * Power * (2*L/5+2) / Def / 50
+  // Source: pret/pokeemerald src/pokemon.c:3245-3260
   const levelFactor = Math.floor((2 * level) / 5) + 2;
-  let baseDamage = Math.floor(Math.floor((levelFactor * power * attack) / defense) / 50) + 2;
+  let baseDamage = Math.floor(Math.floor((levelFactor * power * attack) / defense) / 50);
 
-  // Record the base damage before modifiers for breakdown
-  const rawBaseDamage = baseDamage;
+  // Burn halving: applied AFTER the base formula, BEFORE +2
+  // Source: pret/pokeemerald src/pokemon.c:3262-3264
+  // "if ((attacker->status1 & STATUS1_BURN) && attacker->ability != ABILITY_GUTS) damage /= 2;"
+  const attackerAbility = attacker.ability;
+  const hasBurn = physical && attacker.pokemon.status === "burn";
+  const gutsActive = attackerAbility === "guts" && attacker.pokemon.status !== null;
+  const burnApplied = hasBurn && !gutsActive;
+  if (burnApplied) {
+    baseDamage = Math.floor(baseDamage / 2);
+  }
 
-  // Step 2: Modifier chain
+  // Screens (Reflect / Light Screen) — non-crit only
+  // Source: pret/pokeemerald src/pokemon.c:3266-3273 (physical) / 3317-3324 (special)
+  // TODO: Phase 6+ — apply screen halving when screens are tracked on BattleSide
 
-  // 2.1: Targets — skip for now (doubles not yet supported in Phase 2)
-  // TODO: Phase 6+ — if context.targetCount > 1, apply 0.5x
+  // Spread move penalty — doubles only
+  // Source: pret/pokeemerald src/pokemon.c:3275-3277
+  // TODO: Phase 6+ — if context.targetCount > 1, apply /= 2
 
-  // 2.2: Weather modifier
-  // Source: pret/pokeemerald — rain/sun modify fire/water damage
+  // Weather boosts (special types in CalculateBaseDamage, physical weather is separate)
+  // Source: pret/pokeemerald src/pokemon.c:3330-3363 — rain/sun modify fire/water damage
+  // Note: In pokeemerald, weather is applied inside CalculateBaseDamage for special types only.
+  // For simplicity and correctness, we apply weather to both here before +2.
   const weather = context.state.weather?.type ?? null;
   const weatherMod = getWeatherDamageModifier(move.type, weather);
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
   }
 
-  // 2.3: Critical hit — 2.0x in Gen 3
-  // Source: pret/pokeemerald — crit doubles damage
+  // Add 2 (the constant at the end of CalculateBaseDamage)
+  // Source: pret/pokeemerald src/pokemon.c:3371 — "return damage + 2;"
+  baseDamage += 2;
+
+  // Record the base damage before post-formula modifiers for breakdown
+  const rawBaseDamage = baseDamage;
+
+  // --- Post-formula modifiers (Cmd_damagecalc + adjustnormaldamage) ---
+
+  // Critical hit — 2.0x in Gen 3
+  // Source: pret/pokeemerald src/battle_script_commands.c:1296
+  // "gBattleMoveDamage = gBattleMoveDamage * gCritMultiplier * gBattleScripting.dmgMultiplier;"
   if (isCrit) {
     baseDamage = baseDamage * 2;
   }
 
-  // 2.4: Random factor — integer from 85 to 100 inclusive, divided by 100
+  // Random factor — integer from 85 to 100 inclusive, divided by 100
   // Source: pret/pokeemerald — RandomPercentage range 85-100
   const randomRoll = rng.int(85, 100);
   const randomFactor = randomRoll / 100;
   baseDamage = Math.floor(baseDamage * randomFactor);
 
-  // 2.5: STAB (Same Type Attack Bonus)
+  // STAB (Same Type Attack Bonus)
   // Source: pret/pokeemerald — 1.5x if move type matches attacker type
   const stabMod = getStabModifier(move.type, attacker.types);
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
-  // 2.5b: Type-boosting held items — 1.1x (10%) if item matches move type
-  // Source: pret/pokeemerald HOLD_EFFECT_*_POWER — 10% boost for matching type
-  // Applied after STAB, before type effectiveness (same position as Gen 2)
-  let itemMultiplier = 1;
-  const attackerItem = attacker.pokemon.heldItem;
-  if (attackerItem && TYPE_BOOST_ITEMS[attackerItem] === move.type) {
-    baseDamage = Math.floor(baseDamage * 1.1);
-    itemMultiplier = 1.1;
-  }
-
-  // 2.6: Type effectiveness
+  // Type effectiveness
   // Source: pret/pokeemerald — product of matchups for each defender type
   const effectiveness = getTypeEffectiveness(move.type, defender.types, typeChart);
+
+  const burnMultiplier = burnApplied ? 0.5 : 1;
 
   if (effectiveness === 0) {
     // Type immunity — return 0 damage
@@ -291,8 +335,8 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
         randomMultiplier: randomFactor,
         stabMultiplier: stabMod,
         typeMultiplier: 0,
-        burnMultiplier: physical && attacker.pokemon.status === "burn" ? 0.5 : 1,
-        abilityMultiplier: 1,
+        burnMultiplier,
+        abilityMultiplier,
         itemMultiplier,
         otherMultiplier: 1,
         finalDamage: 0,
@@ -300,9 +344,8 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     };
   }
 
-  // 2.6a: Wonder Guard — only super-effective moves hit
+  // Wonder Guard — only super-effective moves hit
   // Source: pret/pokeemerald ABILITY_WONDER_GUARD — only 2x and 4x moves land
-  // Blocks immune (0x), not-very-effective (0.5x/0.25x), and neutral (1x) moves.
   if (defenderAbility === "wonder-guard" && effectiveness < 2) {
     return {
       damage: 0,
@@ -316,7 +359,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
         randomMultiplier: randomFactor,
         stabMultiplier: stabMod,
         typeMultiplier: effectiveness,
-        burnMultiplier: physical && attacker.pokemon.status === "burn" ? 0.5 : 1,
+        burnMultiplier,
         abilityMultiplier: 0,
         itemMultiplier,
         otherMultiplier: 1,
@@ -326,18 +369,10 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // Apply type effectiveness as a multiplier
-  // For non-integer multipliers (0.25, 0.5, 2, 4), apply with floor
   baseDamage = Math.floor(baseDamage * effectiveness);
 
   // Minimum 1 damage (unless type immune, which returns 0 above)
   const finalDamage = Math.max(1, baseDamage);
-
-  // Calculate burn multiplier for breakdown
-  // Guts negates burn penalty, so when Guts is active with burn, burnMultiplier = 1
-  const attackerAbility = attacker.ability;
-  const hasBurn = physical && attacker.pokemon.status === "burn";
-  const gutsActive = attackerAbility === "guts" && attacker.pokemon.status !== null;
-  const burnMultiplier = hasBurn && !gutsActive ? 0.5 : 1;
 
   const breakdown: DamageBreakdown = {
     baseDamage: rawBaseDamage,

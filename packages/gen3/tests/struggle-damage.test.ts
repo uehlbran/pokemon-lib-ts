@@ -193,8 +193,9 @@ describe("Gen 3 Struggle Damage", () => {
 });
 
 describe("Gen 3 Struggle Recoil", () => {
-  it("given 50 damage dealt, when Struggle recoil calculated, then recoil = floor(50/2) = 25", () => {
-    // Source: pret/pokeemerald — Struggle recoil = damage / 2
+  it("given 100 damage dealt, when Struggle recoil calculated, then recoil = floor(100/4) = 25", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:2636-2639
+    // "case MOVE_EFFECT_RECOIL_25: gBattleMoveDamage = (gHpDealt) / 4;"
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -202,14 +203,15 @@ describe("Gen 3 Struggle Recoil", () => {
       types: ["normal"],
     });
 
-    const recoil = ruleset.calculateStruggleRecoil(attacker, 50);
+    const recoil = ruleset.calculateStruggleRecoil(attacker, 100);
 
     expect(recoil).toBe(25);
   });
 
   it("given 1 damage dealt, when Struggle recoil calculated, then min recoil = 1", () => {
-    // Source: pret/pokeemerald — minimum recoil is 1
-    // floor(1/2) = 0, but Math.max(1, 0) = 1
+    // Source: pret/pokeemerald src/battle_script_commands.c:2638-2639
+    // "if (gBattleMoveDamage == 0) gBattleMoveDamage = 1;"
+    // floor(1/4) = 0, but Math.max(1, 0) = 1
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -222,8 +224,9 @@ describe("Gen 3 Struggle Recoil", () => {
     expect(recoil).toBe(1);
   });
 
-  it("given 99 damage dealt, when Struggle recoil calculated, then recoil = floor(99/2) = 49", () => {
-    // Source: pret/pokeemerald — floor(99/2) = 49
+  it("given 99 damage dealt, when Struggle recoil calculated, then recoil = floor(99/4) = 24", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:2637
+    // "gBattleMoveDamage = (gHpDealt) / 4;" — floor(99/4) = 24
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -233,6 +236,6 @@ describe("Gen 3 Struggle Recoil", () => {
 
     const recoil = ruleset.calculateStruggleRecoil(attacker, 99);
 
-    expect(recoil).toBe(49);
+    expect(recoil).toBe(24);
   });
 });

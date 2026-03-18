@@ -37,8 +37,14 @@ export {
 } from "./pokemon-factory";
 export { calculateAllStats, calculateHp, calculateStat, getNatureModifier } from "./stat-calc";
 export {
+  ACCURACY_STAGE_RATIOS,
   calculateAccuracy,
+  GEN3_STAT_STAGE_RATIOS,
+  GEN12_STAT_STAGE_RATIOS,
   getAccuracyEvasionMultiplier,
+  getAccuracyStageRatio,
+  getGen3StatStageRatio,
+  getGen12StatStageRatio,
   getStatStageMultiplier,
 } from "./stat-stages";
 export {

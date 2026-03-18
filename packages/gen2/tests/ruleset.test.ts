@@ -296,7 +296,8 @@ describe("Gen2Ruleset", () => {
   // --- Sleep Turns ---
 
   describe("Given sleep turns roll", () => {
-    it("should return 1-7 turns (Gen 2 Showdown-confirmed range)", () => {
+    it("should return 2-7 turns (pret/pokecrystal core.asm:3608-3621 — rejects 0 before +1, so min is 2)", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm:3608-3621 — and SLP_MASK rejects 0, then inc a, so result is 2-7
       // Arrange
       const ruleset = new Gen2Ruleset();
       const results = new Set<number>();
@@ -306,14 +307,15 @@ describe("Gen2Ruleset", () => {
         const rng = new SeededRandom(seed);
         const turns = ruleset.rollSleepTurns(rng);
         results.add(turns);
-        expect(turns).toBeGreaterThanOrEqual(1);
+        expect(turns).toBeGreaterThanOrEqual(2);
         expect(turns).toBeLessThanOrEqual(7);
       }
 
-      // Assert: should produce full range including 7
+      // Assert: should produce full range 2-7, never 1
       expect(results.size).toBeGreaterThan(1);
-      expect(results.has(1)).toBe(true);
+      expect(results.has(2)).toBe(true);
       expect(results.has(7)).toBe(true);
+      expect(results.has(1)).toBe(false);
     });
   });
 
@@ -2289,7 +2291,9 @@ describe("Gen2Ruleset", () => {
   // --- Switch Out ---
 
   describe("Given a Pokemon switching out", () => {
-    it("should remove toxic-counter volatile on switch-out", () => {
+    it("should remove toxic-counter volatile and revert badly-poisoned to poison on switch-out", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus — zeros all substatus bytes,
+      // reverting badly-poisoned to regular poison
       // Arrange
       const ruleset = new Gen2Ruleset();
       const pokemon = createMockActive({ status: "badly-poisoned" });
@@ -2302,57 +2306,60 @@ describe("Gen2Ruleset", () => {
       // Act
       ruleset.onSwitchOut(pokemon, state);
 
-      // Assert: toxic-counter is cleared but badly-poisoned status persists
+      // Assert: toxic-counter is cleared AND badly-poisoned reverts to regular poison
       expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
-      expect(pokemon.pokemon.status).toBe("badly-poisoned");
+      expect(pokemon.pokemon.status).toBe("poison");
     });
   });
 
   // --- Struggle Recoil ---
 
   describe("calculateStruggleRecoil", () => {
-    // Bug #100 fixed: Gen 2 Struggle recoil = floor(maxHp / 4), NOT floor(damageDealt / 2)
-    // Source: gen2-ground-truth.md §9 — "Recoil: 1/4 of the user's max HP — formula: floor(maxHp / 4)"
-    // Source: pret/pokecrystal — Struggle recoil uses user's max HP divided by 4, not damage dealt
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil — srl b twice = divide by 4
+    // Gen 2: recoil = floor(damageDealt / 4), NOT floor(maxHp / 4)
 
-    it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 25 (floor(100/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
-      // Assert: floor(200/4) = 50 (damage value ignored — recoil based on max HP)
-      expect(recoil).toBe(50);
+      // Assert: floor(100/4) = 25 — recoil is based on damage dealt, not max HP
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729
+      expect(recoil).toBe(25);
     });
 
-    it("given attacker with 200 max HP and damage=1, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=60, when calculating recoil, then returns 15 (floor(60/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
-      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
-      // Assert: floor(200/4) = 50 (NOT max(1, floor(1/2)) = 1 — old buggy formula)
-      expect(recoil).toBe(50);
+      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 60);
+      // Assert: floor(60/4) = 15
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729
+      expect(recoil).toBe(15);
     });
 
-    it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 1 (minimum recoil)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
-      // Assert: floor(200/4) = 50 (NOT max(1, floor(0/2)) = 1 — old buggy formula)
-      expect(recoil).toBe(50);
+      // Assert: max(1, floor(0/4)) = max(1, 0) = 1
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729
+      expect(recoil).toBe(1);
     });
 
-    it("given attacker with 200 max HP and damage=101, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=300, when calculating recoil, then returns 75 (floor(300/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
-      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
-      // Assert: floor(200/4) = 50 (damage value ignored)
-      expect(recoil).toBe(50);
+      const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 300);
+      // Assert: floor(300/4) = 75
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729
+      expect(recoil).toBe(75);
     });
   });
 

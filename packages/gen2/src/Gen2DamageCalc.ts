@@ -173,17 +173,19 @@ function getItemModifier(attacker: ActivePokemon, moveType: PokemonType): number
 /**
  * Calculate damage for a move in Gen 2.
  *
- * Formula per ground truth §3 (pret/pokecrystal order):
+ * Formula per pret/pokecrystal BattleCommand_DamageCalc (effect_commands.asm:2900-3129):
  *   1. baseDamage = floor(floor(floor((2*L/5)+2) * P * A) / D) / 50)  — no +2 yet
- *   2. Crit: * 2
- *   3. Item modifier (type-boost items at 1.1x)
+ *   2. Item modifier (type-boost items at 1.1x) — line 2983 (BEFORE crit)
+ *   3. Crit: * 2 — line 3023 (AFTER items)
  *   4. Clamp: max(1, min(997, baseDamage))
  *   5. + 2
- *   6. STAB: += floor(damage / 2)  — BEFORE weather (ground truth §3)
- *   7. Type effectiveness (sequential, floor each type separately)
- *   8. Weather: water+rain/fire+sun → floor(* 1.5); opposite → floor(/ 2)
+ *   6. Weather: water+rain/fire+sun → floor(* 1.5); opposite → floor(/ 2) — BattleCommand_Stab:1270
+ *   7. STAB: += floor(damage / 2) — AFTER weather per BattleCommand_Stab:1251+
+ *   8. Type effectiveness (sequential, floor each type separately)
  *   9. Random: floor(damage * rng.int(217,255) / 255)
  *   10. Minimum 1
+ *
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm:2900-3129 BattleCommand_DamageCalc
  *
  * Key differences from Gen 1:
  * - SpAttack and SpDefense are separate stats
@@ -240,15 +242,17 @@ export function calculateGen2Damage(
   let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense);
   baseDamage = Math.floor(baseDamage / 50);
 
-  // Step 2: Critical hit doubles damage in Gen 2
-  if (isCrit) {
-    baseDamage = Math.floor(baseDamage * 2);
-  }
-
-  // Step 3: Item modifier (type-boosting items at 1.1x) — BEFORE clamp
+  // Step 2: Item modifier (type-boosting items at 1.1x) — BEFORE crit
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm:2983 — items applied before crit
   const itemMod = getItemModifier(attacker, move.type);
   if (itemMod !== 1) {
     baseDamage = Math.floor(baseDamage * itemMod);
+  }
+
+  // Step 3: Critical hit doubles damage in Gen 2 — AFTER items
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm:3023 — crit applied after items
+  if (isCrit) {
+    baseDamage = Math.floor(baseDamage * 2);
   }
 
   // Step 4: Clamp to [1, 997]
@@ -257,15 +261,23 @@ export function calculateGen2Damage(
   // Step 5: Add the +2 constant
   baseDamage += 2;
 
-  // Step 6: STAB (applied BEFORE weather — correct order per ground truth §3)
-  // Source: gen2-ground-truth.md §3 — "STAB × type_effectiveness × weather"
+  // Step 6: Weather modifier — BEFORE STAB
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1270 — weather before STAB
+  const weather = state.weather?.type ?? null;
+  const weatherMod = weather ? getWeatherDamageModifier(move.type, weather) : 1;
+  if (weatherMod !== 1) {
+    baseDamage = Math.floor(baseDamage * weatherMod);
+  }
+
+  // Step 7: STAB — AFTER weather
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1251+
   const stabMod = getStabModifier(move.type, attacker.types);
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
-  // Step 7: Type effectiveness — applied sequentially with floor per type
-  // Source: gen2-ground-truth.md §3 — "applied sequentially per defender type"
+  // Step 8: Type effectiveness — applied sequentially with floor per type
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm — sequential application
   const defenderTypes = defender.types;
   let effectiveness = 1;
 
@@ -300,14 +312,6 @@ export function calculateGen2Damage(
       baseDamage = Math.floor((baseDamage * 5) / 10);
     }
     // factor === 1: no change
-  }
-
-  // Step 8: Weather modifier (applied AFTER STAB and type effectiveness)
-  // Source: gen2-ground-truth.md §3 — weather applied after STAB
-  const weather = state.weather?.type ?? null;
-  const weatherMod = weather ? getWeatherDamageModifier(move.type, weather) : 1;
-  if (weatherMod !== 1) {
-    baseDamage = Math.floor(baseDamage * weatherMod);
   }
 
   // Step 9: Random factor (217-255) / 255

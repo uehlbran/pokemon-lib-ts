@@ -50,13 +50,11 @@ function getAttackStat(
   const stats = attacker.pokemon.calculatedStats;
 
   if (isCrit) {
-    // Critical hits use the unmodified stat (ignore stat stages)
-    // but still factor in burn for physical
-    let baseStat = stats ? stats[statKey] : 100;
-    // Burn halves physical attack, even on crits in Gen 1
-    if (physical && attacker.pokemon.status === "burn") {
-      baseStat = Math.floor(baseStat / 2);
-    }
+    // Source: pret/pokered engine/battle/core.asm:4060-4071 GetDamageVarsForPlayerAttack
+    // On critical hits, loads from wPartyMon1Attack (unmodified party data), not wBattleMonAttack
+    // (which has burn halving applied). Therefore burn does NOT affect crits in Gen 1.
+    // Critical hits use the unmodified stat (ignore stat stages AND burn).
+    const baseStat = stats ? stats[statKey] : 100;
     return baseStat;
   }
 
@@ -242,7 +240,8 @@ export function calculateGen1Damage(
     randomMultiplier: randomFactor,
     stabMultiplier: stabMod,
     typeMultiplier: effectiveness,
-    burnMultiplier: isGen1PhysicalType(move.type) && attacker.pokemon.status === "burn" ? 0.5 : 1,
+    burnMultiplier:
+      isGen1PhysicalType(move.type) && attacker.pokemon.status === "burn" && !isCrit ? 0.5 : 1,
     abilityMultiplier: 1,
     itemMultiplier: 1,
     otherMultiplier: 1,

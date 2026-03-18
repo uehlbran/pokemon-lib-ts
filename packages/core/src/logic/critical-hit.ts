@@ -1,6 +1,9 @@
 /**
  * Critical hit probability by stage (Gen 6+).
  *
+ * Source: Showdown sim/battle-actions.ts — Gen 6+ critical hit rates
+ * Source: Bulbapedia — Critical hit (https://bulbapedia.bulbagarden.net/wiki/Critical_hit)
+ *
  * | Stage | Rate           |
  * |-------|----------------|
  * | 0     | 1/24 (~4.17%)  |
@@ -18,6 +21,9 @@ export const CRIT_RATES_GEN6: readonly number[] = [
 /**
  * Critical hit probability by stage (Gen 2).
  * Gen 2 uses a 256-based lookup table, not the modern stage system.
+ *
+ * Source: pret/pokecrystal engine/battle/core.asm — CriticalHitTest
+ * Source: Bulbapedia — Critical hit (Gen II thresholds)
  *
  * | Stage | Threshold | Rate approx    |
  * |-------|-----------|----------------|
@@ -37,6 +43,9 @@ export const CRIT_RATES_GEN2: readonly number[] = [
 
 /**
  * Critical hit probability by stage (Gen 3-5).
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:606 sCriticalHitChance = {16, 8, 4, 3, 2}
+ *   Critical hit occurs when Random() % sCriticalHitChance[stage] == 0, i.e. 1/N chance
  *
  * | Stage | Rate           |
  * |-------|----------------|
@@ -65,8 +74,12 @@ export function getCritRate(stage: number, rateTable: readonly number[]): number
   return rateTable[index] as number;
 }
 
-/** Critical hit damage multiplier (Gen 6+: 1.5x) */
+/** Critical hit damage multiplier (Gen 6+: 1.5x)
+ * Source: Showdown sim/battle-actions.ts — basePower *= 1.5 for crits in Gen 6+
+ */
 export const CRIT_MULTIPLIER_MODERN = 1.5;
 
-/** Critical hit damage multiplier (Gen 1-5: 2.0x) */
+/** Critical hit damage multiplier (Gen 1-5: 2.0x)
+ * Source: pret/pokeemerald src/battle_script_commands.c:1283 — gCritMultiplier = 2
+ */
 export const CRIT_MULTIPLIER_CLASSIC = 2.0;

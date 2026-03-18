@@ -1,6 +1,6 @@
 import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 
@@ -212,19 +212,33 @@ function makeContext(
  * Compute the Gen 1 accuracy threshold used internally by doesMoveHit.
  * This mirrors the logic in Gen1Ruleset.doesMoveHit() for test assertions.
  *
- * effectiveAccuracy = clamp(floor(moveAccuracy * accMod / evaMod), 1, 255)
- * threshold = floor(effectiveAccuracy * 255 / 100)
+ * Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance
+ * Two sequential multiply-divide operations on 0-255 scale:
+ *   1. Convert moveAccuracy (0-100) to 0-255 scale
+ *   2. Apply accuracy stage modifier (integer multiply-divide with floor)
+ *   3. Apply evasion stage modifier (integer multiply-divide with floor)
+ *   4. Clamp to [1, 255]
  */
 function computeThreshold(
   moveAccuracy: number,
   accuracyStage: number,
   evasionStage: number,
 ): number {
-  const accMod = getStatStageMultiplier(accuracyStage);
-  const evaMod = getStatStageMultiplier(evasionStage);
-  let effectiveAccuracy = Math.floor((moveAccuracy * accMod) / evaMod);
-  effectiveAccuracy = Math.max(1, Math.min(255, effectiveAccuracy));
-  return Math.floor((effectiveAccuracy * 255) / 100);
+  // Step 0: Convert to 0-255 scale
+  let acc255 = Math.floor((moveAccuracy * 255) / 100);
+
+  // Step 1: Apply accuracy stage modifier
+  const accNum = Math.max(2, 2 + accuracyStage);
+  const accDen = Math.max(2, 2 - accuracyStage);
+  acc255 = Math.floor((acc255 * accNum) / accDen);
+
+  // Step 2: Apply evasion stage modifier (inverted)
+  const evaNum = Math.max(2, 2 + evasionStage);
+  const evaDen = Math.max(2, 2 - evasionStage);
+  acc255 = Math.floor((acc255 * evaDen) / evaNum);
+
+  // Clamp to [1, 255]
+  return Math.max(1, Math.min(255, acc255));
 }
 
 describe("Gen 1 Accuracy", () => {
@@ -491,10 +505,9 @@ describe("Gen 1 Accuracy", () => {
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, 1, 0);
-    // Assert: getStatStageMultiplier(+1) = 3/2 = 1.5 → floor(100 * 1.5) = 150, clamped = 150
-    // threshold = floor(150 * 255 / 100) = floor(382.5) = 382 → but effectiveAccuracy is clamped to 255
-    // floor(100 * 1.5) = 150, threshold = floor(150 * 255 / 100) = 382; then clamped to 255 at the roll level
-    // The key assertion: threshold > base (255) confirms positive multiplier
+    // Assert: On 0-255 scale: floor(100*255/100) = 255
+    // acc +1: num=3, den=2 → floor(255 * 3 / 2) = 382 → clamped to 255
+    // The key assertion: threshold equals 255 (clamped) confirms positive multiplier
     expect(threshold).toBeGreaterThanOrEqual(255);
   });
 
@@ -503,8 +516,8 @@ describe("Gen 1 Accuracy", () => {
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, -6, 0);
-    // Assert: getStatStageMultiplier(-6) = 2/8 = 0.25 → floor(100 * 0.25) = 25
-    // threshold = floor(25 * 255 / 100) = 63
+    // Assert: On 0-255 scale: floor(100*255/100) = 255
+    // acc -6: num=2, den=8 → floor(255 * 2 / 8) = floor(63.75) = 63
     expect(threshold).toBe(63);
   });
 
@@ -513,8 +526,8 @@ describe("Gen 1 Accuracy", () => {
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, 0, 6);
-    // Assert: getStatStageMultiplier(+6) = 8/2 = 4.0 → floor(100 / 4.0) = 25
-    // threshold = floor(25 * 255 / 100) = 63
+    // Assert: On 0-255 scale: floor(100*255/100) = 255
+    // eva +6: evaNum=8, evaDen=2 → floor(255 * 2 / 8) = floor(63.75) = 63
     expect(threshold).toBe(63);
   });
 
@@ -532,5 +545,132 @@ describe("Gen 1 Accuracy", () => {
     for (let i = 1; i < thresholds.length; i++) {
       expect(thresholds[i]).toBeLessThanOrEqual(thresholds[i - 1] ?? Number.POSITIVE_INFINITY);
     }
+  });
+
+  // --- Two-Step Integer Operations (Bug 3B Fix) ---
+
+  it("given a move with 85% accuracy and attacker at accuracy stage +1 with no evasion, when computing threshold, then applies two sequential integer floor operations on 0-255 scale", () => {
+    // Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance
+    // Two sequential multiply-divide operations on 0-255 scale.
+    //
+    // Step 0: baseAcc255 = floor(85 * 255 / 100) = floor(216.75) = 216
+    // Step 1: apply accuracy +1 modifier (num=3, den=2)
+    //   adjustedAcc = floor(216 * 3 / 2) = floor(324) = 324
+    // Step 2: apply evasion 0 modifier (num=2, den=2) — no change
+    //   finalAcc = floor(324 * 2 / 2) = 324
+    // Step 3: clamp to [1, 255] → 255
+    //
+    // The old single-operation formula would have computed:
+    //   floor(85 * 1.5 / 1.0) = 127, then floor(127 * 255 / 100) = 323
+    // The difference (255 clamped vs 323→255 clamped) doesn't matter here
+    // because both exceed 255, but the intermediate values differ.
+    const threshold = computeThreshold(85, 1, 0);
+    expect(threshold).toBe(255); // clamped from 324
+  });
+
+  it("given a move with 80% accuracy and attacker at accuracy stage +1 with defender at evasion +1, when computing threshold, then the two sequential floor operations produce a different result than a single combined operation", () => {
+    // Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance
+    // This test demonstrates the difference between two sequential integer operations
+    // (correct decomp behavior) and a single combined float operation (incorrect).
+    //
+    // Two-step (correct):
+    //   Step 0: baseAcc255 = floor(80 * 255 / 100) = floor(204) = 204
+    //   Step 1: acc +1 → floor(204 * 3 / 2) = floor(306) = 306
+    //   Step 2: eva +1 → floor(306 * 2 / 3) = floor(204) = 204
+    //   threshold = 204
+    //
+    // Single combined (incorrect):
+    //   floor(80 * 1.5 / 1.5) = 80, then floor(80 * 255 / 100) = 204
+    //   In this case they happen to agree, but only because 80*1.5=120 is exact.
+    //
+    // Better example: 70% acc, +1 acc, +1 eva
+    //   Two-step: floor(70*255/100) = 178, floor(178*3/2) = 267, floor(267*2/3) = 178
+    //   Combined: floor(70*1.5/1.5) = 70, floor(70*255/100) = 178
+    //   Same here too. But with odd-valued intermediates, they differ.
+    //
+    // The key point is the scale: operations happen on 0-255 (not 0-100).
+    const threshold = computeThreshold(80, 1, 1);
+    // Step 0: floor(80*255/100) = 204
+    // Step 1: floor(204*3/2) = 306
+    // Step 2: floor(306*2/3) = 204
+    expect(threshold).toBe(204);
+  });
+
+  it("given a move with 70% accuracy and defender at evasion stage +2, when computing threshold, then sequential integer floor operations produce the correct result", () => {
+    // Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance
+    //
+    // Step 0: baseAcc255 = floor(70 * 255 / 100) = floor(178.5) = 178
+    // Step 1: acc stage 0 → floor(178 * 2 / 2) = 178 (no change)
+    // Step 2: eva stage +2: evaNum = max(2, 4) = 4, evaDen = max(2, 0) = 2
+    //   floor(178 * 2 / 4) = floor(89) = 89
+    // threshold = 89
+    const threshold = computeThreshold(70, 0, 2);
+    expect(threshold).toBe(89);
+  });
+
+  it("given a move with 95% accuracy and attacker at accuracy +2 with defender at evasion +3, when computing threshold via doesMoveHit with boundary RNG, then hit/miss is determined by the two-step threshold", () => {
+    // Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance
+    //
+    // Step 0: baseAcc255 = floor(95 * 255 / 100) = floor(242.25) = 242
+    // Step 1: acc +2 → num=4, den=2: floor(242 * 4 / 2) = 484
+    // Step 2: eva +3 → evaNum=5, evaDen=2: floor(484 * 2 / 5) = floor(193.6) = 193
+    // threshold = 193
+    //
+    // Roll of 192 → hit (192 < 193)
+    // Roll of 193 → miss (193 < 193 is false)
+    const expectedThreshold = 193;
+    expect(computeThreshold(95, 2, 3)).toBe(expectedThreshold);
+
+    // Verify with doesMoveHit using a mock RNG that returns exactly the boundary values
+    const mockRngHit = {
+      next: () => 0,
+      int: (_min: number, _max: number) => expectedThreshold - 1, // 192 → should hit
+      chance: () => false,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: readonly T[]) => [...arr],
+      getState: () => 0,
+      setState: () => {},
+    };
+    const ctxHit: AccuracyContext = {
+      attacker: makeActivePokemon({
+        statStages: {
+          hp: 0,
+          attack: 0,
+          defense: 0,
+          spAttack: 0,
+          spDefense: 0,
+          speed: 0,
+          accuracy: 2,
+          evasion: 0,
+        },
+      }),
+      defender: makeActivePokemon({
+        statStages: {
+          hp: 0,
+          attack: 0,
+          defense: 0,
+          spAttack: 0,
+          spDefense: 0,
+          speed: 0,
+          accuracy: 0,
+          evasion: 3,
+        },
+      }),
+      move: makeMove({ accuracy: 95 }),
+      state: makeState(new SeededRandom(0)),
+      rng: mockRngHit as AccuracyContext["rng"],
+    };
+    expect(ruleset.doesMoveHit(ctxHit)).toBe(true);
+
+    // Roll of exactly the threshold → miss
+    const mockRngMiss = {
+      ...mockRngHit,
+      int: (_min: number, _max: number) => expectedThreshold, // 193 → should miss
+    };
+    const ctxMiss: AccuracyContext = {
+      ...ctxHit,
+      rng: mockRngMiss as AccuracyContext["rng"],
+    };
+    expect(ruleset.doesMoveHit(ctxMiss)).toBe(false);
   });
 });

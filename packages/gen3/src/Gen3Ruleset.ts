@@ -1,6 +1,7 @@
 import {
   type AbilityContext,
   type AbilityResult,
+  type AccuracyContext,
   type ActivePokemon,
   BaseRuleset,
   type BattleAction,
@@ -50,7 +51,7 @@ import { applyGen3WeatherEffects } from "./Gen3Weather";
  * Phase 1 overrides implemented here:
  *   - getAvailableHazards — Gen 3 only has Spikes (no Stealth Rock until Gen 4)
  *   - calculateBindDamage — 1/16 max HP (Gen 2-4; Gen 5+ uses 1/8)
- *   - calculateStruggleRecoil — 1/2 damage dealt (Gen 3; Gen 4+ uses 1/4 max HP)
+ *   - calculateStruggleRecoil — 1/4 damage dealt (Gen 3 RECOIL_25; Gen 4+ uses 1/4 max HP)
  *   - rollMultiHitCount — Gen 1-4 weighted distribution via gen14MultiHitRoll
  *   - rollSleepTurns — 2-5 turns (Gen 3-4; Gen 5+ uses 1-3)
  *   - calculateExpGain — classic formula (no level scaling)
@@ -158,13 +159,14 @@ export class Gen3Ruleset extends BaseRuleset {
   }
 
   /**
-   * Gen 3 Struggle recoil: 1/2 of damage dealt.
+   * Gen 3 Struggle recoil: 1/4 of damage dealt.
    * Gen 4+ changed this to 1/4 of attacker's max HP (BaseRuleset default).
    *
-   * Source: pret/pokeemerald src/battle_script_commands.c — Struggle recoil = damage / 2
+   * Source: pret/pokeemerald src/battle_script_commands.c:2636-2639
+   * "case MOVE_EFFECT_RECOIL_25: gBattleMoveDamage = (gHpDealt) / 4;"
    */
   calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
-    return Math.max(1, Math.floor(damageDealt / 2));
+    return Math.max(1, Math.floor(damageDealt / 4));
   }
 
   /**
@@ -322,7 +324,8 @@ export class Gen3Ruleset extends BaseRuleset {
    * weather, entry hazards, protect, volatile statuses, custom effects).
    *
    * Gen 3 differences from Gen 2:
-   * - Same 0-255 scale for effect chance with 1/256 failure rate at 100%
+   * - Uses 0-99 scale for effect chance (Random() % 100 < percentChance)
+   *   100% effects ALWAYS succeed (unlike Gen 2's 1/256 failure on 0-255 scale)
    * - Knock Off removes defender's item (no damage boost — Gen 5+ only)
    * - Electric types immune to paralysis (unlike Gen 2)
    * - Abilities may grant additional immunities (handled separately in damage calc)
@@ -386,14 +389,18 @@ export class Gen3Ruleset extends BaseRuleset {
   }
 
   /**
-   * Roll for a secondary effect chance on the 0-255 scale.
-   * Even a 100% chance has a 1/256 failure rate (effectChance = 255, roll can equal 255).
+   * Roll for a secondary effect chance on the 0-99 scale.
+   * 100% effects ALWAYS succeed (0-99 < 100 is always true).
    *
-   * Source: pret/pokeemerald src/battle_script_commands.c — secondary effect probability
+   * Source: pret/pokeemerald src/battle_script_commands.c:2908-2935 Cmd_seteffectwithchance
+   * "else if (Random() % 100 < percentChance ...)"
+   * Random() % 100 produces 0-99; percentChance=100 means 0-99 < 100 always true.
    */
   private rollEffectChance(chance: number, rng: SeededRandom): boolean {
-    const effectChance = Math.floor((chance * 255) / 100);
-    return rng.int(0, 255) < effectChance;
+    // 100% effects always succeed — skip the roll entirely
+    // Source: pret/pokeemerald — Random() % 100 < 100 is always true
+    if (chance >= 100) return true;
+    return rng.int(0, 99) < chance;
   }
 
   /**
@@ -706,13 +713,14 @@ export class Gen3Ruleset extends BaseRuleset {
 
   /**
    * Pre-rolls Quick Claw for each move action before the main sort.
-   * Quick Claw gives an 18.75% (3/16) chance to move first among same-priority actions.
+   * Quick Claw gives a 20% chance to move first among same-priority actions.
    *
    * Overrides the BaseRuleset hook so PRNG calls (QC rolls) happen before tiebreak
    * keys are assigned, preserving PRNG consumption order.
    *
-   * Source: pret/pokeemerald src/battle_util.c — HOLD_EFFECT_QUICK_CLAW (game uses
-   * 60/256 ≈ 23.4%; Showdown normalizes to 18.75% = 3/16 for Gen 3)
+   * Source: pret/pokeemerald src/battle_main.c:4653
+   * "if (holdEffect == HOLD_EFFECT_QUICK_CLAW && gRandomTurnNumber < (0xFFFF * holdEffectParam) / 100)"
+   * holdEffectParam = 20 (from src/data/items.h:2241), giving 20.00% activation.
    */
   protected override getQuickClawActivated(
     actions: BattleAction[],
@@ -726,15 +734,95 @@ export class Gen3Ruleset extends BaseRuleset {
         const side = state.sides[action.side];
         const active = side?.active[0];
         if (active?.pokemon.heldItem === "quick-claw") {
-          // 18.75% = 3/16 chance to activate
-          // Source: Showdown sim/battle-actions.ts — Quick Claw 18.75% in Gen 3
-          if (rng.chance(3 / 16)) {
+          // 20% chance to activate
+          // Source: pret/pokeemerald src/battle_main.c:4653 — (0xFFFF * 20) / 100 = 13107
+          // gRandomTurnNumber < 13107 out of 65536 = 20.00%
+          if (rng.chance(0.2)) {
             quickClawActivated.add(i);
           }
         }
       }
     }
     return quickClawActivated;
+  }
+
+  // --- Accuracy System ---
+
+  /**
+   * Gen 3 accuracy check using the exact pokeemerald sAccuracyStageRatios table.
+   *
+   * The accuracy/evasion stage ratios from pokeemerald differ from the simplified
+   * 3-based formula in BaseRuleset at stages -5 (36/100 vs 37%) and -4 (43/100 vs 42%).
+   *
+   * Algorithm (from pokeemerald src/battle_script_commands.c:1099-1188 Cmd_accuracycheck):
+   *   1. Net stage = accStage + DEFAULT_STAT_STAGE - evaStage (clamped to [-6, +6])
+   *   2. calc = sAccuracyStageRatios[buff].dividend * moveAcc / sAccuracyStageRatios[buff].divisor
+   *   3. Ability modifiers (Compound Eyes, Sand Veil, Hustle)
+   *   4. Hold item modifiers (BrightPowder, Lax Incense)
+   *   5. Hit if (Random() % 100 + 1) <= calc
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c:588 sAccuracyStageRatios
+   */
+  doesMoveHit(context: AccuracyContext): boolean {
+    // Never-miss moves (accuracy === null)
+    if (context.move.accuracy === null) return true;
+
+    const moveAcc = context.move.accuracy;
+    const accStage = context.attacker.statStages.accuracy;
+    const evaStage = context.defender.statStages.evasion;
+
+    // Net stage calculation: acc - eva, clamped to [-6, +6]
+    // Source: pret/pokeemerald src/battle_script_commands.c:1136
+    // "buff = acc + DEFAULT_STAT_STAGE - gBattleMons[gBattlerTarget].statStages[STAT_EVASION];"
+    const netStage = Math.max(-6, Math.min(6, accStage - evaStage));
+
+    // Apply accuracy stage ratio from the pokeemerald table
+    // Source: pret/pokeemerald src/battle_script_commands.c:1149-1150
+    // netStage is clamped to [-6, +6] so index is always 0-12 (valid)
+    const ratio = GEN3_ACCURACY_STAGE_RATIOS[netStage + 6] as {
+      dividend: number;
+      divisor: number;
+    };
+    let calc = Math.floor((ratio.dividend * moveAcc) / ratio.divisor);
+
+    // Compound Eyes: 1.3x accuracy
+    // Source: pret/pokeemerald src/battle_script_commands.c:1152-1153
+    if (context.attacker.ability === "compound-eyes") {
+      calc = Math.floor((calc * 130) / 100);
+    }
+
+    // Sand Veil: 0.8x accuracy in sandstorm (WeatherType uses "sand" for sandstorm)
+    // Source: pret/pokeemerald src/battle_script_commands.c:1154-1155
+    const weather = context.state.weather?.type ?? null;
+    if (context.defender.ability === "sand-veil" && weather === "sand") {
+      calc = Math.floor((calc * 80) / 100);
+    }
+
+    // Hustle: 0.8x accuracy for physical moves
+    // Source: pret/pokeemerald src/battle_script_commands.c:1156-1157
+    if (context.attacker.ability === "hustle") {
+      // Check if move type is physical (Gen 3 physical/special split is by type)
+      const physicalTypes = new Set([
+        "normal",
+        "fighting",
+        "flying",
+        "poison",
+        "ground",
+        "rock",
+        "bug",
+        "ghost",
+        "steel",
+      ]);
+      if (physicalTypes.has(context.move.type)) {
+        calc = Math.floor((calc * 80) / 100);
+      }
+    }
+
+    // Final accuracy check: (Random() % 100 + 1) > calc means miss
+    // Source: pret/pokeemerald src/battle_script_commands.c:1176
+    // "if ((Random() % 100 + 1) > calc)" → miss
+    // Equivalent: hit if roll <= calc, where roll is 1-100
+    return context.rng.int(1, 100) <= calc;
   }
 
   // --- Speed (turn order helper) ---
@@ -757,6 +845,37 @@ export class Gen3Ruleset extends BaseRuleset {
     return Math.max(1, effective);
   }
 }
+
+// ─── Gen 3 Accuracy Stage Ratios ──────────────────────────────────────────
+
+/**
+ * Exact accuracy stage ratios from the pokeemerald disassembly.
+ *
+ * Indexed by stage + 6 (stage -6 = index 0, stage +6 = index 12).
+ *
+ * These differ from the simplified 3-based formula at stages:
+ *   -5: 36/100 (decomp) vs 37.5% (3-based)
+ *   -4: 43/100 (decomp) vs 42.8% (3-based)
+ *   +3: 200/100 (decomp) vs 200% (3-based) — same
+ *   +5: 133/50 (decomp) = 266% vs 266.6% (3-based) — rounding differs
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:588-603 sAccuracyStageRatios
+ */
+const GEN3_ACCURACY_STAGE_RATIOS: ReadonlyArray<{ dividend: number; divisor: number }> = [
+  { dividend: 33, divisor: 100 }, // stage -6
+  { dividend: 36, divisor: 100 }, // stage -5
+  { dividend: 43, divisor: 100 }, // stage -4
+  { dividend: 50, divisor: 100 }, // stage -3
+  { dividend: 60, divisor: 100 }, // stage -2
+  { dividend: 75, divisor: 100 }, // stage -1
+  { dividend: 1, divisor: 1 }, //   stage  0
+  { dividend: 133, divisor: 100 }, // stage +1
+  { dividend: 166, divisor: 100 }, // stage +2
+  { dividend: 2, divisor: 1 }, //   stage +3
+  { dividend: 233, divisor: 100 }, // stage +4
+  { dividend: 133, divisor: 50 }, // stage +5
+  { dividend: 3, divisor: 1 }, //   stage +6
+];
 
 // ─── Gen 3 Status Immunity ─────────────────────────────────────────────────
 
