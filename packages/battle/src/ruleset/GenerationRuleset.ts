@@ -186,7 +186,14 @@ export interface ItemSystem {
    */
   hasHeldItems(): boolean;
   /**
-   * Apply a held item's effect at the appropriate trigger point.
+   * Apply held item effects for the given trigger.
+   * @param trigger Known trigger points:
+   *   - `"end-of-turn"` -- standard end-of-turn item effects (Leftovers, Black Sludge, etc.)
+   *   - `"on-damage-taken"` -- triggered when the holder takes damage
+   *   - `"on-hit"` -- triggered when the holder lands a hit
+   *   - `"stat-boost-between-turns"` -- Gen 2+ stat-boosting items (e.g., Macho Brace) between turns
+   *   - `"heal-between-turns"` -- Gen 2+ healing items (e.g., Lum Berry) between turns
+   * @param context The item trigger context (holder, state, RNG, etc.)
    */
   applyHeldItem(trigger: string, context: ItemContext): ItemResult;
 }
@@ -303,6 +310,13 @@ export interface EndOfTurnSystem {
    */
   calculateBindDamage(pokemon: ActivePokemon): number;
   /**
+   * Process one turn of bind/trapping for a Pokemon.
+   * Decrements the bind counter and returns whether the Pokemon is still bound.
+   * Trap mechanics vary by generation (e.g., Gen 1 trapping prevents the target from acting).
+   * @returns `true` if still bound, `false` if the binding ended this turn.
+   */
+  processBoundTurn(active: ActivePokemon, state: BattleState): boolean;
+  /**
    * Process Perish Song countdown for a Pokemon.
    * Returns the new counter value and whether the Pokemon fainted.
    */
@@ -310,13 +324,6 @@ export interface EndOfTurnSystem {
     readonly newCount: number;
     readonly fainted: boolean;
   };
-  /**
-   * Process one turn of bind/trapping for a Pokemon.
-   * Decrements the bind counter and returns whether the Pokemon is still bound.
-   * Trap mechanics vary by generation (e.g., Gen 1 trapping prevents the target from acting).
-   * @returns `true` if still bound, `false` if the binding ended this turn.
-   */
-  processBoundTurn(active: ActivePokemon, state: BattleState): boolean;
   /**
    * The order of end-of-turn effects varies by generation.
    * Returns the ordered list of effect types to process.

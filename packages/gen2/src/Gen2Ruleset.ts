@@ -266,37 +266,17 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Convert move accuracy from percentage to 0-255 scale
     let accuracy = Math.floor((move.accuracy * 255) / 100);
 
-    // Gen 2 accuracy stage lookup tables — exact numerator/denominator pairs from decomp.
-    // Source: pret/pokecrystal data/battle/accuracy_multipliers.asm
-    // Each entry is [numerator, denominator] for integer math: acc = floor(acc * num / den)
-    const GEN2_ACC_STAGES_POS: ReadonlyArray<readonly [number, number]> = [
-      [100, 100], // +0: 100/100 = 1.0x
-      [133, 100], // +1: 133/100
-      [166, 100], // +2: 166/100
-      [200, 100], // +3: 200/100
-      [233, 100], // +4: 233/100
-      [266, 100], // +5: 266/100
-      [300, 100], // +6: 300/100
-    ];
-    const GEN2_ACC_STAGES_NEG: ReadonlyArray<readonly [number, number]> = [
-      [100, 100], // -0: 100/100 = 1.0x
-      [75, 100], // -1: 75/100
-      [60, 100], // -2: 60/100
-      [50, 100], // -3: 50/100
-      [43, 100], // -4: 43/100
-      [38, 100], // -5: 38/100
-      [33, 100], // -6: 33/100
-    ];
+    // Gen 2 accuracy boost lookup tables (not formula-based)
+    const GEN2_ACC_BOOST_POS = [1, 4 / 3, 5 / 3, 2, 7 / 3, 8 / 3, 3]; // stages +0 to +6
+    const GEN2_ACC_BOOST_NEG = [1, 3 / 4, 3 / 5, 1 / 2, 3 / 7, 3 / 8, 1 / 3]; // stages -0 to -6
 
     const accStage = attacker.statStages.accuracy;
     const evaStage = defender.statStages.evasion;
     const netStage = Math.max(-6, Math.min(6, accStage - evaStage));
 
-    const [num, den] =
-      netStage >= 0
-        ? (GEN2_ACC_STAGES_POS[netStage] ?? [100, 100])
-        : (GEN2_ACC_STAGES_NEG[-netStage] ?? [100, 100]);
-    accuracy = Math.floor((accuracy * num) / den);
+    const multiplier =
+      netStage >= 0 ? (GEN2_ACC_BOOST_POS[netStage] ?? 1) : (GEN2_ACC_BOOST_NEG[-netStage] ?? 1);
+    accuracy = Math.floor(accuracy * multiplier);
 
     // Cap at [1, 255]
     accuracy = Math.max(1, Math.min(255, accuracy));
@@ -651,17 +631,26 @@ export class Gen2Ruleset implements GenerationRuleset {
     return calculateGen2StatusDamage(pokemon, status, state);
   }
 
-  checkFreezeThaw(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
-    // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost — thaw happens between
-    // turns (in HandleBetweenTurnEffects), NOT pre-move. The engine calls checkFreezeThaw before
-    // a move executes, so returning false here ensures frozen Pokemon skip their turn.
-    // The actual 25/256 (~9.77%) thaw roll fires in the "defrost" end-of-turn effect instead.
-    return false;
+  checkFreezeThaw(pokemon: ActivePokemon, rng: SeededRandom): boolean {
+    // Source: pret/pokecrystal engine/battle/core.asm:1524-1581 HandleDefrost
+    // Gen 2 thaw happens between turns (not pre-move). Called by engine's freeze check.
+    // Returns true if the Pokemon thaws (25/256 chance), false if still frozen.
+
+    // Thaw requires not being "just frozen" this turn (wPlayerJustGotFrozen guard)
+    // Cast needed: "just-frozen" is added to VolatileStatus in this branch but the
+    // worktree resolves @pokemon-lib-ts/core from the main repo's dist which may not
+    // include it yet. The cast is safe — the Map accepts any string at runtime.
+    if (pokemon.volatileStatuses.has("just-frozen" as VolatileStatus)) {
+      pokemon.volatileStatuses.delete("just-frozen" as VolatileStatus);
+      return false;
+    }
+    return rng.int(0, 255) < 25; // 25/256 chance per pokecrystal HandleDefrost
   }
 
   rollSleepTurns(rng: SeededRandom): number {
-    // Gen 2: Sleep lasts 2-7 turns
-    // Source: pret/pokecrystal engine/battle/core.asm:3608-3621 — and SLP_MASK rejects 0, then inc a, so result is 2-7
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:3608-3621
+    // .random_loop: BattleRandom, AND SLP_MASK (7), reject 0 and 7, then INC A
+    // Result: values 1-6 after AND, +1 = range 2-7
     return rng.int(2, 7);
   }
 
@@ -688,24 +677,6 @@ export class Gen2Ruleset implements GenerationRuleset {
       return true; // Gen 2+: can act on wake turn
     }
     return false; // Still sleeping
-  }
-
-  // --- Confusion/Bound Turn Processing ---
-
-  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
-    // Source: pret/pokecrystal — confusion counter decrement, same as Gen 3+ default
-    const conf = active.volatileStatuses.get("confusion");
-    if (!conf) return false;
-    conf.turnsLeft--;
-    return conf.turnsLeft > 0;
-  }
-
-  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
-    // Source: pret/pokecrystal — bind/trapping turn decrement
-    const bound = active.volatileStatuses.get("bound");
-    if (!bound) return false;
-    bound.turnsLeft--;
-    return bound.turnsLeft > 0;
   }
 
   // --- Abilities (not in Gen 2) ---
@@ -860,25 +831,34 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, baseDamage);
   }
 
+  // Source: Gen 2 confusion lasts 1-4 turns (same as Gen 1)
+  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const conf = active.volatileStatuses.get("confusion");
+    if (!conf) return false;
+    conf.turnsLeft--;
+    return conf.turnsLeft > 0;
+  }
+
+  // Source: Gen 2 bind/trapping — 2-5 turns, 1/16 max HP per turn
+  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const bound = active.volatileStatuses.get("bound");
+    if (!bound) return false;
+    bound.turnsLeft--;
+    return bound.turnsLeft > 0;
+  }
+
   // --- Switch Out ---
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Gen 2: clear non-persistent volatiles on switch
-    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus — zeros all
-    // substatus bytes (SubStatus1-5), clearing SUBSTATUS_TOXIC among others.
+    // Note: toxic-counter resets on switch (damage restarts at 1/16 next time in),
+    // but the badly-poisoned status itself persists.
     pokemon.volatileStatuses.delete("bound");
     pokemon.volatileStatuses.delete("confusion");
     pokemon.volatileStatuses.delete("flinch");
     pokemon.volatileStatuses.delete("focus-energy");
     pokemon.volatileStatuses.delete("leech-seed");
     pokemon.volatileStatuses.delete("toxic-counter");
-
-    // Badly-poisoned reverts to regular poison on switch-out.
-    // Source: pret/pokecrystal — In Gen 2, badly-poisoned = PSN + SUBSTATUS_TOXIC. NewBattleMonStatus
-    // clears SubStatus5 (which holds SUBSTATUS_TOXIC), leaving only the PSN status byte = regular poison.
-    if (pokemon.pokemon.status === "badly-poisoned") {
-      pokemon.pokemon.status = "poison";
-    }
 
     // If the switching Pokemon had applied trapping (Mean Look / Spider Web),
     // clear the "trapped" volatile from the opposing active Pokemon.
@@ -957,12 +937,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, baseDamage);
   }
 
-  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
-    // Gen 2: recoil = 1/4 of the DAMAGE DEALT
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil
-    // The asm loads wCurDamage, shifts right twice (srl b; rr c; srl b; rr c) = divide by 4
-    // wBattleMonMaxHP is the HP pointer to write the new HP to, not the damage source
-    return Math.max(1, Math.floor(damageDealt / 4));
+  calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
+    // Gen 2: recoil = 1/4 of the user's MAX HP (not damage dealt)
+    // Source: gen2-ground-truth.md §9 — Struggle: "floor(maxHp / 4)"
+    // Source: pret/pokecrystal — Struggle recoil uses user's max HP divided by 4
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
   }
 
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
@@ -970,18 +950,18 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
-    // Source: pret/pokecrystal engine/battle/move_effects/protect.asm:14-74 — srl b (halving) each consecutive use
-    // 1st use: 255/255 (always works)
-    // 2nd consecutive: 127/255
-    // 3rd consecutive: 63/255
-    // 4th consecutive: 31/255
-    // etc. — uses bit-shift srl b (halving), not powers of 3
-    // Roll is 1-255 (rejects 0). Success if random <= threshold.
+    // Source: gen2-ground-truth.md §9 — Protect/Detect
+    // "Denominator cap: 255 — after enough consecutive uses, X is capped at 255.
+    //  It does NOT reach 729 (3^6). The cap prevents the denominator from exceeding a single byte (0xFF)."
+    // Source: pret/pokecrystal — consecutive use counter is a single byte capped at 255
     if (consecutiveProtects === 0) return true;
-    const threshold = Math.floor(255 >> consecutiveProtects);
-    if (threshold === 0) return false; // always fails after enough consecutive uses
-    const roll = rng.int(1, 255);
-    return roll <= threshold;
+    // Cap exponent at 8 to avoid precision loss with very large exponents.
+    // At consecutiveProtects >= 6, 3^6 = 729 > 255, so denominator caps at 255,
+    // giving threshold = floor(255/255) = 1 (1/256 chance). Correct per pokecrystal.
+    const capped = Math.min(consecutiveProtects, 8);
+    const denominator = Math.min(255, Math.floor(3 ** capped));
+    const successThreshold = Math.floor(255 / denominator);
+    return rng.int(0, 255) < successThreshold;
   }
 
   calculateBindDamage(pokemon: ActivePokemon): number {
@@ -1010,34 +990,20 @@ export class Gen2Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    // Source: pret/pokecrystal engine/battle/core.asm:250-296 HandleBetweenTurnEffects
-    // Phase 2: runs once after both Pokemon have acted.
+    // Source: pret/pokecrystal engine/battle/core.asm — HandleBetweenTurnEffects
+    // Phase 2: runs once after both Pokemon have acted
     // Note: status-damage, leech-seed, nightmare, and curse are intentionally absent here —
     // they fire per-attack in Phase 1 via getPostAttackResidualOrder().
-    //
-    // Decomp order (lines 256-296):
-    //   HandleFutureSight → HandleWeather (damage+countdown combined) → HandleWrap →
-    //   HandlePerishSong → [faint checks end here] →
-    //   HandleLeftovers → HandleMysteryberry → HandleDefrost → HandleSafeguard →
-    //   HandleScreens → HandleStatBoostingHeldItems → HandleHealingItems → HandleEncore
-    //
-    // Note: HandleWeather in the decomp handles BOTH damage and countdown in a single call.
-    // We split them into two adjacent entries for the engine's switch statement, but they fire
-    // back-to-back to preserve the correct ordering.
+    // Order: future-attack → weather-damage → bind → perish-song → leftovers →
+    // screen-countdown → weather-countdown
     return [
       "future-attack",
       "weather-damage",
-      "weather-countdown",
       "bind",
       "perish-song",
       "leftovers",
-      "mystery-berry",
-      "defrost",
-      "safeguard-countdown",
       "screen-countdown",
-      "stat-boosting-items",
-      "healing-items",
-      "encore-countdown",
+      "weather-countdown",
     ] as const;
   }
 

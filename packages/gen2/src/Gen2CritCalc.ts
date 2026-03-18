@@ -22,8 +22,7 @@ export const GEN2_CRIT_RATES: readonly number[] = [
 
 /**
  * Moves with a high critical hit ratio in Gen 2.
- * These add +2 to the crit stage (not +1).
- * Source: pret/pokecrystal engine/battle/effect_commands.asm:1182-1184 — inc c; inc c (increments twice = +2)
+ * These add +1 to the crit stage.
  */
 const HIGH_CRIT_MOVES: readonly string[] = [
   "slash",
@@ -32,7 +31,6 @@ const HIGH_CRIT_MOVES: readonly string[] = [
   "crabhammer",
   "cross-chop",
   "aeroblast",
-  "razor-wind",
 ];
 
 /**
@@ -46,7 +44,8 @@ function isHighCritMove(move: MoveData): boolean {
  * Calculate the critical hit stage for a Gen 2 attack.
  *
  * Modifiers that add stages (they stack):
- * - High crit moves (Slash, Cross Chop, etc.): +2 (inc c; inc c in decomp)
+ * - move.critRatio: added directly (e.g., Razor Wind = +2 per pokecrystal effect_commands.asm:1182-1184)
+ * - High crit moves (Slash, Cross Chop, etc.): +1 (via hardcoded list, for moves without critRatio)
  * - Focus Energy: +1 (FIXED in Gen 2 — not bugged like Gen 1)
  * - Scope Lens item: +1
  * - Stick (Farfetch'd only): +2
@@ -55,6 +54,7 @@ function isHighCritMove(move: MoveData): boolean {
  * The stage is clamped to [0, 4] (index into GEN2_CRIT_RATES).
  *
  * Source: gen2-ground-truth.md §4 — Crit Stage Sources table
+ * Source: pret/pokecrystal effect_commands.asm — BattleCommand_RazorWind sets crit stage
  *
  * @param attacker - The active attacking Pokemon
  * @param move - The move being used
@@ -63,10 +63,14 @@ function isHighCritMove(move: MoveData): boolean {
 export function getGen2CritStage(attacker: ActivePokemon, move: MoveData): number {
   let stage = 0;
 
-  // High crit move: +2
-  // Source: pret/pokecrystal engine/battle/effect_commands.asm:1182-1184 — high-crit moves add 2 to stage (inc c; inc c)
-  if (isHighCritMove(move)) {
-    stage += 2;
+  // Move-declared crit ratio (e.g., Razor Wind critRatio: 2)
+  // Source: pret/pokecrystal effect_commands.asm:1182-1184 — BattleCommand_RazorWind
+  if (move.critRatio && move.critRatio > 0) {
+    stage += move.critRatio;
+  } else if (isHighCritMove(move)) {
+    // Fallback: hardcoded high crit move list for moves without critRatio in data
+    // High crit move: +1
+    stage += 1;
   }
 
   // Focus Energy: +1 (fixed in Gen 2)

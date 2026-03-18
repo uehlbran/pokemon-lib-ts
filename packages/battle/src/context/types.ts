@@ -242,21 +242,33 @@ export type AbilityEffectType =
   | "ability-change"
   | "none";
 
-/** A single effect produced by an ability trigger. */
-export interface AbilityEffect {
-  /** Effect category — narrows the discriminated union */
-  readonly effectType: AbilityEffectType;
-  /** Which entity the effect applies to */
-  readonly target: "self" | "opponent" | "field";
-  /** For stat-change effects: which stat to modify */
-  readonly stat?: "attack" | "defense" | "spAttack" | "spDefense" | "speed";
-  /** For stat-change effects: number of stages to change (negative = lower) */
-  readonly stages?: number;
-  /** For weather-set effects: which weather to set */
-  readonly weather?: import("@pokemon-lib-ts/core").WeatherType;
-  /** For weather-set effects: how many turns the weather lasts (-1 = indefinite) */
-  readonly weatherTurns?: number;
-}
+/** A single effect produced by an ability trigger — proper discriminated union on effectType. */
+export type AbilityEffect =
+  | {
+      readonly effectType: "stat-change";
+      readonly target: "self" | "opponent";
+      readonly stat:
+        | "attack"
+        | "defense"
+        | "spAttack"
+        | "spDefense"
+        | "speed"
+        | "accuracy"
+        | "evasion";
+      readonly stages: number;
+    }
+  | {
+      readonly effectType: "weather-set";
+      readonly target: "field";
+      readonly weather: import("@pokemon-lib-ts/core").WeatherType;
+      readonly weatherTurns: number;
+    }
+  | { readonly effectType: "damage-reduction"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "type-change"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "weather-immunity"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "ability-change"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
 
 export interface AbilityResult {
   /** `true` if the ability actually activated and produced effects */

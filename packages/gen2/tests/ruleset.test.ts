@@ -341,6 +341,18 @@ describe("Gen2Ruleset", () => {
       expect(results.has(7)).toBe(true);
       expect(results.has(1)).toBe(false);
     });
+
+    it("given 10000 sleep rolls, when checking range bounds, then min is 2 and max is 7 (never 1, never 8+)", () => {
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:3608-3621
+      // Random() & SLP_MASK rejects 0 and 7, then inc a -> range 2-7
+      const ruleset = new Gen2Ruleset();
+      const rolls = Array.from({ length: 10000 }, (_, i) => {
+        const rng = new SeededRandom(i);
+        return ruleset.rollSleepTurns(rng);
+      });
+      expect(Math.min(...rolls)).toBe(2);
+      expect(Math.max(...rolls)).toBe(7);
+    });
   });
 
   // --- Sleep Turn Processing ---

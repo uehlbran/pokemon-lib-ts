@@ -65,10 +65,15 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
   switch (abilityId) {
     case "intimidate": {
       // Source: pret/pokeemerald ABILITY_INTIMIDATE — lowers opponent's Attack by 1 stage on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // The -1 Atk effect is returned correctly in this data structure but is not actually applied
+      // until the engine processes AbilityResult.effects.
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+      // The engine must apply the stat change based on the effect.
+      // AbilityEffectType "stat-change" — target "opponent", lowers Attack by 1 stage.
       const effect: AbilityEffect = {
         effectType: "stat-change",
         target: "opponent",
@@ -84,12 +89,14 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "drizzle": {
       // Source: pret/pokeemerald ABILITY_DRIZZLE — sets permanent rain on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
         effectType: "weather-set",
         target: "field",
         weather: "rain",
-        weatherTurns: -1,
+        weatherTurns: 0, // Gen 3: permanent weather from abilities (0 = infinite)
       };
       return {
         activated: true,
@@ -100,12 +107,14 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "drought": {
       // Source: pret/pokeemerald ABILITY_DROUGHT — sets permanent sun on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
         effectType: "weather-set",
         target: "field",
         weather: "sun",
-        weatherTurns: -1,
+        weatherTurns: 0,
       };
       return {
         activated: true,
@@ -116,12 +125,14 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "sand-stream": {
       // Source: pret/pokeemerald ABILITY_SAND_STREAM — sets permanent sandstorm on switch-in
+      // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
+      // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
         effectType: "weather-set",
         target: "field",
         weather: "sand",
-        weatherTurns: -1,
+        weatherTurns: 0,
       };
       return {
         activated: true,
