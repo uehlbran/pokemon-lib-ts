@@ -297,10 +297,15 @@ export abstract class BaseRuleset implements GenerationRuleset {
     }
   }
 
-  // Gen 3+ default (20% thaw); Gen 2 must override (25/256 ≈ 9.8%)
+  // Gen 3+ default (20% thaw pre-move); Gen 2 overrides to always return false
   checkFreezeThaw(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    // Gen 2+: 20% chance to thaw each turn
+    // Gen 3+: 20% chance to thaw each turn (checked pre-move, not EoT)
     return rng.chance(0.2);
+  }
+
+  // Gen 3+ never thaw via EoT (handled pre-move by checkFreezeThaw); Gen 2 overrides this
+  processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
+    return false;
   }
 
   // Gen 5+ default (1-3 turns); Gen 3-4 must override (2-5 turns)

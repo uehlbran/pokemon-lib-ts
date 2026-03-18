@@ -801,6 +801,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     return false;
   }
 
+  processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
+    // Gen 1: Frozen Pokemon never thaw naturally — no EoT defrost.
+    return false;
+  }
+
   rollSleepTurns(rng: SeededRandom): number {
     // Gen 1: Sleep lasts 1-7 turns
     return rng.int(1, 7);

@@ -2221,22 +2221,9 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active || active.pokemon.currentHp <= 0) continue;
       if (active.pokemon.status !== "freeze") continue;
 
-      // Source: pret/pokecrystal core.asm:1538-1540 — wPlayerJustGotFrozen
-      // If the Pokemon was just frozen this turn, skip the thaw check.
-      const justFrozen = active.volatileStatuses.get(
-        "just-frozen" as import("@pokemon-lib-ts/core").VolatileStatus,
-      );
-      if (justFrozen) {
-        // Clear the flag so they can thaw next turn
-        active.volatileStatuses.delete(
-          "just-frozen" as import("@pokemon-lib-ts/core").VolatileStatus,
-        );
-        continue;
-      }
-
-      // 25/256 chance to thaw (~9.77%)
-      // Source: pret/pokecrystal core.asm:1542-1543 — BattleRandom, cp 10 percent
-      if (this.state.rng.chance(25 / 256)) {
+      // Delegate to the ruleset — Gen 2 uses 25/256 EoT thaw with just-frozen guard;
+      // Gen 1 always returns false; Gen 3+ always returns false (thaw is handled pre-move).
+      if (this.ruleset.processEndOfTurnDefrost(active, this.state.rng)) {
         active.pokemon.status = null;
         this.emit({
           type: "status-cure",

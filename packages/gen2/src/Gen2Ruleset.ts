@@ -631,20 +631,22 @@ export class Gen2Ruleset implements GenerationRuleset {
     return calculateGen2StatusDamage(pokemon, status, state);
   }
 
-  checkFreezeThaw(pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    // Source: pret/pokecrystal engine/battle/core.asm:1524-1581 HandleDefrost
-    // Gen 2 thaw happens between turns (not pre-move). Called by engine's freeze check.
-    // Returns true if the Pokemon thaws (25/256 chance), false if still frozen.
+  checkFreezeThaw(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
+    // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
+    // In Gen 2, thaw happens BETWEEN turns (not pre-move).
+    // canExecuteMove calls this pre-move — always return false so frozen Pokemon always skip.
+    // Actual thaw logic is in processEndOfTurnDefrost (EoT "defrost" effect).
+    return false;
+  }
 
-    // Thaw requires not being "just frozen" this turn (wPlayerJustGotFrozen guard)
-    // Cast needed: "just-frozen" is added to VolatileStatus in this branch but the
-    // worktree resolves @pokemon-lib-ts/core from the main repo's dist which may not
-    // include it yet. The cast is safe — the Map accepts any string at runtime.
-    if (pokemon.volatileStatuses.has("just-frozen" as VolatileStatus)) {
-      pokemon.volatileStatuses.delete("just-frozen" as VolatileStatus);
+  processEndOfTurnDefrost(pokemon: ActivePokemon, rng: SeededRandom): boolean {
+    // Source: pret/pokecrystal engine/battle/core.asm:1524-1581 HandleDefrost
+    // 25/256 (~9.8%) chance to thaw. Skip if frozen this turn (wPlayerJustGotFrozen guard).
+    if (pokemon.volatileStatuses.has("just-frozen")) {
+      pokemon.volatileStatuses.delete("just-frozen");
       return false;
     }
-    return rng.int(0, 255) < 25; // 25/256 chance per pokecrystal HandleDefrost
+    return rng.int(0, 255) < 25;
   }
 
   rollSleepTurns(rng: SeededRandom): number {
@@ -851,8 +853,11 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Gen 2: clear non-persistent volatiles on switch
-    // Note: toxic-counter resets on switch (damage restarts at 1/16 next time in),
-    // but the badly-poisoned status itself persists.
+    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
+    // Zeros wPlayerSubStatus1-5 (including SUBSTATUS_TOXIC), reverting badly-poisoned to regular poison
+    if (pokemon.pokemon.status === "badly-poisoned") {
+      pokemon.pokemon.status = "poison";
+    }
     pokemon.volatileStatuses.delete("bound");
     pokemon.volatileStatuses.delete("confusion");
     pokemon.volatileStatuses.delete("flinch");
@@ -937,12 +942,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, baseDamage);
   }
 
-  calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
-    // Gen 2: recoil = 1/4 of the user's MAX HP (not damage dealt)
-    // Source: gen2-ground-truth.md §9 — Struggle: "floor(maxHp / 4)"
-    // Source: pret/pokecrystal — Struggle recoil uses user's max HP divided by 4
-    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-    return Math.max(1, Math.floor(maxHp / 4));
+  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
+    // Gen 2: recoil = 1/4 of the DAMAGE DEALT (not max HP)
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil
+    // srl b; rr c; srl b; rr c — divides wCurDamage by 4
+    return Math.max(1, Math.floor(damageDealt / 4));
   }
 
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
@@ -950,18 +954,14 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
-    // Source: gen2-ground-truth.md §9 — Protect/Detect
-    // "Denominator cap: 255 — after enough consecutive uses, X is capped at 255.
-    //  It does NOT reach 729 (3^6). The cap prevents the denominator from exceeding a single byte (0xFF)."
-    // Source: pret/pokecrystal — consecutive use counter is a single byte capped at 255
+    // Source: pret/pokecrystal engine/battle/move_effects/protect.asm:14-74 — srl b (halving) each consecutive use
+    // 1st use: 255/255 (always works), 2nd: 127/255, 3rd: 63/255, ...
+    // Roll 1-255; success if roll <= threshold. Cap at 8 to avoid JS 32-bit shift wrap at multiples of 32.
     if (consecutiveProtects === 0) return true;
-    // Cap exponent at 8 to avoid precision loss with very large exponents.
-    // At consecutiveProtects >= 6, 3^6 = 729 > 255, so denominator caps at 255,
-    // giving threshold = floor(255/255) = 1 (1/256 chance). Correct per pokecrystal.
     const capped = Math.min(consecutiveProtects, 8);
-    const denominator = Math.min(255, Math.floor(3 ** capped));
-    const successThreshold = Math.floor(255 / denominator);
-    return rng.int(0, 255) < successThreshold;
+    const threshold = Math.floor(255 >> capped);
+    if (threshold === 0) return false;
+    return rng.int(1, 255) <= threshold;
   }
 
   calculateBindDamage(pokemon: ActivePokemon): number {
@@ -990,20 +990,27 @@ export class Gen2Ruleset implements GenerationRuleset {
   // --- End-of-Turn Order ---
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    // Source: pret/pokecrystal engine/battle/core.asm — HandleBetweenTurnEffects
+    // Source: pret/pokecrystal engine/battle/core.asm:250-296 HandleBetweenTurnEffects
     // Phase 2: runs once after both Pokemon have acted
     // Note: status-damage, leech-seed, nightmare, and curse are intentionally absent here —
     // they fire per-attack in Phase 1 via getPostAttackResidualOrder().
-    // Order: future-attack → weather-damage → bind → perish-song → leftovers →
-    // screen-countdown → weather-countdown
+    // Order matches pokecrystal: FutureSight → weather-damage → weather-countdown → bind →
+    // perish-song → leftovers → mystery-berry → defrost → safeguard → screens →
+    // stat-boosting-items → healing-items → encore
     return [
       "future-attack",
       "weather-damage",
+      "weather-countdown",
       "bind",
       "perish-song",
       "leftovers",
+      "mystery-berry",
+      "defrost",
+      "safeguard-countdown",
       "screen-countdown",
-      "weather-countdown",
+      "stat-boosting-items",
+      "healing-items",
+      "encore-countdown",
     ] as const;
   }
 
