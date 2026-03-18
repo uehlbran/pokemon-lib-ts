@@ -109,8 +109,12 @@ pokemon-lib-ts/
 │   │       ├── items.json       # Held items, berries (Gen 2 versions)
 │   │       └── type-chart.json  # 17-type chart (Dark + Steel, no Fairy)
 │   │
-│   ├── gen3/                    # @pokemon-lib-ts/gen3
-│   │   └── ...                  # 386 species, abilities introduced, natures
+│   ├── gen3/                    # @pokemon-lib-ts/gen3 (v0.1.0) — 386 species, abilities, natures
+│   │   ├── package.json
+│   │   ├── src/
+│   │   │   ├── index.ts
+│   │   │   └── Gen3Ruleset.ts
+│   │   └── data/                # COMPLETE Gen 3 data
 │   ├── gen4/                    # @pokemon-lib-ts/gen4
 │   │   └── ...                  # 493 species, physical/special split per move
 │   ├── gen5/                    # @pokemon-lib-ts/gen5
@@ -229,7 +233,7 @@ pokemon-lib-ts/
 ```json
 {
   "name": "@pokemon-lib-ts/core",
-  "version": "0.4.0",
+  "version": "0.8.0",
   "description": "Core Pokémon data types, entities, and shared game logic",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -240,7 +244,7 @@ pokemon-lib-ts/
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist", "data"],
+  "files": ["dist"],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -263,8 +267,7 @@ pokemon-lib-ts/
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
-    "composite": true
+    "rootDir": "./src"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]
@@ -278,7 +281,7 @@ The battle package is the **engine only** — no gen-specific logic, no data. It
 ```json
 {
   "name": "@pokemon-lib-ts/battle",
-  "version": "0.5.0",
+  "version": "0.10.0",
   "description": "Pokémon battle engine — bring your own generation ruleset",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -298,7 +301,7 @@ The battle package is the **engine only** — no gen-specific logic, no data. It
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pokemon-lib-ts/core": "workspace:*"
+    "@pokemon-lib-ts/core": "*"
   },
   "keywords": ["pokemon", "battle", "simulator", "typescript"],
   "license": "MIT",
@@ -315,7 +318,7 @@ Each gen package exports its `GenerationRuleset` implementation AND its complete
 ```json
 {
   "name": "@pokemon-lib-ts/gen1",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "description": "Gen 1 (Red/Blue/Yellow) battle mechanics and Pokémon data",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -324,6 +327,10 @@ Each gen package exports its `GenerationRuleset` implementation AND its complete
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./data": {
+      "import": "./data/index.js",
+      "require": "./data/index.cjs"
     }
   },
   "files": ["dist", "data"],
@@ -335,8 +342,8 @@ Each gen package exports its `GenerationRuleset` implementation AND its complete
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pokemon-lib-ts/core": "workspace:*",
-    "@pokemon-lib-ts/battle": "workspace:*"
+    "@pokemon-lib-ts/core": "*",
+    "@pokemon-lib-ts/battle": "*"
   },
   "keywords": ["pokemon", "gen1", "red-blue-yellow", "battle"],
   "license": "MIT",
@@ -374,18 +381,12 @@ While in `0.x.x` (pre-stable), MINOR bumps may include breaking changes. This is
 
 ### Release Checklist
 
-This project uses `@changesets/cli` for collision-free versioning across concurrent agents.
-
-**Per-PR (on feature branches):**
-1. Run `/version` skill — creates `.changeset/<name>.md` declaring which packages changed and the bump type
-2. Do NOT edit `package.json` versions or `CHANGELOG.md` directly on feature branches
-
-**On main (when ready to release):**
-1. Run full test suite (`npm run test` from root)
-2. Build (`npm run build`)
-3. Consume changesets: `npm run version-packages` — bumps `package.json` versions and generates `CHANGELOG.md` entries atomically
-4. Commit the version bump: `git commit -m "chore(release): version packages"`
-5. Publish to npm: `npm run release` (runs `changeset publish` which tags and publishes each package)
+1. Update version in `package.json`
+2. Update `CHANGELOG.md` with all changes since last release
+3. Run full test suite (`npm run test` from root)
+4. Build (`npm run build`)
+5. Tag in git (`git tag @pokemon-lib-ts/core@0.4.0`)
+6. Publish to npm (`npm publish --access public` from each package dir)
 
 ---
 
@@ -744,8 +745,8 @@ packages/core/tests/
 | Turborepo config | `turbo.json` | Uses "tasks" key (v2 format) |
 | TypeScript config | `tsconfig.base.json` | Shared strict config |
 | Biome config | `biome.json` | v2.4+, indent 2, lineWidth 100 |
-| Core package | `packages/core/package.json` | tsup build, ESM+CJS, v0.4.0 |
-| Battle package | `packages/battle/package.json` | tsup build, ESM+CJS, v0.5.0 |
+| Core package | `packages/core/package.json` | tsup build, ESM+CJS, v0.8.0 |
+| Battle package | `packages/battle/package.json` | tsup build, ESM+CJS, v0.10.0 |
 | DataManager | `packages/core/src/data/DataManager.ts` | loadFromObjects() is sync |
 | SeededRandom | `packages/core/src/prng/SeededRandom.ts` | Mulberry32 PRNG |
 | Data importer | `tools/data-importer/src/import-gen.ts` | @pkmn/dex + HTTP PokeAPI |
@@ -756,5 +757,7 @@ packages/core/tests/
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.2 | 2026-03-17 | Version numbers synced to latest code (core 0.8.0, battle 0.10.0, gen1 0.6.0, gen3 0.1.0 added). Composite key removed from core tsconfig. |
+| 2.1 | 2026-03-17 | Updated package versions: core 0.6.0, battle 0.7.1, gen1 0.5.1; changed workspace:* to *; fixed core files field to ["dist"] only; changed composite to false; added subexport examples for gen packages |
 | 2.0 | 2026-03-15 | Updated to match actual implementation: tsup build, turbo v2 tasks format, single exports entry, sync DataManager, correct Biome version, tools/* workspace |
 | 1.0 | 2024 | Initial architecture spec |

@@ -247,21 +247,48 @@ export class Gen1Ruleset implements GenerationRuleset {
       return true;
     }
 
-    // Apply accuracy and evasion stages (Gen 1 uses the 2-based scale: +1=3/2, -6=2/8)
-    const accMod = getStatStageMultiplier(attacker.statStages.accuracy);
-    const evaMod = getStatStageMultiplier(defender.statStages.evasion);
+    // Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance — two sequential integer
+    // multiply-divide on 0-255 scale. Each stage modifier is applied as a separate floor()
+    // operation using the Gen 1-2 stat stage numerator/denominator ratios:
+    //   stage  0: 2/2   stage +1: 3/2   stage -1: 2/3   ... stage +6: 8/2   stage -6: 2/8
 
-    // Calculate effective accuracy
-    let effectiveAccuracy = Math.floor((move.accuracy * accMod) / evaMod);
+    // Step 1: Convert move accuracy from 0-100 percentage to 0-255 scale
+    let acc: number;
+    if (move.accuracy >= 100) {
+      acc = 255;
+    } else {
+      acc = Math.floor((move.accuracy * 255) / 100);
+    }
 
-    // Clamp to 1-255 range
-    effectiveAccuracy = Math.max(1, Math.min(255, effectiveAccuracy));
+    // Step 2: Apply accuracy stage (integer multiply-divide)
+    const accStage = attacker.statStages.accuracy;
+    if (accStage !== 0) {
+      const accNum = Math.max(2, 2 + accStage);
+      const accDen = Math.max(2, 2 - accStage);
+      acc = Math.floor((acc * accNum) / accDen);
+    }
+
+    // Clamp to 0-255
+    acc = Math.max(0, Math.min(255, acc));
+
+    // Step 3: Apply evasion stage (integer multiply-divide, inverted)
+    // Evasion stage +1 is like accuracy stage -1 (reduces hit chance)
+    const evaStage = defender.statStages.evasion;
+    if (evaStage !== 0) {
+      // Evasion is inverted: +1 evasion uses the -1 accuracy ratio (2/3)
+      const evaNum = Math.max(2, 2 - evaStage);
+      const evaDen = Math.max(2, 2 + evaStage);
+      acc = Math.floor((acc * evaNum) / evaDen);
+    }
+
+    // Clamp to 0-255
+    acc = Math.max(0, Math.min(255, acc));
 
     // Gen 1 1/256 miss bug: even 100% accuracy moves use < comparison
     // against a 0-255 random roll, meaning 255/256 max hit chance.
     // Exception: self-targeting moves get +1 to their threshold, making
     // 100% accuracy moves always hit (256/256). (Showdown scripts.ts:408)
-    let threshold = Math.min(255, Math.floor((effectiveAccuracy * 255) / 100));
+    let threshold = acc;
     if (move.target === "self") {
       threshold = Math.min(256, threshold + 1);
     }
@@ -774,6 +801,13 @@ export class Gen1Ruleset implements GenerationRuleset {
     return false;
   }
 
+  processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
+    // Gen 1: Frozen Pokemon never thaw naturally — no EoT defrost.
+    // This method satisfies the GenerationRuleset interface contract; it is never called
+    // in practice because Gen 1's getEndOfTurnOrder() does not include "defrost".
+    return false;
+  }
+
   rollSleepTurns(rng: SeededRandom): number {
     // Gen 1: Sleep lasts 1-7 turns
     return rng.int(1, 7);
@@ -955,6 +989,22 @@ export class Gen1Ruleset implements GenerationRuleset {
     const levelFactor = Math.floor((2 * level) / 5) + 2;
     const damage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
     return Math.max(1, damage);
+  }
+
+  // Source: Gen 1 confusion lasts 1-4 turns
+  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const conf = active.volatileStatuses.get("confusion");
+    if (!conf) return false;
+    conf.turnsLeft--;
+    return conf.turnsLeft > 0;
+  }
+
+  // Source: Gen 1 bind/trapping — trapping prevents target from acting for 2-5 turns
+  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const bound = active.volatileStatuses.get("bound");
+    if (!bound) return false;
+    bound.turnsLeft--;
+    return bound.turnsLeft > 0;
   }
 
   // --- Switch Out ---

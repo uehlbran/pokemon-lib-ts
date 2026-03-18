@@ -384,16 +384,17 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
       expect(stage).toBe(0);
     });
 
-    it("when Chansey holds Lucky Punch and uses a high-crit move, then stage is 3 (clamped)", () => {
+    it("when Chansey holds Lucky Punch and uses a high-crit move, then stage is 4 (capped)", () => {
       // Arrange
       const chansey = createActivePokemon({ speciesId: 113, heldItem: "lucky-punch" });
       const highCritMove = createMove({ id: "slash", type: "normal" });
 
-      // Act — Lucky Punch(+2) + Slash(+1) = 3
+      // Act — Lucky Punch(+2) + Slash(+2) = 4, capped at 4
+      // Source: pret/pokecrystal effect_commands.asm:1182-1184 — high-crit moves add 2 (inc c; inc c)
       const stage = getGen2CritStage(chansey, highCritMove);
 
       // Assert
-      expect(stage).toBe(3);
+      expect(stage).toBe(4);
     });
   });
 
@@ -809,11 +810,12 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
 // Source: gen2-ground-truth.md §9 — Protect/Detect
 // ---------------------------------------------------------------------------
 
-describe("Bug #99 — Protect success denominator caps at 255 not 729", () => {
+describe("Bug #99 — Protect success uses bit-shift halving (srl b), not powers of 3", () => {
+  // Source: pret/pokecrystal engine/battle/move_effects/protect.asm:14-74 — srl b (halving) each consecutive use
   const ruleset = new Gen2Ruleset();
 
   describe("Given consecutiveProtects = 0 (first use)", () => {
-    it("when rolling protect success, then always succeeds", () => {
+    it("when rolling protect success, then always succeeds (255/255)", () => {
       // Arrange
       const rng = new SeededRandom(42);
 
@@ -823,10 +825,11 @@ describe("Bug #99 — Protect success denominator caps at 255 not 729", () => {
   });
 
   describe("Given consecutiveProtects = 1 (second consecutive use)", () => {
-    it("when rolling 10000 times, success rate is approximately 85/255 ≈ 33.3%", () => {
+    it("when rolling 10000 times, success rate is approximately 127/255 ≈ 49.8%", () => {
       // Arrange
-      // denominator = min(255, 3^1) = 3; successThreshold = floor(255/3) = 85
-      // rate = 85/256 ≈ 33.2%
+      // threshold = floor(255 >> 1) = 127
+      // roll is 1-255; success if roll <= 127 → 127/255 ≈ 49.8%
+      // Source: pret/pokecrystal protect.asm — srl b halves threshold each consecutive use
       let successes = 0;
       const trials = 10000;
 
@@ -837,61 +840,49 @@ describe("Bug #99 — Protect success denominator caps at 255 not 729", () => {
       }
       const rate = successes / trials;
 
-      // Assert — 85/256 ≈ 33.2%, tolerance ±3%
-      // Source: gen2-ground-truth.md §9 — "Use 2: ~33% (85/256)"
-      expect(rate).toBeGreaterThan(0.3);
-      expect(rate).toBeLessThan(0.37);
+      // Assert — 127/255 ≈ 49.8%, tolerance ±3%
+      expect(rate).toBeGreaterThan(0.46);
+      expect(rate).toBeLessThan(0.53);
     });
   });
 
-  describe("Given consecutiveProtects large enough to hit the cap", () => {
-    it("given consecutiveProtects = 10 (would be 59049 without cap), denominator caps at 255", () => {
-      // Arrange — without the cap, 3^10 = 59049; with cap, denominator = 255
-      // successThreshold = floor(255/255) = 1 — only succeeds if rng.int(0,255) < 1
-      // That means only roll=0 succeeds → ~1/256 chance
+  describe("Given consecutiveProtects large enough to always fail", () => {
+    it("given consecutiveProtects = 10, threshold is 0 so always fails", () => {
+      // Arrange — floor(255 >> 10) = 0 → always fails
       let successes = 0;
-      const trials = 10000;
+      const trials = 1000;
 
       // Act
       for (let i = 0; i < trials; i++) {
         const rng = new SeededRandom(i * 1009);
         if (ruleset.rollProtectSuccess(10, rng)) successes++;
       }
-      const rate = successes / trials;
 
-      // Assert — success rate ≈ 1/256 ≈ 0.39%
-      // With the old bug (cap 729): denominator would be 729, threshold=floor(255/255)=1, same
-      // The key check is that the cap IS 255, not that we went to 59049
-      expect(rate).toBeGreaterThanOrEqual(0); // Just verify it runs without error
-      expect(rate).toBeLessThan(0.02); // Extremely rare success
+      // Assert — threshold is 0, should always fail
+      expect(successes).toBe(0);
     });
 
-    it("given consecutiveProtects = 6, denominator is 255 (3^6 = 729 > 255, so caps)", () => {
-      // Arrange — 3^6 = 729 would be the old (wrong) cap
-      // Correct: denominator = min(255, 729) = 255
-      // successThreshold = floor(255/255) = 1
-      // Source: gen2-ground-truth.md §9 — "cap is 255 not 729"
+    it("given consecutiveProtects = 8, threshold is 0 so always fails", () => {
+      // Arrange — floor(255 >> 8) = 0
+      // Source: pret/pokecrystal protect.asm — srl b shifts right each consecutive use
       let successes = 0;
-      const trials = 5000;
+      const trials = 1000;
 
       // Act
       for (let i = 0; i < trials; i++) {
         const rng = new SeededRandom(i * 2017);
-        if (ruleset.rollProtectSuccess(6, rng)) successes++;
+        if (ruleset.rollProtectSuccess(8, rng)) successes++;
       }
-      const rate = successes / trials;
 
-      // Assert — with correct cap at 255: threshold=1, so ~1/256
-      // With old cap at 729: 3^6=729 > 255, so denominator would have been capped at 729 too
-      // but old code used 3^cons as denominator with cap 729 — meaning for cons=6: 3^6=729, cap=729
-      // New correct: cap at 255, floor(255/255)=1 → rate ≈ 0.4%
-      expect(rate).toBeLessThan(0.03);
+      // Assert
+      expect(successes).toBe(0);
     });
   });
 
-  describe("Given consecutive protect values near the cap boundary", () => {
-    it("given consecutiveProtects = 4, denominator is min(255, 81) = 81, threshold=floor(255/81)=3", () => {
-      // Arrange — 3^4 = 81 < 255, so denominator = 81, threshold = floor(255/81) = 3
+  describe("Given consecutive protect values verifying halving pattern", () => {
+    it("given consecutiveProtects = 4, threshold is floor(255 >> 4) = 15, rate is 15/255", () => {
+      // Arrange — floor(255 >> 4) = floor(255/16) = 15
+      // Source: pret/pokecrystal protect.asm:14-74
       let successes = 0;
       const trials = 10000;
 
@@ -902,8 +893,9 @@ describe("Bug #99 — Protect success denominator caps at 255 not 729", () => {
       }
       const rate = successes / trials;
 
-      // Assert — rate ≈ 3/256 ≈ 1.17%
-      expect(rate).toBeLessThan(0.03);
+      // Assert — rate ≈ 15/255 ≈ 5.88%, tolerance ±2%
+      expect(rate).toBeGreaterThan(0.03);
+      expect(rate).toBeLessThan(0.09);
     });
   });
 });
@@ -913,24 +905,42 @@ describe("Bug #99 — Protect success denominator caps at 255 not 729", () => {
 // Source: gen2-ground-truth.md §9 — Struggle: "floor(maxHp / 4)"
 // ---------------------------------------------------------------------------
 
-describe("Bug #100 — Struggle recoil is 1/4 of attacker max HP", () => {
+describe("Bug #100 — Struggle recoil is 1/4 of damage dealt (not max HP)", () => {
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil — srl b twice = divide by 4
   const ruleset = new Gen2Ruleset();
 
-  describe("Given an attacker with 200 max HP", () => {
-    it("when calculating struggle recoil, then result is 50 (1/4 of 200)", () => {
+  describe("Given an attacker and 60 damage dealt", () => {
+    it("when calculating struggle recoil, then result is 15 (floor(60/4))", () => {
       // Arrange
       const attacker = createActivePokemon({ maxHp: 200 });
-      const damageDealt = 100; // This value should be IGNORED in Gen 2
+      const damageDealt = 60;
 
       // Act
       const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
 
-      // Assert — recoil = floor(200/4) = 50, regardless of damageDealt
-      // Source: gen2-ground-truth.md §9 — "Recoil: 1/4 of the user's max HP — formula: floor(maxHp / 4)"
-      expect(recoil).toBe(50);
+      // Assert — recoil = floor(60/4) = 15
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729
+      expect(recoil).toBe(15);
     });
+  });
 
-    it("when damage dealt is 0, recoil is still based on max HP (not damage)", () => {
+  describe("Given an attacker and 100 damage dealt", () => {
+    it("when calculating struggle recoil, then result is 25 (floor(100/4))", () => {
+      // Arrange
+      const attacker = createActivePokemon({ maxHp: 200 });
+      const damageDealt = 100;
+
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
+
+      // Assert — recoil = floor(100/4) = 25
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729
+      expect(recoil).toBe(25);
+    });
+  });
+
+  describe("Given damage dealt is 0", () => {
+    it("when calculating struggle recoil, then minimum 1 is returned", () => {
       // Arrange
       const attacker = createActivePokemon({ maxHp: 200 });
       const damageDealt = 0;
@@ -938,61 +948,36 @@ describe("Bug #100 — Struggle recoil is 1/4 of attacker max HP", () => {
       // Act
       const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
 
-      // Assert — must be 50 (floor(200/4)), not 0 (floor(0/2))
-      expect(recoil).toBe(50);
-    });
-
-    it("when damage dealt is large (300), recoil is still only 50 (floor(200/4))", () => {
-      // Arrange
-      const attacker = createActivePokemon({ maxHp: 200 });
-      const damageDealt = 300; // Old bug: floor(300/2) = 150
-
-      // Act
-      const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
-
-      // Assert — must be 50 (correct), not 150 (buggy 1/2 of damage)
-      expect(recoil).toBe(50);
-    });
-  });
-
-  describe("Given an attacker with 364 max HP (typical Blissey-class)", () => {
-    it("when calculating struggle recoil, then result is 91 (floor(364/4))", () => {
-      // Arrange
-      const attacker = createActivePokemon({ maxHp: 364 });
-      const damageDealt = 180;
-
-      // Act
-      const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
-
-      // Assert
-      expect(recoil).toBe(91); // floor(364/4) = 91
-    });
-  });
-
-  describe("Given an attacker with 1 HP (edge case)", () => {
-    it("when calculating struggle recoil, minimum 1 is returned", () => {
-      // Arrange
-      const attacker = createActivePokemon({ maxHp: 1 });
-      const damageDealt = 0;
-
-      // Act
-      const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
-
-      // Assert — minimum 1 (floor(1/4)=0, but max(1,...) ensures minimum 1)
+      // Assert — max(1, floor(0/4)) = max(1, 0) = 1
       expect(recoil).toBe(1);
     });
   });
 
-  describe("Given an attacker with 3 HP", () => {
-    it("when calculating struggle recoil, result is max(1, floor(3/4)) = 1", () => {
+  describe("Given damage dealt is 300", () => {
+    it("when calculating struggle recoil, then result is 75 (floor(300/4))", () => {
       // Arrange
-      const attacker = createActivePokemon({ maxHp: 3 });
-      const damageDealt = 50;
+      const attacker = createActivePokemon({ maxHp: 200 });
+      const damageDealt = 300;
 
       // Act
       const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
 
-      // Assert — floor(3/4) = 0 → max(1, 0) = 1
+      // Assert — floor(300/4) = 75
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729
+      expect(recoil).toBe(75);
+    });
+  });
+
+  describe("Given damage dealt is 3 (edge case)", () => {
+    it("when calculating struggle recoil, minimum 1 is returned", () => {
+      // Arrange
+      const attacker = createActivePokemon({ maxHp: 200 });
+      const damageDealt = 3;
+
+      // Act
+      const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
+
+      // Assert — max(1, floor(3/4)) = max(1, 0) = 1
       expect(recoil).toBe(1);
     });
   });

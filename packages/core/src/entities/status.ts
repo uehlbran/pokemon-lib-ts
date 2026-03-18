@@ -45,4 +45,5 @@ export type VolatileStatus =
   | "no-retreat" // Gen 8
   | "tar-shot" // Gen 8
   | "octolock" // Gen 8
-  | "mist"; // Gen 1+ — protects the user's team from stat-lowering moves
+  | "mist" // Gen 1+ — protects the user's team from stat-lowering moves
+  | "just-frozen"; // Gen 2 — tracks whether a Pokemon was frozen this turn (cannot thaw same turn, per pokecrystal wPlayerJustGotFrozen)

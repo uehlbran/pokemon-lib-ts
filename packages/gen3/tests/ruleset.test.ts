@@ -126,25 +126,27 @@ describe("Gen3Ruleset simple overrides", () => {
 
   // --- Struggle Recoil ---
 
-  it("given 100 damage dealt, when calculateStruggleRecoil, then returns 50", () => {
-    // Source: pret/pokeemerald src/battle_script_commands.c
-    // Struggle recoil = floor(damageDealt / 2) = floor(100 / 2) = 50
+  it("given 100 damage dealt, when calculateStruggleRecoil, then returns 25", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:2636-2639
+    // "case MOVE_EFFECT_RECOIL_25: gBattleMoveDamage = (gHpDealt) / 4;"
+    // Struggle recoil = floor(100 / 4) = 25
     const ruleset = makeRuleset();
     const mon = makeActivePokemon(200);
-    expect(ruleset.calculateStruggleRecoil(mon, 100)).toBe(50);
+    expect(ruleset.calculateStruggleRecoil(mon, 100)).toBe(25);
   });
 
-  it("given 75 damage dealt, when calculateStruggleRecoil, then returns 37", () => {
-    // Source: pret/pokeemerald src/battle_script_commands.c
-    // Struggle recoil = floor(damageDealt / 2) = floor(75 / 2) = 37
+  it("given 75 damage dealt, when calculateStruggleRecoil, then returns 18", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:2637
+    // Struggle recoil = floor(75 / 4) = 18
     const ruleset = makeRuleset();
     const mon = makeActivePokemon(200);
-    expect(ruleset.calculateStruggleRecoil(mon, 75)).toBe(37);
+    expect(ruleset.calculateStruggleRecoil(mon, 75)).toBe(18);
   });
 
   it("given 1 damage dealt, when calculateStruggleRecoil, then returns 1 (minimum)", () => {
-    // Source: pret/pokeemerald — recoil damage always >= 1
-    // floor(1 / 2) = 0 → clamped to 1
+    // Source: pret/pokeemerald src/battle_script_commands.c:2638-2639
+    // "if (gBattleMoveDamage == 0) gBattleMoveDamage = 1;"
+    // floor(1 / 4) = 0 → clamped to 1
     const ruleset = makeRuleset();
     const mon = makeActivePokemon(200);
     expect(ruleset.calculateStruggleRecoil(mon, 1)).toBe(1);

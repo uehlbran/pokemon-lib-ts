@@ -3,6 +3,9 @@ import type { SeededRandom } from "../prng/seeded-random.js";
 /**
  * Gen 1–2: ~24.6% chance (63/256) to be fully paralyzed and lose the turn.
  *
+ * Source: pret/pokered engine/battle/core.asm:3454 — cp 25 percent (= 63/256)
+ * Source: pret/pokecrystal engine/battle/core.asm — same 25% threshold
+ *
  * @param rng - The battle's seeded PRNG
  * @returns `true` if the Pokémon is fully paralyzed this turn
  */
@@ -12,6 +15,9 @@ export function gen12FullParalysisCheck(rng: SeededRandom): boolean {
 
 /**
  * Gen 1–4: Weighted multi-hit distribution [2,2,2,3,3,3,4,5].
+ *
+ * Source: pret/pokered engine/battle/core.asm — multi-hit random distribution
+ * Source: Bulbapedia — Multi-hit move (https://bulbapedia.bulbagarden.net/wiki/Multi-strike_move)
  *
  * Hit counts: 2 (37.5%), 3 (37.5%), 4 (12.5%), 5 (12.5%).
  *
@@ -25,6 +31,9 @@ export function gen14MultiHitRoll(rng: SeededRandom): number {
 /**
  * Gen 1–6: 50% chance to hit self in confusion.
  *
+ * Source: pret/pokered engine/battle/core.asm — confusion self-hit check (50%)
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm:602 HitConfusion
+ *
  * @param rng - The battle's seeded PRNG
  * @returns `true` if the Pokémon hits itself in confusion
  */
@@ -34,6 +43,10 @@ export function gen16ConfusionSelfHitRoll(rng: SeededRandom): boolean {
 
 /**
  * Gen 1–2: Stat EXP contribution = floor(ceil(sqrt(statExp)) / 4).
+ *
+ * Source: pret/pokered engine/battle/core.asm — stat experience calculation
+ * Source: pret/pokecrystal engine/battle/core.asm — same formula
+ * Source: Bulbapedia — Stat experience (https://bulbapedia.bulbagarden.net/wiki/Stat_experience)
  *
  * Used in both Gen1StatCalc and Gen2StatCalc. statExp range: 0–65535.
  *

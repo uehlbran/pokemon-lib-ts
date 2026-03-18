@@ -7,6 +7,7 @@ import type {
   ItemContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../src/data";
 import { calculateGen3Damage } from "../src/Gen3DamageCalc";
@@ -1152,10 +1153,11 @@ describe("Gen 3 Held Items", () => {
   // Quick Claw (inline in resolveTurnOrder)
   // =========================================================================
 
-  describe("Quick Claw (inline in resolveTurnOrder)", () => {
-    it("given a slower Pokemon holding Quick Claw when RNG activates (3/16), then it moves first within same priority bracket", () => {
+  describe("Quick Claw (via getQuickClawActivated in resolveTurnOrder)", () => {
+    it("given a slower Pokemon holding Quick Claw, when RNG activates (3/16), then it moves first within same priority bracket", () => {
       // Source: Showdown sim/battle-actions.ts — Quick Claw 18.75% (3/16) in Gen 3
-      // Quick Claw makes the slower Pokemon go first when activated
+      // This test exercises the actual Gen3Ruleset.getQuickClawActivated() production method
+      // by calling resolveTurnOrder with a SeededRandom that yields an activating value.
       const ruleset = new Gen3Ruleset(createGen3DataManager());
 
       const slowMon = createMockPokemon({
@@ -1172,38 +1174,34 @@ describe("Gen 3 Held Items", () => {
         trickRoom: { active: false },
       } as unknown as BattleState;
 
-      // Quick Claw check: rng.chance(3/16) → first call: true (QC activates for side 0)
-      // Side 1 has no Quick Claw, so no roll for it
-      // Then tiebreak rng.next() calls for each action
-      let callCount = 0;
-      const rng = {
-        next: () => {
-          callCount++;
-          return callCount === 1 ? 0.1 : 0.9;
-        },
-        int: (_min: number, _max: number) => 0,
-        chance: (_p: number) => true, // Quick Claw always activates
-        pick: <T>(arr: readonly T[]) => arr[0] as T,
-        shuffle: <T>(arr: readonly T[]) => [...arr],
-        getState: () => 0,
-        setState: () => {},
-      };
-
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
 
-      // Both pokemon have empty moves, so priority lookup will default to 0
-      // The slow mon (side 0) has Quick Claw and it activated → goes first
-      const ordered = ruleset.resolveTurnOrder(actions, state, rng as any);
+      // Find a seed where Quick Claw activates (rng.chance(3/16) returns true).
+      // The first rng.chance() call in getQuickClawActivated checks side 0's Quick Claw.
+      let activatingSeed = -1;
+      for (let seed = 0; seed < 1000; seed++) {
+        const testRng = new SeededRandom(seed);
+        if (testRng.chance(3 / 16)) {
+          activatingSeed = seed;
+          break;
+        }
+      }
+      expect(activatingSeed).toBeGreaterThanOrEqual(0);
 
+      const rng = new SeededRandom(activatingSeed);
+      const ordered = ruleset.resolveTurnOrder([...actions], state, rng);
+
+      // Side 0 (slower but Quick Claw activated) should go first
       expect(ordered[0]?.type).toBe("move");
-      expect((ordered[0] as any).side).toBe(0); // slow mon goes first due to Quick Claw
+      expect((ordered[0] as any).side).toBe(0);
     });
 
-    it("given a slower Pokemon holding Quick Claw when RNG does NOT activate, then normal speed order prevails", () => {
-      // When Quick Claw doesn't activate, faster Pokemon goes first as normal
+    it("given a slower Pokemon holding Quick Claw, when RNG does NOT activate, then normal speed order prevails", () => {
+      // Source: Showdown sim/battle-actions.ts — Quick Claw 18.75% (3/16) in Gen 3
+      // This test exercises the production path with a seed that does NOT activate Quick Claw.
       const ruleset = new Gen3Ruleset(createGen3DataManager());
 
       const slowMon = createMockPokemon({
@@ -1220,29 +1218,28 @@ describe("Gen 3 Held Items", () => {
         trickRoom: { active: false },
       } as unknown as BattleState;
 
-      let callCount = 0;
-      const rng = {
-        next: () => {
-          callCount++;
-          return callCount === 1 ? 0.1 : 0.9;
-        },
-        int: (_min: number, _max: number) => 0,
-        chance: (_p: number) => false, // Quick Claw does NOT activate
-        pick: <T>(arr: readonly T[]) => arr[0] as T,
-        shuffle: <T>(arr: readonly T[]) => [...arr],
-        getState: () => 0,
-        setState: () => {},
-      };
-
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
 
-      const ordered = ruleset.resolveTurnOrder(actions, state, rng as any);
+      // Find a seed where Quick Claw does NOT activate (rng.chance(3/16) returns false).
+      let nonActivatingSeed = -1;
+      for (let seed = 0; seed < 1000; seed++) {
+        const testRng = new SeededRandom(seed);
+        if (!testRng.chance(3 / 16)) {
+          nonActivatingSeed = seed;
+          break;
+        }
+      }
+      expect(nonActivatingSeed).toBeGreaterThanOrEqual(0);
 
+      const rng = new SeededRandom(nonActivatingSeed);
+      const ordered = ruleset.resolveTurnOrder([...actions], state, rng);
+
+      // Fast mon (side 1) goes first because Quick Claw didn't activate
       expect(ordered[0]?.type).toBe("move");
-      expect((ordered[0] as any).side).toBe(1); // fast mon goes first (normal order)
+      expect((ordered[0] as any).side).toBe(1);
     });
   });
 

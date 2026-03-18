@@ -3,6 +3,11 @@ import type { SeededRandom } from "../prng/seeded-random";
 
 /**
  * Status condition catch rate modifiers.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:9991 Cmd_handleballthrow
+ *   sleep/freeze: odds *= 2 (Gen 3-4), Gen 5+ changed to 2.5
+ *   poison/burn/paralysis/toxic: odds = (odds * 15) / 10
+ * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
  */
 export const STATUS_CATCH_MODIFIERS: Record<PrimaryStatus, number> = {
   sleep: 2.5, // Gen 5+ (was 2.0 in Gen 3-4)
@@ -15,6 +20,10 @@ export const STATUS_CATCH_MODIFIERS: Record<PrimaryStatus, number> = {
 
 /**
  * Calculate the modified catch rate.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:9987 Cmd_handleballthrow
+ *   odds = (catchRate * ballMultiplier / 10) * (maxHP * 3 - hp * 2) / (3 * maxHP)
+ * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
  *
  * Formula (Gen 3-4):
  *   a = ((3 * HP_max - 2 * HP_current) * CatchRate * BallMod) / (3 * HP_max)) * StatusMod
@@ -36,6 +45,11 @@ export function calculateModifiedCatchRate(
 /**
  * Calculate how many times the ball shakes (0-4).
  * 4 shakes = caught.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:10025 Cmd_handleballthrow
+ *   odds = Sqrt(Sqrt(16711680 / odds)); odds = 1048560 / odds
+ *   (equivalent to b = 65536 / (255/a)^0.1875 using integer sqrt)
+ * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
  *
  * Formula:
  *   b = 65536 / (255 / a)^0.1875

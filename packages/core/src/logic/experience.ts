@@ -3,8 +3,9 @@ import type { ExperienceGroup } from "../entities/experience";
 /**
  * Calculate the total experience needed to reach a given level.
  *
- * All formulas are from Bulbapedia:
- * https://bulbapedia.bulbagarden.net/wiki/Experience
+ * Source: Bulbapedia — Experience (https://bulbapedia.bulbagarden.net/wiki/Experience)
+ * Source: pret/pokeemerald src/data/pokemon/experience_tables.h — precomputed lookup tables
+ *   (the formulas below produce the same values as the decomp's gExperienceTables)
  *
  * @param group - Experience growth rate group
  * @param level - Target level (1-100)
@@ -51,6 +52,9 @@ export function getExpToNextLevel(group: ExperienceGroup, currentLevel: number):
 /**
  * Calculate experience gained from defeating a Pokemon.
  *
+ * Source: Bulbapedia — Experience (https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula)
+ * Source: Showdown sim/battle-actions.ts — Gen 5+ scaled EXP calculation
+ *
  * Gen 5+ "Scaled" formula:
  *   EXP = (b * L_d / 5) * (1 / s) * ((2 * L_d + 10)^2.5 / (L_d + L_p + 10)^2.5) + 1) * t * e
  *
@@ -86,6 +90,9 @@ export function calculateExpGain(
 
 /**
  * Classic (Gen 1-4) EXP formula -- provided for gen plugins.
+ *
+ * Source: Bulbapedia — Experience (https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula)
+ * Source: pret/pokeemerald src/battle_script_commands.c — Cmd_getexp (Gen 3 variant with /7 divisor)
  *
  *   EXP = (b * L_d / 7) * (1 / s) * t
  *

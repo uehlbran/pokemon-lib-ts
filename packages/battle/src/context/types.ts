@@ -238,16 +238,37 @@ export type AbilityEffectType =
   | "damage-reduction"
   | "type-change"
   | "weather-immunity"
+  | "weather-set"
   | "ability-change"
   | "none";
 
-/** A single effect produced by an ability trigger. */
-export interface AbilityEffect {
-  /** Effect category — narrows the discriminated union */
-  readonly effectType: AbilityEffectType;
-  /** Which entity the effect applies to */
-  readonly target: "self" | "opponent" | "field";
-}
+/** A single effect produced by an ability trigger — proper discriminated union on effectType. */
+export type AbilityEffect =
+  | {
+      readonly effectType: "stat-change";
+      readonly target: "self" | "opponent";
+      readonly stat:
+        | "attack"
+        | "defense"
+        | "spAttack"
+        | "spDefense"
+        | "speed"
+        | "accuracy"
+        | "evasion";
+      readonly stages: number;
+    }
+  | {
+      readonly effectType: "weather-set";
+      readonly target: "field";
+      readonly weather: import("@pokemon-lib-ts/core").WeatherType;
+      readonly weatherTurns: number;
+    }
+  | { readonly effectType: "damage-reduction"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "type-change"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "weather-immunity"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "ability-change"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
 
 export interface AbilityResult {
   /** `true` if the ability actually activated and produced effects */
@@ -429,7 +450,13 @@ export type EndOfTurnEffect =
   | "nightmare"
   | "harvest"
   | "pickup"
-  | "poison-heal";
+  | "poison-heal"
+  | "mystery-berry"
+  | "defrost"
+  | "safeguard-countdown"
+  | "stat-boosting-items"
+  | "healing-items"
+  | "encore-countdown";
 
 /**
  * Configuration object passed to the `BattleEngine` constructor.

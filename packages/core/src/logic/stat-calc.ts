@@ -6,10 +6,15 @@ import type { NonHpStat, StatBlock } from "../entities/stats";
 /**
  * Calculate a Pokemon's maximum HP.
  *
+ * Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — HP branch
+ *   newMaxHP = (((n + hpEV / 4) * level) / 100) + level + 10
+ *   where n = 2 * baseHP + hpIV
+ *
  * Formula (Gen 3+):
  *   HP = floor(((2 * Base + IV + floor(EV / 4)) * Level) / 100) + Level + 10
  *
  * Special case: Shedinja always has 1 HP regardless of stats.
+ * Source: pret/pokeemerald src/pokemon.c:2867 — species == SPECIES_SHEDINJA check
  *
  * @param base - Base HP stat (from species data)
  * @param iv - Individual Value (0-31)
@@ -24,6 +29,10 @@ export function calculateHp(base: number, iv: number, ev: number, level: number)
 
 /**
  * Calculate a non-HP stat (Attack, Defense, SpAtk, SpDef, Speed).
+ *
+ * Source: pret/pokeemerald src/pokemon.c:2814 CALC_STAT macro
+ *   n = (((2 * baseStat + iv + ev / 4) * level) / 100) + 5
+ *   n = ModifyStatByNature(nature, n, statIndex)
  *
  * Formula (Gen 3+):
  *   Stat = floor((floor(((2 * Base + IV + floor(EV / 4)) * Level) / 100) + 5) * NatureMod)
@@ -49,6 +58,10 @@ export function calculateStat(
 
 /**
  * Get the nature modifier for a specific stat.
+ *
+ * Source: pret/pokeemerald src/pokemon.c:5864 ModifyStatByNature
+ *   case  1: retVal = stat * 110 / 100 (boost)
+ *   case -1: retVal = stat *  90 / 100 (hinder)
  *
  * @returns 1.1 if nature boosts this stat, 0.9 if it hinders, 1.0 if neutral
  */

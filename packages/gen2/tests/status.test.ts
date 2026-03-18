@@ -509,20 +509,23 @@ describe("Gen2Status", () => {
 });
 
 describe("Comprehensive status mechanics", () => {
-  it("given a frozen Pokemon, when rolling thaw chance 10000 times, then thaws approximately 9.77% of turns", () => {
+  it("given a frozen Pokemon, when calling checkFreezeThaw, then always returns false because Gen 2 thaws between turns", () => {
+    // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
+    // In Gen 2, freeze thaw happens in HandleBetweenTurnEffects (end-of-turn),
+    // NOT pre-move. checkFreezeThaw is called pre-move by the engine, so Gen 2
+    // must always return false here. The actual 25/256 thaw roll fires in the
+    // "defrost" end-of-turn effect instead.
     // Arrange
     const rng = new SeededRandom(12345);
     const ruleset = new Gen2Ruleset();
     const pokemon = createMockActivePokemon({ status: "freeze" });
     let thawCount = 0;
     // Act
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 100; i++) {
       if (ruleset.checkFreezeThaw(pokemon, rng)) thawCount++;
     }
-    const rate = thawCount / 10000;
-    // Assert — 25/256 ≈ 9.77%, allow ±2%
-    expect(rate).toBeGreaterThan(0.0777);
-    expect(rate).toBeLessThan(0.1177);
+    // Assert — pre-move thaw NEVER happens in Gen 2
+    expect(thawCount).toBe(0);
   });
 
   it("given a burned Pokemon with 200 max HP, when calculating status damage, then takes 25 damage per turn", () => {
@@ -587,5 +590,69 @@ describe("Comprehensive status mechanics", () => {
     const result = canInflictGen2Status("paralysis", pokemon);
     // Assert
     expect(result).toBe(false);
+  });
+});
+
+describe("Gen 2 processEndOfTurnDefrost", () => {
+  it("given a frozen Pokemon without just-frozen volatile, when processEndOfTurnDefrost is called with 1000 seeds, then thaw rate is approximately 25/256 (~9.8%)", () => {
+    // Source: pret/pokecrystal engine/battle/core.asm:1524-1581 HandleDefrost
+    // 25/256 (~9.77%) chance to thaw each end-of-turn (if not frozen this turn)
+    // Arrange
+    const ruleset = new Gen2Ruleset();
+    const rng = new SeededRandom(9001);
+    let thawCount = 0;
+    const iterations = 1000;
+
+    // Act
+    for (let i = 0; i < iterations; i++) {
+      const pokemon = createMockActivePokemon({ status: "freeze" });
+      if (ruleset.processEndOfTurnDefrost(pokemon, rng)) thawCount++;
+    }
+    const rate = thawCount / iterations;
+
+    // Assert — 25/256 ≈ 9.77%, tolerance ±3%
+    expect(rate).toBeGreaterThan(0.067);
+    expect(rate).toBeLessThan(0.128);
+  });
+
+  it("given a frozen Pokemon with just-frozen volatile, when processEndOfTurnDefrost is called, then returns false and clears the volatile", () => {
+    // Source: pret/pokecrystal engine/battle/core.asm:1538-1540 — wPlayerJustGotFrozen
+    // Pokemon frozen this turn must not get a thaw check until next turn.
+    // Arrange
+    const ruleset = new Gen2Ruleset();
+    const rng = new SeededRandom(1); // seed that would thaw otherwise
+    const volatiles = new Map<string, unknown>([["just-frozen", { turnsLeft: 1 }]]);
+    const pokemon = createMockActivePokemon({ status: "freeze", volatileStatuses: volatiles });
+
+    // Act
+    const thawed = ruleset.processEndOfTurnDefrost(pokemon, rng);
+
+    // Assert — should NOT thaw when just-frozen guard is active
+    expect(thawed).toBe(false);
+    // Assert — just-frozen volatile should be cleared so next EoT allows the thaw roll
+    expect((pokemon.volatileStatuses as Map<string, unknown>).has("just-frozen")).toBe(false);
+  });
+
+  it("given a frozen Pokemon where the RNG rolls >= 25, when processEndOfTurnDefrost is called, then returns false", () => {
+    // Source: pret/pokecrystal engine/battle/core.asm:1542-1543 — BattleRandom, cp 25
+    // Only values 0-24 (out of 0-255) trigger thaw. Roll >= 25 → no thaw.
+    // SeededRandom seed 7777 produces first roll above 24 for this test.
+    // Arrange
+    const ruleset = new Gen2Ruleset();
+    // Use a seeded RNG where we can verify the first int(0,255) call returns >= 25.
+    // We'll run 256 deterministic seeds and find at least one that does NOT thaw.
+    let foundNoThaw = false;
+    for (let seed = 100; seed < 400; seed++) {
+      const rng = new SeededRandom(seed);
+      const pokemon = createMockActivePokemon({ status: "freeze" });
+      const result = ruleset.processEndOfTurnDefrost(pokemon, rng);
+      if (!result) {
+        foundNoThaw = true;
+        break;
+      }
+    }
+
+    // Assert — with 300 seeds, we must find at least one non-thaw (probability overwhelmingly certain)
+    expect(foundNoThaw).toBe(true);
   });
 });

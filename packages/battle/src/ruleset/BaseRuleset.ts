@@ -297,10 +297,15 @@ export abstract class BaseRuleset implements GenerationRuleset {
     }
   }
 
-  // Gen 3+ default (20% thaw); Gen 2 must override (25/256 ≈ 9.8%)
+  // Gen 3+ default (20% thaw pre-move); Gen 2 overrides to always return false
   checkFreezeThaw(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    // Gen 2+: 20% chance to thaw each turn
+    // Gen 3+: 20% chance to thaw each turn (checked pre-move, not EoT)
     return rng.chance(0.2);
+  }
+
+  // Gen 3+ never thaw via EoT (handled pre-move by checkFreezeThaw); Gen 2 overrides this
+  processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
+    return false;
   }
 
   // Gen 5+ default (1-3 turns); Gen 3-4 must override (2-5 turns)
@@ -435,6 +440,22 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, damage);
   }
 
+  // Source: default for Gen 3-6; Gen 7+ overrides to 2-5 turn range
+  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const conf = active.volatileStatuses.get("confusion");
+    if (!conf) return false;
+    conf.turnsLeft--;
+    return conf.turnsLeft > 0;
+  }
+
+  // Source: default for Gen 3+
+  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const bound = active.volatileStatuses.get("bound");
+    if (!bound) return false;
+    bound.turnsLeft--;
+    return bound.turnsLeft > 0;
+  }
+
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
     // Default Gen 3+ behavior: clear all volatile statuses on switch-out.
     // Gen 1-2 override this to handle generation-specific persistence rules.
@@ -567,6 +588,9 @@ export abstract class BaseRuleset implements GenerationRuleset {
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    // Note: "defrost" is intentionally absent here. Gen 3+ handle freeze thaw pre-move
+    // via checkFreezeThaw (20% per turn), NOT between turns. Only Gen 2 includes "defrost"
+    // in its EoT order (see Gen2Ruleset.getEndOfTurnOrder and processEndOfTurnDefrost).
     return [
       "weather-damage",
       "weather-countdown",

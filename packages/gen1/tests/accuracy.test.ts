@@ -1,6 +1,6 @@
 import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 
@@ -210,21 +210,45 @@ function makeContext(
 
 /**
  * Compute the Gen 1 accuracy threshold used internally by doesMoveHit.
- * This mirrors the logic in Gen1Ruleset.doesMoveHit() for test assertions.
+ * This mirrors the two-step sequential floor approach in Gen1Ruleset.doesMoveHit().
  *
- * effectiveAccuracy = clamp(floor(moveAccuracy * accMod / evaMod), 1, 255)
- * threshold = floor(effectiveAccuracy * 255 / 100)
+ * Source: pret/pokered engine/battle/core.asm:5348 CalcHitChance
+ * 1. Convert move accuracy from 0-100 to 0-255 scale
+ * 2. Apply accuracy stage (integer multiply-divide, floor)
+ * 3. Clamp to 0-255
+ * 4. Apply evasion stage (integer multiply-divide, inverted, floor)
+ * 5. Clamp to 0-255
  */
 function computeThreshold(
   moveAccuracy: number,
   accuracyStage: number,
   evasionStage: number,
 ): number {
-  const accMod = getStatStageMultiplier(accuracyStage);
-  const evaMod = getStatStageMultiplier(evasionStage);
-  let effectiveAccuracy = Math.floor((moveAccuracy * accMod) / evaMod);
-  effectiveAccuracy = Math.max(1, Math.min(255, effectiveAccuracy));
-  return Math.floor((effectiveAccuracy * 255) / 100);
+  // Step 1: Convert to 0-255 scale
+  let acc: number;
+  if (moveAccuracy >= 100) {
+    acc = 255;
+  } else {
+    acc = Math.floor((moveAccuracy * 255) / 100);
+  }
+
+  // Step 2: Apply accuracy stage
+  if (accuracyStage !== 0) {
+    const accNum = Math.max(2, 2 + accuracyStage);
+    const accDen = Math.max(2, 2 - accuracyStage);
+    acc = Math.floor((acc * accNum) / accDen);
+  }
+  acc = Math.max(0, Math.min(255, acc));
+
+  // Step 3: Apply evasion stage (inverted)
+  if (evasionStage !== 0) {
+    const evaNum = Math.max(2, 2 - evasionStage);
+    const evaDen = Math.max(2, 2 + evasionStage);
+    acc = Math.floor((acc * evaNum) / evaDen);
+  }
+  acc = Math.max(0, Math.min(255, acc));
+
+  return acc;
 }
 
 describe("Gen 1 Accuracy", () => {
@@ -334,10 +358,9 @@ describe("Gen 1 Accuracy", () => {
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, -6, 0);
-    // Assert: -6 accuracy multiplier (Gen 1, 2-based) = 2/8 = 0.25
-    // effective = floor(100 * 0.25) = 25, threshold = floor(25 * 255 / 100) = 63
-    expect(threshold).toBeLessThan(100);
-    expect(threshold).toBeGreaterThan(0);
+    // Assert: acc=255, stage -6: floor(255*2/8)=63
+    // Source: pret/pokered CalcHitChance — stage -6 uses ratio 2/8
+    expect(threshold).toBe(63);
   });
 
   // --- Evasion Stages ---
@@ -367,23 +390,24 @@ describe("Gen 1 Accuracy", () => {
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, 0, 6);
-    // Assert: +6 evasion (Gen 1, 2-based) multiplier = 8/2 = 4.0
-    // effective = floor(100 / 4) = 25, threshold = floor(25 * 255 / 100) = 63
-    expect(threshold).toBeLessThan(100);
-    expect(threshold).toBeGreaterThan(0);
+    // Assert: acc=255, evasion +6: floor(255*2/8)=63
+    // Source: pret/pokered CalcHitChance — evasion +6 inverted uses ratio 2/8
+    expect(threshold).toBe(63);
   });
 
   // --- Combined Accuracy and Evasion ---
 
-  it("given +1 accuracy and +1 evasion, when computing threshold, then effects partially cancel out", () => {
+  it("given +1 accuracy and +1 evasion, when computing threshold, then effects partially cancel but two-step floor causes rounding loss", () => {
     // Arrange
     const moveAccuracy = 100;
     // Act
-    const baseThreshold = computeThreshold(moveAccuracy, 0, 0);
     const modifiedThreshold = computeThreshold(moveAccuracy, 1, 1);
-    // Assert: They should partially cancel; result should be close to the base
-    const diff = Math.abs(modifiedThreshold - baseThreshold);
-    expect(diff).toBeLessThan(50);
+    // Assert: With two-step sequential floor (pokered CalcHitChance):
+    // acc=255, accStage+1: floor(255*3/2)=382 clamped to 255,
+    // evaStage+1: floor(255*2/3)=170. The two steps don't perfectly cancel
+    // due to integer rounding, giving 170 instead of 255.
+    // Source: pret/pokered CalcHitChance sequential integer multiply-divide
+    expect(modifiedThreshold).toBe(170);
   });
 
   it("given +6 accuracy and -6 evasion, when computing threshold, then threshold is at maximum", () => {
@@ -420,24 +444,16 @@ describe("Gen 1 Accuracy", () => {
   it("given seeded RNG and 0% accuracy, when checking hit, then always misses", () => {
     // Arrange
     const rng = new SeededRandom(42);
-    // Act / Assert
-    for (let i = 0; i < 100; i++) {
-      const _ctx = makeContext({ moveAccuracy: 0, rng });
-      // 0% accuracy -> effectiveAccuracy clamped to 1 -> threshold = floor(1 * 255 / 100) = 2
-      // So there's a tiny chance of hitting (2/256), but effectively near-zero.
-      // The original test expects always-miss, but with clamping to 1,
-      // threshold = floor(1*255/100) = 2, so rolls 0 and 1 would hit.
-      // We test that the hit rate is very low instead.
-    }
-    // Run a statistical test instead
+    // Act: 0% accuracy -> acc = floor(0*255/100) = 0, threshold = 0
+    // roll < 0 is always false → always misses
     let hits = 0;
     const trials = 1000;
     for (let i = 0; i < trials; i++) {
       const ctx = makeContext({ moveAccuracy: 0, rng });
       if (ruleset.doesMoveHit(ctx)) hits++;
     }
-    // With threshold = 2 out of 0-255, hit rate ~ 2/256 ~ 0.78%
-    expect(hits / trials).toBeLessThan(0.05);
+    // Assert: threshold = 0 means no roll can be < 0, so 0% hit rate
+    expect(hits).toBe(0);
   });
 
   // --- Determinism ---
@@ -486,35 +502,35 @@ describe("Gen 1 Accuracy", () => {
 
   // --- Gen 1 stage multiplier value checks (2-based scale) ---
 
-  it("given accuracy stage +1 (Gen 1), when computing multiplier, then returns 3/2 = 1.5 (not Gen 3+ 4/3)", () => {
+  it("given accuracy stage +1 (Gen 1), when computing threshold, then stage increases accuracy on 0-255 scale", () => {
     // Arrange
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, 1, 0);
-    // Assert: getStatStageMultiplier(+1) = 3/2 = 1.5 → floor(100 * 1.5) = 150, clamped = 150
-    // threshold = floor(150 * 255 / 100) = floor(382.5) = 382 → but effectiveAccuracy is clamped to 255
-    // floor(100 * 1.5) = 150, threshold = floor(150 * 255 / 100) = 382; then clamped to 255 at the roll level
-    // The key assertion: threshold > base (255) confirms positive multiplier
-    expect(threshold).toBeGreaterThanOrEqual(255);
+    // Assert: acc=255, accStage+1: floor(255*3/2)=382 clamped to 255 → threshold = 255
+    // Source: pret/pokered CalcHitChance — stage +1 uses ratio 3/2 as integer multiply-divide
+    expect(threshold).toBe(255);
   });
 
-  it("given accuracy stage -6 (Gen 1), when computing multiplier, then returns 2/8 = 0.25", () => {
+  it("given accuracy stage -6 (Gen 1), when computing threshold, then threshold is 63 per two-step sequential floor", () => {
     // Arrange
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, -6, 0);
-    // Assert: getStatStageMultiplier(-6) = 2/8 = 0.25 → floor(100 * 0.25) = 25
-    // threshold = floor(25 * 255 / 100) = 63
+    // Assert: acc=255, accStage-6: accNum=max(2,2+(-6))=2, accDen=max(2,2-(-6))=8
+    // floor(255*2/8)=floor(63.75)=63
+    // Source: pret/pokered CalcHitChance — stage -6 uses ratio 2/8
     expect(threshold).toBe(63);
   });
 
-  it("given evasion stage +6 (Gen 1), when computing multiplier, then returns 8/2 = 4.0", () => {
+  it("given evasion stage +6 (Gen 1), when computing threshold, then threshold is 63 per two-step sequential floor", () => {
     // Arrange
     const moveAccuracy = 100;
     // Act
     const threshold = computeThreshold(moveAccuracy, 0, 6);
-    // Assert: getStatStageMultiplier(+6) = 8/2 = 4.0 → floor(100 / 4.0) = 25
-    // threshold = floor(25 * 255 / 100) = 63
+    // Assert: acc=255, evaStage+6: evaNum=max(2,2-6)=2, evaDen=max(2,2+6)=8
+    // floor(255*2/8)=floor(63.75)=63
+    // Source: pret/pokered CalcHitChance — evasion +6 inverted uses ratio 2/8
     expect(threshold).toBe(63);
   });
 

@@ -14,7 +14,7 @@ import { applyGen2HeldItem } from "../src/Gen2Items";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/** Create a mock RNG with configurable chance result. */
+/** Create a mock RNG with configurable chance result and int result. */
 function createMockRng(chanceResult = false, intResult = 0) {
   return {
     next: () => 0,
@@ -115,6 +115,7 @@ function createItemContext(opts: {
   maxHp?: number;
   status?: string | null;
   chanceResult?: boolean;
+  intResult?: number;
   damage?: number;
   hasConfusion?: boolean;
 }): ItemContext {
@@ -129,7 +130,7 @@ function createItemContext(opts: {
   return {
     pokemon,
     state: {} as BattleState,
-    rng: createMockRng(opts.chanceResult ?? false) as ItemContext["rng"],
+    rng: createMockRng(opts.chanceResult ?? false, opts.intResult ?? 0) as ItemContext["rng"],
     damage: opts.damage,
   };
 }
@@ -761,13 +762,15 @@ describe("Gen 2 Held Items", () => {
   // --- Focus Band ---
 
   describe("Given Focus Band held item", () => {
-    it("given a Pokemon holding Focus Band and RNG succeeds (12% chance), when damage would KO, then survives with 1 HP", () => {
-      // Arrange: RNG chance returns true (12% proc)
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:2119-2131 — cp c where c=30 (HELD_FOCUS_BAND), so 30/256 chance
+
+    it("given a Pokemon holding Focus Band and RNG roll < 30, when damage would KO, then survives with 1 HP", () => {
+      // Arrange: RNG int returns 15 (< 30 threshold → activates)
       const context = createItemContext({
         heldItem: "focus-band",
         currentHp: 30,
         maxHp: 200,
-        chanceResult: true,
+        intResult: 15, // 15 < 30, so Focus Band activates
         damage: 50, // 50 damage would KO from 30 HP
       });
 
@@ -781,13 +784,13 @@ describe("Gen 2 Held Items", () => {
       expect(surviveEffect?.value).toBe(1);
     });
 
-    it("given a Pokemon holding Focus Band and RNG fails, when damage would KO, then no activation", () => {
-      // Arrange: RNG chance returns false
+    it("given a Pokemon holding Focus Band and RNG roll >= 30, when damage would KO, then no activation", () => {
+      // Arrange: RNG int returns 200 (>= 30 threshold → does not activate)
       const context = createItemContext({
         heldItem: "focus-band",
         currentHp: 30,
         maxHp: 200,
-        chanceResult: false,
+        intResult: 200, // 200 >= 30, so Focus Band does NOT activate
         damage: 50,
       });
 

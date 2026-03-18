@@ -1119,4 +1119,194 @@ describe("Gen 1 Damage Calculation", () => {
     // Explosion should deal more damage due to halved defense
     expect(explosionDamage).toBeGreaterThan(normalDamage);
   });
+
+  // --- Burn Does NOT Affect Critical Hits (Bug 3A Fix) ---
+
+  it("given a burned attacker using a physical move with a critical hit, when calculating damage, then the attack stat is NOT halved (burn does not apply on crits)", () => {
+    // Source: pret/pokered engine/battle/core.asm:4060-4071 GetDamageVarsForPlayerAttack
+    // On critical hits, loads from wPartyMon1Attack (unmodified party data), not wBattleMonAttack
+    // (which has burn halving applied). Therefore burn does NOT affect crits in Gen 1.
+    //
+    // Setup: L50 Charizard (Fire/Flying, Attack=104) vs L50 Blastoise (Water, Defense=105)
+    // using Slash (Normal-type, 70 power, non-STAB).
+    // Critical hit: effectiveLevel = 50*2 = 100, levelFactor = floor(200/5)+2 = 42
+    //
+    // WITHOUT burn halving on crit (correct):
+    //   attack = 104 (unmodified)
+    //   baseDamage = floor(floor(42 * 70 * 104) / 105 / 50) + 2
+    //             = floor(floor(305760) / 105 / 50) + 2
+    //             = floor(2912 / 50) + 2
+    //             = floor(58.24) + 2 = 58 + 2 = 60
+    //   max roll (255): floor(60 * 255 / 255) = 60
+    //
+    // WITH burn halving on crit (incorrect old behavior):
+    //   attack = floor(104/2) = 52
+    //   baseDamage = floor(floor(42 * 70 * 52) / 105 / 50) + 2
+    //             = floor(floor(152880) / 105 / 50) + 2
+    //             = floor(1456 / 50) + 2
+    //             = floor(29.12) + 2 = 29 + 2 = 31
+    //   max roll (255): floor(31 * 255 / 255) = 31
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const slashMove: MoveData = {
+      id: "slash",
+      displayName: "Slash",
+      type: "normal" as PokemonType,
+      category: "physical",
+      power: 70,
+      accuracy: 100,
+      pp: 20,
+      priority: 0,
+      target: "adjacent-foe",
+      flags: {
+        contact: true,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: true,
+        mirror: true,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: null,
+      description: "",
+      generation: 1,
+    } as MoveData;
+    const rng = createMockRng(255); // max roll
+
+    // Burned Charizard (Fire/Flying) — non-STAB for Normal-type Slash
+    const burnedAttacker = createActivePokemon({
+      level: 50,
+      attack: 104,
+      defense: 78,
+      spAttack: 109,
+      spDefense: 85,
+      types: ["fire", "flying"],
+      status: "burn",
+    });
+
+    // Non-burned Charizard for comparison
+    const normalAttacker = createActivePokemon({
+      level: 50,
+      attack: 104,
+      defense: 78,
+      spAttack: 109,
+      spDefense: 85,
+      types: ["fire", "flying"],
+    });
+
+    const blastoise = createActivePokemon({
+      level: 50,
+      attack: 83,
+      defense: 105,
+      spAttack: 85,
+      spDefense: 105,
+      types: ["water"],
+    });
+
+    // Critical hit with burn — should NOT halve attack
+    const ctxBurnedCrit = {
+      attacker: burnedAttacker,
+      defender: blastoise,
+      move: slashMove,
+      state: {} as DamageContext["state"],
+      rng: rng as DamageContext["rng"],
+      isCrit: true,
+    } satisfies DamageContext;
+
+    // Critical hit without burn — should be identical to burned crit
+    const ctxNormalCrit = {
+      attacker: normalAttacker,
+      defender: blastoise,
+      move: slashMove,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: true,
+    } satisfies DamageContext;
+
+    const burnedCritDamage = calculateGen1Damage(ctxBurnedCrit, chart, species).damage;
+    const normalCritDamage = calculateGen1Damage(ctxNormalCrit, chart, species).damage;
+
+    // Key assertion: burn does NOT reduce damage on crits — both should be equal
+    expect(burnedCritDamage).toBe(normalCritDamage);
+    // Verify the expected value: 60 (calculated above)
+    expect(burnedCritDamage).toBe(60);
+  });
+
+  it("given a burned attacker using a physical move WITHOUT a critical hit, when calculating damage, then the attack stat IS halved (burn penalty applies normally)", () => {
+    // Source: pret/pokered engine/battle/core.asm — GetDamageVarsForPlayerAttack
+    // On non-critical hits, loads from wBattleMonAttack which includes burn halving.
+    //
+    // L50 attacker, Attack=200, Defender Defense=100, Power=80 Normal-type move
+    // Non-crit, max roll, no STAB:
+    //   levelFactor = floor(100/5)+2 = 22
+    //   With burn: attack = floor(200/2) = 100
+    //     baseDamage = floor(floor(22 * 80 * 100) / 100 / 50) + 2 = floor(176000/100/50)+2 = floor(35.2)+2 = 37
+    //   Without burn: attack = 200
+    //     baseDamage = floor(floor(22 * 80 * 200) / 100 / 50) + 2 = floor(352000/100/50)+2 = floor(70.4)+2 = 72
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+    const move = createPhysicalMove(80);
+
+    const burnedAttacker = createActivePokemon({
+      level: 50,
+      attack: 200,
+      defense: 100,
+      spAttack: 200,
+      spDefense: 100,
+      types: ["fire"],
+      status: "burn",
+    });
+    const normalAttacker = createActivePokemon({
+      level: 50,
+      attack: 200,
+      defense: 100,
+      spAttack: 200,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+
+    const ctxBurned = {
+      attacker: burnedAttacker,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+    const ctxNormal = {
+      attacker: normalAttacker,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    const burnedDamage = calculateGen1Damage(ctxBurned, chart, species).damage;
+    const normalDamage = calculateGen1Damage(ctxNormal, chart, species).damage;
+
+    // Burn DOES halve attack on non-crits
+    expect(burnedDamage).toBeLessThan(normalDamage);
+    // Verify exact values
+    expect(burnedDamage).toBe(37);
+    expect(normalDamage).toBe(72);
+  });
 });

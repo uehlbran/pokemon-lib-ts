@@ -8,3 +8,5 @@ tools/repos/
 .worktrees/
 .claude/worktrees/
 .claude/.review-passed
+.claude/review-markers/
+references/

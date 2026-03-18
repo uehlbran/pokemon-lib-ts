@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACCURACY_STAGE_RATIOS,
   calculateAccuracy,
+  GEN3_STAT_STAGE_RATIOS,
+  GEN12_STAT_STAGE_RATIOS,
   getAccuracyEvasionMultiplier,
+  getAccuracyStageRatio,
+  getGen3StatStageRatio,
+  getGen12StatStageRatio,
   getStatStageMultiplier,
 } from "../../src/logic/stat-stages";
 
@@ -166,5 +172,231 @@ describe("calculateAccuracy", () => {
     expect(calculateAccuracy(100, 3, 2)).toBe(133);
     // +2 acc vs +3 eva: net -1, floor(100 * 3/4) = 75
     expect(calculateAccuracy(100, 2, 3)).toBe(75);
+  });
+});
+
+// ============================================================
+// Integer ratio lookup tables (decomp-sourced)
+// ============================================================
+
+describe("GEN12_STAT_STAGE_RATIOS", () => {
+  it("given the table, has 13 entries for stages -6 through +6", () => {
+    // Source: pret/pokered data/battle/stat_modifiers.asm — 13 pairs
+    expect(GEN12_STAT_STAGE_RATIOS).toHaveLength(13);
+  });
+});
+
+describe("getGen12StatStageRatio", () => {
+  // Source: pret/pokered data/battle/stat_modifiers.asm
+  it("given stage -6, returns {num: 25, den: 100} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(-6)).toEqual({ num: 25, den: 100 });
+  });
+
+  it("given stage -5, returns {num: 28, den: 100} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(-5)).toEqual({ num: 28, den: 100 });
+  });
+
+  it("given stage -4, returns {num: 33, den: 100} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(-4)).toEqual({ num: 33, den: 100 });
+  });
+
+  it("given stage -3, returns {num: 40, den: 100} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(-3)).toEqual({ num: 40, den: 100 });
+  });
+
+  it("given stage -2, returns {num: 50, den: 100} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(-2)).toEqual({ num: 50, den: 100 });
+  });
+
+  it("given stage -1, returns {num: 66, den: 100} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(-1)).toEqual({ num: 66, den: 100 });
+  });
+
+  it("given stage 0, returns {num: 1, den: 1} per pokered stat_modifiers.asm", () => {
+    // Source: pokered — db 1, 1 for stage 0
+    expect(getGen12StatStageRatio(0)).toEqual({ num: 1, den: 1 });
+  });
+
+  it("given stage +1, returns {num: 15, den: 10} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(1)).toEqual({ num: 15, den: 10 });
+  });
+
+  it("given stage +2, returns {num: 2, den: 1} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(2)).toEqual({ num: 2, den: 1 });
+  });
+
+  it("given stage +3, returns {num: 25, den: 10} per pokered stat_modifiers.asm", () => {
+    // Source: pokered — db 25, 10 = 2.50x (NOT 2.66x like Gen 3+)
+    expect(getGen12StatStageRatio(3)).toEqual({ num: 25, den: 10 });
+  });
+
+  it("given stage +4, returns {num: 3, den: 1} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(4)).toEqual({ num: 3, den: 1 });
+  });
+
+  it("given stage +5, returns {num: 35, den: 10} per pokered stat_modifiers.asm", () => {
+    expect(getGen12StatStageRatio(5)).toEqual({ num: 35, den: 10 });
+  });
+
+  it("given stage +6, returns {num: 4, den: 1} per pokered stat_modifiers.asm", () => {
+    // Source: pokered — db 4, 1 = 4.00x (NOT 5.00x like Gen 3+)
+    expect(getGen12StatStageRatio(6)).toEqual({ num: 4, den: 1 });
+  });
+
+  it("given stage beyond +6, clamps to +6 result", () => {
+    expect(getGen12StatStageRatio(7)).toEqual({ num: 4, den: 1 });
+    expect(getGen12StatStageRatio(10)).toEqual({ num: 4, den: 1 });
+  });
+
+  it("given stage beyond -6, clamps to -6 result", () => {
+    expect(getGen12StatStageRatio(-7)).toEqual({ num: 25, den: 100 });
+    expect(getGen12StatStageRatio(-10)).toEqual({ num: 25, den: 100 });
+  });
+});
+
+describe("GEN3_STAT_STAGE_RATIOS", () => {
+  it("given the table, has 13 entries for stages -6 through +6", () => {
+    // Source: pret/pokeemerald src/pokemon.c:1868 gStatStageRatios — 13 pairs
+    expect(GEN3_STAT_STAGE_RATIOS).toHaveLength(13);
+  });
+});
+
+describe("getGen3StatStageRatio", () => {
+  // Source: pret/pokeemerald src/pokemon.c:1868 gStatStageRatios
+  it("given stage -6, returns {num: 10, den: 40} per pokeemerald gStatStageRatios", () => {
+    expect(getGen3StatStageRatio(-6)).toEqual({ num: 10, den: 40 });
+  });
+
+  it("given stage -5, returns {num: 10, den: 35} per pokeemerald gStatStageRatios", () => {
+    expect(getGen3StatStageRatio(-5)).toEqual({ num: 10, den: 35 });
+  });
+
+  it("given stage 0, returns {num: 10, den: 10} per pokeemerald gStatStageRatios", () => {
+    expect(getGen3StatStageRatio(0)).toEqual({ num: 10, den: 10 });
+  });
+
+  it("given stage +3, returns {num: 25, den: 10} per pokeemerald gStatStageRatios", () => {
+    // Source: pokeemerald — {25, 10} = 2.5x
+    expect(getGen3StatStageRatio(3)).toEqual({ num: 25, den: 10 });
+  });
+
+  it("given stage +6, returns {num: 40, den: 10} per pokeemerald gStatStageRatios", () => {
+    // Source: pokeemerald — {40, 10} = 4.0x
+    expect(getGen3StatStageRatio(6)).toEqual({ num: 40, den: 10 });
+  });
+
+  it("given stage beyond +6, clamps to +6 result", () => {
+    expect(getGen3StatStageRatio(7)).toEqual({ num: 40, den: 10 });
+  });
+
+  it("given stage beyond -6, clamps to -6 result", () => {
+    expect(getGen3StatStageRatio(-7)).toEqual({ num: 10, den: 40 });
+  });
+
+  it("given all stages, integer arithmetic produces correct effective ratios", () => {
+    // Verify: stat * num / den produces the expected multiplied stat
+    // Using a base stat of 100 for clarity
+    // Source: pokeemerald APPLY_STAT_MOD macro — var = stat * ratio[0]; var /= ratio[1]
+    const base = 100;
+    const expected = [25, 28, 33, 40, 50, 66, 100, 150, 200, 250, 300, 350, 400];
+    for (let stage = -6; stage <= 6; stage++) {
+      const { num, den } = getGen3StatStageRatio(stage);
+      const result = Math.floor((base * num) / den);
+      expect(result).toBe(expected[stage + 6]);
+    }
+  });
+});
+
+describe("ACCURACY_STAGE_RATIOS", () => {
+  it("given the table, has 13 entries for stages -6 through +6", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:588 — 13 pairs
+    expect(ACCURACY_STAGE_RATIOS).toHaveLength(13);
+  });
+});
+
+describe("getAccuracyStageRatio", () => {
+  // Source: pret/pokeemerald src/battle_script_commands.c:588 sAccuracyStageRatios
+  // Source: pret/pokecrystal data/battle/accuracy_multipliers.asm
+  it("given stage -6, returns {num: 33, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(-6)).toEqual({ num: 33, den: 100 });
+  });
+
+  it("given stage -5, returns {num: 36, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    // Source: pokeemerald src/battle_script_commands.c sAccuracyStageRatios
+    // floor(100 * 36 / 100) = 36, not 37 from a simplified 3-based formula
+    expect(getAccuracyStageRatio(-5)).toEqual({ num: 36, den: 100 });
+  });
+
+  it("given stage -4, returns {num: 43, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(-4)).toEqual({ num: 43, den: 100 });
+  });
+
+  it("given stage -3, returns {num: 50, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(-3)).toEqual({ num: 50, den: 100 });
+  });
+
+  it("given stage -2, returns {num: 60, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(-2)).toEqual({ num: 60, den: 100 });
+  });
+
+  it("given stage -1, returns {num: 75, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(-1)).toEqual({ num: 75, den: 100 });
+  });
+
+  it("given stage 0, returns {num: 1, den: 1} per pokeemerald sAccuracyStageRatios", () => {
+    // Source: pokeemerald — {1, 1} for stage 0
+    expect(getAccuracyStageRatio(0)).toEqual({ num: 1, den: 1 });
+  });
+
+  it("given stage +1, returns {num: 133, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(1)).toEqual({ num: 133, den: 100 });
+  });
+
+  it("given stage +2, returns {num: 166, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(2)).toEqual({ num: 166, den: 100 });
+  });
+
+  it("given stage +3, returns {num: 2, den: 1} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(3)).toEqual({ num: 2, den: 1 });
+  });
+
+  it("given stage +4, returns {num: 233, den: 100} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(4)).toEqual({ num: 233, den: 100 });
+  });
+
+  it("given stage +5, returns {num: 133, den: 50} per pokeemerald sAccuracyStageRatios", () => {
+    // Source: pokeemerald — {133, 50} = 2.66x (not {266, 100})
+    // Source: pokecrystal — db 133, 50 for +5
+    expect(getAccuracyStageRatio(5)).toEqual({ num: 133, den: 50 });
+  });
+
+  it("given stage +6, returns {num: 3, den: 1} per pokeemerald sAccuracyStageRatios", () => {
+    expect(getAccuracyStageRatio(6)).toEqual({ num: 3, den: 1 });
+  });
+
+  it("given stage beyond +6, clamps to +6 result", () => {
+    expect(getAccuracyStageRatio(7)).toEqual({ num: 3, den: 1 });
+  });
+
+  it("given stage beyond -6, clamps to -6 result", () => {
+    expect(getAccuracyStageRatio(-7)).toEqual({ num: 33, den: 100 });
+  });
+
+  it("given a 100-accuracy move at stage -5, integer math yields 36 not 37", () => {
+    // Source: pokeemerald sAccuracyStageRatios — {36, 100}
+    // calc = moveAcc * dividend / divisor = 100 * 36 / 100 = 36
+    // The simplified (3+stage)/3 formula gives 100*3/8 = 37.5 -> floor 37 (wrong!)
+    const { num, den } = getAccuracyStageRatio(-5);
+    const result = Math.floor((100 * num) / den);
+    expect(result).toBe(36);
+  });
+
+  it("given a 100-accuracy move at stage -4, integer math yields 43 not 42", () => {
+    // Source: pokeemerald sAccuracyStageRatios — {43, 100}
+    // calc = 100 * 43 / 100 = 43
+    // The simplified formula gives 100*3/7 = 42.857 -> floor 42 (wrong!)
+    const { num, den } = getAccuracyStageRatio(-4);
+    const result = Math.floor((100 * num) / den);
+    expect(result).toBe(43);
   });
 });

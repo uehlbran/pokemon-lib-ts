@@ -979,10 +979,10 @@ describe("Gen 3 Damage Calculation", () => {
         chart,
       );
 
-      // Burn halves attack stat (100 -> 50), recalculate:
-      // Healthy: floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
-      // Burned:  floor(floor(22*80*50/100)/50)+2 = floor(880/50)+2 = 17+2 = 19
-      // Source: Manual derivation from pret/pokeemerald formula
+      // Burn halves damage AFTER base formula, BEFORE +2:
+      // Source: pret/pokeemerald src/pokemon.c:3262-3264 — "damage /= 2" after formula
+      // Healthy: base = floor(floor(22*80*100/100)/50) = 35, +2 = 37
+      // Burned:  base = floor(floor(22*80*100/100)/50) = 35, burn: floor(35/2) = 17, +2 = 19
       expect(healthyResult.damage).toBe(37);
       expect(burnedResult.damage).toBe(19);
     });
@@ -1213,12 +1213,13 @@ describe("Gen 3 Damage Calculation", () => {
       );
 
       // Derivation (level=50, spAtk=120, spDef=100, power=80, rng=100, no STAB — attacker is normal-type):
-      //   levelFactor = 22; baseDmg = floor(floor(22*80*120/100)/50)+2 = floor(2112/50)+2 = 42+2 = 44
-      //   clearResult:  no weather mod → random×1.0=44, no STAB=44, type neutral=44
-      //   rainResult:   water in rain → ×1.5 → floor(44*1.5)=66 → random×1.0=66, no STAB=66, type=66
-      // Source: pret/pokeemerald — rain boosts Water moves by 1.5x
+      //   levelFactor = 22; base = floor(floor(22*80*120/100)/50) = floor(2112/50) = 42
+      //   clearResult:  no weather → 42+2=44, random×1.0=44, no STAB=44, type neutral=44
+      //   rainResult:   water in rain → floor(42*1.5)=63, +2=65, random×1.0=65
+      // Weather is applied BEFORE +2 per pokeemerald src/pokemon.c:3330-3363 (inside CalculateBaseDamage)
+      // Source: pret/pokeemerald src/pokemon.c:3330-3343 — rain boosts Water damage before +2
       expect(clearResult.damage).toBe(44);
-      expect(rainResult.damage).toBe(66);
+      expect(rainResult.damage).toBe(65);
     });
 
     it("given Rain weather and Fire move, when calculating, then damage is reduced by 0.5x", () => {
@@ -1258,12 +1259,13 @@ describe("Gen 3 Damage Calculation", () => {
       );
 
       // Derivation (level=50, spAtk=120, spDef=100, power=80, rng=100, no STAB):
-      //   levelFactor = 22; baseDmg = floor(floor(22*80*120/100)/50)+2 = floor(2112/50)+2 = 42+2 = 44
-      //   clearResult:  no weather mod → 44
-      //   rainResult:   fire in rain → ×0.5 → floor(44*0.5) = 22
-      // Source: pret/pokeemerald — rain weakens Fire moves by 0.5x
+      //   levelFactor = 22; base = floor(floor(22*80*120/100)/50) = floor(2112/50) = 42
+      //   clearResult:  no weather → 42+2=44
+      //   rainResult:   fire in rain → floor(42*0.5)=21, +2=23
+      // Weather is applied BEFORE +2 per pokeemerald src/pokemon.c:3330-3363 (inside CalculateBaseDamage)
+      // Source: pret/pokeemerald src/pokemon.c:3338-3340 — rain weakens Fire damage before +2
       expect(clearResult.damage).toBe(44);
-      expect(rainResult.damage).toBe(22);
+      expect(rainResult.damage).toBe(23);
     });
 
     it("given Sun weather and Fire move, when calculating, then damage is boosted by 1.5x", () => {
@@ -1303,12 +1305,13 @@ describe("Gen 3 Damage Calculation", () => {
       );
 
       // Derivation (level=50, spAtk=120, spDef=100, power=80, rng=100, no STAB — attacker is normal-type):
-      //   levelFactor = 22; baseDmg = floor(floor(22*80*120/100)/50)+2 = 44
-      //   clearResult:  no weather → 44 (same as rain/water clear case)
-      //   sunResult:    fire in sun → ×1.5 → floor(44*1.5)=66 → 66
-      // Source: pret/pokeemerald — sun boosts Fire moves by 1.5x
+      //   levelFactor = 22; base = floor(floor(22*80*120/100)/50) = floor(2112/50) = 42
+      //   clearResult:  no weather → 42+2=44 (same as rain/water clear case)
+      //   sunResult:    fire in sun → floor(42*1.5)=63, +2=65
+      // Weather is applied BEFORE +2 per pokeemerald src/pokemon.c:3351-3363 (inside CalculateBaseDamage)
+      // Source: pret/pokeemerald src/pokemon.c:3352-3358 — sun boosts Fire damage before +2
       expect(clearResult.damage).toBe(44);
-      expect(sunResult.damage).toBe(66);
+      expect(sunResult.damage).toBe(65);
     });
   });
 

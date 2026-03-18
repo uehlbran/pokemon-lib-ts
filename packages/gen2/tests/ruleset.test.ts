@@ -220,21 +220,28 @@ describe("Gen2Ruleset", () => {
       expect(ruleset.getBattleGimmick()).toBeNull();
     });
 
-    it("should return correct end-of-turn order (Phase 2: between-turn effects)", () => {
+    it("should return correct end-of-turn order matching pokecrystal HandleBetweenTurnEffects", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm:250-296 HandleBetweenTurnEffects
+      // Phase 2 only — status-damage, leech-seed, nightmare, curse are Phase 1 (getPostAttackResidualOrder)
       // Arrange
       const ruleset = new Gen2Ruleset();
       // Act
       const order = ruleset.getEndOfTurnOrder();
-      // Assert: Phase 2 only — pret/pokecrystal engine/battle/core.asm HandleBetweenTurnEffects
-      // Note: status-damage, leech-seed, nightmare, curse are Phase 1 (getPostAttackResidualOrder)
+      // Assert: complete decomp order including previously-missing effects
       expect(order).toEqual([
         "future-attack",
         "weather-damage",
+        "weather-countdown",
         "bind",
         "perish-song",
         "leftovers",
+        "mystery-berry",
+        "defrost",
+        "safeguard-countdown",
         "screen-countdown",
-        "weather-countdown",
+        "stat-boosting-items",
+        "healing-items",
+        "encore-countdown",
       ]);
     });
 
@@ -271,32 +278,48 @@ describe("Gen2Ruleset", () => {
   // --- Freeze Thaw ---
 
   describe("Given freeze thaw check", () => {
-    it("should thaw ~9.8% of the time (25/256)", () => {
+    it("given a frozen Pokemon, when checkFreezeThaw is called, then returns false because Gen 2 thaws between turns not pre-move", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
+      // In Gen 2, thaw happens in HandleBetweenTurnEffects (end-of-turn phase),
+      // NOT before the move executes. checkFreezeThaw is called by the engine
+      // pre-move, so it must always return false for Gen 2.
+      // Arrange
+      const ruleset = new Gen2Ruleset();
+      const mockActive = createMockActive({ status: "freeze" });
+      const rng = new SeededRandom(42);
+
+      // Act
+      const result = ruleset.checkFreezeThaw(mockActive, rng);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it("given checkFreezeThaw called 1000 times with different seeds, when checking results, then all return false", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
+      // Triangulation: verify across many seeds that pre-move thaw never happens
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockActive = createMockActive({ status: "freeze" });
       let thawCount = 0;
-      const trials = 10000;
 
       // Act
-      for (let seed = 0; seed < trials; seed++) {
+      for (let seed = 0; seed < 1000; seed++) {
         const rng = new SeededRandom(seed);
         if (ruleset.checkFreezeThaw(mockActive, rng)) {
           thawCount++;
         }
       }
 
-      // Assert: ~9.8% thaw rate (25/256)
-      const thawRate = thawCount / trials;
-      expect(thawRate).toBeGreaterThan(0.06);
-      expect(thawRate).toBeLessThan(0.15);
+      // Assert: zero thaws pre-move
+      expect(thawCount).toBe(0);
     });
   });
 
   // --- Sleep Turns ---
 
   describe("Given sleep turns roll", () => {
-    it("should return 1-7 turns (Gen 2 Showdown-confirmed range)", () => {
+    it("should return 2-7 turns (Gen 2 pokecrystal range)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const results = new Set<number>();
@@ -306,14 +329,29 @@ describe("Gen2Ruleset", () => {
         const rng = new SeededRandom(seed);
         const turns = ruleset.rollSleepTurns(rng);
         results.add(turns);
-        expect(turns).toBeGreaterThanOrEqual(1);
+        // Source: pret/pokecrystal engine/battle/effect_commands.asm:3609-3622
+        // BattleRandom & SLP_MASK (0-7), rejects 0 and 7 (leaving 1-6), then inc a → 2-7
+        expect(turns).toBeGreaterThanOrEqual(2);
         expect(turns).toBeLessThanOrEqual(7);
       }
 
-      // Assert: should produce full range including 7
+      // Assert: should produce full range 2-7
       expect(results.size).toBeGreaterThan(1);
-      expect(results.has(1)).toBe(true);
+      expect(results.has(2)).toBe(true);
       expect(results.has(7)).toBe(true);
+      expect(results.has(1)).toBe(false);
+    });
+
+    it("given 10000 sleep rolls, when checking range bounds, then min is 2 and max is 7 (never 1, never 8+)", () => {
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:3608-3621
+      // Random() & SLP_MASK rejects 0 and 7, then inc a -> range 2-7
+      const ruleset = new Gen2Ruleset();
+      const rolls = Array.from({ length: 10000 }, (_, i) => {
+        const rng = new SeededRandom(i);
+        return ruleset.rollSleepTurns(rng);
+      });
+      expect(Math.min(...rolls)).toBe(2);
+      expect(Math.max(...rolls)).toBe(7);
     });
   });
 
@@ -2289,7 +2327,7 @@ describe("Gen2Ruleset", () => {
   // --- Switch Out ---
 
   describe("Given a Pokemon switching out", () => {
-    it("should remove toxic-counter volatile on switch-out", () => {
+    it("should remove toxic-counter volatile and revert badly-poisoned to poison on switch-out", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const pokemon = createMockActive({ status: "badly-poisoned" });
@@ -2302,57 +2340,65 @@ describe("Gen2Ruleset", () => {
       // Act
       ruleset.onSwitchOut(pokemon, state);
 
-      // Assert: toxic-counter is cleared but badly-poisoned status persists
+      // Assert: toxic-counter is cleared AND badly-poisoned reverts to regular poison
+      // Source: pret/pokecrystal core.asm:4078-4104 NewBattleMonStatus — zeros substatus bytes
+      // (SUBSTATUS_TOXIC is in SubStatus5). The main status byte (PSN) stays, but without
+      // SUBSTATUS_TOXIC the toxic counter is gone → regular poison on switch-back.
       expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
-      expect(pokemon.pokemon.status).toBe("badly-poisoned");
+      expect(pokemon.pokemon.status).toBe("poison");
     });
   });
 
   // --- Struggle Recoil ---
 
   describe("calculateStruggleRecoil", () => {
-    // Bug #100 fixed: Gen 2 Struggle recoil = floor(maxHp / 4), NOT floor(damageDealt / 2)
-    // Source: gen2-ground-truth.md §9 — "Recoil: 1/4 of the user's max HP — formula: floor(maxHp / 4)"
-    // Source: pret/pokecrystal — Struggle recoil uses user's max HP divided by 4, not damage dealt
+    // Gen 2 Struggle recoil = floor(damageDealt / 4)
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil
+    // The asm reads wCurDamage, shifts right twice (srl b; rr c; srl b; rr c = / 4)
+    // Note: gen2-ground-truth.md incorrectly claimed floor(maxHp/4); decomp overrides spec.
 
-    it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 25 (floor(100/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
-      // Assert: floor(200/4) = 50 (damage value ignored — recoil based on max HP)
-      expect(recoil).toBe(50);
+      // Assert: floor(100/4) = 25
+      // Source: pret/pokecrystal effect_commands.asm:5681-5692 — srl b twice on wCurDamage
+      expect(recoil).toBe(25);
     });
 
-    it("given attacker with 200 max HP and damage=1, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=1, when calculating recoil, then returns 1 (minimum)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
-      // Assert: floor(200/4) = 50 (NOT max(1, floor(1/2)) = 1 — old buggy formula)
-      expect(recoil).toBe(50);
+      // Assert: max(1, floor(1/4)) = max(1, 0) = 1
+      // Source: pret/pokecrystal effect_commands.asm:5691-5692 — inc c when b|c == 0
+      expect(recoil).toBe(1);
     });
 
-    it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 1 (minimum)", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
-      // Assert: floor(200/4) = 50 (NOT max(1, floor(0/2)) = 1 — old buggy formula)
-      expect(recoil).toBe(50);
+      // Assert: max(1, floor(0/4)) = max(1, 0) = 1
+      // Source: pret/pokecrystal effect_commands.asm:5691-5692
+      expect(recoil).toBe(1);
     });
 
-    it("given attacker with 200 max HP and damage=101, when calculating recoil, then returns 50 (floor(200/4))", () => {
+    it("given attacker with 200 max HP and damage=101, when calculating recoil, then returns 25 (floor(101/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
-      // Assert: floor(200/4) = 50 (damage value ignored)
-      expect(recoil).toBe(50);
+      // Assert: floor(101/4) = 25
+      // Source: pret/pokecrystal effect_commands.asm:5670-5729
+      expect(recoil).toBe(25);
     });
   });
 

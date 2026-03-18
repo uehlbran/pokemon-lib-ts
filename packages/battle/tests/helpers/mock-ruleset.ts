@@ -281,6 +281,20 @@ export class MockRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 8));
   }
 
+  processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const conf = active.volatileStatuses.get("confusion");
+    if (!conf) return false;
+    conf.turnsLeft--;
+    return conf.turnsLeft > 0;
+  }
+
+  processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
+    const bound = active.volatileStatuses.get("bound");
+    if (!bound) return false;
+    bound.turnsLeft--;
+    return bound.turnsLeft > 0;
+  }
+
   onSwitchOut(_pokemon: ActivePokemon, _state: BattleState): void {
     // No-op for mock
   }

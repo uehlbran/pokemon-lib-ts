@@ -73,8 +73,13 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       // The engine must apply the stat change based on the effect.
-      // AbilityEffectType "stat-change" exists in the type system, target "opponent" is valid.
-      const effect: AbilityEffect = { effectType: "stat-change", target: "opponent" };
+      // AbilityEffectType "stat-change" — target "opponent", lowers Attack by 1 stage.
+      const effect: AbilityEffect = {
+        effectType: "stat-change",
+        target: "opponent",
+        stat: "attack",
+        stages: -1,
+      };
       return {
         activated: true,
         effects: [effect],
@@ -87,9 +92,12 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
       // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-      // AbilityEffectType doesn't have "weather-set", so use "none" with a descriptive message.
-      // The engine currently ignores effects anyway — the message is the important part.
-      const effect: AbilityEffect = { effectType: "none", target: "field" };
+      const effect: AbilityEffect = {
+        effectType: "weather-set",
+        target: "field",
+        weather: "rain",
+        weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite, engine sentinel)
+      };
       return {
         activated: true,
         effects: [effect],
@@ -102,7 +110,12 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
       // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-      const effect: AbilityEffect = { effectType: "none", target: "field" };
+      const effect: AbilityEffect = {
+        effectType: "weather-set",
+        target: "field",
+        weather: "sun",
+        weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite, engine sentinel)
+      };
       return {
         activated: true,
         effects: [effect],
@@ -115,7 +128,12 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // NOTE: The engine currently discards AbilityResult from on-switch-in (BattleEngine.ts ~190).
       // Weather is not actually set until the engine processes AbilityResult.effects.
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-      const effect: AbilityEffect = { effectType: "none", target: "field" };
+      const effect: AbilityEffect = {
+        effectType: "weather-set",
+        target: "field",
+        weather: "sand",
+        weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite, engine sentinel)
+      };
       return {
         activated: true,
         effects: [effect],
