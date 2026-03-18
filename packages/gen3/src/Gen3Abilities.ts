@@ -96,7 +96,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
         effectType: "weather-set",
         target: "field",
         weather: "rain",
-        weatherTurns: 0, // Gen 3: permanent weather from abilities (0 = infinite)
+        weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite, engine sentinel)
       };
       return {
         activated: true,
@@ -114,7 +114,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
         effectType: "weather-set",
         target: "field",
         weather: "sun",
-        weatherTurns: 0,
+        weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite, engine sentinel)
       };
       return {
         activated: true,
@@ -132,7 +132,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
         effectType: "weather-set",
         target: "field",
         weather: "sand",
-        weatherTurns: 0,
+        weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite, engine sentinel)
       };
       return {
         activated: true,
