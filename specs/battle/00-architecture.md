@@ -1,6 +1,6 @@
 <!-- SPEC FRONT-MATTER -->
 <!-- status: IMPLEMENTED -->
-<!-- last-updated: 2026-03-15 -->
+<!-- last-updated: 2026-03-17 -->
 
 # Battle Library — Architecture
 
@@ -48,6 +48,8 @@ The engine is:
 
 Every generation implements this interface. It's the contract between the core engine and gen-specific behavior.
 
+> **Implementation Note:** While `GenerationRuleset` is presented here as a single large interface, the actual implementation uses Interface Segregation principles. The interface is composed of 15 sub-interfaces (TypeSystem, StatCalculator, DamageSystem, MoveExecutor, StatusHandler, WeatherSystem, TerrainSystem, HazardSystem, AbilitySystem, ItemSystem, GimmickSystem, ExpCalculator, SwitchValidator, and VolatileStatusHandler) internally. This composition maintains the interface contract for consumers while organizing code by concern. Consumers still interact with a single `GenerationRuleset` interface.
+
 ```typescript
 /**
  * A generation ruleset defines all the mechanics that vary between generations.
@@ -68,8 +70,8 @@ export interface GenerationRuleset {
   /** Type chart for this generation (may differ from modern) */
   getTypeChart(): TypeChart;
 
-  /** Valid types in this generation */
-  getValidTypes(): readonly PokemonType[];
+  /** Available types in this generation */
+  getAvailableTypes(): readonly PokemonType[];
 
   // --- Stat Calculation ---
 
@@ -501,7 +503,7 @@ export interface TerrainState {
 ### 3.2 Battle Side
 
 ```typescript
-export interface TrainerRef {
+export interface TrainerDataRef {
   readonly id: string;
   readonly displayName: string;
   readonly trainerClass: string;
@@ -512,7 +514,7 @@ export interface BattleSide {
   readonly index: 0 | 1;
 
   /** Trainer reference (null for wild battles) */
-  readonly trainer: TrainerRef | null;
+  readonly trainer: TrainerDataRef | null;
 
   /** Full team (up to 6) */
   team: PokemonInstance[];
@@ -777,7 +779,16 @@ export type BattleEvent =
   | { type: 'exp-gain'; side: 0 | 1; pokemon: string; amount: number }
   | { type: 'level-up'; side: 0 | 1; pokemon: string; newLevel: number }
   | { type: 'message'; text: string }
+  | { type: 'engine-warning'; message: string }
   | { type: 'battle-end'; winner: 0 | 1 | null };
+
+/**
+ * Event-specific details for hazard-set:
+ * type: 'hazard-set'
+ * side: 0 | 1 (which side the hazard is set on)
+ * hazard: EntryHazardType (Spikes, Stealth Rock, etc.)
+ * layers?: number (optional; number of layers for Spikes / Toxic Spikes, 1-3)
+ */
 
 /**
  * Snapshot of a Pokémon's public state — what the opponent can see.
@@ -878,7 +889,7 @@ export interface BattleConfig {
   generation: Generation;
   format: BattleFormat;
   teams: [PokemonInstance[], PokemonInstance[]];
-  trainers?: [TrainerRef | null, TrainerRef | null];
+  trainers?: [TrainerDataRef | null, TrainerDataRef | null];
   seed: number;
   isWildBattle?: boolean;
 }
@@ -980,7 +991,7 @@ export interface MoveEffectResult {
     /** The type of the move dealing this damage, for lastDamageType tracking */
     type?: PokemonType | null;
   } | null;
-  /** Cure the target's status AND reset their stat stages (e.g., Haze cures defender's status) */
+  /** Cure the specified pokemon's status (e.g., Haze clears both sides) */
   readonly statusCured?: { target: 'attacker' | 'defender' | 'both' } | null;
   /** Data for volatile status infliction (turnsLeft, extra data) */
   readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
@@ -1194,7 +1205,7 @@ Each gen package depends on `@pokemon-lib-ts/battle` (for `BaseRuleset` and `Gen
 | BaseRuleset abstract class | `packages/battle/src/ruleset/BaseRuleset.ts` | Gen 3+ defaults |
 | BattleEngine | `packages/battle/src/engine/BattleEngine.ts` | Constructor: (config, ruleset, dataManager) |
 | BattleState | `packages/battle/src/state/BattleState.ts` | State interface |
-| BattleSide, ActivePokemon, TrainerRef | `packages/battle/src/state/BattleSide.ts` | Side and active-slot interfaces |
+| BattleSide, ActivePokemon, TrainerDataRef | `packages/battle/src/state/BattleSide.ts` | Side and active-slot interfaces |
 | BattleEvent types | `packages/battle/src/events/BattleEvent.ts` | Named interface pattern |
 | BattleAction | `packages/battle/src/events/BattleAction.ts` | Discriminated union |
 | Context objects (DamageContext, MoveEffectResult, etc.) | `packages/battle/src/context/types.ts` | Ruleset method parameters |
@@ -1207,5 +1218,6 @@ Each gen package depends on `@pokemon-lib-ts/battle` (for `BaseRuleset` and `Gen
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1 | 2026-03-17 | Renamed TrainerRef → TrainerDataRef, added EngineWarningEvent to events list, documented hazard-set event layers field, renamed getValidTypes() → getAvailableTypes(), added Interface Segregation Pattern note explaining internal composition of GenerationRuleset, updated last-updated timestamp |
 | 2.0 | 2026-03-15 | Added ~20 missing GenerationRuleset methods, fixed constructor signature (ruleset param), fixed TrainerData→TrainerRef, added ActivePokemon combat tracking fields (lastDamageTaken, lastDamageType), fixed freeze thaw rate (20%→~9.8% for Gen 2), added MoveEffectResult fields, added Quick Start and Cross-Reference, updated file structure to match actual layout |
 | 1.0 | 2024 | Initial battle architecture spec |

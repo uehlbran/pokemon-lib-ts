@@ -161,7 +161,7 @@ Known-correct values for testing (verified against Bulbapedia/Showdown):
  *
  * @returns 0 (immune), 0.5 (resisted), 1 (neutral), or 2 (super effective)
  */
-export function getTypeFactor(
+export function getTypeMultiplier(
   attackType: PokemonType,
   defendType: PokemonType,
   chart: TypeChart
@@ -186,7 +186,7 @@ export function getTypeEffectiveness(
 ): number {
   let multiplier = 1;
   for (const defType of defenderTypes) {
-    multiplier *= getTypeFactor(attackType, defType, chart);
+    multiplier *= getTypeMultiplier(attackType, defType, chart);
   }
   return multiplier;
 }
@@ -335,7 +335,7 @@ export function getExpToNextLevel(group: ExperienceGroup, currentLevel: number):
  * Calculate experience gained from defeating a Pokémon.
  *
  * Gen 5+ "Scaled" formula:
- *   EXP = (b * L_d / 5) * (1 / s) * ((2 * L_d + 10)^2.5 / (L_d + L_p + 10)^2.5) + 1) * t * e * p
+ *   EXP = (b * L_d / 5) * (1 / s) * ((2 * L_d + 10)^2.5 / (L_d + L_p + 10)^2.5) + 1) * t * e
  *
  * Where:
  *   b = base EXP yield of defeated species
@@ -344,7 +344,6 @@ export function getExpToNextLevel(group: ExperienceGroup, currentLevel: number):
  *   s = number of Pokémon that participated (EXP Share not counted here)
  *   t = 1.5 if trainer battle, 1.0 if wild
  *   e = 1.5 if holding Lucky Egg, 1.0 otherwise
- *   p = 1.0 (affection bonus in Gen 6+, EXP Charm in Gen 9)
  *
  * @param baseExpYield - Defeated species' base EXP yield
  * @param defeatedLevel - Level of the defeated Pokémon
@@ -402,6 +401,10 @@ In-battle stat stages range from -6 to +6. Each stage applies a multiplier to th
 
 ### 4.1 Regular Stats (Atk, Def, SpAtk, SpDef, Speed)
 
+**Integer ratio lookup tables** are exposed so gen packages can apply `floor(stat * numerator / denominator)` without floating-point precision issues. The formula `(2+stage)/2` and `2/(2-stage)` is mathematically equivalent but produces floating-point values.
+
+> **Source**: Added in fix/deep-accuracy-audit (2026-03-18). See ERRATA.md §36E-1.
+
 ```typescript
 /**
  * Stat stage multiplier table.
@@ -410,22 +413,40 @@ In-battle stat stages range from -6 to +6. Each stage applies a multiplier to th
  *
  * Formula: multiplier = max(2, 2 + stage) / max(2, 2 - stage)
  *
- * | Stage | Multiplier |
- * |-------|-----------|
- * | -6    | 2/8 = 0.25 |
- * | -5    | 2/7 ≈ 0.29 |
- * | -4    | 2/6 ≈ 0.33 |
- * | -3    | 2/5 = 0.40 |
- * | -2    | 2/4 = 0.50 |
- * | -1    | 2/3 ≈ 0.67 |
- * |  0    | 2/2 = 1.00 |
- * | +1    | 3/2 = 1.50 |
- * | +2    | 4/2 = 2.00 |
- * | +3    | 5/2 = 2.50 |
- * | +4    | 6/2 = 3.00 |
- * | +5    | 7/2 = 3.50 |
- * | +6    | 8/2 = 4.00 |
+ * | Stage | Num | Den | Multiplier  |
+ * |-------|-----|-----|-------------|
+ * | -6    |  2  |  8  | 0.25        |
+ * | -5    |  2  |  7  | ≈ 0.286     |
+ * | -4    |  2  |  6  | ≈ 0.333     |
+ * | -3    |  2  |  5  | 0.40        |
+ * | -2    |  2  |  4  | 0.50        |
+ * | -1    |  2  |  3  | ≈ 0.667     |
+ * |  0    |  2  |  2  | 1.00        |
+ * | +1    |  3  |  2  | 1.50        |
+ * | +2    |  4  |  2  | 2.00        |
+ * | +3    |  5  |  2  | 2.50        |
+ * | +4    |  6  |  2  | 3.00        |
+ * | +5    |  7  |  2  | 3.50        |
+ * | +6    |  8  |  2  | 4.00        |
  */
+
+/** Numerators for stat stage lookup (index 0 = stage -6, index 6 = stage 0, index 12 = stage +6) */
+export const STAT_STAGE_NUMERATORS: readonly number[] = [
+  2, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8
+] as const;
+
+/** Denominators for stat stage lookup (index 0 = stage -6, index 6 = stage 0, index 12 = stage +6) */
+export const STAT_STAGE_DENOMINATORS: readonly number[] = [
+  8, 7, 6, 5, 4, 3, 2, 2, 2, 2, 2, 2, 2
+] as const;
+
+/** Apply a stat stage as integer arithmetic: floor(stat * num / den) */
+export function applyStatStageInteger(stat: number, stage: number): number {
+  const clamped = Math.max(-6, Math.min(6, stage));
+  const index = clamped + 6;
+  return Math.floor(stat * STAT_STAGE_NUMERATORS[index]! / STAT_STAGE_DENOMINATORS[index]!);
+}
+
 export function getStatStageMultiplier(stage: number): number {
   const clamped = Math.max(-6, Math.min(6, stage));
   if (clamped >= 0) {
@@ -437,44 +458,61 @@ export function getStatStageMultiplier(stage: number): number {
 
 ### 4.2 Accuracy and Evasion
 
+**Gen 3+ (pokeemerald `sAccuracyStageRatios`)**: The accuracy stage table uses a 3-based system, but the exact values come from an explicit lookup table in the decomp, not the pure formula `(3+stage)/3`. The formula is a close approximation, but the lookup table is authoritative for Gen 3 implementation.
+
+> **Source**: pokeemerald `src/battle_util.c` `sAccuracyStageRatios`. See ERRATA.md §36C-5. The Gen 3+ table below is the canonical source for accuracy stage ratios in packages/gen3 and later.
+
+**Gen 1**: Accuracy stages use the same 2-based table as regular stat stages (`(2+stage)/2`), NOT the 3-based table. Two sequential floor operations are applied (see specs/battle/02-gen1.md §8).
+
+**Gen 2**: Uses a different lookup table from pokecrystal `data/moves/accuracy_stages.asm` with byte-pair ratios. See ERRATA.md §36B-3.
+
 ```typescript
 /**
- * Accuracy/Evasion stage multiplier.
- * Uses a different scale than regular stats (Gen 3+).
+ * Accuracy/Evasion stage multiplier (Gen 3+ default).
+ * Uses the pokeemerald sAccuracyStageRatios lookup table values.
  *
- * | Stage | Multiplier |
- * |-------|-----------|
- * | -6    | 3/9 = 0.33 |
- * | -5    | 3/8 = 0.375 |
- * | -4    | 3/7 ≈ 0.43 |
- * | -3    | 3/6 = 0.50 |
- * | -2    | 3/5 = 0.60 |
- * | -1    | 3/4 = 0.75 |
- * |  0    | 3/3 = 1.00 |
- * | +1    | 4/3 ≈ 1.33 |
- * | +2    | 5/3 ≈ 1.67 |
- * | +3    | 6/3 = 2.00 |
- * | +4    | 7/3 ≈ 2.33 |
- * | +5    | 8/3 ≈ 2.67 |
- * | +6    | 9/3 = 3.00 |
+ * | Stage | Num/Den   | Decimal |
+ * |-------|-----------|---------|
+ * | -6    | 33/100    | 0.330   |
+ * | -5    | 36/100    | 0.360   |
+ * | -4    | 43/100    | 0.430   |
+ * | -3    | 50/100    | 0.500   |
+ * | -2    | 60/100    | 0.600   |
+ * | -1    | 75/100    | 0.750   |
+ * |  0    | 100/100   | 1.000   |
+ * | +1    | 133/100   | 1.330   |
+ * | +2    | 166/100   | 1.660   |
+ * | +3    | 200/100   | 2.000   |
+ * | +4    | 233/100   | 2.330   |
+ * | +5    | 266/100   | 2.660   |
+ * | +6    | 300/100   | 3.000   |
+ *
+ * Note: The formula (3+stage)/3 approximates these values but differs for
+ * stages ±1, ±2, ±4, ±5. Use the lookup table for Gen 3+ accuracy calculations.
  */
+
+/** Numerators for accuracy stage lookup (index 0 = stage -6, index 6 = stage 0, index 12 = stage +6) */
+export const ACCURACY_STAGE_NUMERATORS: readonly number[] = [
+  33, 36, 43, 50, 60, 75, 100, 133, 166, 200, 233, 266, 300
+] as const;
+
+/** All accuracy/evasion use denominator 100 in Gen 3+ */
+export const ACCURACY_STAGE_DENOMINATOR = 100;
+
 export function getAccuracyEvasionMultiplier(stage: number): number {
   const clamped = Math.max(-6, Math.min(6, stage));
-  if (clamped >= 0) {
-    return (3 + clamped) / 3;
-  }
-  return 3 / (3 - clamped);
+  const index = clamped + 6; // 0-12
+  return ACCURACY_STAGE_NUMERATORS[index]! / ACCURACY_STAGE_DENOMINATOR;
 }
 
 /**
- * Calculate the effective accuracy of a move in battle.
+ * Calculate the effective accuracy of a move in battle (Gen 3+ default).
  *
- * The actual implementation uses a net-stage approach:
- *   netStage = clamp(accuracyStage - evasionStage, -6, 6)
- *   effectiveAccuracy = moveAccuracy * getAccuracyEvasionMultiplier(netStage)
+ * Uses lookup table ratios and floor at each step.
+ * netStage = clamp(accuracyStage - evasionStage, -6, 6)
  *
- * This matches Showdown's implementation and avoids floating-point issues
- * from dividing two stage multipliers.
+ * Gen 1 uses a different formula — see specs/battle/02-gen1.md §8.
+ * Gen 2 uses a different lookup table — see ERRATA.md §36B-3.
  *
  * If move accuracy is null, the move never misses.
  */
@@ -790,21 +828,21 @@ These are shared building blocks used by gen-specific damage calculators in the 
 
 ```typescript
 /**
- * Apply a modifier to a value with integer truncation.
+ * Apply a damage modifier to a value with integer truncation.
  * This is the standard way damage modifiers are applied in Pokémon.
  */
-export function applyModifier(value: number, modifier: number): number {
+export function applyDamageModifier(value: number, modifier: number): number {
   return Math.floor(value * modifier);
 }
 
 /**
- * Apply a chain of modifiers to a value.
+ * Apply a chain of damage modifiers to a value.
  * Each modifier is applied with floor truncation in sequence.
  */
-export function applyModifierChain(value: number, modifiers: readonly number[]): number {
+export function applyDamageModifierChain(value: number, modifiers: readonly number[]): number {
   let result = value;
   for (const mod of modifiers) {
-    result = applyModifier(result, mod);
+    result = applyDamageModifier(result, mod);
   }
   return result;
 }
@@ -830,7 +868,7 @@ export function getStabModifier(
  * Sun:   Fire moves × 1.5, Water moves × 0.5
  * Other: No damage modification (sand/snow damage is applied at turn end)
  */
-export function getWeatherModifier(
+export function getWeatherDamageModifier(
   moveType: PokemonType,
   weather: WeatherType | null,
 ): number {
@@ -962,10 +1000,12 @@ TypeScript, Vitest, Biome
 | calculateHp, calculateStat | `packages/core/src/logic/statCalc.ts` (verify filename) | Gen 3+ formulas |
 | calculateAllStats | `packages/core/src/logic/statCalc.ts` (verify filename) | Calls above |
 | getNatureModifier | `packages/core/src/logic/statCalc.ts` (verify filename) | 0.9/1.0/1.1 |
-| getTypeEffectiveness | `packages/core/src/logic/typeChart.ts` (verify filename) | Chart lookup |
+| getTypeMultiplier, getTypeEffectiveness | `packages/core/src/logic/typeChart.ts` (verify filename) | Chart lookup |
 | GEN6_TYPE_CHART | `packages/core/src/logic/typeChart.ts` (verify filename) | Constant, not function |
 | getExpForLevel | `packages/core/src/logic/experience.ts` (verify filename) | EXP curves |
 | CRIT_RATES_GEN2, CRIT_RATES_GEN3_5 | `packages/core/src/logic/critCalc.ts` (verify filename) | Split constants |
+| applyDamageModifier, applyDamageModifierChain | `packages/core/src/logic/damageUtils.ts` | Modifier application |
+| getWeatherDamageModifier | `packages/core/src/logic/damageUtils.ts` | Weather modifier |
 | SeededRandom | `packages/core/src/prng/SeededRandom.ts` | Mulberry32 |
 
 > **Note**: Verify exact filenames by checking `packages/core/src/logic/`.
@@ -976,5 +1016,7 @@ TypeScript, Vitest, Biome
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.4 | 2026-03-18 | Deep accuracy audit (fix/deep-accuracy-audit): Added STAT_STAGE_NUMERATORS/DENOMINATORS integer lookup tables and applyStatStageInteger(). Replaced accuracy stage formula with ACCURACY_STAGE_NUMERATORS lookup from pokeemerald sAccuracyStageRatios; added gen-specific notes (Gen 1 uses 2-based table; Gen 2 uses pokecrystal table). See ERRATA.md §36E. |
+| 1.3 | 2026-03-17 | Renamed getTypeFactor→getTypeMultiplier; removed p parameter from EXP gain formula; renamed applyModifier→applyDamageModifier, applyModifierChain→applyDamageModifierChain, getWeatherModifier→getWeatherDamageModifier; updated Cross-Reference |
 | 1.2 | 2026-03-15 | Fixed stat verification table (nature-adjusted values), documented net-stage accuracy formula, split CRIT_RATES_GEN2_5 into gen-specific constants, renamed getDefaultTypeChart→GEN6_TYPE_CHART, added guards documentation, added Cross-Reference |
 | 1.0 | 2024 | Initial shared logic spec |

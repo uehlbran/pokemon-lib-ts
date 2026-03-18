@@ -1,6 +1,6 @@
 <!-- SPEC FRONT-MATTER -->
 <!-- status: IMPLEMENTED -->
-<!-- last-updated: 2026-03-15 -->
+<!-- last-updated: 2026-03-17 -->
 
 # Battle Library — Core Engine
 
@@ -24,16 +24,18 @@
 
 **End-of-turn delegation**: `ruleset.getEndOfTurnOrder()` returns an array like `["status-damage", "leech-seed", "weather"]`. The engine iterates this array in order.
 
-**Known delegation bugs** (flagged for separate fix):
-- Leech Seed drain: hardcoded to `maxHp/8` at ~line 1588; Gen 1 should be `maxHp/16`. Should call `ruleset.calculateLeechSeedDrain()`.
-- Curse damage: hardcoded to `maxHp/4` at ~line 1658; should call `ruleset.calculateCurseDamage()`.
-- Nightmare damage: hardcoded to `maxHp/4` at ~line 1681; should call `ruleset.calculateNightmareDamage()`.
+**Known delegation bugs** (FIXED in latest code):
+- Leech Seed drain: FIXED — now calls `ruleset.calculateLeechSeedDrain(active)` at ~line 1933.
+- Curse damage: FIXED — now calls `ruleset.calculateCurseDamage(active)` at ~line 2008.
+- Nightmare damage: FIXED — now calls `ruleset.calculateNightmareDamage(active)` at ~line 2035.
 
 ---
 
 ## 1. BattleEngine Implementation
 
 ### 1.1 Construction & Initialization
+
+**Factory method**: Use `BattleEngine.fromGeneration(gen, config, dataManager)` to construct an engine with a generation-specific ruleset automatically resolved.
 
 ```typescript
 export class BattleEngine implements BattleEventEmitter {
@@ -43,9 +45,10 @@ export class BattleEngine implements BattleEventEmitter {
   private listeners: Set<BattleEventListener> = new Set();
   private eventLog: BattleEvent[] = [];
   private pendingActions: Map<0 | 1, BattleAction> = new Map();
+  private faintedPokemonThisTurn: Set<string> = new Set(); // Prevents duplicate faint events within a turn
 
-  constructor(config: BattleConfig, dataManager: DataManager) {
-    this.ruleset = generations.get(config.generation);
+  constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
+    this.ruleset = ruleset;
     this.dataManager = dataManager;
 
     this.state = {
@@ -71,6 +74,10 @@ export class BattleEngine implements BattleEventEmitter {
   }
 }
 ```
+
+**Field Documentation**:
+
+- `faintedPokemonThisTurn: Set<string>` — Tracks which Pokémon have already emitted a `faint` event during the current turn. This prevents duplicate faint events when `checkMidTurnFaints()` is called multiple times per turn (e.g., after Pursuit execution and again after the main action). Each entry is a key of format `${sideIndex}-${pokemonUid}`. The set is cleared at turn start in `resolveTurn()` (line ~581).
 
 ### 1.2 Starting the Battle
 
@@ -131,6 +138,9 @@ private resolveTurn(): void {
   this.transitionTo('TURN_RESOLVE');
 
   // Sort actions by priority → speed → random
+  // NOTE: Pursuit pre-switch handling is done here before turn order resolution.
+  // If a switch action is selected and opponent has Pursuit available, Pursuit executes first.
+  // See implementation code lines 554-592 for Pursuit interception logic.
   const orderedActions = this.ruleset.resolveTurnOrder(
     actions,
     this.state,
@@ -212,15 +222,8 @@ private executeMove(action: MoveAction, actor: ActivePokemon): void {
   if (action.terastallize) this.applyTerastallize(actor);
 
   // --- Pre-move ability (Protean, Libero) ---
-  if (this.ruleset.hasAbilities()) {
-    this.ruleset.applyAbility('on-before-move', {
-      pokemon: actor,
-      state: this.state,
-      rng: this.state.rng,
-      trigger: 'on-before-move',
-      move: moveData,
-    });
-  }
+  // NOTE: NOT YET IMPLEMENTED. on-before-move handling for type-change abilities
+  // is pending implementation in the ruleset. This check is a placeholder.
 
   // --- Pre-move checks: Can the Pokémon actually move? ---
   if (!this.canExecuteMove(actor, moveData)) return;
@@ -321,17 +324,8 @@ private executeMove(action: MoveAction, actor: ActivePokemon): void {
   this.processEffectResult(effectResult, actor, defender);
 
   // --- Post-move: Contact ability triggers ---
-  if (moveData.flags.contact && this.ruleset.hasAbilities()) {
-    this.ruleset.applyAbility('on-after-move-hit', {
-      pokemon: defender,
-      opponent: actor,
-      state: this.state,
-      rng: this.state.rng,
-      trigger: 'on-after-move-hit',
-      move: moveData,
-      damage,
-    });
-  }
+  // NOTE: NOT YET IMPLEMENTED. on-after-move-hit handling for contact abilities
+  // (Static, Poison Powder on contact, etc.) is pending implementation in the ruleset.
 
   // --- Post-move: Held item triggers (Life Orb recoil, etc.) ---
   if (this.ruleset.hasHeldItems() && actor.pokemon.heldItem) {
@@ -412,7 +406,7 @@ private canExecuteMove(actor: ActivePokemon, move: MoveData): boolean {
       this.emit({ type: 'message', text: `${this.getName(actor)} is confused!` });
       if (this.ruleset.rollConfusionSelfHit(this.state.rng)) {
         // Self-hit: damage formula delegated to ruleset
-        const selfDamage = this.ruleset.calculateConfusionDamage(actor);
+        const selfDamage = this.ruleset.calculateConfusionDamage(actor, this.state, this.state.rng);
         actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
         this.emit({ type: 'message', text: "It hurt itself in its confusion!" });
         this.emit({
@@ -497,7 +491,7 @@ private processEndOfTurn(): void {
         this.processBind();
         break;
       case 'leftovers':
-        this.processLeftovers();
+        this.processHeldItemEndOfTurn();
         break;
       case 'black-sludge':
         this.processBlackSludge();
@@ -572,16 +566,33 @@ Example arrays:
 - Gen 2: `["weather-damage", "status-damage", "leech-seed", "future-sight"]`
 - Gen 3+: `["weather-damage", "status-damage", "leech-seed", "nightmare", "curse", "future-sight", "wish", "weather-end"]`
 
-Valid effect identifiers include:
+### Currently Implemented Effects
 - `"weather-damage"` — Sandstorm/Hail chip damage
 - `"status-damage"` — Burn/Poison/Toxic damage
 - `"leech-seed"` — Leech Seed drain
 - `"nightmare"` — Nightmare damage (1/4 max HP if asleep)
 - `"curse"` — Curse damage (Ghost-type curse, 1/4 max HP)
+- `"bind"` — Partial trapping damage
 - `"weather-end"` — Decrement weather counter, clear if expired
-- `"future-sight"` — Execute Future Sight/Doom Desire hits
-- `"wish"` — Heal from Wish
-- `"perish-song"` — Decrement Perish Song counter, faint if 0
+- `"terrain"` — Terrain duration countdown
+- `"status"` (poison/burn/freeze) — Poison/Burn status damage
+
+### NOT YET IMPLEMENTED Effects
+The following effect identifiers are listed in the switch statement but have placeholder implementations only:
+- `"black-sludge"` — Black Sludge held item heal for Poison types
+- `"aqua-ring"` — Aqua Ring HP recovery
+- `"ingrain"` — Ingrain root HP recovery
+- `"grassy-terrain-heal"` — Grassy Terrain HP recovery
+- `"wish"` — Wish delayed heal (stub only)
+- `"future-attack"` — Future Sight/Doom Desire hit execution (stub only)
+- `"speed-boost"` — Speed Boost ability stat increase
+- `"moody"` — Moody ability random stat changes
+- `"bad-dreams"` — Bad Dreams ability damage
+- `"harvest"` — Harvest ability berry restoration
+- `"pickup"` — Pickup ability item finding
+- `"poison-heal"` — Poison Heal ability HP recovery
+
+These effects need to be properly implemented in future versions.
 
 ---
 
@@ -596,29 +607,24 @@ private executeSwitch(action: SwitchAction): void {
 
   if (!outgoing) return;
 
-  // --- On-switch-out ability ---
-  if (this.ruleset.hasAbilities()) {
-    this.ruleset.applyAbility('on-switch-out', {
-      pokemon: outgoing,
-      state: this.state,
-      rng: this.state.rng,
-      trigger: 'on-switch-out',
-    });
-  }
-
   this.emit({
     type: 'switch-out',
     side: action.side,
     pokemon: this.createSnapshot(outgoing),
   });
 
-  // Clear volatile statuses
+  // --- Trigger on-switch-out effects through ruleset ---
+  this.ruleset.onSwitchOut(outgoing, this.state);
+
+  // Clear volatile statuses and reset tracking fields
   outgoing.volatileStatuses.clear();
   outgoing.statStages = this.createDefaultStatStages();
   outgoing.consecutiveProtects = 0;
   outgoing.turnsOnField = 0;
   outgoing.movedThisTurn = false;
   outgoing.lastMoveUsed = null;
+  outgoing.lastDamageTaken = 0; // Reset damage tracking
+  outgoing.lastDamageType = null; // Reset damage type tracking
   outgoing.isMega = false; // Mega is permanent per battle, but tracking resets
   if (outgoing.isDynamaxed) {
     outgoing.isDynamaxed = false;
@@ -666,16 +672,9 @@ private sendOut(side: BattleSide, teamSlot: number): void {
     this.ruleset.applyEntryHazards(active, side);
   }
 
-  // Apply on-switch-in ability
-  if (this.ruleset.hasAbilities()) {
-    this.ruleset.applyAbility('on-switch-in', {
-      pokemon: active,
-      opponent: this.getOpponentActive(side.index),
-      state: this.state,
-      rng: this.state.rng,
-      trigger: 'on-switch-in',
-    });
-  }
+  // NOTE: Entry abilities (Intimidate, weather setters, terrain setters) are only triggered
+  // in start() for leads, NOT in sendOut() for mid-battle switches. The ruleset owns this logic
+  // and controls whether entry abilities apply on mid-battle switches.
 }
 ```
 
@@ -692,48 +691,15 @@ private checkBattleEnd(): boolean {
       this.state.ended = true;
       this.state.winner = winner as 0 | 1;
 
-      // Calculate EXP gains for the winning side
-      this.processExpGains(winner as 0 | 1);
+      // NOTE: EXP gain calculation is NOT YET IMPLEMENTED.
+      // The processExpGains() method below is aspirational and should not be called.
+      // EXP gain logic will be delegated to the ruleset once implemented.
 
       this.emit({ type: 'battle-end', winner: winner as 0 | 1 });
       return true;
     }
   }
   return false;
-}
-
-private processExpGains(winningSide: 0 | 1): void {
-  const winner = this.state.sides[winningSide];
-  const loser = this.state.sides[winningSide === 0 ? 1 : 0];
-  const isTrainer = loser.trainer !== null;
-
-  // Each fainted Pokémon on the losing side grants EXP to participants
-  for (const defeated of loser.team) {
-    const species = this.dataManager.getSpecies(defeated.speciesId);
-
-    // For simplicity, all alive Pokémon on the winning side share EXP
-    const participants = winner.team.filter(p => p.currentHp > 0);
-
-    for (const participant of participants) {
-      const exp = this.ruleset.calculateExpGain({
-        defeatedSpecies: species,
-        defeatedLevel: defeated.level,
-        participantLevel: participant.level,
-        isTrainerBattle: isTrainer,
-        participantCount: participants.length,
-        hasLuckyEgg: participant.heldItem === 'lucky-egg',
-        hasExpShare: false, // Simplified
-        affectionBonus: false,
-      });
-
-      this.emit({
-        type: 'exp-gain',
-        side: winningSide,
-        pokemon: participant.nickname ?? species.displayName,
-        amount: exp,
-      });
-    }
-  }
 }
 ```
 
@@ -746,6 +712,8 @@ private processExpGains(winningSide: 0 | 1): void {
 > `BattleState` is mutated in-place during turn resolution. Events are emitted *after* state mutations,
 > as notifications for UI and replay consumers. Do not reconstruct game state from events — query
 > `BattleState` directly.
+
+**Note**: `EngineWarningEvent` exists for alerting consumers to implementation gaps (e.g., "NOT YET IMPLEMENTED feature X"). See source code for EngineWarningEvent type definition and emission points.
 
 ## 7. Serialization
 
@@ -816,8 +784,7 @@ export function createTestBattle(options: {
     ...p,
   })) as PokemonInstance[];
 
-  return new BattleEngine({
-    generation: gen,
+  return BattleEngine.fromGeneration(gen, {
     format: 'singles',
     teams: [team1, team2],
     seed,
@@ -913,12 +880,13 @@ When a Pokémon has 0 PP remaining in all move slots, it uses Struggle:
 - Always hits (no accuracy check)
 - Base power: 50
 - Type: Normal (Gen 1-3), Typeless (Gen 4+)
-- Recoil: 1/4 of damage dealt (Gen 4+), 1/2 of user's max HP (Gen 1-3)
+- Damage: Delegated to `ruleset.calculateStruggleDamage(actor, defender, state)` — NOT hardcoded.
+- Recoil: Delegated to `ruleset.calculateStruggleRecoil(actor, actualDamage, state)` — Gen 1-2: 1/2 max HP, Gen 4+: 1/4 max HP.
 - Cannot be blocked by Protect
 - Cannot be reflected by Magic Coat
 - PP loss: None (Struggle costs no PP)
 
-> **Delegation**: `ruleset.getStruggleRecoilFraction()` returns the recoil fraction for this gen.
+> **Implementation note**: Struggle damage calculation is now fully delegated to the ruleset as of v3.1. The `executeStruggle()` method (line ~989) calls `this.ruleset.calculateStruggleDamage(actor, defender, this.state)` to determine damage. This allows gens to customize Struggle behavior (e.g., type immunity in Gen 1).
 
 > **Cross-ref**: `BattleEngine.ts` `executeStruggle()` method (search for `executeStruggle`).
 
@@ -937,7 +905,7 @@ Double-hit moves (Bonemerang, Double Kick, etc.):
 - Each hit is checked for accuracy independently (Gen 1-4)
 - Gen 5+: second hit cannot miss if first hit landed
 
-> **Cross-ref**: `BattleEngine.ts` `executeMultiHitMove()` (search for this method)
+> **Cross-ref**: Multi-hit moves are handled within the main `executeMove()` method; there is no separate `executeMultiHitMove()` method. Hit count calculation and iteration is delegated to the ruleset.
 
 ---
 
@@ -1002,15 +970,16 @@ The `'bound'` volatile status is set on the target. End-of-turn processing is ha
 
 | Concept | Source File | Approximate Location |
 |---------|-------------|---------------------|
-| Turn loop | `packages/battle/src/engine/BattleEngine.ts` | `executeTurn()` method |
-| Turn order resolution | `packages/battle/src/engine/BattleEngine.ts` | `resolveTurnOrder()` |
-| Accuracy check | `packages/battle/src/engine/BattleEngine.ts` | `doesMoveHit()` |
-| Damage calculation | `packages/battle/src/engine/BattleEngine.ts` | delegates to `ruleset.calculateDamage()` |
-| End-of-turn loop | `packages/battle/src/engine/BattleEngine.ts` | search `getEndOfTurnOrder` |
-| Leech Seed (BUG) | `packages/battle/src/engine/BattleEngine.ts` | ~line 1588, hardcoded maxHp/8 |
-| Curse (BUG) | `packages/battle/src/engine/BattleEngine.ts` | ~line 1658, hardcoded maxHp/4 |
-| Nightmare (BUG) | `packages/battle/src/engine/BattleEngine.ts` | ~line 1681, hardcoded maxHp/4 |
-| Struggle | `packages/battle/src/engine/BattleEngine.ts` | `executeStruggle()` |
+| Turn loop | `packages/battle/src/engine/BattleEngine.ts` | `resolveTurn()` method ~line 553 |
+| Turn order resolution | `packages/battle/src/engine/BattleEngine.ts` | `ruleset.resolveTurnOrder()` ~line 633 |
+| Accuracy check | `packages/battle/src/engine/BattleEngine.ts` | `ruleset.doesMoveHit()` ~line 721 |
+| Damage calculation | `packages/battle/src/engine/BattleEngine.ts` | delegates to `ruleset.calculateDamage()` ~line 749 |
+| Mid-turn faint check | `packages/battle/src/engine/BattleEngine.ts` | `checkMidTurnFaints()` ~line 1770 |
+| End-of-turn loop | `packages/battle/src/engine/BattleEngine.ts` | `processEndOfTurn()` ~line 1531 |
+| Leech Seed (FIXED) | `packages/battle/src/engine/BattleEngine.ts` | `processLeechSeedForSide()` ~line 1933, delegates to `ruleset.calculateLeechSeedDrain()` |
+| Curse (FIXED) | `packages/battle/src/engine/BattleEngine.ts` | `processCurseForSide()` ~line 2008, delegates to `ruleset.calculateCurseDamage()` |
+| Nightmare (FIXED) | `packages/battle/src/engine/BattleEngine.ts` | `processNightmareForSide()` ~line 2035, delegates to `ruleset.calculateNightmareDamage()` |
+| Struggle | `packages/battle/src/engine/BattleEngine.ts` | `executeStruggle()` ~line 989, delegates to `ruleset.calculateStruggleDamage()` |
 | Pursuit intercept | `packages/battle/src/engine/BattleEngine.ts` | search `"pursuit"` |
 | Protect success roll | `packages/battle/src/engine/BattleEngine.ts` | search `rollProtectSuccess` |
 | Partial trapping damage | `packages/battle/src/engine/BattleEngine.ts` | `processBindDamage()` |
@@ -1021,5 +990,7 @@ The `'bound'` volatile status is set on the target. End-of-turn processing is ha
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.1 | 2026-03-17 | **Delegation fixes applied**: (1) Struggle damage now fully delegated to `ruleset.calculateStruggleDamage(actor, defender, state)` (was noted as hardcoded). (2) Leech Seed drain fixed — now calls `ruleset.calculateLeechSeedDrain(active)` at ~line 1933. (3) Curse damage fixed — now calls `ruleset.calculateCurseDamage(active)` at ~line 2008. (4) Nightmare damage fixed — now calls `ruleset.calculateNightmareDamage(active)` at ~line 2035. (5) Added documentation for new `faintedPokemonThisTurn: Set<string>` field to prevent duplicate faint events per turn. (6) Updated Known Delegation Bugs section from "BUG" to "FIXED in latest code". (7) Updated section 8 (Struggle) to reflect actual delegation behavior. (8) Updated Implementation Cross-Reference table with correct line numbers and delegation call details. |
+| 3.0 | 2026-03-17 | **Major corrections applied**: (1) Constructor signature changed to 3-arg with ruleset parameter; added fromGeneration() factory method reference. (2) Removed applyAbility('on-switch-in') from sendOut(); added note that entry abilities are only triggered in start() for leads. (3) Marked on-before-move abilities (Protean/Libero) as NOT YET IMPLEMENTED. (4) Marked on-after-move-hit contact abilities as NOT YET IMPLEMENTED. (5) Added Pursuit pre-switch handling note with code reference. (6) Changed processLeftovers() to processHeldItemEndOfTurn(). (7) Removed processExpGains() call and marked EXP gain as NOT YET IMPLEMENTED. (8) Updated confusion damage signature to include state and rng parameters. (9) Added ruleset.onSwitchOut() call before volatile cleanup. (10) Expanded volatile cleanup with specific field resets (lastDamageTaken, lastDamageType). (11) Changed Struggle recoil method from getStruggleRecoilFraction() to calculateStruggleRecoil(actor, actualDamage). (12) Added note that Struggle uses fixed maxHp/4 damage, not damage formula. (13) Corrected multi-hit method reference: no separate executeMultiHitMove(). (14) Updated test helper to use BattleEngine.fromGeneration(). (15) Updated line numbers for known delegation bugs (~1711, ~1781, ~1804). (16) Expanded end-of-turn effects section with implemented vs. NOT YET IMPLEMENTED split, detailing 13 unimplemented effects. (17) Added EngineWarningEvent documentation note. |
 | 2.0 | 2026-03-15 | Added Quick Start with delegation bugs, added 6 missing sections (Struggle, Multi-Hit, Protect formula, Pursuit, Partial Trapping, Status Reference), documented end-of-turn delegation pattern, added Cross-Reference, fixed paralysis/confusion delegation documentation |
 | 1.0 | 2024 | Initial core engine spec |

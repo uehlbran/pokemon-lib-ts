@@ -1,6 +1,6 @@
 <!-- SPEC FRONT-MATTER -->
 <!-- status: IMPLEMENTED -->
-<!-- last-updated: 2026-03-15 -->
+<!-- last-updated: 2026-03-17 -->
 
 # Core Pokémon Library — Entity Definitions
 
@@ -136,13 +136,14 @@ export type VolatileStatus =
   | 'endure'
   | 'drowsy'           // Gen 9 — from Yawn equivalent
   | 'bound'            // Bind, Wrap, Fire Spin, etc.
-  | 'trapped'          // Wrapped, Bound, Fire Spin, etc. (some sources use 'bound'; verify in code)
-  | 'recharge'         // Must recharge next turn (after Hyper Beam etc.)
-  | 'toxic-counter'    // Tracks escalating Toxic damage (N increments each turn)
+  | 'trapped'          // Mean Look, Spider Web (Gen 2+) — prevents switching
+  | 'recharge'         // Must recharge next turn (Hyper Beam etc.)
   | 'sleep-counter'    // Tracks remaining sleep turns
+  | 'toxic-counter'    // Tracks escalating Toxic damage (N increments each turn)
   | 'no-retreat'       // Gen 8
   | 'tar-shot'         // Gen 8
-  | 'octolock';        // Gen 8
+  | 'octolock'         // Gen 8
+  | 'mist';            // Gen 1+ — protects the user's team from stat-lowering moves
 ```
 
 ### 1.4 Weather & Terrain
@@ -664,8 +665,8 @@ export interface PokemonCreationOptions {
   originalTrainer: string;
   originalTrainerId: number;
   pokeball: string;
-  teraType: PokemonType;
-  dynamaxLevel: number;
+  teraType?: PokemonType;
+  dynamaxLevel?: number;
 }
 ```
 
@@ -726,6 +727,14 @@ export interface MoveData {
 
   /** Max Move base power (Gen 8) */
   readonly maxMovePower?: number;
+
+  /**
+   * Critical hit ratio stage bonus for high-crit-ratio moves.
+   * 0 or undefined = normal crit rate (no bonus).
+   * 1 = +1 stage (Slash, Crabhammer, Razor Leaf, etc.).
+   * 2 = +2 stages (10,000,000 Volt Thunderbolt; always crits at stage 3+).
+   */
+  readonly critRatio?: number;
 
   /**
    * Category override history — some moves changed category across gens.
@@ -888,7 +897,7 @@ interface TwoTurnEffect {
 
 interface SwitchOutEffect {
   readonly type: 'switch-out';
-  readonly who: 'self' | 'foe';   // U-turn = self, Dragon Tail = foe
+  readonly target: 'self' | 'foe';   // U-turn = self, Dragon Tail = foe
 }
 
 interface ProtectEffect {
@@ -1220,5 +1229,7 @@ export interface DataValidationWarning {
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.3 | 2026-03-17 | Added missing VolatileStatus values (trapped, mist). Added MoveData.critRatio field. |
+| 1.2 | 2026-03-17 | Changed SwitchOutEffect.who to target; made teraType and dynamaxLevel optional in PokemonCreationOptions |
 | 1.1 | 2026-03-15 | Added missing VolatileStatus values, MoveEffect export note, Implementation Cross-Reference |
 | 1.0 | 2024 | Initial entity spec |
