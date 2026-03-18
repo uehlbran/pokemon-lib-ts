@@ -872,6 +872,7 @@ export class BattleEngine implements BattleEventEmitter {
         move: effectiveMoveData,
         state: this.state,
         rng: this.state.rng,
+        defender,
       });
 
       const result = this.ruleset.calculateDamage({

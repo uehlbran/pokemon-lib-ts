@@ -7,6 +7,7 @@ import {
   type BattleAction,
   type BattleSide,
   type BattleState,
+  type CritContext,
   type DamageContext,
   type DamageResult,
   type EntryHazardResult,
@@ -130,6 +131,26 @@ export class Gen3Ruleset extends BaseRuleset {
    */
   getCritMultiplier(): number {
     return GEN3_CRIT_MULTIPLIER;
+  }
+
+  /**
+   * Gen 3 critical hit roll with Battle Armor / Shell Armor immunity.
+   *
+   * If the defender has Battle Armor or Shell Armor, critical hits are
+   * completely prevented — return false immediately without rolling.
+   * Otherwise, defer to BaseRuleset.rollCritical for normal crit logic.
+   *
+   * Source: pret/pokeemerald src/battle_util.c — CalcCritChanceStage
+   *   "if (IsAbilityOnSide(gBattlerTarget, ABILITY_BATTLE_ARMOR)
+   *    || IsAbilityOnSide(gBattlerTarget, ABILITY_SHELL_ARMOR))
+   *       return 0;"
+   */
+  override rollCritical(context: CritContext): boolean {
+    const defenderAbility = context.defender?.ability;
+    if (defenderAbility === "battle-armor" || defenderAbility === "shell-armor") {
+      return false;
+    }
+    return super.rollCritical(context);
   }
 
   // --- Hazard System ---
@@ -392,15 +413,28 @@ export class Gen3Ruleset extends BaseRuleset {
    * Roll for a secondary effect chance on the 0-99 scale.
    * 100% effects ALWAYS succeed (0-99 < 100 is always true).
    *
+   * Serene Grace: doubles the chance before the roll (capped at 100).
+   *
    * Source: pret/pokeemerald src/battle_script_commands.c:2908-2935 Cmd_seteffectwithchance
    * "else if (Random() % 100 < percentChance ...)"
    * Random() % 100 produces 0-99; percentChance=100 means 0-99 < 100 always true.
+   *
+   * Source: pret/pokeemerald src/battle_util.c — ABILITY_SERENE_GRACE
+   * "percentChance *= 2" before the Random() % 100 check.
    */
-  private rollEffectChance(chance: number, rng: SeededRandom): boolean {
+  private rollEffectChance(chance: number, rng: SeededRandom, attacker?: ActivePokemon): boolean {
+    let effectiveChance = chance;
+
+    // Serene Grace: double the secondary effect chance (cap at 100)
+    // Source: pret/pokeemerald src/battle_util.c — ABILITY_SERENE_GRACE doubles percentChance
+    if (attacker?.ability === "serene-grace") {
+      effectiveChance = Math.min(chance * 2, 100);
+    }
+
     // 100% effects always succeed — skip the roll entirely
     // Source: pret/pokeemerald — Random() % 100 < 100 is always true
-    if (chance >= 100) return true;
-    return rng.int(0, 99) < chance;
+    if (effectiveChance >= 100) return true;
+    return rng.int(0, 99) < effectiveChance;
   }
 
   /**
@@ -447,7 +481,7 @@ export class Gen3Ruleset extends BaseRuleset {
       case "status-chance": {
         // Roll for status infliction on 0-255 scale (1/256 failure rate even at 100%)
         // Source: pret/pokeemerald — secondary effect probability check
-        if (this.rollEffectChance(effect.chance, rng)) {
+        if (this.rollEffectChance(effect.chance, rng, attacker)) {
           if (!defender.pokemon.status) {
             if (canInflictGen3Status(effect.status, defender)) {
               result.statusInflicted = effect.status;
@@ -473,7 +507,7 @@ export class Gen3Ruleset extends BaseRuleset {
         // (e.g., Swords Dance, Dragon Dance) have guaranteed primary effects and
         // must never incur the 1/256 failure.
         // Source: pret/pokeemerald — secondary effect check only for damaging moves
-        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng)) {
+        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng, attacker)) {
           break;
         }
         for (const change of effect.changes) {
@@ -519,7 +553,7 @@ export class Gen3Ruleset extends BaseRuleset {
       case "volatile-status": {
         // For damaging moves, roll the effect chance
         // For status moves (e.g., Focus Energy, Substitute), guaranteed
-        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng)) {
+        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng, attacker)) {
           break;
         }
         result.volatileInflicted = effect.status;
