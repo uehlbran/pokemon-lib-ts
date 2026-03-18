@@ -36,6 +36,18 @@ const GEN3_PHYSICAL_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Maps pinch abilities to the move type they boost.
+ * Hoisted to module scope to avoid recreating the object on every damage calculation.
+ * Source: pret/pokeemerald src/battle_util.c ABILITY_OVERGROW/BLAZE/TORRENT/SWARM
+ */
+const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
+  overgrow: "grass",
+  blaze: "fire",
+  torrent: "water",
+  swarm: "bug",
+};
+
+/**
  * Determine whether a move type is physical or special in Gen 3.
  * Same categorization as Gen 1-2 (with Steel added in Gen 2).
  *
@@ -280,12 +292,6 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Source: pret/pokeemerald src/battle_util.c ABILITY_OVERGROW/BLAZE/TORRENT/SWARM
   // Source: Bulbapedia — "When the Pokemon with this Ability has 1/3 or less of its HP
   //   remaining, moves of the same type get a 50% power boost."
-  const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
-    overgrow: "grass",
-    blaze: "fire",
-    torrent: "water",
-    swarm: "bug",
-  };
   const pinchType = PINCH_ABILITY_TYPES[attacker.ability];
   if (pinchType && move.type === pinchType) {
     const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
