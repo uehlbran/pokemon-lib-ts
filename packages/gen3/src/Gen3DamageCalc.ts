@@ -99,6 +99,17 @@ function getAttackStat(
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
+  // 4b. Thick Club: doubles physical Attack for Cubone (104) / Marowak (105)
+  // Source: pret/pokeemerald HOLD_EFFECT_THICK_CLUB — attack * 2
+  // Source: Bulbapedia — "Thick Club: When held by Cubone or Marowak, doubles the holder's Attack."
+  if (
+    physical &&
+    attacker.pokemon.heldItem === "thick-club" &&
+    (attacker.pokemon.speciesId === 104 || attacker.pokemon.speciesId === 105)
+  ) {
+    rawStat = rawStat * 2;
+  }
+
   // 5. Hustle: 1.5x physical attack (accuracy penalty handled by engine)
   // Source: pret/pokeemerald src/pokemon.c:3205-3206 — (150 * attack) / 100
   if (physical && ability === "hustle") {
@@ -139,7 +150,18 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   const physical = isGen3PhysicalType(moveType);
   const statKey = physical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
-  const baseStat = stats ? stats[statKey] : 100;
+  let rawStat = stats ? stats[statKey] : 100;
+
+  // Deep Sea Scale: doubles SpDef for Clamperl (366) when defending special moves
+  // Source: pret/pokeemerald HOLD_EFFECT_DEEP_SEA_SCALE — spDefense * 2
+  // Source: Bulbapedia — "Deep Sea Scale: When held by Clamperl, doubles its Special Defense."
+  if (
+    !physical &&
+    defender.pokemon.heldItem === "deep-sea-scale" &&
+    defender.pokemon.speciesId === 366
+  ) {
+    rawStat = rawStat * 2;
+  }
 
   // Get the appropriate stage
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
@@ -148,7 +170,7 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Source: pret/pokeemerald — crit ignores positive def stages only
   const effectiveStage = isCrit && stage > 0 ? 0 : stage;
 
-  const effective = Math.floor(baseStat * getStatStageMultiplier(effectiveStage));
+  const effective = Math.floor(rawStat * getStatStageMultiplier(effectiveStage));
 
   return Math.max(1, effective);
 }
@@ -197,9 +219,31 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   }
 
   const level = attacker.pokemon.level;
-  const power = move.power;
+  let power = move.power;
   const physical = isGen3PhysicalType(move.type);
   const defenderAbility = defender.ability;
+  const attackerAbilityName = attacker.ability;
+
+  // --- Pinch abilities: Overgrow, Blaze, Torrent, Swarm ---
+  // These multiply move power by 1.5x when the user's HP is at or below floor(maxHP/3)
+  // AND the move type matches the ability's type.
+  // Source: pret/pokeemerald src/battle_util.c ABILITY_OVERGROW/BLAZE/TORRENT/SWARM
+  // Source: Bulbapedia — "When the Pokemon with this Ability has 1/3 or less of its HP
+  //   remaining, moves of the same type get a 50% power boost."
+  const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
+    overgrow: "grass",
+    blaze: "fire",
+    torrent: "water",
+    swarm: "bug",
+  };
+  const pinchType = PINCH_ABILITY_TYPES[attackerAbilityName];
+  if (pinchType && move.type === pinchType) {
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    const threshold = Math.floor(maxHp / 3);
+    if (attacker.pokemon.currentHp <= threshold) {
+      power = Math.floor(power * 1.5);
+    }
+  }
 
   // --- Defender ability type immunities ---
   // These abilities grant full immunity to specific move types.
