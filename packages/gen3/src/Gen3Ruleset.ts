@@ -521,6 +521,13 @@ export class Gen3Ruleset extends BaseRuleset {
       }
 
       case "recoil": {
+        // Rock Head: prevents recoil damage from recoil moves (NOT Struggle).
+        // Struggle recoil is handled separately by calculateStruggleRecoil.
+        // Source: pret/pokeemerald ABILITY_ROCK_HEAD
+        // Source: Bulbapedia — "Rock Head: Protects the Pokemon from recoil damage."
+        if (attacker.ability === "rock-head") {
+          break;
+        }
         // Recoil damage is a fraction of damage dealt
         // Source: pret/pokeemerald — recoil = floor(damage * fraction)
         result.recoilDamage = Math.max(1, Math.floor(damage * effect.amount));
