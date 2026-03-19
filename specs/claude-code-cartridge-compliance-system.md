@@ -4,7 +4,7 @@
 
 Build an automated cartridge compliance system that mechanically proves each generation matches its source-of-truth implementation. This is one unified system — oracle validation, compliance tracking, CI reporting, and a `/compliance` subagent command.
 
-**Critical design principle**: Oracles (`@pkmn/data`, `@smogon/calc`, `@pkmn/sim`) are **sanity checks**, not authorities. They catch regressions and flag discrepancies. The actual authorities are pret disassemblies (Gen 1-3), Bulbapedia (for documented cartridge mechanics), and Showdown source (Gen 4-9 where no decomp exists). When an oracle disagrees with us, we investigate — we don't auto-correct to match the oracle.
+**Critical design principle**: Oracles (`@pkmn/data`, `@smogon/calc`, `@pkmn/sim`) are **sanity checks**, not authorities. They catch regressions and flag discrepancies. The actual authorities are pret disassemblies (Gen 1-3), pret decomps where available (Gen 4), Bulbapedia (for documented cartridge mechanics), and Showdown source (Gen 5-9 where no decomp exists). When an oracle disagrees with us, we investigate — we don't auto-correct to match the oracle.
 
 ---
 
@@ -752,7 +752,7 @@ Add at the top of `specs/SPEC-STATUS.md`:
 
 Update VERIFIED definition:
 ```markdown
-| **VERIFIED** | Audited against primary source authority (pret for Gen 1-3, Showdown + Bulbapedia for Gen 4-9). Feeds the "Spec Verified" criterion in the compliance suite. |
+| **VERIFIED** | Audited against primary source authority (pret for Gen 1-3, pret decomps where available for Gen 4, Showdown + Bulbapedia for Gen 5-9). Feeds the "Spec Verified" criterion in the compliance suite. |
 ```
 
 ---

@@ -134,7 +134,16 @@ When implementing mechanics, use the following per-gen hierarchy (highest author
 3. Bulbapedia
 4. Our specs
 
-**Gen 4–9:**
+**Gen 4 (Diamond/Pearl/Platinum/HeartGold/SoulSilver):**
+1. `pret/pokeplatinum` or `pret/pokeheartgold` — where the specific function has been decompiled to C with a byte-perfect match. Both repos are ~75% decompiled; verify the battle-relevant function is in C (not `.s` assembly stubs) before citing.
+2. Pokemon Showdown (Gen 4 mod) — primary fallback and authority for anything not yet decompiled
+3. Bulbapedia (cross-reference for edge cases)
+4. Smogon research threads (for disputed mechanics with cartridge testing)
+5. Our specs
+
+> **Note**: hg-engine (BluRosie/hg-engine) is a modding framework built on top of the HGSS ROM, not a disassembly. It must **never** be used as a source reference — it reflects modding conventions, not cartridge behavior.
+
+**Gen 5–9:**
 1. Pokemon Showdown — primary authority (no complete disassemblies exist)
 2. Bulbapedia (cross-reference for edge cases)
 3. Smogon research threads (for disputed mechanics with cartridge testing)
@@ -147,7 +156,7 @@ This hierarchy applies to mechanics and formulas. For raw data (species stats, m
 **Ground-truth reference documents:**
 - Currently exist: `specs/reference/gen1-ground-truth.md`, `specs/reference/gen2-ground-truth.md`
 - Will be created per gen as implementation progresses
-- Gen 3 should be sourced from `pret/pokeemerald`; Gen 4–9 primarily from Showdown with Bulbapedia cross-references
+- Gen 3 should be sourced from `pret/pokeemerald`; Gen 4 from `pret/pokeplatinum`/`pret/pokeheartgold` (where decompiled) with Showdown fallback; Gen 5–9 primarily from Showdown with Bulbapedia cross-references
 
 When implementing a gen-specific mechanic, check the ground-truth reference first. If none exists for that gen, fall through to the hierarchy directly.
 
@@ -191,7 +200,7 @@ Every PR requires local review before push plus a human approver:
 - **CodeRabbit** — inline comments, PR summary, security scan (advisory, bonus). Config: `.coderabbit.yaml`
 - **Qodo PR-Agent** — structured review (advisory, best-effort — may be rate-limited). GitHub Action.
 - **Claude Code** — deep local review via `pokemon-reviewer` subagent. Runs on push via `git pushreview`. Posts findings to PR as comments (advisory).
-- **Human** — required approval (1 reviewer). Final say on architecture and correctness.
+- **Human** — final say on architecture and correctness. Human review is a process rule enforced via CLAUDE.md, not a branch protection setting.
 
 AI reviews are advisory (comments only, never formal approvals). See `.github/AI_REVIEWERS.md` for interaction commands.
 
