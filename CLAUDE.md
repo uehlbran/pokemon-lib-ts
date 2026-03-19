@@ -37,6 +37,7 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 - **Core has zero runtime dependencies.** This is a hard rule. If you need an external library, it doesn't belong in core.
 - **The battle engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
 - **Turn flow**: `turn-start → action selection → priority sort → turn-resolve (accuracy check → move execution → damage/effects → ability triggers) → turn-end → weather/status ticks → faint-check → next turn or game over`
+- **Branch-first (enforced by hook).** Before editing any repo file, run `/start-task <branch-name>`. The `enforce-branch-first.sh` hook blocks Edit/Write until a session branch is declared. See `.claude/rules/branch-first.md`.
 
 ## Tech Stack
 

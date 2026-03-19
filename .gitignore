@@ -9,4 +9,5 @@ tools/repos/
 .claude/worktrees/
 .claude/.review-passed
 .claude/review-markers/
+.claude/.session-branch
 references/
