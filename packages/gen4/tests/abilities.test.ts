@@ -464,8 +464,8 @@ describe("applyGen4Ability on-turn-end — Speed Boost", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-turn-end — Rain Dish", () => {
-  it("given Rain Dish and active rain, when turn ends, then activates and heals 1/16 max HP", () => {
-    // Source: Bulbapedia — Rain Dish: heals 1/16 HP per turn in rain
+  it("given Rain Dish and active rain, when turn ends, then activates with heal effect type and 1/16 max HP value", () => {
+    // Source: Bulbapedia — Rain Dish: restores 1/16 HP in rain each turn
     // Derivation: maxHp=160, floor(160/16) = 10
     const ctx = makeContext({
       ability: "rain-dish",
@@ -476,6 +476,7 @@ describe("applyGen4Ability on-turn-end — Rain Dish", () => {
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
     expect(result.effects[0]?.value).toBe(10);
     expect(result.messages[0]).toContain("Rain Dish");
   });
@@ -494,7 +495,7 @@ describe("applyGen4Ability on-turn-end — Rain Dish", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-turn-end — Ice Body (NEW in Gen 4)", () => {
-  it("given Ice Body and active hail, when turn ends, then activates and heals 1/16 max HP", () => {
+  it("given Ice Body and active hail, when turn ends, then activates with heal effect type and 1/16 max HP value", () => {
     // Source: Bulbapedia — Ice Body (Gen 4): heals 1/16 HP per turn in hail; also immune to hail chip
     // Derivation: maxHp=160, floor(160/16) = 10
     const ctx = makeContext({
@@ -506,6 +507,7 @@ describe("applyGen4Ability on-turn-end — Ice Body (NEW in Gen 4)", () => {
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
     expect(result.effects[0]?.value).toBe(10);
     expect(result.messages[0]).toContain("Ice Body");
   });
@@ -523,7 +525,7 @@ describe("applyGen4Ability on-turn-end — Ice Body (NEW in Gen 4)", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
-  it("given Dry Skin and rain, when turn ends, then heals 1/8 max HP", () => {
+  it("given Dry Skin and rain, when turn ends, then heals 1/8 max HP with heal effect type", () => {
     // Source: Bulbapedia — Dry Skin: heals 1/8 HP in rain at end of turn
     // Derivation: maxHp=160, floor(160/8) = 20
     const ctx = makeContext({
@@ -535,13 +537,14 @@ describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
     expect(result.effects[0]?.value).toBe(20);
     expect(result.messages[0]).toContain("Dry Skin");
   });
 
-  it("given Dry Skin and sun, when turn ends, then takes 1/8 max HP chip damage (negative value)", () => {
+  it("given Dry Skin and sun, when turn ends, then takes 1/8 max HP chip damage with chip-damage effect type", () => {
     // Source: Bulbapedia — Dry Skin: takes 1/8 HP chip damage in sun at end of turn
-    // Derivation: maxHp=160, -floor(160/8) = -20
+    // Derivation: maxHp=160, floor(160/8) = 20 (positive — engine applies as damage)
     const ctx = makeContext({
       ability: "dry-skin",
       maxHp: 160,
@@ -550,7 +553,8 @@ describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.value).toBe(-20);
+    expect(result.effects[0]?.effectType).toBe("chip-damage");
+    expect(result.effects[0]?.value).toBe(20);
   });
 
   it("given Dry Skin and no weather, when turn ends, then does not activate", () => {
@@ -566,9 +570,9 @@ describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-turn-end — Solar Power (NEW in Gen 4)", () => {
-  it("given Solar Power and sun, when turn ends, then takes 1/8 max HP chip damage (negative value)", () => {
+  it("given Solar Power and sun, when turn ends, then takes 1/8 max HP chip damage with chip-damage effect type", () => {
     // Source: Bulbapedia — Solar Power: takes 1/8 HP chip in sun; SpAtk 1.5x (damage calc)
-    // Derivation: maxHp=160, -floor(160/8) = -20
+    // Derivation: maxHp=160, floor(160/8) = 20 (positive — engine applies as damage)
     const ctx = makeContext({
       ability: "solar-power",
       maxHp: 160,
@@ -577,7 +581,8 @@ describe("applyGen4Ability on-turn-end — Solar Power (NEW in Gen 4)", () => {
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.value).toBe(-20);
+    expect(result.effects[0]?.effectType).toBe("chip-damage");
+    expect(result.effects[0]?.value).toBe(20);
   });
 
   it("given Solar Power and no sun, when turn ends, then does not activate", () => {
@@ -662,15 +667,17 @@ describe("applyGen4Ability on-turn-end — Shed Skin", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-turn-end — Bad Dreams (NEW in Gen 4)", () => {
-  it("given Bad Dreams and a sleeping opponent, when turn ends, then deals 1/8 opponent's max HP", () => {
+  it("given Bad Dreams and a sleeping opponent, when turn ends, then deals 1/8 opponent's max HP with chip-damage effect type", () => {
     // Source: Bulbapedia — Bad Dreams: damages sleeping opponents for 1/8 HP each turn
-    // Derivation: opponent maxHp=160, floor(160/8) = 20
+    // Derivation: opponent maxHp=160, floor(160/8) = 20 (positive — engine applies as damage)
     const opponent = makeActivePokemon({ status: "sleep", maxHp: 160 });
     const ctx = makeContext({ ability: "bad-dreams", opponent });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.value).toBe(-20);
+    expect(result.effects[0]?.effectType).toBe("chip-damage");
+    expect(result.effects[0]?.target).toBe("opponent");
+    expect(result.effects[0]?.value).toBe(20);
     expect(result.messages[0]).toContain("Bad Dreams");
   });
 
@@ -696,7 +703,7 @@ describe("applyGen4Ability on-turn-end — Bad Dreams (NEW in Gen 4)", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
-  it("given Poison Heal and poison status below max HP, when turn ends, then heals 1/8 max HP", () => {
+  it("given Poison Heal and poison status below max HP, when turn ends, then heals 1/8 max HP with heal effect type", () => {
     // Source: Bulbapedia — Poison Heal: heals 1/8 HP per turn when poisoned (instead of damage)
     // Derivation: maxHp=160, currentHp=100, floor(160/8) = 20
     const ctx = makeContext({
@@ -708,11 +715,12 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
     expect(result.effects[0]?.value).toBe(20);
     expect(result.messages[0]).toContain("Poison Heal");
   });
 
-  it("given Poison Heal and badly-poisoned status below max HP, when turn ends, then heals 1/8 max HP", () => {
+  it("given Poison Heal and badly-poisoned status below max HP, when turn ends, then heals 1/8 max HP with heal effect type", () => {
     // Source: Bulbapedia — Poison Heal works for both regular and bad poison
     // Derivation: maxHp=160, currentHp=80, floor(160/8) = 20
     const ctx = makeContext({
@@ -724,6 +732,7 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
     expect(result.effects[0]?.value).toBe(20);
   });
 
@@ -772,5 +781,148 @@ describe("applyGen4Ability — unknown ability/trigger", () => {
     const result = applyGen4Ability("on-faint", ctx);
 
     expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Triangulation: heal/chip-damage effect types with second input value
+// ---------------------------------------------------------------------------
+
+describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", () => {
+  it("given Rain Dish with maxHp=320 in rain, when turn ends, then heal value is 20 (floor(320/16))", () => {
+    // Source: Bulbapedia — Rain Dish: restores 1/16 HP in rain
+    // Triangulation: second test with different maxHp to verify formula, not a constant
+    // Derivation: maxHp=320, floor(320/16) = 20
+    const ctx = makeContext({
+      ability: "rain-dish",
+      maxHp: 320,
+      currentHp: 200,
+      weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+    });
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.value).toBe(20);
+  });
+
+  it("given Ice Body with maxHp=320 in hail, when turn ends, then heal value is 20 (floor(320/16))", () => {
+    // Source: Bulbapedia — Ice Body: restores 1/16 HP in hail
+    // Triangulation: confirms formula scales with maxHp
+    // Derivation: maxHp=320, floor(320/16) = 20
+    const ctx = makeContext({
+      ability: "ice-body",
+      maxHp: 320,
+      currentHp: 200,
+      weather: { type: "hail", turnsLeft: 5, source: "hail" },
+    });
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.value).toBe(20);
+  });
+
+  it("given Dry Skin with maxHp=320 in sun, when turn ends, then chip-damage value is 40 (floor(320/8))", () => {
+    // Source: Bulbapedia — Dry Skin: takes 1/8 HP in sun
+    // Triangulation: confirms chip-damage value scales with maxHp
+    // Derivation: maxHp=320, floor(320/8) = 40
+    const ctx = makeContext({
+      ability: "dry-skin",
+      maxHp: 320,
+      weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+    });
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("chip-damage");
+    expect(result.effects[0]?.value).toBe(40);
+  });
+
+  it("given Solar Power with maxHp=320 in sun, when turn ends, then chip-damage value is 40 (floor(320/8))", () => {
+    // Source: Bulbapedia — Solar Power: takes 1/8 HP in sun
+    // Triangulation: confirms chip-damage formula scales with maxHp
+    // Derivation: maxHp=320, floor(320/8) = 40
+    const ctx = makeContext({
+      ability: "solar-power",
+      maxHp: 320,
+      weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+    });
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("chip-damage");
+    expect(result.effects[0]?.value).toBe(40);
+  });
+
+  it("given Bad Dreams with sleeping opponent maxHp=320, when turn ends, then chip-damage value is 40 targeting opponent", () => {
+    // Source: Bulbapedia — Bad Dreams: damages sleeping opponents for 1/8 HP each turn
+    // Triangulation: confirms chip-damage targets opponent and scales with opponent maxHp
+    // Derivation: oppMaxHp=320, floor(320/8) = 40
+    const opponent = makeActivePokemon({ status: "sleep", maxHp: 320 });
+    const ctx = makeContext({ ability: "bad-dreams", opponent });
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("chip-damage");
+    expect(result.effects[0]?.target).toBe("opponent");
+    expect(result.effects[0]?.value).toBe(40);
+  });
+
+  it("given Poison Heal with maxHp=320 and poison, when turn ends, then heal value is 40 (floor(320/8))", () => {
+    // Source: Bulbapedia — Poison Heal: heals 1/8 HP per turn when poisoned
+    // Triangulation: confirms heal formula scales with maxHp
+    // Derivation: maxHp=320, floor(320/8) = 40
+    const ctx = makeContext({
+      ability: "poison-heal",
+      status: "poison",
+      maxHp: 320,
+      currentHp: 200,
+    });
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.value).toBe(40);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration: Rain Dish through applyAbility with proper context
+// ---------------------------------------------------------------------------
+
+describe("applyGen4Ability — integration: Rain Dish end-to-end", () => {
+  it("given a Pokemon with Rain Dish in rain at 80% HP, when applyAbility is called with on-turn-end trigger, then returns activated:true with heal effect of 1/16 max HP", () => {
+    // Source: Bulbapedia — Rain Dish restores 1/16 HP in rain
+    // Derivation: maxHp=160, currentHp=128 (80%), floor(160/16) = 10
+    const maxHp = 160;
+    const pokemon = makeActivePokemon({
+      ability: "rain-dish",
+      currentHp: 128,
+      maxHp,
+    });
+    const state = makeBattleState({ type: "rain", turnsLeft: 3, source: "drizzle" });
+    const ctx: AbilityContext = {
+      pokemon,
+      state,
+      trigger: "on-turn-end",
+      rng: {
+        next: () => 0,
+        int: () => 1,
+        chance: () => false,
+        pick: <T>(arr: readonly T[]) => arr[0] as T,
+        shuffle: <T>(arr: T[]) => arr,
+        getState: () => 0,
+        setState: () => {},
+      },
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.effectType).toBe("heal");
+    // Source: 1/16 of 160 = 10
+    expect(result.effects[0]?.value).toBe(10);
   });
 });
