@@ -426,6 +426,11 @@ export interface BattleGimmick {
  * - `harvest` — Harvest ability tries to restore a consumed Berry
  * - `pickup` — Pickup ability tries to collect a used item
  * - `poison-heal` — Poison Heal ability heals instead of taking poison damage
+ * - `weather-healing` — Rain Dish, Dry Skin rain heal, Ice Body end-of-turn HP restoration
+ * - `shed-skin` — Shed Skin 33% chance to cure primary status
+ * - `toxic-orb-activation` — Toxic Orb badly poisons holder at end of turn
+ * - `flame-orb-activation` — Flame Orb burns holder at end of turn
+ * - `slow-start-countdown` — Slow Start 5-turn counter decrement
  */
 export type EndOfTurnEffect =
   | "weather-damage"
@@ -458,7 +463,12 @@ export type EndOfTurnEffect =
   | "safeguard-countdown"
   | "stat-boosting-items"
   | "healing-items"
-  | "encore-countdown";
+  | "encore-countdown"
+  | "weather-healing"
+  | "shed-skin"
+  | "toxic-orb-activation"
+  | "flame-orb-activation"
+  | "slow-start-countdown";
 
 /**
  * Configuration object passed to the `BattleEngine` constructor.

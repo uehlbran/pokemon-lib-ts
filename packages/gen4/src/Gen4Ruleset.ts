@@ -1,4 +1,6 @@
 import type {
+  AbilityContext,
+  AbilityResult,
   AccuracyContext,
   ActivePokemon,
   BattleAction,
@@ -7,11 +9,16 @@ import type {
   CritContext,
   DamageContext,
   DamageResult,
+  EndOfTurnEffect,
   EntryHazardResult,
   ExpContext,
+  ItemContext,
+  ItemResult,
+  WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
+  AbilityTrigger,
   EntryHazardType,
   PokemonType,
   PrimaryStatus,
@@ -24,9 +31,12 @@ import {
   gen14MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
+import { applyGen4Ability } from "./Gen4Abilities";
 import { GEN4_CRIT_MULTIPLIER, GEN4_CRIT_RATE_DENOMINATORS } from "./Gen4CritCalc";
 import { calculateGen4Damage } from "./Gen4DamageCalc";
+import { applyGen4HeldItem } from "./Gen4Items";
 import { GEN4_TYPE_CHART, GEN4_TYPES } from "./Gen4TypeChart";
+import { applyGen4WeatherEffects } from "./Gen4Weather";
 
 /**
  * Gen 4 (Diamond/Pearl/Platinum/HeartGold/SoulSilver) ruleset.
@@ -498,6 +508,106 @@ export class Gen4Ruleset extends BaseRuleset {
    */
   hasHeldItems(): boolean {
     return true;
+  }
+
+  // --- Ability Triggers ---
+
+  /**
+   * Gen 4 ability trigger dispatch.
+   *
+   * Delegates to applyGen4Ability which handles:
+   *   - on-switch-in: Intimidate, Drizzle, Drought, Sand Stream, Snow Warning,
+   *                   Download, Anticipation, Forewarn, Frisk, Slow Start
+   *   - on-turn-end: Speed Boost, Rain Dish, Ice Body, Dry Skin, Solar Power,
+   *                  Hydration, Shed Skin, Bad Dreams, Poison Heal
+   *
+   * Source: Showdown sim/battle.ts Gen 4 mod
+   */
+  applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+    return applyGen4Ability(trigger, context);
+  }
+
+  // --- Held Item Triggers ---
+
+  /**
+   * Gen 4 held item trigger dispatch.
+   *
+   * Delegates to applyGen4HeldItem which handles:
+   *   - end-of-turn: Leftovers, Black Sludge, Toxic Orb, Flame Orb, Sitrus Berry, berries
+   *   - on-damage-taken: Focus Sash, Focus Band, Sitrus Berry, Oran Berry
+   *   - on-hit: King's Rock, Razor Fang, Shell Bell, Life Orb
+   *
+   * Source: Showdown sim/battle.ts Gen 4 mod
+   */
+  applyHeldItem(trigger: string, context: ItemContext): ItemResult {
+    return applyGen4HeldItem(trigger, context);
+  }
+
+  // --- Weather Effects ---
+
+  /**
+   * Gen 4 end-of-turn weather chip damage.
+   *
+   * Sandstorm: 1/16 max HP to non-Rock/Ground/Steel (same chip rate as Gen 3).
+   * Hail: 1/16 max HP to non-Ice (same chip rate as Gen 3).
+   * Magic Guard: grants immunity to weather chip (NEW vs Gen 3).
+   * Rain/Sun: no chip damage.
+   *
+   * Source: Showdown sim/battle.ts Gen 4 mod
+   */
+  applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
+    return applyGen4WeatherEffects(state);
+  }
+
+  // --- End-of-Turn Order ---
+
+  /**
+   * Gen 4 end-of-turn effect processing order.
+   *
+   * Based on Showdown Gen 4 mod and Bulbapedia (Pokemon Diamond/Pearl/Platinum).
+   * Key Gen 4 ordering decisions:
+   *   - weather-damage before wish/weather-healing
+   *   - weather-healing (Rain Dish, Ice Body, Dry Skin) before leftovers
+   *   - shed-skin before leftovers
+   *   - poison-heal before status-damage (Poison Heal replaces poison tick)
+   *   - bad-dreams after status-damage
+   *   - toxic-orb / flame-orb after weather-countdown (late EoT)
+   *   - speed-boost and healing-items at end
+   *
+   * Source: Showdown sim/battle.ts Gen 4 mod — end-of-turn processing order
+   * Source: Bulbapedia — Diamond/Pearl/Platinum battle mechanics
+   */
+  getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    return [
+      "weather-damage", // Sandstorm/Hail chip
+      "future-attack", // Future Sight / Doom Desire
+      "wish", // Wish recovery
+      "weather-healing", // Rain Dish, Dry Skin rain, Ice Body
+      "shed-skin", // Shed Skin 33% cure
+      "leftovers", // Leftovers recovery
+      "black-sludge", // Black Sludge
+      "aqua-ring", // Aqua Ring recovery
+      "ingrain", // Ingrain recovery
+      "leech-seed", // Leech Seed drain
+      "poison-heal", // Poison Heal (before status damage)
+      "status-damage", // Poison/Toxic/Burn
+      "nightmare", // Nightmare damage
+      "curse", // Ghost Curse damage
+      "bad-dreams", // Bad Dreams
+      "bind", // Trap damage
+      "encore-countdown", // Encore timer
+      "perish-song", // Perish Song countdown
+      "screen-countdown", // Reflect / Light Screen
+      "safeguard-countdown", // Safeguard
+      "tailwind-countdown", // Tailwind
+      "trick-room-countdown", // Trick Room
+      "weather-countdown", // Weather timer
+      "toxic-orb-activation", // Toxic Orb
+      "flame-orb-activation", // Flame Orb
+      "slow-start-countdown", // Slow Start
+      "speed-boost", // Speed Boost
+      "healing-items", // Berry/item consumption
+    ] as const;
   }
 }
 
