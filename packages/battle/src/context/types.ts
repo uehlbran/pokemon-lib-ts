@@ -206,6 +206,10 @@ export interface MoveEffectResult {
   readonly selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   /** Change the types of the attacker or defender */
   readonly typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+  /** Set Tailwind on a side (Gen 4+) */
+  readonly tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
+  /** Set Trick Room on the field (Gen 4+) */
+  readonly trickRoomSet?: { turnsLeft: number } | null;
 }
 
 /**
@@ -242,6 +246,8 @@ export type AbilityEffectType =
   | "weather-immunity"
   | "weather-set"
   | "ability-change"
+  | "heal"
+  | "chip-damage"
   | "none";
 
 /** A single effect produced by an ability trigger — proper discriminated union on effectType. */
@@ -270,6 +276,12 @@ export type AbilityEffect =
   | { readonly effectType: "weather-immunity"; readonly target: "self" | "opponent" }
   | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" }
   | { readonly effectType: "ability-change"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "heal"; readonly target: "self" | "opponent"; readonly value: number }
+  | {
+      readonly effectType: "chip-damage";
+      readonly target: "self" | "opponent";
+      readonly value: number;
+    }
   | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
 
 export interface AbilityResult {
@@ -310,6 +322,8 @@ export type ItemEffectType =
   | "survive"
   | "flinch"
   | "volatile-cure"
+  | "status-inflict"
+  | "self-damage"
   | "none";
 
 /** A single effect produced by an item trigger. */
