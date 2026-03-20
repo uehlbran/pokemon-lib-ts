@@ -71,6 +71,8 @@ import { applyGen4WeatherEffects } from "./Gen4Weather";
  *   - getQuickClawActivated — 20% pre-roll (same as Gen 3)
  *   - applyEntryHazards — Spikes + Stealth Rock + Toxic Spikes (Gen 4 full set)
  *   - resolveTurnOrder — Tailwind speed doubling + Trick Room reversal (Gen 4)
+ *   - processSleepTurn — cannot act on wake turn (Gen 1-4 behavior; Gen 5+ can act)
+ *   - canSwitch — Shadow Tag, Arena Trap, Magnet Pull, trapped volatile
  */
 export class Gen4Ruleset extends BaseRuleset {
   readonly generation = 4 as const;
@@ -318,6 +320,33 @@ export class Gen4Ruleset extends BaseRuleset {
    */
   rollSleepTurns(rng: SeededRandom): number {
     return rng.int(1, 5);
+  }
+
+  /**
+   * Gen 4 sleep processing: the Pokemon CANNOT act on the turn it wakes up.
+   *
+   * In Gen 5+ (BaseRuleset default), a Pokemon can act on the turn it wakes.
+   * In Gen 1-4, waking up consumes the turn — the Pokemon loses its action.
+   *
+   * Source: pret/pokeplatinum — sleep counter decrements at turn start; wake = can't act
+   * Source: Showdown Gen 4 mod — pokemon.status === 'slp' prevents action on wake turn
+   */
+  override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
+    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    if (!sleepState || sleepState.turnsLeft <= 0) {
+      // No counter found or already at 0 — wake up, but cannot act (Gen 4)
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep-counter");
+      return false;
+    }
+    sleepState.turnsLeft--;
+    if (sleepState.turnsLeft <= 0) {
+      // Counter just reached 0 — wake up, but cannot act (Gen 4)
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep-counter");
+      return false;
+    }
+    return false; // Still sleeping — cannot act
   }
 
   /**
@@ -634,6 +663,54 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: pret/pokeplatinum — same check as pokeemerald
     // Equivalent: hit if roll <= calc, where roll is 1-100
     return context.rng.int(1, 100) <= calc;
+  }
+
+  // --- Switch Restrictions ---
+
+  /**
+   * Gen 4 switch restriction check.
+   *
+   * Trapping abilities and the "trapped" volatile status prevent switching:
+   *   - Shadow Tag: traps all non-Shadow-Tag opponents
+   *   - Arena Trap: traps grounded opponents (non-Flying, non-Levitate)
+   *   - Magnet Pull: traps Steel-type opponents
+   *   - "trapped" volatile: Mean Look, Spider Web, Block
+   *
+   * Ghost-types are immune to trapping moves (Mean Look etc.) starting in Gen 6,
+   * but in Gen 4 they are NOT immune — the "trapped" volatile applies to all types.
+   *
+   * Source: Showdown Gen 4 mod — Shadow Tag, Arena Trap, Magnet Pull trapping logic
+   * Source: Bulbapedia — Arena Trap does not affect Flying-types or Levitate holders
+   * Source: Bulbapedia — Shadow Tag: all adjacent non-Shadow-Tag opponents are trapped
+   */
+  override canSwitch(pokemon: ActivePokemon, state: BattleState): boolean {
+    // "trapped" volatile (Mean Look, Spider Web, Block)
+    if (pokemon.volatileStatuses.has("trapped")) return false;
+
+    // Find which side the pokemon is on and get the opponent
+    const pokemonSide = state.sides[0].active[0] === pokemon ? 0 : 1;
+    const opponentSide = pokemonSide === 0 ? 1 : 0;
+    const opponent = state.sides[opponentSide].active[0];
+    if (!opponent || opponent.pokemon.currentHp <= 0) return true;
+
+    const oppAbility = opponent.ability;
+
+    // Shadow Tag: traps non-Shadow-Tag opponents
+    // Source: Bulbapedia — Shadow Tag traps all adjacent Pokemon without Shadow Tag
+    if (oppAbility === "shadow-tag" && pokemon.ability !== "shadow-tag") return false;
+
+    // Arena Trap: traps grounded (non-Flying, non-Levitate) opponents
+    // Source: Bulbapedia — Arena Trap does not affect Flying-types or Levitate holders
+    if (oppAbility === "arena-trap") {
+      const isGrounded = !pokemon.types.includes("flying") && pokemon.ability !== "levitate";
+      if (isGrounded) return false;
+    }
+
+    // Magnet Pull: traps Steel-type opponents
+    // Source: Bulbapedia — Magnet Pull traps all Steel-type opponents
+    if (oppAbility === "magnet-pull" && pokemon.types.includes("steel")) return false;
+
+    return true;
   }
 
   // --- Held Items ---
