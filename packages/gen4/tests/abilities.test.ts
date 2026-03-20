@@ -1,5 +1,5 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { Gender, MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 
@@ -30,6 +30,7 @@ function makePokemonInstance(overrides: {
   maxHp?: number;
   defense?: number;
   spDefense?: number;
+  gender?: Gender;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
@@ -48,7 +49,7 @@ function makePokemonInstance(overrides: {
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: (overrides.gender ?? "male") as const,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -77,6 +78,7 @@ function makeActivePokemon(overrides: {
   heldItem?: string | null;
   defense?: number;
   spDefense?: number;
+  gender?: Gender;
 }) {
   return {
     pokemon: makePokemonInstance({
@@ -89,6 +91,7 @@ function makeActivePokemon(overrides: {
       heldItem: overrides.heldItem,
       defense: overrides.defense,
       spDefense: overrides.spDefense,
+      gender: overrides.gender,
     }),
     teamSlot: 0,
     statStages: {
@@ -169,6 +172,25 @@ function makeBattleState(weather?: {
   } as unknown as BattleState;
 }
 
+function makeMove(type: PokemonType): MoveData {
+  return {
+    id: "test-move",
+    displayName: "Test Move",
+    type,
+    category: "physical",
+    power: 80,
+    accuracy: 100,
+    pp: 10,
+    maxPp: 10,
+    priority: 0,
+    target: "single",
+    generation: 4,
+    flags: { contact: true },
+    effectChance: null,
+    secondaryEffects: [],
+  } as unknown as MoveData;
+}
+
 function makeContext(opts: {
   ability: string;
   types?: PokemonType[];
@@ -180,6 +202,9 @@ function makeContext(opts: {
   defense?: number;
   spDefense?: number;
   rngChance?: boolean;
+  rngNextValues?: number[];
+  move?: MoveData;
+  gender?: Gender;
 }): AbilityContext {
   const state = makeBattleState(opts.weather);
   const pokemon = makeActivePokemon({
@@ -190,14 +215,26 @@ function makeContext(opts: {
     maxHp: opts.maxHp,
     defense: opts.defense,
     spDefense: opts.spDefense,
+    gender: opts.gender,
   });
+
+  // If rngNextValues is provided, return them in sequence; otherwise always return 0
+  let nextIndex = 0;
+  const rngNextValues = opts.rngNextValues;
+
   return {
     pokemon,
     opponent: opts.opponent,
     state,
     trigger: "on-switch-in",
+    move: opts.move,
     rng: {
-      next: () => 0,
+      next: () => {
+        if (rngNextValues && nextIndex < rngNextValues.length) {
+          return rngNextValues[nextIndex++];
+        }
+        return 0;
+      },
       int: () => 1,
       chance: (_p: number) => opts.rngChance ?? false,
       pick: <T>(arr: readonly T[]) => arr[0] as T,
@@ -924,5 +961,649 @@ describe("applyGen4Ability — integration: Rain Dish end-to-end", () => {
     expect(result.effects[0]?.effectType).toBe("heal");
     // Source: 1/16 of 160 = 10
     expect(result.effects[0]?.value).toBe(10);
+  });
+});
+
+// ===========================================================================
+// on-contact: Static
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- Static", () => {
+  it("given Static and RNG < 0.3 and attacker has no status, when contact is made, then inflicts paralysis on opponent", () => {
+    // Source: Bulbapedia -- Static: 30% chance to paralyze on contact
+    // Source: Showdown Gen 4 mod -- Static trigger
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "static",
+      opponent: attacker,
+      rngNextValues: [0.1], // < 0.3, triggers
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "paralysis",
+    });
+  });
+
+  it("given Static and RNG >= 0.3, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Static: 30% chance; RNG >= 0.3 means no trigger
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "static",
+      opponent: attacker,
+      rngNextValues: [0.5], // >= 0.3, no trigger
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Static and attacker already has a status, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Static: cannot paralyze a Pokemon that already has a status
+    const attacker = makeActivePokemon({ maxHp: 200, status: "burn" });
+    const ctx = makeContext({
+      ability: "static",
+      opponent: attacker,
+      rngNextValues: [0.1], // would trigger, but status blocks
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// on-contact: Flame Body
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- Flame Body", () => {
+  it("given Flame Body and RNG < 0.3 and attacker has no status, when contact is made, then inflicts burn on opponent", () => {
+    // Source: Bulbapedia -- Flame Body: 30% chance to burn on contact
+    // Source: Showdown Gen 4 mod -- Flame Body trigger
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "flame-body",
+      opponent: attacker,
+      rngNextValues: [0.2], // < 0.3, triggers
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "burn",
+    });
+  });
+
+  it("given Flame Body and attacker already has a status, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Flame Body: cannot burn if attacker already has a status condition
+    const attacker = makeActivePokemon({ maxHp: 200, status: "paralysis" });
+    const ctx = makeContext({
+      ability: "flame-body",
+      opponent: attacker,
+      rngNextValues: [0.1],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// on-contact: Poison Point
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- Poison Point", () => {
+  it("given Poison Point and RNG < 0.3 and attacker has no status, when contact is made, then inflicts poison on opponent", () => {
+    // Source: Bulbapedia -- Poison Point: 30% chance to poison on contact
+    // Source: Showdown Gen 4 mod -- Poison Point trigger
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "poison-point",
+      opponent: attacker,
+      rngNextValues: [0.15], // < 0.3, triggers
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "poison",
+    });
+  });
+
+  it("given Poison Point and attacker already has a status, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Poison Point: cannot poison if attacker already has a status condition
+    const attacker = makeActivePokemon({ maxHp: 200, status: "sleep" });
+    const ctx = makeContext({
+      ability: "poison-point",
+      opponent: attacker,
+      rngNextValues: [0.1],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// on-contact: Rough Skin
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- Rough Skin", () => {
+  it("given Rough Skin and attacker with maxHp=200, when contact is made, then always deals 1/8 attacker max HP (25) as chip damage", () => {
+    // Source: Bulbapedia -- Rough Skin: deals 1/8 attacker's max HP on contact (always, no RNG)
+    // Source: Showdown Gen 4 mod -- Rough Skin trigger (guaranteed chip)
+    // Derivation: floor(200/8) = 25
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "rough-skin",
+      opponent: attacker,
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "chip-damage",
+      target: "opponent",
+      value: 25,
+    });
+  });
+
+  it("given Rough Skin and attacker with maxHp=320, when contact is made, then deals floor(320/8)=40 chip damage (triangulation)", () => {
+    // Source: Bulbapedia -- Rough Skin: 1/8 attacker max HP chip damage
+    // Triangulation: confirms formula scales with attacker max HP
+    // Derivation: floor(320/8) = 40
+    const attacker = makeActivePokemon({ maxHp: 320 });
+    const ctx = makeContext({
+      ability: "rough-skin",
+      opponent: attacker,
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "chip-damage",
+      target: "opponent",
+      value: 40,
+    });
+  });
+
+  it("given Rough Skin and attacker with very low maxHp=1, when contact is made, then deals at least 1 chip damage", () => {
+    // Source: Bulbapedia -- Rough Skin: minimum 1 HP damage
+    // Derivation: floor(1/8) = 0, but Math.max(1, 0) = 1
+    const attacker = makeActivePokemon({ maxHp: 1, currentHp: 1 });
+    const ctx = makeContext({
+      ability: "rough-skin",
+      opponent: attacker,
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "chip-damage",
+      target: "opponent",
+      value: 1,
+    });
+  });
+});
+
+// ===========================================================================
+// on-contact: Effect Spore
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- Effect Spore", () => {
+  it("given Effect Spore and RNG triggers (< 0.3) and split roll < 1/3, when contact is made, then inflicts poison", () => {
+    // Source: Bulbapedia -- Effect Spore: 30% total, then 1/3 each for poison/paralysis/sleep
+    // Source: Showdown Gen 4 mod -- Effect Spore trigger
+    // RNG sequence: [0.1 (< 0.3, activates), 0.1 (< 1/3, poison)]
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "effect-spore",
+      opponent: attacker,
+      rngNextValues: [0.1, 0.1],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "poison",
+    });
+  });
+
+  it("given Effect Spore and RNG triggers and split roll in [1/3, 2/3), when contact is made, then inflicts paralysis", () => {
+    // Source: Bulbapedia -- Effect Spore: middle 1/3 = paralysis
+    // RNG sequence: [0.2 (< 0.3, activates), 0.5 (>= 1/3, < 2/3, paralysis)]
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "effect-spore",
+      opponent: attacker,
+      rngNextValues: [0.2, 0.5],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "paralysis",
+    });
+  });
+
+  it("given Effect Spore and RNG triggers and split roll >= 2/3, when contact is made, then inflicts sleep", () => {
+    // Source: Bulbapedia -- Effect Spore: last 1/3 = sleep
+    // RNG sequence: [0.1 (< 0.3, activates), 0.8 (>= 2/3, sleep)]
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "effect-spore",
+      opponent: attacker,
+      rngNextValues: [0.1, 0.8],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "sleep",
+    });
+  });
+
+  it("given Effect Spore and RNG >= 0.3, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Effect Spore: 30% gate, RNG >= 0.3 means no trigger
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "effect-spore",
+      opponent: attacker,
+      rngNextValues: [0.5], // >= 0.3, no trigger
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Effect Spore and attacker already has status, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Effect Spore: cannot inflict status if attacker already has one
+    const attacker = makeActivePokemon({ maxHp: 200, status: "poison" });
+    const ctx = makeContext({
+      ability: "effect-spore",
+      opponent: attacker,
+      rngNextValues: [0.1, 0.1],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// on-contact: Cute Charm
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- Cute Charm", () => {
+  it("given Cute Charm with opposite genders and RNG < 0.3, when contact is made, then inflicts infatuation volatile on opponent", () => {
+    // Source: Bulbapedia -- Cute Charm: 30% chance to infatuate on contact, opposite genders
+    // Source: Showdown Gen 4 mod -- Cute Charm trigger
+    const attacker = makeActivePokemon({ maxHp: 200, gender: "male" });
+    const ctx = makeContext({
+      ability: "cute-charm",
+      opponent: attacker,
+      gender: "female",
+      rngNextValues: [0.1], // < 0.3, triggers
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "volatile-inflict",
+      target: "opponent",
+      volatile: "infatuation",
+    });
+  });
+
+  it("given Cute Charm with same genders and RNG < 0.3, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Cute Charm: requires opposite genders
+    const attacker = makeActivePokemon({ maxHp: 200, gender: "female" });
+    const ctx = makeContext({
+      ability: "cute-charm",
+      opponent: attacker,
+      gender: "female",
+      rngNextValues: [0.1], // would trigger RNG, but same gender blocks
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Cute Charm and defender is genderless, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Cute Charm: fails if either Pokemon is genderless
+    const attacker = makeActivePokemon({ maxHp: 200, gender: "male" });
+    const ctx = makeContext({
+      ability: "cute-charm",
+      opponent: attacker,
+      gender: "genderless",
+      rngNextValues: [0.1],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Cute Charm and attacker is genderless, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Cute Charm: fails if either Pokemon is genderless
+    const attacker = makeActivePokemon({ maxHp: 200, gender: "genderless" });
+    const ctx = makeContext({
+      ability: "cute-charm",
+      opponent: attacker,
+      gender: "female",
+      rngNextValues: [0.1],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Cute Charm and RNG >= 0.3, when contact is made, then does not activate", () => {
+    // Source: Bulbapedia -- Cute Charm: 30% chance; RNG fail = no activation
+    const attacker = makeActivePokemon({ maxHp: 200, gender: "male" });
+    const ctx = makeContext({
+      ability: "cute-charm",
+      opponent: attacker,
+      gender: "female",
+      rngNextValues: [0.5], // >= 0.3, no trigger
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// on-contact: no opponent
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- no opponent", () => {
+  it("given Static but no opponent present, when on-contact triggers, then does not activate", () => {
+    const ctx = makeContext({ ability: "static" });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: Water Absorb
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- Water Absorb", () => {
+  it("given Water Absorb and incoming Water move with maxHp=200, when passive-immunity triggers, then activates with heal of 1/4 max HP (50)", () => {
+    // Source: Bulbapedia -- Water Absorb: Water moves heal 1/4 max HP
+    // Source: Showdown Gen 4 mod -- Water Absorb immunity
+    // Derivation: floor(200/4) = 50
+    const ctx = makeContext({
+      ability: "water-absorb",
+      maxHp: 200,
+      currentHp: 100,
+      move: makeMove("water"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "heal",
+      target: "self",
+      value: 50,
+    });
+  });
+
+  it("given Water Absorb and incoming Water move with maxHp=320, when passive-immunity triggers, then heals floor(320/4)=80 (triangulation)", () => {
+    // Source: Bulbapedia -- Water Absorb: heals 1/4 max HP
+    // Triangulation: confirms formula scales with max HP
+    // Derivation: floor(320/4) = 80
+    const ctx = makeContext({
+      ability: "water-absorb",
+      maxHp: 320,
+      currentHp: 200,
+      move: makeMove("water"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "heal",
+      target: "self",
+      value: 80,
+    });
+  });
+
+  it("given Water Absorb and incoming Fire move, when passive-immunity triggers, then does not activate", () => {
+    // Source: Bulbapedia -- Water Absorb: only absorbs Water-type moves
+    const ctx = makeContext({
+      ability: "water-absorb",
+      maxHp: 200,
+      move: makeMove("fire"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: Volt Absorb
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- Volt Absorb", () => {
+  it("given Volt Absorb and incoming Electric move with maxHp=200, when passive-immunity triggers, then activates with heal of 1/4 max HP (50)", () => {
+    // Source: Bulbapedia -- Volt Absorb: Electric moves heal 1/4 max HP
+    // Source: Showdown Gen 4 mod -- Volt Absorb immunity
+    // Derivation: floor(200/4) = 50
+    const ctx = makeContext({
+      ability: "volt-absorb",
+      maxHp: 200,
+      currentHp: 100,
+      move: makeMove("electric"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "heal",
+      target: "self",
+      value: 50,
+    });
+  });
+
+  it("given Volt Absorb and incoming Normal move, when passive-immunity triggers, then does not activate", () => {
+    // Source: Bulbapedia -- Volt Absorb: only absorbs Electric-type moves
+    const ctx = makeContext({
+      ability: "volt-absorb",
+      maxHp: 200,
+      move: makeMove("normal"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: Motor Drive
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- Motor Drive", () => {
+  it("given Motor Drive and incoming Electric move, when passive-immunity triggers, then activates with Speed +1 stat change", () => {
+    // Source: Bulbapedia -- Motor Drive: Electric moves raise Speed by 1 stage
+    // Source: Showdown Gen 4 mod -- Motor Drive immunity + Speed boost
+    const ctx = makeContext({
+      ability: "motor-drive",
+      maxHp: 200,
+      move: makeMove("electric"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "stat-change",
+      target: "self",
+      stat: "speed",
+      stages: 1,
+    });
+  });
+
+  it("given Motor Drive and incoming Water move, when passive-immunity triggers, then does not activate", () => {
+    // Source: Bulbapedia -- Motor Drive: only absorbs Electric-type moves
+    const ctx = makeContext({
+      ability: "motor-drive",
+      maxHp: 200,
+      move: makeMove("water"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: Dry Skin (Water immunity)
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- Dry Skin", () => {
+  it("given Dry Skin and incoming Water move with maxHp=200, when passive-immunity triggers, then activates with heal of 1/4 max HP (50)", () => {
+    // Source: Bulbapedia -- Dry Skin: Water moves heal 1/4 max HP (immunity)
+    // Source: Showdown Gen 4 mod -- Dry Skin passive Water immunity
+    // Derivation: floor(200/4) = 50
+    const ctx = makeContext({
+      ability: "dry-skin",
+      maxHp: 200,
+      currentHp: 100,
+      move: makeMove("water"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "heal",
+      target: "self",
+      value: 50,
+    });
+  });
+
+  it("given Dry Skin and incoming Fire move, when passive-immunity triggers, then does not activate (Fire weakness handled in damage calc)", () => {
+    // Source: Bulbapedia -- Dry Skin: Fire weakness is a damage multiplier, not immunity
+    const ctx = makeContext({
+      ability: "dry-skin",
+      maxHp: 200,
+      move: makeMove("fire"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: Flash Fire
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- Flash Fire", () => {
+  it("given Flash Fire and incoming Fire move, when passive-immunity triggers, then activates with no effects (volatile boost deferred)", () => {
+    // Source: Bulbapedia -- Flash Fire: Fire moves are absorbed; powers up Fire moves
+    // Source: Showdown Gen 4 mod -- Flash Fire immunity (volatile boost deferred to Part 7)
+    const ctx = makeContext({
+      ability: "flash-fire",
+      maxHp: 200,
+      move: makeMove("fire"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(0);
+  });
+
+  it("given Flash Fire and incoming Water move, when passive-immunity triggers, then does not activate", () => {
+    // Source: Bulbapedia -- Flash Fire: only absorbs Fire-type moves
+    const ctx = makeContext({
+      ability: "flash-fire",
+      maxHp: 200,
+      move: makeMove("water"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: Levitate
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- Levitate", () => {
+  it("given Levitate and incoming Ground move, when passive-immunity triggers, then activates with no effects (pure immunity)", () => {
+    // Source: Bulbapedia -- Levitate: Ground moves have no effect
+    // Source: Showdown Gen 4 mod -- Levitate ground immunity
+    const ctx = makeContext({
+      ability: "levitate",
+      maxHp: 200,
+      move: makeMove("ground"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(0);
+  });
+
+  it("given Levitate and incoming Electric move, when passive-immunity triggers, then does not activate", () => {
+    // Source: Bulbapedia -- Levitate: only grants immunity to Ground-type moves
+    const ctx = makeContext({
+      ability: "levitate",
+      maxHp: 200,
+      move: makeMove("electric"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: no move provided
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- no move", () => {
+  it("given Water Absorb but no move in context, when passive-immunity triggers, then does not activate", () => {
+    const ctx = makeContext({
+      ability: "water-absorb",
+      maxHp: 200,
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// passive-immunity: unknown ability
+// ===========================================================================
+
+describe("applyGen4Ability passive-immunity -- unknown ability", () => {
+  it("given an unknown ability with a Water move, when passive-immunity triggers, then does not activate", () => {
+    const ctx = makeContext({
+      ability: "some-unknown",
+      maxHp: 200,
+      move: makeMove("water"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
   });
 });
