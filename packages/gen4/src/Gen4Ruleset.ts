@@ -178,6 +178,7 @@ export class Gen4Ruleset extends BaseRuleset {
     let totalDamage = 0;
     let statusInflicted: PrimaryStatus | null = null;
     const messages: string[] = [];
+    const hazardsToRemove: EntryHazardType[] = [];
     const pokemonName = pokemon.pokemon.nickname ?? pokemon.pokemon.speciesId.toString();
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
 
@@ -222,8 +223,8 @@ export class Gen4Ruleset extends BaseRuleset {
         // Source: Bulbapedia — Toxic Spikes: grounded Poison-types remove them
         if (pokemon.types.includes("poison")) {
           // Absorb: remove the toxic spikes from this side
-          // Note: The engine handles the actual removal of the hazard struct;
-          // we signal via statChanges or messages. For now, just message.
+          // Source: Bulbapedia — Toxic Spikes: grounded Poison-types remove them
+          hazardsToRemove.push("toxic-spikes");
           messages.push(`${pokemonName} absorbed the poison spikes!`);
         } else if (pokemon.types.includes("steel")) {
           // Steel-types are immune to poison status
@@ -246,6 +247,7 @@ export class Gen4Ruleset extends BaseRuleset {
       statusInflicted,
       statChanges: [],
       messages,
+      hazardsToRemove: hazardsToRemove.length > 0 ? hazardsToRemove : undefined,
     };
   }
 
@@ -271,7 +273,9 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: pret/pokeplatinum — multi-hit uses same 8-entry lookup table as Gen 1-3
    * Also: packages/core/src/logic/gen12-shared.ts gen14MultiHitRoll
    */
-  rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
+  rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number {
+    // Source: Showdown — Skill Link (introduced Gen 4) always hits 5 times
+    if (attacker.ability === "skill-link") return 5;
     return gen14MultiHitRoll(rng);
   }
 

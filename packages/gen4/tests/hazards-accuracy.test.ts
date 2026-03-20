@@ -414,47 +414,25 @@ describe("Gen4Ruleset doesMoveHit", () => {
     expect(results.every(Boolean)).toBe(true);
   });
 
-  it("given attacker with Compound Eyes and 70% accuracy move, when doesMoveHit calculation, then effective accuracy is 91% (floor(70 * 130/100))", () => {
+  it("given attacker with Compound Eyes and 70% accuracy move, when doesMoveHit with seed producing roll 74, then base misses but Compound Eyes hits", () => {
     // Source: pret/pokeplatinum — Compound Eyes: 1.3x accuracy bonus
     // Derivation: calc = floor(1 * 70 / 1) = 70; with Compound Eyes: floor(70 * 130 / 100) = 91
-    // A roll of 91 should hit; a roll of 92 should miss.
+    // Seed 2 produces SeededRandom.int(1,100) = 74
+    // Without Compound Eyes: 74 > 70 → miss
+    // With Compound Eyes:    74 <= 91 → hit
     const ruleset = makeRuleset();
 
-    // Find a seed that rolls exactly 91 (should hit) — use the SeededRandom.int(1,100) behavior
-    // By inspecting: with compound eyes, calc becomes 91.
-    // Test with a known-hit seed and a move that has 70% base accuracy
-    // With compound eyes active, a roll of 91 or less hits.
-
-    // Verify the basic calculation: without Compound Eyes, 70% accuracy with seed-1 roll
-    // Testing the modifier logic directly by checking that Compound Eyes calc > standard calc
     const ctxStandard = makeAccuracyContext({ moveAccuracy: 70, accStage: 0, evaStage: 0 });
+    (ctxStandard as { rng: unknown }).rng = new SeededRandom(2);
+    expect(ruleset.doesMoveHit(ctxStandard)).toBe(false);
+
     const ctxCompound = makeAccuracyContext({
       moveAccuracy: 70,
       accStage: 0,
       evaStage: 0,
       attackerAbility: "compound-eyes",
     });
-
-    // Both use the same seed (42) — compound eyes should be able to hit more often
-    // With accuracy = 70 and no modifier: calc = 70
-    // With Compound Eyes: calc = floor(70 * 130 / 100) = 91
-    // Verify: the compound eyes version has a hit threshold of 91 vs 70
-    // Seed 42 on SeededRandom.int(1,100): check what value it produces
-    const rng = new SeededRandom(42);
-    const roll = rng.int(1, 100);
-    // If roll <= 70, both hit. If 71 <= roll <= 91, only compound eyes hits.
-    if (roll > 70 && roll <= 91) {
-      // Roll is in the "compound eyes saves it" zone
-      expect(ruleset.doesMoveHit(ctxStandard)).toBe(false);
-      expect(ruleset.doesMoveHit(ctxCompound)).toBe(true);
-    } else if (roll <= 70) {
-      // Both hit
-      expect(ruleset.doesMoveHit(ctxStandard)).toBe(true);
-      expect(ruleset.doesMoveHit(ctxCompound)).toBe(true);
-    } else {
-      // roll > 91: both miss
-      expect(ruleset.doesMoveHit(ctxStandard)).toBe(false);
-      expect(ruleset.doesMoveHit(ctxCompound)).toBe(false);
-    }
+    (ctxCompound as { rng: unknown }).rng = new SeededRandom(2);
+    expect(ruleset.doesMoveHit(ctxCompound)).toBe(true);
   });
 });
