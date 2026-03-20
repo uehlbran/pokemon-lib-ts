@@ -2835,8 +2835,17 @@ describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
       chart,
     );
 
-    // Dry Skin: Fire damage × 1.25 → floor(noAbility * 1.25)
-    expect(drySkinResult.damage).toBe(Math.floor(noAbilityResult.damage * 1.25));
+    // Dry Skin applies 1.25x at BASE POWER stage (onSourceBasePower), not final damage.
+    // Derivation for drySkinResult:
+    //   power' = floor(80 * 1.25) = 100
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   base = floor(floor(22*100*100/100)/50) = floor(2200/50) = 44
+    //   +2 = 46; rng=100 → 46; STAB(fire vs fire) = floor(46*1.5) = 69; finalDamage = 69
+    // Derivation for noAbilityResult (no power modifier):
+    //   base = floor(floor(22*80*100/100)/50) = 35; +2=37; STAB=floor(37*1.5)=55
+    // Source: Showdown data/abilities.ts — Dry Skin onSourceBasePower (priority 17)
+    expect(drySkinResult.damage).toBe(69);
+    expect(noAbilityResult.damage).toBe(55);
   });
 });
 
