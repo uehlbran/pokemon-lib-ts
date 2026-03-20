@@ -301,6 +301,8 @@ describe("Gen4Ruleset applyEntryHazards — Toxic Spikes", () => {
       side as Parameters<Gen4Ruleset["applyEntryHazards"]>[1],
     );
     expect(result.statusInflicted).toBeNull();
+    // Source: Bulbapedia — Poison-types absorb (remove) Toxic Spikes on switch-in
+    expect(result.hazardsToRemove).toEqual(["toxic-spikes"]);
   });
 
   it("given a grounded Steel-type Pokemon and Toxic Spikes, when switching in, then no status inflicted (Steel immune to poison)", () => {
