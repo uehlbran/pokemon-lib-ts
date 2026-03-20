@@ -66,6 +66,8 @@ type MutableResult = {
   selfVolatileInflicted?: VolatileStatus | null;
   selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+  tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
+  trickRoomSet?: { turnsLeft: number } | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -668,9 +670,14 @@ function handleNullEffectMoves(
     }
 
     case "trick-room": {
-      // Toggle Trick Room field state
+      // Toggle Trick Room: if already active, end it; otherwise start it (5 turns)
       // Source: Showdown Gen 4 — Trick Room reverses speed order for 5 turns
-      result.messages.push("The dimensions were twisted!");
+      if (context.state.trickRoom.active) {
+        result.messages.push("The twisted dimensions returned to normal!");
+      } else {
+        result.trickRoomSet = { turnsLeft: 5 };
+        result.messages.push("The dimensions were twisted!");
+      }
       break;
     }
 
@@ -679,7 +686,7 @@ function handleNullEffectMoves(
       // Source: Showdown Gen 4 — Tailwind lasts 3 turns (including the turn it's used)
       // Source: Bulbapedia — Tailwind duration is 3 turns in Gen 4
       // Note: Gen 5+ extended Tailwind to 4 turns
-      result.screenSet = { screen: "tailwind", turnsLeft: 3, side: "attacker" };
+      result.tailwindSet = { turnsLeft: 3, side: "attacker" };
       result.messages.push(`${attackerName} whipped up a tailwind!`);
       break;
     }

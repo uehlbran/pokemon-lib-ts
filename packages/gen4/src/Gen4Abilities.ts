@@ -265,7 +265,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self", value: healAmount } as AbilityEffect],
+        effects: [{ effectType: "heal", target: "self", value: healAmount }],
         messages: [`${name}'s Rain Dish restored its HP!`],
       };
     }
@@ -278,7 +278,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self", value: healAmount } as AbilityEffect],
+        effects: [{ effectType: "heal", target: "self", value: healAmount }],
         messages: [`${name}'s Ice Body restored its HP!`],
       };
     }
@@ -291,7 +291,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         const healAmount = Math.max(1, Math.floor(maxHp / 8));
         return {
           activated: true,
-          effects: [{ effectType: "none", target: "self", value: healAmount } as AbilityEffect],
+          effects: [{ effectType: "heal", target: "self", value: healAmount }],
           messages: [`${name}'s Dry Skin restored its HP!`],
         };
       }
@@ -299,7 +299,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         const chipDamage = Math.max(1, Math.floor(maxHp / 8));
         return {
           activated: true,
-          effects: [{ effectType: "none", target: "self", value: -chipDamage } as AbilityEffect],
+          effects: [{ effectType: "chip-damage", target: "self", value: chipDamage }],
           messages: [`${name}'s Dry Skin was hurt by the harsh sunlight!`],
         };
       }
@@ -314,7 +314,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self", value: -chipDamage } as AbilityEffect],
+        effects: [{ effectType: "chip-damage", target: "self", value: chipDamage }],
         messages: [`${name} was hurt by Solar Power!`],
       };
     }
@@ -361,7 +361,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "opponent", value: -chipDamage } as AbilityEffect],
+        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
         messages: [`${oppName} is tormented by ${name}'s Bad Dreams!`],
       };
     }
@@ -380,7 +380,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const healAmount = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self", value: healAmount } as AbilityEffect],
+        effects: [{ effectType: "heal", target: "self", value: healAmount }],
         messages: [`${name}'s Poison Heal restored its HP!`],
       };
     }

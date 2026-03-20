@@ -1072,8 +1072,8 @@ describe("Gen 4 executeMoveEffect — Roost (null-effect)", () => {
 // ─── Trick Room ─────────────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Trick Room", () => {
-  it("given Trick Room used, when executeMoveEffect called, then message emitted", () => {
-    // Source: Showdown Gen 4 — Trick Room reverses speed order
+  it("given Trick Room used when trickRoom is not active, when executeMoveEffect called, then trickRoomSet with 5 turns", () => {
+    // Source: Showdown Gen 4 — Trick Room reverses speed order for 5 turns
     const attacker = createActivePokemon({ types: ["psychic"] });
     const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove("trick-room");
@@ -1082,14 +1082,35 @@ describe("Gen 4 executeMoveEffect — Trick Room", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
+    expect(result.trickRoomSet).toEqual({ turnsLeft: 5 });
     expect(result.messages).toContain("The dimensions were twisted!");
+  });
+
+  it("given Trick Room used when trickRoom is already active, when executeMoveEffect called, then trickRoomSet is not set and dimensions returned to normal", () => {
+    // Source: Showdown Gen 4 — Using Trick Room while active ends it
+    const attacker = createActivePokemon({ types: ["psychic"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("trick-room");
+    const rng = createMockRng(0);
+    // Create state with active Trick Room
+    const state = createMinimalBattleState(attacker, defender);
+    (state as { trickRoom: { active: boolean; turnsLeft: number } }).trickRoom = {
+      active: true,
+      turnsLeft: 3,
+    };
+    const context = { attacker, defender, move, damage: 0, state, rng } as MoveEffectContext;
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.trickRoomSet).toBeUndefined();
+    expect(result.messages).toContain("The twisted dimensions returned to normal!");
   });
 });
 
 // ─── Tailwind ───────────────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Tailwind", () => {
-  it("given Tailwind used, when executeMoveEffect called, then screenSet with 3 turns", () => {
+  it("given Tailwind used, when executeMoveEffect called, then tailwindSet with 3 turns and side attacker", () => {
     // Source: Showdown Gen 4 — Tailwind lasts 3 turns in Gen 4
     // Source: Bulbapedia — Tailwind: 3 turns in Gen 4, 4 turns in Gen 5+
     const attacker = createActivePokemon({ types: ["flying"], nickname: "Togekiss" });
@@ -1100,7 +1121,8 @@ describe("Gen 4 executeMoveEffect — Tailwind", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.screenSet).toEqual({ screen: "tailwind", turnsLeft: 3, side: "attacker" });
+    expect(result.tailwindSet).toEqual({ turnsLeft: 3, side: "attacker" });
+    expect(result.screenSet).toBeUndefined();
     expect(result.messages).toContain("Togekiss whipped up a tailwind!");
   });
 });
