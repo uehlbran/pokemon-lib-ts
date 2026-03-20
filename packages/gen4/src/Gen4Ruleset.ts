@@ -14,6 +14,8 @@ import type {
   ExpContext,
   ItemContext,
   ItemResult,
+  MoveEffectContext,
+  MoveEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
@@ -35,6 +37,7 @@ import { applyGen4Ability } from "./Gen4Abilities";
 import { GEN4_CRIT_MULTIPLIER, GEN4_CRIT_RATE_DENOMINATORS } from "./Gen4CritCalc";
 import { calculateGen4Damage } from "./Gen4DamageCalc";
 import { applyGen4HeldItem } from "./Gen4Items";
+import { executeGen4MoveEffect } from "./Gen4MoveEffects";
 import { GEN4_TYPE_CHART, GEN4_TYPES } from "./Gen4TypeChart";
 import { applyGen4WeatherEffects } from "./Gen4Weather";
 
@@ -101,6 +104,25 @@ export class Gen4Ruleset extends BaseRuleset {
    */
   calculateDamage(context: DamageContext): DamageResult {
     return calculateGen4Damage(context, this.getTypeChart());
+  }
+
+  // --- Move Effects ---
+
+  /**
+   * Gen 4 move effect execution.
+   * Delegates to Gen4MoveEffects which handles all data-driven and custom effects.
+   *
+   * Key Gen 4 additions over Gen 3:
+   *   - Shield Dust blocks secondary effects
+   *   - Weather rocks extend weather to 8 turns
+   *   - Light Clay extends screens to 8 turns
+   *   - Defog, Roost, Stealth Rock, Toxic Spikes, Trick Room, Tailwind
+   *   - No Electric-type paralysis immunity (Gen 6 addition)
+   *
+   * Source: Showdown sim/battle.ts Gen 4 mod
+   */
+  executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    return executeGen4MoveEffect(context);
   }
 
   // --- Critical Hit System ---
