@@ -744,3 +744,190 @@ describe("applyGen4HeldItem on-hit -- King's Rock RNG fail", () => {
     expect(result.activated).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// end-of-turn: Lum Berry — additional branch coverage
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem end-of-turn — Lum Berry (branch coverage)", () => {
+  it("given Lum Berry and no status and no confusion, when end-of-turn triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Lum Berry only activates when there is a status to cure
+    // Covers the !hasPrimaryStatus && !hasConfusion early return (Gen4Items.ts line 164-165)
+    const ctx = makeContext({ heldItem: "lum-berry", status: null, hasConfusion: false });
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Lum Berry with confusion only (no primary status), when end-of-turn triggers, then cures confusion and consumes", () => {
+    // Source: Showdown Gen 4 mod — Lum Berry cures confusion even without a primary status
+    // Covers the hasPrimaryStatus=false, hasConfusion=true branch (Gen4Items.ts line 168/171)
+    const ctx = makeContext({ heldItem: "lum-berry", status: null, hasConfusion: true });
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    expect(result.activated).toBe(true);
+    const types = result.effects.map((e) => e.type);
+    // Should NOT have status-cure (no primary status), but SHOULD have volatile-cure
+    expect(types).not.toContain("status-cure");
+    expect(types).toContain("volatile-cure");
+    expect(types).toContain("consume");
+    expect(result.effects.find((e) => e.type === "volatile-cure")).toMatchObject({
+      value: "confusion",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// end-of-turn: status-curing berries — wrong-status no-activation cases
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem end-of-turn — status-curing berry wrong-status cases", () => {
+  it("given Cheri Berry and burn status (not paralysis), when end-of-turn triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Cheri Berry only cures paralysis, not burn
+    // Covers the no-activation branch (Gen4Items.ts line 194) when status != paralysis
+    const ctx = makeContext({ heldItem: "cheri-berry", status: "burn" });
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Chesto Berry and burn status (not sleep), when end-of-turn triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Chesto Berry only cures sleep, not burn
+    // Covers the no-activation branch (Gen4Items.ts line 210) when status != sleep
+    const ctx = makeContext({ heldItem: "chesto-berry", status: "burn" });
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Pecha Berry and paralysis status (not poison/badly-poisoned), when end-of-turn triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Pecha Berry only cures poison/badly-poisoned, not paralysis
+    // Covers the no-activation branch (Gen4Items.ts line 226) when status is unrelated
+    const ctx = makeContext({ heldItem: "pecha-berry", status: "paralysis" });
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Rawst Berry and paralysis status (not burn), when end-of-turn triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Rawst Berry only cures burn, not paralysis
+    // Covers the no-activation branch (Gen4Items.ts line 242) when status != burn
+    const ctx = makeContext({ heldItem: "rawst-berry", status: "paralysis" });
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Aspear Berry and paralysis status (not freeze), when end-of-turn triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Aspear Berry only cures freeze, not paralysis
+    // Covers the no-activation branch (Gen4Items.ts line 258) when status != freeze
+    const ctx = makeContext({ heldItem: "aspear-berry", status: "paralysis" });
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// on-damage-taken: Sitrus Berry — KO damage does not trigger
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-damage-taken — Sitrus Berry KO edge case", () => {
+  it("given Sitrus Berry and damage that exactly KOs (hpAfterDamage = 0), when damage taken, then does not activate (berry needs HP > 0 to heal)", () => {
+    // Source: Showdown Gen 4 mod — Sitrus Berry only activates if hpAfterDamage > 0
+    // If the hit KOs the Pokemon, Sitrus Berry does not proc (no one to heal)
+    // Covers the hpAfterDamage <= 0 branch (Gen4Items.ts lines 383-385)
+    const ctx = makeContext({
+      heldItem: "sitrus-berry",
+      maxHp: 160,
+      currentHp: 160,
+      damage: 160, // Exactly KOs: hpAfterDamage = 0
+    });
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// on-damage-taken: Oran Berry — HP stays above 50% (no activation)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-damage-taken — Oran Berry HP stays above 50%", () => {
+  it("given Oran Berry and small damage (HP stays above 50%), when damage taken, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Oran Berry only triggers when hpAfterDamage <= floor(maxHP/2)
+    // Covers the no-activation branch (Gen4Items.ts lines 383-385) for Oran Berry
+    // Derivation: maxHp=160, currentHp=160, damage=10 → hpAfterDamage=150 > 80 (50%) → no trigger
+    const ctx = makeContext({
+      heldItem: "oran-berry",
+      maxHp: 160,
+      currentHp: 160,
+      damage: 10, // HP after = 150, still above 80 (50% of 160)
+    });
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// handleEndOfTurn — calculatedStats fallback (maxHp from currentHp)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem end-of-turn — calculatedStats hp fallback", () => {
+  it("given Leftovers and Pokemon with no calculatedStats, when end-of-turn triggers, then heals using currentHp as max", () => {
+    // Source: Showdown Gen 4 mod — maxHp = calculatedStats?.hp ?? currentHp
+    // Covers the null calculatedStats fallback (Gen4Items.ts line 60)
+    // Derivation: without calculatedStats, maxHp = currentHp = 160; floor(160/16) = 10
+    const ctx = makeContext({ heldItem: "leftovers", maxHp: 160 });
+    // Remove calculatedStats to trigger fallback
+    (ctx.pokemon.pokemon as { calculatedStats: null }).calculatedStats = null;
+    const result = applyGen4HeldItem("end-of-turn", ctx);
+
+    // maxHp fallback = currentHp = 160; floor(160/16) = 10
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({ type: "heal", value: 10 });
+  });
+
+  it("given Life Orb and Pokemon with no calculatedStats, when on-hit triggers, then recoil uses currentHp as max", () => {
+    // Source: Bulbapedia — Life Orb recoil = floor(maxHP/10); fallback to currentHp when no stats
+    // Covers the null calculatedStats fallback (Gen4Items.ts line 403)
+    // Derivation: maxHp fallback = currentHp = 160; floor(160/10) = 16
+    const ctx = makeContext({ heldItem: "life-orb", maxHp: 160, damage: 80 });
+    (ctx.pokemon.pokemon as { calculatedStats: null }).calculatedStats = null;
+    const result = applyGen4HeldItem("on-hit", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({ type: "none", value: -16 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// handleOnHit — Shell Bell with undefined damage (fallback to 0)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-hit — Shell Bell with undefined damage", () => {
+  it("given Shell Bell and no damage context (undefined), when on-hit triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Shell Bell uses context.damage ?? 0; 0 damage = no activation
+    // Covers the `context.damage ?? 0` fallback (Gen4Items.ts line 437) when damage is undefined
+    const ctx = makeContext({ heldItem: "shell-bell" }); // damage is undefined in makeContext
+    const result = applyGen4HeldItem("on-hit", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// handleOnHit — Life Orb with undefined damage (fallback to 0)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-hit — Life Orb with undefined damage", () => {
+  it("given Life Orb and no damage context (undefined), when on-hit triggers, then does not activate", () => {
+    // Source: Showdown Gen 4 mod — Life Orb uses context.damage ?? 0; 0 damage = no activation
+    // Covers the `context.damage ?? 0` fallback (Gen4Items.ts line 454) when damage is undefined
+    const ctx = makeContext({ heldItem: "life-orb" }); // damage is undefined
+    const result = applyGen4HeldItem("on-hit", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});

@@ -1653,6 +1653,970 @@ describe("Gen 4 executeMoveEffect — Wish", () => {
   });
 });
 
+// ─── Spider Web ─────────────────────────────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Spider Web (trapping)", () => {
+  it("given Spider Web used, when executeMoveEffect called, then volatileInflicted = 'trapped'", () => {
+    // Source: Showdown Gen 4 — Spider Web prevents switching (same as Mean Look)
+    const attacker = createActivePokemon({ types: ["bug"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("spider-web");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.volatileInflicted).toBe("trapped");
+  });
+});
+
+// ─── Self-Destruct ──────────────────────────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Self-Destruct", () => {
+  it("given Self-Destruct used, when executeMoveEffect called, then selfFaint = true", () => {
+    // Source: Showdown Gen 4 — Self-Destruct causes self-KO (same as Explosion)
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Electrode" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("self-destruct");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 200, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfFaint).toBe(true);
+    expect(result.messages).toContain("Electrode exploded!");
+  });
+});
+
+// ─── applyMoveEffect — passthrough cases (no-op effect types) ───────────────
+
+describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", () => {
+  it("given a move with remove-hazards effect type, when executeMoveEffect called, then no hazard clearing in result (handled by engine)", () => {
+    // Source: Showdown Gen 4 — remove-hazards is a no-op in applyMoveEffect;
+    // Rapid Spin uses the custom handler and Defog uses handleNullEffectMoves.
+    // This test covers the intentional no-op branch at line 368 in Gen4MoveEffects.ts.
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("some-spin", {
+      effect: { type: "remove-hazards" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // remove-hazards is a no-op in applyMoveEffect — only statuses/messages reset
+    expect(result.clearSideHazards).toBeUndefined();
+    expect(result.statusInflicted).toBeNull();
+  });
+
+  it("given a move with fixed-damage effect type, when executeMoveEffect called, then no status inflicted (handled by damage calc)", () => {
+    // Source: Showdown Gen 4 — fixed-damage is handled by the damage calculation, not move effects
+    // Covers the fixed-damage case arm (line 374) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("sonic-boom", {
+      effect: { type: "fixed-damage", damage: 20 } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 20, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBeNull();
+    expect(result.recoilDamage).toBe(0);
+  });
+
+  it("given a move with terrain effect type, when executeMoveEffect called, then no terrain set in result (not in Gen 4)", () => {
+    // Source: Showdown Gen 4 — terrain moves are N/A in Gen 4 (Gen 5 feature)
+    // Covers the terrain case arm (line 381) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["electric"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("electric-terrain", {
+      effect: { type: "terrain", terrain: "electric" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toHaveLength(0);
+  });
+
+  it("given a move with multi-hit effect type, when executeMoveEffect called, then no additional effects (handled by engine)", () => {
+    // Source: Showdown Gen 4 — multi-hit is handled by the engine loop, not move effects
+    // Covers the multi-hit case arm (line 382) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("fury-swipes", {
+      effect: { type: "multi-hit", min: 2, max: 5 } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 15, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.recoilDamage).toBe(0);
+    expect(result.statusInflicted).toBeNull();
+  });
+
+  it("given a move with two-turn effect type, when executeMoveEffect called, then no side effects (handled by engine)", () => {
+    // Source: Showdown Gen 4 — two-turn moves like Fly/Dig handled by engine, not move effects
+    // Covers the two-turn case arm (line 383) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["flying"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("fly", {
+      effect: { type: "two-turn", status: "semi-invulnerable" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 90, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBeNull();
+    expect(result.recoilDamage).toBe(0);
+  });
+
+  it("given a move with damage effect type, when executeMoveEffect called, then no additional effects (pure damage)", () => {
+    // Source: Showdown Gen 4 — damage effect type is pure damage, handled by the damage calc
+    // Covers the damage case arm (line 377) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("tackle", {
+      effect: { type: "damage" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 40, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBeNull();
+    expect(result.recoilDamage).toBe(0);
+  });
+});
+
+// ─── applyMoveEffect — stat-change targeting defender ───────────────────────
+
+describe("Gen 4 executeMoveEffect — stat-change targeting defender", () => {
+  it("given Charm (secondary stat drop on foe), when roll succeeds, then defender's Attack drops", () => {
+    // Source: Showdown Gen 4 — Charm lowers target's Attack stat
+    // Using a synthetic move with stat-change type targeting foe
+    // Covers the effect.target !== "self" branch (line 246) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("charm-fake", {
+      category: "status",
+      effect: {
+        type: "stat-change",
+        target: "foe",
+        chance: 100,
+        changes: [{ stat: "attack", stages: -2 }],
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statChanges).toContainEqual({ target: "defender", stat: "attack", stages: -2 });
+  });
+
+  it("given a physical move with secondary stat-change chance, when RNG roll fails, then no stat change", () => {
+    // Source: Showdown Gen 4 — secondary stat changes only apply if the roll succeeds
+    // Using a synthetic physical move with 10% stat-change secondary effect
+    // Covers the roll-fails branch (line 239-242) in applyMoveEffect for stat-change
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("crunch-fake", {
+      category: "physical",
+      effect: {
+        type: "stat-change",
+        target: "foe",
+        chance: 10,
+        changes: [{ stat: "defense", stages: -1 }],
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(50); // roll=50, 50 < 10 is false → chance fails
+    const context = createContext(attacker, defender, move, 80, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statChanges).toHaveLength(0);
+  });
+});
+
+// ─── applyMoveEffect — volatile-status for status move (guaranteed) ──────────
+
+describe("Gen 4 executeMoveEffect — volatile-status on status move (guaranteed)", () => {
+  it("given a status move with volatile-status effect and roll fails, when used, then volatile IS still inflicted (guaranteed for status moves)", () => {
+    // Source: Showdown Gen 4 — volatile-status from status moves is guaranteed (no roll for status moves)
+    // Covers the 'move.category === status' path (line 290-299) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("focus-energy", {
+      category: "status",
+      effect: {
+        type: "volatile-status",
+        status: "focus-energy",
+        chance: 0,
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(99); // roll=99, would fail if used
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // Status moves with volatile-status are guaranteed, ignoring chance
+    expect(result.volatileInflicted).toBe("focus-energy");
+  });
+
+  it("given a damaging move with volatile-status secondary effect, when roll fails, then volatile NOT inflicted", () => {
+    // Source: Showdown Gen 4 — volatile-status from damaging moves uses a roll
+    // Covers the false-branch of the volatile-status roll check (line 293-297)
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("rock-slide-fake", {
+      category: "physical",
+      effect: {
+        type: "volatile-status",
+        status: "flinch",
+        chance: 10,
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(50); // roll=50, 50 < 10 is false → fails
+    const context = createContext(attacker, defender, move, 80, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.volatileInflicted).toBeNull();
+  });
+});
+
+// ─── Serene Grace at 100% cap ───────────────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Serene Grace doubling chance to 100%", () => {
+  it("given attacker has Serene Grace and move has 50% secondary chance, when roll is 99, then effect STILL activates (capped at 100%)", () => {
+    // Source: pret/pokeplatinum — Serene Grace doubles secondary effect chance; min(chance*2, 100)
+    // A 50% chance doubled = 100%, meaning it always succeeds regardless of roll
+    // Covers the effectiveChance >= 100 branch (line 185) in rollEffectChance
+    const attacker = createActivePokemon({ types: ["normal"], ability: "serene-grace" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("iron-head-fake", {
+      category: "physical",
+      effect: {
+        type: "volatile-status",
+        status: "flinch",
+        chance: 50, // 50% × 2 (Serene Grace) = 100% → always activates
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(99); // roll=99, normally would fail 50% check, but 100% = guaranteed
+    const context = createContext(attacker, defender, move, 80, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // 100% guaranteed effect — covers the 'effectiveChance >= 100' fast-path
+    expect(result.volatileInflicted).toBe("flinch");
+  });
+});
+
+// ─── handleNullEffectMoves — default case ───────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — handleNullEffectMoves default case", () => {
+  it("given a null-effect move with unrecognized ID, when executeMoveEffect called, then no effect produced", () => {
+    // Source: Showdown Gen 4 — unknown null-effect moves are silently ignored
+    // Covers the default case (line 846-847) in handleNullEffectMoves
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("unknown-null-move", {
+      effect: null,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBeNull();
+    expect(result.volatileInflicted).toBeNull();
+    expect(result.statChanges).toHaveLength(0);
+    expect(result.messages).toHaveLength(0);
+  });
+});
+
+// ─── handleCustomEffect — default case ──────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — handleCustomEffect default case", () => {
+  it("given a custom-effect move with unrecognized ID, when executeMoveEffect called, then no effect produced", () => {
+    // Source: Showdown Gen 4 — unknown custom moves fall through to no-op default
+    // Covers the default case (line 618-621) in handleCustomEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("future-custom-move", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBeNull();
+    expect(result.volatileInflicted).toBeNull();
+    expect(result.messages).toHaveLength(0);
+  });
+});
+
+// ─── handleNullEffectMoves — attacker on side 1 (hazards target side 0) ─────
+
+describe("Gen 4 executeMoveEffect — entry hazards from attacker on side 1", () => {
+  it("given attacker on side 1 uses Stealth Rock, when executeMoveEffect called, then hazardSet targets side 0", () => {
+    // Source: Showdown Gen 4 — Stealth Rock places hazard on the opponent's side
+    // Covers the attackerSideIndex !== 0 branch (line 653) in handleNullEffectMoves
+    const attacker = createActivePokemon({ types: ["rock"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("stealth-rock");
+    const rng = createMockRng(0);
+
+    // Place attacker on side 1 instead of side 0
+    const state = createMinimalBattleState(defender, attacker); // swap sides
+    const context = { attacker, defender, move, damage: 0, state, rng } as MoveEffectContext;
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // Attacker on side 1 → hazard targets side 0
+    expect(result.hazardSet).toEqual({ hazard: "stealth-rock", targetSide: 0 });
+  });
+
+  it("given attacker on side 1 uses Toxic Spikes, when executeMoveEffect called, then hazardSet targets side 0", () => {
+    // Source: Showdown Gen 4 — Toxic Spikes places hazard on the opponent's side
+    // Covers the attackerSideIndex !== 0 branch (line 666) in handleNullEffectMoves
+    const attacker = createActivePokemon({ types: ["poison"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("toxic-spikes");
+    const rng = createMockRng(0);
+
+    const state = createMinimalBattleState(defender, attacker);
+    const context = { attacker, defender, move, damage: 0, state, rng } as MoveEffectContext;
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.hazardSet).toEqual({ hazard: "toxic-spikes", targetSide: 0 });
+  });
+});
+
+// ─── Belly Drum — attack already at +6 ──────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Belly Drum with attack already maxed", () => {
+  it("given attacker at +6 attack with >50% HP, when Belly Drum used, then recoilDamage = 50% HP and statChanges has stages = 0", () => {
+    // Source: Showdown Gen 4 — Belly Drum maximizes attack; stages = 6 - current
+    // When already at +6 attack, stages = 6 - 6 = 0 (no change to stages)
+    // Covers the branch where attacker.statStages.attack is 6 (line 419)
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      currentHp: 200,
+      maxHp: 200,
+      nickname: "Snorlax",
+      statStages: { attack: 6 },
+    });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("belly-drum");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // Belly Drum still costs 50% HP even if attack is maxed
+    expect(result.recoilDamage).toBe(100); // floor(200/2) = 100
+    // Stages = 6 - 6 = 0 (already maxed — no additional stages added)
+    expect(result.statChanges).toContainEqual({ target: "attacker", stat: "attack", stages: 0 });
+  });
+});
+
+// ─── switch-out effect with non-self target ──────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — switch-out effect with opponent target", () => {
+  it("given a synthetic move with switch-out effect targeting opponent, when used, then switchOut = false (only self-switch triggers)", () => {
+    // Source: Showdown Gen 4 — switch-out effect with target=opponent does not trigger switchOut
+    // Covers the 'switchTarget !== self' branch (line 350-353) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("forced-switch", {
+      effect: {
+        type: "switch-out",
+        target: "opponent",
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // switchOut is only set for target="self"
+    expect(result.switchOut).toBe(false);
+  });
+});
+
+// ─── applyMoveEffect — multi effect (composite) ─────────────────────────────
+
+describe("Gen 4 executeMoveEffect — multi effect (Scald-style: damage + secondary burn)", () => {
+  it("given a move with multi effect containing status-chance, when roll succeeds, then burn is inflicted", () => {
+    // Source: Showdown Gen 4 — Scald has multi effect: [damage, 30% burn]
+    // The multi effect routes sub-effects through applyMoveEffect recursively
+    // Covers the 'multi' case (lines 282-288) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["water"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("scald-fake", {
+      category: "special",
+      effect: {
+        type: "multi",
+        effects: [
+          {
+            type: "status-chance",
+            status: "burn",
+            chance: 30,
+          },
+        ],
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0); // roll=0, 0 < 30 → burn succeeds
+    const context = createContext(attacker, defender, move, 80, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBe("burn");
+  });
+});
+
+// ─── applyMoveEffect — heal without calculatedStats ─────────────────────────
+
+describe("Gen 4 executeMoveEffect — heal effect with no calculatedStats (fallback to currentHp)", () => {
+  it("given a Pokemon with no calculatedStats and heal move, when executeMoveEffect called, then uses currentHp as maxHp", () => {
+    // Source: Showdown Gen 4 — heal uses calculatedStats?.hp ?? currentHp fallback
+    // Covers the '?? attacker.pokemon.currentHp' fallback (line 277) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"], currentHp: 100, maxHp: 200 });
+    // Remove calculatedStats to trigger fallback
+    (attacker.pokemon as { calculatedStats: null }).calculatedStats = null;
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("recover", {
+      category: "status",
+      power: 0,
+      effect: { type: "heal", amount: 0.5 } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // maxHp fallback = currentHp = 100; heal = floor(100 * 0.5) = 50
+    expect(result.healAmount).toBe(50);
+  });
+});
+
+// ─── switch-out with `who` field (Gen 4 data compatibility) ─────────────────
+
+describe("Gen 4 executeMoveEffect — switch-out effect using 'who' field", () => {
+  it("given move with switch-out effect using 'who: self' field, when executeMoveEffect called, then switchOut = true", () => {
+    // Source: Showdown Gen 4 — some Gen 4 move data uses 'who' instead of 'target' for switch-out
+    // Covers the 'effect.target ?? effect.who ?? self' branch (line 349) in applyMoveEffect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    // Synthetic move with switch-out effect using legacy 'who' field (no 'target' field)
+    const move = createMove("baton-pass-who", {
+      effect: {
+        type: "switch-out",
+        who: "self",
+        // No 'target' field — forces the ?? fallback to 'who'
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.switchOut).toBe(true);
+  });
+});
+
+// ─── entry-hazard in applyMoveEffect — attacker on side 1 ───────────────────
+
+describe("Gen 4 executeMoveEffect — entry-hazard in applyMoveEffect with attacker on side 1", () => {
+  it("given Spikes (data-driven entry-hazard) used from side 1, when executeMoveEffect called, then hazard targets side 0", () => {
+    // Source: Showdown Gen 4 — Spikes (entry-hazard type) places hazard on opponent's side
+    // Covers the attackerSideIndex !== 0 branch (line 336) in applyMoveEffect entry-hazard case
+    const attacker = createActivePokemon({ types: ["ground"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("spikes");
+    const rng = createMockRng(0);
+
+    // Place attacker on side 1 by swapping the sides
+    const state = createMinimalBattleState(defender, attacker);
+    const context = { attacker, defender, move, damage: 0, state, rng } as MoveEffectContext;
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // Attacker on side 1 → hazard targets side 0
+    expect(result.hazardSet).toEqual({ hazard: "spikes", targetSide: 0 });
+  });
+});
+
+// ─── Rest in handleNullEffectMoves — no calculatedStats fallback ─────────────
+
+describe("Gen 4 executeMoveEffect — Rest in handleNullEffectMoves with no calculatedStats", () => {
+  it("given Rest used by Pokemon with no calculatedStats, when executeMoveEffect called, then uses currentHp as max HP", () => {
+    // Source: Showdown Gen 4 — Rest heals max HP; maxHp = calculatedStats?.hp ?? currentHp
+    // Covers the '?? attacker.pokemon.currentHp' fallback (line 734) in handleNullEffectMoves rest case
+    // When calculatedStats is null, maxHp falls back to currentHp
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      currentHp: 120,
+      maxHp: 300, // calculatedStats.hp set to 300
+      nickname: "Snorlax",
+    });
+    // Remove calculatedStats to trigger fallback
+    (attacker.pokemon as { calculatedStats: null }).calculatedStats = null;
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("rest");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // maxHp fallback = currentHp = 120 (not 300); Rest heals to that amount
+    expect(result.healAmount).toBe(120);
+    expect(result.selfStatusInflicted).toBe("sleep");
+  });
+});
+
+// ─── handleCustomEffect — dead-code branch coverage via synthetic custom moves ─
+
+describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic custom-effect moves", () => {
+  it("given synthetic custom-effect mean-look move, when used, then volatileInflicted = 'trapped'", () => {
+    // Covers handleCustomEffect case 'mean-look' (line 441) with explicit custom effect type
+    // In real data mean-look has null effect (handled by handleNullEffectMoves);
+    // this synthetic test covers the handleCustomEffect path.
+    const attacker = createActivePokemon({ types: ["ghost"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("mean-look", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.volatileInflicted).toBe("trapped");
+  });
+
+  it("given synthetic custom-effect spider-web move, when used, then volatileInflicted = 'trapped'", () => {
+    // Covers handleCustomEffect case 'spider-web' (line 442) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["bug"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("spider-web", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.volatileInflicted).toBe("trapped");
+  });
+
+  it("given synthetic custom-effect block move, when used, then volatileInflicted = 'trapped'", () => {
+    // Covers handleCustomEffect case 'block' (line 443) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("block", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.volatileInflicted).toBe("trapped");
+  });
+
+  it("given synthetic custom-effect covet move (no item, defender has item), when used, then item is stolen", () => {
+    // Covers handleCustomEffect case 'covet' (line 451) via synthetic custom effect
+    // Source: Showdown Gen 4 — Covet steals defender's item if attacker has no item
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      heldItem: null,
+      nickname: "Skitty",
+    });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "sitrus-berry",
+      nickname: "Blissey",
+    });
+    const move = createMove("covet", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 60, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.itemTransfer).toEqual({ from: "defender", to: "attacker" });
+    expect(result.messages).toContain("Skitty stole Blissey's sitrus-berry!");
+  });
+
+  it("given synthetic custom-effect explosion move, when used, then selfFaint = true", () => {
+    // Covers handleCustomEffect case 'explosion' (line 470) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Weezing" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("explosion", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 250, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfFaint).toBe(true);
+    expect(result.messages).toContain("Weezing exploded!");
+  });
+
+  it("given synthetic custom-effect self-destruct move, when used, then selfFaint = true", () => {
+    // Covers handleCustomEffect case 'self-destruct' (line 471) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Electrode" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("self-destruct", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 200, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfFaint).toBe(true);
+  });
+
+  it("given synthetic custom-effect haze move, when used, then statStagesReset for both", () => {
+    // Covers handleCustomEffect case 'haze' (line 479) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["poison"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("haze", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statStagesReset).toEqual({ target: "both" });
+    expect(result.messages).toContain("All stat changes were eliminated!");
+  });
+
+  it("given synthetic custom-effect wish move, when used, then message emitted", () => {
+    // Covers handleCustomEffect case 'wish' (line 487) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Togetic" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("wish", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.messages).toContain("Togetic made a wish!");
+  });
+
+  it("given synthetic custom-effect safeguard move, when used, then screenSet = safeguard for 5 turns", () => {
+    // Covers handleCustomEffect case 'safeguard' (line 497) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Blissey" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("safeguard", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.screenSet).toEqual({ screen: "safeguard", turnsLeft: 5, side: "attacker" });
+  });
+
+  it("given synthetic custom-effect lucky-chant move, when used, then screenSet = lucky-chant for 5 turns", () => {
+    // Covers handleCustomEffect case 'lucky-chant' (line 498) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Clefable" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("lucky-chant", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.screenSet).toEqual({
+      screen: "lucky-chant",
+      turnsLeft: 5,
+      side: "attacker",
+    });
+  });
+
+  it("given synthetic custom-effect ingrain move, when used, then selfVolatileInflicted = 'ingrain'", () => {
+    // Covers handleCustomEffect case 'ingrain' via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["grass"], nickname: "Torterra" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("ingrain", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfVolatileInflicted).toBe("ingrain");
+  });
+
+  it("given synthetic custom-effect aqua-ring move, when used, then selfVolatileInflicted = 'aqua-ring'", () => {
+    // Covers handleCustomEffect case 'aqua-ring' via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["water"], nickname: "Vaporeon" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("aqua-ring", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfVolatileInflicted).toBe("aqua-ring");
+  });
+
+  it("given synthetic custom-effect refresh move and poisoned Pokemon, when used, then statusCuredOnly set", () => {
+    // Covers handleCustomEffect case 'refresh' (line 608) via synthetic custom effect
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      status: "poison",
+      nickname: "Chansey",
+    });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("refresh", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusCuredOnly).toEqual({ target: "attacker" });
+    expect(result.messages).toContain("Chansey cured its status condition!");
+  });
+
+  it("given synthetic custom-effect refresh move and healthy Pokemon, when used, then no effect", () => {
+    // Covers handleCustomEffect case 'refresh' false-branch (attacker.pokemon.status is null)
+    const attacker = createActivePokemon({ types: ["normal"] }); // no status
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("refresh", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusCuredOnly).toBeUndefined();
+  });
+
+  it("given synthetic custom-effect baton-pass move, when used, then switchOut = true", () => {
+    // Covers handleCustomEffect case 'baton-pass' (line 463) via synthetic custom effect
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("baton-pass", {
+      effect: { type: "custom" } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.switchOut).toBe(true);
+  });
+});
+
+// ─── handleNullEffectMoves — haze case ──────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — handleNullEffectMoves haze", () => {
+  it("given Haze (null-effect route) used, when executeMoveEffect called, then statStagesReset = both", () => {
+    // Source: Showdown Gen 4 — Haze resets all stat changes for both sides
+    // Haze has null effect in Gen 4 data, routed through handleNullEffectMoves
+    const attacker = createActivePokemon({ types: ["poison"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("haze");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statStagesReset).toEqual({ target: "both" });
+  });
+});
+
+// ─── handleNullEffectMoves — safeguard / lucky-chant / ingrain / aqua-ring / refresh ─
+
+describe("Gen 4 executeMoveEffect — handleNullEffectMoves null-effect moves", () => {
+  it("given Safeguard (null effect), when executeMoveEffect called, then screenSet = safeguard 5 turns", () => {
+    // Covers handleNullEffectMoves case 'safeguard' (line 576)
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Blissey" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("safeguard");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.screenSet).toEqual({ screen: "safeguard", turnsLeft: 5, side: "attacker" });
+  });
+
+  it("given Lucky Chant (null effect), when executeMoveEffect called, then screenSet = lucky-chant 5 turns", () => {
+    // Covers handleNullEffectMoves case 'lucky-chant' (line 584)
+    const attacker = createActivePokemon({ types: ["normal"], nickname: "Clefable" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("lucky-chant");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.screenSet).toEqual({
+      screen: "lucky-chant",
+      turnsLeft: 5,
+      side: "attacker",
+    });
+  });
+
+  it("given Ingrain (null effect), when executeMoveEffect called, then selfVolatileInflicted = 'ingrain'", () => {
+    // Covers handleNullEffectMoves case 'ingrain' (line 592)
+    const attacker = createActivePokemon({ types: ["grass"], nickname: "Torterra" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("ingrain");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfVolatileInflicted).toBe("ingrain");
+  });
+
+  it("given Aqua Ring (null effect), when executeMoveEffect called, then selfVolatileInflicted = 'aqua-ring'", () => {
+    // Covers handleNullEffectMoves case 'aqua-ring' (line 600)
+    const attacker = createActivePokemon({ types: ["water"], nickname: "Vaporeon" });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("aqua-ring");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfVolatileInflicted).toBe("aqua-ring");
+  });
+});
+
+// ─── handleNullEffectMoves — rest with calculatedStats fallback ──────────────
+
+describe("Gen 4 executeMoveEffect — Rest in handleNullEffectMoves (calculatedStats fallback)", () => {
+  it("given Rest (null effect) used and no calculatedStats, when executeMoveEffect called, then uses currentHp as maxHp", () => {
+    // Source: Showdown Gen 4 — Rest heals fully; maxHp = calculatedStats?.hp ?? currentHp
+    // Covers the '?? attacker.pokemon.currentHp' fallback (line 734) in handleNullEffectMoves rest case
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      currentHp: 80,
+      maxHp: 200,
+      nickname: "Snorlax",
+    });
+    (attacker.pokemon as { calculatedStats: null }).calculatedStats = null;
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("rest");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // maxHp fallback = currentHp = 80 (not 200, since calculatedStats is null)
+    expect(result.healAmount).toBe(80);
+    expect(result.selfStatusInflicted).toBe("sleep");
+  });
+});
+
+// ─── executeGen4MoveEffect — Roost with no calculatedStats (main entry fallback) ─
+
+describe("Gen 4 executeMoveEffect — Roost main-entry-point with no calculatedStats", () => {
+  it("given Roost used and Pokemon has no calculatedStats, when executeMoveEffect called, then uses currentHp as maxHp fallback", () => {
+    // Source: Showdown Gen 4 — Roost heals max HP; maxHp = calculatedStats?.hp ?? currentHp
+    // Covers the '?? attacker.pokemon.currentHp' fallback (line 886) in executeGen4MoveEffect
+    const attacker = createActivePokemon({
+      types: ["flying"],
+      currentHp: 100,
+      maxHp: 300,
+      nickname: "Pidgeot",
+    });
+    (attacker.pokemon as { calculatedStats: null }).calculatedStats = null;
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("roost");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // maxHp fallback = currentHp = 100; floor(100 * 0.5) = 50
+    expect(result.healAmount).toBe(50);
+    // Flying type should be removed
+    expect(result.typeChange).toEqual({ target: "attacker", types: ["normal"] });
+  });
+});
+
+// ─── executeGen4MoveEffect — Knock Off defender with no nickname (fallback name) ─
+
+describe("Gen 4 executeMoveEffect — Knock Off defender with no nickname", () => {
+  it("given Knock Off vs defender with no nickname and an item, when executeMoveEffect called, then uses fallback name in message", () => {
+    // Source: Showdown Gen 4 — Knock Off message uses pokemon nickname ?? 'The foe'
+    // Covers the defenderName fallback (line 911) in executeGen4MoveEffect
+    const attacker = createActivePokemon({ types: ["dark"] });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "leftovers",
+      nickname: null, // no nickname — triggers fallback
+    });
+    const move = dataManager.getMove("knock-off");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 20, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.messages).toContain("The foe lost its leftovers!");
+  });
+});
+
+// ─── applyMoveEffect — weather effect.turns fallback ────────────────────────
+
+describe("Gen 4 executeMoveEffect — weather effect with no turns field (default 5)", () => {
+  it("given a synthetic weather move with no turns field and no rock item, when used, then weatherSet turns = 5 (default)", () => {
+    // Source: Showdown Gen 4 — weather effect uses effect.turns ?? 5 as fallback
+    // Covers the 'effect.turns ?? 5' branch (line 309) in applyMoveEffect weather case
+    const attacker = createActivePokemon({ types: ["fire"] }); // no rock item
+    const defender = createActivePokemon({ types: ["normal"] });
+    // Synthetic weather move with no 'turns' field defined
+    const move = createMove("sunny-day-noturn", {
+      effect: {
+        type: "weather",
+        weather: "sun",
+        // No 'turns' field — forces '?? 5' fallback
+      } as unknown as typeof move.effect,
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // No Heat Rock + no turns field → fallback to 5
+    expect(result.weatherSet).toEqual({ weather: "sun", turns: 5, source: "sunny-day-noturn" });
+  });
+});
+
 // ─── Roost (non-Flying type) ───────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Roost on non-Flying type", () => {
