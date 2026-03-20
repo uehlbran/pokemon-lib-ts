@@ -566,3 +566,103 @@ describe("Gen4Ruleset hasHeldItems", () => {
     expect(ruleset.hasHeldItems()).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// getEndOfTurnOrder
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset getEndOfTurnOrder", () => {
+  it("given Gen4Ruleset, when getEndOfTurnOrder, then returns array starting with weather-damage", () => {
+    // Source: Showdown sim/battle.ts Gen 4 mod — weather chip is first EoT effect
+    // Source: Bulbapedia — Diamond/Pearl/Platinum EoT order: weather damage is first
+    const ruleset = makeRuleset();
+    const order = ruleset.getEndOfTurnOrder();
+    expect(order[0]).toBe("weather-damage");
+  });
+
+  it("given Gen4Ruleset, when getEndOfTurnOrder, then returns all 28 Gen 4 EoT effects in correct order", () => {
+    // Source: Showdown sim/battle.ts Gen 4 mod — full EoT ordering
+    // Source: Bulbapedia — Diamond/Pearl/Platinum end-of-turn processing order
+    // Key Gen 4 ordering: weather-damage first, toxic/flame orb after weather-countdown,
+    // speed-boost and healing-items at end
+    const ruleset = makeRuleset();
+    const order = ruleset.getEndOfTurnOrder();
+    expect(order).toEqual([
+      "weather-damage",
+      "future-attack",
+      "wish",
+      "weather-healing",
+      "shed-skin",
+      "leftovers",
+      "black-sludge",
+      "aqua-ring",
+      "ingrain",
+      "leech-seed",
+      "poison-heal",
+      "status-damage",
+      "nightmare",
+      "curse",
+      "bad-dreams",
+      "bind",
+      "encore-countdown",
+      "perish-song",
+      "screen-countdown",
+      "safeguard-countdown",
+      "tailwind-countdown",
+      "trick-room-countdown",
+      "weather-countdown",
+      "toxic-orb-activation",
+      "flame-orb-activation",
+      "slow-start-countdown",
+      "speed-boost",
+      "healing-items",
+    ]);
+  });
+
+  it("given Gen4Ruleset, when getEndOfTurnOrder, then poison-heal comes before status-damage", () => {
+    // Source: Showdown Gen 4 mod — Poison Heal replaces poison tick (must process first)
+    // Source: Bulbapedia — Poison Heal activates instead of taking poison damage
+    const ruleset = makeRuleset();
+    const order = ruleset.getEndOfTurnOrder();
+    const poisonHealIndex = order.indexOf("poison-heal");
+    const statusDamageIndex = order.indexOf("status-damage");
+    expect(poisonHealIndex).toBeLessThan(statusDamageIndex);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyHeldItem delegation
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset applyHeldItem", () => {
+  it("given Gen4Ruleset with Leftovers context, when applyHeldItem called for end-of-turn, then delegates to Gen4Items", () => {
+    // Source: Showdown Gen 4 mod — Leftovers heals 1/16 max HP at end of turn
+    // This tests that the Gen4Ruleset.applyHeldItem method correctly delegates
+    const ruleset = makeRuleset();
+    const pokemon = makePokemonInstance({ maxHp: 160, speed: 100 });
+    pokemon.heldItem = "leftovers";
+    pokemon.currentHp = 100;
+    const active = makeActivePokemon({ maxHp: 160, speed: 100 });
+    active.pokemon = pokemon;
+
+    const ctx = {
+      pokemon: active,
+      state: {} as BattleState,
+      rng: {
+        next: () => 0,
+        int: () => 1,
+        chance: () => false,
+        pick: <T>(arr: readonly T[]) => arr[0] as T,
+        shuffle: <T>(arr: T[]) => arr,
+        getState: () => 0,
+        setState: () => {},
+      },
+      damage: undefined,
+    } as unknown as import("@pokemon-lib-ts/battle").ItemContext;
+
+    const result = ruleset.applyHeldItem("end-of-turn", ctx);
+    // Leftovers heals 1/16 max HP = floor(160/16) = 10
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({ type: "heal", value: 10 });
+  });
+});

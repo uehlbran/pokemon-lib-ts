@@ -70,8 +70,7 @@ import { applyGen4WeatherEffects } from "./Gen4Weather";
  *   - doesMoveHit — Gen 3-4 accuracy stage ratios (pokeemerald sAccuracyStageRatios)
  *   - getQuickClawActivated — 20% pre-roll (same as Gen 3)
  *   - applyEntryHazards — Spikes + Stealth Rock + Toxic Spikes (Gen 4 full set)
- *
- * Phase 2: calculateDamage will be implemented (placeholder returns 0).
+ *   - resolveTurnOrder — Tailwind speed doubling + Trick Room reversal (Gen 4)
  */
 export class Gen4Ruleset extends BaseRuleset {
   readonly generation = 4 as const;
@@ -401,7 +400,121 @@ export class Gen4Ruleset extends BaseRuleset {
     return Math.max(1, effective);
   }
 
-  // --- Turn Order (Quick Claw) ---
+  // --- Turn Order ---
+
+  /**
+   * Gen 4 turn order resolution with Tailwind speed doubling and Trick Room reversal.
+   *
+   * Overrides BaseRuleset.resolveTurnOrder to incorporate Tailwind (doubles speed
+   * for the active side) into the speed comparison. BaseRuleset.getEffectiveSpeed
+   * only takes ActivePokemon and has no access to BattleSide.tailwind state, so
+   * Tailwind must be applied here in the sort.
+   *
+   * Turn order rules (matching BaseRuleset exactly, plus Tailwind):
+   *   1. Switches always go first (before items, moves, run)
+   *   2. Items go before moves
+   *   3. Run goes before moves
+   *   4. Moves sorted by: priority (desc) > Quick Claw > speed > random tiebreak
+   *   5. Tailwind doubles effective speed for the active side
+   *   6. Trick Room reverses speed comparison (slower goes first)
+   *
+   * Source: Showdown Gen 4 mod -- Tailwind doubles Speed for 3 turns
+   * Source: Bulbapedia -- Tailwind: doubles Speed of user's side
+   * Source: Showdown Gen 4 mod -- Trick Room: slower Pokemon move first
+   */
+  override resolveTurnOrder(
+    actions: BattleAction[],
+    state: BattleState,
+    rng: SeededRandom,
+  ): BattleAction[] {
+    // Pre-roll Quick Claw before tiebreak keys (preserves PRNG consumption order)
+    const quickClawActivated = this.getQuickClawActivated(actions, state, rng);
+
+    // Assign one tiebreak key per action BEFORE sorting for deterministic PRNG consumption
+    // Source: GitHub issue #120 -- V8 sort calls comparator non-deterministic number of times
+    const tagged = actions.map((action, idx) => ({ action, idx, tiebreak: rng.next() }));
+
+    const trickRoomActive = state.trickRoom.active;
+
+    tagged.sort((a, b) => {
+      const actionA = a.action;
+      const actionB = b.action;
+
+      // Switches always go first
+      if (actionA.type === "switch" && actionB.type !== "switch") return -1;
+      if (actionB.type === "switch" && actionA.type !== "switch") return 1;
+
+      // Item usage goes before moves
+      if (actionA.type === "item" && actionB.type === "move") return -1;
+      if (actionB.type === "item" && actionA.type === "move") return 1;
+
+      // Run goes before moves
+      if (actionA.type === "run" && actionB.type === "move") return -1;
+      if (actionB.type === "run" && actionA.type === "move") return 1;
+
+      // For moves, compare priority then speed
+      if (actionA.type === "move" && actionB.type === "move") {
+        const sideA = state.sides[actionA.side];
+        const sideB = state.sides[actionB.side];
+        const activeA = sideA?.active[0];
+        const activeB = sideB?.active[0];
+        if (!activeA || !activeB) return 0;
+
+        const moveSlotA = activeA.pokemon.moves[actionA.moveIndex];
+        const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
+        if (!moveSlotA || !moveSlotB) return 0;
+
+        let priorityA = 0;
+        let priorityB = 0;
+        try {
+          priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
+        } catch {
+          /* default 0 */
+        }
+        try {
+          priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
+        } catch {
+          /* default 0 */
+        }
+
+        if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
+
+        // Quick Claw: activated holders go first within same priority bracket
+        const qcA = quickClawActivated.has(a.idx);
+        const qcB = quickClawActivated.has(b.idx);
+        if (qcA && !qcB) return -1;
+        if (qcB && !qcA) return 1;
+
+        // Speed tiebreak with Tailwind doubling
+        // Source: Bulbapedia -- Tailwind doubles Speed of user's side
+        let speedA = this.getEffectiveSpeed(activeA);
+        let speedB = this.getEffectiveSpeed(activeB);
+
+        if (sideA?.tailwind.active) {
+          speedA *= 2;
+        }
+        if (sideB?.tailwind.active) {
+          speedB *= 2;
+        }
+
+        // Trick Room reverses speed order (slower goes first)
+        // Source: Showdown Gen 4 mod -- Trick Room
+        if (trickRoomActive) {
+          if (speedA !== speedB) return speedA - speedB;
+        } else {
+          if (speedA !== speedB) return speedB - speedA;
+        }
+        return a.tiebreak < b.tiebreak ? -1 : 1;
+      }
+
+      // Deterministic tiebreak (non-move vs non-move of same type)
+      return a.tiebreak < b.tiebreak ? -1 : 1;
+    });
+
+    return tagged.map((t) => t.action);
+  }
+
+  // --- Quick Claw ---
 
   /**
    * Pre-rolls Quick Claw for each move action before the main sort.
