@@ -25,6 +25,7 @@ import {
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 import { GEN4_CRIT_MULTIPLIER, GEN4_CRIT_RATE_DENOMINATORS } from "./Gen4CritCalc";
+import { calculateGen4Damage } from "./Gen4DamageCalc";
 import { GEN4_TYPE_CHART, GEN4_TYPES } from "./Gen4TypeChart";
 
 /**
@@ -77,23 +78,19 @@ export class Gen4Ruleset extends BaseRuleset {
     return GEN4_TYPES;
   }
 
-  // --- Damage Calculation (Phase 2 placeholder) ---
+  // --- Damage Calculation ---
 
   /**
-   * Gen 4 damage formula.
+   * Gen 4 damage formula with physical/special split.
    *
-   * Phase 2 will implement the full formula with the physical/special split.
    * Gen 4 is the first generation where move category is per-move, not per-type.
+   * Delegates to calculateGen4Damage which implements the full formula.
    *
-   * Source: pret/pokeplatinum — damage formula (to be implemented)
+   * Source: Showdown sim/battle.ts — Gen 4 damage calc
+   * Source: pret/pokeplatinum — damage formula (where decompiled)
    */
-  calculateDamage(_context: DamageContext): DamageResult {
-    return {
-      damage: 0,
-      effectiveness: 1,
-      isCrit: false,
-      randomFactor: 1,
-    };
+  calculateDamage(context: DamageContext): DamageResult {
+    return calculateGen4Damage(context, this.getTypeChart());
   }
 
   // --- Critical Hit System ---
