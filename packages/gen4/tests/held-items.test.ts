@@ -630,3 +630,117 @@ describe("applyGen4HeldItem end-of-turn — status-curing berries", () => {
     expect(types).toContain("consume");
   });
 });
+
+// ---------------------------------------------------------------------------
+// on-damage-taken: Focus Band (10% chance to survive)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-damage-taken -- Focus Band", () => {
+  it("given Focus Band and RNG succeeds (10% chance), when KO hit is taken, then survives at 1 HP (not consumed)", () => {
+    // Source: Showdown Gen 4 mod -- Focus Band 10% activation (same as Gen 3)
+    // Focus Band is NOT consumed after activation (reusable)
+    const ctx = makeContext({
+      heldItem: "focus-band",
+      maxHp: 160,
+      currentHp: 50,
+      damage: 200,
+      rngChance: true,
+    });
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({ type: "survive", value: 1 });
+    // Focus Band is NOT consumed (no "consume" effect)
+    expect(result.effects.length).toBe(1);
+    expect(result.messages[0]).toContain("Focus Band");
+  });
+
+  it("given Focus Band and RNG fails, when KO hit is taken, then does not activate", () => {
+    // Source: Showdown Gen 4 mod -- Focus Band 10% chance, fails when RNG says no
+    const ctx = makeContext({
+      heldItem: "focus-band",
+      maxHp: 160,
+      currentHp: 50,
+      damage: 200,
+      rngChance: false,
+    });
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Focus Band, when non-KO hit is taken, then does not activate", () => {
+    // Source: Showdown Gen 4 mod -- Focus Band only triggers on would-be KO hits
+    const ctx = makeContext({
+      heldItem: "focus-band",
+      maxHp: 160,
+      currentHp: 100,
+      damage: 20,
+      rngChance: true,
+    });
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// on-damage-taken: Unknown item (default branch)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-damage-taken -- unknown item", () => {
+  it("given an unrecognized item, when on-damage-taken trigger fires, then does not activate", () => {
+    // Source: Showdown Gen 4 mod -- items not in the on-damage-taken switch have no effect
+    // This covers the default case in handleOnDamageTaken (Gen4Items.ts line 388)
+    const ctx = makeContext({
+      heldItem: "silk-scarf",
+      maxHp: 160,
+      currentHp: 50,
+      damage: 200,
+    });
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// on-hit: Unknown item (default branch)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-hit -- unknown item", () => {
+  it("given an unrecognized item, when on-hit trigger fires, then does not activate", () => {
+    // Source: Showdown Gen 4 mod -- items not in the on-hit switch have no effect
+    // This covers the default case in handleOnHit (Gen4Items.ts line 467)
+    const ctx = makeContext({
+      heldItem: "leftovers",
+      maxHp: 160,
+      currentHp: 100,
+      damage: 60,
+    });
+    const result = applyGen4HeldItem("on-hit", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// on-hit: King's Rock RNG fails (no flinch)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4HeldItem on-hit -- King's Rock RNG fail", () => {
+  it("given King's Rock and RNG fails (90% of the time), when on-hit trigger fires, then does not activate", () => {
+    // Source: Showdown Gen 4 mod -- King's Rock 10% flinch chance, fails when RNG says no
+    // This covers the false-branch of the RNG check (Gen4Items.ts line 417)
+    const ctx = makeContext({
+      heldItem: "kings-rock",
+      maxHp: 160,
+      currentHp: 100,
+      damage: 60,
+      rngChance: false,
+    });
+    const result = applyGen4HeldItem("on-hit", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});

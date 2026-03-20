@@ -1515,3 +1515,171 @@ describe("Gen 4 executeMoveEffect — Whirlwind/Roar (phazing)", () => {
     expect(result.switchOut).toBe(true);
   });
 });
+
+// ─── Covet ──────────────────────────────────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Covet", () => {
+  it("given Covet used and attacker has no item and defender has item, when executeMoveEffect called, then item is stolen", () => {
+    // Source: Showdown Gen 4 — Covet steals defender's item (same as Thief)
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      heldItem: null,
+      nickname: "Togekiss",
+    });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "leftovers",
+      nickname: "Blissey",
+    });
+    const move = dataManager.getMove("covet");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 60, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.itemTransfer).toEqual({ from: "defender", to: "attacker" });
+    expect(result.messages).toContain("Togekiss stole Blissey's leftovers!");
+  });
+
+  it("given Covet used and attacker already has item, when executeMoveEffect called, then no item transfer", () => {
+    // Source: Showdown Gen 4 — can't steal if you already have an item
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      heldItem: "choice-band",
+    });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "leftovers",
+    });
+    const move = dataManager.getMove("covet");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 60, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.itemTransfer).toBeUndefined();
+  });
+});
+
+// ─── Refresh ────────────────────────────────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Refresh", () => {
+  it("given Refresh used by poisoned Pokemon, when executeMoveEffect called, then statusCuredOnly for attacker", () => {
+    // Source: Showdown Gen 4 — Refresh cures burn/poison/paralysis on the user
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      status: "poison",
+      nickname: "Chansey",
+    });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("refresh");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusCuredOnly).toEqual({ target: "attacker" });
+    expect(result.messages).toContain("Chansey cured its status condition!");
+  });
+
+  it("given Refresh used by healthy Pokemon (no status), when executeMoveEffect called, then no effect", () => {
+    // Source: Showdown Gen 4 — Refresh does nothing if no status condition
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("refresh");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusCuredOnly).toBeUndefined();
+  });
+});
+
+// ─── Wish ──────────────────────────────────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Wish", () => {
+  it("given Wish used, when executeMoveEffect called, then emits wish message (engine tracks state)", () => {
+    // Source: Showdown Gen 4 — Wish sets up healing for end of next turn
+    // Source: Bulbapedia — Wish: At end of next turn, heals the Pokemon at user's position by 1/2 max HP
+    // The move effect only produces a message; the engine handles Wish tracking
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      nickname: "Jirachi",
+    });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("wish");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.messages).toContain("Jirachi made a wish!");
+  });
+
+  it("given Wish used by unnamed Pokemon, when executeMoveEffect called, then uses default name", () => {
+    // Source: Showdown Gen 4 — Wish message fallback for unnamed Pokemon
+    const attacker = createActivePokemon({ types: ["normal"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("wish");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.messages).toContain("The Pokemon made a wish!");
+  });
+});
+
+// ─── Roost (non-Flying type) ───────────────────────────────────────────────
+
+describe("Gen 4 executeMoveEffect — Roost on non-Flying type", () => {
+  it("given Roost used by pure Normal type, when executeMoveEffect called, then heals 50% but no type change", () => {
+    // Source: Showdown Gen 4 — Roost only removes Flying type if the user IS Flying-type
+    // Source: Bulbapedia — Roost: if the user is not Flying-type, no type change occurs
+    // A Normal-type using Roost still heals but has no type change
+    const attacker = createActivePokemon({
+      types: ["normal"],
+      maxHp: 200,
+      currentHp: 100,
+      nickname: "Snorlax",
+    });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("roost");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // Heals 50% of max HP = floor(200 * 0.5) = 100
+    expect(result.healAmount).toBe(100);
+    // No type change since not Flying-type
+    expect(result.typeChange).toBeUndefined();
+    expect(result.messages).toContain("Snorlax landed and recovered health!");
+  });
+
+  it("given Roost used by Fire/Flying type, when executeMoveEffect called, then heals and removes Flying type", () => {
+    // Source: Showdown Gen 4 — Roost removes Flying type, leaves Fire
+    // Source: Bulbapedia — Roost: dual-typed Flying Pokemon loses Flying for the turn
+    const attacker = createActivePokemon({
+      types: ["fire", "flying"],
+      maxHp: 300,
+      currentHp: 150,
+      nickname: "Charizard",
+    });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("roost");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // Heals 50% of max HP = floor(300 * 0.5) = 150
+    expect(result.healAmount).toBe(150);
+    // Flying removed, Fire remains
+    expect(result.typeChange).toEqual({
+      target: "attacker",
+      types: ["fire"],
+    });
+  });
+});
