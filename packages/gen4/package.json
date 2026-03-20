@@ -1,0 +1,33 @@
+{
+  "name": "@pokemon-lib-ts/gen4",
+  "version": "0.1.0",
+  "description": "Gen 4 (Diamond/Pearl/Platinum) ruleset and data for pokemon-lib-ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./data": {
+      "import": "./data/index.js",
+      "require": "./data/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "data"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@pokemon-lib-ts/core": "*",
+    "@pokemon-lib-ts/battle": "*"
+  }
+}
