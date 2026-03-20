@@ -241,6 +241,7 @@ export interface AbilityContext {
 export type AbilityEffectType =
   | "stat-change"
   | "status-cure"
+  | "status-inflict"
   | "damage-reduction"
   | "type-change"
   | "weather-immunity"
@@ -248,6 +249,7 @@ export type AbilityEffectType =
   | "ability-change"
   | "heal"
   | "chip-damage"
+  | "volatile-inflict"
   | "none";
 
 /** A single effect produced by an ability trigger — proper discriminated union on effectType. */
@@ -281,6 +283,17 @@ export type AbilityEffect =
       readonly effectType: "chip-damage";
       readonly target: "self" | "opponent";
       readonly value: number;
+    }
+  | {
+      readonly effectType: "status-inflict";
+      readonly target: "self" | "opponent";
+      readonly status: PrimaryStatus;
+    }
+  | {
+      readonly effectType: "volatile-inflict";
+      readonly target: "self" | "opponent";
+      readonly volatile: VolatileStatus;
+      readonly data?: Record<string, unknown>;
     }
   | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
 

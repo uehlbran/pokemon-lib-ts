@@ -892,6 +892,25 @@ export class BattleEngine implements BattleEventEmitter {
 
       damage = result.damage;
 
+      // Passive immunity ability (Water Absorb, Volt Absorb, Motor Drive, Flash Fire, Dry Skin, Levitate)
+      // Source: Showdown sim/battle-actions.ts — ability immunities checked after damage calc returns 0
+      if (this.ruleset.hasAbilities() && result.damage === 0 && result.effectiveness === 0) {
+        const immunityResult = this.ruleset.applyAbility("passive-immunity", {
+          pokemon: defender,
+          opponent: actor,
+          state: this.state,
+          rng: this.state.rng,
+          trigger: "passive-immunity",
+          move: effectiveMoveData,
+        });
+        if (immunityResult.activated) {
+          this.processAbilityResult(immunityResult, defender, actor, defenderSide as 0 | 1);
+          actor.lastMoveUsed = moveData.id;
+          actor.movedThisTurn = true;
+          return; // Move fully absorbed — skip damage, effects, items
+        }
+      }
+
       // Effectiveness and crit events fire regardless of substitute — emit before
       // the damage is applied so the ordering matches real cartridge behaviour.
       if (result.effectiveness !== 1) {
@@ -902,7 +921,9 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       // Apply damage to substitute or pokemon
+      let hitSubstitute = false;
       if (defender.substituteHp > 0 && !effectiveMoveData.flags.bypassSubstitute) {
+        hitSubstitute = true;
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
         this.emit({
           type: "message",
@@ -942,6 +963,30 @@ export class BattleEngine implements BattleEventEmitter {
         });
         if (defItemResult.activated) {
           this.processItemResult(defItemResult, defender, defenderSide as 0 | 1);
+        }
+      }
+
+      // Contact ability trigger (Static, Flame Body, Poison Point, Rough Skin, etc.)
+      // Source: Showdown sim/battle-actions.ts — contact abilities checked after damage
+      if (
+        this.ruleset.hasAbilities() &&
+        damage > 0 &&
+        effectiveMoveData.flags.contact &&
+        !hitSubstitute
+      ) {
+        if (defender.pokemon.currentHp > 0) {
+          const contactResult = this.ruleset.applyAbility("on-contact", {
+            pokemon: defender,
+            opponent: actor,
+            state: this.state,
+            rng: this.state.rng,
+            trigger: "on-contact",
+            move: effectiveMoveData,
+            damage,
+          });
+          if (contactResult.activated) {
+            this.processAbilityResult(contactResult, defender, actor, defenderSide as 0 | 1);
+          }
         }
       }
     }
@@ -2394,6 +2439,39 @@ export class BattleEngine implements BattleEventEmitter {
               side: targetSide,
               pokemon: getPokemonName(target),
               status,
+            });
+          }
+          break;
+        }
+        case "status-inflict": {
+          // Source: Showdown — Static, Flame Body, Poison Point inflict status on contact
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          if (!target.pokemon.status) {
+            target.pokemon.status = effect.status;
+            this.emit({
+              type: "status-inflict",
+              side: targetSide,
+              pokemon: getPokemonName(target),
+              status: effect.status,
+            });
+          }
+          break;
+        }
+        case "volatile-inflict": {
+          // Source: Showdown — abilities that inflict volatile statuses (e.g., Cute Charm)
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          if (!target.volatileStatuses.has(effect.volatile)) {
+            target.volatileStatuses.set(effect.volatile, {
+              turnsLeft: -1,
+              ...(effect.data ? { data: effect.data } : {}),
+            });
+            this.emit({
+              type: "volatile-start",
+              side: targetSide,
+              pokemon: getPokemonName(target),
+              volatile: effect.volatile,
             });
           }
           break;
