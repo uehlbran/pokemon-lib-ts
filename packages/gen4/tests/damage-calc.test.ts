@@ -2785,9 +2785,9 @@ describe("Gen 4 damage calc — type chart integration", () => {
 describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
   it("given defender has Dry Skin and attacker uses Fire move, when calculating damage, then damage is 1.25x vs no-ability baseline", () => {
     // Source: Bulbapedia — Dry Skin (Gen 4): "Fire-type moves deal 1.25× damage to the user."
-    // Source: Showdown sim/abilities.ts — Dry Skin onSourceModifyDamage (Fire)
-    // Dry Skin provides Water immunity (handled as early return) AND a separate
-    // 1.25x multiplier for Fire moves applied to the final damage.
+    // Source: Showdown data/abilities.ts — Dry Skin onSourceBasePower (priority 17)
+    // Dry Skin provides Water immunity (early return) AND a base-power boost for Fire moves.
+    // Applied at base-power stage (before Technician, priority 30), not as a final multiplier.
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,

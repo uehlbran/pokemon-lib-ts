@@ -337,10 +337,10 @@ function getDefenseStat(
  *
  * Formula order (Showdown Gen 4 damage calc):
  *   1. Status moves / power=0: return 0
- *   2. Pinch abilities (overgrow/blaze/torrent/swarm): 1.5x power
- *   3. Technician: 1.5x power for moves with base power <= 60
- *  3b. Dry Skin fire weakness: 1.25x base power for Fire moves (onSourceBasePower)
- *   4. Defender ability immunities (levitate, volt-absorb, etc.)
+ *   2. Pinch abilities (overgrow/blaze/torrent/swarm): 1.5x power (priority 2)
+ *   3. Dry Skin fire weakness: 1.25x base power for Fire moves (onSourceBasePower, priority 17)
+ *   4. Technician: 1.5x power for moves with base power <= 60 (onBasePower, priority 30)
+ *   5. Defender ability immunities (levitate, volt-absorb, etc.)
  *   5. Physical/Special determination (per-move, NOT per-type)
  *   6. Thick Fat: halve attack stat for fire/ice moves
  *   7. Explosion/Self-Destruct: halve defense
@@ -393,21 +393,26 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
-  // 3. Technician (NEW in Gen 4): 1.5x power for moves with base power <= 60
-  // Source: Bulbapedia — Technician: "Moves with a base power of 60 or less are
-  //   boosted in power by 50%."
-  // Source: Showdown sim/abilities.ts — Technician
-  if (attackerAbility === "technician" && power <= 60) {
-    power = Math.floor(power * 1.5);
-  }
-
-  // 3b. Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin defenders
-  // Dry Skin's water immunity is handled in step 4 (early return of 0 damage).
-  // The fire weakness is a separate base-power modifier applied before the damage formula.
-  // Source: Showdown data/abilities.ts — Dry Skin onSourceBasePower (Fire weakness, priority 17)
+  // 3. Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin defenders.
+  // Showdown processes onSourceBasePower callbacks by priority (ascending = runs first).
+  // Dry Skin has priority 17; Technician has priority 30 — so Dry Skin runs first.
+  // This matters for fire moves with base power 49-60: Dry Skin can push them above 60
+  // before Technician checks, preventing Technician from activating.
+  // Dry Skin's water immunity is handled in step 5 (early return of 0 damage).
+  // Source: Showdown data/abilities.ts — Dry Skin onSourceBasePower (priority 17)
   // Source: Bulbapedia — Dry Skin: "Fire-type moves deal 1.25× damage to the user."
   if (defenderAbility === "dry-skin" && move.type === "fire") {
     power = Math.floor(power * 1.25);
+  }
+
+  // 4. Technician (NEW in Gen 4): 1.5x power for moves with base power <= 60.
+  // Technician checks power AFTER Dry Skin's fire modifier (priority 30 > 17),
+  // so a 60-power fire move vs Dry Skin becomes 75 base power → Technician inactive.
+  // Source: Bulbapedia — Technician: "Moves with a base power of 60 or less are
+  //   boosted in power by 50%."
+  // Source: Showdown data/abilities.ts — Technician onBasePower (priority 30)
+  if (attackerAbility === "technician" && power <= 60) {
+    power = Math.floor(power * 1.5);
   }
 
   // 4. Defender ability type immunities
