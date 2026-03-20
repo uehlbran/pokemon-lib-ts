@@ -9,6 +9,10 @@ import type { AbilityTrigger } from "@pokemon-lib-ts/core";
  *                     Download, Anticipation, Forewarn, Frisk, Slow Start
  *   - "on-turn-end": Speed Boost, Rain Dish, Ice Body, Dry Skin, Solar Power,
  *                    Hydration, Shed Skin, Bad Dreams, Poison Heal
+ *   - "on-contact": Static, Flame Body, Poison Point, Rough Skin, Effect Spore,
+ *                   Cute Charm
+ *   - "passive-immunity": Water Absorb, Volt Absorb, Motor Drive, Dry Skin,
+ *                         Flash Fire, Levitate
  *
  * Deferred abilities (require engine hooks not yet available):
  *   - Magic Guard: passive damage immunity (needs engine check before applying chip)
@@ -36,6 +40,10 @@ export function applyGen4Ability(trigger: AbilityTrigger, context: AbilityContex
       return handleSwitchIn(abilityId, context);
     case "on-turn-end":
       return handleTurnEnd(abilityId, context);
+    case "on-contact":
+      return handleOnContact(abilityId, context);
+    case "passive-immunity":
+      return handlePassiveImmunity(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };
   }
@@ -382,6 +390,231 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         activated: true,
         effects: [{ effectType: "heal", target: "self", value: healAmount }],
         messages: [`${name}'s Poison Heal restored its HP!`],
+      };
+    }
+
+    default:
+      return { activated: false, effects: [], messages: [] };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// on-contact
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle "on-contact" abilities for Gen 4.
+ *
+ * Fires when a contact move hits and deals damage. `context.pokemon` is the
+ * defender (whose ability fires), `context.opponent` is the attacker who
+ * made contact.
+ *
+ * Source: Showdown sim/battle.ts Gen 4 mod — on-contact ability triggers
+ * Source: Bulbapedia — individual contact ability mechanics
+ */
+function handleOnContact(abilityId: string, context: AbilityContext): AbilityResult {
+  const attacker = context.opponent;
+  if (!attacker) return { activated: false, effects: [], messages: [] };
+
+  const attackerMaxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+  const attackerStatus = attacker.pokemon.status;
+
+  switch (abilityId) {
+    case "static": {
+      // Source: Bulbapedia — Static: 30% chance to paralyze attacker on contact
+      // Source: Showdown Gen 4 mod — Static trigger (30% = rng.next() < 0.3)
+      if (attackerStatus) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      return {
+        activated: true,
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        messages: [],
+      };
+    }
+
+    case "flame-body": {
+      // Source: Bulbapedia — Flame Body: 30% chance to burn attacker on contact
+      // Source: Showdown Gen 4 mod — Flame Body trigger (30%)
+      if (attackerStatus) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      return {
+        activated: true,
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        messages: [],
+      };
+    }
+
+    case "poison-point": {
+      // Source: Bulbapedia — Poison Point: 30% chance to poison attacker on contact
+      // Source: Showdown Gen 4 mod — Poison Point trigger (30%)
+      if (attackerStatus) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      return {
+        activated: true,
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        messages: [],
+      };
+    }
+
+    case "rough-skin": {
+      // Source: Bulbapedia — Rough Skin: deals 1/8 attacker's max HP on contact (always)
+      // Source: Showdown Gen 4 mod — Rough Skin trigger (guaranteed chip)
+      const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
+      return {
+        activated: true,
+        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        messages: [],
+      };
+    }
+
+    case "effect-spore": {
+      // Source: Bulbapedia — Effect Spore: 30% total chance on contact; if triggered,
+      //   1/3 chance each for poison, paralysis, sleep
+      // Source: Showdown Gen 4 mod — Effect Spore trigger (30% gate, then 1/3 splits)
+      if (attackerStatus) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      const roll = context.rng.next();
+      if (roll < 1 / 3) {
+        return {
+          activated: true,
+          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          messages: [],
+        };
+      }
+      if (roll < 2 / 3) {
+        return {
+          activated: true,
+          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+          messages: [],
+        };
+      }
+      return {
+        activated: true,
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+        messages: [],
+      };
+    }
+
+    case "cute-charm": {
+      // Source: Bulbapedia — Cute Charm: 30% chance to infatuate attacker on contact;
+      //   requires opposite genders, fails if either is genderless
+      // Source: Showdown Gen 4 mod — Cute Charm trigger (30%, gender check)
+      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      const defenderGender = context.pokemon.pokemon.gender;
+      const attackerGender = attacker.pokemon.gender;
+      if (
+        !defenderGender ||
+        !attackerGender ||
+        defenderGender === "genderless" ||
+        attackerGender === "genderless" ||
+        defenderGender === attackerGender
+      ) {
+        return { activated: false, effects: [], messages: [] };
+      }
+      return {
+        activated: true,
+        effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
+        messages: [],
+      };
+    }
+
+    default:
+      return { activated: false, effects: [], messages: [] };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// passive-immunity
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle "passive-immunity" abilities for Gen 4.
+ *
+ * Fires when a move would hit a Pokemon and the ability grants immunity to
+ * the move's type. `context.pokemon` is the defender (whose ability grants
+ * immunity), `context.move` is the incoming move.
+ *
+ * Returns `activated: true` if the ability absorbs/negates the move,
+ * `activated: false` if the move type doesn't match (regular type immunity
+ * or normal damage should apply instead).
+ *
+ * Source: Showdown sim/battle.ts Gen 4 mod — passive immunity ability checks
+ * Source: Bulbapedia — individual immunity ability mechanics
+ */
+function handlePassiveImmunity(abilityId: string, context: AbilityContext): AbilityResult {
+  const moveType = context.move?.type;
+  if (!moveType) return { activated: false, effects: [], messages: [] };
+
+  const maxHp = context.pokemon.pokemon.calculatedStats?.hp ?? context.pokemon.pokemon.currentHp;
+
+  switch (abilityId) {
+    case "water-absorb": {
+      // Source: Bulbapedia — Water Absorb: Water moves heal 1/4 max HP instead of dealing damage
+      // Source: Showdown Gen 4 mod — Water Absorb immunity + heal
+      if (moveType !== "water") return { activated: false, effects: [], messages: [] };
+      const healAmt = Math.max(1, Math.floor(maxHp / 4));
+      return {
+        activated: true,
+        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        messages: [],
+      };
+    }
+
+    case "volt-absorb": {
+      // Source: Bulbapedia — Volt Absorb: Electric moves heal 1/4 max HP instead of dealing damage
+      // Source: Showdown Gen 4 mod — Volt Absorb immunity + heal
+      if (moveType !== "electric") return { activated: false, effects: [], messages: [] };
+      const healAmt = Math.max(1, Math.floor(maxHp / 4));
+      return {
+        activated: true,
+        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        messages: [],
+      };
+    }
+
+    case "motor-drive": {
+      // Source: Bulbapedia — Motor Drive: Electric moves raise Speed by 1 instead of dealing damage
+      // Source: Showdown Gen 4 mod — Motor Drive immunity + Speed boost
+      if (moveType !== "electric") return { activated: false, effects: [], messages: [] };
+      return {
+        activated: true,
+        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        messages: [],
+      };
+    }
+
+    case "dry-skin": {
+      // Source: Bulbapedia — Dry Skin: Water moves heal 1/4 max HP (also takes 1.25x from Fire,
+      //   but the Fire weakness is handled in damage calc, not here)
+      // Source: Showdown Gen 4 mod — Dry Skin passive immunity (Water only)
+      if (moveType !== "water") return { activated: false, effects: [], messages: [] };
+      const healAmt = Math.max(1, Math.floor(maxHp / 4));
+      return {
+        activated: true,
+        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        messages: [],
+      };
+    }
+
+    case "flash-fire": {
+      // Source: Bulbapedia — Flash Fire: Fire moves are absorbed; powers up holder's Fire moves
+      // Source: Showdown Gen 4 mod — Flash Fire immunity (volatile boost deferred to Part 7)
+      if (moveType !== "fire") return { activated: false, effects: [], messages: [] };
+      return {
+        activated: true,
+        effects: [],
+        messages: [],
+      };
+    }
+
+    case "levitate": {
+      // Source: Bulbapedia — Levitate: Ground moves have no effect
+      // Source: Showdown Gen 4 mod — Levitate ground immunity
+      if (moveType !== "ground") return { activated: false, effects: [], messages: [] };
+      return {
+        activated: true,
+        effects: [],
+        messages: [],
       };
     }
 
