@@ -67,7 +67,7 @@ const PLATE_ITEMS: Readonly<Record<string, string>> = {
   "draco-plate": "dragon",
   "dread-plate": "dark",
   "iron-plate": "steel",
-  "pixie-plate": "fairy",
+  // Pixie Plate (fairy) is NOT included — Fairy type was introduced in Gen 6
 };
 
 // ─── Pinch Ability Types ────────────────────────────────────────────────────
@@ -590,7 +590,17 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     abilityMultiplier *= 0.75;
   }
 
-  // 20. Item damage modifiers (NEW in Gen 4)
+  // 20. Dry Skin: Fire weakness — 1.25x damage from Fire-type moves
+  // Source: Bulbapedia — Dry Skin: "Fire-type moves deal 1.25× damage to it."
+  // Source: Showdown sim/abilities.ts — Dry Skin onSourceModifyDamage (Fire weakness)
+  // Note: Dry Skin's Water immunity is handled earlier (returns 0 damage). This is
+  // the separate Fire-weakness modifier applied to non-zero damage calculations.
+  if (defenderAbility === "dry-skin" && move.type === "fire") {
+    baseDamage = Math.floor(baseDamage * 1.25);
+    abilityMultiplier *= 1.25;
+  }
+
+  // 21. Item damage modifiers (NEW in Gen 4)
   // Source: Showdown sim/items.ts — Life Orb, Expert Belt, Muscle Band, Wise Glasses
   let itemMultiplier = 1;
 

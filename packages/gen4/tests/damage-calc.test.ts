@@ -8,7 +8,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
-import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
+import { GEN4_TYPE_CHART, GEN4_TYPES } from "../src/Gen4TypeChart";
 
 /**
  * Gen 4 Damage Formula Tests
@@ -1382,6 +1382,61 @@ describe("Gen 4 damage calc — new abilities", () => {
     expect(lensResult.damage).toBe(noLensResult.damage * 2);
   });
 
+  it("given attacker has Tinted Lens and matchup is SE (effectiveness=2), when calculating, then Tinted Lens has no effect", () => {
+    // Source: Bulbapedia — Tinted Lens: "The power of not very effective moves is doubled."
+    // Only NVE (effectiveness < 1) triggers the bonus; SE is unaffected.
+    const lensAttacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["water"],
+      ability: "tinted-lens",
+    });
+    const noLensAttacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["water"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    // Water vs Fire = SE (2x). Tinted Lens must NOT apply.
+    const chart = createTypeChart([["water", "fire", 2]]);
+    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+
+    const lensResult = calculateGen4Damage(
+      createDamageContext({
+        attacker: lensAttacker,
+        defender,
+        move: waterMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const noLensResult = calculateGen4Damage(
+      createDamageContext({
+        attacker: noLensAttacker,
+        defender,
+        move: waterMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Tinted Lens inactive on SE → identical damage
+    expect(lensResult.damage).toBe(noLensResult.damage);
+  });
+
   it("given defender has Filter and matchup is SE (effectiveness=2), when calculating, then damage is multiplied by 0.75 vs no-Filter baseline", () => {
     // Source: Bulbapedia — Filter (Gen 4): "Reduces the power of super-effective moves by 25%"
     //   Multiplier: 0.75x on SE moves
@@ -1487,6 +1542,61 @@ describe("Gen 4 damage calc — new abilities", () => {
     );
 
     expect(solidRockResult.damage).toBe(Math.floor(noAbilityResult.damage * 0.75));
+  });
+
+  it("given defender has Filter and matchup is neutral (effectiveness=1), when calculating, then Filter has no effect", () => {
+    // Source: Bulbapedia — Filter: "Reduces the power of super-effective attacks by 25%."
+    // Neutral (effectiveness=1) does NOT trigger Filter; damage must equal no-Filter baseline.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const filterDefender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      ability: "filter",
+    });
+    const noAbilityDefender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    // Normal vs Normal = neutral (1x). Filter must NOT apply.
+    const chart = createNeutralTypeChart();
+    const normalMove = createMove({ type: "normal", power: 80, category: "physical" });
+
+    const filterResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: filterDefender,
+        move: normalMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const noAbilityResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: noAbilityDefender,
+        move: normalMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Filter inactive on neutral → identical damage
+    expect(filterResult.damage).toBe(noAbilityResult.damage);
   });
 
   it("given attacker has Overgrow and HP ≤ 1/3 max HP and uses Grass move, when calculating, then power is boosted 1.5x", () => {
@@ -2665,5 +2775,140 @@ describe("Gen 4 damage calc — type chart integration", () => {
 
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: Dry Skin fire weakness
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
+  it("given defender has Dry Skin and attacker uses Fire move, when calculating damage, then damage is 1.25x vs no-ability baseline", () => {
+    // Source: Bulbapedia — Dry Skin (Gen 4): "Fire-type moves deal 1.25× damage to the user."
+    // Source: Showdown sim/abilities.ts — Dry Skin onSourceModifyDamage (Fire)
+    // Dry Skin provides Water immunity (handled as early return) AND a separate
+    // 1.25x multiplier for Fire moves applied to the final damage.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const drySkinDefender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      ability: "dry-skin",
+    });
+    const noAbilityDefender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const fireMove = createMove({ type: "fire", power: 80, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const drySkinResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: drySkinDefender,
+        move: fireMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const noAbilityResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: noAbilityDefender,
+        move: fireMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Dry Skin: Fire damage × 1.25 → floor(noAbility * 1.25)
+    expect(drySkinResult.damage).toBe(Math.floor(noAbilityResult.damage * 1.25));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: Plates (Gen 4 new item type — 1.2x boost, vs 1.1x for type-boost items)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Plates (1.2x type boost)", () => {
+  it("given attacker holds Flame Plate and uses a Fire move, when calculating, then boost is 1.2x vs no item", () => {
+    // Source: Bulbapedia — Plates (Gen 4): "Raises the power of [type] moves by 20%."
+    // Source: Showdown sim/items.ts — all Plates use 1.2x boost (not 1.1x like type-boost items)
+    // Derivation: no-item → L50, power=80, spAtk=100, spDef=100, rng=100, neutral, STAB
+    //   levelFactor=22, base=floor(floor(22*80*100/100)/50)=35, +2=37
+    //   STAB (fire attacker, fire move): floor(37*1.5)=55; final=55
+    //   with flame-plate (1.2x to spAtk): spAtk=floor(100*120/100)=120
+    //   base=floor(floor(22*80*120/100)/50)=floor(2112/50)=42, +2=44
+    //   STAB: floor(44*1.5)=66; final=66
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fire"],
+      heldItem: "flame-plate",
+    });
+    const noItemAttacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fire"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const fireMove = createMove({ type: "fire", power: 80, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const plateResult = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move: fireMove, rng: createMockRng(100) }),
+      chart,
+    );
+    const noItemResult = calculateGen4Damage(
+      createDamageContext({
+        attacker: noItemAttacker,
+        defender,
+        move: fireMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Derivation above: no-item → 55 (with STAB), plate → 66
+    expect(noItemResult.damage).toBe(55);
+    expect(plateResult.damage).toBe(66);
+    expect(plateResult.damage).toBeGreaterThan(noItemResult.damage);
+  });
+
+  it("given Gen 4 type list, when checking for Fairy type, then Fairy is absent (Fairy introduced Gen 6)", () => {
+    // Source: Bulbapedia — Fairy type was introduced in Generation VI (X/Y)
+    // Pixie Plate (fairy) must NOT exist in Gen 4 — no Fairy type means no Fairy plate bonus
+    expect(GEN4_TYPES).not.toContain("fairy");
+    // Gen 4 has exactly 17 types: Normal, Fire, Water, Grass, Electric, Ice, Fighting,
+    // Poison, Ground, Flying, Psychic, Bug, Rock, Ghost, Dragon, Dark, Steel
+    // Source: Bulbapedia — Generation IV type chart has 17 types
+    expect(GEN4_TYPES.length).toBe(17);
   });
 });
