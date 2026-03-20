@@ -1437,6 +1437,27 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Tailwind set (Gen 4+)
+    if (result.tailwindSet) {
+      const tailwindSide =
+        result.tailwindSet.side === "attacker"
+          ? this.state.sides[attackerSide]
+          : this.state.sides[defenderSide];
+      const tailwindSideIndex =
+        result.tailwindSet.side === "attacker" ? attackerSide : defenderSide;
+      tailwindSide.tailwind = { active: true, turnsLeft: result.tailwindSet.turnsLeft };
+      this.emit({
+        type: "message",
+        text: `Side ${tailwindSideIndex}'s tailwind began!`,
+      });
+    }
+
+    // Trick Room set (Gen 4+)
+    if (result.trickRoomSet) {
+      this.state.trickRoom = { active: true, turnsLeft: result.trickRoomSet.turnsLeft };
+      this.emit({ type: "message", text: "The dimensions were twisted!" });
+    }
+
     // Self-faint (Explosion / Self-Destruct)
     if (result.selfFaint) {
       attacker.pokemon.currentHp = 0;
@@ -1694,6 +1715,248 @@ export class BattleEngine implements BattleEventEmitter {
         case "encore-countdown":
           this.processEncoreCountdown();
           break;
+        case "weather-healing": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "shed-skin": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "poison-heal": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "bad-dreams": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "speed-boost": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "slow-start-countdown": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            if (active.ability !== "slow-start") continue;
+            // Slow Start ends after 5 turns on the field
+            // Source: Pokemon Showdown Gen 4 mod — slowstart ability
+            if (active.turnsOnField === 5) {
+              this.emit({
+                type: "message",
+                text: `${active.pokemon.nickname ?? String(active.pokemon.speciesId)}'s Slow Start wore off!`,
+              });
+            }
+          }
+          break;
+        }
+        case "toxic-orb-activation":
+        case "flame-orb-activation": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const itemResult = this.ruleset.applyHeldItem("end-of-turn", {
+              pokemon: active,
+              state: this.state,
+              rng: this.state.rng,
+            });
+            if (itemResult.activated) {
+              this.processItemResult(itemResult, active, side.index);
+            }
+          }
+          break;
+        }
+        case "black-sludge": {
+          // Handled via applyHeldItem("end-of-turn") — same as leftovers, gen ruleset distinguishes
+          if (!this.ruleset.hasHeldItems()) break;
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            if (active.pokemon.heldItem !== "black-sludge") continue;
+            const itemResult = this.ruleset.applyHeldItem("end-of-turn", {
+              pokemon: active,
+              state: this.state,
+              rng: this.state.rng,
+            });
+            if (itemResult.activated) {
+              this.processItemResult(itemResult, active, side.index);
+            }
+          }
+          break;
+        }
+        case "aqua-ring": {
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            if (!active.volatileStatuses.has("aqua-ring")) continue;
+            const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+            const healAmount = Math.max(1, Math.floor(maxHp / 16));
+            const oldHp = active.pokemon.currentHp;
+            active.pokemon.currentHp = Math.min(maxHp, oldHp + healAmount);
+            const healed = active.pokemon.currentHp - oldHp;
+            if (healed > 0) {
+              this.emit({
+                type: "heal",
+                side: side.index,
+                pokemon: getPokemonName(active),
+                amount: healed,
+                currentHp: active.pokemon.currentHp,
+                maxHp,
+                source: "aqua-ring",
+              });
+            }
+          }
+          break;
+        }
+        case "ingrain": {
+          // Source: Bulbapedia — Ingrain heals 1/16 max HP per turn
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            if (!active.volatileStatuses.has("ingrain")) continue;
+            const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+            const healAmount = Math.max(1, Math.floor(maxHp / 16));
+            const oldHp = active.pokemon.currentHp;
+            active.pokemon.currentHp = Math.min(maxHp, oldHp + healAmount);
+            const healed = active.pokemon.currentHp - oldHp;
+            if (healed > 0) {
+              this.emit({
+                type: "heal",
+                side: side.index,
+                pokemon: getPokemonName(active),
+                amount: healed,
+                currentHp: active.pokemon.currentHp,
+                maxHp,
+                source: "ingrain",
+              });
+            }
+          }
+          break;
+        }
+        case "wish": {
+          for (const side of this.state.sides) {
+            if (!side.wish?.active) continue;
+            side.wish.turnsLeft--;
+            if (side.wish.turnsLeft <= 0) {
+              const active = side.active[0];
+              if (active && active.pokemon.currentHp > 0) {
+                const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+                const healAmount = Math.min(side.wish.healAmount, maxHp - active.pokemon.currentHp);
+                if (healAmount > 0) {
+                  active.pokemon.currentHp += healAmount;
+                  this.emit({
+                    type: "heal",
+                    side: side.index,
+                    pokemon: getPokemonName(active),
+                    amount: healAmount,
+                    currentHp: active.pokemon.currentHp,
+                    maxHp,
+                    source: "wish",
+                  });
+                }
+              }
+              side.wish = null;
+            }
+          }
+          break;
+        }
+        case "future-attack": {
+          for (const side of this.state.sides) {
+            if (!side.futureAttack) continue;
+            side.futureAttack.turnsLeft--;
+            if (side.futureAttack.turnsLeft <= 0) {
+              const active = side.active[0];
+              if (active && active.pokemon.currentHp > 0) {
+                const damage = Math.min(side.futureAttack.damage, active.pokemon.currentHp);
+                active.pokemon.currentHp -= damage;
+                const maxHp =
+                  active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp + damage;
+                this.emit({
+                  type: "damage",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  amount: damage,
+                  currentHp: active.pokemon.currentHp,
+                  maxHp,
+                  source: side.futureAttack.moveId,
+                });
+              }
+              side.futureAttack = null;
+            }
+          }
+          break;
+        }
         default:
           // Many effects not yet implemented
           break;
@@ -1991,6 +2254,34 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
+        case "status-inflict": {
+          const statusToInflict = effect.value as import("@pokemon-lib-ts/core").PrimaryStatus;
+          if (!pokemon.pokemon.status) {
+            pokemon.pokemon.status = statusToInflict;
+            this.emit({
+              type: "status-inflict",
+              side,
+              pokemon: getPokemonName(pokemon),
+              status: statusToInflict,
+            });
+          }
+          break;
+        }
+        case "self-damage": {
+          const amount = effect.value as number;
+          const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+          pokemon.pokemon.currentHp = Math.max(0, pokemon.pokemon.currentHp - amount);
+          this.emit({
+            type: "damage",
+            side,
+            pokemon: getPokemonName(pokemon),
+            amount,
+            currentHp: pokemon.pokemon.currentHp,
+            maxHp,
+            source: "held-item",
+          });
+          break;
+        }
       }
     }
     for (const msg of result.messages) {
@@ -2054,8 +2345,61 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
+        case "heal": {
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          const maxHp = target.pokemon.calculatedStats?.hp ?? target.pokemon.currentHp;
+          const oldHp = target.pokemon.currentHp;
+          const healAmount = effect.value;
+          target.pokemon.currentHp = Math.min(maxHp, oldHp + healAmount);
+          const healed = target.pokemon.currentHp - oldHp;
+          if (healed > 0) {
+            this.emit({
+              type: "heal",
+              side: targetSide,
+              pokemon: getPokemonName(target),
+              amount: healed,
+              currentHp: target.pokemon.currentHp,
+              maxHp,
+              source: "ability",
+            });
+          }
+          break;
+        }
+        case "chip-damage": {
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          const maxHp = target.pokemon.calculatedStats?.hp ?? target.pokemon.currentHp;
+          const chipAmount = effect.value;
+          target.pokemon.currentHp = Math.max(0, target.pokemon.currentHp - chipAmount);
+          this.emit({
+            type: "damage",
+            side: targetSide,
+            pokemon: getPokemonName(target),
+            amount: chipAmount,
+            currentHp: target.pokemon.currentHp,
+            maxHp,
+            source: "ability",
+          });
+          break;
+        }
+        case "status-cure": {
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          const status = target.pokemon.status;
+          if (status) {
+            target.pokemon.status = null;
+            this.emit({
+              type: "status-cure",
+              side: targetSide,
+              pokemon: getPokemonName(target),
+              status,
+            });
+          }
+          break;
+        }
         default:
-          // Other effect types (status-cure, damage-reduction, etc.) not yet implemented
+          // Other effect types (damage-reduction, etc.) not yet implemented
           break;
       }
     }
