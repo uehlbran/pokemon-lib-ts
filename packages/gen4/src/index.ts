@@ -8,5 +8,6 @@ export {
   GEN4_CRIT_RATE_DENOMINATORS,
   GEN4_CRIT_RATES,
 } from "./Gen4CritCalc";
+export { calculateGen4Damage } from "./Gen4DamageCalc";
 export { Gen4Ruleset } from "./Gen4Ruleset";
 export { GEN4_TYPE_CHART, GEN4_TYPES } from "./Gen4TypeChart";
