@@ -1,4 +1,4 @@
-import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -403,7 +403,7 @@ describe("Gen4Ruleset doesMoveHit", () => {
     // Any roll 1-100 <= 100, so always hits
     // Using seed 1 which rolls an early value <= 100
     const ruleset = makeRuleset();
-    const ctx = makeAccuracyContext({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
+    const _ctx = makeAccuracyContext({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
     // With 100% accuracy at stage 0, the move always hits
     const results = Array.from({ length: 20 }, (_, i) => {
       const localCtx = makeAccuracyContext({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
