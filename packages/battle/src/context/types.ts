@@ -558,4 +558,6 @@ export interface EntryHazardResult {
   readonly statChanges: ReadonlyArray<{ stat: BattleStat; stages: number }>;
   /** Messages to emit for each hazard effect */
   readonly messages: readonly string[];
+  /** Hazard IDs to clear from the side (e.g., Poison-type absorbing Toxic Spikes) */
+  readonly hazardsToRemove?: readonly EntryHazardType[];
 }

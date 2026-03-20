@@ -546,6 +546,12 @@ export class BattleEngine implements BattleEventEmitter {
           status: hazardResult.statusInflicted,
         });
       }
+      // Source: Bulbapedia — Poison-type absorbs Toxic Spikes on switch-in
+      if (hazardResult.hazardsToRemove && hazardResult.hazardsToRemove.length > 0) {
+        for (const hazardType of hazardResult.hazardsToRemove) {
+          side.hazards = side.hazards.filter((h) => h.type !== hazardType);
+        }
+      }
       for (const msg of hazardResult.messages) {
         this.emit({ type: "message", text: msg });
       }

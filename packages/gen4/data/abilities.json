@@ -1,0 +1,1232 @@
+[
+  {
+    "id": "adaptability",
+    "displayName": "Adaptability",
+    "description": "This Pokemon's moves that match one of its types have a same-type attack bonus (STAB) of 2 instead of 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "aftermath",
+    "displayName": "Aftermath",
+    "description": "If this Pokemon is knocked out with a contact move, that move's user loses 1/4 of its maximum HP, rounded down. This effect is prevented if the move's user has the Magic Guard Ability or if any active Pokemon has the Damp Ability.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "air-lock",
+    "displayName": "Air Lock",
+    "description": "While this Pokemon is active, the effects of weather conditions are disabled.",
+    "triggers": ["on-switch-in", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "anger-point",
+    "displayName": "Anger Point",
+    "description": "If this Pokemon, or its substitute, is struck by a critical hit, its Attack is raised by 12 stages.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "anticipation",
+    "displayName": "Anticipation",
+    "description": "On switch-in, this Pokemon is alerted if any opposing Pokemon has an attacking move with a type that is super effective against this Pokemon, or any OHKO move if this Pokemon is not immune to the type and the Pokemon with the move is not a lower level than this Pokemon. This effect considers moves to be their original type. This effect is not activated by Counter, Dragon Rage, Metal Burst, Mirror Coat, Night Shade, Psywave, or Seismic Toss. This effect checks if this Pokemon is holding an Iron Ball, if it is under the effects of Foresight (Odor Sleuth), Gravity, Ingrain, Miracle Eye, or Roost, and whether each opposing Pokemon has the Normalize or Scrappy Abilities before determining if their attacks fit the conditions.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "arena-trap",
+    "displayName": "Arena Trap",
+    "description": "Prevents opposing Pokemon from choosing to switch out unless they are airborne or holding a Shed Shell.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "bad-dreams",
+    "displayName": "Bad Dreams",
+    "description": "Causes opposing Pokemon to lose 1/8 of their maximum HP, rounded down, at the end of each turn if they are asleep.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "battle-armor",
+    "displayName": "Battle Armor",
+    "description": "This Pokemon cannot be struck by a critical hit.",
+    "triggers": ["on-critical-hit", "passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "blaze",
+    "displayName": "Blaze",
+    "description": "When this Pokemon has 1/3 or less of its maximum HP, rounded down, its Fire-type attacks have their power multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "chlorophyll",
+    "displayName": "Chlorophyll",
+    "description": "If Sunny Day is active, this Pokemon's Speed is doubled.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "clear-body",
+    "displayName": "Clear Body",
+    "description": "Prevents other Pokemon from lowering this Pokemon's stat stages.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "cloud-nine",
+    "displayName": "Cloud Nine",
+    "description": "While this Pokemon is active, the effects of weather conditions are disabled.",
+    "triggers": ["on-switch-in", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "color-change",
+    "displayName": "Color Change",
+    "description": "This Pokemon's type changes to match the type of the last move that hit it, unless that type is already one of its types. This effect applies after each hit from a multi-hit move. This effect does not happen if this Pokemon did not lose HP from the attack.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "compound-eyes",
+    "displayName": "Compound Eyes",
+    "description": "This Pokemon's moves have their accuracy multiplied by 1.3.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "cute-charm",
+    "displayName": "Cute Charm",
+    "description": "There is a 30% chance a Pokemon making contact with this Pokemon will become infatuated if it is of the opposite gender. This effect does not happen if this Pokemon did not lose HP from the attack.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "damp",
+    "displayName": "Damp",
+    "description": "While this Pokemon is active, Explosion, Self-Destruct, and the Aftermath Ability are prevented from having an effect.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "download",
+    "displayName": "Download",
+    "description": "On switch-in, this Pokemon's Attack or Special Attack is raised by 1 stage based on the weaker combined defensive stat of all opposing Pokemon. Attack is raised if their Defense is lower, and Special Attack is raised if their Special Defense is the same or lower.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "drizzle",
+    "displayName": "Drizzle",
+    "description": "On switch-in, this Pokemon summons Rain Dance.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "drought",
+    "displayName": "Drought",
+    "description": "On switch-in, this Pokemon summons Sunny Day.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "dry-skin",
+    "displayName": "Dry Skin",
+    "description": "This Pokemon is immune to Water-type moves and restores 1/4 of its maximum HP, rounded down, when hit by a Water-type move. The power of Fire-type moves is multiplied by 1.25 when used on this Pokemon. At the end of each turn, this Pokemon restores 1/8 of its maximum HP, rounded down, if the weather is Rain Dance, and loses 1/8 of its maximum HP, rounded down, if the weather is Sunny Day.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "early-bird",
+    "displayName": "Early Bird",
+    "description": "This Pokemon's sleep counter drops by 2 instead of 1.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "effect-spore",
+    "displayName": "Effect Spore",
+    "description": "30% chance a Pokemon making contact with this Pokemon will be poisoned, paralyzed, or fall asleep. This effect does not happen if this Pokemon did not lose HP from the attack.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "filter",
+    "displayName": "Filter",
+    "description": "This Pokemon receives 3/4 damage from supereffective attacks.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "flame-body",
+    "displayName": "Flame Body",
+    "description": "30% chance a Pokemon making contact with this Pokemon will be burned. This effect does not happen if this Pokemon did not lose HP from the attack.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "flash-fire",
+    "displayName": "Flash Fire",
+    "description": "This Pokemon is immune to Fire-type moves, as long as it is not frozen. The first time it is hit by a Fire-type move, damage from its Fire-type attacks will be multiplied by 1.5 as long as it remains active and has this Ability.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "flower-gift",
+    "displayName": "Flower Gift",
+    "description": "If Sunny Day is active, the Attack and Special Defense of this Pokemon and its allies are multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "forecast",
+    "displayName": "Forecast",
+    "description": "If this Pokemon is a Castform, its type changes to the current weather condition's type, except Sandstorm.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "forewarn",
+    "displayName": "Forewarn",
+    "description": "On switch-in, this Pokemon is alerted to the move with the highest power, at random, known by an opposing Pokemon. This effect considers OHKO moves to have 150 power, Counter, Mirror Coat, and Metal Burst to have 120 power, and every other attacking move with an unspecified power to have 80 power.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "frisk",
+    "displayName": "Frisk",
+    "description": "On switch-in, this Pokemon identifies the held item of a random opposing Pokemon.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "gluttony",
+    "displayName": "Gluttony",
+    "description": "When this Pokemon is holding a Berry that usually activates with 1/4 or less of its maximum HP, it is eaten at 1/2 or less of its maximum HP instead.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "guts",
+    "displayName": "Guts",
+    "description": "If this Pokemon has a non-volatile status condition, its Attack is multiplied by 1.5. This Pokemon's physical attacks ignore the burn effect of halving damage.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "heatproof",
+    "displayName": "Heatproof",
+    "description": "The power of Fire-type attacks against this Pokemon is halved. This Pokemon takes half of the usual burn damage, rounded down.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "honey-gather",
+    "displayName": "Honey Gather",
+    "description": "No competitive use.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "huge-power",
+    "displayName": "Huge Power",
+    "description": "This Pokemon's Attack is doubled.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "hustle",
+    "displayName": "Hustle",
+    "description": "This Pokemon's Attack is multiplied by 1.5 and the accuracy of its physical attacks is multiplied by 0.8.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "hydration",
+    "displayName": "Hydration",
+    "description": "This Pokemon has its non-volatile status condition cured at the end of each turn if Rain Dance is active.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "hyper-cutter",
+    "displayName": "Hyper Cutter",
+    "description": "Prevents other Pokemon from lowering this Pokemon's Attack stat stage.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "ice-body",
+    "displayName": "Ice Body",
+    "description": "If Hail is active, this Pokemon restores 1/16 of its maximum HP, rounded down, at the end of each turn. This Pokemon takes no damage from Hail.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "illuminate",
+    "displayName": "Illuminate",
+    "description": "No competitive use.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "immunity",
+    "displayName": "Immunity",
+    "description": "This Pokemon cannot be poisoned. Gaining this Ability while poisoned cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "inner-focus",
+    "displayName": "Inner Focus",
+    "description": "This Pokemon cannot be made to flinch.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "insomnia",
+    "displayName": "Insomnia",
+    "description": "This Pokemon cannot fall asleep. Gaining this Ability while asleep cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "intimidate",
+    "displayName": "Intimidate",
+    "description": "On switch-in, this Pokemon lowers the Attack of opposing Pokemon by 1 stage. Pokemon behind a substitute are immune. If U-turn breaks an opposing substitute and this Pokemon switches in as the replacement, the Pokemon that had the substitute is still immune to this Ability.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "iron-fist",
+    "displayName": "Iron Fist",
+    "description": "This Pokemon's punch-based attacks have their power multiplied by 1.2.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "keen-eye",
+    "displayName": "Keen Eye",
+    "description": "Prevents other Pokemon from lowering this Pokemon's accuracy stat stage.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "klutz",
+    "displayName": "Klutz",
+    "description": "This Pokemon's held item has no effect. This Pokemon cannot use Fling successfully. Macho Brace, Power Anklet, Power Band, Power Belt, Power Bracer, Power Lens, and Power Weight still have their effects.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "leaf-guard",
+    "displayName": "Leaf Guard",
+    "description": "If Sunny Day is active, this Pokemon cannot become affected by a non-volatile status condition or Yawn, but can use Rest normally.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "levitate",
+    "displayName": "Levitate",
+    "description": "This Pokemon is immune to Ground-type attacks and the effects of Spikes, Toxic Spikes, and the Arena Trap Ability. The effects of Gravity, Ingrain, and Iron Ball nullify the immunity.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "lightning-rod",
+    "displayName": "Lightning Rod",
+    "description": "If this Pokemon is not the target of a single-target Electric-type move used by another Pokemon, this Pokemon redirects that move to itself.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "limber",
+    "displayName": "Limber",
+    "description": "This Pokemon cannot be paralyzed. Gaining this Ability while paralyzed cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "liquid-ooze",
+    "displayName": "Liquid Ooze",
+    "description": "This Pokemon damages those draining HP from it for as much as they would heal. This effect does not consider Dream Eater.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "magic-guard",
+    "displayName": "Magic Guard",
+    "description": "This Pokemon can only be damaged by direct attacks. Curse and Substitute on use, Belly Drum, Pain Split, Struggle recoil, and confusion damage are considered direct damage. This Pokemon cannot be prevented from moving because of paralysis, and is unaffected by Toxic Spikes on switch-in.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "magma-armor",
+    "displayName": "Magma Armor",
+    "description": "This Pokemon cannot be frozen. Gaining this Ability while frozen cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "magnet-pull",
+    "displayName": "Magnet Pull",
+    "description": "Prevents opposing Steel-type Pokemon from choosing to switch out, unless they are holding a Shed Shell.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "marvel-scale",
+    "displayName": "Marvel Scale",
+    "description": "If this Pokemon has a non-volatile status condition, its Defense is multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "minus",
+    "displayName": "Minus",
+    "description": "If an active ally has the Plus Ability, this Pokemon's Special Attack is multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "mold-breaker",
+    "displayName": "Mold Breaker",
+    "description": "This Pokemon's moves and their effects ignore certain Abilities of other Pokemon. The Abilities that can be negated are Battle Armor, Clear Body, Damp, Dry Skin, Filter, Flash Fire, Flower Gift, Heatproof, Hyper Cutter, Immunity, Inner Focus, Insomnia, Keen Eye, Leaf Guard, Levitate, Lightning Rod, Limber, Magma Armor, Marvel Scale, Motor Drive, Oblivious, Own Tempo, Sand Veil, Shell Armor, Shield Dust, Simple, Snow Cloak, Solid Rock, Soundproof, Sticky Hold, Storm Drain, Sturdy, Suction Cups, Tangled Feet, Thick Fat, Unaware, Vital Spirit, Volt Absorb, Water Absorb, Water Veil, White Smoke, and Wonder Guard. This affects every other Pokemon on the field, whether or not it is a target of this Pokemon's move. The Attack modifier from an ally's Flower Gift Ability is not negated.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "motor-drive",
+    "displayName": "Motor Drive",
+    "description": "This Pokemon is immune to Electric-type moves and raises its Speed by 1 stage when hit by an Electric-type move.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "multitype",
+    "displayName": "Multitype",
+    "description": "If this Pokemon is an Arceus, its type changes to match its held Plate. This Pokemon cannot lose its held item due to another Pokemon's attack.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "natural-cure",
+    "displayName": "Natural Cure",
+    "description": "This Pokemon has its non-volatile status condition cured when it switches out.",
+    "triggers": ["on-switch-out"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "no-guard",
+    "displayName": "No Guard",
+    "description": "Every move used by or against this Pokemon will always hit.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "normalize",
+    "displayName": "Normalize",
+    "description": "This Pokemon's moves are changed to be Normal type. This effect comes after other effects that change a move's type, except Struggle.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "oblivious",
+    "displayName": "Oblivious",
+    "description": "This Pokemon cannot be infatuated. Gaining this Ability while infatuated cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "overgrow",
+    "displayName": "Overgrow",
+    "description": "When this Pokemon has 1/3 or less of its maximum HP, rounded down, its Grass-type attacks have their power multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "own-tempo",
+    "displayName": "Own Tempo",
+    "description": "This Pokemon cannot be confused. Gaining this Ability while confused cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "pickup",
+    "displayName": "Pickup",
+    "description": "No competitive use.",
+    "triggers": ["on-turn-end"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "plus",
+    "displayName": "Plus",
+    "description": "If an active ally has the Minus Ability, this Pokemon's Special Attack is multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "poison-heal",
+    "displayName": "Poison Heal",
+    "description": "If this Pokemon is poisoned, it restores 1/8 of its maximum HP, rounded down, at the end of each turn instead of losing HP.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "poison-point",
+    "displayName": "Poison Point",
+    "description": "30% chance a Pokemon making contact with this Pokemon will be poisoned. This effect does not happen if this Pokemon did not lose HP from the attack.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "pressure",
+    "displayName": "Pressure",
+    "description": "If this Pokemon is the target of another Pokemon's move, that move loses one additional PP.",
+    "triggers": ["on-switch-in", "passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "pure-power",
+    "displayName": "Pure Power",
+    "description": "This Pokemon's Attack is doubled.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "quick-feet",
+    "displayName": "Quick Feet",
+    "description": "If this Pokemon has a non-volatile status condition, its Speed is multiplied by 1.5. This Pokemon ignores the paralysis effect of quartering Speed.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "rain-dish",
+    "displayName": "Rain Dish",
+    "description": "If Rain Dance is active, this Pokemon restores 1/16 of its maximum HP, rounded down, at the end of each turn.",
+    "triggers": ["on-turn-end"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "reckless",
+    "displayName": "Reckless",
+    "description": "This Pokemon's attacks with recoil or crash damage have their power multiplied by 1.2. Does not affect Struggle.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "rivalry",
+    "displayName": "Rivalry",
+    "description": "This Pokemon's attacks have their power multiplied by 1.25 against targets of the same gender or multiplied by 0.75 against targets of the opposite gender. There is no modifier if either this Pokemon or the target is genderless.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "rock-head",
+    "displayName": "Rock Head",
+    "description": "This Pokemon does not take recoil damage, except Struggle. Does not affect Life Orb damage or crash damage.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "rough-skin",
+    "displayName": "Rough Skin",
+    "description": "Pokemon making contact with this Pokemon lose 1/8 of their maximum HP, rounded down. This effect does not happen if this Pokemon did not lose HP from the attack.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "run-away",
+    "displayName": "Run Away",
+    "description": "No competitive use.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sand-stream",
+    "displayName": "Sand Stream",
+    "description": "On switch-in, this Pokemon summons Sandstorm.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sand-veil",
+    "displayName": "Sand Veil",
+    "description": "If Sandstorm is active, the accuracy of moves used against this Pokemon is multiplied by 0.8. This Pokemon takes no damage from Sandstorm.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "scrappy",
+    "displayName": "Scrappy",
+    "description": "This Pokemon can hit Ghost types with Normal- and Fighting-type moves.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "serene-grace",
+    "displayName": "Serene Grace",
+    "description": "This Pokemon's moves have their secondary effect chance doubled.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shadow-tag",
+    "displayName": "Shadow Tag",
+    "description": "Prevents opposing Pokemon from choosing to switch out, unless they are holding a Shed Shell or also have this Ability.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shed-skin",
+    "displayName": "Shed Skin",
+    "description": "This Pokemon has a 33% chance to have its non-volatile status condition cured at the end of each turn.",
+    "triggers": ["on-turn-end"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shell-armor",
+    "displayName": "Shell Armor",
+    "description": "This Pokemon cannot be struck by a critical hit.",
+    "triggers": ["on-critical-hit", "passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "shield-dust",
+    "displayName": "Shield Dust",
+    "description": "This Pokemon is not affected by the secondary effect of another Pokemon's attack. Attacks with secondary effects that are prevented include those with a chance (even 100%) to paralyze, sleep, freeze, burn, poison, confuse, cause this Pokemon to flinch, cause this Pokemon's stat stages to be lowered, and Fling. Secondary effects added by King's Rock and Razor Fang are also prevented against this Pokemon.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "simple",
+    "displayName": "Simple",
+    "description": "This Pokemon's stat stages are considered doubled during stat calculations. A stat stage cannot be considered more than 6 or less than -6.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "skill-link",
+    "displayName": "Skill Link",
+    "description": "This Pokemon's multi-hit attacks always hit the maximum number of times. Does not affect Triple Kick.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "slow-start",
+    "displayName": "Slow Start",
+    "description": "On switch-in, this Pokemon's Attack and Speed are halved for 5 turns.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sniper",
+    "displayName": "Sniper",
+    "description": "If this Pokemon strikes with a critical hit, the damage is multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "snow-cloak",
+    "displayName": "Snow Cloak",
+    "description": "If Hail is active, the accuracy of moves used against this Pokemon is multiplied by 0.8. This Pokemon takes no damage from Hail.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "snow-warning",
+    "displayName": "Snow Warning",
+    "description": "On switch-in, this Pokemon summons Hail.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "solar-power",
+    "displayName": "Solar Power",
+    "description": "If Sunny Day is active, this Pokemon's Special Attack is multiplied by 1.5 and it loses 1/8 of its maximum HP, rounded down, at the end of each turn.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "solid-rock",
+    "displayName": "Solid Rock",
+    "description": "This Pokemon receives 3/4 damage from supereffective attacks.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "soundproof",
+    "displayName": "Soundproof",
+    "description": "This Pokemon is immune to sound-based moves, including Heal Bell.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "speed-boost",
+    "displayName": "Speed Boost",
+    "description": "This Pokemon's Speed is raised by 1 stage at the end of each full turn it has been on the field.",
+    "triggers": ["on-turn-end"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "stall",
+    "displayName": "Stall",
+    "description": "This Pokemon moves last among Pokemon using the same or greater priority moves.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "static",
+    "displayName": "Static",
+    "description": "30% chance a Pokemon making contact with this Pokemon will be paralyzed. This effect does not happen if this Pokemon did not lose HP from the attack.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "steadfast",
+    "displayName": "Steadfast",
+    "description": "If this Pokemon flinches, its Speed is raised by 1 stage.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "stench",
+    "displayName": "Stench",
+    "description": "No competitive use.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sticky-hold",
+    "displayName": "Sticky Hold",
+    "description": "This Pokemon cannot lose its held item due to another Pokemon's attack, even if the attack knocks out this Pokemon. A Sticky Barb will be transferred to other Pokemon regardless of this Ability.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "storm-drain",
+    "displayName": "Storm Drain",
+    "description": "If this Pokemon is not the target of a single-target Water-type move used by another Pokemon, this Pokemon redirects that move to itself.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "sturdy",
+    "displayName": "Sturdy",
+    "description": "OHKO moves fail when used against this Pokemon.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "suction-cups",
+    "displayName": "Suction Cups",
+    "description": "This Pokemon cannot be forced to switch out by another Pokemon's attack or item.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "super-luck",
+    "displayName": "Super Luck",
+    "description": "This Pokemon's critical hit ratio is raised by 1 stage.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "swarm",
+    "displayName": "Swarm",
+    "description": "When this Pokemon has 1/3 or less of its maximum HP, rounded down, its Bug-type attacks have their power multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "swift-swim",
+    "displayName": "Swift Swim",
+    "description": "If Rain Dance is active, this Pokemon's Speed is doubled.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "synchronize",
+    "displayName": "Synchronize",
+    "description": "If another Pokemon burns, paralyzes, or poisons this Pokemon, that Pokemon receives the same non-volatile status condition. If another Pokemon badly poisons this Pokemon, that Pokemon becomes poisoned.",
+    "triggers": ["on-status-change"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "tangled-feet",
+    "displayName": "Tangled Feet",
+    "description": "This Pokemon's evasiveness is doubled as long as it is confused.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "technician",
+    "displayName": "Technician",
+    "description": "This Pokemon's moves of 60 power or less have their power multiplied by 1.5, except Struggle. This effect comes after a move's effect changes its own power, as well as the effects of Charge and Helping Hand.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "thick-fat",
+    "displayName": "Thick Fat",
+    "description": "The power of Fire- and Ice-type attacks against this Pokemon is halved.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "tinted-lens",
+    "displayName": "Tinted Lens",
+    "description": "This Pokemon's attacks that are not very effective on a target deal double damage.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "torrent",
+    "displayName": "Torrent",
+    "description": "When this Pokemon has 1/3 or less of its maximum HP, rounded down, its Water-type attacks have their power multiplied by 1.5.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "trace",
+    "displayName": "Trace",
+    "description": "On switch-in, this Pokemon copies a random opposing Pokemon's Ability. Abilities that cannot be copied are Forecast, Multitype, and Trace. If no opposing Pokemon has an Ability that can be copied, this Ability will activate as soon as one does.",
+    "triggers": ["on-switch-in"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "truant",
+    "displayName": "Truant",
+    "description": "This Pokemon skips every other turn instead of using a move.",
+    "triggers": ["passive-modifier"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "unaware",
+    "displayName": "Unaware",
+    "description": "This Pokemon ignores other Pokemon's Attack, Special Attack, and accuracy stat stages when taking damage, and ignores other Pokemon's Defense, Special Defense, and evasiveness stat stages when dealing damage.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "unburden",
+    "displayName": "Unburden",
+    "description": "If this Pokemon loses its held item for any reason, its Speed is doubled as long as it remains active, has this Ability, and is not holding an item.",
+    "triggers": ["passive-modifier"],
+    "generation": 4,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "vital-spirit",
+    "displayName": "Vital Spirit",
+    "description": "This Pokemon cannot fall asleep. Gaining this Ability while asleep cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "volt-absorb",
+    "displayName": "Volt Absorb",
+    "description": "This Pokemon is immune to Electric-type moves and restores 1/4 of its maximum HP, rounded down, when hit by an Electric-type move.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "water-absorb",
+    "displayName": "Water Absorb",
+    "description": "This Pokemon is immune to Water-type moves and restores 1/4 of its maximum HP, rounded down, when hit by a Water-type move.",
+    "triggers": ["on-damage-taken"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "water-veil",
+    "displayName": "Water Veil",
+    "description": "This Pokemon cannot be burned. Gaining this Ability while burned cures it.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "white-smoke",
+    "displayName": "White Smoke",
+    "description": "Prevents other Pokemon from lowering this Pokemon's stat stages.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  },
+  {
+    "id": "wonder-guard",
+    "displayName": "Wonder Guard",
+    "description": "This Pokemon is only damaged by Fire Fang, supereffective moves, indirect damage.",
+    "triggers": ["passive-immunity"],
+    "generation": 3,
+    "suppressible": true,
+    "copyable": true,
+    "swappable": true
+  }
+]

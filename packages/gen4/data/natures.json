@@ -1,0 +1,202 @@
+[
+  {
+    "id": "hardy",
+    "displayName": "Hardy",
+    "increased": null,
+    "decreased": null,
+    "likedFlavor": null,
+    "dislikedFlavor": null
+  },
+  {
+    "id": "lonely",
+    "displayName": "Lonely",
+    "increased": "atk",
+    "decreased": "def",
+    "likedFlavor": "spicy",
+    "dislikedFlavor": "sour"
+  },
+  {
+    "id": "brave",
+    "displayName": "Brave",
+    "increased": "atk",
+    "decreased": "spe",
+    "likedFlavor": "spicy",
+    "dislikedFlavor": "sweet"
+  },
+  {
+    "id": "adamant",
+    "displayName": "Adamant",
+    "increased": "atk",
+    "decreased": "spa",
+    "likedFlavor": "spicy",
+    "dislikedFlavor": "dry"
+  },
+  {
+    "id": "naughty",
+    "displayName": "Naughty",
+    "increased": "atk",
+    "decreased": "spd",
+    "likedFlavor": "spicy",
+    "dislikedFlavor": "bitter"
+  },
+  {
+    "id": "bold",
+    "displayName": "Bold",
+    "increased": "def",
+    "decreased": "atk",
+    "likedFlavor": "sour",
+    "dislikedFlavor": "spicy"
+  },
+  {
+    "id": "docile",
+    "displayName": "Docile",
+    "increased": null,
+    "decreased": null,
+    "likedFlavor": null,
+    "dislikedFlavor": null
+  },
+  {
+    "id": "relaxed",
+    "displayName": "Relaxed",
+    "increased": "def",
+    "decreased": "spe",
+    "likedFlavor": "sour",
+    "dislikedFlavor": "sweet"
+  },
+  {
+    "id": "impish",
+    "displayName": "Impish",
+    "increased": "def",
+    "decreased": "spa",
+    "likedFlavor": "sour",
+    "dislikedFlavor": "dry"
+  },
+  {
+    "id": "lax",
+    "displayName": "Lax",
+    "increased": "def",
+    "decreased": "spd",
+    "likedFlavor": "sour",
+    "dislikedFlavor": "bitter"
+  },
+  {
+    "id": "timid",
+    "displayName": "Timid",
+    "increased": "spe",
+    "decreased": "atk",
+    "likedFlavor": "sweet",
+    "dislikedFlavor": "spicy"
+  },
+  {
+    "id": "hasty",
+    "displayName": "Hasty",
+    "increased": "spe",
+    "decreased": "def",
+    "likedFlavor": "sweet",
+    "dislikedFlavor": "sour"
+  },
+  {
+    "id": "serious",
+    "displayName": "Serious",
+    "increased": null,
+    "decreased": null,
+    "likedFlavor": null,
+    "dislikedFlavor": null
+  },
+  {
+    "id": "jolly",
+    "displayName": "Jolly",
+    "increased": "spe",
+    "decreased": "spa",
+    "likedFlavor": "sweet",
+    "dislikedFlavor": "dry"
+  },
+  {
+    "id": "naive",
+    "displayName": "Naive",
+    "increased": "spe",
+    "decreased": "spd",
+    "likedFlavor": "sweet",
+    "dislikedFlavor": "bitter"
+  },
+  {
+    "id": "modest",
+    "displayName": "Modest",
+    "increased": "spa",
+    "decreased": "atk",
+    "likedFlavor": "dry",
+    "dislikedFlavor": "spicy"
+  },
+  {
+    "id": "mild",
+    "displayName": "Mild",
+    "increased": "spa",
+    "decreased": "def",
+    "likedFlavor": "dry",
+    "dislikedFlavor": "sour"
+  },
+  {
+    "id": "quiet",
+    "displayName": "Quiet",
+    "increased": "spa",
+    "decreased": "spe",
+    "likedFlavor": "dry",
+    "dislikedFlavor": "sweet"
+  },
+  {
+    "id": "bashful",
+    "displayName": "Bashful",
+    "increased": null,
+    "decreased": null,
+    "likedFlavor": null,
+    "dislikedFlavor": null
+  },
+  {
+    "id": "rash",
+    "displayName": "Rash",
+    "increased": "spa",
+    "decreased": "spd",
+    "likedFlavor": "dry",
+    "dislikedFlavor": "bitter"
+  },
+  {
+    "id": "calm",
+    "displayName": "Calm",
+    "increased": "spd",
+    "decreased": "atk",
+    "likedFlavor": "bitter",
+    "dislikedFlavor": "spicy"
+  },
+  {
+    "id": "gentle",
+    "displayName": "Gentle",
+    "increased": "spd",
+    "decreased": "def",
+    "likedFlavor": "bitter",
+    "dislikedFlavor": "sour"
+  },
+  {
+    "id": "sassy",
+    "displayName": "Sassy",
+    "increased": "spd",
+    "decreased": "spe",
+    "likedFlavor": "bitter",
+    "dislikedFlavor": "sweet"
+  },
+  {
+    "id": "careful",
+    "displayName": "Careful",
+    "increased": "spd",
+    "decreased": "spa",
+    "likedFlavor": "bitter",
+    "dislikedFlavor": "dry"
+  },
+  {
+    "id": "quirky",
+    "displayName": "Quirky",
+    "increased": null,
+    "decreased": null,
+    "likedFlavor": null,
+    "dislikedFlavor": null
+  }
+]
