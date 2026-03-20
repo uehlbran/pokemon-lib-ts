@@ -676,6 +676,7 @@ describe("Gen 4 executeMoveEffect — Recoil", () => {
 describe("Gen 4 executeMoveEffect — Drain", () => {
   it("given Giga Drain dealing 80 damage, when executeMoveEffect called, then healAmount = 40 (50% drain)", () => {
     // Source: Showdown Gen 4 — Giga Drain drains 50%
+    // Formula: max(1, floor(80 * 0.5)) = 40
     const attacker = createActivePokemon({ types: ["grass"] });
     const defender = createActivePokemon({ types: ["normal"] });
     const move = createMove("giga-drain", {
@@ -690,14 +691,34 @@ describe("Gen 4 executeMoveEffect — Drain", () => {
 
     expect(result.healAmount).toBe(40);
   });
+
+  it("given Dream Eater dealing 150 damage, when executeMoveEffect called, then healAmount = 75 (50% drain)", () => {
+    // Source: Showdown Gen 4 — Dream Eater drains 50%
+    // Formula: max(1, floor(150 * 0.5)) = 75
+    // Triangulation: second test ensures drain formula computes, not a constant return
+    const attacker = createActivePokemon({ types: ["psychic"] });
+    const defender = createActivePokemon({ types: ["normal"], status: "sleep" });
+    const move = createMove("dream-eater", {
+      type: "psychic",
+      category: "special",
+      effect: { type: "drain", amount: 0.5 },
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 150, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.healAmount).toBe(75);
+  });
 });
 
 // ─── Heal ───────────────────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Heal", () => {
-  it("given Roost used (heal type in data), when executeMoveEffect called, then healAmount = 50% of max HP", () => {
-    // Source: Showdown Gen 4 — Roost heals 50% max HP
-    // roost has { type: "heal", amount: 0.5 } in data, so it goes through applyMoveEffect
+  it("given Roost used by Flying/Normal type (real data), when executeMoveEffect called, then healAmount = 50% and typeChange removes Flying", () => {
+    // Source: Showdown Gen 4 — Roost heals 50% max HP and removes Flying type for the turn
+    // roost has { type: "heal", amount: 0.5 } in data; the Roost special-case handler
+    // in executeGen4MoveEffect intercepts by move ID to also apply Flying-type removal.
     const attacker = createActivePokemon({
       types: ["normal", "flying"],
       maxHp: 300,
@@ -711,9 +732,34 @@ describe("Gen 4 executeMoveEffect — Heal", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    // Roost data has effect: { type: "heal", amount: 0.5 }
-    // So heal = floor(300 * 0.5) = 150
+    // heal = floor(300 * 0.5) = 150
+    // Source: Showdown Gen 4 — Roost heals 50% max HP
     expect(result.healAmount).toBe(150);
+    // Flying type removed for this turn; Normal type remains
+    // Source: Bulbapedia — Roost temporarily removes the user's Flying type
+    expect(result.typeChange).toEqual({ target: "attacker", types: ["normal"] });
+    expect(result.messages).toContain("Staraptor landed and recovered health!");
+  });
+
+  it("given Recover used (heal 0.5 fraction, non-Roost), when executeMoveEffect called, then healAmount = 50% and no typeChange", () => {
+    // Source: Showdown Gen 4 — Recover heals 50% max HP, no type change
+    // Triangulation: ensures the heal case works generically, not just for Roost
+    const attacker = createActivePokemon({ types: ["normal"], maxHp: 200, currentHp: 100 });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = createMove("recover", {
+      type: "normal",
+      category: "status",
+      power: 0,
+      effect: { type: "heal", amount: 0.5 },
+    });
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 0, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    // heal = floor(200 * 0.5) = 100
+    expect(result.healAmount).toBe(100);
+    expect(result.typeChange).toBeUndefined();
   });
 });
 
@@ -1226,9 +1272,12 @@ describe("Gen 4 executeMoveEffect — Pain Split", () => {
     expect(result.messages).toContain("The battlers shared their pain!");
   });
 
-  it("given attacker at 150 HP and defender at 50 HP, when Pain Split used, then no heal and no customDamage (attacker would lose HP)", () => {
+  it("given attacker at 150 HP and defender at 50 HP, when Pain Split used, then attacker takes customDamage of 50 to reach average", () => {
     // Average = floor((150 + 50) / 2) = 100
-    // Attacker would lose 50 HP (healAmount = negative → 0), defender gains HP (no customDamage)
+    // Attacker at 150 → loses 50 HP (customDamage targeting attacker)
+    // Defender at 50 → would gain 50 HP, but MoveEffectResult has no "heal defender" field
+    //   (known limitation; defender healing in this case is deferred to a future engine extension)
+    // Source: Showdown Gen 4 — Pain Split sets both to the average HP
     const attacker = createActivePokemon({
       types: ["ghost"],
       maxHp: 200,
@@ -1245,8 +1294,9 @@ describe("Gen 4 executeMoveEffect — Pain Split", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.healAmount).toBe(0); // 100 - 150 = negative → no heal
-    expect(result.customDamage).toBeUndefined(); // 50 - 100 = negative → no damage
+    expect(result.healAmount).toBe(0); // attacker above average → no heal
+    // Attacker takes 50 damage (150 → 100)
+    expect(result.customDamage).toEqual({ target: "attacker", amount: 50, source: "pain-split" });
     expect(result.messages).toContain("The battlers shared their pain!");
   });
 });
@@ -1369,8 +1419,9 @@ describe("Gen 4 executeMoveEffect — Safeguard and Lucky Chant", () => {
 // ─── Heal Bell / Aromatherapy ───────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Heal Bell / Aromatherapy", () => {
-  it("given Heal Bell used, when executeMoveEffect called, then statusCuredOnly for both", () => {
-    // Source: Showdown Gen 4 — Heal Bell cures team status
+  it("given Heal Bell used, when executeMoveEffect called, then statusCuredOnly for attacker's side only (not foe's party)", () => {
+    // Source: Showdown Gen 4 — Heal Bell cures user's team status
+    // Source: Bulbapedia — "Heal Bell cures all status conditions of the user and the user's party"
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove("heal-bell");
@@ -1379,11 +1430,12 @@ describe("Gen 4 executeMoveEffect — Heal Bell / Aromatherapy", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusCuredOnly).toEqual({ target: "both" });
+    expect(result.statusCuredOnly).toEqual({ target: "attacker" });
   });
 
-  it("given Aromatherapy used, when executeMoveEffect called, then statusCuredOnly for both", () => {
-    // Source: Showdown Gen 4 — Aromatherapy cures team status
+  it("given Aromatherapy used, when executeMoveEffect called, then statusCuredOnly for attacker's side only (not foe's party)", () => {
+    // Source: Showdown Gen 4 — Aromatherapy cures user's team status
+    // Source: Bulbapedia — cures user's party, not the foe's party
     const attacker = createActivePokemon({ types: ["grass"] });
     const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove("aromatherapy");
@@ -1392,7 +1444,7 @@ describe("Gen 4 executeMoveEffect — Heal Bell / Aromatherapy", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusCuredOnly).toEqual({ target: "both" });
+    expect(result.statusCuredOnly).toEqual({ target: "attacker" });
   });
 });
 

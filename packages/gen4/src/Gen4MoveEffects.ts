@@ -494,9 +494,10 @@ function handleCustomEffect(
 
     case "heal-bell":
     case "aromatherapy": {
-      // Cure all party members' status conditions
-      // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures team status
-      result.statusCuredOnly = { target: "both" };
+      // Cure all party members' status conditions (attacker's side only — not the foe's party)
+      // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures user's team status
+      // Source: Bulbapedia — "Heal Bell cures all status conditions of the user and the user's party"
+      result.statusCuredOnly = { target: "attacker" };
       const moveName = move.id === "heal-bell" ? "Heal Bell" : "Aromatherapy";
       result.messages.push(`A bell chimed! ${moveName} cured the team's status!`);
       break;
@@ -512,20 +513,32 @@ function handleCustomEffect(
     }
 
     case "pain-split": {
-      // Average HP between attacker and defender
+      // Average HP between attacker and defender: floor((a + b) / 2)
       // Source: Showdown Gen 4 — Pain Split averages current HP
+      // Source: Bulbapedia — Pain Split: "The user and the target each have their HP
+      // set to the average of the two Pokémon's HP values."
       const average = Math.floor((attacker.pokemon.currentHp + defender.pokemon.currentHp) / 2);
       const attackerDiff = average - attacker.pokemon.currentHp;
-      if (attackerDiff > 0) {
-        result.healAmount = attackerDiff;
-      }
       const defenderDiff = defender.pokemon.currentHp - average;
-      if (defenderDiff > 0) {
+
+      if (attackerDiff > 0) {
+        // Attacker has LESS HP than average → attacker heals
+        result.healAmount = attackerDiff;
+        if (defenderDiff > 0) {
+          // Defender has MORE HP than average → defender takes damage
+          result.customDamage = { target: "defender", amount: defenderDiff, source: "pain-split" };
+        }
+      } else if (attackerDiff < 0) {
+        // Attacker has MORE HP than average → attacker takes damage
+        // Source: Showdown Gen 4 — Pain Split reduces attacker HP when above average
         result.customDamage = {
-          target: "defender",
-          amount: defenderDiff,
+          target: "attacker",
+          amount: Math.abs(attackerDiff),
           source: "pain-split",
         };
+        // Note: Defender gains HP when below average, but MoveEffectResult has no
+        // "heal defender" field. Defender-side healing in this case requires an engine
+        // extension (tracked as a known limitation).
       }
       result.messages.push("The battlers shared their pain!");
       break;
@@ -728,9 +741,10 @@ function handleNullEffectMoves(
 
     case "heal-bell":
     case "aromatherapy": {
-      // Cure all party members' status conditions
-      // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures team status
-      result.statusCuredOnly = { target: "both" };
+      // Cure all party members' status conditions (attacker's side only)
+      // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures user's team status
+      // Source: Bulbapedia — cures user's party, not the foe's party
+      result.statusCuredOnly = { target: "attacker" };
       const moveName = moveId === "heal-bell" ? "Heal Bell" : "Aromatherapy";
       result.messages.push(`A bell chimed! ${moveName} cured the team's status!`);
       break;
@@ -854,9 +868,35 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     messages: [],
   };
 
+  // Roost: heal + temporarily remove Flying type for this turn.
+  // Roost has effect: { type: "heal", amount: 0.5 } in the Gen 4 data, so it routes
+  // through applyMoveEffect's "heal" case which only heals — it cannot set typeChange.
+  // We intercept by move ID before dispatch so both effects are applied correctly.
+  // Source: Showdown Gen 4 — Roost heals 50% and removes Flying type
+  // Source: Bulbapedia — Roost: the user temporarily loses its Flying type
+  if (context.move.id === "roost") {
+    const { attacker } = context;
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    // Use the data's fraction if present (0.5), otherwise default to 0.5
+    const healEffect = context.move.effect as { type: string; amount: number } | null;
+    const healFraction = healEffect?.amount ?? 0.5;
+    result.healAmount = Math.max(1, Math.floor(maxHp * healFraction));
+    if (attacker.types.includes("flying")) {
+      const newTypes = attacker.types.filter((t) => t !== "flying");
+      result.typeChange = {
+        target: "attacker",
+        types: newTypes.length > 0 ? (newTypes as readonly PokemonType[]) : (["normal"] as const),
+      };
+    }
+    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+    result.messages.push(`${attackerName} landed and recovered health!`);
+    return result;
+  }
+
   // Knock Off: custom handler — move data has effect: null so we handle by ID
   // Source: Showdown Gen 4 — Knock Off removes defender's item, no damage boost in Gen 4
   // (Gen 5+ adds 50% damage boost)
+  // Note: Directly mutates defender.pokemon.heldItem (consistent with Gen 3 pattern).
   if (context.move.id === "knock-off") {
     if (context.defender.pokemon.heldItem) {
       const item = context.defender.pokemon.heldItem;
