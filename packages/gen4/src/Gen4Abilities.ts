@@ -335,7 +335,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
 
     case "shed-skin": {
       // 33% chance to cure primary status each turn.
-      // Source: Bulbapedia — Shed Skin: 30% chance (approx. 1/3) to cure status each turn
+      // Source: Bulbapedia — Shed Skin: 33% chance (1/3) to cure status each turn
       // Source: Showdown Gen 4 mod — Shed Skin trigger (uses 33% = 1/3)
       if (!status) return { activated: false, effects: [], messages: [] };
       if (!context.rng.chance(1 / 3)) return { activated: false, effects: [], messages: [] };
@@ -368,13 +368,15 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
 
     case "poison-heal": {
       // Heal 1/8 max HP when poisoned (instead of taking poison damage).
-      // The normal status-damage tick is skipped; this heals instead.
+      // Even at full HP, Poison Heal MUST return activated:true to signal that the
+      // poison-heal EoT slot handled the tick — preventing status-damage from
+      // applying poison chip damage to this Pokemon.
       // Source: Bulbapedia — Poison Heal: heals 1/8 HP per turn if poisoned (instead of damage)
       // Source: Showdown Gen 4 mod — Poison Heal trigger
       if (status !== "poison" && status !== "badly-poisoned")
         return { activated: false, effects: [], messages: [] };
-      // Only heal if current HP < max HP (no overflow)
-      if (currentHp >= maxHp) return { activated: false, effects: [], messages: [] };
+      // At full HP: ability still activates (suppresses poison damage) but deals no heal
+      if (currentHp >= maxHp) return { activated: true, effects: [], messages: [] };
       const healAmount = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,

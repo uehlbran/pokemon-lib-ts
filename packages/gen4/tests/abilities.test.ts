@@ -727,8 +727,11 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     expect(result.effects[0]?.value).toBe(20);
   });
 
-  it("given Poison Heal and poison at full HP, when turn ends, then does not activate (already full)", () => {
-    // Source: Showdown Gen 4 mod — Poison Heal does not heal if already at max HP
+  it("given Poison Heal and poison at full HP, when turn ends, then activates with no effects (suppresses poison damage tick)", () => {
+    // Poison Heal must return activated:true even at full HP so the engine knows
+    // the poison-heal EoT slot handled the tick and skips status-damage for this Pokemon.
+    // Source: Bulbapedia — Poison Heal: heals instead of taking damage; no damage is ever dealt
+    // Source: Showdown Gen 4 mod — Poison Heal activates when poisoned regardless of current HP
     const ctx = makeContext({
       ability: "poison-heal",
       status: "poison",
@@ -737,7 +740,8 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(0);
   });
 
   it("given Poison Heal and no status, when turn ends, then does not activate", () => {

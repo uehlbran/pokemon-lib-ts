@@ -23,10 +23,10 @@ export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
  * Check whether a Pokemon is immune to the given weather's end-of-turn chip damage.
  *
  * Gen 4 weather chip damage rules:
+ * - Rain/Sun: no chip damage — returns false immediately (immunity concept does not apply)
  * - Sandstorm: Rock, Ground, and Steel types are immune
  * - Hail: Ice types are immune
- * - Magic Guard: completely ignores weather chip damage (NEW vs Gen 3)
- * - Rain/Sun: no chip damage, always return false
+ * - Magic Guard: completely ignores weather chip damage (NEW vs Gen 3) — only for sand/hail
  *
  * Source: Showdown sim/battle.ts Gen 4 mod — weather damage immunity checks
  * Source: Bulbapedia — Magic Guard: immune to all indirect damage including weather
@@ -41,7 +41,12 @@ export function isGen4WeatherImmune(
   weather: WeatherType,
   ability?: string,
 ): boolean {
+  // Rain and Sun have no chip damage — immunity concept does not apply
+  if (weather !== "sand" && weather !== "hail") return false;
+
   // Magic Guard: immune to all indirect damage, including weather chip
+  // Only applies to sand/hail (checked after the early-return above so this
+  // does not spuriously return true for rain/sun).
   // Source: Bulbapedia — Magic Guard: prevents all indirect damage
   // Source: Showdown — magic-guard check before weather damage loop
   if (ability === "magic-guard") return true;
@@ -49,11 +54,8 @@ export function isGen4WeatherImmune(
   if (weather === "sand") {
     return types.some((type) => SANDSTORM_IMMUNE_TYPES.includes(type));
   }
-  if (weather === "hail") {
-    return types.some((type) => HAIL_IMMUNE_TYPES.includes(type));
-  }
-  // Rain and Sun have no chip damage
-  return false;
+  // hail
+  return types.some((type) => HAIL_IMMUNE_TYPES.includes(type));
 }
 
 /**
