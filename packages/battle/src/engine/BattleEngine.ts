@@ -1486,11 +1486,13 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Initialize companion volatiles that downstream mechanics depend on
     if (status === "badly-poisoned") {
+      // Source: Showdown sim/battle-actions.ts — toxic counter starts at 1, increments each EoT
       target.volatileStatuses.set("toxic-counter", {
         turnsLeft: -1,
         data: { counter: 1 },
       });
     } else if (status === "sleep") {
+      // Source: Showdown sim/battle-actions.ts — sleep turns rolled on infliction, tracked by sleep-counter
       const turns = sleepTurnsOverride ?? this.ruleset.rollSleepTurns(this.state.rng);
       target.volatileStatuses.set("sleep-counter", {
         turnsLeft: turns,
