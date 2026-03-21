@@ -6633,7 +6633,7 @@
     "power": null,
     "accuracy": 100,
     "pp": 20,
-    "priority": -1,
+    "priority": -6,
     "target": "adjacent-foe",
     "flags": {
       "contact": false,
@@ -9599,7 +9599,7 @@
     "power": null,
     "accuracy": 100,
     "pp": 20,
-    "priority": -1,
+    "priority": -6,
     "target": "adjacent-foe",
     "flags": {
       "contact": false,
