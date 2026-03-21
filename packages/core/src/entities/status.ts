@@ -46,4 +46,7 @@ export type VolatileStatus =
   | "tar-shot" // Gen 8
   | "octolock" // Gen 8
   | "mist" // Gen 1+ — protects the user's team from stat-lowering moves
-  | "just-frozen"; // Gen 2 — tracks whether a Pokemon was frozen this turn (cannot thaw same turn, per pokecrystal wPlayerJustGotFrozen)
+  | "just-frozen" // Gen 2 — tracks whether a Pokemon was frozen this turn (cannot thaw same turn, per pokecrystal wPlayerJustGotFrozen)
+  | "destiny-bond" // Destiny Bond — if the user faints from the opponent's move, the opponent faints too
+  | "choice-locked" // Choice item (Band/Specs/Scarf) — locks the user into one move
+  | "flash-fire"; // Flash Fire — boosts Fire-type moves by 50% when hit by a Fire move

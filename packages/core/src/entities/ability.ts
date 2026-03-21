@@ -48,4 +48,5 @@ export type AbilityTrigger =
   | "on-type-effectiveness" // Filter, Solid Rock, Prism Armor
   | "on-item-use" // Unnerve, Ripen
   | "passive-modifier" // Huge Power, Pure Power, Hustle
-  | "passive-immunity"; // Levitate, Flash Fire, Lightning Rod, Volt Absorb
+  | "passive-immunity" // Levitate, Flash Fire, Lightning Rod, Volt Absorb
+  | "on-flinch"; // Steadfast — raises Speed when flinched

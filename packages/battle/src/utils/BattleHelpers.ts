@@ -46,6 +46,7 @@ export function createActivePokemon(
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
+    lastDamageCategory: null,
     turnsOnField: 0,
     movedThisTurn: false,
     consecutiveProtects: 0,

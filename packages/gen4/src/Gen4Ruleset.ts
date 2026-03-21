@@ -808,6 +808,8 @@ export class Gen4Ruleset extends BaseRuleset {
       "bad-dreams", // Bad Dreams
       "bind", // Trap damage
       "encore-countdown", // Encore timer
+      "taunt-countdown", // Taunt timer (3 turns in Gen 4)
+      "disable-countdown", // Disable timer (4 turns in Gen 4)
       "perish-song", // Perish Song countdown
       "screen-countdown", // Reflect / Light Screen
       "safeguard-countdown", // Safeguard
