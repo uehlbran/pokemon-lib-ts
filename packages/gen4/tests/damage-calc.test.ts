@@ -2850,19 +2850,18 @@ describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: Plates (Gen 4 new item type — 1.2x boost, vs 1.1x for type-boost items)
+// Tests: Plates (Gen 4 — 4915/4096 base power boost, same as type-boost items)
 // ---------------------------------------------------------------------------
 
-describe("Gen 4 damage calc — Plates (1.2x type boost)", () => {
-  it("given attacker holds Flame Plate and uses a Fire move, when calculating, then boost is 1.2x vs no item", () => {
-    // Source: Bulbapedia — Plates (Gen 4): "Raises the power of [type] moves by 20%."
-    // Source: Showdown sim/items.ts — all Plates use 1.2x boost (not 1.1x like type-boost items)
+describe("Gen 4 damage calc — Plates (4915/4096 base power boost)", () => {
+  it("given attacker holds Flame Plate and uses a Fire move, when calculating, then base power is boosted by 4915/4096", () => {
+    // Source: Showdown data/items.ts — Flame Plate uses chainModify([4915, 4096]) on onBasePower
     // Derivation: no-item → L50, power=80, spAtk=100, spDef=100, rng=100, neutral, STAB
     //   levelFactor=22, base=floor(floor(22*80*100/100)/50)=35, +2=37
     //   STAB (fire attacker, fire move): floor(37*1.5)=55; final=55
-    //   with flame-plate (1.2x to spAtk): spAtk=floor(100*120/100)=120
-    //   base=floor(floor(22*80*120/100)/50)=floor(2112/50)=42, +2=44
-    //   STAB: floor(44*1.5)=66; final=66
+    //   with flame-plate (4915/4096 on base power): boosted power = floor(80*4915/4096) = 95
+    //   base=floor(floor(22*95*100/100)/50)=floor(2090/50)=41, +2=43
+    //   STAB: floor(43*1.5)=64; final=64
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -2905,9 +2904,9 @@ describe("Gen 4 damage calc — Plates (1.2x type boost)", () => {
       chart,
     );
 
-    // Derivation above: no-item → 55 (with STAB), plate → 66
+    // Derivation above: no-item → 55 (with STAB), plate → 64
     expect(noItemResult.damage).toBe(55);
-    expect(plateResult.damage).toBe(66);
+    expect(plateResult.damage).toBe(64);
     expect(plateResult.damage).toBeGreaterThan(noItemResult.damage);
   });
 

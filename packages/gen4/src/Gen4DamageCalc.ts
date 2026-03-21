@@ -15,11 +15,14 @@ import {
 // ─── Type-Boosting Items ────────────────────────────────────────────────────
 
 /**
- * Gen 3-era type-boosting held items: 1.1x (10%) damage increase for moves
- * of the matching type. All of these existed in Gen 3 and carry over to Gen 4
- * with the same boost factor.
+ * Type-boosting held items: ~1.2x (4915/4096) base power increase for moves
+ * of the matching type. Applied via onBasePower in Showdown.
  *
- * Source: pret/pokeemerald src/data/items.h — HoldEffect HOLD_EFFECT_*_POWER
+ * Note: In Gen 3 (pret/pokeemerald), these were 110/100 applied to the attack stat.
+ * In Gen 4+ (Showdown), they use chainModify([4915, 4096]) on base power instead.
+ *
+ * Source: Showdown data/items.ts — Charcoal, Mystic Water, etc. use
+ *   onBasePower with chainModify([4915, 4096])
  * Source: Bulbapedia — Type-enhancing item (Generation IV)
  */
 const TYPE_BOOST_ITEMS: Readonly<Record<string, string>> = {
@@ -43,12 +46,13 @@ const TYPE_BOOST_ITEMS: Readonly<Record<string, string>> = {
 };
 
 /**
- * Plate items introduced in Gen 4: 1.2x (20%) damage increase for moves
- * of the matching type. These are stronger than the Gen 3 type-boost items.
+ * Plate items introduced in Gen 4: ~1.2x (4915/4096) base power increase for moves
+ * of the matching type. Same multiplier as type-boost items in Showdown.
  *
+ * Source: Showdown data/items.ts — Flame Plate, etc. use onBasePower with
+ *   chainModify([4915, 4096])
  * Source: Bulbapedia — Plate (item): "Boosts the power of the holder's
  *   [type]-type moves by 20%."
- * Source: Showdown sim/items.ts — Plate items onBasePowerPriority
  */
 const PLATE_ITEMS: Readonly<Record<string, string>> = {
   "flame-plate": "fire",
@@ -198,8 +202,7 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  *
  * Modifier application order on the raw stat (before stat stages):
  *   1. Huge Power / Pure Power: Atk x2 (physical only)
- *   2. Type-boosting items (1.1x): applied to raw stat
- *   3. Plates (1.2x, NEW): applied to raw stat
+ *   2-3. (Type-boost items and Plates moved to base power step in calculateGen4Damage)
  *   4. Choice Band (physical) / Choice Specs (special, NEW): 1.5x raw stat
  *   5. Species-specific items (Soul Dew, Deep Sea Tooth, Light Ball, Thick Club)
  *   6. Hustle: 1.5x physical attack
@@ -214,8 +217,6 @@ function getAttackStat(
   moveType: PokemonType,
   isPhysical: boolean,
   isCrit: boolean,
-  typeBoostItemType: string | null,
-  plateItemType: string | null,
   defender?: ActivePokemon,
   weather?: string | null,
 ): number {
@@ -239,19 +240,11 @@ function getAttackStat(
     rawStat = rawStat * 2;
   }
 
-  // 2. Type-boosting held items (1.1x): applied to raw attack/spAttack stat
-  // Source: Showdown sim/battle.ts — type boost items
-  // Source: pret/pokeplatinum — same as pokeemerald: (attack * 110) / 100
-  if (!attackerHasKlutz && typeBoostItemType === moveType) {
-    rawStat = Math.floor((rawStat * 110) / 100);
-  }
-
-  // 3. Plates (1.2x, NEW in Gen 4): applied to raw stat
-  // Source: Bulbapedia — Plate items boost matching type moves by 20%
-  // Source: Showdown sim/items.ts — Plate onBasePowerPriority
-  if (!attackerHasKlutz && plateItemType === moveType) {
-    rawStat = Math.floor((rawStat * 120) / 100);
-  }
+  // 2–3. Type-boosting items and Plates: MOVED to base power step in calculateGen4Damage().
+  // Source: Showdown data/items.ts — Charcoal, Silk Scarf, etc. use onBasePower with
+  //   chainModify([4915, 4096]). Plates also use the same 4915/4096 modifier on onBasePower.
+  // Previously these were here at (attack * 110/100) and (attack * 120/100) respectively,
+  // which was both the wrong multiplier and the wrong application point.
 
   // 4. Choice Band: 1.5x physical attack (applied to raw stat)
   // Source: Showdown sim/battle.ts — Choice Band Gen 4
@@ -500,6 +493,7 @@ function getDefenseStat(
  *
  * Formula order (Showdown Gen 4 damage calc):
  *   1. Status moves / power=0: return 0
+ *   1b. Type-boost items + Plates: 4915/4096 base power (onBasePower, priority 15)
  *   2. Pinch abilities (overgrow/blaze/torrent/swarm): 1.5x power (priority 2)
  *   3. Dry Skin fire weakness: 1.25x base power for Fire moves (onSourceBasePower, priority 17)
  *   4. Technician: 1.5x power for moves with base power <= 60 (onBasePower, priority 30)
@@ -565,6 +559,25 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Normalize: "All the Pokemon's moves become Normal-type."
   // Source: Showdown data/abilities.ts — Normalize onModifyMove
   const effectiveMoveType: PokemonType = attackerAbility === "normalize" ? "normal" : move.type;
+
+  // Klutz: holder cannot use its held item — suppresses all held-item modifiers
+  // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
+  const attackerHasKlutz = attackerAbility === "klutz";
+
+  // Type-boost items (Charcoal, Mystic Water, etc.) and Plates (Flame Plate, etc.):
+  // Both apply ~1.2x to BASE POWER (not attack stat).
+  // Both use the same multiplier: 4915/4096 (~1.1999...).
+  // Source: Showdown data/items.ts — Charcoal, Silk Scarf, etc. use onBasePower with
+  //   chainModify([4915, 4096]). Plates also use chainModify([4915, 4096]).
+  // Source: Showdown data/items.ts — onBasePowerPriority: 15 (runs before Technician at 30)
+  const typeBoostItemType = TYPE_BOOST_ITEMS[attacker.pokemon.heldItem ?? ""];
+  const plateItemType = PLATE_ITEMS[attacker.pokemon.heldItem ?? ""];
+  if (!attackerHasKlutz && typeBoostItemType === effectiveMoveType) {
+    power = Math.floor((power * 4915) / 4096);
+  }
+  if (!attackerHasKlutz && plateItemType === effectiveMoveType) {
+    power = Math.floor((power * 4915) / 4096);
+  }
 
   // Mold Breaker: attacker's ability bypasses defender's defensive abilities
   // Source: Showdown Gen 4 — Mold Breaker negates defender abilities in damage calc
@@ -699,22 +712,10 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   //   each individual move has its own damage category."
   const isPhysical = move.category === "physical";
 
-  // Determine type-boost item and plate matches (used in getAttackStat)
   const attackerItem = attacker.pokemon.heldItem;
-  const typeBoostItemType = attackerItem ? (TYPE_BOOST_ITEMS[attackerItem] ?? null) : null;
-  const plateItemType = attackerItem ? (PLATE_ITEMS[attackerItem] ?? null) : null;
 
   // Get effective stats (pass opponent for Simple/Unaware stat stage adjustments)
-  let attack = getAttackStat(
-    attacker,
-    effectiveMoveType,
-    isPhysical,
-    isCrit,
-    typeBoostItemType,
-    plateItemType,
-    defender,
-    weather,
-  );
+  let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, defender, weather);
   let defense = getDefenseStat(defender, isPhysical, isCrit, weather, attacker);
 
   // Track multipliers for breakdown
@@ -885,9 +886,15 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // Wonder Guard: only super-effective moves hit
   // Mold Breaker bypasses Wonder Guard
+  // Fire Fang bypasses Wonder Guard in Gen 4 (cartridge bug replicated by Showdown)
+  // Source: Showdown data/mods/gen4/abilities.ts — wonderguard: move.id === 'firefang' returns
   // Source: Bulbapedia — Wonder Guard: "Only super effective moves will hit."
-  // Source: Showdown sim/abilities.ts — Wonder Guard
-  if (!moldBreaker && defenderAbility === "wonder-guard" && effectiveness < 2) {
+  if (
+    !moldBreaker &&
+    defenderAbility === "wonder-guard" &&
+    effectiveness < 2 &&
+    move.id !== "fire-fang"
+  ) {
     return {
       damage: 0,
       effectiveness,
@@ -954,11 +961,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // 20. Item damage modifiers (NEW in Gen 4)
   // Source: Showdown sim/items.ts — Life Orb, Expert Belt, Muscle Band, Wise Glasses
-  // Klutz: suppresses all held item effects (including damage modifiers)
-  // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
-  // Source: Showdown data/abilities.ts — Klutz gates item modifiers
+  // Klutz: suppresses all held item effects (attackerHasKlutz computed earlier)
   let itemMultiplier = 1;
-  const attackerHasKlutz = attackerAbility === "klutz";
 
   // Life Orb: 1.3x damage (recoil is handled separately by the engine)
   // Source: Bulbapedia — Life Orb: "Boosts the power of moves by 30%."
@@ -1017,13 +1021,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
-  // Account for type-boost items and plates in itemMultiplier for breakdown
-  if (typeBoostItemType === effectiveMoveType) {
-    itemMultiplier = itemMultiplier === 1 ? 1.1 : itemMultiplier;
-  }
-  if (plateItemType === effectiveMoveType) {
-    itemMultiplier = itemMultiplier === 1 ? 1.2 : itemMultiplier;
-  }
+  // Type-boost items and Plates now modify base power (not attack stat),
+  // so they're already baked into baseDamage. No separate itemMultiplier needed for them.
 
   // 21. Minimum 1 damage (unless type immune, which returns 0 above)
   // Source: Showdown sim/battle.ts — minimum 1 damage
