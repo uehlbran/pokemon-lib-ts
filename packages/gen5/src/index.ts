@@ -14,4 +14,9 @@ export { applyGen5HeldItem } from "./Gen5Items";
 export { executeGen5MoveEffect } from "./Gen5MoveEffects";
 export { Gen5Ruleset } from "./Gen5Ruleset";
 export { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
-export { applyGen5WeatherEffects } from "./Gen5Weather";
+export {
+  applyGen5WeatherEffects,
+  HAIL_IMMUNE_TYPES,
+  isGen5WeatherImmune,
+  SANDSTORM_IMMUNE_TYPES,
+} from "./Gen5Weather";

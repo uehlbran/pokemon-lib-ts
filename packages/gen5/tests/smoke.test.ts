@@ -200,9 +200,10 @@ describe("Gen 5 stub functions", () => {
     expect(result.messages).toEqual([]);
   });
 
-  it("given applyGen5WeatherEffects stub, when called, then returns empty array", () => {
-    // Source: Stub -- will be implemented in Wave 2
-    const result = applyGen5WeatherEffects();
+  it("given applyGen5WeatherEffects with no weather, when called, then returns empty array", () => {
+    // Source: No weather = no chip damage effects
+    const state = { weather: null, sides: [] } as unknown as BattleState;
+    const result = applyGen5WeatherEffects(state);
     expect(result).toEqual([]);
   });
 });
