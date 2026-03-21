@@ -236,11 +236,10 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
     // Source: pret/pokecrystal engine/items/item_effects.asm PokeBallEffect
     // Gen 2 formula: F = floor(catchRate * (maxHP*2 - currentHP*3) / (maxHP*2))
     // At full HP (current=max=200): maxHP*2=400, currentHP*3=600 → curHp3 >= maxHp2
-    // So hpFactor = max(1, floor(catchRate * ballMod / maxHP*2))
-    // catchRate=45 (Bulbasaur), ballMod=1 (Poke Ball)
-    // hpFactor = max(1, floor(45 / 400)) = max(1, 0) = 1
+    // When curHp3 >= maxHp2, numerator <= 0 → hpFactor clamps to 1.
+    // catchRate=45 (Bulbasaur), ballMod=1 (Poke Ball). hpFactor = 1.
     // No status bonus. finalRate = 1.
-    // With Poke Ball (1x multiplier) at full HP, catch is very unlikely (1/256).
+    // With Poke Ball (1x multiplier) at full HP, catch is very unlikely (≤1/256 ~ 2/256 with equality).
     // Gen 3+ would give a different result due to its 4-shake formula.
     const rng = new SeededRandom(42);
     const result = ruleset.rollCatchAttempt(45, 200, 200, null, 1, rng);
