@@ -3643,7 +3643,11 @@ export class BattleEngine implements BattleEventEmitter {
     defenderSide: 0 | 1,
   ): { id: string; category: import("@pokemon-lib-ts/core").MoveCategory } | null {
     const defenderAction = this.currentTurnActions.find((a) => a.side === defenderSide);
-    if (!defenderAction || defenderAction.type !== "move") return null;
+    if (!defenderAction) return null;
+    // Struggle is a damaging (physical) action — Sucker Punch should succeed against it.
+    // Source: Showdown sim — Sucker Punch succeeds when target is using Struggle
+    if (defenderAction.type === "struggle") return { id: "struggle", category: "physical" };
+    if (defenderAction.type !== "move") return null;
     const defenderActive = this.getActive(defenderSide);
     if (!defenderActive) return null;
     const moveSlot = defenderActive.pokemon.moves[defenderAction.moveIndex];
