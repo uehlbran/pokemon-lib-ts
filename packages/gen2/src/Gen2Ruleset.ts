@@ -304,17 +304,18 @@ export class Gen2Ruleset implements GenerationRuleset {
       messages: [],
     };
 
-    // Explosion and Self-Destruct have effect: null in move data but must still set selfFaint
-    if (context.move.id === "explosion" || context.move.id === "self-destruct") {
-      result.selfFaint = true;
-      const pokemonName = context.attacker.pokemon.nickname ?? "The Pokemon";
-      result.messages.push(`${pokemonName} exploded!`);
-    }
-
-    // Safeguard has effect: null in move data but still needs to set up the screen.
-    // Handle it before the null-effect guard, same pattern as Explosion/Self-Destruct.
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm SafeguardEffect
-    if (context.move.id === "safeguard") {
+    // Some moves have effect: null in move data but still require custom handling.
+    // Dispatch them to handleCustomEffect before the null-effect guard so their
+    // cases in handleCustomEffect are reachable.
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm
+    const id = context.move.id;
+    if (
+      id === "explosion" ||
+      id === "self-destruct" ||
+      id === "safeguard" ||
+      id === "mean-look" ||
+      id === "spider-web"
+    ) {
       handleCustomEffect(context.move, result, context);
       return result;
     }

@@ -15,6 +15,7 @@ import type {
 import { describe, expect, it } from "vitest";
 import { calculateGen2Damage, isGen2PhysicalType } from "../src/Gen2DamageCalc";
 import { applyMoveEffect, handleCustomEffect, type MutableResult } from "../src/Gen2MoveEffects";
+import { Gen2Ruleset } from "../src/Gen2Ruleset";
 import { canInflictGen2Status } from "../src/Gen2Status";
 
 // ---------------------------------------------------------------------------
@@ -921,6 +922,87 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // Mean Look sets trapped volatile, not a screen
       expect(result.screenSet).toBeUndefined();
+      expect(result.volatileInflicted).toBe("trapped");
+    });
+
+    it("given safeguard move with effect:null, when executeMoveEffect is called, then result.screenSet is populated", () => {
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm SafeguardEffect
+      // Bug 3 fix: Safeguard has effect:null in move data, so executeMoveEffect previously
+      // returned early (at the null-effect guard) before reaching handleCustomEffect.
+      // This test verifies the pre-null-guard routing works end-to-end.
+      const ruleset = new Gen2Ruleset();
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        nickname: "Blissey",
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("normal", 0, "status", { id: "safeguard" });
+      const state = createMockStateWithSides(attacker, defender, []);
+      const context: MoveEffectContext = {
+        attacker,
+        defender,
+        move,
+        damage: 0,
+        state,
+        rng: createMockRng(0),
+      };
+
+      const result = ruleset.executeMoveEffect(context);
+
+      expect(result.screenSet).toEqual({
+        screen: "safeguard",
+        turnsLeft: 5,
+        side: "attacker",
+      });
+      expect(result.messages).toContain("Blissey's party is protected by Safeguard!");
+    });
+
+    it("given mean-look move with effect:null, when executeMoveEffect is called, then result.volatileInflicted is trapped", () => {
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm MeanLookEffect
+      // Mean Look and Spider Web have effect:null in move data and were silently broken
+      // (same root cause as Bug 3). This test verifies the pre-null-guard routing fixes them.
+      const ruleset = new Gen2Ruleset();
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const defender = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+      });
+      const move = createMove("normal", 0, "status", { id: "mean-look" });
+      const state = createMockStateWithSides(attacker, defender, []);
+      const context: MoveEffectContext = {
+        attacker,
+        defender,
+        move,
+        damage: 0,
+        state,
+        rng: createMockRng(0),
+      };
+
+      const result = ruleset.executeMoveEffect(context);
+
       expect(result.volatileInflicted).toBe("trapped");
     });
   });
