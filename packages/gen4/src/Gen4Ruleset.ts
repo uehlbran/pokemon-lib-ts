@@ -240,6 +240,19 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: Bulbapedia — Stealth Rock, Toxic Spikes
    */
   applyEntryHazards(pokemon: ActivePokemon, side: BattleSide): EntryHazardResult {
+    // Magic Guard: immune to all indirect damage, including entry hazard damage
+    // Note: Toxic Spikes status infliction is ALSO prevented by Magic Guard
+    // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+    // Source: Showdown Gen 4 — Magic Guard prevents hazard damage
+    if (pokemon.ability === "magic-guard") {
+      return {
+        damage: 0,
+        statusInflicted: null,
+        statChanges: [],
+        messages: [],
+      };
+    }
+
     let totalDamage = 0;
     let statusInflicted: PrimaryStatus | null = null;
     const messages: string[] = [];
@@ -326,8 +339,56 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: pret/pokeplatinum — trap damage = maxHP / 16
    */
   calculateBindDamage(pokemon: ActivePokemon): number {
+    // Magic Guard: immune to all indirect damage, including binding/trap damage
+    // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+    // Source: Showdown Gen 4 — Magic Guard prevents bind/wrap/clamp damage
+    if (pokemon.ability === "magic-guard") {
+      return 0;
+    }
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     return Math.max(1, Math.floor(maxHp / 16));
+  }
+
+  /**
+   * Gen 4 Leech Seed drain with Magic Guard override.
+   * Magic Guard prevents Leech Seed drain entirely.
+   *
+   * Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+   * Source: Showdown Gen 4 — Magic Guard prevents Leech Seed drain
+   */
+  override calculateLeechSeedDrain(pokemon: ActivePokemon): number {
+    if (pokemon.ability === "magic-guard") {
+      return 0;
+    }
+    return super.calculateLeechSeedDrain(pokemon);
+  }
+
+  /**
+   * Gen 4 Curse (Ghost-type) damage with Magic Guard override.
+   * Magic Guard prevents Curse damage entirely.
+   *
+   * Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+   * Source: Showdown Gen 4 — Magic Guard prevents Curse damage
+   */
+  override calculateCurseDamage(pokemon: ActivePokemon): number {
+    if (pokemon.ability === "magic-guard") {
+      return 0;
+    }
+    return super.calculateCurseDamage(pokemon);
+  }
+
+  /**
+   * Gen 4 Nightmare damage with Magic Guard override.
+   * Magic Guard prevents Nightmare damage entirely.
+   *
+   * Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+   * Source: Showdown Gen 4 — Magic Guard prevents Nightmare damage
+   */
+  override calculateNightmareDamage(pokemon: ActivePokemon): number {
+    if (pokemon.ability === "magic-guard") {
+      return 0;
+    }
+    return super.calculateNightmareDamage(pokemon);
   }
 
   /**
@@ -392,8 +453,21 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: specs/battle/05-gen4.md line 48 — "Burn damage is 1/8 max HP"
    */
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, state: BattleState): number {
+    // Magic Guard: immune to all indirect damage, including status damage
+    // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+    // Source: Showdown Gen 4 — Magic Guard prevents burn/poison/toxic damage
+    if (pokemon.ability === "magic-guard") {
+      return 0;
+    }
+
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     if (status === "burn") {
+      // Heatproof: burn damage is halved (1/16 instead of 1/8)
+      // Source: Bulbapedia — Heatproof: "Also halves the damage the holder takes from a burn."
+      // Source: Showdown Gen 4 — Heatproof halves burn damage
+      if (pokemon.ability === "heatproof") {
+        return Math.max(1, Math.floor(maxHp / 16));
+      }
       // Gen 3-6: burn = 1/8 max HP (not 1/16 like Gen 7+)
       // Source: pret/pokeplatinum — burn damage = maxHP / 8
       return Math.max(1, Math.floor(maxHp / 8));
@@ -461,7 +535,15 @@ export class Gen4Ruleset extends BaseRuleset {
   protected getEffectiveSpeed(active: ActivePokemon): number {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
-    let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+
+    // Simple: doubles the effective speed stage (clamped to [-6, +6])
+    // Source: Showdown Gen 4 — Simple doubles stat stage
+    // Source: Bulbapedia — Simple: "Doubles the effects of stat stage changes"
+    const rawSpeedStage = active.statStages.speed;
+    const speedStage =
+      active.ability === "simple" ? Math.max(-6, Math.min(6, rawSpeedStage * 2)) : rawSpeedStage;
+
+    let effective = Math.floor(baseSpeed * getStatStageMultiplier(speedStage));
 
     // Choice Scarf: 1.5x Speed
     // Source: Bulbapedia — Choice Scarf raises Speed by 50%
@@ -662,8 +744,16 @@ export class Gen4Ruleset extends BaseRuleset {
     }
 
     const moveAcc = context.move.accuracy;
-    const accStage = context.attacker.statStages.accuracy;
-    const evaStage = context.defender.statStages.evasion;
+
+    // Unaware accuracy/evasion interaction:
+    // - If the ATTACKER has Unaware, ignore the defender's evasion stages
+    // - If the DEFENDER has Unaware, ignore the attacker's accuracy stages
+    // Source: Bulbapedia — Unaware: "Ignores stat stage changes of the opposing Pokemon"
+    // Source: Showdown Gen 4 — Unaware in accuracy calculation
+    const accStage =
+      context.defender.ability === "unaware" ? 0 : context.attacker.statStages.accuracy;
+    const evaStage =
+      context.attacker.ability === "unaware" ? 0 : context.defender.statStages.evasion;
 
     // Net stage calculation: acc - eva, clamped to [-6, +6]
     // Source: pret/pokeplatinum — same as pokeemerald
