@@ -271,8 +271,40 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   const level = attacker.pokemon.level;
   let power = move.power;
-  const physical = isGen3PhysicalType(move.type);
   const defenderAbility = defender.ability;
+
+  // Weather (moved before Weather Ball/SolarBeam checks)
+  // Source: pret/pokeemerald src/pokemon.c:3330-3363
+  const weather = context.state.weather?.type ?? null;
+
+  // Track the effective move type — Weather Ball changes type based on weather
+  let effectiveMoveType: PokemonType = move.type;
+
+  // Weather Ball: type and power change based on active weather
+  // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_WEATHER_BALL
+  // Source: Showdown data/moves.ts — Weather Ball onModifyType/onModifyMove
+  // Power doubles from 50 to 100, and type changes to match weather
+  if (move.id === "weather-ball" && weather) {
+    power = power * 2;
+    const weatherTypeMap: Record<string, PokemonType> = {
+      rain: "water",
+      sun: "fire",
+      sand: "rock",
+      hail: "ice",
+    };
+    effectiveMoveType = weatherTypeMap[weather] ?? move.type;
+  }
+
+  // SolarBeam: half power in Rain, Sand, Hail (not Sun)
+  // Source: pret/pokeemerald src/battle_script_commands.c — SolarBeam halved in non-sun weather
+  // Source: Showdown data/moves.ts — SolarBeam onBasePower: 0.5x in rain/sand/hail
+  if (move.id === "solar-beam") {
+    if (weather === "rain" || weather === "sand" || weather === "hail") {
+      power = Math.floor(power / 2);
+    }
+  }
+
+  const physical = isGen3PhysicalType(effectiveMoveType);
 
   // --- Pinch abilities: Overgrow, Blaze, Torrent, Swarm ---
   // These multiply move power by 1.5x when the user's HP is at or below floor(maxHP/3)
@@ -287,7 +319,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     swarm: "bug",
   };
   const pinchType = PINCH_ABILITY_TYPES[attacker.ability];
-  if (pinchType && move.type === pinchType) {
+  if (pinchType && effectiveMoveType === pinchType) {
     const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
     const threshold = Math.floor(maxHp / 3);
     if (attacker.pokemon.currentHp <= threshold) {
@@ -302,26 +334,25 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Levitate: immune to ground-type moves
   // Source: pret/pokeemerald ABILITY_LEVITATE
-  if (defenderAbility === "levitate" && move.type === "ground") {
+  if (defenderAbility === "levitate" && effectiveMoveType === "ground") {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
   // Volt Absorb: immune to electric-type moves
   // Source: pret/pokeemerald ABILITY_VOLT_ABSORB
-  if (defenderAbility === "volt-absorb" && move.type === "electric") {
+  if (defenderAbility === "volt-absorb" && effectiveMoveType === "electric") {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
   // Water Absorb: immune to water-type moves
   // Source: pret/pokeemerald ABILITY_WATER_ABSORB
-  if (defenderAbility === "water-absorb" && move.type === "water") {
+  if (defenderAbility === "water-absorb" && effectiveMoveType === "water") {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
-  // Flash Fire: immune to fire-type moves (boost tracking skipped for now)
+  // Flash Fire: immune to fire-type moves
   // Source: pret/pokeemerald ABILITY_FLASH_FIRE
-  // NOTE: The boost to fire moves after absorbing one is a volatile state change, skip for now
-  if (defenderAbility === "flash-fire" && move.type === "fire") {
+  if (defenderAbility === "flash-fire" && effectiveMoveType === "fire") {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
@@ -332,8 +363,8 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Get effective stats (with ability mods, items, and stat stages applied)
   // Burn is NOT applied here — it's applied AFTER the base formula per pokeemerald
-  let attack = getAttackStat(attacker, move.type, isCrit, typeBoostItemType);
-  let defense = getDefenseStat(defender, move.type, isCrit);
+  let attack = getAttackStat(attacker, effectiveMoveType, isCrit, typeBoostItemType);
+  let defense = getDefenseStat(defender, effectiveMoveType, isCrit);
 
   // Explosion / Self-Destruct: halve the defender's Defense stat
   // Source: pret/pokeemerald src/pokemon.c — EFFECT_EXPLOSION halves defense
@@ -345,13 +376,24 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Track multipliers for breakdown
   let abilityMultiplier = 1;
-  const itemMultiplier = typeBoostItemType === move.type ? 1.1 : 1;
+  const itemMultiplier = typeBoostItemType === effectiveMoveType ? 1.1 : 1;
 
   // Thick Fat: halves the attacker's effective stat BEFORE the damage formula runs.
   // Source: pret/pokeemerald src/pokemon.c:3203-3204 — spAttack /= 2 (or attack for physical)
-  if (defenderAbility === "thick-fat" && (move.type === "fire" || move.type === "ice")) {
+  if (
+    defenderAbility === "thick-fat" &&
+    (effectiveMoveType === "fire" || effectiveMoveType === "ice")
+  ) {
     attack = Math.floor(attack / 2);
     abilityMultiplier = 0.5;
+  }
+
+  // Flash Fire: 1.5x boost to fire-type attack when attacker has the flash-fire volatile
+  // Source: pret/pokeemerald src/battle_util.c — ABILITY_FLASH_FIRE volatile boosts fire moves
+  // Source: Showdown data/abilities.ts — Flash Fire condition: onModifyAtk/onModifySpA 1.5x for fire
+  if (attacker.volatileStatuses.has("flash-fire") && effectiveMoveType === "fire") {
+    attack = Math.floor(attack * 1.5);
+    abilityMultiplier = abilityMultiplier === 1 ? 1.5 : abilityMultiplier * 1.5;
   }
 
   // Base formula: damage = Atk * Power * (2*L/5+2) / Def / 50
@@ -382,8 +424,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Source: pret/pokeemerald src/pokemon.c:3330-3363 — rain/sun modify fire/water damage
   // Note: In pokeemerald, weather is applied inside CalculateBaseDamage for special types only.
   // For simplicity and correctness, we apply weather to both here before +2.
-  const weather = context.state.weather?.type ?? null;
-  const weatherMod = getWeatherDamageModifier(move.type, weather);
+  const weatherMod = getWeatherDamageModifier(effectiveMoveType, weather);
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
   }
@@ -412,14 +453,14 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // STAB (Same Type Attack Bonus)
   // Source: pret/pokeemerald — 1.5x if move type matches attacker type
-  const stabMod = getStabModifier(move.type, attacker.types);
+  const stabMod = getStabModifier(effectiveMoveType, attacker.types);
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
   // Type effectiveness
   // Source: pret/pokeemerald — product of matchups for each defender type
-  const effectiveness = getTypeEffectiveness(move.type, defender.types, typeChart);
+  const effectiveness = getTypeEffectiveness(effectiveMoveType, defender.types, typeChart);
 
   const burnMultiplier = burnApplied ? 0.5 : 1;
 
