@@ -3127,18 +3127,20 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
-  // Gen 4 Metronome item: 0.1x step per consecutive use, capping at 1.5x (5 boost steps).
-  // Gen 5+ uses 0.2x per step up to 2.0x — but Gen 4 uses smaller values.
-  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
-  //   metronome.onModifyDamagePhase2: return damage * (1 + numConsecutive / 10)
+  // Metronome item applies to baseDamage (alongside Life Orb, Expert Belt), NOT to power.
+  // Gen 4: +10% per consecutive use, caps at 1.5x (5 boost steps).
+  // Source: Showdown Gen 4 mod — Metronome item onModifyMove: 10% step, 1.5x cap
+  // Source: Bulbapedia — Metronome (item) Gen 4: "Each consecutive use adds 10%, up to 50%"
+  // Bug #358: Previous tests used Gen 5+ values (0.2x step / 2.0x cap); updated to Gen 4.
   // data.count tracks consecutive uses (including first): count=1 -> 1.0x, count=2 -> 1.1x, ...
 
-  it("given Metronome item with count=2 (2nd consecutive use), when calculating damage, then baseDamage boosted by 1.1x", () => {
+  it("given Metronome item with count=2 (2nd consecutive use), when calculating damage, then baseDamage boosted by 1.1x (Gen 4 step is 0.1x)", () => {
+    // Source: Showdown Gen 4 mod — Metronome 10% step (not 20% which is Gen 5+)
     // Derivation (L50, Atk=100, Def=100, power=80, rng=100):
     //   levelFactor = 22
     //   baseDmg = floor(floor(22*80*100/100)/50) + 2 = 35 + 2 = 37
     //   STAB: Normal attacker, Normal move -> 1.5x: floor(37*1.5) = 55
-    //   Metronome 1.1x (boostSteps=1, 1 + 1*0.1): floor(55*1.1) = 60
+    //   Metronome 1.1x (boostSteps=1, Gen 4): floor(55*1.1) = floor(60.5) = 60
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -3166,11 +3168,13 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     expect(result.damage).toBe(60);
   });
 
-  it("given Metronome item with count=6 (6th consecutive use, max), when calculating damage, then baseDamage boosted by 1.5x", () => {
+  it("given Metronome item with count=6 (6th consecutive use, max), when calculating damage, then baseDamage boosted by 1.5x (Gen 4 cap, not 2.0x)", () => {
+    // Source: Showdown Gen 4 mod — Metronome cap is 1.5x (not 2.0x which is Gen 5+)
+    // Bug #358: Previous test expected 2.0x cap; Gen 4 cap is 1.5x.
     // Derivation (L50, Atk=100, Def=100, power=80, rng=100, no STAB):
     //   baseDmg = 35 + 2 = 37
     //   No STAB (fighting attacker, normal move): 37
-    //   Metronome 1.5x (boostSteps=5, 1 + 5*0.1): floor(37*1.5) = 55
+    //   Metronome 1.5x (boostSteps=5, Gen 4 cap): floor(37*1.5) = floor(55.5) = 55
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -3229,8 +3233,9 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     expect(result.damage).toBe(37);
   });
 
-  it("given Metronome item with count=11 (exceeds cap), when calculating damage, then capped at 1.5x", () => {
+  it("given Metronome item with count=11 (exceeds cap), when calculating damage, then capped at 1.5x (Gen 4 cap)", () => {
     // Source: Showdown Gen 4 mod — Metronome caps at 1.5x (boostSteps capped at 5)
+    // Bug #358: Previous test expected 2.0x cap; Gen 4 cap is 1.5x.
     // boostSteps = min(11-1, 5) = 5 -> 1.5x
     const attacker = createActivePokemon({
       level: 50,
@@ -3256,7 +3261,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       chart,
     );
 
-    // Capped at 1.5x: floor(37*1.5) = 55
+    // Capped at 1.5x (Gen 4): floor(37*1.5) = floor(55.5) = 55
     expect(result.damage).toBe(55);
   });
 

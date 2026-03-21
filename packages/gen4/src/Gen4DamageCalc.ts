@@ -126,8 +126,17 @@ export const TYPE_RESIST_BERRIES: Readonly<Record<string, string>> = {
  *
  * Gen 4 additions vs Gen 3: Motor Drive (electric), Dry Skin (water).
  *
+ * Note: Storm Drain is NOT included here. In Gen 4, Storm Drain only redirects
+ * Water-type moves in doubles battles — it does not grant Water immunity in singles.
+ * The Water immunity + SpAtk boost behavior was introduced in Gen 5.
+ *
  * Source: Showdown sim/battle.ts — Gen 4 immunity abilities
+ * Source: Bulbapedia — Storm Drain (Generation IV): "Draws all single-target Water-type
+ *   moves to this Pokemon. Has no effect in single battles."
  * Source: Bulbapedia — Motor Drive, Dry Skin
+ *
+ * Bug #350/#351: Storm Drain was previously included here, granting Water immunity
+ * in singles — which is Gen 5+ behavior.
  */
 // Note: Storm Drain is intentionally absent — in Gen 4 it only redirects Water moves
 // in doubles, it does NOT grant water immunity or SpAtk boost. That was added in Gen 5.
@@ -456,13 +465,16 @@ function getDefenseStat(
 
   // Flower Gift: 1.5x SpDef in Harsh Sunlight (for the defender with the ability)
   // In singles, only the Pokemon with Flower Gift gets the boost.
-  // Mold Breaker (and Teravolt/Turboblaze) ignore the defender's ability, so no boost applies.
+  // Mold Breaker ignores the defender's ability, so no boost applies.
+  //
   // Source: Bulbapedia — Flower Gift: "During harsh sunlight, the Attack and Special Defense
   //   stats of the Pokemon with this Ability and its allies are boosted by 50%."
   // Source: Bulbapedia — Mold Breaker: ignores ability effects on the opposing Pokemon
   // Source: Showdown data/abilities.ts — Flower Gift onAllyModifySpDPriority
-  // Only Mold Breaker exists in Gen 4; Teravolt/Turboblaze are Gen 5+ (Zekrom/Reshiram).
-  // Source: Bulbapedia — Teravolt (Gen V, Zekrom), Turboblaze (Gen V, Reshiram)
+  //
+  // Note: Teravolt and Turboblaze are Gen 5 abilities (Zekrom/Reshiram). They are NOT
+  // present in Gen 4 and must not be referenced here.
+  // Bug #377: Previous code referenced teravolt/turboblaze which are Gen 5+ only.
   const flowerGiftMoldBreaker = attacker?.ability === "mold-breaker";
   if (
     !isPhysical &&
@@ -503,7 +515,7 @@ function getDefenseStat(
  *   4. Technician: 1.5x power for moves with base power <= 60 (onBasePower, priority 30)
  *   5. Defender ability immunities (levitate, volt-absorb, etc.)
  *   5. Physical/Special determination (per-move, NOT per-type)
- *   6. Thick Fat: halve attack stat for fire/ice moves
+ *   6. Thick Fat: halve base power for fire/ice moves (Gen 4; Gen 5+ halves attack stat)
  *   7. Explosion/Self-Destruct: halve defense
  *   8. Base formula: floor(floor((2*L/5+2) * Power * Atk / Def) / 50)
  *   9. Burn: floor(baseDamage / 2) if physical + burned + NOT Guts
@@ -789,17 +801,22 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const attackerItem = attacker.pokemon.heldItem;
 
   // Get effective stats (pass opponent for Simple/Unaware stat stage adjustments)
-  let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, defender, weather);
+  const attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, defender, weather);
   let defense = getDefenseStat(defender, isPhysical, isCrit, weather, attacker);
 
   // Track multipliers for breakdown
   let abilityMultiplier = 1;
 
-  // 6. Thick Fat: halves base power for fire/ice moves (Gen 4 uses onSourceBasePower)
-  // Mold Breaker bypasses Thick Fat
-  // Source: Showdown data/mods/gen4/abilities.ts lines 502-512 — Thick Fat onSourceBasePower
-  //   chainModify(0.5) on base power for Ice/Fire moves
+  // 6. Thick Fat: halves the BASE POWER of Fire/Ice moves (Gen 4 behavior)
+  // Mold Breaker bypasses Thick Fat.
+  //
+  // In Gen 4, Thick Fat is an onModifyBasePower modifier (halves the move's power).
+  // In Gen 5+, it was changed to onSourceModifyAtk (halves the attacker's stat).
+  //
+  // Source: Showdown Gen 4 mod — Thick Fat onModifyBasePower halves Fire/Ice power
   // Source: Bulbapedia — Thick Fat: "Fire-type and Ice-type moves deal half damage."
+  //
+  // Bug #353: Previous implementation halved the attacker's stat (Gen 5+ behavior).
   if (
     !moldBreaker &&
     defenderAbility === "thick-fat" &&
@@ -809,15 +826,18 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     abilityMultiplier = 0.5;
   }
 
-  // 6a. Heatproof: halves the attacker's effective Atk/SpAtk for fire moves
-  // Mold Breaker bypasses Heatproof
-  // Source: Showdown data/abilities.ts lines 1776-1790 — Heatproof onSourceModifyAtk/onSourceModifySpA
-  //   chainModify(0.5) on attacker's offensive stat for Fire moves
+  // 6a. Heatproof: applies a 0.5x modifier to final damage for Fire-type moves (Gen 4 behavior)
+  // Mold Breaker bypasses Heatproof.
+  //
+  // In Gen 4, Heatproof is an onSourceModifyDamage modifier (0.5x on final damage).
+  // This is applied after the base formula; tracking as a flag here, applied after formula.
+  //
+  // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage 0.5x for Fire moves
   // Source: Bulbapedia — Heatproof: "Halves the damage from Fire-type moves."
-  if (!moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === "fire") {
-    attack = Math.floor(attack / 2);
-    abilityMultiplier *= 0.5;
-  }
+  //
+  // Bug #355: Previous implementation halved base power (incorrect phase for Gen 4).
+  const heatproofActive =
+    !moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === "fire";
 
   // 7. Explosion / Self-Destruct: halve defense
   // Source: Showdown sim/battle.ts — Gen 4 Explosion/Self-Destruct halve defense
@@ -894,8 +914,13 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // --- Post-formula modifiers ---
 
-  // Track item multiplier for breakdown (used across Phase 2 and final modifier sections)
-  let itemMultiplier = 1;
+  // 11a. Heatproof: 0.5x damage modifier on Fire-type moves (Gen 4 — applied post-formula)
+  // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage 0.5x for Fire moves
+  // Bug #355: previous code halved power (base power), which is the wrong phase
+  if (heatproofActive) {
+    baseDamage = Math.floor(baseDamage * 0.5);
+    abilityMultiplier *= 0.5;
+  }
 
   // 12. Critical hit multiplier
   // Gen 4: 2.0x normally, 3.0x with Sniper (NEW ability in Gen 4)
@@ -1118,8 +1143,41 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Muscle Band and Wise Glasses: now applied to base power (moved to early base power section).
   // See step 1c in the base power modifiers above.
 
-  // Metronome item: moved to Phase 2 (after crit, before random/STAB/types).
-  // See step 12b above.
+  // Wise Glasses: 1.1x damage for special moves
+  // Source: Bulbapedia — Wise Glasses: "Boosts the power of special moves by 10%."
+  // Source: Showdown sim/items.ts — Wise Glasses
+  if (!attackerHasKlutz && attackerItem === "wise-glasses" && !isPhysical) {
+    baseDamage = Math.floor(baseDamage * 1.1);
+    itemMultiplier = 1.1;
+  }
+
+  // Metronome item: consecutive use of the same move boosts baseDamage (Gen 4).
+  // Each consecutive use adds 0.1x: 1.0x (first use), 1.1x, 1.2x, ..., caps at 1.5x (5 boosts).
+  // Applied to baseDamage (alongside Life Orb, Expert Belt, etc.), NOT to power.
+  // The consecutive count is tracked via the "metronome-count" volatile's data.count field.
+  // First use: data.count = 1 (1.0x = no boost); second consecutive use: data.count = 2 (1.1x), etc.
+  //
+  // Source: Showdown Gen 4 mod — Metronome item onModifyMove: 10% step, 1.5x cap
+  // Source: Bulbapedia — Metronome (item) Gen 4: "+10% per consecutive use, max 50% (1.5x)"
+  //
+  // Bug #358: Previous implementation used Gen 5+ values (0.2x step / 2.0x cap).
+  // Gen 4 uses 0.1x step and caps at 1.5x (after 5 consecutive uses).
+  if (!attackerHasKlutz && attackerItem === "metronome") {
+    const metronomeState = attacker.volatileStatuses.get("metronome-count");
+    if (metronomeState?.data?.count) {
+      // count tracks consecutive uses including the first:
+      //   count=1 -> first use (1.0x, no boost)
+      //   count=2 -> second consecutive (1.1x)
+      //   count=3 -> third consecutive (1.2x)
+      //   count=6+ -> capped at 5 boost steps (1.5x)
+      const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
+      if (boostSteps > 0) {
+        const multiplier = 1 + boostSteps * 0.1;
+        baseDamage = Math.floor(baseDamage * multiplier);
+        itemMultiplier = multiplier;
+      }
+    }
+  }
 
   // Type-boost items and Plates now modify base power (not attack stat),
   // so they're already baked into baseDamage. No separate itemMultiplier needed for them.
