@@ -1087,16 +1087,12 @@ export class BattleEngine implements BattleEventEmitter {
 
       // Source: pokered — Self-Destruct/Explosion: user always faints even on miss.
       // The user explodes regardless of whether the move hits.
+      // Set currentHp = 0 only; faint event + faintCount are handled by checkMidTurnFaints().
       if (
         moveData.effect?.type === "custom" &&
         (moveData.effect.handler === "explosion" || moveData.effect.handler === "self-destruct")
       ) {
         actor.pokemon.currentHp = 0;
-        this.emit({
-          type: "faint",
-          side: action.side,
-          pokemon: getPokemonName(actor),
-        });
       }
 
       // Source: pokered RageEffect — Gen 1 Rage miss loop.
