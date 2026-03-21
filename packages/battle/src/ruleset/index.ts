@@ -2,6 +2,7 @@ export { BaseRuleset } from "./BaseRuleset";
 export { GenerationRegistry, generations } from "./GenerationRegistry";
 export type {
   AbilitySystem,
+  BagItemSystem,
   CriticalHitSystem,
   DamageSystem,
   EndOfTurnSystem,

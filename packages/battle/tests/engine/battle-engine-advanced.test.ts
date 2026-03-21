@@ -513,7 +513,7 @@ describe("BattleEngine — advanced scenarios", () => {
   });
 
   describe("item action", () => {
-    it("given an item action, when turn resolves, then item message is emitted", () => {
+    it("given an item action, when turn resolves, then item usage message is emitted", () => {
       // Arrange
       const { engine, events } = createEngine();
       engine.start();
@@ -522,9 +522,9 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.submitAction(0, { type: "item", side: 0, itemId: "potion" });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert
+      // Assert — the engine emits "Side 0 used potion!" followed by ruleset result messages
       const itemMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("item"),
+        (e) => e.type === "message" && "text" in e && e.text.includes("potion"),
       );
       expect(itemMsg).toBeDefined();
     });

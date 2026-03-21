@@ -6,6 +6,7 @@ export type {
   AbilityResult,
   AccuracyContext,
   AvailableMove,
+  BagItemResult,
   BattleConfig,
   BattleGimmick,
   CritContext,

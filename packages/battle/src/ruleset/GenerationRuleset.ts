@@ -15,6 +15,7 @@ import type {
   AbilityContext,
   AbilityResult,
   AccuracyContext,
+  BagItemResult,
   BattleGimmick,
   CritContext,
   DamageContext,
@@ -363,6 +364,28 @@ export interface EndOfTurnSystem {
   processEndOfTurnDefrost(pokemon: ActivePokemon, rng: SeededRandom): boolean;
 }
 
+/**
+ * Bag item usage (Potions, status cures, X items, Revives).
+ *
+ * Bag items are items used from the trainer's bag during battle, not held items.
+ * Effects are generation-invariant (a Super Potion always heals 50 HP).
+ * Poke Ball catch mechanics are out of scope — deferred to per-gen ruleset.
+ */
+export interface BagItemSystem {
+  /**
+   * Whether the trainer can use bag items in the current battle context.
+   * Returns `true` for standard trainer battles, `false` for Battle Frontier, etc.
+   */
+  canUseBagItems(): boolean;
+
+  /**
+   * Apply a bag item effect to a target Pokemon.
+   * Returns a BagItemResult describing what happened; the engine applies the result
+   * to the battle state and emits appropriate events.
+   */
+  applyBagItem(itemId: string, target: ActivePokemon, state: BattleState): BagItemResult;
+}
+
 /** Pokémon validation, EXP gain, and battle gimmick (Mega/Z-Move/Dynamax/Tera). */
 export interface ValidationSystem {
   /**
@@ -400,6 +423,7 @@ export interface GenerationRuleset
     StatusSystem,
     AbilitySystem,
     ItemSystem,
+    BagItemSystem,
     WeatherSystem,
     TerrainSystem,
     HazardSystem,
