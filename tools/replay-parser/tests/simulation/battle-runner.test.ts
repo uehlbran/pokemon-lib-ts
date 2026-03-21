@@ -90,9 +90,11 @@ describe("runBattle — battle outcome", () => {
 });
 
 describe("runBattle — timeout", () => {
-  it("given maxTurns: 1, when the battle cannot finish in one turn, then timedOut is true", () => {
-    // Arrange — 1 turn is almost certainly not enough to finish a battle
-    const config: BattleRunConfig = { ...BASE_CONFIG, seed: 5, maxTurns: 1 };
+  it("given maxTurns: 0, when the battle is run with 0 max turns, then timedOut is true", () => {
+    // Arrange — 0 turns guarantees timeout regardless of teams or damage rolls.
+    // Using maxTurns: 0 (not 1) ensures this test is deterministic after any
+    // engine mechanics change that could KO on the first turn.
+    const config: BattleRunConfig = { ...BASE_CONFIG, seed: 5, maxTurns: 0 };
 
     // Act
     const report = runBattle(config);
