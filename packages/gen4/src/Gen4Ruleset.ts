@@ -412,15 +412,29 @@ export class Gen4Ruleset extends BaseRuleset {
   // --- Speed (turn order helper) ---
 
   /**
-   * Gen 3-6 paralysis speed penalty: 0.25x (speed is quartered).
-   * Gen 7+ uses 0.5x (BaseRuleset default).
+   * Gen 4 effective speed calculation.
+   *
+   * Applies:
+   *   - Stat stages
+   *   - Choice Scarf: 1.5x Speed (NEW in Gen 4)
+   *   - Paralysis: 0.25x (Gen 3-6; Gen 7+ uses 0.5x)
    *
    * Source: pret/pokeplatinum — paralyzed speed = speed / 4
+   * Source: Bulbapedia — Choice Scarf: "Raises the holder's Speed by 50%,
+   *   but only allows the use of the first move selected."
    */
   protected getEffectiveSpeed(active: ActivePokemon): number {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+
+    // Choice Scarf: 1.5x Speed
+    // Source: Bulbapedia — Choice Scarf raises Speed by 50%
+    // Source: Showdown sim/items.ts — Choice Scarf onModifySpe
+    if (active.pokemon.heldItem === "choice-scarf") {
+      effective = Math.floor(effective * 1.5);
+    }
+
     if (active.pokemon.status === "paralysis") {
       // Gen 3-6: paralysis quarters speed (x0.25)
       // Source: pret/pokeplatinum

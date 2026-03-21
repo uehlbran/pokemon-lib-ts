@@ -1516,9 +1516,10 @@ describe("applyGen4Ability passive-immunity -- Dry Skin", () => {
 // ===========================================================================
 
 describe("applyGen4Ability passive-immunity -- Flash Fire", () => {
-  it("given Flash Fire and incoming Fire move, when passive-immunity triggers, then activates with no effects (volatile boost deferred)", () => {
-    // Source: Bulbapedia -- Flash Fire: Fire moves are absorbed; powers up Fire moves
-    // Source: Showdown Gen 4 mod -- Flash Fire immunity (volatile boost deferred to Part 7)
+  it("given Flash Fire and incoming Fire move without prior boost, when passive-immunity triggers, then activates and sets flash-fire volatile", () => {
+    // Source: Bulbapedia -- Flash Fire: Fire moves are absorbed; "raises the power of
+    //   Fire-type moves by 50% while it is in effect"
+    // Source: Showdown Gen 4 mod -- Flash Fire immunity + volatile boost
     const ctx = makeContext({
       ability: "flash-fire",
       maxHp: 200,
@@ -1527,7 +1528,29 @@ describe("applyGen4Ability passive-immunity -- Flash Fire", () => {
     const result = applyGen4Ability("passive-immunity", ctx);
 
     expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toEqual({
+      effectType: "volatile-inflict",
+      target: "self",
+      volatile: "flash-fire",
+    });
+    expect(result.messages[0]).toContain("Flash Fire was activated");
+  });
+
+  it("given Flash Fire already boosted and incoming Fire move, when passive-immunity triggers, then activates with no new volatile", () => {
+    // Source: Bulbapedia -- Flash Fire: still absorbs the move if already boosted
+    const ctx = makeContext({
+      ability: "flash-fire",
+      maxHp: 200,
+      move: makeMove("fire"),
+    });
+    // Set the volatile to simulate an already-boosted state
+    ctx.pokemon.volatileStatuses.set("flash-fire", { turnsLeft: -1 });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(0);
+    expect(result.messages[0]).toContain("already boosted");
   });
 
   it("given Flash Fire and incoming Water move, when passive-immunity triggers, then does not activate", () => {
