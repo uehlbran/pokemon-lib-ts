@@ -210,10 +210,11 @@ describe("Gen 3 Color Change", () => {
     expect(result.effects.length).toBe(0);
   });
 
-  it("given Color Change dual-type Pokemon hit by one of its types, when on-damage-taken fires, then type changes (dual to mono)", () => {
-    // Source: pret/pokeemerald src/battle_util.c — ABILITY_COLOR_CHANGE
-    // A dual-typed Pokemon (fire/water) hit by fire -> becomes mono-fire
-    // Only blocks if already mono-typed to the move's type
+  it("given Color Change dual-type Pokemon hit by one of its types, when on-damage-taken fires, then Color Change does NOT activate", () => {
+    // pokeemerald IS_BATTLER_OF_TYPE checks BOTH type slots:
+    //   gBattleMons[battler].types[0] == type || gBattleMons[battler].types[1] == type
+    // Source: pret/pokeemerald src/battle_util.c — ABILITY_COLOR_CHANGE check at line 2757
+    // A fire/water Pokemon hit by fire should NOT change (fire type already present in slot 0)
     const pokemon = createActivePokemon({
       types: ["fire", "water"],
       ability: "color-change",
@@ -223,10 +224,9 @@ describe("Gen 3 Color Change", () => {
     const ctx = createDamageTakenContext(pokemon, move);
     const result = applyGen3Ability("on-damage-taken", ctx);
 
-    expect(result.activated).toBe(true);
-    if (result.effects[0]!.effectType === "type-change") {
-      expect(result.effects[0]!.types).toEqual(["fire"]);
-    }
+    // Color Change does NOT activate — fire type already present
+    expect(result.activated).toBe(false);
+    expect(result.effects.length).toBe(0);
   });
 
   it("given Color Change Pokemon with no move context, when on-damage-taken fires, then no type change", () => {

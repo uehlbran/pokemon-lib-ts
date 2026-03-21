@@ -647,7 +647,9 @@ function handleBeforeMove(abilityId: string, context: AbilityContext): AbilityRe
     // Source: Bulbapedia — "Truant causes the Pokemon to use a move only every other turn"
     const hasTruantTurn = context.pokemon.volatileStatuses.has("truant-turn");
     if (hasTruantTurn) {
-      // This is the "loaf" turn — delete volatile, block the move
+      // This is the "loaf" turn — remove volatile and block the move.
+      // TODO: Replace direct deletion with a "volatile-remove" AbilityEffect once the engine
+      // supports it (track via GitHub issue). For now, direct mutation is the only option.
       context.pokemon.volatileStatuses.delete("truant-turn");
       return {
         activated: true,
@@ -656,7 +658,16 @@ function handleBeforeMove(abilityId: string, context: AbilityContext): AbilityRe
         messages: [`${name} is loafing around!`],
       };
     }
-    // This is the "act" turn — set volatile (will loaf next turn), move proceeds
+    // This is the "act" turn — set volatile (will loaf next turn), move proceeds.
+    // Direct mutation is intentional here: the unit-testable path does not run through the engine,
+    // and both act-turn (set) and loaf-turn (delete) use the same direct-mutation pattern for
+    // symmetry. A future "volatile-remove" effect type would allow the loaf-turn delete to go
+    // through the effect pipeline too.
+    // Source: pret/pokeemerald src/battle_util.c — truantCounter ^= 1 at ABILITYEFFECT_ENDTURN
+    // NOTE: Ideally this toggle would happen at on-turn-end (even when move is blocked by sleep/
+    // freeze) to match pokeemerald's ABILITYEFFECT_ENDTURN. Engine lacks on-turn-end per-pokemon
+    // ability trigger; see issue for tracking. For now, on-before-move gives correct behavior for
+    // the common case.
     context.pokemon.volatileStatuses.set("truant-turn", { turnsLeft: -1 });
     return { activated: false, effects: [], messages: [] };
   }
@@ -684,9 +695,10 @@ function handleDamageTaken(abilityId: string, context: AbilityContext): AbilityR
     // Source: Bulbapedia — "Color Change changes the user's type to that of the move that hits it"
     const moveType = context.move?.type;
     if (!moveType) return { activated: false, effects: [], messages: [] };
-    // Don't change if already mono-typed to the move's type
+    // Don't change if already that type (pokeemerald IS_BATTLER_OF_TYPE checks both slots)
+    // Source: pret/pokeemerald src/battle_util.c — gBattleMons[battler].types[0/1] == type
     const currentTypes = context.pokemon.types;
-    if (currentTypes.length === 1 && currentTypes[0] === moveType) {
+    if (currentTypes.includes(moveType as PokemonType)) {
       return { activated: false, effects: [], messages: [] };
     }
     return {
@@ -736,10 +748,14 @@ function handleStatusInflicted(abilityId: string, context: AbilityContext): Abil
       return { activated: false, effects: [], messages: [] };
     }
     const oppName = context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+    // In Gen 3, Synchronize converts badly-poisoned -> regular poison before mirroring.
+    // Source: pret/pokeemerald src/battle_util.c — synchronizeMoveEffect == MOVE_EFFECT_TOXIC
+    //   sets synchronizeMoveEffect = MOVE_EFFECT_POISON (lines 2976-2977, 2992-2993)
+    const mirroredStatus = status === "badly-poisoned" ? "poison" : status;
     return {
       activated: true,
-      effects: [{ effectType: "status-inflict", target: "opponent", status }],
-      messages: [`${name}'s Synchronize shared its ${status} with ${oppName}!`],
+      effects: [{ effectType: "status-inflict", target: "opponent", status: mirroredStatus }],
+      messages: [`${name}'s Synchronize shared its ${mirroredStatus} with ${oppName}!`],
     };
   }
   return { activated: false, effects: [], messages: [] };

@@ -608,9 +608,10 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
     expect(result.effects).toHaveLength(0);
   });
 
-  it("given a dual-typed (Fire/Flying) Pokemon with Color Change hit by a Fire move, when on-damage-taken fires, then type changes to mono-Fire", () => {
-    // Source: pret/pokeemerald — dual-type check: only skip if length === 1 AND types[0] === moveType
-    // A dual-typed Pokemon should still change, becoming mono-type
+  it("given a dual-typed (Fire/Flying) Pokemon with Color Change hit by a Fire move, when on-damage-taken fires, then Color Change does NOT activate", () => {
+    // pokeemerald IS_BATTLER_OF_TYPE checks both type slots — if EITHER matches, no activation.
+    // Source: pret/pokeemerald src/battle_util.c line 2757 —
+    //   gBattleMons[battler].types[0] == type || gBattleMons[battler].types[1] == type
     const kecleon = createMockPokemon({
       types: ["fire", "flying"],
       ability: "color-change",
@@ -632,12 +633,9 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
     };
 
     const result = applyGen3Ability("on-damage-taken", context);
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual({
-      effectType: "type-change",
-      target: "self",
-      types: ["fire"],
-    });
+    // Fire type is already in slot 0 — Color Change does NOT activate
+    expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
   });
 
   it("given a non-Color-Change Pokemon, when on-damage-taken fires, then no type change", () => {
@@ -799,8 +797,10 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     });
   });
 
-  it("given a Pokemon with Synchronize that received badly-poisoned, when on-status-inflicted fires, then opponent gets badly-poisoned", () => {
-    // Source: pret/pokeemerald — Synchronize mirrors badly-poisoned (toxic)
+  it("given a Pokemon with Synchronize that received badly-poisoned, when on-status-inflicted fires, then opponent gets regular poison (Gen 3 downgrade)", () => {
+    // In Gen 3, Synchronize downgrades badly-poisoned to regular poison before mirroring.
+    // Source: pret/pokeemerald src/battle_util.c lines 2976-2977, 2992-2993 —
+    //   if (synchronizeMoveEffect == MOVE_EFFECT_TOXIC) synchronizeMoveEffect = MOVE_EFFECT_POISON
     const syncer = createMockPokemon({
       types: ["psychic"],
       ability: "synchronize",
@@ -826,10 +826,11 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
 
     const result = applyGen3Ability("on-status-inflicted", context);
     expect(result.activated).toBe(true);
+    // Opponent receives regular poison, NOT badly-poisoned — Gen 3 downgrade
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "badly-poisoned",
+      status: "poison",
     });
   });
 

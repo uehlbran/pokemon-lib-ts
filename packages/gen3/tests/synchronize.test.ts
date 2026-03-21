@@ -190,9 +190,10 @@ describe("Gen 3 Synchronize", () => {
     }
   });
 
-  it("given Synchronize Pokemon badly-poisoned, when on-status-inflicted fires, then opponent also gets badly-poisoned", () => {
-    // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
-    // Source: Bulbapedia — Synchronize passes Toxic (badly-poisoned) status
+  it("given Synchronize Pokemon badly-poisoned, when on-status-inflicted fires, then opponent gets regular poison (Gen 3 downgrade)", () => {
+    // In Gen 3, Synchronize converts badly-poisoned (Toxic) to regular poison before mirroring.
+    // Source: pret/pokeemerald src/battle_util.c lines 2976-2977, 2992-2993 —
+    //   "if (synchronizeMoveEffect == MOVE_EFFECT_TOXIC) synchronizeMoveEffect = MOVE_EFFECT_POISON"
     const ctx = createSynchronizeContext({
       pokemonStatus: "badly-poisoned",
     });
@@ -200,7 +201,8 @@ describe("Gen 3 Synchronize", () => {
 
     expect(result.activated).toBe(true);
     if (result.effects[0]!.effectType === "status-inflict") {
-      expect(result.effects[0]!.status).toBe("badly-poisoned");
+      // Downgraded to regular poison — opponent does NOT get badly-poisoned in Gen 3
+      expect(result.effects[0]!.status).toBe("poison");
     }
   });
 
