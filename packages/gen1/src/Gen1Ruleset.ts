@@ -304,7 +304,7 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    const { move, damage, defender } = context;
+    const { move, damage, defender, brokeSubstitute } = context;
 
     const result: {
       statusInflicted: PrimaryStatus | null;
@@ -345,6 +345,18 @@ export class Gen1Ruleset implements GenerationRuleset {
       selfVolatileInflicted?: VolatileStatus | null;
       selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+      recursiveMove?: string | null;
+      moveSlotChange?: {
+        slot: number;
+        newMoveId: string;
+        newPP: number;
+        originalMoveId: string;
+      } | null;
+      forcedMoveSet?: {
+        moveIndex: number;
+        moveId: string;
+        volatileStatus: VolatileStatus;
+      } | null;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -361,7 +373,12 @@ export class Gen1Ruleset implements GenerationRuleset {
     // NOTE: By the time executeMoveEffect is called, the engine has already applied damage to
     // defender.pokemon.currentHp (clamped to 0 on KO). So a KO is detected by checking currentHp === 0.
     // We also require damage > 0 to avoid triggering on missed moves (damage = 0).
-    if (move.flags.recharge && damage > 0 && defender.pokemon.currentHp === 0) {
+    // brokeSubstitute: set by the engine when this hit destroyed the defender's substitute.
+    if (
+      move.flags.recharge &&
+      damage > 0 &&
+      (defender.pokemon.currentHp === 0 || brokeSubstitute)
+    ) {
       result.noRecharge = true;
     }
 
@@ -414,6 +431,18 @@ export class Gen1Ruleset implements GenerationRuleset {
       selfVolatileInflicted?: VolatileStatus | null;
       selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
       typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+      recursiveMove?: string | null;
+      moveSlotChange?: {
+        slot: number;
+        newMoveId: string;
+        newPP: number;
+        originalMoveId: string;
+      } | null;
+      forcedMoveSet?: {
+        moveIndex: number;
+        moveId: string;
+        volatileStatus: VolatileStatus;
+      } | null;
     },
     context: MoveEffectContext,
   ): void {
@@ -771,6 +800,196 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.selfVolatileData = { turnsLeft: -1 };
             result.messages.push(`${attacker.pokemon.nickname ?? "The user"} put in a substitute!`);
           }
+        } else if (effect.handler === "rage") {
+          // Source: pret/pokered src/engine/battle/move_effects.asm RageEffect
+          // First use: sets rage volatile and locks user into repeating Rage.
+          // Subsequent uses: re-locks the forced move (volatile already set by onDamageReceived boosts).
+          const moveIndex = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
+          if (!attacker.volatileStatuses.has("rage")) {
+            // First activation: set volatile and force repeat
+            result.selfVolatileInflicted = "rage";
+            result.selfVolatileData = { turnsLeft: -1, data: { moveIndex } };
+          }
+          // Always re-lock into Rage so it repeats next turn
+          result.forcedMoveSet = {
+            moveIndex: moveIndex >= 0 ? moveIndex : 0,
+            moveId: move.id,
+            volatileStatus: "rage",
+          };
+        } else if (effect.handler === "mimic") {
+          // Source: pret/pokered src/engine/battle/move_effects.asm MimicEffect
+          // Copies the opponent's last used move into Mimic's move slot for this battle.
+          const lastMove = defender.lastMoveUsed;
+          const invalidMoves = new Set(["mimic", "transform", "metronome", "struggle"]);
+          if (!lastMove || invalidMoves.has(lastMove)) {
+            result.messages.push("But it failed!");
+          } else {
+            // Find the slot Mimic occupies in the attacker's moveset
+            const slot = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
+            if (slot < 0) {
+              result.messages.push("But it failed!");
+            } else {
+              result.moveSlotChange = {
+                slot,
+                newMoveId: lastMove,
+                newPP: 5,
+                originalMoveId: move.id,
+              };
+            }
+          }
+        } else if (effect.handler === "mirror-move") {
+          // Source: pret/pokered src/engine/battle/move_effects.asm MirrorMoveEffect
+          // Executes the move the defender used last turn.
+          const lastMove = defender.lastMoveUsed;
+          // Cannot mirror: no previous move, or certain uncopyable moves
+          const cannotMirror = new Set(["mirror-move", "metronome", "struggle"]);
+          if (!lastMove || cannotMirror.has(lastMove)) {
+            result.messages.push("But it failed!");
+          } else {
+            result.recursiveMove = lastMove;
+          }
+        } else if (effect.handler === "metronome") {
+          // Source: pret/pokered src/engine/battle/move_effects.asm MetronomeEffect
+          // Picks a random Gen 1 move (excluding Metronome and Struggle) and executes it.
+          const allMoves = this.dataManager.getAllMoves();
+          const pool = allMoves.filter((m) => m.id !== "metronome" && m.id !== "struggle");
+          if (pool.length === 0) {
+            result.messages.push("But it failed!");
+          } else {
+            const idx = rng.int(0, pool.length - 1);
+            const chosen = pool[idx];
+            if (chosen) {
+              result.recursiveMove = chosen.id;
+            }
+          }
+        } else if (effect.handler === "transform") {
+          // Source: pret/pokered src/engine/battle/move_effects.asm TransformEffect
+          // Copies the defender's types, stat stages, calculated stats (except HP), and moves.
+          // Copy types
+          result.typeChange = { target: "attacker", types: [...defender.types] };
+          // Copy stat stages (direct mutation — same pattern as Haze)
+          for (const stat of [
+            "attack",
+            "defense",
+            "spAttack",
+            "spDefense",
+            "speed",
+            "accuracy",
+            "evasion",
+          ] as const) {
+            attacker.statStages[stat] = defender.statStages[stat];
+          }
+          // Copy calculated stats (all except HP)
+          // Cast to mutable to allow direct stat overwrite (Transform is a runtime mutation)
+          if (defender.pokemon.calculatedStats && attacker.pokemon.calculatedStats) {
+            const mutableStats = attacker.pokemon.calculatedStats as {
+              -readonly [K in keyof import("@pokemon-lib-ts/core").StatBlock]: import("@pokemon-lib-ts/core").StatBlock[K];
+            };
+            mutableStats.attack = defender.pokemon.calculatedStats.attack;
+            mutableStats.defense = defender.pokemon.calculatedStats.defense;
+            mutableStats.spAttack = defender.pokemon.calculatedStats.spAttack;
+            mutableStats.spDefense = defender.pokemon.calculatedStats.spDefense;
+            mutableStats.speed = defender.pokemon.calculatedStats.speed;
+          }
+          // Copy moves with PP = 5 each; store originals for restoration on switch-out
+          const originalMoves = attacker.pokemon.moves.map((m) => ({ ...m }));
+          attacker.pokemon.moves = defender.pokemon.moves.map((m) => ({
+            moveId: m.moveId,
+            currentPP: 5,
+            maxPP: 5,
+            ppUps: 0,
+          }));
+          // Set transformed volatile to store originals
+          attacker.transformed = true;
+          attacker.transformedSpecies = defender.transformedSpecies ?? null;
+          attacker.volatileStatuses.set("transform-data", {
+            turnsLeft: -1,
+            data: {
+              originalMoves,
+              originalTypes: [...(attacker.types ?? [])],
+              originalStats: attacker.pokemon.calculatedStats
+                ? { ...attacker.pokemon.calculatedStats }
+                : null,
+            },
+          });
+          result.messages.push(`${attacker.pokemon.nickname ?? "The user"} transformed!`);
+        } else if (effect.handler === "bide") {
+          // Source: pret/pokered src/engine/battle/move_effects.asm BideEffect
+          // Charges for 2-3 turns accumulating damage, then releases 2x accumulated damage.
+          const bideVolatile = attacker.volatileStatuses.get("bide");
+          if (!bideVolatile) {
+            // First use: start charging
+            const turns = rng.int(2, 3);
+            result.selfVolatileInflicted = "bide";
+            result.selfVolatileData = { turnsLeft: turns, data: { accumulatedDamage: 0 } };
+            result.forcedMoveSet = {
+              moveIndex: attacker.pokemon.moves.findIndex((m) => m.moveId === move.id),
+              moveId: move.id,
+              volatileStatus: "bide",
+            };
+            result.messages.push(`${attacker.pokemon.nickname ?? "The user"} is storing energy!`);
+          } else {
+            const turnsLeft = bideVolatile.turnsLeft;
+            const accumulated = (bideVolatile.data?.accumulatedDamage as number) ?? 0;
+            if (turnsLeft > 1) {
+              // Still charging: decrement turnsLeft and re-lock
+              bideVolatile.turnsLeft = turnsLeft - 1;
+              result.forcedMoveSet = {
+                moveIndex: attacker.pokemon.moves.findIndex((m) => m.moveId === move.id),
+                moveId: move.id,
+                volatileStatus: "bide",
+              };
+              result.messages.push(`${attacker.pokemon.nickname ?? "The user"} is storing energy!`);
+            } else {
+              // Release: deal 2x accumulated damage
+              attacker.volatileStatuses.delete("bide");
+              if (accumulated === 0) {
+                result.messages.push("But it failed!");
+              } else {
+                result.customDamage = {
+                  target: "defender",
+                  amount: accumulated * 2,
+                  source: "bide",
+                };
+                result.messages.push(
+                  `${attacker.pokemon.nickname ?? "The user"} unleashed energy!`,
+                );
+              }
+            }
+          }
+        } else if (effect.handler === "thrash") {
+          // Source: pret/pokered src/engine/battle/move_effects.asm ThrashEffect
+          // Locks into Thrash for 2-3 turns, then confuses the user.
+          // Petal Dance uses the same handler.
+          const lockVolatile = attacker.volatileStatuses.get("thrash-lock");
+          if (!lockVolatile) {
+            // First use: set lock
+            const turns = rng.int(2, 3);
+            result.selfVolatileInflicted = "thrash-lock";
+            result.selfVolatileData = { turnsLeft: turns, data: { moveId: move.id } };
+            result.forcedMoveSet = {
+              moveIndex: attacker.pokemon.moves.findIndex((m) => m.moveId === move.id),
+              moveId: move.id,
+              volatileStatus: "thrash-lock",
+            };
+          } else {
+            const turnsLeft = lockVolatile.turnsLeft;
+            if (turnsLeft > 1) {
+              lockVolatile.turnsLeft = turnsLeft - 1;
+              result.forcedMoveSet = {
+                moveIndex: attacker.pokemon.moves.findIndex((m) => m.moveId === move.id),
+                moveId: move.id,
+                volatileStatus: "thrash-lock",
+              };
+            } else {
+              // Last turn: remove lock, confuse user
+              attacker.volatileStatuses.delete("thrash-lock");
+              if (!attacker.volatileStatuses.has("confusion")) {
+                result.selfVolatileInflicted = "confusion";
+                result.selfVolatileData = { turnsLeft: rng.int(2, 5) };
+              }
+            }
+          }
         }
         break;
       }
@@ -1110,6 +1329,28 @@ export class Gen1Ruleset implements GenerationRuleset {
     return bound.turnsLeft > 0;
   }
 
+  // --- Reactive Damage Hook ---
+
+  onDamageReceived(
+    defender: ActivePokemon,
+    damage: number,
+    _move: MoveData,
+    _state: BattleState,
+  ): void {
+    // Source: pret/pokered RageEffect — if defender is using Rage, boost Attack +1 on each hit
+    const rageVolatile = defender.volatileStatuses.get("rage");
+    if (rageVolatile) {
+      const newStage = Math.min(6, defender.statStages.attack + 1);
+      defender.statStages.attack = newStage;
+    }
+    // Source: pret/pokered BideEffect — accumulate damage received into the bide counter
+    const bideVolatile = defender.volatileStatuses.get("bide");
+    if (bideVolatile) {
+      const current = (bideVolatile.data?.accumulatedDamage as number) ?? 0;
+      bideVolatile.data = { ...bideVolatile.data, accumulatedDamage: current + damage };
+    }
+  }
+
   // --- Switch Out ---
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
@@ -1118,6 +1359,48 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Source: gen1-ground-truth.md §8 — What Resets on Switch-Out
     // Toxic counter resets to 0 on switch-out, and status reverts to regular poison.
     // (In Gen 1, Toxic'd Pokemon become regular-poisoned when they switch out.)
+
+    // Mimic restoration: if a move slot was replaced by Mimic, restore the original
+    // Source: pret/pokered — Mimic replacement reverts on switch-out
+    const mimicSlot = pokemon.volatileStatuses.get("mimic-slot");
+    if (mimicSlot?.data) {
+      const { slot, originalMoveId } = mimicSlot.data as {
+        slot: number;
+        originalMoveId: string;
+      };
+      if (pokemon.pokemon.moves[slot]) {
+        const maxPP = this.dataManager.getMove(originalMoveId).pp;
+        pokemon.pokemon.moves[slot] = {
+          moveId: originalMoveId,
+          currentPP: maxPP,
+          maxPP,
+          ppUps: 0,
+        };
+      }
+    }
+
+    // Transform restoration: if transformed, restore original stats/types/moves
+    // Source: pret/pokered — Transform reverts on switch-out
+    const transformData = pokemon.volatileStatuses.get("transform-data");
+    if (transformData?.data && pokemon.transformed) {
+      const { originalMoves, originalTypes, originalStats } = transformData.data as {
+        originalMoves: Array<{
+          moveId: string;
+          currentPP: number;
+          maxPP: number;
+          ppUps: number;
+        }>;
+        originalTypes: PokemonType[];
+        originalStats: Record<string, number> | null;
+      };
+      pokemon.pokemon.moves = originalMoves;
+      pokemon.types = originalTypes;
+      if (originalStats && pokemon.pokemon.calculatedStats) {
+        Object.assign(pokemon.pokemon.calculatedStats, originalStats);
+      }
+      pokemon.transformed = false;
+      pokemon.transformedSpecies = null;
+    }
 
     // Preserve the sleep counter through the volatile clear
     const sleepCounter = pokemon.volatileStatuses.get("sleep-counter");
