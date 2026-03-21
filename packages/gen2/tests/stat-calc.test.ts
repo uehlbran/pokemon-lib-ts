@@ -571,14 +571,17 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
-      expect(stats.hp).toBeGreaterThan(0);
-      expect(stats.attack).toBeGreaterThan(0);
-      expect(stats.defense).toBeGreaterThan(0);
-      expect(stats.spAttack).toBeGreaterThan(0);
-      expect(stats.spDefense).toBeGreaterThan(0);
-      expect(stats.speed).toBeGreaterThan(0);
-      expect(Number.isInteger(stats.hp)).toBe(true);
-      expect(Number.isInteger(stats.attack)).toBe(true);
+      // Source: pret/pokecrystal engine/stats.asm — Gen 2 stat formula
+      // HP: floor(((base+DV)*2+floor(sqrt(statExp)/4))*level/100)+level+10
+      // base=5, DV=0, StatExp=0, level=1 → HP=11, all others=5
+      // HP:    floor(((5+0)*2+0)*1/100)+1+10 = floor(10/100)+11 = 0+11 = 11
+      // Other: floor(((5+0)*2+0)*1/100)+5    = floor(10/100)+5  = 0+5  = 5
+      expect(stats.hp).toBe(11);
+      expect(stats.attack).toBe(5);
+      expect(stats.defense).toBe(5);
+      expect(stats.spAttack).toBe(5);
+      expect(stats.spDefense).toBe(5);
+      expect(stats.speed).toBe(5);
     });
 
     it("should increase stats monotonically with increasing DVs", () => {

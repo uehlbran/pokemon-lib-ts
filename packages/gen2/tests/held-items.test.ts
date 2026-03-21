@@ -142,6 +142,7 @@ function createItemContext(opts: {
 describe("Gen 2 Held Items", () => {
   // --- Leftovers ---
 
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm — Leftovers heal floor(maxHP/16) each turn
   describe("Given Leftovers held item", () => {
     it("given a Pokemon holding Leftovers, when end-of-turn triggers, then heals 1/16 max HP", () => {
       // Arrange
@@ -181,6 +182,7 @@ describe("Gen 2 Held Items", () => {
 
   // --- Berry (10 HP heal at <= 50% HP) ---
 
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry heals 10 HP when HP <= 50%
   describe("Given Berry held item (10 HP heal at <= 50% HP)", () => {
     it("given a Pokemon at 50% HP holding Berry, when end-of-turn triggers, then heals 10 HP", () => {
       // Arrange
@@ -302,6 +304,7 @@ describe("Gen 2 Held Items", () => {
 
   // --- Gold Berry (30 HP heal at <= 50% HP) ---
 
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gold Berry heals 30 HP when HP <= 50%
   describe("Given Gold Berry held item (30 HP heal at <= 50% HP)", () => {
     it("given a Pokemon at 50% HP holding Gold Berry, when end-of-turn triggers, then heals 30 HP", () => {
       // Arrange
@@ -708,6 +711,7 @@ describe("Gen 2 Held Items", () => {
 
   // --- Berry Juice ---
 
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry Juice heals 20 HP when HP <= 50%
   describe("Given Berry Juice held item", () => {
     it("given a Pokemon at 50% HP holding Berry Juice, when end-of-turn triggers, then heals 20 HP", () => {
       // Arrange
