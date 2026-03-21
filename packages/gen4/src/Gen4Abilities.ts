@@ -132,6 +132,20 @@ function handleSwitchIn(
       };
     }
 
+    case "pressure": {
+      // Pressure: announce on switch-in. The PP cost increase is handled by
+      // Gen4Ruleset.getPPCost() — this handler only emits the message.
+      // Source: Showdown data/abilities.ts — Pressure onStart message
+      // Source: Bulbapedia — "When a Pokémon with Pressure enters battle, the message
+      //   '<Pokémon> is exerting its Pressure!' is displayed."
+      const noneEffect: AbilityEffect = { effectType: "none", target: "self" };
+      return {
+        activated: true,
+        effects: [noneEffect],
+        messages: [`${name} is exerting its Pressure!`],
+      };
+    }
+
     case "drizzle": {
       // Source: Showdown Gen 4 mod — Drizzle sets permanent rain on switch-in
       // Gen 4: weather from abilities is permanent (-1 turns sentinel)

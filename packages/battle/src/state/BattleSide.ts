@@ -81,6 +81,8 @@ export interface ActivePokemon {
   types: PokemonType[];
   /** Current ability ID; may differ from base species due to Skill Swap / Trace / Imposter */
   ability: string;
+  /** Original ability saved when suppressed by Gastro Acid; `null` when not suppressed */
+  suppressedAbility: string | null;
   /** ID of the last move this Pokémon successfully used (for Encore, Disable, etc.) */
   lastMoveUsed: string | null;
   /** HP removed by the last hit this Pokémon received (for Counter / Mirror Coat) */
@@ -97,6 +99,8 @@ export interface ActivePokemon {
   consecutiveProtects: number;
   /** HP of the active Substitute; 0 means no Substitute is present */
   substituteHp: number;
+  /** `true` if Knock Off removed this Pokémon's item; prevents re-giving items via Trick/Switcheroo */
+  itemKnockedOff: boolean;
   /** `true` if this Pokémon has used Transform and currently resembles another Pokémon */
   transformed: boolean;
   /** Species data for the transformed form, or `null` if not transformed */

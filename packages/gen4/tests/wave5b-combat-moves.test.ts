@@ -200,9 +200,18 @@ function createContext(
   move: MoveData,
   rng: ReturnType<typeof createMockRng>,
   stateOverrides?: Partial<BattleState>,
+  contextOverrides?: Partial<MoveEffectContext>,
 ): MoveEffectContext {
   const state = createMinimalBattleState(attacker, defender, stateOverrides);
-  return { attacker, defender, move, damage: 0, state, rng } as MoveEffectContext;
+  return {
+    attacker,
+    defender,
+    move,
+    damage: 0,
+    state,
+    rng,
+    ...contextOverrides,
+  } as MoveEffectContext;
 }
 
 // ===========================================================================
@@ -222,20 +231,17 @@ describe("Sucker Punch", () => {
     });
     const move = createMove("sucker-punch", { type: "dark", power: 80, priority: 1 });
     const rng = createMockRng(0);
-    // Set up turnHistory with current turn showing defender selected a move action
-    const ctx = createContext(attacker, defender, move, rng, {
-      turnNumber: 1,
-      turnHistory: [
-        {
-          turn: 1,
-          actions: [
-            { type: "move", side: 0 as const, moveIndex: 0 },
-            { type: "move", side: 1 as const, moveIndex: 0 }, // defender using Tackle (physical)
-          ],
-          events: [],
-        },
-      ],
-    });
+    // Engine populates defenderSelectedMove with the defender's chosen move and its category
+    const ctx = createContext(
+      attacker,
+      defender,
+      move,
+      rng,
+      {},
+      {
+        defenderSelectedMove: { id: "tackle", category: "physical" },
+      },
+    );
 
     const result = executeGen4MoveEffect(ctx);
 
@@ -243,44 +249,36 @@ describe("Sucker Punch", () => {
     expect(result.messages).not.toContain("But it failed!");
   });
 
-  it("given defender selected a status move this turn, when Sucker Punch is used, then it succeeds because move category cannot be checked from effect handler alone", () => {
+  it("given defender selected a status move this turn, when Sucker Punch is used, then it fails", () => {
     // Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch fails if
-    //   target selected a status move. However, our effect handler can only
-    //   verify the defender submitted a "move" action — it cannot look up the
-    //   move's category without DataManager access.
-    // Note: Full category check requires engine-level support (passing move
-    //   metadata to the effect context). For now, any move action passes.
+    //   target selected a status move
+    // Source: Bulbapedia — "Sucker Punch will fail if the target does not select
+    //   a move that deals damage"
+    // The engine now populates defenderSelectedMove with the move's category,
+    // so the effect handler can properly check for status moves.
     const attacker = createActivePokemon({ types: ["dark"] });
     const defender = createActivePokemon({
       types: ["normal"],
       movedThisTurn: false,
-      moves: [
-        { moveId: "toxic", currentPP: 10, maxPP: 10 },
-        { moveId: "ember", currentPP: 25, maxPP: 25 },
-      ],
     });
     const move = createMove("sucker-punch", { type: "dark", power: 80, priority: 1 });
     const rng = createMockRng(0);
-    // Defender selected move index 0 (Toxic — status move)
-    const ctx = createContext(attacker, defender, move, rng, {
-      turnNumber: 1,
-      turnHistory: [
-        {
-          turn: 1,
-          actions: [
-            { type: "move", side: 0 as const, moveIndex: 0 },
-            { type: "move", side: 1 as const, moveIndex: 0 }, // defender using Toxic
-          ],
-          events: [],
-        },
-      ],
-    });
+    // Defender selected Toxic (status move) — Sucker Punch should fail
+    const ctx = createContext(
+      attacker,
+      defender,
+      move,
+      rng,
+      {},
+      {
+        defenderSelectedMove: { id: "toxic", category: "status" },
+      },
+    );
 
     const result = executeGen4MoveEffect(ctx);
 
-    // Currently succeeds because category check requires DataManager.
-    // The move action type is "move" which passes the non-move check.
-    expect(result.messages).not.toContain("But it failed!");
+    // Sucker Punch fails because the defender selected a status move
+    expect(result.messages).toContain("But it failed!");
   });
 
   it("given defender is switching this turn, when Sucker Punch is used, then it fails", () => {
@@ -295,20 +293,17 @@ describe("Sucker Punch", () => {
     });
     const move = createMove("sucker-punch", { type: "dark", power: 80, priority: 1 });
     const rng = createMockRng(0);
-    // turnHistory shows defender selected a switch action
-    const ctx = createContext(attacker, defender, move, rng, {
-      turnNumber: 1,
-      turnHistory: [
-        {
-          turn: 1,
-          actions: [
-            { type: "move", side: 0 as const, moveIndex: 0 },
-            { type: "switch", side: 1 as const, switchTo: 1 },
-          ],
-          events: [],
-        },
-      ],
-    });
+    // Defender is switching — defenderSelectedMove is null (not using a move)
+    const ctx = createContext(
+      attacker,
+      defender,
+      move,
+      rng,
+      {},
+      {
+        defenderSelectedMove: null,
+      },
+    );
 
     const result = executeGen4MoveEffect(ctx);
 
