@@ -794,8 +794,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Showdown Gen 4 — Unaware in accuracy calculation
     const accStage =
       context.defender.ability === "unaware" ? 0 : context.attacker.statStages.accuracy;
-    let evaStage =
-      context.attacker.ability === "unaware" ? 0 : context.defender.statStages.evasion;
+    let evaStage = context.attacker.ability === "unaware" ? 0 : context.defender.statStages.evasion;
 
     // Tangled Feet (NEW in Gen 4): doubles evasion when confused.
     // Implemented as +2 to evasion stage (capped at +6).
