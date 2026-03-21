@@ -1,6 +1,7 @@
 import type {
   BattleStat,
   EntryHazardType,
+  MoveCategory,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
@@ -86,6 +87,8 @@ export interface ActivePokemon {
   lastDamageTaken: number;
   /** Type of the move that dealt the last damage (for Counter / Mirror Coat targeting) */
   lastDamageType: PokemonType | null;
+  /** Category of the move that dealt the last damage (for Counter / Mirror Coat) */
+  lastDamageCategory: MoveCategory | null;
   /** Number of turns this Pokémon has been on the field without switching (for Toxic, etc.) */
   turnsOnField: number;
   /** `true` if this Pokémon has already moved this turn (for after-turn effects) */

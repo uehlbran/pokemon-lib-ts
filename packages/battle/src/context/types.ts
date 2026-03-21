@@ -210,6 +210,8 @@ export interface MoveEffectResult {
   readonly tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
   /** Set Trick Room on the field (Gen 4+) */
   readonly trickRoomSet?: { turnsLeft: number } | null;
+  /** Schedule a Future Sight / Doom Desire attack on the target side (Gen 2+) */
+  readonly futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;
 }
 
 /**
@@ -277,7 +279,11 @@ export type AbilityEffect =
   | { readonly effectType: "type-change"; readonly target: "self" | "opponent" }
   | { readonly effectType: "weather-immunity"; readonly target: "self" | "opponent" }
   | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" }
-  | { readonly effectType: "ability-change"; readonly target: "self" | "opponent" }
+  | {
+      readonly effectType: "ability-change";
+      readonly target: "self" | "opponent";
+      readonly newAbility: string;
+    }
   | { readonly effectType: "heal"; readonly target: "self" | "opponent"; readonly value: number }
   | {
       readonly effectType: "chip-damage";
@@ -495,7 +501,9 @@ export type EndOfTurnEffect =
   | "shed-skin"
   | "toxic-orb-activation"
   | "flame-orb-activation"
-  | "slow-start-countdown";
+  | "slow-start-countdown"
+  | "taunt-countdown"
+  | "disable-countdown";
 
 /**
  * Configuration object passed to the `BattleEngine` constructor.

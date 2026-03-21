@@ -311,10 +311,37 @@ export class BattleEngine implements BattleEventEmitter {
         return [];
       }
 
-      const disabled =
-        slot.currentPP <= 0 ||
-        (active.volatileStatuses.has("disable") &&
-          active.volatileStatuses.get("disable")?.data?.moveId === slot.moveId);
+      // Determine if the move is disabled and why
+      let disabled = false;
+      let disabledReason: string | undefined;
+
+      if (slot.currentPP <= 0) {
+        disabled = true;
+        disabledReason = "No PP remaining";
+      } else if (
+        active.volatileStatuses.has("disable") &&
+        active.volatileStatuses.get("disable")?.data?.moveId === slot.moveId
+      ) {
+        disabled = true;
+        disabledReason = "Move is disabled";
+      } else if (
+        active.volatileStatuses.has("taunt") &&
+        moveData?.category === "status"
+      ) {
+        // Taunt prevents status moves
+        // Source: Bulbapedia — "Taunt prevents the target from using status moves"
+        disabled = true;
+        disabledReason = "Blocked by Taunt";
+      } else if (active.volatileStatuses.has("choice-locked")) {
+        // Choice lock restricts to the locked move only
+        // Source: Bulbapedia — Choice Band/Specs/Scarf lock the user into the first move used
+        const choiceData = active.volatileStatuses.get("choice-locked")?.data;
+        const lockedMoveId = choiceData?.moveId as string | undefined;
+        if (lockedMoveId && slot.moveId !== lockedMoveId) {
+          disabled = true;
+          disabledReason = "Locked by Choice item";
+        }
+      }
 
       return [
         {
@@ -326,11 +353,7 @@ export class BattleEngine implements BattleEventEmitter {
           pp: slot.currentPP,
           maxPp: slot.maxPP,
           disabled,
-          disabledReason: disabled
-            ? slot.currentPP <= 0
-              ? "No PP remaining"
-              : "Move is disabled"
-            : undefined,
+          disabledReason,
         },
       ];
     });
@@ -650,7 +673,7 @@ export class BattleEngine implements BattleEventEmitter {
 
         // Execute Pursuit before the switch (doubled base power for pre-switch Pursuit)
         this.executeMove(action, actor, 2);
-        this.checkMidTurnFaints();
+        this.checkMidTurnFaints({ attackerSide: action.side });
         if (this.checkBattleEnd()) {
           this.transitionTo("battle-end");
           this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
@@ -700,8 +723,13 @@ export class BattleEngine implements BattleEventEmitter {
           break;
       }
 
-      // Check for faints after each action
-      this.checkMidTurnFaints();
+      // Check for faints after each action — pass attacker side for Destiny Bond check
+      // when the action is a move or struggle (opponent KO'd by an attack)
+      const moveSourceForFaint =
+        action.type === "move" || action.type === "struggle"
+          ? { attackerSide: action.side }
+          : undefined;
+      this.checkMidTurnFaints(moveSourceForFaint);
       if (this.state.ended) {
         this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
         return;
@@ -942,6 +970,7 @@ export class BattleEngine implements BattleEventEmitter {
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
         defender.lastDamageType = effectiveMoveData.type;
+        defender.lastDamageCategory = effectiveMoveData.category;
         this.emit({
           type: "damage",
           side: defenderSide as 0 | 1,
@@ -1028,6 +1057,24 @@ export class BattleEngine implements BattleEventEmitter {
 
     actor.lastMoveUsed = moveData.id;
     actor.movedThisTurn = true;
+
+    // Choice lock: if the actor holds a Choice item and isn't already locked,
+    // lock them into the move they just used.
+    // Source: Bulbapedia — "Choice Band boosts the holder's Attack by 50%, but
+    // only allows the use of the first move selected."
+    if (
+      this.ruleset.hasHeldItems() &&
+      !actor.volatileStatuses.has("choice-locked") &&
+      actor.pokemon.heldItem &&
+      (actor.pokemon.heldItem === "choice-band" ||
+        actor.pokemon.heldItem === "choice-specs" ||
+        actor.pokemon.heldItem === "choice-scarf")
+    ) {
+      actor.volatileStatuses.set("choice-locked", {
+        turnsLeft: -1,
+        data: { moveId: moveData.id },
+      });
+    }
   }
 
   private executeSwitch(action: import("../events").SwitchAction): void {
@@ -1053,6 +1100,7 @@ export class BattleEngine implements BattleEventEmitter {
       outgoing.lastMoveUsed = null;
       outgoing.lastDamageTaken = 0;
       outgoing.lastDamageType = null;
+      outgoing.lastDamageCategory = null;
     }
 
     // Send in new pokemon
@@ -1118,6 +1166,26 @@ export class BattleEngine implements BattleEventEmitter {
         type: "message",
         text: `${getPokemonName(actor)} flinched and couldn't move!`,
       });
+
+      // On-flinch ability trigger (e.g., Steadfast raises Speed when flinched)
+      // Source: Bulbapedia — Steadfast "raises the Speed stat of a Pokemon with
+      // this Ability by one stage each time it flinches"
+      if (this.ruleset.hasAbilities()) {
+        const opponent = this.getOpponentActive(side);
+        if (opponent) {
+          const flinchResult = this.ruleset.applyAbility("on-flinch", {
+            pokemon: actor,
+            opponent,
+            state: this.state,
+            rng: this.state.rng,
+            trigger: "on-flinch",
+          });
+          if (flinchResult.activated) {
+            this.processAbilityResult(flinchResult, actor, opponent, side);
+          }
+        }
+      }
+
       return false;
     }
 
@@ -1501,6 +1569,25 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.trickRoomSet) {
       this.state.trickRoom = { active: true, turnsLeft: result.trickRoomSet.turnsLeft };
       this.emit({ type: "message", text: "The dimensions were twisted!" });
+    }
+
+    // Future attack (Future Sight / Doom Desire) — schedule on the target's side
+    // Source: Bulbapedia — "In Generations II-IV, damage is calculated when
+    // Future Sight or Doom Desire hits."
+    if (result.futureAttack) {
+      const targetSideState = this.state.sides[defenderSide];
+      if (!targetSideState.futureAttack) {
+        targetSideState.futureAttack = {
+          moveId: result.futureAttack.moveId,
+          turnsLeft: result.futureAttack.turnsLeft,
+          damage: 0, // Gen 4: damage calculated at hit time, not on use
+          sourceSide: result.futureAttack.sourceSide,
+        };
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(attacker)} foresaw an attack!`,
+        });
+      }
     }
 
     // Self-faint (Explosion / Self-Destruct)
@@ -1983,21 +2070,96 @@ export class BattleEngine implements BattleEventEmitter {
             if (side.futureAttack.turnsLeft <= 0) {
               const active = side.active[0];
               if (active && active.pokemon.currentHp > 0) {
-                const damage = Math.min(side.futureAttack.damage, active.pokemon.currentHp);
-                active.pokemon.currentHp -= damage;
+                let futureDamage = side.futureAttack.damage;
+
+                // Gen 4+: damage is calculated at hit time, not on use
+                // Source: Bulbapedia — "In Generations II-IV, damage is calculated
+                // when Future Sight or Doom Desire hits."
+                if (futureDamage === 0) {
+                  const sourceSideState = this.state.sides[side.futureAttack.sourceSide];
+                  const sourceActive = sourceSideState.active[0];
+                  if (sourceActive && sourceActive.pokemon.currentHp > 0) {
+                    let moveData: MoveData | undefined;
+                    try {
+                      moveData = this.dataManager.getMove(side.futureAttack.moveId);
+                    } catch {
+                      // Move data missing — use fallback damage
+                    }
+                    if (moveData) {
+                      const result = this.ruleset.calculateDamage({
+                        attacker: sourceActive,
+                        defender: active,
+                        move: moveData,
+                        state: this.state,
+                        rng: this.state.rng,
+                        isCrit: false,
+                      });
+                      futureDamage = result.damage;
+                    }
+                  }
+                }
+
+                const clampedDamage = Math.min(futureDamage, active.pokemon.currentHp);
+                active.pokemon.currentHp -= clampedDamage;
                 const maxHp =
-                  active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp + damage;
+                  active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp + clampedDamage;
                 this.emit({
                   type: "damage",
                   side: side.index,
                   pokemon: getPokemonName(active),
-                  amount: damage,
+                  amount: clampedDamage,
                   currentHp: active.pokemon.currentHp,
                   maxHp,
                   source: side.futureAttack.moveId,
                 });
               }
               side.futureAttack = null;
+            }
+          }
+          break;
+        }
+        case "taunt-countdown": {
+          // Taunt volatile countdown — remove when turnsLeft reaches 0
+          // Source: Bulbapedia — "Taunt lasts for 3 turns in Gen 4"
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const tauntState = active.volatileStatuses.get("taunt");
+            if (!tauntState) continue;
+            if (tauntState.turnsLeft > 0) {
+              tauntState.turnsLeft--;
+              if (tauntState.turnsLeft <= 0) {
+                active.volatileStatuses.delete("taunt");
+                this.emit({
+                  type: "volatile-end",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  volatile: "taunt",
+                });
+              }
+            }
+          }
+          break;
+        }
+        case "disable-countdown": {
+          // Disable volatile countdown — remove when turnsLeft reaches 0
+          // Source: Bulbapedia — "Disable lasts for 4-7 turns in Gen 4"
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const disableState = active.volatileStatuses.get("disable");
+            if (!disableState) continue;
+            if (disableState.turnsLeft > 0) {
+              disableState.turnsLeft--;
+              if (disableState.turnsLeft <= 0) {
+                active.volatileStatuses.delete("disable");
+                this.emit({
+                  type: "volatile-end",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  volatile: "disable",
+                });
+              }
             }
           }
           break;
@@ -2151,7 +2313,13 @@ export class BattleEngine implements BattleEventEmitter {
     });
   }
 
-  private checkMidTurnFaints(): void {
+  /**
+   * Checks for fainted Pokemon and emits faint events.
+   * @param moveSource - If provided, the side that used a move causing the faint
+   *   (enables Destiny Bond check). Pass `undefined` for non-move faint sources
+   *   (weather, status, recoil) where Destiny Bond should not trigger.
+   */
+  private checkMidTurnFaints(moveSource?: { attackerSide: 0 | 1 }): void {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (active && active.pokemon.currentHp <= 0) {
@@ -2167,6 +2335,35 @@ export class BattleEngine implements BattleEventEmitter {
           pokemon: getPokemonName(active),
         });
         side.faintCount++;
+
+        // Destiny Bond: if the fainted Pokemon has destiny-bond volatile and was
+        // KO'd by an opponent's move, the opponent also faints.
+        // Source: Bulbapedia — "If the user faints after using this move, the
+        // Pokemon that knocked it out also faints."
+        if (
+          active.volatileStatuses.has("destiny-bond") &&
+          moveSource &&
+          moveSource.attackerSide !== side.index
+        ) {
+          const opponent = this.state.sides[moveSource.attackerSide].active[0];
+          if (opponent && opponent.pokemon.currentHp > 0) {
+            opponent.pokemon.currentHp = 0;
+            const opponentKey = `${moveSource.attackerSide}-${opponent.pokemon.uid}`;
+            if (!this.faintedPokemonThisTurn.has(opponentKey)) {
+              this.faintedPokemonThisTurn.add(opponentKey);
+              this.emit({
+                type: "message",
+                text: `${getPokemonName(active)} took its attacker down with it!`,
+              });
+              this.emit({
+                type: "faint",
+                side: moveSource.attackerSide,
+                pokemon: getPokemonName(opponent),
+              });
+              this.state.sides[moveSource.attackerSide].faintCount++;
+            }
+          }
+        }
       }
     }
   }
@@ -2474,6 +2671,18 @@ export class BattleEngine implements BattleEventEmitter {
               volatile: effect.volatile,
             });
           }
+          break;
+        }
+        case "ability-change": {
+          // Ability swap effects (Trace, Skill Swap, etc.)
+          // Source: Bulbapedia — various ability-swapping mechanics
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          target.ability = effect.newAbility;
+          this.emit({
+            type: "message",
+            text: `${getPokemonName(target)}'s ability changed to ${effect.newAbility}!`,
+          });
           break;
         }
         default:
