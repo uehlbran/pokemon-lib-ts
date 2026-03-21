@@ -324,10 +324,7 @@ export class BattleEngine implements BattleEventEmitter {
       ) {
         disabled = true;
         disabledReason = "Move is disabled";
-      } else if (
-        active.volatileStatuses.has("taunt") &&
-        moveData?.category === "status"
-      ) {
+      } else if (active.volatileStatuses.has("taunt") && moveData?.category === "status") {
         // Taunt prevents status moves
         // Source: Bulbapedia — "Taunt prevents the target from using status moves"
         disabled = true;
@@ -2677,7 +2674,6 @@ export class BattleEngine implements BattleEventEmitter {
           // Ability swap effects (Trace, Skill Swap, etc.)
           // Source: Bulbapedia — various ability-swapping mechanics
           const target = effect.target === "self" ? pokemon : opponent;
-          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
           target.ability = effect.newAbility;
           this.emit({
             type: "message",
