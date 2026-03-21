@@ -318,7 +318,7 @@ describe("Gen3 freeze thaw check (20% probability)", () => {
     // Test value 0.20 >= 0.2 → should stay frozen
     const ruleset = makeRuleset();
     const frozenMon = makeActivePokemon({ status: "freeze" });
-    const rng = makeMockRng(0.20); // 0.20 == 0.2 → stays frozen (chance uses <, not <=)
+    const rng = makeMockRng(0.2); // 0.20 == 0.2 → stays frozen (chance uses <, not <=)
 
     const thawed = ruleset.checkFreezeThaw(frozenMon, rng);
 
