@@ -1,6 +1,7 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { isGen1PhysicalType } from "../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 
 /**
@@ -259,34 +260,30 @@ describe("Gen1Ruleset", () => {
 
   // --- Physical vs Special by Type ---
 
-  it("given Gen1Ruleset, when classifying physical types, then Normal/Fighting/Flying/Ground/Rock/Bug/Ghost are physical", () => {
-    // Arrange
-    const physicalTypes = ["normal", "fighting", "flying", "ground", "rock", "bug", "ghost"];
-    // Act / Assert: We can't test getMoveCategoryByType directly from the ruleset interface,
-    // but the ruleset's type chart and data loading should reflect this
-    // (This test verifies the concept rather than a specific method)
-    for (const type of physicalTypes) {
-      // Physical types in Gen 1 use Attack/Defense stats
-      expect(physicalTypes).toContain(type);
-    }
+  it("given isGen1PhysicalType, when checking physical types, then Normal/Fighting/Flying/Ground/Rock/Bug/Ghost/Poison return true", () => {
+    // Source: pret/pokered data/type_names.asm — Gen 1 physical types: Normal, Fighting, Flying,
+    // Poison, Ground, Rock, Bug, Ghost. Poison IS physical in Gen 1 (common misconception).
+    // These types use Attack/Defense stats in the damage formula.
+    expect(isGen1PhysicalType("normal")).toBe(true);
+    expect(isGen1PhysicalType("fighting")).toBe(true);
+    expect(isGen1PhysicalType("flying")).toBe(true);
+    expect(isGen1PhysicalType("poison")).toBe(true); // Poison IS physical in Gen 1
+    expect(isGen1PhysicalType("ground")).toBe(true);
+    expect(isGen1PhysicalType("rock")).toBe(true);
+    expect(isGen1PhysicalType("bug")).toBe(true);
+    expect(isGen1PhysicalType("ghost")).toBe(true);
   });
 
-  it("given Gen1Ruleset, when classifying special types, then Fire/Water/Grass/Electric/Ice/Psychic/Poison/Dragon are special", () => {
-    // Arrange
-    const specialTypes = [
-      "fire",
-      "water",
-      "grass",
-      "electric",
-      "ice",
-      "psychic",
-      "poison",
-      "dragon",
-    ];
-    // Act / Assert: Special types in Gen 1 use the unified Special stat
-    for (const type of specialTypes) {
-      expect(specialTypes).toContain(type);
-    }
+  it("given isGen1PhysicalType, when checking special types, then Fire/Water/Grass/Electric/Ice/Psychic/Dragon return false", () => {
+    // Source: pret/pokered data/type_names.asm — Gen 1 special types use the unified Special stat
+    // for both offense (SpAttack) and defense (SpDefense).
+    expect(isGen1PhysicalType("fire")).toBe(false);
+    expect(isGen1PhysicalType("water")).toBe(false);
+    expect(isGen1PhysicalType("grass")).toBe(false);
+    expect(isGen1PhysicalType("electric")).toBe(false);
+    expect(isGen1PhysicalType("ice")).toBe(false);
+    expect(isGen1PhysicalType("psychic")).toBe(false);
+    expect(isGen1PhysicalType("dragon")).toBe(false);
   });
 
   // --- Struggle Recoil ---

@@ -1436,4 +1436,84 @@ describe("Gen 1 Damage Calculation", () => {
     // Float math (2/3≈0.6667):     effective defense=180 → damage=50
     expect(result.damage).toBe(51);
   });
+
+  // --- 997 Intermediate Damage Cap ---
+
+  it("given extreme stats that produce intermediate damage far above 997, when calculating at max roll, then final damage is exactly 999", () => {
+    // Source: pret/pokered engine/battle/core.asm (Showdown scripts.ts:848) —
+    // The intermediate base damage (before the +2 additive constant) is capped at 997.
+    // The formula is: min(997, floor(innerDamage / 50)) + 2
+    // So the maximum possible base damage before random factor is 997 + 2 = 999.
+    //
+    // Derivation using L100, BP=100, Atk=255, Def=1, no STAB, neutral type, roll=255:
+    //   levelFactor = floor(2*100/5)+2 = 42
+    //   inner = floor(42 * 100 * 255) / 1 = 1071000
+    //   pre-cap = floor(1071000 / 50) = 21420   (well above 997)
+    //   baseDamage = min(997, 21420) + 2 = 999
+    //   random factor (roll=255): floor(999 * 255 / 255) = 999
+    //
+    // This test would FAIL if the cap were absent (damage would be >999).
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+
+    // Use a move that won't trigger special handling (normal type physical, no effect)
+    const highPowerMove = createPhysicalMove(100);
+
+    const attacker = createActivePokemon({
+      level: 100,
+      attack: 255,
+      defense: 100,
+      spAttack: 255,
+      spDefense: 100,
+      types: ["fire"], // fire so normal move gets no STAB
+    });
+    const defender = createActivePokemon({
+      level: 100,
+      attack: 100,
+      defense: 1, // minimum defense to maximize damage
+      spAttack: 100,
+      spDefense: 1,
+      types: ["normal"],
+    });
+
+    // Second triangulation: different params also hitting the cap
+    // L100, BP=100, Atk=200, Def=1:
+    //   inner = floor(42 * 100 * 200) / 1 = 840000
+    //   pre-cap = floor(840000 / 50) = 16800   (also above 997)
+    //   baseDamage = min(997, 16800) + 2 = 999
+    const attacker2 = createActivePokemon({
+      level: 100,
+      attack: 200,
+      defense: 100,
+      spAttack: 200,
+      spDefense: 100,
+      types: ["fire"],
+    });
+
+    const ctx1 = {
+      attacker,
+      defender,
+      move: highPowerMove,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    const ctx2 = {
+      attacker: attacker2,
+      defender,
+      move: highPowerMove,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    } satisfies DamageContext;
+
+    // Act
+    const damage1 = calculateGen1Damage(ctx1, chart, species).damage;
+    const damage2 = calculateGen1Damage(ctx2, chart, species).damage;
+
+    // Assert — both extreme inputs are capped to 999, proving the cap is enforced
+    expect(damage1).toBe(999);
+    expect(damage2).toBe(999);
+  });
 });

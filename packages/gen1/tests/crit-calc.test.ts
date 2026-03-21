@@ -1,5 +1,14 @@
+import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import type {
+  MoveData,
+  PokemonInstance,
+  PokemonSpeciesData,
+  PokemonType,
+  TypeChart,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { getGen1CritRate } from "../src/Gen1CritCalc";
+import { calculateGen1Damage } from "../src/Gen1DamageCalc";
 
 /**
  * Gen 1 Critical Hit Tests
@@ -172,14 +181,16 @@ describe("Gen 1 Critical Hit", () => {
     expect(highCritRate).toBeGreaterThan(normalRate);
   });
 
-  it("given a high crit-ratio move with base speed 100, when calculating crit rate, then rate is very high", () => {
-    // Arrange
+  it("given a high crit-ratio move with base speed 100, when calculating crit rate, then rate is 255/256 (capped)", () => {
+    // Source: pret/pokered engine/battle/core.asm — high crit-ratio formula:
+    //   T = min(255, floor(BaseSpeed * 8 / 2)) = min(255, 400) = 255
+    //   critRate = 255 / 256 ≈ 0.996
+    // Slash, Karate Chop, etc. use Speed * 4 after the standard /2 step (effectively *8 total).
     const baseSpeed = 100;
     // Act
     const rate = getGen1CritRate(baseSpeed, false, true);
-    // Assert: High crit should give a rate well above the base rate
-    // With base speed 100: floor(100 * 8 / 2) / 256 = 400/256, capped at 255/256 ~ 99.6%
-    expect(rate).toBeGreaterThan(0.5);
+    // Assert — with base speed 100 the raw threshold overflows 255, so it is capped at 255/256
+    expect(rate).toBeCloseTo(255 / 256, 3);
   });
 
   it("given a high crit-ratio move with low base speed 20, when calculating crit rate, then rate is still elevated", () => {
@@ -194,11 +205,220 @@ describe("Gen 1 Critical Hit", () => {
 
   // --- Critical Hit Damage ---
 
-  it("given Gen 1, when checking crit multiplier, then it should be 2.0 (not 1.5 like Gen 6+)", () => {
-    // Arrange / Act / Assert
-    // Gen 1 crit multiplier is a well-known constant: 2x damage
-    const GEN1_CRIT_MULTIPLIER = 2;
-    expect(GEN1_CRIT_MULTIPLIER).toBe(2);
+  it("given L50 attacker Atk=100 vs Def=100 BP=80, when crit hits vs non-crit at max roll, then crit damage is 69 and non-crit is 37", () => {
+    // Source: pret/pokered engine/battle/core.asm — Gen 1 crits double the attacker's level
+    // in the damage formula (not a 1.5x or 2x post-damage multiplier like later gens).
+    //
+    // Non-crit: effectiveLevel=50, levelFactor=floor(2*50/5)+2=22
+    //   base = floor(floor(22*80*100)/100/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    //   final = floor(37*255/255) = 37
+    //
+    // Crit: effectiveLevel=100, levelFactor=floor(2*100/5)+2=42
+    //   base = floor(floor(42*80*100)/100/50)+2 = floor(3360/50)+2 = 67+2 = 69
+    //   final = floor(69*255/255) = 69
+    //
+    // Ratio = 69/37 ≈ 1.86x (NOT exactly 2x because of integer floors at each step)
+
+    // Build minimal mock infrastructure matching damage-calc.test.ts patterns
+    const neutralChart: TypeChart = (() => {
+      const types: PokemonType[] = [
+        "normal",
+        "fire",
+        "water",
+        "electric",
+        "grass",
+        "ice",
+        "fighting",
+        "poison",
+        "ground",
+        "flying",
+        "psychic",
+        "bug",
+        "rock",
+        "ghost",
+        "dragon",
+      ];
+      const chart = {} as Record<string, Record<string, number>>;
+      for (const atk of types) {
+        chart[atk] = {};
+        for (const def of types) {
+          (chart[atk] as Record<string, number>)[def] = 1;
+        }
+      }
+      return chart as TypeChart;
+    })();
+
+    const species: PokemonSpeciesData = {
+      id: 1,
+      name: "test",
+      displayName: "Test",
+      types: ["normal"],
+      baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
+      abilities: { normal: [""], hidden: null },
+      genderRatio: 50,
+      catchRate: 45,
+      baseExp: 64,
+      expGroup: "medium-slow",
+      evYield: {},
+      eggGroups: ["monster"],
+      learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
+      evolution: null,
+      dimensions: { height: 1, weight: 10 },
+      spriteKey: "test",
+      baseFriendship: 70,
+      generation: 1,
+      isLegendary: false,
+      isMythical: false,
+    } as PokemonSpeciesData;
+
+    const makePoke = (
+      level: number,
+      atk: number,
+      def: number,
+      types: PokemonType[],
+    ): ActivePokemon =>
+      ({
+        pokemon: {
+          uid: "t",
+          speciesId: 1,
+          nickname: null,
+          level,
+          experience: 0,
+          nature: "hardy",
+          ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+          evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+          currentHp: 200,
+          moves: [],
+          ability: "",
+          abilitySlot: "normal1" as const,
+          heldItem: null,
+          status: null,
+          friendship: 0,
+          gender: "male" as const,
+          isShiny: false,
+          metLocation: "",
+          metLevel: 1,
+          originalTrainer: "",
+          originalTrainerId: 0,
+          pokeball: "pokeball",
+          calculatedStats: {
+            hp: 200,
+            attack: atk,
+            defense: def,
+            spAttack: atk,
+            spDefense: def,
+            speed: 100,
+          },
+        } as PokemonInstance,
+        teamSlot: 0,
+        statStages: {
+          hp: 0,
+          attack: 0,
+          defense: 0,
+          spAttack: 0,
+          spDefense: 0,
+          speed: 0,
+          accuracy: 0,
+          evasion: 0,
+        },
+        volatileStatuses: new Map(),
+        types,
+        ability: "",
+        lastMoveUsed: null,
+        lastDamageTaken: 0,
+        lastDamageType: null,
+        turnsOnField: 0,
+        movedThisTurn: false,
+        consecutiveProtects: 0,
+        substituteHp: 0,
+        transformed: false,
+        transformedSpecies: null,
+        isMega: false,
+        isDynamaxed: false,
+        dynamaxTurnsLeft: 0,
+        isTerastallized: false,
+        teraType: null,
+      }) as ActivePokemon;
+
+    const move: MoveData = {
+      id: "test",
+      displayName: "Test",
+      type: "normal" as PokemonType,
+      category: "physical",
+      power: 80,
+      accuracy: 100,
+      pp: 35,
+      priority: 0,
+      target: "adjacent-foe",
+      flags: {
+        contact: false,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: true,
+        mirror: true,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: null,
+      description: "",
+      generation: 1,
+    } as MoveData;
+
+    const mockRng = {
+      next: () => 0,
+      int: (_min: number, _max: number) => 255,
+      chance: () => false,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: readonly T[]) => [...arr],
+      getState: () => 0,
+      setState: () => {},
+    };
+
+    const attacker = makePoke(50, 100, 100, ["fire"]); // fire so no STAB on normal move
+    const defender = makePoke(50, 100, 100, ["normal"]);
+    const state = {} as DamageContext["state"];
+
+    const ctxNonCrit: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state,
+      rng: mockRng as DamageContext["rng"],
+      isCrit: false,
+    };
+    const ctxCrit: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state,
+      rng: mockRng as DamageContext["rng"],
+      isCrit: true,
+    };
+
+    // Act
+    const nonCritDamage = calculateGen1Damage(ctxNonCrit, neutralChart, species).damage;
+    const critDamage = calculateGen1Damage(ctxCrit, neutralChart, species).damage;
+
+    // Assert — exact values derived from pret/pokered damage formula
+    expect(nonCritDamage).toBe(37);
+    expect(critDamage).toBe(69);
+    // Gen 1 crit is implemented via level doubling, not a 2x multiplier.
+    // The ratio is ~1.86x due to integer floors, which proves the implementation
+    // uses the correct cartridge-accurate formula (not a simple 2x multiplier).
+    expect(critDamage).toBeGreaterThan(nonCritDamage);
+    const ratio = critDamage / nonCritDamage;
+    expect(ratio).toBeGreaterThan(1.7);
+    expect(ratio).toBeLessThan(2.1);
   });
 
   // --- Edge Cases ---
@@ -212,13 +432,17 @@ describe("Gen 1 Critical Hit", () => {
     expect(rate).toBe(0);
   });
 
-  it("given high crit AND focus energy, when calculating crit rate, then both modifiers apply", () => {
-    // Arrange: These two interact in interesting ways
+  it("given high crit AND Focus Energy active with base speed 100, when calculating crit rate, then rate is 100/256", () => {
+    // Source: pret/pokered engine/battle/core.asm (Gen1CritCalc.ts implementation):
+    //   Step 1: critChance = floor(100 / 2) = 50
+    //   Step 2 (Focus Energy BUG): critChance = floor(50 / 2) = 25  (divides by 2 instead of *4)
+    //   Step 3 (high-crit move): critChance = min(255, max(1, 25 * 4)) = 100
+    //   critRate = 100 / 256 ≈ 0.3906
+    // Despite Focus Energy's divide bug, the high-crit multiplier partially compensates.
     const baseSpeed = 100;
     // Act
     const rate = getGen1CritRate(baseSpeed, true, true);
-    // Assert: The rate should be defined and reasonable
-    expect(rate).toBeGreaterThanOrEqual(0);
-    expect(rate).toBeLessThanOrEqual(1);
+    // Assert
+    expect(rate).toBeCloseTo(100 / 256, 3);
   });
 });

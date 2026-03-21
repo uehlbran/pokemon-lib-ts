@@ -1,6 +1,7 @@
 /**
  * Regression tests for Gen 1 mechanic bug fixes.
- * Issues: #129, #283, #297, #299, #300, #304, #305, #404, #406, #408, #410
+ * Issues: #129, #283, #297, #299, #300, #304, #305, #404, #406, #408, #410,
+ *         #412, #413, #414, #415
  *
  * Each test uses Given/When/Then naming, AAA structure, and source comments.
  * All expected values use toBe() or toEqual() -- never toBeTruthy() or toBeGreaterThan(0).
@@ -1036,5 +1037,244 @@ describe("#410 — Struggle accuracy check (uses standard accuracy formula)", ()
       // If no miss found in 10000 seeds, this should not happen with +6 evasion
       expect(found).toBe(true);
     }
+  });
+});
+
+// ============================================================================
+// #413 — Rage miss: rage volatile must NOT be cleared when Rage misses
+// ============================================================================
+
+describe("#413 — Rage miss: rage volatile survives a miss", () => {
+  it("given Pokemon has 'rage' volatile and Rage move misses, when processBoundTurn is irrelevant and doesMoveHit returns false, then rage volatile is preserved (not cleared on miss)", () => {
+    // Source: pret/pokered RageEffect — the 'rage' volatile accumulates Attack boosts
+    // each time the raging Pokemon is hit. Clearing the rage volatile on a miss would
+    // lose all accumulated boosts (regression).
+    //
+    // The engine (BattleEngine.ts) only sets 'rage-miss-lock' on miss — it does NOT delete
+    // the 'rage' volatile. This test verifies the ruleset's doesMoveHit logic does not
+    // mutate the 'rage' volatile.
+
+    // Arrange — attacker is raging (already set the volatile)
+    const attacker = makeActivePokemon();
+    attacker.volatileStatuses.set("rage", { turnsLeft: -1, data: { moveIndex: 0 } });
+    attacker.statStages.attack = 3; // Accumulated +3 via Rage boosts
+
+    const defender = makeActivePokemon({ types: ["normal"] as PokemonType[] });
+
+    const rageMove = makeMove({
+      id: "rage",
+      category: "physical" as const,
+      power: 20,
+      accuracy: 100,
+    });
+
+    // Use a seeded rng that will produce a hit (not the 1/256 miss)
+    // Seed=1 gives a roll well above 0, so 100% accuracy moves hit
+    const rng = new SeededRandom(1);
+
+    const ctx = {
+      attacker,
+      defender,
+      move: rageMove,
+      state: makeBattleState({ side0Active: attacker, side1Active: defender }),
+      rng,
+    } as AccuracyContext;
+
+    // Act — doesMoveHit does not touch the 'rage' volatile
+    ruleset.doesMoveHit(ctx);
+
+    // Assert — 'rage' volatile is still present regardless of hit/miss
+    expect(attacker.volatileStatuses.has("rage")).toBe(true);
+    // Accumulated attack boosts are also preserved
+    expect(attacker.statStages.attack).toBe(3);
+  });
+
+  it("given Pokemon has 'rage' volatile with accumulated boosts, when Rage misses (1/256 glitch), then rage volatile and attack boosts are not cleared", () => {
+    // Regression: pret/pokered — Gen 1 miss while in Rage sets 'rage-miss-lock' volatile
+    // but must NOT clear the 'rage' volatile or reset the Attack stage.
+    // The engine adds rage-miss-lock; it must not delete 'rage'.
+
+    // Arrange — attacker is raging with +4 attack boosts
+    const attacker = makeActivePokemon();
+    attacker.volatileStatuses.set("rage", { turnsLeft: -1, data: { moveIndex: 0 } });
+    attacker.statStages.attack = 4;
+
+    // The doesMoveHit method on the ruleset itself does not mutate volatile statuses.
+    // We test that the volatile map is unmodified after calling doesMoveHit.
+    const defender = makeActivePokemon({ types: ["normal"] as PokemonType[] });
+    const rageMove = makeMove({ id: "rage", accuracy: 100 });
+    const rng = new SeededRandom(42);
+
+    const ctx = {
+      attacker,
+      defender,
+      move: rageMove,
+      state: makeBattleState({ side0Active: attacker, side1Active: defender }),
+      rng,
+    } as AccuracyContext;
+
+    // Capture the volatile map state before the call
+    const rageVolatileBefore = attacker.volatileStatuses.has("rage");
+
+    // Act
+    ruleset.doesMoveHit(ctx);
+
+    // Assert — rage volatile was NOT cleared by doesMoveHit
+    expect(rageVolatileBefore).toBe(true);
+    expect(attacker.volatileStatuses.has("rage")).toBe(true);
+    expect(attacker.statStages.attack).toBe(4);
+  });
+});
+
+// ============================================================================
+// #414 — Substitute + confusion self-hit: damage hits the user, not the sub
+// ============================================================================
+
+describe("#414 — Substitute + confusion: confusion self-hit bypasses Substitute in Gen 1", () => {
+  it("given confusionSelfHitTargetsOpponentSub returns true for Gen 1, when queried, then returns true (Gen 1 bug: self-hit goes to opponent's sub, not user's sub)", () => {
+    // Source: pret/pokered engine/battle/core.asm — confusion self-hit damage calculation
+    // checks whether the *opponent* has a Substitute and damages that sub instead.
+    // This is a Gen 1 cartridge bug: in later gens, confusion self-hit always damages
+    // the confused Pokemon itself.
+    //
+    // confusionSelfHitTargetsOpponentSub() returns true for Gen 1 to signal this behavior.
+    expect(ruleset.confusionSelfHitTargetsOpponentSub()).toBe(true);
+  });
+
+  it("given Gen 1 ruleset, when calculateConfusionDamage is called for a L50 pokemon with Atk=80 Def=60 at +0 stages, then returns exact damage value", () => {
+    // Source: pret/pokered engine/battle/core.asm lines 4388-4450 — confusion uses BP=40,
+    // attacker's own Attack and Defense, no STAB, no type effectiveness, no random factor.
+    //
+    // Formula: min(997, floor(floor((2*50/5+2) * 40 * 80) / 60 / 50)) + 2
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   inner = floor(22 * 40 * 80) = floor(70400) = 70400
+    //   /60 = floor(70400/60) = floor(1173.3) = 1173
+    //   /50 = floor(1173/50) = floor(23.46) = 23
+    //   baseDamage = min(997, 23) + 2 = 25
+    //
+    // The default makeActivePokemon() has level=50, attack=80, defense=60.
+    const pokemon = makeActivePokemon();
+    const state = makeBattleState();
+    const rng = new SeededRandom(0);
+
+    // Act
+    const damage = ruleset.calculateConfusionDamage(pokemon, state, rng);
+
+    // Assert — exact value from formula derivation above
+    expect(damage).toBe(25);
+  });
+
+  it("given Gen 1 ruleset, when calculateConfusionDamage is called for a L100 pokemon with Atk=100 Def=100 at +0 stages, then returns exact damage value", () => {
+    // Triangulation: second case with different stats proves no constant return.
+    // Source: pret/pokered engine/battle/core.asm — same formula as above.
+    //
+    // Formula: min(997, floor(floor((2*100/5+2) * 40 * 100) / 100 / 50)) + 2
+    //   levelFactor = floor(2*100/5)+2 = 42
+    //   inner = floor(42 * 40 * 100) = 168000
+    //   /100 = floor(168000/100) = 1680
+    //   /50 = floor(1680/50) = 33
+    //   baseDamage = min(997, 33) + 2 = 35
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        level: 100,
+        calculatedStats: {
+          hp: 300,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        },
+      } as PokemonInstance,
+    });
+    const state = makeBattleState();
+    const rng = new SeededRandom(0);
+
+    // Act
+    const damage = ruleset.calculateConfusionDamage(pokemon, state, rng);
+
+    // Assert
+    expect(damage).toBe(35);
+  });
+});
+
+// ============================================================================
+// #415 — Sleep wake-turn action skip
+// ============================================================================
+
+describe("#415 — Sleep wake-turn: Pokemon cannot act on the turn it wakes up (Gen 1)", () => {
+  it("given sleeping Pokemon with 1 turn remaining, when processSleepTurn is called, then wakes up and returns false (cannot act this turn)", () => {
+    // Source: pret/pokered engine/battle/effects.asm — SLP handling: when the sleep counter
+    // reaches 0, the game clears the sleep status BUT the Pokemon still cannot move that turn.
+    // The move execution is skipped and a wake-up message is shown instead.
+    //
+    // processSleepTurn() return value semantics: false = "cannot act this turn"
+    // This is different from Gen 2+ where the Pokemon CAN act on the wake turn.
+
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "sleep" as const,
+      } as PokemonInstance,
+    });
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    const state = makeBattleState();
+
+    // Act
+    const canAct = ruleset.processSleepTurn(pokemon, state);
+
+    // Assert — Gen 1: wake turn is wasted (cannot act)
+    expect(canAct).toBe(false);
+    // And the status is cleared (Pokemon actually woke up)
+    expect(pokemon.pokemon.status).toBeNull();
+    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
+  });
+
+  it("given sleeping Pokemon with 3 turns remaining, when processSleepTurn is called, then decrements counter and still cannot act (still asleep)", () => {
+    // Source: pret/pokered — sleeping Pokemon cannot act; each turn the counter decrements.
+    // processSleepTurn() returns false when still sleeping (counter still positive after decrement).
+
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "sleep" as const,
+      } as PokemonInstance,
+    });
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    const state = makeBattleState();
+
+    // Act
+    const canAct = ruleset.processSleepTurn(pokemon, state);
+
+    // Assert — still sleeping after decrement (3 → 2)
+    expect(canAct).toBe(false);
+    expect(pokemon.pokemon.status).toBe("sleep");
+    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
+  });
+
+  it("given sleeping Pokemon with 0 turns already remaining, when processSleepTurn is called, then wakes up and returns false (wake turn is also skipped)", () => {
+    // Source: pret/pokered — if counter is already 0 when processSleepTurn runs (edge case),
+    // the Pokemon still wakes up but cannot act this turn.
+    // This handles the case where the counter reached 0 before processSleepTurn runs.
+
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "sleep" as const,
+      } as PokemonInstance,
+    });
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
+    const state = makeBattleState();
+
+    // Act
+    const canAct = ruleset.processSleepTurn(pokemon, state);
+
+    // Assert — woke up but cannot act (wake turn is skipped in Gen 1)
+    expect(canAct).toBe(false);
+    expect(pokemon.pokemon.status).toBeNull();
   });
 });

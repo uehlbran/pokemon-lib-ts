@@ -295,13 +295,46 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
     expect(result.volatileInflicted).toBe("bound");
   });
 
-  it.todo(
-    "given target is trapped by Wrap, when target attempts to move, then target cannot act during trap turns",
-  );
+  it("given target has 'bound' volatile with turnsLeft=3, when processBoundTurn is called, then returns true (still trapped) and decrements counter", () => {
+    // Source: pret/pokered engine/battle/core.asm — Gen 1 trapping moves (Wrap, Bind,
+    // Fire Spin, Clamp) hold the target for 2-5 turns. The 'bound' volatile presence
+    // is checked by the engine (canExecuteMove) to block the trapped Pokemon's actions.
+    // processBoundTurn() decrements the counter each turn.
+    // Returns true = still trapped, false = trap expired.
 
-  it.todo(
-    "given Wrap active for 2-5 turns, when trap expires, then target is freed and can act normally",
-  );
+    // Arrange
+    const trapped = makeActivePokemon();
+    trapped.volatileStatuses.set("bound", { turnsLeft: 3 });
+    const state = makeBattleState();
+
+    // Act — first tick
+    const stillTrapped = ruleset.processBoundTurn(trapped, state);
+
+    // Assert — still trapped after first decrement (3 → 2)
+    expect(stillTrapped).toBe(true);
+    expect(trapped.volatileStatuses.get("bound")?.turnsLeft).toBe(2);
+  });
+
+  it("given target has 'bound' volatile with turnsLeft=1, when processBoundTurn is called, then returns false (trap expires) and counter reaches 0", () => {
+    // Source: pret/pokered engine/battle/core.asm — when the trap counter reaches 0
+    // the Pokemon is freed and can act normally next turn.
+    // processBoundTurn() returns false when turnsLeft drops to 0, signalling expiry.
+    //
+    // The 'bound' volatile deletion itself is handled by the engine (canExecuteMove)
+    // when it detects turnsLeft <= 0. The ruleset just decrements and returns the flag.
+
+    // Arrange — last turn of trapping
+    const trapped = makeActivePokemon();
+    trapped.volatileStatuses.set("bound", { turnsLeft: 1 });
+    const state = makeBattleState();
+
+    // Act — final tick
+    const stillTrapped = ruleset.processBoundTurn(trapped, state);
+
+    // Assert — trap has expired (counter hit 0)
+    expect(stillTrapped).toBe(false);
+    expect(trapped.volatileStatuses.get("bound")?.turnsLeft).toBe(0);
+  });
 });
 
 // ============================================================================
