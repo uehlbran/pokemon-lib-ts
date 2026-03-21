@@ -17,6 +17,7 @@ import type {
   AbilityContext,
   AbilityResult,
   AccuracyContext,
+  BagItemResult,
   BattleGimmick,
   CritContext,
   DamageContext,
@@ -368,6 +369,145 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   applyHeldItem(_trigger: string, _context: ItemContext): ItemResult {
     return { activated: false, effects: [], messages: [] };
+  }
+
+  canUseBagItems(): boolean {
+    return true;
+  }
+
+  /**
+   * Apply a bag item (Potion, Antidote, X Attack, Revive, etc.) to a target Pokemon.
+   *
+   * Bag items are generation-invariant in their effects — a Super Potion always heals 50 HP,
+   * an X Attack always boosts Attack by +2. Poke Ball mechanics are deferred to per-gen rulesets.
+   *
+   * Source: Bulbapedia "Potion" / "X Attack" etc. — item effects are consistent across all gens.
+   */
+  applyBagItem(itemId: string, target: ActivePokemon, _state: BattleState): BagItemResult {
+    const pokemon = target.pokemon;
+    const messages: string[] = [];
+    const name = pokemon.nickname ?? `species#${pokemon.speciesId}`;
+
+    // Normalize item ID: strip hyphens and lowercase for matching
+    // This handles alternate IDs like "full-restore" → "fullrestore", "parlyz-heal" → "parlyzheal"
+    const normalizedId = itemId.replace(/-/g, "").toLowerCase();
+
+    // ─── Healing items ────────────────────────────────────────────────────────
+    const healAmounts: Record<string, number | "full"> = {
+      potion: 20,
+      superpotion: 50,
+      hyperpotion: 120,
+      maxpotion: "full",
+      fullrestore: "full",
+    };
+
+    const healVal = healAmounts[normalizedId];
+    if (healVal !== undefined) {
+      const maxHp = pokemon.calculatedStats?.hp ?? pokemon.currentHp;
+      const currentHp = pokemon.currentHp;
+
+      // Cannot use healing items on fainted Pokemon (use Revive instead)
+      if (currentHp <= 0) {
+        messages.push("It won't have any effect.");
+        return { activated: false, messages };
+      }
+
+      const healAmount =
+        healVal === "full" ? maxHp - currentHp : Math.min(healVal as number, maxHp - currentHp);
+
+      if (healAmount <= 0) {
+        messages.push(`${name}'s HP is already full!`);
+        return { activated: false, messages };
+      }
+
+      messages.push(`${name} recovered ${healAmount} HP!`);
+
+      // Full Restore also cures status
+      if (normalizedId === "fullrestore" && pokemon.status) {
+        const curedStatus = pokemon.status;
+        messages.push(`${name}'s ${curedStatus} was cured!`);
+        return { activated: true, healAmount, statusCured: curedStatus, messages };
+      }
+
+      return { activated: true, healAmount, messages };
+    }
+
+    // ─── Status cure items ────────────────────────────────────────────────────
+    const statusCures: Record<string, PrimaryStatus | "any"> = {
+      antidote: "poison",
+      burnheal: "burn",
+      iceheal: "freeze",
+      awakening: "sleep",
+      paralyzeheal: "paralysis",
+      parlyzheal: "paralysis",
+      fullheal: "any",
+    };
+
+    const cureTarget = statusCures[normalizedId];
+    if (cureTarget !== undefined) {
+      if (!pokemon.status) {
+        messages.push("It won't have any effect.");
+        return { activated: false, messages };
+      }
+
+      // Check if the item cures this specific status
+      const cures =
+        cureTarget === "any" ||
+        pokemon.status === cureTarget ||
+        // Antidote cures both poison and badly-poisoned
+        (cureTarget === "poison" && pokemon.status === "badly-poisoned");
+
+      if (!cures) {
+        messages.push("It won't have any effect.");
+        return { activated: false, messages };
+      }
+
+      messages.push(`${name}'s ${pokemon.status} was cured!`);
+      return { activated: true, statusCured: pokemon.status, messages };
+    }
+
+    // ─── Revive items ─────────────────────────────────────────────────────────
+    if (normalizedId === "revive" || normalizedId === "maxrevive") {
+      if (pokemon.currentHp > 0) {
+        messages.push("It won't have any effect.");
+        return { activated: false, messages };
+      }
+
+      const maxHp = pokemon.calculatedStats?.hp ?? 1;
+      const reviveHp = normalizedId === "maxrevive" ? maxHp : Math.floor(maxHp / 2);
+      messages.push(`${name} was revived!`);
+      return { activated: true, revived: true, healAmount: reviveHp, messages };
+    }
+
+    // ─── Stat boost items (X items: +2 stages, capped at +6) ─────────────────
+    // Source: Bulbapedia "X Attack" etc. — Gen 7+ X items raise stat by 2 stages
+    const statBoosts: Record<string, import("@pokemon-lib-ts/core").BattleStat> = {
+      xattack: "attack",
+      xdefense: "defense",
+      xdefend: "defense",
+      xspatk: "spAttack",
+      xspecial: "spAttack",
+      xspdef: "spDefense",
+      xspeed: "speed",
+      xaccuracy: "accuracy",
+    };
+
+    const boostStat = statBoosts[normalizedId];
+    if (boostStat !== undefined) {
+      const currentStage = target.statStages[boostStat] ?? 0;
+
+      if (currentStage >= 6) {
+        messages.push(`${name}'s ${boostStat} won't go higher!`);
+        return { activated: false, messages };
+      }
+
+      messages.push(`${name}'s ${boostStat} rose sharply!`);
+      return { activated: true, statChange: { stat: boostStat, stages: 2 }, messages };
+    }
+
+    // ─── Unknown item ─────────────────────────────────────────────────────────
+    messages.push("It had no effect.");
+    return { activated: false, messages };
   }
 
   hasWeather(): boolean {

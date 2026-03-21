@@ -623,3 +623,25 @@ export interface EntryHazardResult {
   /** Hazard IDs to clear from the side (e.g., Poison-type absorbing Toxic Spikes) */
   readonly hazardsToRemove?: readonly EntryHazardType[];
 }
+
+/**
+ * Result of applying a bag item (Potion, Antidote, X Attack, etc.) to a Pokemon.
+ * Returned by `GenerationRuleset.applyBagItem()`.
+ *
+ * The engine reads these fields and applies each effect to the battle state,
+ * emitting the appropriate BattleEvents. All optional fields mean "no effect of this type".
+ */
+export interface BagItemResult {
+  /** `true` if the item activated and produced an effect */
+  readonly activated: boolean;
+  /** HP to restore (for healing items and revives) */
+  readonly healAmount?: number;
+  /** Primary status that was cured */
+  readonly statusCured?: PrimaryStatus;
+  /** Stat stage change to apply (for X items) */
+  readonly statChange?: { readonly stat: BattleStat; readonly stages: number };
+  /** `true` if the pokemon was revived from faint */
+  readonly revived?: boolean;
+  /** Freeform messages to emit as `MessageEvent`s */
+  readonly messages: readonly string[];
+}

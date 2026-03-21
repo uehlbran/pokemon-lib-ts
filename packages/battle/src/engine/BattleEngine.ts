@@ -6,6 +6,7 @@ import type {
   BattleEvent,
   BattleEventEmitter,
   BattleEventListener,
+  ItemAction,
   MoveAction,
 } from "../events";
 import type { GenerationRuleset } from "../ruleset";
@@ -729,11 +730,7 @@ export class BattleEngine implements BattleEventEmitter {
           this.executeSwitch(action);
           break;
         case "item":
-          // Items not fully implemented yet
-          this.emit({
-            type: "message",
-            text: `Side ${action.side} used an item`,
-          });
+          this.executeItem(action);
           break;
         case "run":
           this.emit({
@@ -1190,6 +1187,146 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Send in new pokemon
     this.sendOut(side, action.switchTo);
+  }
+
+  /**
+   * Execute a bag item action (Potion, Antidote, X Attack, Revive, etc.).
+   *
+   * The engine delegates item effect calculation to the ruleset via `applyBagItem()`,
+   * then applies the result to the battle state and emits appropriate events.
+   *
+   * Items always target a Pokemon on the user's own side. The `target` field on
+   * ItemAction indicates the team slot index (defaults to 0 = active Pokemon).
+   */
+  private executeItem(action: ItemAction): void {
+    if (!this.ruleset.canUseBagItems()) {
+      this.emit({ type: "message", text: "Items cannot be used here!" });
+      return;
+    }
+
+    const side = this.state.sides[action.side];
+    // Determine target pokemon — default to active slot 0
+    const targetSlot = action.target ?? 0;
+
+    // Resolve the target ActivePokemon. For active Pokemon, use the active slot directly.
+    // For bench Pokemon (e.g., Revive on a fainted team member), create a temporary wrapper.
+    const target = this.resolveItemTarget(side, targetSlot);
+    if (!target) {
+      this.emit({ type: "message", text: "Invalid target for item." });
+      return;
+    }
+
+    this.emit({
+      type: "message",
+      text: `Side ${action.side} used ${action.itemId}!`,
+    });
+
+    const result = this.ruleset.applyBagItem(action.itemId, target, this.state);
+
+    // If the item had no effect, emit messages and return
+    if (!result.activated) {
+      for (const msg of result.messages) {
+        this.emit({ type: "message", text: msg });
+      }
+      return;
+    }
+
+    // Apply heal
+    if (result.healAmount !== undefined && result.healAmount > 0) {
+      const maxHp = target.pokemon.calculatedStats?.hp ?? target.pokemon.currentHp;
+      if (result.revived) {
+        // Revive: set HP directly (pokemon was at 0)
+        target.pokemon.currentHp = result.healAmount;
+      } else {
+        target.pokemon.currentHp = Math.min(maxHp, target.pokemon.currentHp + result.healAmount);
+      }
+      this.emit({
+        type: "heal",
+        side: action.side,
+        pokemon: getPokemonName(target),
+        amount: result.healAmount,
+        currentHp: target.pokemon.currentHp,
+        maxHp,
+        source: action.itemId,
+      });
+    }
+
+    // Apply status cure
+    if (result.statusCured) {
+      target.pokemon.status = null;
+      this.emit({
+        type: "status-cure",
+        side: action.side,
+        pokemon: getPokemonName(target),
+        status: result.statusCured,
+      });
+    }
+
+    // Apply stat change
+    if (result.statChange) {
+      const { stat, stages } = result.statChange;
+      const current = target.statStages[stat] ?? 0;
+      const newStage = Math.min(6, current + stages);
+      target.statStages[stat] = newStage;
+      this.emit({
+        type: "stat-change",
+        side: action.side,
+        pokemon: getPokemonName(target),
+        stat,
+        stages,
+        currentStage: newStage,
+      });
+    }
+
+    // Emit result messages
+    for (const msg of result.messages) {
+      this.emit({ type: "message", text: msg });
+    }
+  }
+
+  /**
+   * Resolve the target ActivePokemon for an item action.
+   * Returns the active slot if targeting the current active Pokemon,
+   * or creates a temporary ActivePokemon wrapper for bench targets (e.g., Revive).
+   */
+  private resolveItemTarget(side: BattleSide, targetSlot: number): ActivePokemon | null {
+    // Check if targeting the active Pokemon
+    const active = side.active[0];
+    if (active && active.teamSlot === targetSlot) {
+      return active;
+    }
+
+    // Otherwise, target a bench Pokemon (e.g., Revive on a fainted team member)
+    const benchPokemon = side.team[targetSlot];
+    if (!benchPokemon) {
+      return null;
+    }
+
+    // Create a minimal ActivePokemon wrapper so the ruleset can inspect it
+    return {
+      pokemon: benchPokemon,
+      teamSlot: targetSlot,
+      statStages: createDefaultStatStages(),
+      volatileStatuses: new Map(),
+      types: [],
+      ability: benchPokemon.ability,
+      lastMoveUsed: null,
+      lastDamageTaken: 0,
+      lastDamageType: null,
+      lastDamageCategory: null,
+      turnsOnField: 0,
+      movedThisTurn: false,
+      consecutiveProtects: 0,
+      substituteHp: 0,
+      transformed: false,
+      transformedSpecies: null,
+      isMega: false,
+      isDynamaxed: false,
+      dynamaxTurnsLeft: 0,
+      teraType: null,
+      isTerastallized: false,
+      forcedMove: null,
+    };
   }
 
   private executeStruggle(action: import("../events").StruggleAction, actor: ActivePokemon): void {

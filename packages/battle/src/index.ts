@@ -11,6 +11,7 @@ export type {
   AbilityResult,
   AccuracyContext,
   AvailableMove,
+  BagItemResult,
   BattleConfig,
   BattleGimmick,
   CritContext,
@@ -89,6 +90,7 @@ export type {
 // Ruleset
 export type {
   AbilitySystem,
+  BagItemSystem,
   CriticalHitSystem,
   DamageSystem,
   EndOfTurnSystem,

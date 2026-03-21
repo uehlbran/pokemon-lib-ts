@@ -3,6 +3,7 @@ import type {
   AbilityResult,
   AccuracyContext,
   ActivePokemon,
+  BagItemResult,
   BattleAction,
   BattleGimmick,
   BattleSide,
@@ -957,6 +958,17 @@ export class Gen1Ruleset implements GenerationRuleset {
       effects: [],
       messages: [],
     };
+  }
+
+  canUseBagItems(): boolean {
+    return true;
+  }
+
+  applyBagItem(_itemId: string, _target: ActivePokemon, _state: BattleState): BagItemResult {
+    // Gen 1 bag items are deferred — return no effect for now.
+    // Standard bag items (Potions, status cures) will be implemented
+    // when Gen 1 single-player battles are added.
+    return { activated: false, messages: ["It had no effect."] };
   }
 
   // --- Weather (not in Gen 1) ---

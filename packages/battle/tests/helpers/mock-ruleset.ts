@@ -15,6 +15,7 @@ import type {
   AbilityContext,
   AbilityResult,
   AccuracyContext,
+  BagItemResult,
   BattleGimmick,
   CritContext,
   DamageContext,
@@ -246,6 +247,30 @@ export class MockRuleset implements GenerationRuleset {
 
   applyHeldItem(_trigger: string, _context: ItemContext): ItemResult {
     return { activated: false, effects: [], messages: [] };
+  }
+
+  private nextBagItemResult: BagItemResult | null = null;
+  private bagItemsAllowed = true;
+
+  setNextBagItemResult(result: BagItemResult): void {
+    this.nextBagItemResult = result;
+  }
+
+  setBagItemsAllowed(allowed: boolean): void {
+    this.bagItemsAllowed = allowed;
+  }
+
+  canUseBagItems(): boolean {
+    return this.bagItemsAllowed;
+  }
+
+  applyBagItem(_itemId: string, _target: ActivePokemon, _state: BattleState): BagItemResult {
+    if (this.nextBagItemResult) {
+      const result = this.nextBagItemResult;
+      this.nextBagItemResult = null;
+      return result;
+    }
+    return { activated: false, messages: ["It had no effect."] };
   }
 
   hasWeather(): boolean {
