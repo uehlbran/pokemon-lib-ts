@@ -1672,6 +1672,8 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.statChange) {
       const { stat, stages } = result.statChange;
       const current = target.statStages[stat] ?? 0;
+      // Source: All generations — stat stages are universally clamped to [-6, +6] range
+      // (Bulbapedia: "Stat stages" — the range [-6, +6] is consistent across all mainline games)
       const newStage = Math.max(-6, Math.min(6, current + stages));
       target.statStages[stat] = newStage;
       this.emit({
