@@ -1,5 +1,6 @@
 ---
 "@pokemon-lib-ts/gen4": patch
+"@pokemon-lib-ts/gen3": patch
 "@pokemon-lib-ts/battle": minor
 ---
 
