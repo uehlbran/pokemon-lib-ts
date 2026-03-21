@@ -47,7 +47,8 @@ const HAIL_IMMUNE_ABILITIES: readonly string[] = [
   "magic-guard",
   "overcoat",
   "ice-body",
-  "snow-cloak",
+  // snow-cloak is NOT immune to hail chip — it only grants evasion boost
+  // Source: references/pokemon-showdown/data/abilities.ts -- snowcloak.onImmunity returns false for hail
 ];
 
 /**
@@ -68,7 +69,7 @@ const HAIL_IMMUNE_ABILITIES: readonly string[] = [
  */
 export function isGen5WeatherImmune(
   types: readonly string[],
-  weather: string,
+  weather: WeatherType,
   ability?: string,
 ): boolean {
   // Rain and Sun have no chip damage -- immunity concept does not apply

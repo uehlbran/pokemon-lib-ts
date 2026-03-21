@@ -63,9 +63,10 @@ describe("Gen5 Protect consecutive success", () => {
     }
   });
 
-  it("given 1 consecutive Protect, when rollProtectSuccess called, then has approximately 1/4 success chance", () => {
-    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts
-    // counter starts at 2, doubles on restart: 2^(1+1) = 4, chance = 1/4
+  it("given 1 consecutive Protect, when rollProtectSuccess called, then has approximately 1/2 success chance", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- stall condition
+    //   onStart sets counter=2 after first successful use
+    //   At N=1, onStallMove checks counter=2 → randomChance(1, 2) = 1/2
     const rng = new SeededRandom(42);
     let successCount = 0;
     const iterations = 2000;
@@ -73,13 +74,14 @@ describe("Gen5 Protect consecutive success", () => {
       if (ruleset.rollProtectSuccess(1, rng)) successCount++;
     }
     const ratio = successCount / iterations;
-    // Expected: 1/4 = 0.25, with tolerance
-    expect(ratio).toBeGreaterThan(0.18);
-    expect(ratio).toBeLessThan(0.32);
+    // Expected: 1/2 = 0.5, with tolerance
+    expect(ratio).toBeGreaterThan(0.43);
+    expect(ratio).toBeLessThan(0.57);
   });
 
-  it("given 2 consecutive Protects, when rollProtectSuccess called, then has approximately 1/8 success chance", () => {
-    // Source: counter = 2^(2+1) = 8, chance = 1/8
+  it("given 2 consecutive Protects, when rollProtectSuccess called, then has approximately 1/4 success chance", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts
+    //   At N=2, onRestart doubled counter to 4 → chance = 1/4
     const rng = new SeededRandom(42);
     let successCount = 0;
     const iterations = 4000;
@@ -87,27 +89,42 @@ describe("Gen5 Protect consecutive success", () => {
       if (ruleset.rollProtectSuccess(2, rng)) successCount++;
     }
     const ratio = successCount / iterations;
-    // Expected: 1/8 = 0.125, with tolerance
-    expect(ratio).toBeGreaterThan(0.08);
-    expect(ratio).toBeLessThan(0.18);
+    // Expected: 1/4 = 0.25, with tolerance
+    expect(ratio).toBeGreaterThan(0.18);
+    expect(ratio).toBeLessThan(0.32);
   });
 
-  it("given 7 consecutive Protects, when rollProtectSuccess called, then has approximately 1/256 success chance (capped)", () => {
-    // Source: counter capped at 256 = 2^8, but 2^(7+1) = 256, so chance = 1/256
+  it("given 7 consecutive Protects, when rollProtectSuccess called, then has approximately 1/128 success chance", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts
+    //   At N=7, counter = 2^7 = 128 (still below cap of 256) → chance = 1/128 ≈ 0.0078
     const rng = new SeededRandom(42);
     let successCount = 0;
-    const iterations = 10000;
+    const iterations = 15000;
     for (let i = 0; i < iterations; i++) {
       if (ruleset.rollProtectSuccess(7, rng)) successCount++;
     }
     const ratio = successCount / iterations;
+    // Expected: 1/128 ~ 0.0078
+    expect(ratio).toBeGreaterThan(0.003);
+    expect(ratio).toBeLessThan(0.016);
+  });
+
+  it("given 8 consecutive Protects, when rollProtectSuccess called, then has approximately 1/256 success chance (cap hit)", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- counterMax: 256
+    //   At N=8, counter = 2^8 = 256 = cap → chance = 1/256 ≈ 0.0039
+    const rng = new SeededRandom(42);
+    let successCount = 0;
+    const iterations = 10000;
+    for (let i = 0; i < iterations; i++) {
+      if (ruleset.rollProtectSuccess(8, rng)) successCount++;
+    }
+    const ratio = successCount / iterations;
     // Expected: 1/256 ~ 0.0039, with wide tolerance due to rarity
-    expect(ratio).toBeLessThan(0.02);
+    expect(ratio).toBeLessThan(0.012);
   });
 
   it("given 10 consecutive Protects, when rollProtectSuccess called, then still capped at 1/256", () => {
-    // Source: counterMax: 256 in Showdown conditions.ts
-    // 2^(10+1) = 2048, but capped at 256, so chance = 1/256
+    // Source: counterMax: 256 in Showdown conditions.ts -- 2^10=1024 > cap, so stays at 1/256
     const rng = new SeededRandom(42);
     let successCount = 0;
     const iterations = 10000;
@@ -115,8 +132,8 @@ describe("Gen5 Protect consecutive success", () => {
       if (ruleset.rollProtectSuccess(10, rng)) successCount++;
     }
     const ratio = successCount / iterations;
-    // Should be same as 7 consecutive (both capped at 1/256)
-    expect(ratio).toBeLessThan(0.02);
+    // Should be same as 8 consecutive (both capped at 1/256)
+    expect(ratio).toBeLessThan(0.012);
   });
 });
 

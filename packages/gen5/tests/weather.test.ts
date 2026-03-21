@@ -291,24 +291,46 @@ describe("Gen5 weather chip damage", () => {
   });
 });
 
-describe("Gen5 weather duration", () => {
-  it("given move-summoned rain, when weather starts, then has 5 turns remaining", () => {
-    // Source: Bulbapedia -- Rain Dance lasts 5 turns in Gen 5
-    const turnsRemaining = 5;
-    expect(turnsRemaining).toBe(5);
+describe("Gen5 weather duration — BattleState shape", () => {
+  // Weather duration values are stored in BattleState.weather.turnsLeft.
+  // Move-summoned: 5 turns. Damp/Heat/Icy/Smooth Rock: 8 turns. Ability-summoned: -1 (indefinite).
+  // These are set by the BattleEngine when the weather is started, not by Gen5Ruleset.
+  // Source: Bulbapedia -- Weather conditions page, Gen 5 section
+  // Source: Showdown gen5 -- Drizzle/Drought/Sandstream/Snowwarning set indefinite weather
+
+  it("given a BattleState with rain turnsLeft=5, when applyWeatherEffects called, then no chip damage (rain has none)", () => {
+    // Source: Bulbapedia -- Rain does not deal chip damage; confirms the state shape is valid
+    const ruleset = new Gen5Ruleset();
+    const state = makeState("rain", 5, [
+      makeSide(makeActivePokemon({ types: ["fire"] }), 0),
+      makeSide(makeActivePokemon({ types: ["water"] }), 1),
+    ]);
+    const results = ruleset.applyWeatherEffects(state);
+    // Rain never deals chip damage — 0 results regardless of turnsLeft
+    expect(results).toHaveLength(0);
   });
 
-  it("given rain summoned with Damp Rock, when weather starts, then has 8 turns remaining", () => {
-    // Source: Bulbapedia -- Damp Rock extends weather to 8 turns
-    const turnsRemaining = 8;
-    expect(turnsRemaining).toBe(8);
+  it("given a BattleState with sand turnsLeft=8 (Smooth Rock), when applyWeatherEffects called, then non-immune types take chip damage", () => {
+    // Source: Bulbapedia -- Smooth Rock extends sandstorm to 8 turns; chip still applies each turn
+    const ruleset = new Gen5Ruleset();
+    const state = makeState("sand", 8, [
+      makeSide(makeActivePokemon({ maxHp: 160, types: ["fire"] }), 0),
+      makeSide(makeActivePokemon({ types: ["rock"] }), 1),
+    ]);
+    const results = ruleset.applyWeatherEffects(state);
+    expect(results).toHaveLength(1); // only Fire takes chip; Rock is immune
+    expect(results[0].damage).toBe(10); // floor(160/16)=10
   });
 
-  it("given ability-summoned rain (Drizzle), when weather starts, then has -1 turns (indefinite)", () => {
-    // Source: Showdown gen5 -- Drizzle ability-summoned weather is indefinite. Gen 6+ nerfed to 5 turns.
-    // In our WeatherState, turnsLeft = -1 means indefinite
-    const turnsRemaining = -1;
-    expect(turnsRemaining).toBe(-1);
+  it("given a BattleState with sand turnsLeft=-1 (Sandstream, indefinite), when applyWeatherEffects called, then chip damage still applies", () => {
+    // Source: Showdown gen5 -- Sandstream sets indefinite weather (turnsLeft=-1 per our WeatherState shape)
+    const ruleset = new Gen5Ruleset();
+    const state = makeState("sand", -1, [
+      makeSide(makeActivePokemon({ maxHp: 160, types: ["fire"] }), 0),
+      makeSide(makeActivePokemon({ types: ["ground"] }), 1),
+    ]);
+    const results = ruleset.applyWeatherEffects(state);
+    expect(results).toHaveLength(1); // only Fire takes chip; Ground is immune
   });
 });
 
@@ -342,5 +364,19 @@ describe("Gen5 weather immunity type constants", () => {
     // Source: Bulbapedia -- only ice is immune to hail chip
     expect(HAIL_IMMUNE_TYPES).toContain("ice");
     expect(HAIL_IMMUNE_TYPES).toHaveLength(1);
+  });
+});
+
+describe("Gen5 Snow Cloak hail immunity", () => {
+  it("given a Pokemon with snow-cloak in hail, when isGen5WeatherImmune called, then returns false (no chip immunity)", () => {
+    // Source: references/pokemon-showdown/data/abilities.ts -- snowcloak.onImmunity returns false for hail
+    // Snow Cloak only grants evasion boost in hail; it does NOT prevent hail chip damage.
+    // Contrast with Ice Body which heals in hail (and thus is immune to chip).
+    expect(isGen5WeatherImmune(["normal"], "hail", "snow-cloak")).toBe(false);
+  });
+
+  it("given a Pokemon with ice-body in hail, when isGen5WeatherImmune called, then returns true (grants chip immunity)", () => {
+    // Source: Bulbapedia -- Ice Body: "the Pokémon is unaffected by hail"
+    expect(isGen5WeatherImmune(["normal"], "hail", "ice-body")).toBe(true);
   });
 });

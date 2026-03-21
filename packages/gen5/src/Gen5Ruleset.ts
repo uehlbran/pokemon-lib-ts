@@ -223,6 +223,11 @@ export class Gen5Ruleset extends BaseRuleset {
    *
    * Source: references/pokemon-showdown/data/mods/gen5/conditions.ts --
    *   slp.onSwitchIn: "this.effectState.time = this.effectState.startTime"
+   *
+   * NOTE: This method is NOT on the GenerationRuleset interface yet and is not called by
+   * BattleEngine. The sleep-counter-reset mechanic is unit-tested here but will only
+   * take effect in actual battles once onSwitchIn is added to GenerationRuleset and
+   * wired in the engine's switch handler. Tracked for Wave 9 engine integration.
    */
   onSwitchIn(pokemon: ActivePokemon, _state: BattleState): void {
     if (pokemon.pokemon.status === "sleep") {
@@ -495,9 +500,15 @@ export class Gen5Ruleset extends BaseRuleset {
    */
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
     if (consecutiveProtects === 0) return true;
-    // Denominator = 2^(N+1), capped at 256
-    // Source: Showdown Gen 5 conditions.ts -- counter starts at 2, doubles each time
-    const denominator = Math.min(256, 2 ** (consecutiveProtects + 1));
+    // Denominator = 2^N, capped at 256
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- stall condition
+    //   onStart: counter = 2 (set after FIRST successful use)
+    //   onStallMove: chance = 1/counter (checked at SECOND+ use)
+    //   onRestart: counter *= 2
+    //   So at N=1 (second consecutive), counter=2 → chance=1/2
+    //   At N=2 (third), counter=4 → chance=1/4, etc.
+    //   Cap: counterMax=256, so N≥8 gives 1/256
+    const denominator = Math.min(256, 2 ** consecutiveProtects);
     return rng.chance(1 / denominator);
   }
 
@@ -607,6 +618,13 @@ export class Gen5Ruleset extends BaseRuleset {
       "curse",
       "bad-dreams",
       "bind",
+      "yawn-countdown", // Yawn drowsy → sleep
+      "encore-countdown", // Encore timer
+      "taunt-countdown", // Taunt timer (3 turns in Gen 5)
+      "disable-countdown", // Disable timer
+      "heal-block-countdown", // Heal Block (5 turns)
+      "embargo-countdown", // Embargo (5 turns)
+      "magnet-rise-countdown", // Magnet Rise (5 turns)
       "perish-song",
       "screen-countdown",
       "safeguard-countdown",
@@ -614,8 +632,12 @@ export class Gen5Ruleset extends BaseRuleset {
       "trick-room-countdown",
       "gravity-countdown",
       "weather-countdown",
+      "toxic-orb-activation", // Toxic Orb — after weather countdown
+      "flame-orb-activation", // Flame Orb — after weather countdown
+      "slow-start-countdown", // Slow Start (5 turns)
       "speed-boost",
-      "moody",
+      "moody", // Moody (introduced Gen 5)
+      "healing-items", // Berry/item consumption
     ];
   }
 
