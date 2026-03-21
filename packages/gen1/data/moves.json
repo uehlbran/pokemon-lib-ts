@@ -1791,9 +1791,8 @@
       "bypassSubstitute": false
     },
     "effect": {
-      "type": "volatile-status",
-      "status": "disable",
-      "chance": 100
+      "type": "custom",
+      "handler": "disable"
     },
     "description": "For four turns, this move prevents the target from using the move it last used.",
     "generation": 1
@@ -5716,9 +5715,8 @@
       "bypassSubstitute": false
     },
     "effect": {
-      "type": "volatile-status",
-      "status": "substitute",
-      "chance": 100
+      "type": "custom",
+      "handler": "substitute"
     },
     "description": "The user makes a copy of itself using some of its HP. The copy serves as the user's decoy.",
     "generation": 1
