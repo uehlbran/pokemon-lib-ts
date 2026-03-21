@@ -485,11 +485,12 @@ export class Gen5Ruleset extends BaseRuleset {
   /**
    * Gen 5 Protect/Detect consecutive activation formula.
    *
-   * Success rate uses a doubling denominator: 2^(N+1), capped at 256.
+   * Success rate uses a doubling denominator: 2^N, capped at 256.
    *   consecutiveUses=0: always succeeds (100%)
-   *   consecutiveUses=1: 1/4 (denominator = 2^2 = 4)
-   *   consecutiveUses=2: 1/8 (denominator = 2^3 = 8)
-   *   consecutiveUses=7: 1/256 (denominator = 2^8 = 256) -- cap
+   *   consecutiveUses=1: 1/2 (denominator = 2^1 = 2) — stall counter starts at 2 on first use
+   *   consecutiveUses=2: 1/4 (denominator = 2^2 = 4) — doubled by onRestart
+   *   consecutiveUses=3: 1/8 (denominator = 2^3 = 8)
+   *   consecutiveUses=8: 1/256 (denominator = 2^8 = 256) -- cap
    *   consecutiveUses=10: still 1/256 (capped)
    *
    * This differs from Gen 4 which uses a halving formula capped at 1/8.

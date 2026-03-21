@@ -368,11 +368,14 @@ describe("Gen5 weather immunity type constants", () => {
 });
 
 describe("Gen5 Snow Cloak hail immunity", () => {
-  it("given a Pokemon with snow-cloak in hail, when isGen5WeatherImmune called, then returns false (no chip immunity)", () => {
-    // Source: references/pokemon-showdown/data/abilities.ts -- snowcloak.onImmunity returns false for hail
-    // Snow Cloak only grants evasion boost in hail; it does NOT prevent hail chip damage.
-    // Contrast with Ice Body which heals in hail (and thus is immune to chip).
-    expect(isGen5WeatherImmune(["normal"], "hail", "snow-cloak")).toBe(false);
+  it("given a Pokemon with snow-cloak in hail, when isGen5WeatherImmune called, then returns true (grants chip immunity)", () => {
+    // Source: references/pokemon-showdown/data/abilities.ts -- snowcloak.onImmunity
+    //   "if (type === 'hail') return false"
+    // In Showdown's event system, onImmunity returning false means the pokemon IS immune:
+    //   weather damage check: "!target.runStatusImmunity(effect.id)" → skips damage when false
+    //   runStatusImmunity calls runEvent('Immunity') → onImmunity returning false → immune
+    // Source: Bulbapedia -- Snow Cloak: "The Pokemon is immune to damage from hail."
+    expect(isGen5WeatherImmune(["normal"], "hail", "snow-cloak")).toBe(true);
   });
 
   it("given a Pokemon with ice-body in hail, when isGen5WeatherImmune called, then returns true (grants chip immunity)", () => {
