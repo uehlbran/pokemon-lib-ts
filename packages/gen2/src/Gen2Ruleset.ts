@@ -303,10 +303,13 @@ export class Gen2Ruleset implements GenerationRuleset {
 
     // Thunder has 50% accuracy in sun (Gen 2)
     // Source: pret/pokecrystal engine/battle/effect_commands.asm ThunderAccuracy
-    // In sun, Thunder's accuracy drops to ~50%.
-    // Note: This is handled by the accuracy formula below — in sun, we halve the base accuracy.
+    // The decomp checks for BATTLE_WEATHER_SUN and halves the accuracy byte.
+    // Thunder base accuracy = 70% → 178 on 0-255 scale → halved to 89.
     // Convert move accuracy from percentage to 0-255 scale
     let accuracy = Math.floor((move.accuracy * 255) / 100);
+    if (move.id === "thunder" && weather === "sun") {
+      accuracy = Math.max(1, Math.floor(accuracy / 2));
+    }
 
     // Apply accuracy/evasion stage modifiers using integer ratio table
     // Source: pret/pokecrystal data/battle/accuracy_multipliers.asm — AccuracyLevelMultipliers

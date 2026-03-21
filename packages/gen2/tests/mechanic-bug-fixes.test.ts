@@ -814,6 +814,36 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     expect(hitResult).toBe(false);
   });
 
+  it("given sun weather, when Thunder with 70% accuracy used and RNG=100, then it hits at halved accuracy", () => {
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm ThunderAccuracy
+    // In sun, Thunder's base accuracy is halved: floor(70 * 255 / 100) = 178 → floor(178/2) = 89
+    // RNG roll of 100 > 89 → miss; RNG roll of 50 < 89 → hit
+    const attacker = createMockActive();
+    const defender = createMockActive();
+    const move = createMove("thunder", {
+      type: "electric",
+      category: "special",
+      power: 120,
+      accuracy: 70,
+    });
+    const stateSun = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
+      type: "sun",
+      turnsLeft: 3,
+    });
+
+    // RNG=50 → 50 < 89 → hit (sun halved accuracy: 89)
+    const rngHit = createMockRng(50);
+    expect(ruleset.doesMoveHit({ attacker, defender, move, state: stateSun, rng: rngHit })).toBe(
+      true,
+    );
+
+    // RNG=100 → 100 > 89 → miss
+    const rngMiss = createMockRng(100);
+    expect(ruleset.doesMoveHit({ attacker, defender, move, state: stateSun, rng: rngMiss })).toBe(
+      false,
+    );
+  });
+
   it("given rain weather, when SolarBeam is used, then power is halved", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SolarBeamPower
     // SolarBeam power halved in rain: 120 / 2 = 60
