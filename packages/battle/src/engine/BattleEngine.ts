@@ -2819,6 +2819,17 @@ export class BattleEngine implements BattleEventEmitter {
               pokemon: getPokemonName(target),
               status: effect.status,
             });
+            // Initialize counters for statuses that require them — same ordering as processEffectResult
+            if (effect.status === "badly-poisoned") {
+              target.volatileStatuses.set("toxic-counter", { turnsLeft: -1, data: { counter: 1 } });
+            }
+            if (effect.status === "sleep") {
+              const sleepTurns = this.ruleset.rollSleepTurns(this.state.rng);
+              target.volatileStatuses.set("sleep-counter", { turnsLeft: sleepTurns, data: {} });
+            }
+            if (effect.status === "freeze") {
+              target.volatileStatuses.set("just-frozen", { turnsLeft: 1 });
+            }
           }
           break;
         }
