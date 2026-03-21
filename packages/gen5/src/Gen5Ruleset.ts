@@ -508,7 +508,9 @@ export class Gen5Ruleset extends BaseRuleset {
     //   onRestart: counter *= 2
     //   So at N=1 (second consecutive), counter=2 → chance=1/2
     //   At N=2 (third), counter=4 → chance=1/4, etc.
-    //   Cap: counterMax=256, so N≥8 gives 1/256
+    //   Cap: counterMax=256; when counter≥256 Showdown uses randomChance(1, 2^32) ≈ 0
+    //   We simplify the capped case to 1/256 — effectively zero for any practical scenario.
+    //   Intentional minor divergence from Showdown (1/256 vs 1/4294967296 when N≥8).
     const denominator = Math.min(256, 2 ** consecutiveProtects);
     return rng.chance(1 / denominator);
   }
