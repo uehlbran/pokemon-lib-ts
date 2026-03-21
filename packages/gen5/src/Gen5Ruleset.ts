@@ -205,9 +205,18 @@ export class Gen5Ruleset extends BaseRuleset {
    * Source: references/pokemon-showdown/sim/battle-actions.ts -- Gen < 7 burn damage
    */
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, state: BattleState): number {
+    // Magic Guard: prevents all indirect damage including status chip damage
+    // Source: Bulbapedia -- Magic Guard prevents damage from weather, poison, burn, etc.
+    if (pokemon.ability === "magic-guard") return 0;
+
     if (status === "burn") {
       // Gen 3-6: 1/8 max HP
       const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+      // Heatproof: halves burn damage (1/8 -> 1/16)
+      // Source: Bulbapedia -- Heatproof halves damage from Fire-type moves and burn
+      if (pokemon.ability === "heatproof") {
+        return Math.max(1, Math.floor(maxHp / 16));
+      }
       return Math.max(1, Math.floor(maxHp / 8));
     }
     // Poison, Badly Poisoned: same as BaseRuleset default
@@ -296,8 +305,9 @@ export class Gen5Ruleset extends BaseRuleset {
    * Gen 5 effective speed calculation.
    *
    * Applies (in order):
+   *   - Simple ability: doubles stat stage effects (clamped to [-6, 6])
    *   - Stat stages
-   *   - Choice Scarf: 1.5x Speed
+   *   - Choice Scarf: 1.5x Speed (suppressed by Klutz)
    *   - Chlorophyll: 2x Speed in sun
    *   - Swift Swim: 2x Speed in rain
    *   - Sand Rush: 2x Speed in sandstorm
@@ -305,7 +315,7 @@ export class Gen5Ruleset extends BaseRuleset {
    *   - Unburden: 2x Speed when held item consumed
    *   - Quick Feet: 1.5x Speed when statused (OVERRIDES paralysis penalty)
    *   - Paralysis: 0.25x (Gen 3-6; Gen 7+ uses 0.5x) -- skipped if Quick Feet
-   *   - Iron Ball: 0.5x Speed
+   *   - Iron Ball: 0.5x Speed (suppressed by Klutz)
    *
    * Source: Showdown sim/pokemon.ts -- Gen 5 speed modifiers
    * Source: Bulbapedia -- individual ability/item pages
@@ -314,12 +324,20 @@ export class Gen5Ruleset extends BaseRuleset {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
 
-    // Apply stat stages
-    let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+    // Simple: doubles all stat stage effects (Gen 5)
+    // Source: Bulbapedia -- Simple doubles stat stage effects
+    const speedStage =
+      active.ability === "simple"
+        ? Math.max(-6, Math.min(6, active.statStages.speed * 2))
+        : active.statStages.speed;
 
-    // Choice Scarf: 1.5x Speed
+    // Apply stat stages
+    let effective = Math.floor(baseSpeed * getStatStageMultiplier(speedStage));
+
+    // Choice Scarf: 1.5x Speed (suppressed by Klutz)
     // Source: Bulbapedia -- Choice Scarf raises Speed by 50%
-    if (active.pokemon.heldItem === "choice-scarf") {
+    // Source: Bulbapedia -- Klutz prevents holder's items from taking effect
+    if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz") {
       effective = Math.floor(effective * 1.5);
     }
 
@@ -370,9 +388,10 @@ export class Gen5Ruleset extends BaseRuleset {
       effective = Math.floor(effective * 0.25);
     }
 
-    // Iron Ball: halve Speed
+    // Iron Ball: halve Speed (suppressed by Klutz)
     // Source: Bulbapedia -- Iron Ball: "Cuts the Speed stat of the holder to half."
-    if (active.pokemon.heldItem === "iron-ball") {
+    // Source: Bulbapedia -- Klutz prevents holder's items from taking effect
+    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz") {
       effective = Math.floor(effective * 0.5);
     }
 
