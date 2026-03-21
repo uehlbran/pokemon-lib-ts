@@ -59,42 +59,50 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
 /**
  * Check if a move has secondary effects that Sheer Force would suppress.
  *
- * Sheer Force removes "secondary effects" -- status chances, stat-change chances,
- * flinch chances, volatile status chances. It does NOT remove primary effects like
- * recoil, drain, or fixed stat changes with 100% chance that are part of the move's
- * primary effect.
+ * Sheer Force suppresses any effect in Showdown's `move.secondary`/`move.secondaries`
+ * field, regardless of chance value. This includes guaranteed (chance=100) secondary
+ * effects like Acid Spray's SpDef drop, Fake Out's flinch, and Dynamic Punch's confusion.
  *
- * In Showdown, Sheer Force checks `move.secondaries` -- which is populated for moves
- * with secondary (chance-based) effects. If a move has `secondaries`, Sheer Force
- * activates.
+ * Key distinction: Showdown uses two separate fields for self-effects:
+ *   - `secondary: { self: { boosts } }` — part of the secondary; SUPPRESSED by Sheer Force
+ *     (e.g., Flame Charge Speed boost)
+ *   - `self: { boosts }` with `secondary: null` — primary self-effect; NOT suppressed
+ *     (e.g., Close Combat, Draco Meteor, Superpower, Hammer Arm)
  *
- * For our data model, we check the move.effect for chance-based secondaries:
- *   - status-chance (e.g., Flamethrower 10% burn)
- *   - stat-change with chance < 100 and target "foe" (e.g., Psychic 10% SpDef drop)
- *   - volatile-status with chance < 100 (e.g., Air Slash 30% flinch)
- *   - multi effects containing any of the above
+ * Source: Showdown data/abilities.ts -- sheerforce:
+ *   if (move.secondaries) { delete move.secondaries; delete move.self; ... }
+ * Source: Showdown data/moves.ts -- secondary vs self field placement
  *
- * Source: Showdown data/abilities.ts -- Sheer Force onModifyMove checks move.secondaries
+ * Note on data model limitation: our `stat-change` with `target: "self"` cannot
+ * distinguish Flame Charge (secondary.self → eligible) from Close Combat (self → not eligible).
+ * Self-targeted stat-changes are conservatively excluded — incorrect only for Flame Charge.
+ * See GitHub issue for data model fix tracking this.
  */
 export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
   if (!effect) return false;
 
   switch (effect.type) {
     case "status-chance":
-      // Any chance-based status infliction counts
+      // Any chance-based status infliction counts (e.g., Flamethrower 10% burn)
       return true;
 
     case "stat-change":
-      // Stat changes targeting the foe with chance < 100 count as secondaries.
-      // Self stat changes (like Close Combat lowering own stats) do NOT count.
-      // 100% foe stat drops that are the move's PRIMARY effect (e.g., Charm)
-      // also don't count, but those are status-category moves that don't deal damage.
-      // Source: Showdown -- Sheer Force only applies to damaging moves with secondaries
-      return effect.target === "foe" && effect.chance < 100;
+      // Foe-targeted stat changes in Showdown's `secondary` field are eligible,
+      // regardless of chance value. This fixes guaranteed 100% foe-drops like:
+      //   - Acid Spray (SpDef -2, chance 100)
+      //   - Bulldoze (Speed -1, chance 100)
+      //   - Electroweb, Icy Wind, Mud Shot, Rock Tomb (Speed -1, chance 100)
+      // Self-targeted stat changes are excluded — see data model limitation above.
+      // Source: Showdown data/moves.ts — acidspray, bulldoze use `secondary` field
+      return effect.target === "foe" && effect.chance > 0;
 
     case "volatile-status":
-      // Flinch, confusion, etc. with a chance
-      return effect.chance < 100;
+      // Volatile-status secondaries include guaranteed (chance=100) effects:
+      //   - Fake Out (flinch, chance 100)
+      //   - Dynamic Punch (confusion, chance 100)
+      //   - Air Slash (flinch, chance 30)
+      // Source: Showdown data/moves.ts — fakeout, dynamicpunch use `secondary` field
+      return effect.chance > 0;
 
     case "multi":
       // Recursively check sub-effects
@@ -456,11 +464,25 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
  * - Sturdy (Gen 5+): Blocks OHKO moves AND survives any hit from full HP at 1 HP
  *
  * For Sturdy, there are two distinct effects:
- * 1. OHKO move immunity: checked via move.effect.type === "ohko"
+ * 1. OHKO move immunity: checked via move.effect.type === "ohko" — WORKS correctly
+ *    (handled via "on-damage-calc" trigger before damage is applied)
  * 2. Focus Sash effect: at full HP, any damage that would KO is reduced to leave 1 HP
+ *    — STUB: cannot be activated via "on-damage-taken" due to engine timing.
  *
- * The "on-damage-taken" trigger is fired by the engine after damage is calculated
- * but before it is applied to HP. ctx.damage contains the calculated damage.
+ * Engine timing limitation for Effect 2:
+ * BattleEngine applies damage to HP (setting currentHp = 0 on lethal hits) BEFORE
+ * firing the "on-damage-taken" ability hook. The hook is also gated on `currentHp > 0`,
+ * so it never fires when the hit is lethal. Even if it fired, `processAbilityResult`
+ * does not handle `damage-reduction` effects post-hoc (by design — per the engine
+ * architecture, damage reduction is applied inline in the damage calc pipeline).
+ *
+ * The correct fix requires one of:
+ *   a) A new pre-damage engine hook ("on-lethal-damage") fired before HP subtraction
+ *   b) An `AbilityEffect` type of `survive`/`set-hp` that the engine processes
+ *      to override the HP result
+ *   c) Inline handling in `calculateDamage` to cap damage at maxHp-1 when Sturdy
+ *      is active and defender is at full HP
+ * See GitHub issue tracking the engine pre-damage hook.
  *
  * Source: Showdown data/abilities.ts -- sturdy
  *   onTryHit: if move.ohko, return null (blocks OHKO)
@@ -485,22 +507,17 @@ export function handleGen5DamageImmunityAbility(ctx: AbilityContext): AbilityRes
         };
       }
 
-      // Effect 2: Survive at 1 HP from full HP (Focus Sash effect)
+      // Effect 2: Survive at 1 HP from full HP (Focus Sash effect) — STUB
       // Source: Showdown data/abilities.ts -- sturdy onDamage (priority -30)
       //   if (target.hp === target.maxhp && damage >= target.hp && effect.effectType === 'Move')
       //     return target.hp - 1
-      const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
-      const currentHp = ctx.pokemon.pokemon.currentHp;
-      const damage = ctx.damage ?? 0;
-
-      if (currentHp >= maxHp && damage >= currentHp) {
-        return {
-          activated: true,
-          effects: [{ effectType: "damage-reduction", target: "self" }],
-          messages: [`${name} hung on thanks to Sturdy!`],
-        };
-      }
-
+      //
+      // ARCHITECTURAL LIMITATION: This handler cannot be correctly triggered via
+      // "on-damage-taken" because the engine applies damage (sets currentHp=0) BEFORE
+      // firing this hook, and gates the hook on `currentHp > 0`. Even if the hook fired,
+      // `processAbilityResult` intentionally does not handle `damage-reduction` post-hoc.
+      // Requires a pre-damage engine hook to implement. See class JSDoc above and the
+      // tracking GitHub issue for the engine pre-damage hook.
       return NO_ACTIVATION;
     }
 
