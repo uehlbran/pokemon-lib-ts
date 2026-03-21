@@ -406,10 +406,21 @@ function getDefenseStat(
 
   // Flower Gift: 1.5x SpDef in Harsh Sunlight (for the defender with the ability)
   // In singles, only the Pokemon with Flower Gift gets the boost.
+  // Mold Breaker (and Teravolt/Turboblaze) ignore the defender's ability, so no boost applies.
   // Source: Bulbapedia — Flower Gift: "During harsh sunlight, the Attack and Special Defense
   //   stats of the Pokemon with this Ability and its allies are boosted by 50%."
+  // Source: Bulbapedia — Mold Breaker: ignores ability effects on the opposing Pokemon
   // Source: Showdown data/abilities.ts — Flower Gift onAllyModifySpDPriority
-  if (!isPhysical && weather === "sun" && defender.ability === "flower-gift") {
+  const flowerGiftMoldBreaker =
+    attacker?.ability === "mold-breaker" ||
+    attacker?.ability === "teravolt" ||
+    attacker?.ability === "turboblaze";
+  if (
+    !isPhysical &&
+    !flowerGiftMoldBreaker &&
+    weather === "sun" &&
+    defender.ability === "flower-gift"
+  ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 

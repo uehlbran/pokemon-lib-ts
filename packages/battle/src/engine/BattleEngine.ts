@@ -2843,13 +2843,13 @@ export class BattleEngine implements BattleEventEmitter {
           if (!target.volatileStatuses.has(effect.volatile)) {
             // Use turnsLeft from effect data if provided (e.g., Slow Start sets turnsLeft: 5),
             // otherwise default to -1 (permanent until explicitly removed).
-            const turnsLeft =
-              effect.data?.turnsLeft !== undefined && typeof effect.data.turnsLeft === "number"
-                ? effect.data.turnsLeft
-                : -1;
+            // Strip turnsLeft from the data payload to avoid storing it in two places —
+            // the top-level counter is the single source of truth for the EoT decrement.
+            const { turnsLeft: explicitTurnsLeft, ...volatileData } = effect.data ?? {};
+            const turnsLeft = typeof explicitTurnsLeft === "number" ? explicitTurnsLeft : -1;
             target.volatileStatuses.set(effect.volatile, {
               turnsLeft,
-              ...(effect.data ? { data: effect.data } : {}),
+              ...(Object.keys(volatileData).length > 0 ? { data: volatileData } : {}),
             });
             this.emit({
               type: "volatile-start",
