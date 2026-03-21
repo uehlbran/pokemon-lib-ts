@@ -677,6 +677,33 @@ export class Gen3Ruleset extends BaseRuleset {
     }
   }
 
+  // --- Protect Success Rate ---
+
+  /**
+   * Gen 3 Protect/Detect consecutive activation formula.
+   *
+   * Success rate halves each consecutive use, capped at 12.5% (1/8):
+   *   consecutiveUses=0: always succeeds (100%)
+   *   consecutiveUses=1: 50% (0x7FFF / 0xFFFF)
+   *   consecutiveUses=2: 25% (0x3FFF / 0xFFFF)
+   *   consecutiveUses=3+: 12.5% (0x1FFF / 0xFFFF) — CAPS HERE
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate
+   *   has exactly 4 entries (0xFFFF, 0x7FFF, 0x3FFF, 0x1FFF). Counter caps at
+   *   index 3. Minimum is 12.5%, NOT zero.
+   *   Same halving table as Gen 4 (pret/pokeplatinum battle_script.c:5351-5356).
+   *
+   * BaseRuleset defaults to Gen 5+ behavior (1/3^N) which is incorrect for Gen 3.
+   */
+  override rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
+    if (consecutiveProtects === 0) return true;
+    // Cap at 3 consecutive uses (index 3 = 12.5%)
+    // Source: pret/pokeemerald — sProtectSuccessRate has 4 entries, counter caps at 3
+    const capped = Math.min(consecutiveProtects, 3);
+    const denominator = 2 ** capped; // 2, 4, 8
+    return rng.chance(1 / denominator);
+  }
+
   // --- Switch Restrictions (#229: trapping abilities) ---
 
   /**

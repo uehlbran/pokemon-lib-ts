@@ -294,3 +294,104 @@ describe("Gen3Ruleset simple overrides", () => {
     expect(trainerResult).toBe(Math.max(1, Math.floor(((bulbasaur.baseExp * 30) / 7 / 1) * 1.5)));
   });
 });
+
+// ---------------------------------------------------------------------------
+// Protect success rate (Gen 3: halving formula 1/2^N per pokeemerald)
+// ---------------------------------------------------------------------------
+
+describe("Gen3Ruleset rollProtectSuccess", () => {
+  it("given consecutiveProtects=0, when rollProtectSuccess, then always returns true (100%)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate[0] = 0xFFFF (100%)
+    // First Protect always succeeds; no RNG roll needed
+    const ruleset = makeRuleset();
+    const rng = new SeededRandom(42);
+    expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
+  });
+
+  it("given consecutiveProtects=0 called 20 times with varied seeds, when rollProtectSuccess, then always returns true", () => {
+    // Source: pret/pokeemerald — 0 consecutive uses = guaranteed success (100%)
+    // Triangulation: verify across multiple seeds
+    const ruleset = makeRuleset();
+    for (let seed = 1; seed <= 20; seed++) {
+      const rng = new SeededRandom(seed);
+      expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
+    }
+  });
+
+  it("given consecutiveProtects=1, when rollProtectSuccess with 10000 trials, then success rate is ~50% (Gen 3: halving formula)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate[1] = 0x7FFF (50%)
+    // Gen 3 halves the success rate each consecutive use: 1/2^N
+    const ruleset = makeRuleset();
+    let successes = 0;
+    const trials = 10000;
+
+    for (let seed = 1; seed <= trials; seed++) {
+      const rng = new SeededRandom(seed);
+      if (ruleset.rollProtectSuccess(1, rng)) {
+        successes++;
+      }
+    }
+
+    const rate = successes / trials;
+    // Expected: 50% — toBeCloseTo with precision=1 checks within 0.05 (appropriate for 10000 trials)
+    expect(rate).toBeCloseTo(0.5, 1);
+  });
+
+  it("given consecutiveProtects=2, when rollProtectSuccess with 10000 trials, then success rate is ~25%", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate[2] = 0x3FFF (25%)
+    // Gen 3 halving formula: 1/2^2 = 25%
+    const ruleset = makeRuleset();
+    let successes = 0;
+    const trials = 10000;
+
+    for (let seed = 1; seed <= trials; seed++) {
+      const rng = new SeededRandom(seed);
+      if (ruleset.rollProtectSuccess(2, rng)) {
+        successes++;
+      }
+    }
+
+    const rate = successes / trials;
+    // Expected: 25% — toBeCloseTo with precision=1 checks within 0.05 (appropriate for 10000 trials)
+    expect(rate).toBeCloseTo(0.25, 1);
+  });
+
+  it("given consecutiveProtects=3, when rollProtectSuccess with 10000 trials, then success rate is ~12.5%", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate[3] = 0x1FFF (12.5%)
+    // Gen 3 halving formula: 1/2^3 = 12.5% (same cap as Gen 4 per pokeemerald)
+    const ruleset = makeRuleset();
+    let successes = 0;
+    const trials = 10000;
+
+    for (let seed = 1; seed <= trials; seed++) {
+      const rng = new SeededRandom(seed);
+      if (ruleset.rollProtectSuccess(3, rng)) {
+        successes++;
+      }
+    }
+
+    const rate = successes / trials;
+    // Expected: 12.5% — toBeCloseTo with precision=1 checks within 0.05 (appropriate for 10000 trials)
+    expect(rate).toBeCloseTo(0.125, 1);
+  });
+
+  it("given consecutiveProtects=4 (beyond cap), when rollProtectSuccess, then capped same as 3 consecutive", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate has 4 entries
+    // Counter caps at index 3 (12.5%); never goes lower
+    const ruleset = makeRuleset();
+    let successes3 = 0;
+    let successes4 = 0;
+    const trials = 500;
+
+    // Use same seeds for both to compare identically
+    for (let seed = 1; seed <= trials; seed++) {
+      const rng3 = new SeededRandom(seed);
+      const rng4 = new SeededRandom(seed);
+      if (ruleset.rollProtectSuccess(3, rng3)) successes3++;
+      if (ruleset.rollProtectSuccess(4, rng4)) successes4++;
+    }
+
+    // Both should produce the same result (cap at 3)
+    expect(successes3).toBe(successes4);
+  });
+});
