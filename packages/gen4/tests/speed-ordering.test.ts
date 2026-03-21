@@ -19,8 +19,11 @@ function makePokemonInstance(overrides: {
   status?: PokemonInstance["status"];
   heldItem?: string | null;
   moves?: Array<{ moveId: string; pp: number; maxPp: number }>;
+  ability?: string;
+  currentHp?: number;
+  maxHp?: number;
 }): PokemonInstance {
-  const maxHp = 200;
+  const maxHp = overrides.maxHp ?? 200;
   return {
     uid: `test-${overrides.speed ?? 100}`,
     speciesId: 1,
@@ -30,9 +33,9 @@ function makePokemonInstance(overrides: {
     nature: "hardy",
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: maxHp,
+    currentHp: overrides.currentHp ?? maxHp,
     moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-    ability: "",
+    ability: overrides.ability ?? "",
     abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
@@ -62,6 +65,9 @@ function makeActivePokemon(overrides: {
   heldItem?: string | null;
   types?: PokemonType[];
   moves?: Array<{ moveId: string; pp: number; maxPp: number }>;
+  ability?: string;
+  currentHp?: number;
+  maxHp?: number;
 }): ActivePokemon {
   return {
     pokemon: makePokemonInstance(overrides),
@@ -77,7 +83,7 @@ function makeActivePokemon(overrides: {
     },
     volatileStatuses: new Map(),
     types: overrides.types ?? ["normal"],
-    ability: "",
+    ability: overrides.ability ?? "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -552,5 +558,285 @@ describe("Gen4Ruleset resolveTurnOrder -- Paralysis + Tailwind", () => {
     // 50 < 80, B goes first
     expect(ordered[0]).toEqual(actions[1]); // B (80) first
     expect(ordered[1]).toEqual(actions[0]); // A (50 effective) second
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Iron Ball -- Speed halving
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset resolveTurnOrder -- Iron Ball speed halving", () => {
+  it("given Pokemon A (speed 100) with Iron Ball and Pokemon B (speed 60), when resolveTurnOrder is called, then Pokemon B moves first (100*0.5=50 < 60)", () => {
+    // Source: Bulbapedia — Iron Ball: "Cuts the Speed stat of the holder to half."
+    // Source: Showdown data/items.ts — Iron Ball onModifySpe halves speed
+    // Derivation: A effective speed = floor(100 * 0.5) = 50; B speed = 60
+    // 50 < 60, so B goes first
+    const monA = makeActivePokemon({ speed: 100, heldItem: "iron-ball" });
+    const monB = makeActivePokemon({ speed: 60 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[1]); // B (60) first
+    expect(ordered[1]).toEqual(actions[0]); // A (50 with Iron Ball) second
+  });
+
+  it("given Pokemon A (speed 101) with Iron Ball and Pokemon B (speed 50), when resolveTurnOrder is called, then Pokemon B moves first (floor(101*0.5)=50, tiebreak)", () => {
+    // Source: Bulbapedia — Iron Ball: "Cuts the Speed stat of the holder to half."
+    // Triangulation: odd speed value tests floor behavior
+    // Derivation: A effective speed = floor(101 * 0.5) = 50; B speed = 50
+    // Equal speed: random tiebreak determines order
+    const monA = makeActivePokemon({ speed: 101, heldItem: "iron-ball" });
+    const monB = makeActivePokemon({ speed: 51 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    // floor(101 * 0.5) = 50 < 51, so B goes first
+    expect(ordered[0]).toEqual(actions[1]); // B (51) first
+    expect(ordered[1]).toEqual(actions[0]); // A (50 with Iron Ball) second
+  });
+
+  it("given Pokemon A (speed 100) with Iron Ball and paralysis, when resolveTurnOrder is called against Pokemon B (speed 15), then Pokemon A moves first (floor(floor(100*0.25)*0.5)=12 < 15 means B first)", () => {
+    // Source: Bulbapedia — Iron Ball halves speed; paralysis quarters speed
+    // Source: pret/pokeplatinum — paralysis applied before Iron Ball
+    // Derivation: A effective = floor(100 * 0.25) = 25 (paralysis), then floor(25 * 0.5) = 12 (Iron Ball)
+    // B speed = 15; 12 < 15, so B goes first
+    const monA = makeActivePokemon({ speed: 100, heldItem: "iron-ball", status: "paralysis" });
+    const monB = makeActivePokemon({ speed: 15 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    // A: floor(100 * 0.25) = 25 (paralysis), then floor(25 * 0.5) = 12 (Iron Ball)
+    // B: 15
+    // 12 < 15, B goes first
+    expect(ordered[0]).toEqual(actions[1]); // B (15) first
+    expect(ordered[1]).toEqual(actions[0]); // A (12 with paralysis+Iron Ball) second
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stall ability -- Always move last in priority bracket
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset resolveTurnOrder -- Stall ability", () => {
+  it("given Stall user (speed 200) vs non-Stall user (speed 50) at same priority, when resolveTurnOrder is called, then Stall user moves second", () => {
+    // Source: Bulbapedia — Stall: "The Pokemon moves after all other Pokemon"
+    // Source: Showdown data/abilities.ts — Stall: onFractionalPriority -0.1
+    // Despite having higher speed (200 > 50), Stall forces A to move last
+    const monA = makeActivePokemon({ speed: 200, ability: "stall" });
+    const monB = makeActivePokemon({ speed: 50 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[1]); // B (non-Stall) first
+    expect(ordered[1]).toEqual(actions[0]); // A (Stall) second, despite higher speed
+  });
+
+  it("given two Stall users with different speeds, when resolveTurnOrder is called, then faster Stall user moves first (both Stall, normal speed tiebreak)", () => {
+    // Source: Showdown data/abilities.ts — both have Stall, so the -0.1 priority
+    // cancels out, and normal speed ordering resumes
+    // Derivation: both Stall → speed tiebreak: 120 > 80, A goes first
+    const monA = makeActivePokemon({ speed: 120, ability: "stall" });
+    const monB = makeActivePokemon({ speed: 80, ability: "stall" });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[0]); // A (120, both Stall) first
+    expect(ordered[1]).toEqual(actions[1]); // B (80, both Stall) second
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Lagging Tail / Full Incense -- Always move last in priority bracket
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset resolveTurnOrder -- Lagging Tail", () => {
+  it("given Lagging Tail holder (speed 200) vs non-holder (speed 50), when resolveTurnOrder is called, then holder moves second", () => {
+    // Source: Bulbapedia — Lagging Tail: "Holder always moves last"
+    // Source: Showdown data/items.ts — Lagging Tail: onFractionalPriority -0.1
+    // Despite having higher speed, Lagging Tail forces A to move last
+    const monA = makeActivePokemon({ speed: 200, heldItem: "lagging-tail" });
+    const monB = makeActivePokemon({ speed: 50 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[1]); // B (no Lagging Tail) first
+    expect(ordered[1]).toEqual(actions[0]); // A (Lagging Tail) second
+  });
+
+  it("given Lagging Tail holder (speed 50) vs non-holder (speed 200), when resolveTurnOrder is called, then holder still moves second (Lagging Tail forces last)", () => {
+    // Source: Bulbapedia — Lagging Tail: "Holder always moves last"
+    // Triangulation: holder is already slower, but Lagging Tail still applies
+    const monA = makeActivePokemon({ speed: 50, heldItem: "lagging-tail" });
+    const monB = makeActivePokemon({ speed: 200 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[1]); // B (200) first
+    expect(ordered[1]).toEqual(actions[0]); // A (50, Lagging Tail) second
+  });
+});
+
+describe("Gen4Ruleset resolveTurnOrder -- Full Incense", () => {
+  it("given Full Incense holder (speed 200) vs non-holder (speed 50), when resolveTurnOrder is called, then holder moves second", () => {
+    // Source: Bulbapedia — Full Incense: "Holder always moves last in its priority bracket"
+    // Source: Showdown data/items.ts — Full Incense: onFractionalPriority -0.1
+    // Full Incense has identical behavior to Lagging Tail
+    const monA = makeActivePokemon({ speed: 200, heldItem: "full-incense" });
+    const monB = makeActivePokemon({ speed: 50 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[1]); // B (no Full Incense) first
+    expect(ordered[1]).toEqual(actions[0]); // A (Full Incense) second
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Custap Berry -- Move first at <=25% HP
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset resolveTurnOrder -- Custap Berry", () => {
+  it("given Custap Berry holder at 50/200 HP (25%) with speed 50 vs non-holder with speed 200, when resolveTurnOrder is called, then Custap user moves first", () => {
+    // Source: Bulbapedia — Custap Berry: "When the holder's HP drops to 1/4 or less,
+    //   it will move first in its priority bracket."
+    // Source: Showdown data/items.ts — Custap Berry: onFractionalPriority checks HP <= 0.25
+    // Derivation: 50/200 = 25% = exactly threshold, so Custap activates
+    const monA = makeActivePokemon({
+      speed: 50,
+      heldItem: "custap-berry",
+      currentHp: 50,
+      maxHp: 200,
+    });
+    const monB = makeActivePokemon({ speed: 200 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[0]); // A (Custap activated) first
+    expect(ordered[1]).toEqual(actions[1]); // B second
+  });
+
+  it("given Custap Berry holder at 51/200 HP (25.5%) with speed 50, when resolveTurnOrder is called, then Custap does NOT activate (slower user goes second normally)", () => {
+    // Source: Bulbapedia — Custap Berry: activates at <=25% HP
+    // Source: Showdown data/items.ts — Custap Berry checks HP <= floor(maxHp * 0.25)
+    // Derivation: floor(200 * 0.25) = 50; 51 > 50, so Custap does NOT activate
+    const monA = makeActivePokemon({
+      speed: 50,
+      heldItem: "custap-berry",
+      currentHp: 51,
+      maxHp: 200,
+    });
+    const monB = makeActivePokemon({ speed: 200 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    // Custap didn't activate: normal speed ordering — 200 > 50
+    expect(ordered[0]).toEqual(actions[1]); // B (200) first
+    expect(ordered[1]).toEqual(actions[0]); // A (50, Custap inactive) second
+  });
+
+  it("given Custap Berry holder at 1/200 HP (0.5%) with speed 50, when resolveTurnOrder is called against Pokemon with speed 200, then Custap user moves first", () => {
+    // Source: Bulbapedia — Custap Berry activates at <=25% HP
+    // Triangulation: very low HP still activates
+    // Derivation: 1/200 = 0.5% <= 25%, so Custap activates
+    const monA = makeActivePokemon({
+      speed: 50,
+      heldItem: "custap-berry",
+      currentHp: 1,
+      maxHp: 200,
+    });
+    const monB = makeActivePokemon({ speed: 200 });
+    const state = buildTwoSideState(monA, monB);
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rng = new SeededRandom(42);
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect(ordered[0]).toEqual(actions[0]); // A (Custap activated) first
+    expect(ordered[1]).toEqual(actions[1]); // B second
   });
 });
