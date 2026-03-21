@@ -11,8 +11,9 @@ data/battle/stat_multipliers.asm`. Using float approximations (`getStatStageMult
 produces off-by-one results at certain stat values (e.g. base Attack 150 at stage -1:
 integer=99, float=100).
 
-Also fixes the Gen 1 Focus Energy bug: the pokered disassembly shows a `>>2` shift (divide
-by 4) not `>>1`, so the crit threshold is divided by 4 rather than 2. Gen 1 CLAUDE.md
+Also fixes the Gen 1 Focus Energy bug: the pokered disassembly shows a `srl b` instruction
+(`>>1`, divide by 2) instead of the intended `sla b` (`<<1`, multiply by 2). The net effect
+is 1/4 of the normal crit rate (dividing by 2 instead of multiplying by 2). Gen 1 CLAUDE.md
 confirmed: "Divides crit rate by 4 instead of multiplying (does the opposite of what it
 should)".
 

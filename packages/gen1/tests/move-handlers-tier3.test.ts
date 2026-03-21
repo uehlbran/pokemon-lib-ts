@@ -225,8 +225,8 @@ describe("Gen 1 Focus Energy handler", () => {
     expect(result.selfVolatileInflicted).toBeFalsy();
   });
 
-  it("given Focus Energy active, when rolling crit for a 60-base-Speed attacker, then crit rate is 3/256 (bugged — /4 not /2)", () => {
-    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy uses >>2 (divide by 4)
+  it("given Focus Energy active, when rolling crit for a 60-base-Speed attacker, then crit rate is 7/256 (bugged — srl b single right-shift)", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy uses srl b (>>1, divide by 2)
     // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy executes a single
     // `srl b` (>>1, divide by 2) instead of the intended `sla b` (<<1, multiply by 2).
     // Net result is 1/4 of the normal crit rate (divide by 2 vs multiply by 2 = 1/4 ratio).

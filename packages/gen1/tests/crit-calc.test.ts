@@ -122,7 +122,7 @@ describe("Gen 1 Critical Hit", () => {
 
   it("given Focus Energy active, when calculating crit rate, then rate DECREASES (Gen 1 bug)", () => {
     // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy sets a flag that causes
-    // a >>2 shift (divide by 4) on the crit threshold instead of <<2 (multiply by 4).
+    // a `srl b` (>>1, divide by 2) instead of `sla b` (<<1, multiply by 2).
     // The intended effect was to quadruple crit rate, but the bug inverts it.
     // Without FE: floor(100/2)=50, *2=100, /2=50 → 50/256 ~19.5%
     // With FE:    floor(100/2)=50, /4=12,  /2=6  → 6/256 ~2.3% (lower — bugged!)
