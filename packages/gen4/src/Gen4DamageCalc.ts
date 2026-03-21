@@ -106,6 +106,39 @@ const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
   "dry-skin": "water",
 };
 
+// ─── Simple / Unaware Stat Stage Helper ───────────────────────────────────
+
+/**
+ * Get the effective stat stage for a Pokemon, accounting for Simple and Unaware.
+ *
+ * - Simple: doubles the effective stat stage (clamped to [-6, +6])
+ * - Unaware (on opponent): ignores the Pokemon's stat stages (returns 0)
+ *
+ * Source: Showdown sim/battle.ts — Simple doubles stat stages in Gen 4
+ * Source: Bulbapedia — Simple: "Doubles the effects of stat stage changes"
+ * Source: Bulbapedia — Unaware: "Ignores stat stage changes of the opposing Pokemon
+ *   when calculating damage"
+ *
+ * @param pokemon - The Pokemon whose stat stage is being read
+ * @param stat - The stat key to read (attack, defense, spAttack, spDefense, speed, etc.)
+ * @param opponent - The opposing Pokemon (for Unaware check)
+ * @returns The effective stat stage after Simple/Unaware adjustments
+ */
+function getEffectiveStatStage(
+  pokemon: ActivePokemon,
+  stat: string,
+  opponent?: ActivePokemon,
+): number {
+  const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
+  // Simple: double the stage, clamped to [-6, +6]
+  // Source: Showdown Gen 4 — Simple doubles stat stage
+  if (pokemon.ability === "simple") return Math.max(-6, Math.min(6, raw * 2));
+  // Unaware: opponent ignores this Pokemon's stat stages
+  // Source: Showdown Gen 4 — Unaware ignores foe's stat changes in damage calc
+  if (opponent?.ability === "unaware") return 0;
+  return raw;
+}
+
 // ─── Attack Stat Calculation ────────────────────────────────────────────────
 
 /**
@@ -134,6 +167,7 @@ function getAttackStat(
   isCrit: boolean,
   typeBoostItemType: string | null,
   plateItemType: string | null,
+  defender?: ActivePokemon,
 ): number {
   const statKey = isPhysical ? "attack" : "spAttack";
   const stats = attacker.pokemon.calculatedStats;
@@ -234,10 +268,11 @@ function getAttackStat(
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
-  // 8. Apply stat stages
+  // 8. Apply stat stages (with Simple/Unaware adjustments)
   // Source: Showdown sim/battle.ts — stat stage application
   // Source: pret/pokeplatinum — same APPLY_STAT_MOD as pokeemerald
-  const stage = isPhysical ? attacker.statStages.attack : attacker.statStages.spAttack;
+  const statKey2 = isPhysical ? "attack" : "spAttack";
+  const stage = getEffectiveStatStage(attacker, statKey2, defender);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
   // Source: Showdown sim/battle.ts — crit ignores negative attack stages
@@ -271,6 +306,7 @@ function getDefenseStat(
   isPhysical: boolean,
   isCrit: boolean,
   weather: string | null,
+  attacker?: ActivePokemon,
 ): number {
   const statKey = isPhysical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
@@ -299,10 +335,19 @@ function getDefenseStat(
   }
 
   // Marvel Scale: 1.5x physical Defense when defender has a non-volatile status condition
+  // Note: Mold Breaker bypass is handled in the main damage calc function, not here,
+  // because getDefenseStat doesn't have moldBreaker context. However, since the attacker
+  // parameter is available, we check it directly.
   // Source: Bulbapedia — Marvel Scale: "If the Pokemon has a status condition, its Defense
   //   stat is 1.5x."
   // Source: Showdown sim/abilities.ts — Marvel Scale
-  if (isPhysical && defender.ability === "marvel-scale" && defender.pokemon.status !== null) {
+  const marvelScaleMoldBreaker = attacker?.ability === "mold-breaker";
+  if (
+    isPhysical &&
+    !marvelScaleMoldBreaker &&
+    defender.ability === "marvel-scale" &&
+    defender.pokemon.status !== null
+  ) {
     baseStat = Math.floor(baseStat * 1.5);
   }
 
@@ -314,8 +359,9 @@ function getDefenseStat(
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
-  // Get the appropriate stat stage
-  const stage = isPhysical ? defender.statStages.defense : defender.statStages.spDefense;
+  // Get the appropriate stat stage (with Simple/Unaware adjustments)
+  const defStatKey = isPhysical ? "defense" : "spDefense";
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker);
 
   // On crit: ignore positive defense stages (use 0 instead), keep negative
   // Source: Showdown sim/battle.ts — crit ignores positive def stages
@@ -381,6 +427,12 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
 
+  // Mold Breaker: attacker's ability bypasses defender's defensive abilities
+  // Source: Showdown Gen 4 — Mold Breaker negates defender abilities in damage calc
+  // Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this Ability
+  //   are unaffected by the target's Ability."
+  const moldBreaker = attackerAbility === "mold-breaker";
+
   // 2. Pinch abilities: 1.5x power when HP <= floor(maxHP/3) and type matches
   // Source: Showdown sim/battle.ts — Gen 4 pinch ability check
   // Source: Bulbapedia — Overgrow / Blaze / Torrent / Swarm
@@ -409,7 +461,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Dry Skin's water immunity is handled in step 5 (early return of 0 damage).
   // Source: Showdown data/abilities.ts — Dry Skin onSourceBasePower (priority 17)
   // Source: Bulbapedia — Dry Skin: "Fire-type moves deal 1.25× damage to the user."
-  if (defenderAbility === "dry-skin" && move.type === "fire") {
+  if (!moldBreaker && defenderAbility === "dry-skin" && move.type === "fire") {
     power = Math.floor(power * 1.25);
   }
 
@@ -424,17 +476,21 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // 4. Defender ability type immunities
+  // Mold Breaker bypasses all defender ability-based immunities
   // Source: Showdown sim/battle.ts — Gen 4 ability immunities
+  // Source: Showdown Gen 4 — Mold Breaker negates Levitate, Volt Absorb, Water Absorb, etc.
   const gravityActive = context.state.gravity?.active ?? false;
-  const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
-  if (immuneType && move.type === immuneType) {
-    // Gravity grounds all Pokemon — Levitate no longer grants Ground immunity
-    // Source: Showdown Gen 4 mod — Gravity suppresses Levitate
-    // Source: Bulbapedia — Gravity: "Levitate will not give immunity to Ground-type moves."
-    const isLevitateGrounded =
-      defenderAbility === "levitate" && move.type === "ground" && gravityActive;
-    if (!isLevitateGrounded) {
-      return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+  if (!moldBreaker) {
+    const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
+    if (immuneType && move.type === immuneType) {
+      // Gravity grounds all Pokemon — Levitate no longer grants Ground immunity
+      // Source: Showdown Gen 4 mod — Gravity suppresses Levitate
+      // Source: Bulbapedia — Gravity: "Levitate will not give immunity to Ground-type moves."
+      const isLevitateGrounded =
+        defenderAbility === "levitate" && move.type === "ground" && gravityActive;
+      if (!isLevitateGrounded) {
+        return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+      }
     }
   }
 
@@ -452,7 +508,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Get weather for defense stat and weather modifier
   const weather = context.state.weather?.type ?? null;
 
-  // Get effective stats
+  // Get effective stats (pass opponent for Simple/Unaware stat stage adjustments)
   let attack = getAttackStat(
     attacker,
     move.type,
@@ -460,18 +516,33 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     isCrit,
     typeBoostItemType,
     plateItemType,
+    defender,
   );
-  let defense = getDefenseStat(defender, isPhysical, isCrit, weather);
+  let defense = getDefenseStat(defender, isPhysical, isCrit, weather, attacker);
 
   // Track multipliers for breakdown
   let abilityMultiplier = 1;
 
   // 6. Thick Fat: halves the attacker's effective stat for fire/ice moves
+  // Mold Breaker bypasses Thick Fat
   // Source: Bulbapedia — Thick Fat: "Fire-type and Ice-type moves deal half damage."
   // Source: Showdown sim/abilities.ts — Thick Fat
-  if (defenderAbility === "thick-fat" && (move.type === "fire" || move.type === "ice")) {
+  if (
+    !moldBreaker &&
+    defenderAbility === "thick-fat" &&
+    (move.type === "fire" || move.type === "ice")
+  ) {
     attack = Math.floor(attack / 2);
     abilityMultiplier = 0.5;
+  }
+
+  // 6a. Heatproof: halves fire damage to the holder
+  // Mold Breaker bypasses Heatproof
+  // Source: Bulbapedia — Heatproof: "Halves the damage from Fire-type moves."
+  // Source: Showdown sim/abilities.ts — Heatproof onSourceModifyAtk
+  if (!moldBreaker && defenderAbility === "heatproof" && move.type === "fire") {
+    power = Math.floor(power / 2);
+    abilityMultiplier *= 0.5;
   }
 
   // 7. Explosion / Self-Destruct: halve defense
@@ -587,9 +658,10 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // Wonder Guard: only super-effective moves hit
+  // Mold Breaker bypasses Wonder Guard
   // Source: Bulbapedia — Wonder Guard: "Only super effective moves will hit."
   // Source: Showdown sim/abilities.ts — Wonder Guard
-  if (defenderAbility === "wonder-guard" && effectiveness < 2) {
+  if (!moldBreaker && defenderAbility === "wonder-guard" && effectiveness < 2) {
     return {
       damage: 0,
       effectiveness,
@@ -624,10 +696,15 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // 19. Filter / Solid Rock (NEW in Gen 4): 0.75x damage if super effective
+  // Mold Breaker bypasses Filter / Solid Rock
   // Source: Bulbapedia — Filter / Solid Rock: "Reduces the power of super-effective
   //   attacks taken by 25%."
   // Source: Showdown sim/abilities.ts — Filter / Solid Rock
-  if ((defenderAbility === "filter" || defenderAbility === "solid-rock") && effectiveness > 1) {
+  if (
+    !moldBreaker &&
+    (defenderAbility === "filter" || defenderAbility === "solid-rock") &&
+    effectiveness > 1
+  ) {
     baseDamage = Math.floor(baseDamage * 0.75);
     abilityMultiplier *= 0.75;
   }

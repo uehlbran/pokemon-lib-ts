@@ -253,6 +253,19 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
+    case "mold-breaker": {
+      // Mold Breaker: announce on switch-in (informational only — the actual
+      // ability bypass logic is in the damage calc and accuracy check)
+      // Source: Showdown Gen 4 mod — Mold Breaker switch-in announcement
+      // Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this
+      //   Ability are unaffected by the target's Ability."
+      return {
+        activated: true,
+        effects: [{ effectType: "none", target: "self" }],
+        messages: [`${name} breaks the mold!`],
+      };
+    }
+
     default:
       return { activated: false, effects: [], messages: [] };
   }

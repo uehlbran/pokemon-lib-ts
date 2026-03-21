@@ -267,6 +267,12 @@ function applyMoveEffect(
       if (attacker.ability === "rock-head") {
         break;
       }
+      // Magic Guard: prevents recoil damage from moves (NOT Struggle recoil)
+      // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+      // Source: Showdown Gen 4 — Magic Guard prevents move recoil
+      if (attacker.ability === "magic-guard") {
+        break;
+      }
       // Recoil damage is a fraction of damage dealt
       // Source: Showdown Gen 4 — recoil = floor(damage * fraction)
       result.recoilDamage = Math.max(1, Math.floor(damage * effect.amount));
