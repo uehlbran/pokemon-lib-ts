@@ -425,9 +425,17 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // 4. Defender ability type immunities
   // Source: Showdown sim/battle.ts — Gen 4 ability immunities
+  const gravityActive = context.state.gravity?.active ?? false;
   const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
   if (immuneType && move.type === immuneType) {
-    return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+    // Gravity grounds all Pokemon — Levitate no longer grants Ground immunity
+    // Source: Showdown Gen 4 mod — Gravity suppresses Levitate
+    // Source: Bulbapedia — Gravity: "Levitate will not give immunity to Ground-type moves."
+    const isLevitateGrounded =
+      defenderAbility === "levitate" && move.type === "ground" && gravityActive;
+    if (!isLevitateGrounded) {
+      return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+    }
   }
 
   // 5. Physical/Special determination — THE key Gen 4 change
@@ -540,7 +548,18 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // 15. Type effectiveness
   // Source: Showdown sim/battle.ts — Gen 4 type effectiveness
-  const effectiveness = getTypeEffectiveness(move.type, defender.types, typeChart);
+  // Gravity: Ground moves ignore Flying-type immunity
+  // Source: Showdown Gen 4 mod — Gravity makes Ground moves hit Flying-types
+  // Source: Bulbapedia — Gravity: "All Pokémon on the ground are no longer immune to
+  //   Ground-type moves because of their Flying type."
+  let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
+  if (gravityActive && move.type === "ground" && defender.types.includes("flying")) {
+    // Remove Flying from the defender's types for effectiveness calculation
+    // so Ground moves can hit. If the defender is pure Flying, treat as Normal.
+    const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
+    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
+  }
+  const effectiveness = getTypeEffectiveness(move.type, effectiveDefenderTypes, typeChart);
 
   const burnMultiplier = burnApplied ? 0.5 : 1;
 

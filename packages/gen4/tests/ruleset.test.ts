@@ -612,6 +612,7 @@ describe("Gen4Ruleset getEndOfTurnOrder", () => {
       "safeguard-countdown",
       "tailwind-countdown",
       "trick-room-countdown",
+      "gravity-countdown",
       "weather-countdown",
       "toxic-orb-activation",
       "flame-orb-activation",
