@@ -281,6 +281,14 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return false;
   }
 
+  /**
+   * Default PP cost is 1. Gen 3+ rulesets override to return 2 when the defender has Pressure.
+   * Source: pret/pokeemerald — ABILITY_PRESSURE deducts 2 PP per move use
+   */
+  getPPCost(_actor: ActivePokemon, _defender: ActivePokemon | null, _state: BattleState): number {
+    return 1;
+  }
+
   onDamageReceived(
     _defender: ActivePokemon,
     _damage: number,

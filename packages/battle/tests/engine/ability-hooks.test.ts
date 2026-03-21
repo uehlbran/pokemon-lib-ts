@@ -680,3 +680,267 @@ describe("processAbilityResult: volatile-inflict effect", () => {
     expect(volatileStartEvents.length).toBe(0);
   });
 });
+
+// ---- on-before-move ability hook tests ----
+
+describe("on-before-move ability hook", () => {
+  it("given MockRuleset returns movePrevented=true on-before-move, when submitAction move, then move is blocked and lastMoveUsed is set", () => {
+    // Source: Showdown sim/battle-actions.ts — beforeMove ability hook can prevent move execution
+    // (e.g., Truant skips every other turn)
+    const { engine, ruleset, events } = createTestEngine();
+    ruleset.setFixedDamage(10);
+
+    ruleset.setAbilityHandler((trigger, _ctx) => {
+      if (trigger === "on-before-move") {
+        return {
+          activated: true,
+          effects: [{ effectType: "move-prevented" as const, target: "self" as const }],
+          messages: ["Charizard is loafing around!"],
+          movePrevented: true,
+        };
+      }
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    events.length = 0;
+    ruleset.triggerLog = [];
+
+    // Charizard (side 0) uses Tackle — should be blocked by on-before-move
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert: on-before-move was called
+    const beforeMoveTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-before-move");
+    expect(beforeMoveTriggers.length).toBeGreaterThanOrEqual(1);
+
+    // Assert: the loafing message was emitted
+    // Source: Showdown — Truant emits a message when the ability blocks the move
+    const loafingMessages = events.filter(
+      (e) => e.type === "message" && "text" in e && e.text.includes("loafing"),
+    );
+    expect(loafingMessages.length).toBeGreaterThanOrEqual(1);
+
+    // Assert: no damage event from the blocked Pokemon
+    // Because both sides fire on-before-move and both are prevented,
+    // we check that no damage event was emitted at all
+    const damageEvents = events.filter((e) => e.type === "damage");
+    expect(damageEvents.length).toBe(0);
+  });
+
+  it("given MockRuleset returns activated=false on-before-move, when submitAction move, then move proceeds normally", () => {
+    // Source: Showdown sim/battle-actions.ts — ability does not activate = move proceeds
+    const { engine, ruleset, events } = createTestEngine();
+    ruleset.setFixedDamage(10);
+
+    ruleset.setAbilityHandler((_trigger, _ctx) => {
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    events.length = 0;
+    ruleset.triggerLog = [];
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert: on-before-move was called but did not prevent the move
+    const beforeMoveTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-before-move");
+    expect(beforeMoveTriggers.length).toBeGreaterThanOrEqual(1);
+
+    // Assert: damage events were emitted (moves proceeded normally)
+    // Source: both Charizard and Blastoise should deal 10 damage each
+    const damageEvents = events.filter((e) => e.type === "damage");
+    expect(damageEvents.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ---- on-damage-taken ability hook tests ----
+
+describe("on-damage-taken ability hook", () => {
+  it("given MockRuleset's on-damage-taken returns a type-change effect, when move deals damage, then type-change is applied", () => {
+    // Source: Showdown sim/battle-actions.ts — Color Change: changes the target's type
+    // to match the type of the move that hit it
+    const { engine, ruleset, events } = createTestEngine();
+    ruleset.setFixedDamage(10);
+
+    ruleset.setAbilityHandler((trigger, _ctx) => {
+      if (trigger === "on-damage-taken") {
+        return {
+          activated: true,
+          effects: [
+            {
+              effectType: "type-change" as const,
+              target: "self" as const,
+              types: ["normal" as const],
+            },
+          ],
+          messages: ["Color Change activated!"],
+        };
+      }
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    events.length = 0;
+    ruleset.triggerLog = [];
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert: on-damage-taken was called for the defender
+    const damageTakenTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-damage-taken");
+    expect(damageTakenTriggers.length).toBeGreaterThanOrEqual(1);
+
+    // Assert: type-change message was emitted
+    // Source: BattleEngine.processAbilityResult emits "type changed" messages
+    const typeChangeMessages = events.filter(
+      (e) => e.type === "message" && "text" in e && e.text.includes("type changed"),
+    );
+    expect(typeChangeMessages.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("given damage = 0 from immunity, when ability check runs, then on-damage-taken does NOT fire", () => {
+    // Source: Showdown — on-damage-taken only fires when actual damage > 0
+    const { engine, ruleset } = createTestEngine();
+
+    // Make damage calc return 0 (type immunity scenario)
+    ruleset.calculateDamage = (_ctx) => ({
+      damage: 0,
+      effectiveness: 0,
+      isCrit: false,
+      randomFactor: 1,
+    });
+
+    ruleset.setAbilityHandler((_trigger, _ctx) => {
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    ruleset.triggerLog = [];
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert: on-damage-taken was NOT called (damage was 0)
+    const damageTakenTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-damage-taken");
+    expect(damageTakenTriggers.length).toBe(0);
+  });
+});
+
+// ---- on-status-inflicted ability hook tests ----
+
+describe("on-status-inflicted ability hook", () => {
+  it("given MockRuleset's on-status-inflicted returns status-inflict effect, when status inflicted on target, then opponent gets same status (Synchronize pattern)", () => {
+    // Source: pret/pokeemerald — ABILITY_SYNCHRONIZE: when the holder is poisoned, burned,
+    // or paralyzed, the opponent receives the same status condition
+    const { engine, ruleset, events } = createTestEngine();
+    ruleset.setFixedDamage(10);
+
+    // Make executeMoveEffect inflict paralysis on the defender
+    ruleset.executeMoveEffect = (_ctx) => ({
+      statusInflicted: "paralysis",
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
+
+    // When on-status-inflicted fires, mirror the status to the opponent
+    ruleset.setAbilityHandler((trigger, ctx) => {
+      if (trigger === "on-status-inflicted") {
+        // The status-inflicted pokemon mirrors the status to the opponent
+        return {
+          activated: true,
+          effects: [
+            {
+              effectType: "status-inflict" as const,
+              target: "opponent" as const,
+              status: "paralysis" as const,
+            },
+          ],
+          messages: ["Synchronize activated!"],
+        };
+      }
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    events.length = 0;
+    ruleset.triggerLog = [];
+
+    // Blastoise (faster, speed 120) attacks Charizard and inflicts paralysis
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert: on-status-inflicted was called
+    const statusTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-status-inflicted");
+    expect(statusTriggers.length).toBeGreaterThanOrEqual(1);
+
+    // Assert: Synchronize message was emitted
+    const syncMessages = events.filter(
+      (e) => e.type === "message" && "text" in e && e.text.includes("Synchronize"),
+    );
+    expect(syncMessages.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---- getPPCost tests ----
+
+describe("getPPCost integration", () => {
+  it("given MockRuleset.getPPCost returns 2 (Pressure), when move is used, then PP is deducted by 2", () => {
+    // Source: pret/pokeemerald — ABILITY_PRESSURE deducts 2 PP per move use
+    // Pressure doubles the PP cost of moves that target the Pressure holder.
+    const { engine, ruleset, events } = createTestEngine({
+      side0Moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+    });
+    ruleset.setFixedDamage(10);
+    ruleset.setPPCost(2);
+
+    engine.start();
+    events.length = 0;
+
+    // Get Charizard's PP before the move
+    const charizard = engine.getActive(0);
+    expect(charizard).not.toBeNull();
+    const ppBefore = charizard!.pokemon.moves[0]!.currentPP;
+    // Source: initial PP is 35 (set in createTestEngine)
+    expect(ppBefore).toBe(35);
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert: PP was deducted by 2 (Pressure)
+    // Source: 35 - 2 = 33
+    const ppAfter = charizard!.pokemon.moves[0]!.currentPP;
+    expect(ppAfter).toBe(33);
+  });
+
+  it("given MockRuleset.getPPCost returns 1 (default, no Pressure), when move is used, then PP is deducted by 1", () => {
+    // Source: pret/pokeemerald — standard PP deduction is 1 per move use
+    const { engine, ruleset, events } = createTestEngine({
+      side0Moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+    });
+    ruleset.setFixedDamage(10);
+    // Default ppCost is 1 (no setPPCost call needed)
+
+    engine.start();
+    events.length = 0;
+
+    const charizard = engine.getActive(0);
+    expect(charizard).not.toBeNull();
+    const ppBefore = charizard!.pokemon.moves[0]!.currentPP;
+    // Source: initial PP is 35 (set in createTestEngine)
+    expect(ppBefore).toBe(35);
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert: PP was deducted by 1 (standard)
+    // Source: 35 - 1 = 34
+    const ppAfter = charizard!.pokemon.moves[0]!.currentPP;
+    expect(ppAfter).toBe(34);
+  });
+});

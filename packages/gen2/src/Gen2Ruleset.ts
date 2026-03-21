@@ -294,6 +294,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return false;
   }
 
+  // Gen 2 has no Pressure ability — PP cost is always 1.
+  getPPCost(_actor: ActivePokemon, _defender: ActivePokemon | null, _state: BattleState): number {
+    return 1;
+  }
+
   onDamageReceived(
     _defender: ActivePokemon,
     _damage: number,

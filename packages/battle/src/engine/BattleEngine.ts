@@ -865,8 +865,12 @@ export class BattleEngine implements BattleEventEmitter {
     // Pre-move checks: can the pokemon actually move?
     if (!this.canExecuteMove(actor, moveData)) return;
 
-    // Deduct PP
-    moveSlot.currentPP = Math.max(0, moveSlot.currentPP - 1);
+    // Deduct PP — cost may be 2 if defender has Pressure (getPPCost handles this)
+    // PP deduction happens here, before accuracy check — PP is consumed on attempt, not on hit
+    // Source: pret/pokeemerald — PP deducted when move is selected, before accuracy check
+    const defenderForPP = this.getOpponentActive(action.side);
+    const ppCost = this.ruleset.getPPCost(actor, defenderForPP, this.state);
+    moveSlot.currentPP = Math.max(0, moveSlot.currentPP - ppCost);
 
     this.emit({
       type: "move-start",
@@ -965,6 +969,27 @@ export class BattleEngine implements BattleEventEmitter {
       });
       if (beforeMoveResult.activated) {
         this.processItemResult(beforeMoveResult, actor, action.side);
+      }
+    }
+
+    // Ability: on-before-move trigger (e.g., Truant — skip every other turn)
+    // Source: Showdown sim/battle-actions.ts — beforeMove ability hook
+    if (this.ruleset.hasAbilities()) {
+      const beforeMoveAbilityResult = this.ruleset.applyAbility("on-before-move", {
+        pokemon: actor,
+        opponent: defender,
+        state: this.state,
+        rng: this.state.rng,
+        trigger: "on-before-move",
+        move: effectiveMoveData,
+      });
+      if (beforeMoveAbilityResult.activated) {
+        this.processAbilityResult(beforeMoveAbilityResult, actor, defender, action.side);
+        if (beforeMoveAbilityResult.movePrevented) {
+          actor.lastMoveUsed = moveData.id;
+          actor.movedThisTurn = true;
+          return;
+        }
       }
     }
 
@@ -1101,6 +1126,28 @@ export class BattleEngine implements BattleEventEmitter {
         });
         if (defItemResult.activated) {
           this.processItemResult(defItemResult, defender, defenderSide as 0 | 1);
+        }
+      }
+
+      // Ability: on-damage-taken trigger (e.g., Color Change — type changes to match move type)
+      // Source: Showdown sim/battle-actions.ts — onDamagingHit ability hook (fires after damage dealt)
+      if (this.ruleset.hasAbilities() && damage > 0 && defender.pokemon.currentHp > 0) {
+        const damageTakenAbilityResult = this.ruleset.applyAbility("on-damage-taken", {
+          pokemon: defender,
+          opponent: actor,
+          state: this.state,
+          rng: this.state.rng,
+          trigger: "on-damage-taken",
+          move: effectiveMoveData,
+          damage,
+        });
+        if (damageTakenAbilityResult.activated) {
+          this.processAbilityResult(
+            damageTakenAbilityResult,
+            defender,
+            actor,
+            defenderSide as 0 | 1,
+          );
         }
       }
 
@@ -1875,6 +1922,25 @@ export class BattleEngine implements BattleEventEmitter {
       pokemon: getPokemonName(target),
       status,
     });
+
+    // Ability: on-status-inflicted trigger (e.g., Synchronize — mirrors status to opponent)
+    // Source: pret/pokeemerald — ABILITY_SYNCHRONIZE fires when status is inflicted
+    if (this.ruleset.hasAbilities()) {
+      const opponentSideIdx = (side === 0 ? 1 : 0) as 0 | 1;
+      const opponent = this.getActive(opponentSideIdx);
+      if (opponent && opponent.pokemon.currentHp > 0) {
+        const statusInflictedResult = this.ruleset.applyAbility("on-status-inflicted", {
+          pokemon: target,
+          opponent,
+          state: this.state,
+          rng: this.state.rng,
+          trigger: "on-status-inflicted",
+        });
+        if (statusInflictedResult.activated) {
+          this.processAbilityResult(statusInflictedResult, target, opponent, side);
+        }
+      }
+    }
   }
 
   private processEffectResult(
