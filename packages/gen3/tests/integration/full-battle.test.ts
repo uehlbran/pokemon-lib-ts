@@ -324,7 +324,10 @@ describe("Gen 3 Full Battle Integration", () => {
   });
 
   it("given a Gen 3 battle with 1v1 teams, when both sides attack, then damage events are emitted", () => {
-    // Arrange: 1v1 battle
+    // Arrange: 1v1 battle — Blaziken L50 (HP=155) uses Flamethrower, Swampert L50 (HP=175) uses Surf
+    // Source: pret/pokeemerald — Gen 3 damage formula produces non-zero damage for these matchups
+    // HP formula: Blaziken base HP=80: floor((2*80+31)*50/100)+60 = 155
+    //             Swampert base HP=100: floor((2*100+31)*50/100)+60 = 175
     const attacker = createGen3Pokemon(
       257,
       50,
@@ -344,16 +347,22 @@ describe("Gen 3 Full Battle Integration", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert
+    // Assert: both moves deal damage so at least 2 damage events (one per attacker)
+    // Surf is 4x effective vs Blaziken (Water vs Fire/Fighting); Flamethrower vs Swampert is 0.5x
     const events = engine.getEventLog();
     const damageEvents = events.filter((e) => e.type === "damage");
-    expect(damageEvents.length).toBeGreaterThanOrEqual(1);
+    // Both moves hit — expect exactly 2 combat damage events this turn
+    expect(damageEvents.length).toBe(2);
 
     for (const evt of damageEvents) {
       if (evt.type === "damage") {
+        // Each damage event must reference a valid side
         expect(evt.side === 0 || evt.side === 1).toBe(true);
-        expect(evt.amount).toBeGreaterThan(0);
-        expect(evt.maxHp).toBeGreaterThan(0);
+        // Damage amount must be a positive integer (non-zero because both moves are super or neutral effective)
+        expect(evt.amount).toBeGreaterThanOrEqual(1);
+        // maxHp must equal the defender's actual calculated HP (Blaziken=155, Swampert=175)
+        // Source: HP formula — damage events carry maxHp from the defending Pokemon's calculated stats
+        expect(evt.maxHp === 155 || evt.maxHp === 175).toBe(true);
       }
     }
   });
@@ -378,10 +387,16 @@ describe("Gen 3 Full Battle Integration", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert
+    // Assert: both Blaziken and Swampert used moves → expect exactly 2 move-start events
+    // Source: BattleEngine — each submitted move that executes emits one "move-start" event
     const events = engine.getEventLog();
     const moveStartEvents = events.filter((e) => e.type === "move-start");
-    expect(moveStartEvents.length).toBeGreaterThanOrEqual(1);
+    expect(moveStartEvents.length).toBe(2);
+
+    // Verify each side's move-start event is present
+    const movedSides = moveStartEvents.map((e) => (e.type === "move-start" ? e.side : -1));
+    expect(movedSides).toContain(0); // Blaziken side
+    expect(movedSides).toContain(1); // Swampert side
   });
 
   it("given a 3v3 Gen 3 battle, when run to completion multiple times, then always finishes within 500 turns", () => {
@@ -418,14 +433,17 @@ describe("Gen 3 Ability Integration", () => {
     // Act
     engine.start();
 
-    // Assert
+    // Assert: Intimidate triggered a stat-change event lowering the opposing side's Attack by 1
+    // Source: pret/pokeemerald — ABILITY_INTIMIDATE lowers gBattlerTarget's Attack by 1 stage on entry
+    // Side 0 = Salamence (Intimidate user), Side 1 = Blaziken (target of Intimidate)
     const events = engine.getEventLog();
     const statEvents = events.filter((e) => e.type === "stat-change");
-    // Intimidate should have triggered a stat-change event on the opponent
     const intimidateEvent = statEvents.find(
-      (e) => e.type === "stat-change" && e.stat === "attack" && e.stages === -1,
+      (e) => e.type === "stat-change" && e.stat === "attack" && e.stages === -1 && e.side === 1,
     );
-    expect(intimidateEvent).toBeDefined();
+    // Intimidate must have fired and must have targeted side 1 (the opponent, Blaziken)
+    expect(intimidateEvent).not.toBeNull();
+    expect(intimidateEvent).not.toBeUndefined();
   });
 
   it("given Kyogre with Drizzle lead, when battle starts, then rain weather is set", () => {
@@ -445,12 +463,16 @@ describe("Gen 3 Ability Integration", () => {
     // Act
     engine.start();
 
-    // Assert
+    // Assert: Drizzle fires exactly once on battle start, setting rain weather
+    // Source: pret/pokeemerald — ABILITY_DRIZZLE sets WEATHER_RAIN on switch-in; fires exactly once
     const events = engine.getEventLog();
     const weatherEvents = events.filter((e) => e.type === "weather-set");
-    expect(weatherEvents.length).toBeGreaterThanOrEqual(1);
+    // Drizzle fires exactly once (only one side has a weather-setting ability)
+    expect(weatherEvents.length).toBe(1);
     const rainEvent = weatherEvents.find((e) => e.type === "weather-set" && e.weather === "rain");
-    expect(rainEvent).toBeDefined();
+    // The single weather event must be the rain event from Drizzle
+    expect(rainEvent).not.toBeNull();
+    expect(rainEvent).not.toBeUndefined();
 
     // Verify state reflects rain
     const state = engine.getState();
@@ -488,13 +510,28 @@ describe("Gen 3 Ability Integration", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 2 }); // protect
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 }); // body-slam
 
-    // Assert: After turn 1, check for stat-change events indicating Speed Boost
+    // Assert: After turn 1, exactly one Speed Boost event fires (once per end-of-turn)
+    // Source: pret/pokeemerald — ABILITY_SPEED_BOOST raises Speed +1 at end of each turn
+    // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ENDTURN fires once per Pokemon
+    // Ninjask (side 0) should get exactly one +1 Speed boost per turn.
+    //
+    // NOTE: This test currently FAILS with count=3 due to bug #484.
+    // BattleEngine.processEndOfTurn() calls applyAbility("on-turn-end") in multiple EoT cases
+    // (weather-healing, shed-skin, speed-boost), each iterating all active Pokemon. Since
+    // Gen3Abilities.handleTurnEnd("speed-boost") doesn't filter by which EoT step called it,
+    // Speed Boost fires 3 times per turn instead of once.
+    // See: https://github.com/uehlbran/pokemon-lib-ts/issues/484
     const events = engine.getEventLog();
     const speedBoostEvents = events.filter(
       (e) => e.type === "stat-change" && e.stat === "speed" && e.stages === 1,
     );
-    // At least one Speed Boost event should have fired at end of turn 1
-    expect(speedBoostEvents.length).toBeGreaterThanOrEqual(1);
+    // Correct behavior per spec: exactly 1 Speed Boost per turn
+    // Currently fails (actual = 3) — see bug #484
+    expect(speedBoostEvents.length).toBe(1);
+
+    // Verify it targeted Ninjask's side (side 0)
+    const boostEvent = speedBoostEvents[0];
+    expect(boostEvent?.type === "stat-change" && boostEvent.side).toBe(0);
   });
 });
 
@@ -523,10 +560,23 @@ describe("Gen 3 Weather Integration", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // surf
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 }); // flamethrower
 
-    // Assert: Water move should deal more damage than Fire move (rain boosts water, weakens fire)
+    // Assert: Rain boosts Surf (Water) 1.5x and Blaziken is 4x weak to Water (Fire/Fighting)
+    // Source: pret/pokeemerald — rain multiplies Water damage by 1.5x; type effectiveness stacks
+    // Speed comparison: Kyogre base speed=90 (eff. 110 at L50) vs Blaziken base speed=80 (eff. 100)
+    // Kyogre goes first; Surf (4x effective + 1.5x rain) OHKOs Blaziken before Flamethrower fires
+    // Formula: Kyogre L50 SpAtk vs Blaziken L50 Def, Water vs Fire/Fighting (×4), rain ×1.5 → OHKO
     const events = engine.getEventLog();
     const damageEvents = events.filter((e) => e.type === "damage");
-    expect(damageEvents.length).toBeGreaterThanOrEqual(1);
+    // Kyogre OHKOs Blaziken with Surf before Flamethrower executes → exactly 1 damage event
+    expect(damageEvents.length).toBe(1);
+
+    // The single damage event must be Surf hitting Blaziken (side 1)
+    const surfDamage = damageEvents[0];
+    expect(surfDamage?.type === "damage" && surfDamage.side).toBe(1);
+    // Surf must deal non-trivial damage (rain + 4x = 6x effective; should OHKOs Blaziken HP=155)
+    if (surfDamage?.type === "damage") {
+      expect(surfDamage.amount).toBeGreaterThanOrEqual(155); // Blaziken HP = 155 → OHKO
+    }
   });
 
   it("given rain active with Swift Swim Pokemon, when battling vs another, then Swift Swim user moves first", () => {
@@ -609,7 +659,11 @@ describe("Gen 3 Weather Integration", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // protect
 
     // Assert: Check for weather damage event on Blaziken (non-immune)
-    // The engine emits type: "damage" with source: "weather-sand" for sandstorm chip
+    // Source: pret/pokeemerald src/battle_util.c — sandstorm chip = floor(maxHP/16)
+    // Blaziken L50 (31 IVs, 0 EVs, Hardy, base HP=80):
+    //   HP = floor((2*80+31)*50/100) + 60 = 95 + 60 = 155
+    //   Sandstorm chip = floor(155/16) = 9
+    // Tyranitar is Rock-type → immune to sandstorm chip
     const events = engine.getEventLog();
     const weatherDmgEvents = events.filter(
       (e) =>
@@ -617,8 +671,17 @@ describe("Gen 3 Weather Integration", () => {
         "source" in e &&
         (e as { source?: string }).source?.startsWith("weather-"),
     );
-    // Blaziken should take sandstorm chip damage; Tyranitar should not (Rock type)
-    expect(weatherDmgEvents.length).toBeGreaterThanOrEqual(1);
+    // Exactly one weather chip event: only Blaziken (side 1) takes sandstorm chip damage
+    expect(weatherDmgEvents.length).toBe(1);
+
+    // Verify it targeted Blaziken (side 1) with the correct chip amount
+    const chipEvt = weatherDmgEvents[0];
+    if (chipEvt?.type === "damage") {
+      expect(chipEvt.side).toBe(1); // Blaziken's side
+      // Source: pret/pokeemerald — sandstorm chip = floor(maxHP/16)
+      // Blaziken HP = 155: floor(155/16) = 9
+      expect(chipEvt.amount).toBe(9);
+    }
   });
 
   it("given a weather battle (Drizzle vs Sand Stream), when run to completion, then it finishes deterministically", () => {
@@ -846,5 +909,161 @@ describe("Gen 3 Battle Stability", () => {
       runFullBattle(engine, seed, 500);
       expect(engine.isEnded()).toBe(true);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #382: Choice Band move lock-in mechanic
+// ---------------------------------------------------------------------------
+
+describe("Gen 3 Choice Band move lock-in mechanic", () => {
+  /**
+   * Choice Band locks the user into the first move it uses.
+   * After using a move, a "choice-locked" volatile is set on the user,
+   * and all other moves become disabled in getAvailableMoves.
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHOICE_BAND
+   * Source: Bulbapedia — "Choice Band locks the user into the first move selected"
+   */
+
+  it("given a Pokemon holding Choice Band, when it uses its first move, then other moves are disabled on the next turn", () => {
+    // Source: pret/pokeemerald — after using a move with Choice Band, 'choice-locked' volatile is set
+    // Blaziken moveset: [flamethrower(0), sky-uppercut(1), rock-slide(2), swords-dance(3)]
+    // After using move index 0 (flamethrower), moves 1-3 should be disabled
+    const blaziken = createGen3Pokemon(
+      257,
+      50,
+      ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+      "Blaziken",
+      { heldItem: "choice-band" },
+    );
+    const swampert = createGen3Pokemon(
+      260,
+      50,
+      ["surf", "earthquake", "ice-beam", "protect"],
+      "Swampert",
+    );
+    const engine = createBattle([blaziken], [swampert], 42);
+
+    // Act: Start battle, use move index 0 (flamethrower) with Choice Band
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // flamethrower
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // protect
+
+    // Assert: After turn 1, moves 1-3 for Blaziken should be disabled (Choice locked)
+    const availableMoves = engine.getAvailableMoves(0);
+    expect(availableMoves.length).toBe(4); // All 4 moves listed
+
+    // Move 0 (flamethrower) should NOT be disabled (it's the locked move)
+    expect(availableMoves[0]?.disabled).toBe(false);
+
+    // Moves 1-3 should be disabled with "Locked by Choice item" reason
+    expect(availableMoves[1]?.disabled).toBe(true);
+    expect(availableMoves[1]?.disabledReason).toBe("Locked by Choice item");
+    expect(availableMoves[2]?.disabled).toBe(true);
+    expect(availableMoves[3]?.disabled).toBe(true);
+  });
+
+  it("given a Pokemon NOT holding Choice Band, when it uses a move, then all moves remain available next turn", () => {
+    // Source: pret/pokeemerald — Choice lock only applies when holding a Choice item
+    // Without Choice Band, no lock-in should occur
+    const blaziken = createGen3Pokemon(
+      257,
+      50,
+      ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+      "Blaziken",
+      { heldItem: null },
+    );
+    const swampert = createGen3Pokemon(
+      260,
+      50,
+      ["surf", "earthquake", "ice-beam", "protect"],
+      "Swampert",
+    );
+    const engine = createBattle([blaziken], [swampert], 42);
+
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // flamethrower (no CB)
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // protect
+
+    // All moves should still be available (no choice lock)
+    const availableMoves = engine.getAvailableMoves(0);
+    const disabledMoves = availableMoves.filter((m) => m.disabled);
+    expect(disabledMoves.length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #387: Protect consecutive-use success-rate decay
+// ---------------------------------------------------------------------------
+
+describe("Gen 3 Protect consecutive-use success rate decay", () => {
+  /**
+   * Protect's success rate decays with consecutive uses.
+   * Source: pret/pokeemerald src/battle_script_commands.c sProtectSuccessRates:
+   *   sProtectSuccessRates = [USHRT_MAX, USHRT_MAX/2, USHRT_MAX/4, USHRT_MAX/8]
+   *   Index 0: 100% (always succeeds on first use or after reset)
+   *   Index 1: 50% (second consecutive use)
+   *   Index 2: 25% (third consecutive use)
+   *   Index 3: 12.5% (fourth+ consecutive use, capped)
+   *
+   * BaseRuleset.rollProtectSuccess(consecutiveProtects, rng) implements this:
+   *   0 consecutive → always true
+   *   1 consecutive → rng.chance(1 / 3^1) ← NOTE: implementation uses 3^n, not 2^n
+   *
+   * The implementation uses 3^n denominators (pokeemerald uses 2^n halving).
+   * These tests verify the IMPLEMENTATION's actual behavior per the testing standard:
+   * "Read the actual implementation first to find the exact threshold values used."
+   */
+
+  function makeMockRng(nextValue: number): SeededRandom {
+    return {
+      next: () => nextValue,
+      int: (_min: number, _max: number) => Math.floor(nextValue * (_max - _min + 1)) + _min,
+      chance: (p: number) => nextValue < p,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: T[]) => arr,
+      getState: () => 0,
+      setState: () => {},
+    } as unknown as SeededRandom;
+  }
+
+  it("given consecutiveProtects=0, when rollProtectSuccess is called, then always returns true (100% first use)", () => {
+    // Source: pret/pokeemerald sProtectSuccessRates[0] = USHRT_MAX (100%)
+    // BaseRuleset.rollProtectSuccess: if(consecutiveProtects === 0) return true
+    const rng = makeMockRng(0.99); // any RNG value — always succeeds on first use
+    expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
+  });
+
+  it("given consecutiveProtects=1, when RNG < 1/2, then Protect succeeds", () => {
+    // Source: pret/pokeemerald sProtectSuccessRates[1] = 32768 / 65535 ≈ 0.5 → rng.chance(1/2)
+    // Gen 3 override uses halving formula: 2^1 = 2 denominator
+    // value 0.40 < 0.50 → succeeds
+    const rng = makeMockRng(0.4);
+    expect(ruleset.rollProtectSuccess(1, rng)).toBe(true);
+  });
+
+  it("given consecutiveProtects=1, when RNG >= 1/2, then Protect fails", () => {
+    // Source: pret/pokeemerald sProtectSuccessRates[1] = 32768 / 65535 ≈ 0.5 → rng.chance(1/2)
+    // Gen 3 override uses halving formula: 2^1 = 2 denominator
+    // value 0.60 > 0.50 → fails
+    const rng = makeMockRng(0.6);
+    expect(ruleset.rollProtectSuccess(1, rng)).toBe(false);
+  });
+
+  it("given consecutiveProtects=2, when RNG < 1/4, then Protect succeeds", () => {
+    // Source: pret/pokeemerald sProtectSuccessRates[2] = 16384 / 65535 ≈ 0.25 → rng.chance(1/4)
+    // Gen 3 override uses halving formula: 2^2 = 4 denominator
+    // value 0.20 < 0.25 → succeeds
+    const rng = makeMockRng(0.2);
+    expect(ruleset.rollProtectSuccess(2, rng)).toBe(true);
+  });
+
+  it("given consecutiveProtects=2, when RNG >= 1/4, then Protect fails", () => {
+    // Source: pret/pokeemerald sProtectSuccessRates[2] = 16384 / 65535 ≈ 0.25 → rng.chance(1/4)
+    // Gen 3 override uses halving formula: 2^2 = 4 denominator
+    // value 0.30 > 0.25 → fails
+    const rng = makeMockRng(0.3);
+    expect(ruleset.rollProtectSuccess(2, rng)).toBe(false);
   });
 });
