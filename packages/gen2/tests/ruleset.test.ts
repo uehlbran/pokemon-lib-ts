@@ -237,7 +237,7 @@ describe("Gen2Ruleset", () => {
         "leftovers",
         "mystery-berry",
         "defrost",
-        "safeguard-countdown",
+        // safeguard-countdown removed: Safeguard is stored as a ScreenType and handled by screen-countdown
         "screen-countdown",
         "stat-boosting-items",
         "healing-items",
