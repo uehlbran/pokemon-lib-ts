@@ -760,8 +760,10 @@ export class Gen2Ruleset implements GenerationRuleset {
     const curHp3 = currentHp * 3;
     let hpFactor: number;
     if (curHp3 >= maxHp2) {
-      // If current HP * 3 >= max HP * 2, HP factor is minimal
-      hpFactor = Math.max(1, Math.floor(modifiedRate / maxHp2));
+      // When curHP*3 >= maxHP*2, the numerator (maxHP*2 - curHP*3) is <= 0.
+      // The decomp formula produces 0 or negative, which clamps to minimum 1.
+      // Source: pret/pokecrystal — hpFactor = max(1, formula) where formula <= 0 at full HP
+      hpFactor = 1;
     } else {
       hpFactor = Math.floor((modifiedRate * (maxHp2 - curHp3)) / maxHp2);
       hpFactor = Math.max(1, hpFactor);
@@ -779,11 +781,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Step 4: Final rate
     const finalRate = Math.min(255, hpFactor + statusBonus);
 
-    // Step 5: Single roll — random 0-255, catch if random < finalRate
+    // Step 5: Single roll — random 0-255, catch if random <= finalRate
     // Source: decomp lines 375-381 — `call Random; cp b; jr z, .catch; jr nc, .fail`
-    // cp b: carry set if random < b (catch), zero flag if random == b (also catch in decomp)
+    // cp b: carry set (A < B → catch), zero flag set (A == B → also catch per jr z)
+    // Combined condition: A <= B means roll <= finalRate
     const roll = rng.int(0, 255);
-    if (roll < finalRate) {
+    if (roll <= finalRate) {
       return { caught: true, shakes: 3 };
     }
     // Gen 2 wobble animation is cosmetic — we return 0 shakes on failure for simplicity
