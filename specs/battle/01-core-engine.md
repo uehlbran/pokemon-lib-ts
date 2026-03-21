@@ -1,6 +1,6 @@
 <!-- SPEC FRONT-MATTER -->
 <!-- status: IMPLEMENTED -->
-<!-- last-updated: 2026-03-17 -->
+<!-- last-updated: 2026-03-21 -->
 
 # Battle Library — Core Engine
 
@@ -324,8 +324,8 @@ private executeMove(action: MoveAction, actor: ActivePokemon): void {
   this.processEffectResult(effectResult, actor, defender);
 
   // --- Post-move: Contact ability triggers ---
-  // NOTE: NOT YET IMPLEMENTED. on-after-move-hit handling for contact abilities
-  // (Static, Poison Powder on contact, etc.) is pending implementation in the ruleset.
+  // IMPLEMENTED: Contact abilities (Static, Flame Body, Poison Point, Rough Skin, etc.)
+  // are handled at BattleEngine.ts ~line 1083 via applyAbility("on-contact").
 
   // --- Post-move: Held item triggers (Life Orb recoil, etc.) ---
   if (this.ruleset.hasHeldItems() && actor.pokemon.heldItem) {
@@ -568,31 +568,54 @@ Example arrays:
 
 ### Currently Implemented Effects
 - `"weather-damage"` — Sandstorm/Hail chip damage
+- `"weather-countdown"` — Decrement weather counter, clear if expired
+- `"terrain-countdown"` — Terrain duration countdown
 - `"status-damage"` — Burn/Poison/Toxic damage
 - `"leech-seed"` — Leech Seed drain
 - `"nightmare"` — Nightmare damage (1/4 max HP if asleep)
 - `"curse"` — Curse damage (Ghost-type curse, 1/4 max HP)
 - `"bind"` — Partial trapping damage
-- `"weather-end"` — Decrement weather counter, clear if expired
-- `"terrain"` — Terrain duration countdown
-- `"status"` (poison/burn/freeze) — Poison/Burn status damage
+- `"leftovers"` — Leftovers held item HP restoration
+- `"black-sludge"` — Black Sludge held item heal/damage (via `applyHeldItem`)
+- `"aqua-ring"` — Aqua Ring HP recovery (1/16 max HP per turn)
+- `"ingrain"` — Ingrain root HP recovery (1/16 max HP per turn)
+- `"wish"` — Wish delayed heal (activates when turnsLeft reaches 0)
+- `"future-attack"` — Future Sight/Doom Desire hit execution (damage calc at hit time for Gen 4+)
+- `"perish-song"` — Perish Song countdown; faints at 0
+- `"screen-countdown"` — Reflect/Light Screen duration countdown
+- `"tailwind-countdown"` — Tailwind duration countdown
+- `"trick-room-countdown"` — Trick Room duration countdown
+- `"speed-boost"` — Speed Boost ability stat increase (via `applyAbility("on-turn-end")`)
+- `"bad-dreams"` — Bad Dreams ability damage (via `applyAbility("on-turn-end")`)
+- `"poison-heal"` — Poison Heal ability HP recovery (via `applyAbility("on-turn-end")`)
+- `"weather-healing"` — Rain Dish, Dry Skin, Ice Body (via `applyAbility("on-turn-end")`)
+- `"shed-skin"` — Shed Skin 33% status cure (via `applyAbility("on-turn-end")`)
+- `"toxic-orb-activation"` — Toxic Orb badly poisons holder (via `applyHeldItem("end-of-turn")`)
+- `"flame-orb-activation"` — Flame Orb burns holder (via `applyHeldItem("end-of-turn")`)
+- `"slow-start-countdown"` — Slow Start 5-turn volatile countdown
+- `"defrost"` — Gen 2 end-of-turn freeze thaw check
+- `"safeguard-countdown"` — Safeguard duration countdown
+- `"mystery-berry"` — Mystery Berry PP restoration
+- `"stat-boosting-items"` — Stat-boosting held items
+- `"healing-items"` — Healing held items
+- `"encore-countdown"` — Encore volatile countdown
+- `"taunt-countdown"` — Taunt volatile countdown
+- `"disable-countdown"` — Disable volatile countdown
+- `"gravity-countdown"` — Gravity field countdown
+- `"yawn-countdown"` — Yawn drowsiness countdown (inflicts sleep at 0)
+- `"heal-block-countdown"` — Heal Block volatile countdown
+- `"embargo-countdown"` — Embargo volatile countdown
+- `"magnet-rise-countdown"` — Magnet Rise volatile countdown
 
 ### NOT YET IMPLEMENTED Effects
-The following effect identifiers are listed in the switch statement but have placeholder implementations only:
-- `"black-sludge"` — Black Sludge held item heal for Poison types
-- `"aqua-ring"` — Aqua Ring HP recovery
-- `"ingrain"` — Ingrain root HP recovery
-- `"grassy-terrain-heal"` — Grassy Terrain HP recovery
-- `"wish"` — Wish delayed heal (stub only)
-- `"future-attack"` — Future Sight/Doom Desire hit execution (stub only)
-- `"speed-boost"` — Speed Boost ability stat increase
-- `"moody"` — Moody ability random stat changes
-- `"bad-dreams"` — Bad Dreams ability damage
-- `"harvest"` — Harvest ability berry restoration
-- `"pickup"` — Pickup ability item finding
-- `"poison-heal"` — Poison Heal ability HP recovery
+The following effect identifiers have stubs in the engine switch statement that delegate to the ruleset, but no gen ruleset currently returns them:
+- `"moody"` — Moody ability random stat changes (Gen 5+; stub delegates to `applyAbility("on-turn-end")`)
+- `"harvest"` — Harvest ability berry restoration (Gen 5+; stub delegates to `applyAbility("on-turn-end")`)
+- `"pickup"` — Pickup ability item collection (Gen 5+; stub delegates to `applyAbility("on-turn-end")`)
+- `"grassy-terrain-heal"` — Grassy Terrain HP recovery (Gen 6+; stub delegates to `applyTerrainEffects()`)
 
-These effects need to be properly implemented in future versions.
+### NOT YET IMPLEMENTED Features
+- EXP gain calculation — not yet implemented; will be delegated to the ruleset
 
 ---
 

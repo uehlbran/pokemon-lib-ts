@@ -2458,8 +2458,86 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
+        case "moody": {
+          // Gen 5+ ability: raises one stat by 2 and lowers another by 1 at EoT.
+          // Stub: delegates to ruleset ability hook. No gen currently returns this effect.
+          // Source: Showdown sim/abilities.ts — Moody triggers at residual phase
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "harvest": {
+          // Gen 5+ ability: 50% chance to restore a consumed Berry at EoT (100% in sun).
+          // Stub: delegates to ruleset ability hook. No gen currently returns this effect.
+          // Source: Showdown sim/abilities.ts — Harvest triggers at residual phase
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "pickup": {
+          // Gen 5+ ability: may pick up an item used during the turn.
+          // Stub: delegates to ruleset ability hook. No gen currently returns this effect.
+          // Source: Showdown sim/abilities.ts — Pickup triggers at residual phase
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const opponent = this.getOpponentActive(side.index);
+            const result = this.ruleset.applyAbility("on-turn-end", {
+              pokemon: active,
+              opponent: opponent ?? undefined,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-turn-end",
+            });
+            if (result.activated) {
+              this.processAbilityResult(result, active, opponent ?? active, side.index);
+            }
+          }
+          break;
+        }
+        case "grassy-terrain-heal": {
+          // Gen 6+ terrain: heals grounded Pokemon for 1/16 max HP at EoT.
+          // Stub: delegates to ruleset terrain effects. No gen currently returns this effect.
+          // Source: Showdown sim/field.ts — Grassy Terrain heals at residual phase
+          if (this.state.terrain?.type === "grassy") {
+            const terrainResults = this.ruleset.applyTerrainEffects(this.state);
+            for (const result of terrainResults) {
+              const active = this.getActive(result.side);
+              if (active && active.pokemon.currentHp > 0) {
+                this.emit({ type: "message", text: result.message });
+              }
+            }
+          }
+          break;
+        }
         default:
-          // Many effects not yet implemented
+          // Remaining effects not yet implemented
           break;
       }
 
@@ -2973,7 +3051,10 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         default:
-          // Other effect types (damage-reduction, etc.) not yet implemented
+          // damage-reduction, type-change, weather-immunity are intentionally NOT processed
+          // here. They are passive checks handled inline by the ruleset's calculateDamage()
+          // and ability trigger systems — not post-hoc engine effects. This is by design
+          // per the cardinal rule: the engine delegates ALL gen-specific behavior to rulesets.
           break;
       }
     }
