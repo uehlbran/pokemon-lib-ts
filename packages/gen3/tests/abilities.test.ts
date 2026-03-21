@@ -1231,12 +1231,12 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       expect(result.messages.length).toBe(0);
     });
 
-    it("given an unsupported trigger (e.g., on-contact), when dispatched, then returns activated=false", () => {
-      // Engine doesn't call on-contact triggers yet
+    it("given an unsupported trigger (e.g., on-flinch), when dispatched, then returns activated=false", () => {
+      // on-flinch is not implemented for Gen 3 (Gen 4+ only)
       const ctx = createAbilityContext({
         pokemonAbility: "static",
       });
-      const result = applyGen3Ability("on-contact" as "on-switch-in", ctx);
+      const result = applyGen3Ability("on-flinch" as "on-switch-in", ctx);
       expect(result.activated).toBe(false);
     });
   });

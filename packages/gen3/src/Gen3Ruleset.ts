@@ -35,7 +35,11 @@ import {
   gen14MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
-import { applyGen3Ability } from "./Gen3Abilities";
+import {
+  applyGen3Ability,
+  isGen3AbilityStatusImmune,
+  isGen3VolatileBlockedByAbility,
+} from "./Gen3Abilities";
 import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
 import { calculateGen3Damage } from "./Gen3DamageCalc";
 import { applyGen3HeldItem } from "./Gen3Items";
@@ -512,6 +516,106 @@ export class Gen3Ruleset extends BaseRuleset {
     }
     return Math.max(1, effective);
   }
+
+  // --- Switch Restrictions (#229: trapping abilities) ---
+
+  /**
+   * Gen 3 switch restrictions: "trapped" volatile + trapping abilities.
+   *
+   * Trapping abilities in Gen 3:
+   *   - Shadow Tag: traps non-Shadow-Tag opponents
+   *   - Arena Trap: traps grounded (non-Flying, non-Levitate) opponents
+   *     NOTE: No Gravity in Gen 3 (introduced Gen 4), so no gravity grounding check.
+   *   - Magnet Pull: traps Steel-type opponents
+   *
+   * Source: pret/pokeemerald src/battle_util.c — trapping ability checks
+   * Source: Bulbapedia — Shadow Tag, Arena Trap, Magnet Pull
+   */
+  override canSwitch(pokemon: ActivePokemon, state: BattleState): boolean {
+    // "trapped" volatile (Mean Look, Spider Web, Block)
+    if (pokemon.volatileStatuses.has("trapped")) return false;
+
+    // Find which side the pokemon is on and get the opponent
+    const pokemonSide = state.sides[0].active[0] === pokemon ? 0 : 1;
+    const opponentSide = pokemonSide === 0 ? 1 : 0;
+    const opponent = state.sides[opponentSide].active[0];
+    if (!opponent || opponent.pokemon.currentHp <= 0) return true;
+
+    const oppAbility = opponent.ability;
+
+    // Shadow Tag: traps non-Shadow-Tag opponents
+    // Source: pret/pokeemerald — ABILITY_SHADOW_TAG traps all non-Shadow-Tag foes
+    if (oppAbility === "shadow-tag" && pokemon.ability !== "shadow-tag") return false;
+
+    // Arena Trap: traps grounded (non-Flying, non-Levitate) opponents
+    // NOTE: No Gravity in Gen 3 (Gen 4+), so no gravity grounding check.
+    // Source: pret/pokeemerald — ABILITY_ARENA_TRAP traps non-Flying, non-Levitate foes
+    if (oppAbility === "arena-trap") {
+      const isFlying = pokemon.types.includes("flying");
+      const hasLevitate = pokemon.ability === "levitate";
+      if (!isFlying && !hasLevitate) return false;
+    }
+
+    // Magnet Pull: traps Steel-type opponents
+    // Source: pret/pokeemerald — ABILITY_MAGNET_PULL traps Steel-type foes
+    if (oppAbility === "magnet-pull" && pokemon.types.includes("steel")) return false;
+
+    return true;
+  }
+
+  // --- Sleep Processing (#227 partial: Early Bird) ---
+
+  /**
+   * Gen 3 sleep turn processing with Early Bird support.
+   *
+   * Early Bird: sleep counter decrements by 2 instead of 1 each turn.
+   * Gen 3 behavior: Pokemon CANNOT act on the turn they wake up (same as Gen 1-4).
+   *
+   * Source: pret/pokeemerald src/battle_util.c — ABILITY_EARLY_BIRD doubles sleep decrement
+   * Source: Bulbapedia — "Early Bird causes sleep to last half as long"
+   */
+  override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
+    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    if (!sleepState || sleepState.turnsLeft <= 0) {
+      // No counter found or already at 0 — wake up, but cannot act (Gen 3)
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep-counter");
+      return false;
+    }
+
+    // Early Bird: decrement by 2 instead of 1
+    // Source: pret/pokeemerald — ABILITY_EARLY_BIRD: sleepTimer decremented twice
+    const decrement = pokemon.ability === "early-bird" ? 2 : 1;
+    sleepState.turnsLeft = Math.max(0, sleepState.turnsLeft - decrement);
+
+    if (sleepState.turnsLeft <= 0) {
+      // Counter just reached 0 — wake up, but cannot act (Gen 3)
+      pokemon.pokemon.status = null;
+      pokemon.volatileStatuses.delete("sleep-counter");
+      return false;
+    }
+
+    return false; // Still sleeping — cannot act
+  }
+
+  // --- Switch Out (#227 partial: Natural Cure) ---
+
+  /**
+   * Gen 3 switch-out processing with Natural Cure.
+   *
+   * Natural Cure: cures all primary status conditions when the Pokemon switches out.
+   *
+   * Source: pret/pokeemerald src/battle_util.c — ABILITY_NATURAL_CURE on switch-out
+   * Source: Bulbapedia — "Natural Cure heals any status condition upon switching out."
+   */
+  override onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
+    // Natural Cure: cure status condition on switch-out
+    if (pokemon.ability === "natural-cure" && pokemon.pokemon.status !== null) {
+      pokemon.pokemon.status = null;
+    }
+    // Delegate to BaseRuleset for standard volatile clearing
+    super.onSwitchOut(pokemon, state);
+  }
 }
 
 // ─── Gen 3 Accuracy Stage Ratios ──────────────────────────────────────────
@@ -592,6 +696,12 @@ export function canInflictGen3Status(status: PrimaryStatus, target: ActivePokemo
         return false;
       }
     }
+  }
+
+  // Check ability immunities (Immunity, Insomnia, Vital Spirit, Limber, Water Veil, Magma Armor)
+  // Source: pret/pokeemerald src/battle_util.c — ability checks in CanBeStatusd
+  if (isGen3AbilityStatusImmune(target.ability, status)) {
+    return false;
   }
 
   return true;
