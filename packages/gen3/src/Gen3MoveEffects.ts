@@ -70,6 +70,8 @@ type MutableResult = {
   forcedMoveSet?: { moveIndex: number; moveId: string; volatileStatus: VolatileStatus } | null;
   /** Screens to clear from the defender's side (e.g., Brick Break removes Reflect/Light Screen) */
   screensCleared?: "attacker" | "defender" | "both" | null;
+  /** When set, only remove screens whose type is in this list (Brick Break: reflect, light-screen) */
+  screenTypesToRemove?: readonly string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -799,6 +801,9 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       // Source: Bulbapedia — "Brick Break removes Reflect and Light Screen from the target's
       //   side of the field, then inflicts damage."
       result.screensCleared = "defender";
+      // Source: pret/pokeemerald EFFECT_BRICK_BREAK -- only removes Reflect and Light Screen,
+      // NOT Safeguard. Defog (Gen 4) clears all screens including Safeguard.
+      result.screenTypesToRemove = ["reflect", "light-screen"];
       // Only show message if there are actually screens to remove
       const defenderSideIndex = state.sides.findIndex((side) =>
         side.active.some((a) => a?.pokemon === defender.pokemon),

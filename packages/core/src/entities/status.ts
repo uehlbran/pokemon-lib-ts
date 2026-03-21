@@ -67,4 +67,5 @@ export type VolatileStatus =
   | "truant-turn" // Truant — alternates between acting and loafing each turn (Gen 3+)
   | "quick-guard" // Quick Guard — protects the user's side from priority moves (Gen 5+)
   | "wide-guard" // Wide Guard — protects the user's side from multi-target moves (Gen 5+)
+  | "uproar" // Uproar — prevents all Pokemon from falling asleep, lasts 3 turns (Gen 3+)
   | "illusion"; // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)

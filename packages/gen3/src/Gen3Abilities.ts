@@ -255,6 +255,8 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
       return handleDamageTaken(abilityId, context);
     case "on-status-inflicted":
       return handleStatusInflicted(abilityId, context);
+    case "on-weather-change":
+      return handleWeatherChange(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };
   }
@@ -944,4 +946,47 @@ function handleStatusInflicted(abilityId: string, context: AbilityContext): Abil
     };
   }
   return { activated: false, effects: [], messages: [] };
+}
+
+// ─── On-Weather-Change ──────────────────────────────────────────────────────
+
+/**
+ * Handle "on-weather-change" abilities for Gen 3.
+ *
+ * Only Forecast is relevant: Castform changes type when weather changes mid-battle.
+ *
+ * Source: pret/pokeemerald src/battle_util.c — ABILITY_FORECAST / GetCastformForm
+ * Source: Bulbapedia — "Forecast changes Castform's type based on the weather"
+ */
+function handleWeatherChange(abilityId: string, context: AbilityContext): AbilityResult {
+  if (abilityId !== "forecast") return { activated: false, effects: [], messages: [] };
+
+  // Forecast only has an effect on Castform (speciesId 351).
+  // Source: pret/pokeemerald — IS_CASTFORM_SPECIES guard
+  if (context.pokemon.pokemon.speciesId !== 351) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+  const weather = context.state?.weather?.type ?? null;
+
+  // Weather is suppressed if Cloud Nine / Air Lock is on the field
+  const suppressed = isWeatherSuppressedGen3(context.pokemon, context.opponent);
+  const effectiveWeather = suppressed ? null : weather;
+  const newType = getForecastType(effectiveWeather);
+
+  // Only activate if the type would actually change
+  const currentTypes = context.pokemon.types;
+  if (currentTypes.length === 1 && currentTypes[0] === newType) {
+    return { activated: false, effects: [], messages: [] };
+  }
+  if (currentTypes.length === 0 && newType === "normal") {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  return {
+    activated: true,
+    effects: [{ effectType: "type-change", target: "self", types: [newType] }],
+    messages: [`${name} transformed into the ${newType} type!`],
+  };
 }
