@@ -9,8 +9,10 @@ import {
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
+  getTypeMultiplier,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
+import { isWeatherSuppressedGen3 } from "./Gen3Abilities";
 import { TYPE_BOOST_ITEMS } from "./Gen3Items";
 
 /**
@@ -70,6 +72,7 @@ function getAttackStat(
   moveType: PokemonType,
   isCrit: boolean,
   typeBoostItemType: string | null,
+  defenderAbility?: string,
 ): number {
   const physical = isGen3PhysicalType(moveType);
   const statKey = physical ? "attack" : "spAttack";
@@ -151,6 +154,13 @@ function getAttackStat(
   // Source: pret/pokeemerald src/pokemon.c:3211-3212 — (150 * attack) / 100
   if (physical && ability === "guts" && attacker.pokemon.status !== null) {
     rawStat = Math.floor((150 * rawStat) / 100);
+  }
+
+  // 6a. Thick Fat: halves the raw attack/spAttack stat for Fire and Ice moves.
+  // Applied BEFORE stat stages per pokeemerald modifier order.
+  // Source: pret/pokeemerald src/pokemon.c:3203-3204 — spAttack /= 2 (or attack /= 2)
+  if (defenderAbility === "thick-fat" && (moveType === "fire" || moveType === "ice")) {
+    rawStat = Math.floor(rawStat / 2);
   }
 
   // Now apply stat stages
@@ -278,7 +288,10 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Weather (moved before Weather Ball/SolarBeam checks)
   // Source: pret/pokeemerald src/pokemon.c:3330-3363
-  const weather = context.state.weather?.type ?? null;
+  // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
+  // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+  const rawWeather = context.state.weather?.type ?? null;
+  const weather = isWeatherSuppressedGen3(attacker, defender) ? null : rawWeather;
 
   // Track the effective move type — Weather Ball changes type based on weather
   let effectiveMoveType: PokemonType = move.type;
@@ -366,7 +379,13 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Get effective stats (with ability mods, items, and stat stages applied)
   // Burn is NOT applied here — it's applied AFTER the base formula per pokeemerald
-  let attack = getAttackStat(attacker, effectiveMoveType, isCrit, typeBoostItemType);
+  let attack = getAttackStat(
+    attacker,
+    effectiveMoveType,
+    isCrit,
+    typeBoostItemType,
+    defenderAbility,
+  );
   let defense = getDefenseStat(defender, effectiveMoveType, isCrit);
 
   // Explosion / Self-Destruct: halve the defender's Defense stat
@@ -378,16 +397,15 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // Track multipliers for breakdown
+  // Thick Fat is now applied inside getAttackStat (before stat stages) per pokeemerald order
   let abilityMultiplier = 1;
   const itemMultiplier = typeBoostItemType === effectiveMoveType ? 1.1 : 1;
 
-  // Thick Fat: halves the attacker's effective stat BEFORE the damage formula runs.
-  // Source: pret/pokeemerald src/pokemon.c:3203-3204 — spAttack /= 2 (or attack for physical)
+  // Track Thick Fat for breakdown (already applied in getAttackStat)
   if (
     defenderAbility === "thick-fat" &&
     (effectiveMoveType === "fire" || effectiveMoveType === "ice")
   ) {
-    attack = Math.floor(attack / 2);
     abilityMultiplier = 0.5;
   }
 
@@ -474,8 +492,16 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     baseDamage = Math.floor(baseDamage * stabMod);
   }
 
-  // Type effectiveness
-  // Source: pret/pokeemerald — product of matchups for each defender type
+  // Type effectiveness — applied SEQUENTIALLY with intermediate floor per pokeemerald.
+  // In Gen 3+, each defender type multiplier is applied one at a time with Math.floor
+  // between them. This can produce different results from multiplying all at once.
+  //
+  // Example: damage=7, type1=0.5x, type2=2x
+  //   Sequential: floor(floor(7*0.5)*2) = floor(3*2) = 6
+  //   Combined:   floor(7*1.0) = 7
+  //
+  // Source: pret/pokeemerald src/battle_script_commands.c — type effectiveness loop
+  //   applies one type at a time with truncation between iterations
   const effectiveness = getTypeEffectiveness(effectiveMoveType, defender.types, typeChart);
 
   const burnMultiplier = burnApplied ? 0.5 : 1;
@@ -527,8 +553,12 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     };
   }
 
-  // Apply type effectiveness as a multiplier
-  baseDamage = Math.floor(baseDamage * effectiveness);
+  // Apply type effectiveness SEQUENTIALLY with intermediate floor for each defender type
+  // Source: pret/pokeemerald src/battle_script_commands.c — loop over defender types
+  for (const defType of defender.types) {
+    const mult = getTypeMultiplier(effectiveMoveType, defType, typeChart);
+    baseDamage = Math.floor(baseDamage * mult);
+  }
 
   // Minimum 1 damage (unless type immune, which returns 0 above)
   const finalDamage = Math.max(1, baseDamage);

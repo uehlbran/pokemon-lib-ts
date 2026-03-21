@@ -191,10 +191,12 @@ describe("Gen 3 Limber ability immunity integration", () => {
     expect(canInflictGen3Status("burn", target)).toBe(true);
   });
 
-  it("given Electric-type target without Limber, when attempting to inflict paralysis, then returns false (type immunity)", () => {
-    // Source: pret/pokeemerald — Electric types are immune to paralysis in Gen 3
+  it("given Electric-type target without Limber, when attempting to inflict paralysis, then returns true (no Electric immunity in Gen 3)", () => {
+    // Source: pret/pokeemerald src/battle_util.c — CanBeStatusd has no Electric-type paralysis check
+    // Electric-type paralysis immunity was introduced in Gen 6.
+    // Source: Bulbapedia — "In Generation VI onward, Electric-type Pokemon are immune to paralysis."
     const target = createMockActivePokemon({ types: ["electric"], ability: "static" });
-    expect(canInflictGen3Status("paralysis", target)).toBe(false);
+    expect(canInflictGen3Status("paralysis", target)).toBe(true);
   });
 
   it("given Normal-type target without Limber, when attempting to inflict paralysis, then returns true", () => {

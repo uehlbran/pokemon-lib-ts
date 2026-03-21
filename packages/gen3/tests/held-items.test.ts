@@ -801,9 +801,8 @@ describe("Gen 3 Held Items", () => {
       expect(result.activated).toBe(false);
     });
 
-    it.todo(
-      "given a Pokemon using Bite (inherent 30% flinch) holding King's Rock, when on-hit triggers, then King's Rock does NOT add extra flinch (requires VERIFY_POKEEMERALD confirmation: src/battle_util.c)",
-    );
+    // Bite + King's Rock flinch restriction: fully tested in move-item-bugs.test.ts
+    // King's Rock does NOT add extra flinch on moves with inherent flinch (e.g., Bite)
   });
 
   // =========================================================================
@@ -1308,19 +1307,13 @@ describe("Gen 3 Held Items", () => {
   // Accuracy-reducing items — engine-limited stubs
   // =========================================================================
 
-  describe("Accuracy-reducing items — engine-limited stubs", () => {
-    it.todo(
-      "given Brightpowder holder is targeted, when accuracy check runs, then opponent's accuracy is 0.9x (requires doesMoveHit accuracy modifier hook)",
-    );
-    it.todo(
-      "given Lax Incense holder is targeted, when accuracy check runs, then opponent's accuracy is 0.9x (requires doesMoveHit accuracy modifier hook)",
-    );
-  });
+  // BrightPowder/Lax Incense accuracy reduction: implemented in Gen3Ruleset.doesMoveHit
+  // Tests in move-item-bugs.test.ts
+
+  // White Herb: implemented in Gen3Items.ts handleStatBoostBetweenTurns
+  // Tests in move-item-bugs.test.ts
 
   describe("Stubbed items (engine support not available)", () => {
-    it.todo(
-      "White Herb restores lowered stat stages once, then is consumed (requires engine stat-boost support)",
-    );
     it.todo("Salac Berry boosts Speed +1 stage at <= 25% HP (requires engine stat-boost support)");
     it.todo("Petaya Berry boosts SpAtk +1 stage at <= 25% HP (requires engine stat-boost support)");
     it.todo("Apicot Berry boosts SpDef +1 stage at <= 25% HP (requires engine stat-boost support)");
