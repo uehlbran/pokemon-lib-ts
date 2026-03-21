@@ -476,7 +476,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return ["spikes"];
   }
 
-  applyEntryHazards(pokemon: ActivePokemon, side: BattleSide): EntryHazardResult {
+  applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    _state?: BattleState,
+  ): EntryHazardResult {
     const hasSpikes = side.hazards.some((h) => h.type === "spikes");
     if (!hasSpikes) {
       return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
