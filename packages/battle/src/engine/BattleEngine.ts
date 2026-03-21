@@ -1615,25 +1615,42 @@ export class BattleEngine implements BattleEventEmitter {
     if (!wildActive) return;
 
     // Extract ball modifier from item data
+    // Guard: catchRateModifier may be absent on a ball item with a missing field — default to 1
     const useEffect = itemData.useEffect;
-    const ballModifier = useEffect && useEffect.type === "catch" ? useEffect.catchRateModifier : 1;
+    const ballModifier = useEffect?.type === "catch" ? (useEffect.catchRateModifier ?? 1) : 1;
 
-    // Get wild Pokemon's species catch rate
-    // 45 is the most common wild Pokemon catch rate (Rattata, Pidgey, etc.) — used as a
-    // data-missing guard only. Real battles should always have species data present.
-    // Source: Bulbapedia — Catch rate (most common wild Pokemon base value)
-    let baseCatchRate = 45;
+    // Get wild Pokemon's species catch rate.
+    // Abort the catch attempt with an engine message if species data is unavailable —
+    // silently substituting a default (45) would distort capture odds for the player.
+    let baseCatchRate: number;
     try {
       const species = this.dataManager.getSpecies(wildActive.pokemon.speciesId);
       baseCatchRate = species.catchRate;
     } catch {
-      // Species not found in data manager — use default
+      this.emit({
+        type: "message",
+        text: "The Poke Ball missed! (species data unavailable)",
+      });
+      return;
+    }
+
+    // maxHp must come from calculatedStats, not currentHp — using currentHp when the Pokemon
+    // has taken damage would make it appear at full health (HP ratio = 1.0), incorrectly
+    // lowering the catch rate bonus for damaged Pokemon.
+    // Abort if calculatedStats is absent (e.g., after deserialize without species data).
+    const maxHp = wildActive.pokemon.calculatedStats?.hp;
+    if (maxHp === undefined) {
+      this.emit({
+        type: "message",
+        text: "The Poke Ball missed! (stat data unavailable)",
+      });
+      return;
     }
 
     // Delegate to ruleset for the actual roll
     const result = this.ruleset.rollCatchAttempt(
       baseCatchRate,
-      wildActive.pokemon.calculatedStats?.hp ?? wildActive.pokemon.currentHp,
+      maxHp,
       wildActive.pokemon.currentHp,
       wildActive.pokemon.status,
       ballModifier,
@@ -1651,7 +1668,11 @@ export class BattleEngine implements BattleEventEmitter {
 
     if (result.caught) {
       this.emit({ type: "message", text: `${getPokemonName(wildActive)} was caught!` });
+      // Synchronize state before emitting battle-end so getWinner() and getPhase() are
+      // consistent for synchronous listeners — mirrors the checkBattleEnd() pattern.
       this.state.ended = true;
+      this.state.winner = 0;
+      this.transitionTo("battle-end");
       // Side 0 (player) wins by catching
       this.emit({ type: "battle-end", winner: 0 });
     } else {

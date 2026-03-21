@@ -2,7 +2,7 @@ import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, CatchResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
-import type { BattleEvent, CatchAttemptEvent } from "../../src/events";
+import type { BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -84,22 +84,24 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.submitAction(0, { type: "item", side: 0, itemId: "poke-ball" });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert
-    const catchEvent = events.find((e) => e.type === "catch-attempt") as
-      | CatchAttemptEvent
-      | undefined;
-    expect(catchEvent).toBeDefined();
-    expect(catchEvent!.caught).toBe(true);
-    expect(catchEvent!.shakes).toBe(3);
-    expect(catchEvent!.ball).toBe("poke-ball");
+    // Assert — catch-attempt event carries full content
+    const catchEvent = events.find((e) => e.type === "catch-attempt");
+    expect(catchEvent).toEqual(
+      expect.objectContaining({
+        type: "catch-attempt",
+        caught: true,
+        shakes: 3,
+        ball: "poke-ball",
+      }),
+    );
 
     // Battle should end with side 0 (player) winning
     const endEvent = events.find((e) => e.type === "battle-end");
-    expect(endEvent).toBeDefined();
-    expect((endEvent as { winner: 0 | 1 | null }).winner).toBe(0);
+    expect(endEvent).toEqual(expect.objectContaining({ type: "battle-end", winner: 0 }));
 
-    // Engine should be in ended state
+    // Engine should be in ended state with winner set
     expect(engine.isEnded()).toBe(true);
+    expect(engine.getWinner()).toBe(0);
   });
 
   it("given a wild battle and catch fails with 2 shakes, when poke-ball thrown, then CatchAttemptEvent(caught=false, shakes=2) and battle continues", () => {
@@ -115,13 +117,11 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.submitAction(0, { type: "item", side: 0, itemId: "poke-ball" });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert
-    const catchEvent = events.find((e) => e.type === "catch-attempt") as
-      | CatchAttemptEvent
-      | undefined;
-    expect(catchEvent).toBeDefined();
-    expect(catchEvent!.caught).toBe(false);
-    expect(catchEvent!.shakes).toBe(2);
+    // Assert — catch-attempt event carries full content
+    const catchEvent = events.find((e) => e.type === "catch-attempt");
+    expect(catchEvent).toEqual(
+      expect.objectContaining({ type: "catch-attempt", caught: false, shakes: 2 }),
+    );
 
     // Battle should NOT end
     const endEvent = events.find((e) => e.type === "battle-end");
@@ -148,7 +148,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     const blockedMsg = events.find(
       (e) => e.type === "message" && "text" in e && e.text.includes("trainer"),
     );
-    expect(blockedMsg).toBeDefined();
+    expect(blockedMsg).toEqual(expect.objectContaining({ type: "message" }));
 
     const catchEvent = events.find((e) => e.type === "catch-attempt");
     expect(catchEvent).toBeUndefined();
@@ -180,7 +180,6 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     let capturedBallModifier = 0;
 
     // Override rollCatchAttempt to capture the ballModifier argument
-    const originalRoll = ruleset.rollCatchAttempt.bind(ruleset);
     ruleset.rollCatchAttempt = (
       catchRate: number,
       maxHp: number,
@@ -204,11 +203,8 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     // Source: Bulbapedia "Ultra Ball" — catch rate modifier is 2x
     expect(capturedBallModifier).toBe(2);
 
-    const catchEvent = events.find((e) => e.type === "catch-attempt") as
-      | CatchAttemptEvent
-      | undefined;
-    expect(catchEvent).toBeDefined();
-    expect(catchEvent!.caught).toBe(true);
+    const catchEvent = events.find((e) => e.type === "catch-attempt");
+    expect(catchEvent).toEqual(expect.objectContaining({ type: "catch-attempt", caught: true }));
   });
 
   it("given a Potion used (not a catch item), when item action submitted, then normal bag item logic applies (regression)", () => {
@@ -235,7 +231,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
 
     // Assert — should get heal event, NOT catch event
     const healEvent = events.find((e) => e.type === "heal");
-    expect(healEvent).toBeDefined();
+    expect(healEvent).toEqual(expect.objectContaining({ type: "heal" }));
 
     const catchEvent = events.find((e) => e.type === "catch-attempt");
     expect(catchEvent).toBeUndefined();
@@ -259,14 +255,8 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     const events1 = runCatchAttempt();
     const events2 = runCatchAttempt();
 
-    // Assert — same seed produces identical event streams
+    // Assert — same seed produces identical event streams (full stream equality)
     // Source: CLAUDE.md "Seeded PRNG: Mulberry32. Deterministic battles for testing and replay."
-    expect(events1.length).toBe(events2.length);
-
-    const catch1 = events1.find((e) => e.type === "catch-attempt") as CatchAttemptEvent;
-    const catch2 = events2.find((e) => e.type === "catch-attempt") as CatchAttemptEvent;
-    expect(catch1.shakes).toBe(catch2.shakes);
-    expect(catch1.caught).toBe(catch2.caught);
-    expect(catch1.ball).toBe(catch2.ball);
+    expect(events1).toEqual(events2);
   });
 });

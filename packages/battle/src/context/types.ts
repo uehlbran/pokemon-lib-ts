@@ -696,9 +696,21 @@ export interface BagItemResult {
  * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
  * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
  */
-export interface CatchResult {
-  /** Number of shake checks that succeeded (0-3 if not caught, always 3 if caught) */
-  readonly shakes: number;
-  /** Whether the Pokemon was successfully caught (shakes === 3 maps to caught) */
-  readonly caught: boolean;
-}
+/**
+ * Discriminated union ensuring caught/shake count combinations are always valid.
+ * A successful catch always has shakes=3; a failed attempt always has shakes 0–2.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
+ * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+ */
+export type CatchResult =
+  | {
+      readonly caught: true;
+      /** Always 3 on a successful catch */
+      readonly shakes: 3;
+    }
+  | {
+      readonly caught: false;
+      /** 0–2 shake checks passed before the Pokemon broke free */
+      readonly shakes: 0 | 1 | 2;
+    };

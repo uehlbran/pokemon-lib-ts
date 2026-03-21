@@ -1514,9 +1514,10 @@ export class Gen1Ruleset implements GenerationRuleset {
       statusModifier,
     );
     const shakeChecks = calculateShakeChecks(modifiedRate, rng);
-    const caught = shakeChecks >= 4;
-    const shakes = caught ? 3 : shakeChecks;
-    return { shakes, caught };
+    if (shakeChecks >= 4) {
+      return { caught: true, shakes: 3 };
+    }
+    return { caught: false, shakes: shakeChecks as 0 | 1 | 2 };
   }
 
   shouldExecutePursuitPreSwitch(): boolean {

@@ -685,9 +685,10 @@ export abstract class BaseRuleset implements GenerationRuleset {
     const shakeChecks = calculateShakeChecks(modifiedRate, rng);
     // calculateShakeChecks returns 0-4; 4 = caught
     // CatchAttemptEvent uses shakes 0-3 where 3 = caught display
-    const caught = shakeChecks >= 4;
-    const shakes = caught ? 3 : shakeChecks;
-    return { shakes, caught };
+    if (shakeChecks >= 4) {
+      return { caught: true, shakes: 3 };
+    }
+    return { caught: false, shakes: shakeChecks as 0 | 1 | 2 };
   }
 
   // Gen 3-7 default (true); Gen 8+ must override (false)
