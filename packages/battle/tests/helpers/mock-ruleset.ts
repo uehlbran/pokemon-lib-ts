@@ -48,6 +48,7 @@ export class MockRuleset implements GenerationRuleset {
   private fixedDamage = 10;
   private alwaysHit = true;
   private alwaysCrit = false;
+  private fleeSuccess = true;
 
   setFixedDamage(damage: number): void {
     this.fixedDamage = damage;
@@ -59,6 +60,10 @@ export class MockRuleset implements GenerationRuleset {
 
   setAlwaysCrit(crit: boolean): void {
     this.alwaysCrit = crit;
+  }
+
+  setFleeSuccess(success: boolean): void {
+    this.fleeSuccess = success;
   }
 
   getTypeChart(): TypeChart {
@@ -382,6 +387,19 @@ export class MockRuleset implements GenerationRuleset {
       perishState.turnsLeft = newCount;
     }
     return { newCount, fainted: false };
+  }
+
+  rollFleeSuccess(
+    _playerSpeed: number,
+    _wildSpeed: number,
+    _attempts: number,
+    _rng: SeededRandom,
+  ): boolean {
+    return this.fleeSuccess;
+  }
+
+  processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
+    return false;
   }
 
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {

@@ -106,6 +106,10 @@ export interface BattleState {
   turnHistory: TurnRecord[];
   /** The PRNG instance; shared across all random rolls in the battle */
   readonly rng: SeededRandom;
+  /** `true` if this is a wild Pokemon encounter (enables flee mechanics) */
+  readonly isWildBattle: boolean;
+  /** Number of flee attempts made so far (incremented on each RunAction) */
+  fleeAttempts: number;
   /** `true` once the battle has concluded (winner or draw determined) */
   ended: boolean;
   /** The winning side (0 or 1), or `null` if the battle ended in a draw */

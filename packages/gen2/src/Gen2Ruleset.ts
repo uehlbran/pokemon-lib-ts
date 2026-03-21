@@ -578,6 +578,23 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // --- Switching ---
 
+  // Source: pret/pokecrystal engine/battle/core.asm TryRunning
+  // Gen 2 flee formula is similar to Gen 1 but with minor differences.
+  // Uses the same speed-based comparison: if player speed >= wild speed, always succeeds.
+  // Otherwise: F = floor(playerSpeed * 128 / wildSpeed) + 30 * attempts
+  // Flee succeeds if F >= 256 OR rng(0, 255) < F
+  rollFleeSuccess(
+    playerSpeed: number,
+    wildSpeed: number,
+    attempts: number,
+    rng: SeededRandom,
+  ): boolean {
+    if (playerSpeed >= wildSpeed) return true;
+    const f = Math.floor((playerSpeed * 128) / wildSpeed) + 30 * attempts;
+    if (f >= 256) return true;
+    return rng.int(0, 255) < f;
+  }
+
   shouldExecutePursuitPreSwitch(): boolean {
     return true;
   }

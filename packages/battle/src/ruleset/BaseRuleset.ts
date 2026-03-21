@@ -472,6 +472,21 @@ export abstract class BaseRuleset implements GenerationRuleset {
     pokemon.volatileStatuses.clear();
   }
 
+  // Source: Bulbapedia -- Escape (Generation III onwards)
+  // F = floor(playerSpeed * 128 / wildSpeed) + 30 * attempts
+  // Flee succeeds if playerSpeed >= wildSpeed OR F >= 256 OR rng(0,255) < F
+  rollFleeSuccess(
+    playerSpeed: number,
+    wildSpeed: number,
+    attempts: number,
+    rng: SeededRandom,
+  ): boolean {
+    if (playerSpeed >= wildSpeed) return true;
+    const f = Math.floor((playerSpeed * 128) / wildSpeed) + 30 * attempts;
+    if (f >= 256) return true;
+    return rng.int(0, 255) < f;
+  }
+
   // Gen 3-7 default (true); Gen 8+ must override (false)
   shouldExecutePursuitPreSwitch(): boolean {
     // Gen 3-7 default (override to false in Gen 8+)
