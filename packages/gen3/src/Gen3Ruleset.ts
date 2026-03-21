@@ -124,6 +124,22 @@ export class Gen3Ruleset extends BaseRuleset {
     return applyGen3Ability(trigger, context);
   }
 
+  // --- PP Cost (Pressure) ---
+
+  /**
+   * Pressure: when the target has Pressure, moves cost 2 PP instead of 1.
+   *
+   * Source: pret/pokeemerald src/battle_util.c — ABILITY_PRESSURE: deductsExtraMove
+   * Source: Bulbapedia — "Pressure causes moves targeting the Ability-bearer to use 2 PP"
+   */
+  override getPPCost(
+    _actor: ActivePokemon,
+    defender: ActivePokemon | null,
+    _state: BattleState,
+  ): number {
+    return defender?.ability === "pressure" ? 2 : 1;
+  }
+
   // --- Critical Hit System ---
 
   /**
