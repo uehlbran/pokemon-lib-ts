@@ -204,12 +204,12 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
     //   levelFactor = floor(2*50/5)+2 = 22
     //   atk = floor(100*150/100) = 150 (Solar Power 1.5x SpAtk)
     //   baseDamage = floor(floor(22*80*150/100)/50) = floor(2640/50) = 52
-    //   weather(sun, fire) = floor(52*1.5) = 78; +2 = 80
-    //   random = floor(80*100/100) = 80; no STAB; effectiveness=1 → 80
-    expect(withSolarPower.damage).toBe(80);
+    //   +2 = 54; weather(sun, fire) = floor(54*1.5) = 81
+    //   random = floor(81*100/100) = 81; no STAB; effectiveness=1 → 81
+    expect(withSolarPower.damage).toBe(81);
     // Without Solar Power: atk=100, baseDamage=floor(1760/50)=35
-    //   weather = floor(35*1.5)=52; +2=54; random=54; no STAB; eff=1 → 54
-    expect(withoutSolarPower.damage).toBe(54);
+    //   +2=37; weather = floor(37*1.5)=55; random=55; no STAB; eff=1 → 55
+    expect(withoutSolarPower.damage).toBe(55);
   });
 
   it("given Solar Power attacker using a special move without sun, when damage is calculated, then no SpAtk boost is applied", () => {
@@ -307,13 +307,13 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
     // Derivation (Solar Power, max roll, Water/60/SpAtk=120):
     //   atk = floor(120*150/100) = 180 (Solar Power)
     //   baseDamage = floor(floor(22*60*180/100)/50) = floor(2376/50) = 47
-    //   weather(sun, water) = floor(47*0.5) = 23; +2 = 25; random = 25
-    //   no STAB; effectiveness=1 → 25
-    expect(withSolarPower.damage).toBe(25);
+    //   +2 = 49; weather(sun, water) = floor(49*0.5) = 24; random = 24
+    //   no STAB; effectiveness=1 → 24
+    expect(withSolarPower.damage).toBe(24);
     // Without Solar Power: atk=120
     //   baseDamage = floor(floor(22*60*120/100)/50) = floor(1584/50) = 31
-    //   weather = floor(31*0.5)=15; +2=17; random=17; no STAB; eff=1 → 17
-    expect(withoutSolarPower.damage).toBe(17);
+    //   +2=33; weather = floor(33*0.5)=16; random=16; no STAB; eff=1 → 16
+    expect(withoutSolarPower.damage).toBe(16);
   });
 });
 
@@ -391,12 +391,12 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
     // Derivation (vs Flower Gift defender, max roll):
     //   atk=100; def=floor(100*150/100)=150 (Flower Gift SpDef boost)
     //   baseDamage = floor(floor(22*80*100/150)/50) = floor(floor(1173.33)/50) = floor(1173/50) = 23
-    //   weather(sun, water) = floor(23*0.5) = 11; +2 = 13; random = 13
-    //   no STAB; eff=1 → 13
-    expect(againstFlowerGift.damage).toBe(13);
+    //   +2 = 25; weather(sun, water) = floor(25*0.5) = 12; random = 12
+    //   no STAB; eff=1 → 12
+    expect(againstFlowerGift.damage).toBe(12);
     // Without Flower Gift: def=100, baseDamage=floor(1760/50)=35
-    //   weather = floor(35*0.5)=17; +2=19; random=19; no STAB; eff=1 → 19
-    expect(againstNormal.damage).toBe(19);
+    //   +2=37; weather = floor(37*0.5)=18; random=18; no STAB; eff=1 → 18
+    expect(againstNormal.damage).toBe(18);
   });
 
   it("given Flower Gift attacker without sun, when using a physical move, then no Attack boost is applied", () => {

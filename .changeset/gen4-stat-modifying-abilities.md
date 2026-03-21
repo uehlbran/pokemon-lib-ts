@@ -1,6 +1,7 @@
 ---
 "@pokemon-lib-ts/gen4": patch
 "@pokemon-lib-ts/core": patch
+"@pokemon-lib-ts/battle": patch
 ---
 
 # feat(gen4): stat-modifying abilities (Solar Power, Flower Gift, Scrappy, Normalize, Slow Start, Download)

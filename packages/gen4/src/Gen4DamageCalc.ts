@@ -682,18 +682,18 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     baseDamage = Math.floor(baseDamage / 2);
   }
 
-  // 10. Weather modifier
+  // 10. Add 2 (before weather — matches the Bulbapedia formula order)
+  // Source: Bulbapedia — Gen 4 damage formula: floor(floor(.../ 50 + 2) * Modifier)
+  // Source: pret/pokeplatinum — "+2" added before weather modifier is applied
+  baseDamage += 2;
+
+  // 11. Weather modifier (applied after +2)
   // Source: Showdown sim/battle.ts — Gen 4 weather damage modifier
   // Rain: Water 1.5x, Fire 0.5x; Sun: Fire 1.5x, Water 0.5x
   const weatherMod = getWeatherDamageModifier(effectiveMoveType, weather);
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
   }
-
-  // 11. Add 2 (the constant at the end of the base damage formula)
-  // Source: Showdown sim/battle.ts — Gen 4 base damage + 2
-  // Source: pret/pokeplatinum — "return damage + 2"
-  baseDamage += 2;
 
   // Record the base damage before post-formula modifiers for breakdown
   const rawBaseDamage = baseDamage;
