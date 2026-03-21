@@ -10,7 +10,7 @@ import type { AbilityTrigger } from "@pokemon-lib-ts/core";
  *   - "on-turn-end": Speed Boost, Rain Dish, Ice Body, Dry Skin, Solar Power,
  *                    Hydration, Shed Skin, Bad Dreams, Poison Heal
  *   - "on-contact": Static, Flame Body, Poison Point, Rough Skin, Effect Spore,
- *                   Cute Charm
+ *                   Cute Charm, Aftermath
  *   - "passive-immunity": Water Absorb, Volt Absorb, Motor Drive, Dry Skin,
  *                         Flash Fire (with volatile boost), Levitate
  *   - "on-flinch": Steadfast
@@ -555,6 +555,23 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         activated: true,
         effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
         messages: [],
+      };
+    }
+
+    case "aftermath": {
+      // Aftermath: when the holder faints from a contact move, the attacker takes 1/4
+      // of its max HP in damage. Only triggers if the holder has 0 HP (fainted).
+      // Source: Bulbapedia — Aftermath: "Damages the attacker landing the finishing hit
+      //   by 1/4 its max HP"
+      // Source: Showdown Gen 4 mod — Aftermath trigger (on-contact, holder must be fainted)
+      const holderHp = context.pokemon.pokemon.currentHp;
+      if (holderHp > 0) return { activated: false, effects: [], messages: [] };
+      const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 4));
+      const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+      return {
+        activated: true,
+        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        messages: [`${name}'s Aftermath hurt the attacker!`],
       };
     }
 

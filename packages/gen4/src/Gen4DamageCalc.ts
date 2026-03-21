@@ -4,7 +4,7 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
-import type { PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type { MoveEffect, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   getStabModifier,
   getStatStageMultiplier,
@@ -137,6 +137,26 @@ function getEffectiveStatStage(
   // Source: Showdown Gen 4 — Unaware ignores foe's stat changes in damage calc
   if (opponent?.ability === "unaware") return 0;
   return raw;
+}
+
+// ─── Recoil Detection Helper ──────────────────────────────────────────────
+
+/**
+ * Check if a move effect includes recoil (for Reckless boost).
+ * A move has recoil if its top-level effect is `type: "recoil"`, or if it's a
+ * multi-effect with a recoil sub-effect.
+ * Struggle has `effect: null` and is NOT boosted by Reckless.
+ *
+ * Source: Showdown data/abilities.ts — Reckless checks for recoil flag
+ * Source: Bulbapedia — Reckless does not boost Struggle
+ */
+function hasRecoilEffect(effect: MoveEffect | null): boolean {
+  if (!effect) return false;
+  if (effect.type === "recoil") return true;
+  if (effect.type === "multi") {
+    return effect.effects.some((e) => e.type === "recoil");
+  }
+  return false;
 }
 
 // ─── Attack Stat Calculation ────────────────────────────────────────────────
@@ -473,6 +493,43 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown data/abilities.ts — Technician onBasePower (priority 30)
   if (attackerAbility === "technician" && power <= 60) {
     power = Math.floor(power * 1.5);
+  }
+
+  // 4b. Iron Fist (NEW in Gen 4): 1.2x power for punching moves (flags.punch).
+  // Source: Bulbapedia — Iron Fist: "Boosts the power of punching moves by 20%."
+  // Source: Showdown data/abilities.ts — Iron Fist onBasePower
+  if (attackerAbility === "iron-fist" && move.flags.punch) {
+    power = Math.floor(power * 1.2);
+  }
+
+  // 4c. Reckless (NEW in Gen 4): 1.2x power for moves with recoil.
+  // Does NOT boost Struggle (Struggle has effect: null).
+  // Source: Bulbapedia — Reckless: "Boosts the base power of moves which have recoil damage."
+  // Source: Showdown data/abilities.ts — Reckless onBasePower
+  if (attackerAbility === "reckless" && hasRecoilEffect(move.effect)) {
+    power = Math.floor(power * 1.2);
+  }
+
+  // 4d. Rivalry (NEW in Gen 4): gender-dependent power modifier.
+  // Same gender as target: 1.25x power; opposite gender: 0.75x; either genderless: no change.
+  // Source: Bulbapedia — Rivalry: "Raises the base power of moves by 25% if the
+  //   target is the same gender, lowers by 25% if the target is the opposite gender."
+  // Source: Showdown data/abilities.ts — Rivalry onBasePower
+  if (attackerAbility === "rivalry") {
+    const attackerGender = attacker.pokemon.gender;
+    const defenderGender = defender.pokemon.gender;
+    if (
+      attackerGender &&
+      defenderGender &&
+      attackerGender !== "genderless" &&
+      defenderGender !== "genderless"
+    ) {
+      if (attackerGender === defenderGender) {
+        power = Math.floor(power * 1.25);
+      } else {
+        power = Math.floor(power * 0.75);
+      }
+    }
   }
 
   // 4. Defender ability type immunities

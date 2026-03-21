@@ -11,7 +11,12 @@ export {
 } from "./Gen4CritCalc";
 export { calculateGen4Damage } from "./Gen4DamageCalc";
 export { applyGen4HeldItem } from "./Gen4Items";
-export { canInflictGen4Status, executeGen4MoveEffect } from "./Gen4MoveEffects";
+export {
+  canInflictGen4Status,
+  executeGen4MoveEffect,
+  isStatusBlockedByAbility,
+  isVolatileBlockedByAbility,
+} from "./Gen4MoveEffects";
 export { Gen4Ruleset } from "./Gen4Ruleset";
 export { GEN4_TYPE_CHART, GEN4_TYPES } from "./Gen4TypeChart";
 export {
