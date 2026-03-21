@@ -432,11 +432,12 @@ export class Gen3Ruleset extends BaseRuleset {
       "curse",
       "nightmare",
       "bind",
+      "stat-boosting-items",
       "encore-countdown",
       "disable-countdown",
       "taunt-countdown",
       "perish-song",
-      "uproar" as EndOfTurnEffect,
+      "uproar" as EndOfTurnEffect, // "uproar" added in battle source but not yet in installed package types
       "speed-boost",
       "shed-skin",
       "weather-countdown",

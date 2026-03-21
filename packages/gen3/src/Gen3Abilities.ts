@@ -367,17 +367,14 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // Trace: copies the opponent's ability on switch-in.
       //
       // Source: pret/pokeemerald src/battle_util.c:3020-3060 — ABILITYEFFECT_TRACE
-      //   pokeemerald only checks gBattleMons[target].ability != ABILITY_NONE &&
-      //   gBattleMons[target].hp != 0. There is NO explicit blocklist in Gen 3 —
-      //   Trace CAN copy Wonder Guard, Forecast, etc. on the original cartridge.
+      //   pokeemerald checks gBattleMons[target].ability != ABILITY_TRACE &&
+      //   gBattleMons[target].ability != ABILITY_NONE.
+      //   Trace CANNOT copy Trace on the original cartridge.
       //
-      // Implementation note: we block Trace itself to prevent infinite-loop edge
-      // cases in our singles implementation. This matches Showdown Gen 3 behavior
-      // which also doesn't restrict Wonder Guard/Forecast in Gen 3.
-      //
-      // Source: Showdown data/mods/gen3/abilities.ts — trace.onStart copies foe ability
+      // Source: Showdown data/mods/gen3/abilities.ts — trace.onStart copies foe ability (blocks trace)
+      // Source: Bulbapedia/Trace — "Trace cannot copy Trace"
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
-      const uncopyable = ["trace"]; // Gen 3: only Trace blocked (implementation guard)
+      const uncopyable = ["trace"]; // Trace cannot copy itself (cartridge-accurate)
       const opponentAbility = context.opponent.ability;
       if (!opponentAbility || uncopyable.includes(opponentAbility)) {
         return { activated: false, effects: [], messages: [] };
@@ -434,8 +431,16 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // On switch-in, set Castform's type to match the current weather.
       // If weather is suppressed (Cloud Nine/Air Lock), Castform stays Normal.
       //
+      // Gen 3: Forecast only has an effect on Castform (speciesId 351). If Trace copies
+      // Forecast onto another species, the copied Forecast is inert (no type change).
+      //
       // Source: pret/pokeemerald src/battle_util.c — ABILITY_FORECAST / GetCastformForm
+      //   pokeemerald explicitly checks IS_CASTFORM_SPECIES before changing type/form.
       // Source: Bulbapedia — "Forecast changes Castform's type based on the weather"
+      if (context.pokemon.pokemon.speciesId !== 351) {
+        // Non-Castform holder (e.g., via Trace) — Forecast has no effect
+        return { activated: false, effects: [], messages: [] };
+      }
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const weather = context.state.weather?.type ?? null;
 

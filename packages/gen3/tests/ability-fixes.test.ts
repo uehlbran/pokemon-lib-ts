@@ -926,6 +926,7 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     const castform = createActivePokemon({
       types: ["normal"],
       ability: "forecast",
+      speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
@@ -946,6 +947,7 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     const castform = createActivePokemon({
       types: ["normal"],
       ability: "forecast",
+      speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
@@ -966,6 +968,7 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     const castform = createActivePokemon({
       types: ["normal"],
       ability: "forecast",
+      speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
@@ -984,6 +987,7 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     const castform = createActivePokemon({
       types: ["normal"],
       ability: "forecast",
+      speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
@@ -1002,6 +1006,7 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     const castform = createActivePokemon({
       types: ["normal"],
       ability: "forecast",
+      speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
@@ -1020,6 +1025,7 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     const castform = createActivePokemon({
       types: ["normal"],
       ability: "forecast",
+      speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const cloudNiner = createActivePokemon({
@@ -1141,6 +1147,7 @@ describe("Gen 3 Trace — No Blocklist (#340)", () => {
     const opponent = createActivePokemon({
       types: ["normal"],
       ability: "forecast",
+      speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({ pokemon: tracer, opponent });

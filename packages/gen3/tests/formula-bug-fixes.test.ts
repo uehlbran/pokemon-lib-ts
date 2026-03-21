@@ -551,10 +551,11 @@ describe("Regression #341: Uproar in end-of-turn order", () => {
     expect(uproarIdx).toBeLessThan(speedBoostIdx);
   });
 
-  it("given Gen3Ruleset, when getting EoT order, then total count is 19 (including uproar and ingrain)", () => {
-    // Source: pret/pokeemerald — 19 end-of-turn effects in Gen 3 (uproar + ingrain both added)
+  it("given Gen3Ruleset, when getting EoT order, then total count is 20 (including uproar, ingrain, stat-boosting-items)", () => {
+    // Source: pret/pokeemerald — 20 end-of-turn effects in Gen 3:
+    // uproar, ingrain, and stat-boosting-items (White Herb) all added
     const ruleset = makeRuleset();
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toHaveLength(19);
+    expect(order).toHaveLength(20);
   });
 });

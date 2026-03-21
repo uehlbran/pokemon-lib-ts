@@ -262,7 +262,7 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.switchOut).toBe(false);
-    expect(result.forcedSwitch).toBeFalsy();
+    expect(result.forcedSwitch).toBeUndefined();
     expect(result.messages.length).toBeGreaterThan(0);
   });
 
@@ -281,7 +281,7 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.switchOut).toBe(false);
-    expect(result.forcedSwitch).toBeFalsy();
+    expect(result.forcedSwitch).toBeUndefined();
     expect(result.messages.some((m) => m.includes("roots"))).toBe(true);
   });
 });
@@ -317,8 +317,8 @@ describe("#343 — Pursuit", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.customDamage).toBeFalsy();
-    expect(result.selfFaint).toBeFalsy();
+    expect(result.customDamage).toBeUndefined();
+    expect(result.selfFaint).toBeUndefined();
   });
 });
 
@@ -488,7 +488,7 @@ describe("#343 — Ingrain", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.selfVolatileInflicted).toBeFalsy();
+    expect(result.selfVolatileInflicted).toBeUndefined();
     expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
   });
 

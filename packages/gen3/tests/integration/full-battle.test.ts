@@ -671,6 +671,7 @@ describe("Gen 3 End-of-Turn Order", () => {
       "curse",
       "nightmare",
       "bind",
+      "stat-boosting-items",
       "encore-countdown",
       "disable-countdown",
       "taunt-countdown",
