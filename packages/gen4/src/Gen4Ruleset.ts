@@ -902,10 +902,21 @@ export class Gen4Ruleset extends BaseRuleset {
         const active = side?.active[0];
         if (!active) continue;
         if (active.pokemon.heldItem !== "custap-berry") continue;
+        // Klutz prevents item activation
+        if (active.ability === "klutz") continue;
+        // Embargo prevents item activation
+        if (active.volatileStatuses.has("embargo")) continue;
         const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-        // Source: Bulbapedia — Custap Berry activates at <=25% HP
-        if (active.pokemon.currentHp <= Math.floor(maxHp * 0.25)) {
+        // Gluttony: activates at <=50% HP instead of <=25% HP
+        // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+        //   custapberry: if (pokemon.hp <= pokemon.maxhp / 4 ||
+        //     (pokemon.hp <= pokemon.maxhp / 2 && pokemon.ability === 'gluttony'))
+        const threshold = active.ability === "gluttony" ? 0.5 : 0.25;
+        if (active.pokemon.currentHp <= Math.floor(maxHp * threshold)) {
           activated.add(i);
+          // Consume the berry after activation (single-use)
+          // Source: Showdown Gen 4 mod — Custap Berry: pokemon.eatItem() consumes the berry
+          active.pokemon.heldItem = null;
         }
       }
     }

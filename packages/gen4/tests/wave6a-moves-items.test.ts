@@ -671,9 +671,10 @@ describe("Berry Juice", () => {
 // ===========================================================================
 
 describe("Grip Claw and Binding Moves", () => {
-  it("given attacker holds Grip Claw, when using Bind, then binding lasts 7 turns", () => {
-    // Source: Bulbapedia -- Grip Claw: "Extends the duration of binding moves to 7 turns"
-    // Source: Showdown Gen 4 mod -- Grip Claw sets binding to 7 turns
+  it("given attacker holds Grip Claw, when using Bind, then binding lasts 6 turns", () => {
+    // Source: Showdown Gen 4 mod — Grip Claw sets binding to the maximum duration (6 turns)
+    // In Gen 4, binding lasts 3-6 turns (rng.int(3, 6)), Grip Claw forces max = 6.
+    // Note: Gen 4 Grip Claw is 5+1 extension = 6, not 7 (7 was Gen 5+).
     const attacker = createActivePokemon({
       types: ["normal"],
       heldItem: "grip-claw",
@@ -686,12 +687,12 @@ describe("Grip Claw and Binding Moves", () => {
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.volatileInflicted).toBe("bound");
-    expect(result.volatileData).toEqual({ turnsLeft: 7 });
+    expect(result.volatileData).toEqual({ turnsLeft: 6 });
   });
 
-  it("given attacker does NOT hold Grip Claw, when using Fire Spin, then binding lasts 4-5 turns based on RNG", () => {
-    // Source: Bulbapedia -- Binding moves last 4-5 turns in Gen 4
-    // Source: Showdown Gen 4 mod -- binding duration is rng.int(4, 5) without Grip Claw
+  it("given attacker does NOT hold Grip Claw, when using Fire Spin, then binding lasts 3-6 turns based on RNG", () => {
+    // Source: Showdown Gen 4 mod — binding duration is rng.int(3, 6) without Grip Claw
+    // Source: Bulbapedia — Binding moves last 2-5 turns in Gen 4 (exclusive upper = 3-6 inclusive for int)
     const attacker = createActivePokemon({ types: ["fire"] });
     const defender = createActivePokemon({ types: ["normal"], nickname: "Foe" });
     const move = createMove("fire-spin", { type: "fire", category: "special", power: 15 });

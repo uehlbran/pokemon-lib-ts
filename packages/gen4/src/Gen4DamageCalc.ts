@@ -129,6 +129,10 @@ export const TYPE_RESIST_BERRIES: Readonly<Record<string, string>> = {
  * Source: Showdown sim/battle.ts — Gen 4 immunity abilities
  * Source: Bulbapedia — Motor Drive, Dry Skin
  */
+// Note: Storm Drain is intentionally absent — in Gen 4 it only redirects Water moves
+// in doubles, it does NOT grant water immunity or SpAtk boost. That was added in Gen 5.
+// Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+//   stormDrain.onTryHit is empty (no immunity)
 const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
   levitate: "ground",
   "volt-absorb": "electric",
@@ -136,7 +140,6 @@ const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
   "flash-fire": "fire",
   "motor-drive": "electric",
   "dry-skin": "water",
-  "storm-drain": "water",
 };
 
 // ─── Simple / Unaware Stat Stage Helper ───────────────────────────────────
@@ -291,14 +294,12 @@ function getAttackStat(
     rawStat = rawStat * 2;
   }
 
-  // Light Ball: 2x Atk AND SpAtk for Pikachu (25)
-  // CHANGED from Gen 3: Gen 3 was SpAtk only; Gen 4+ boosts BOTH Attack and SpAttack.
-  // Source: Bulbapedia — Light Ball: "When held by a Pikachu, doubles its Attack and
-  //   Special Attack. (Generation IV+)"
-  // Source: Showdown sim/items.ts — Light Ball Gen 4+ behavior
-  if (!attackerHasKlutz && attackerItem === "light-ball" && attackerSpecies === 25) {
-    rawStat = rawStat * 2;
-  }
+  // Light Ball: In Gen 4, Light Ball doubles BASE POWER (not attack stat) for Pikachu.
+  // Showdown Gen 4 mod explicitly removes onModifyAtk/onModifySpA and replaces with onBasePower.
+  // The base power doubling is applied in the base power section below, not here.
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+  //   lightball: onModifyAtk() {}, onModifySpA() {},
+  //   onBasePower(basePower, pokemon) { if Pikachu => chainModify(2) }
 
   // Thick Club: 2x Attack for Cubone (104) / Marowak (105)
   // Source: Bulbapedia — Thick Club: "When held by Cubone or Marowak, doubles Attack."
@@ -557,11 +558,13 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     power = Math.floor(power / 2);
   }
 
-  // Normalize: all moves used by the Pokemon become Normal type.
-  // This happens before everything else — affects STAB, type effectiveness, weather, etc.
+  // Normalize: all moves used by the Pokemon become Normal type, EXCEPT Struggle.
+  // Struggle is typeless ("???") in Gen 4 and Normalize must not affect it.
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+  //   normalize.onModifyMove: if (move.id !== 'struggle') move.type = 'Normal'
   // Source: Bulbapedia — Normalize: "All the Pokemon's moves become Normal-type."
-  // Source: Showdown data/abilities.ts — Normalize onModifyMove
-  const effectiveMoveType: PokemonType = attackerAbility === "normalize" ? "normal" : move.type;
+  const effectiveMoveType: PokemonType =
+    attackerAbility === "normalize" && move.id !== "struggle" ? "normal" : move.type;
 
   // Klutz: holder cannot use its held item — suppresses all held-item modifiers
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
@@ -710,6 +713,29 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     (effectiveMoveType === "water" || effectiveMoveType === "dragon")
   ) {
     power = Math.floor((power * 4915) / 4096);
+  }
+  // Griseous Orb: 1.2x base power for Giratina (487) on Ghost/Dragon moves
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+  //   griseousorb.onBasePower: user.species.num === 487 && (Ghost || Dragon) => chainModify(1.2)
+  // Source: Bulbapedia — Griseous Orb: boosts Giratina's Ghost/Dragon moves by 20%
+  if (
+    !attackerHasKlutzPower &&
+    attackerItemPower === "griseous-orb" &&
+    attackerSpeciesIdPower === 487 && // Giratina
+    (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
+  ) {
+    power = Math.floor((power * 4915) / 4096);
+  }
+  // Light Ball: 2x base power for Pikachu (speciesId 25) on ALL moves
+  // In Gen 4, Light Ball doubles base power (onBasePower), not the attack stat.
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+  //   lightball: onBasePower(basePower, pokemon) { if Pikachu => chainModify(2) }
+  if (
+    !attackerHasKlutzPower &&
+    attackerItemPower === "light-ball" &&
+    attackerSpeciesIdPower === 25 // Pikachu
+  ) {
+    power = power * 2;
   }
 
   // 4. Defender ability type immunities

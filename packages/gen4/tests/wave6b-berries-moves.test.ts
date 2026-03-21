@@ -458,7 +458,8 @@ describe("Natural Gift table completeness", () => {
     expect(NATURAL_GIFT_TABLE["liechi-berry"]).toEqual({ type: "grass", power: 80 });
     expect(NATURAL_GIFT_TABLE["ganlon-berry"]).toEqual({ type: "ice", power: 80 });
     expect(NATURAL_GIFT_TABLE["salac-berry"]).toEqual({ type: "fighting", power: 80 });
-    expect(NATURAL_GIFT_TABLE["petaya-berry"]).toEqual({ type: "electric", power: 80 });
+    // Source: Bulbapedia — Petaya Berry Natural Gift type is Poison in Gen IV
+    expect(NATURAL_GIFT_TABLE["petaya-berry"]).toEqual({ type: "poison", power: 80 });
     expect(NATURAL_GIFT_TABLE["apicot-berry"]).toEqual({ type: "ground", power: 80 });
   });
 });
@@ -1240,17 +1241,20 @@ describe("Rowap Berry", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given holder holds Rowap Berry with maxHp=1 and is hit by a special move, when triggered, then retaliation damage is at least 1", () => {
-    // Source: Showdown -- Math.max(1, floor(maxHp/8)) ensures minimum 1 damage
-    // maxHp=1, floor(1/8)=0, max(1,0)=1
+  it("given holder holds Rowap Berry and attacker has maxHp=1, when hit by a special move, then retaliation damage is at least 1", () => {
+    // Source: Showdown — Math.max(1, floor(attackerMaxHp/8)) ensures minimum 1 damage
+    // Bug fix #388: Rowap/Jaboca Berry use the ATTACKER's maxHp (not holder's)
+    // attackerMaxHp=1, floor(1/8)=0, max(1,0)=1
     const pokemon = createActivePokemon({
       types: ["bug"],
       heldItem: "rowap-berry",
-      maxHp: 1,
-      currentHp: 1,
+      maxHp: 200,
+      currentHp: 150,
       nickname: "Shedinja",
     });
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    // Opponent (attacker) has maxHp=1 to test minimum floor
+    const opponent = createActivePokemon({ types: ["normal"], maxHp: 1, currentHp: 1 });
+    const state = createMinimalBattleState(pokemon, opponent);
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem("on-damage-taken", {
