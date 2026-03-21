@@ -290,9 +290,10 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 
 - **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally. Do not depend on CodeRabbit/Qodo — they can be rate-limited.
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/*/src/` or `packages/*/data/`. Creates a `.changeset/<name>.md` file; does NOT edit `package.json` or `CHANGELOG.md`. See Package Versioning above. Tests, docs, config, and `specs/` changes do not require a changeset.
-- **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. GitHub auto-closes the issue when the PR merges. No related issue (pure chore/docs/tooling)? Add `Closes: N/A` — the `check-issue-link` CI workflow requires either a closing reference or an explicit no-issue marker and will fail otherwise. **CRITICAL SYNTAX**: `Closes #50, #80` only closes #50 — each issue needs its own keyword on its own line. See `.claude/rules/issue-closing-syntax.md`.
-- Use **`/babysit-pr`** for all PR monitoring (waiting for CI, reviewer comments, following up after fixes). Do NOT use manual polling.
+- **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. **Before using `Closes: N/A`**, run `gh issue list --state open --search "KEYWORDS"` with at least 2 keyword sets — only use N/A if no matching issue is found. See `.claude/rules/issue-linking.md`. **CRITICAL SYNTAX**: `Closes #50, #80` only closes #50 — each issue needs its own keyword on its own line. See `.claude/rules/issue-closing-syntax.md`.
+- **Always use `/babysit-pr <number>` after creating a PR** — mandatory. This is the ONLY sanctioned way to monitor, address comments, and merge. Do NOT run `gh pr merge` directly — the comment gate hook will block it if review threads haven't been acknowledged.
 - **`/babysit-pr` auto-merges by default** and self-polls until complete — no `/loop` wrapper needed. Use `--no-merge` to require confirmation before merging.
+- **Comment gate enforced by hook**: `enforce-comment-gate.sh` blocks `gh pr merge` if any unresolved review thread has zero replies. Every thread (CodeRabbit, Qodo, human) needs at minimum a reply before merge. See `.claude/rules/pr-comment-handling.md`.
 - **Act autonomously.** When handling a PR, agents should:
   - Push fixes for reviewer feedback without asking permission
   - Fix CI/lint/test failures independently
@@ -304,7 +305,7 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
   - The reviewer's feedback is ambiguous and could be interpreted multiple ways
   - A decision requires trade-offs only the user can weigh
 - **Check PR state before acting**: run `gh pr view <number> --json state` before investigating review comments or doing work on a PR. If `MERGED` or `CLOSED`, stop
-- **After `gh pr merge --auto`**: always verify with `gh pr view <number> --json state` — the command produces no output on success
+- **Never run `gh pr merge` directly** — use `/babysit-pr <number>` instead. If you must verify merge state after `/babysit-pr` completes, use `gh pr view <number> --json state` — `gh pr merge --auto` produces no output on success
 - **CodeRabbit and Qodo are advisory only** — not required checks. Do not block merge on them. Required checks: `build`, `test`, `typecheck`, `lint`
 - **`gh pr checks` exit code 8 means pending**, not failure
 - **`gh pr edit` is broken for body edits** — it calls the deprecated GitHub Projects (classic) API and errors even when only updating `--body`. Use `gh api PATCH /repos/{owner}/{repo}/pulls/{number} --field body="..."` instead whenever you need to edit a PR body after creation.
