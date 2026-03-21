@@ -72,7 +72,7 @@ import { applyGen4WeatherEffects } from "./Gen4Weather";
  *   - getQuickClawActivated — 20% pre-roll (same as Gen 3)
  *   - applyEntryHazards — Spikes + Stealth Rock + Toxic Spikes (Gen 4 full set)
  *   - resolveTurnOrder — Tailwind speed doubling + Trick Room reversal (Gen 4)
- *   - processSleepTurn — can act on wake turn (Gen 3-4 behavior; Gen 1-2 cannot)
+ *   - processSleepTurn — can act on wake turn (Gen 3-4 behavior; Gen 1-2 cannot act)
  *   - canSwitch — Shadow Tag, Arena Trap, Magnet Pull, trapped volatile
  */
 export class Gen4Ruleset extends BaseRuleset {
@@ -475,25 +475,30 @@ export class Gen4Ruleset extends BaseRuleset {
   /**
    * Gen 4 sleep processing: the Pokemon CAN act on the turn it wakes up.
    *
-   * The sleep counter is decremented each turn. When it reaches 0, the Pokemon
-   * wakes up and CAN act that turn. The "lose turn on wake" mechanic is Gen 1-2 only.
+   * This overrides the BaseRuleset default to apply the Gen 4-specific 1-5 turn duration
+   * while preserving the correct Gen 3+ wake-turn behavior (can act).
    *
-   * Source: Showdown Gen 4 data/mods/gen4/conditions.ts lines 39-52 —
-   *   when time <= 0, cureStatus() is called and the function returns without
-   *   "return false", allowing the Pokemon to act.
-   * Source: pret/pokeplatinum — sleep counter decrements; wake turn allows action
+   * Gen 1-2 cannot act on wake turn. Gen 3+ (including Gen 4) can act on the wake turn.
+   * The spec (05-gen4.md line 531) confirms: "if counter reaches 0, Pokemon wakes and
+   * acts normally that turn."
+   *
+   * Source: specs/battle/05-gen4.md — "if counter reaches 0, Pokemon wakes and acts normally"
+   * Source: Showdown Gen 4 mod — BaseRuleset processSleepTurn returns true on wake (Gen 3+)
+   *
+   * Bug #354: Previous implementation incorrectly applied Gen 1-2 "cannot act on wake"
+   * behavior to Gen 4. Gen 4 follows Gen 3+ rules: Pokemon CAN act on the wake turn.
    */
   override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
-      // No counter found or already at 0 — wake up and CAN act
+      // No counter found or already at 0 — wake up, CAN act (Gen 3-4 behavior)
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
       return true;
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
-      // Counter just reached 0 — wake up and CAN act
+      // Counter just reached 0 — wake up, CAN act (Gen 3-4 behavior)
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
       return true;

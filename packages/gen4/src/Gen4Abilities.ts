@@ -41,7 +41,7 @@ export const PLATE_TO_TYPE: Record<string, PokemonType> = {
  *   - "passive-immunity": Water Absorb, Volt Absorb, Motor Drive, Dry Skin,
  *                         Flash Fire (with volatile boost), Levitate
  *   - "on-flinch": Steadfast
- *   - "on-after-move-hit": (none in Gen 4 — Stench flinch is Gen 5+)
+ *   - "on-after-move-hit": (no Gen 4 abilities use this trigger)
  *
  * Stat-modifying abilities (damage calc / speed calc integration):
  *   - Solar Power: 1.5x SpAtk in sun (damage calc) + 1/8 HP chip (turn-end)
@@ -54,7 +54,7 @@ export const PLATE_TO_TYPE: Record<string, PokemonType> = {
  * Implemented elsewhere:
  *   - Leaf Guard: status prevention in sun (canInflictGen4Status in Gen4MoveEffects.ts)
  *   - Klutz: item suppression (Gen4Items.ts, Gen4DamageCalc.ts, Gen4Ruleset.ts)
- *   - Storm Drain: doubles-only Water redirection (no immunity/boost in Gen 4; those are Gen 5+)
+ *   - Storm Drain: redirect-only in doubles, no singles effect (Gen 4); Water immunity is Gen 5+
  *   - Suction Cups: forced switch prevention (Gen4MoveEffects.ts Whirlwind/Roar handler)
  *
  * Source: Showdown sim/battle.ts Gen 4 mod — ability trigger dispatch
@@ -882,12 +882,20 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       };
     }
 
-    // Storm Drain: in Gen 4, Storm Drain ONLY redirects Water moves in doubles.
-    // It does NOT grant Water immunity or SpAtk boost — those were added in Gen 5.
-    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
-    //   stormDrain.onTryHit is empty (no immunity, no boost)
-    // Storm Drain redirection is a doubles-only targeting mechanic handled by the engine,
-    // not a passive-immunity trigger, so no case is needed here.
+    case "storm-drain": {
+      // Storm Drain in Gen 4: redirect-only ability in doubles. In singles, it has no effect.
+      // There is no Water immunity and no SpAtk boost in Gen 4.
+      //
+      // Source: Bulbapedia — Storm Drain (Generation IV): "Draws all single-target Water-type
+      //   moves to this Pokemon. Has no effect in single battles."
+      // Source: Showdown Gen 4 mod — Storm Drain is a doubles redirect; no singles immunity
+      //
+      // The Water immunity + SpAtk boost behavior was introduced in Gen 5 (Bulbapedia Gen V entry).
+      //
+      // Bug #350/#351: Previous implementation granted Water immunity + SpAtk boost,
+      // which is Gen 5+ behavior. Gen 4 Storm Drain does nothing in singles.
+      return { activated: false, effects: [], messages: [] };
+    }
 
     default:
       return { activated: false, effects: [], messages: [] };
@@ -941,12 +949,17 @@ function handleOnFlinch(abilityId: string, context: AbilityContext): AbilityResu
  * is the attacker (whose ability triggers), `context.opponent` is the
  * defender that was hit.
  *
- * In Gen 4, Stench has NO battle effect — the 10% flinch was added in Gen 5.
- * Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
- *   stench entry has rating: 0 and no onModifyMove/onDamagingHit hook
+ * No Gen 4 abilities use this trigger in singles.
+ *
+ * Note on Stench: In Gen 4, Stench has NO battle effect. It only reduces the wild
+ * encounter rate in the overworld. The 10% flinch chance was introduced in Gen 5.
+ *
+ * Source: Bulbapedia — Stench (Generation IV): "Has no effect in battle."
+ * Source: Showdown — Stench onModifyMove flinch only exists in Gen 5+ scripts
+ *
+ * Bug #384: Previous implementation incorrectly gave Stench a 10% flinch chance,
+ * which is Gen 5+ behavior.
  */
 function handleOnAfterMoveHit(_abilityId: string, _context: AbilityContext): AbilityResult {
-  // No abilities currently use on-after-move-hit in Gen 4.
-  // Stench's 10% flinch chance is a Gen 5+ mechanic.
   return { activated: false, effects: [], messages: [] };
 }

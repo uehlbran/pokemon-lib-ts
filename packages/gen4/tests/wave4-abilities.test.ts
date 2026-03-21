@@ -331,13 +331,15 @@ describe("Leaf Guard — prevent all status in sun", () => {
 // Storm Drain
 // ---------------------------------------------------------------------------
 
-describe("Storm Drain — Gen 4: redirect only, no immunity or SpAtk boost", () => {
-  it("given Storm Drain in Gen 4, when hit by Water move, then damage is NOT zero (no immunity)", () => {
-    // Source: Bulbapedia — Storm Drain (Gen 4): "All Water-type moves are drawn to this Pokemon."
-    //   In Gen 4, Storm Drain ONLY redirects Water moves in Doubles; it does NOT grant
-    //   immunity or SpAtk boost. The immunity + SpAtk boost was added in Gen 5.
-    // Source: Showdown Gen 4 mod — Storm Drain is not in ABILITY_TYPE_IMMUNITIES
-    const attacker = makeActivePokemon({ types: ["water"], attack: 100 });
+describe("Storm Drain — Gen 4: redirect-only in doubles, no singles immunity", () => {
+  it("given Storm Drain, when hit by Water move in singles, then damage is NOT blocked (no immunity in Gen 4)", () => {
+    // Source: Bulbapedia — Storm Drain (Generation IV): "Draws all single-target Water-type
+    //   moves to this Pokemon. Has no effect in single battles."
+    // Source: Showdown Gen 4 mod — Storm Drain is doubles-redirect only; no Water immunity
+    //
+    // Bug #350/#351: Previous behavior granted Water immunity + SpAtk boost (Gen 5+).
+    // Gen 4 Storm Drain does nothing in singles — Water moves deal normal damage.
+    const attacker = makeActivePokemon({ types: ["water"], spAttack: 100 });
     const defender = makeActivePokemon({ ability: "storm-drain", types: ["ground"] });
     const move = makeMove("water", { power: 90, category: "special" });
     const state = makeBattleState();
@@ -354,22 +356,41 @@ describe("Storm Drain — Gen 4: redirect only, no immunity or SpAtk boost", () 
       GEN4_TYPE_CHART,
     );
 
-    // Water is super-effective against Ground, so damage should be > 0
-    expect(damageResult.damage).toBeGreaterThan(0);
+    // In Gen 4 singles, Storm Drain does NOT grant Water immunity — Water deals normal damage.
+    // Derivation: level=50, spAtk=100, spDef=100, power=90, Water vs Ground = 2x (super effective)
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDamage = floor(floor((22*90*100)/100)/50) = floor(1980/50) = 39
+    //   +2 = 41; random=100 → floor(41*1.0)=41; STAB (water/water) 1.5x → floor(61.5)=61
+    //   effectiveness 2.0 → floor(61*2) = 122; no items → 122
+    // Source: Bulbapedia — Storm Drain (Gen 4): "Has no effect in single battles."
+    // Source: Gen 4 type chart — Water is super effective against Ground (2x)
+    expect(damageResult.damage).toBe(122);
     expect(damageResult.effectiveness).toBe(2);
   });
 
-  it("given Storm Drain in Gen 4, when passive-immunity trigger fires with Water move, then ability does NOT activate", () => {
-    // Source: Showdown Gen 4 mod — Storm Drain removed from passive-immunity handler
-    // In Gen 4, Storm Drain has no passive-immunity behavior (only redirect in doubles)
+  it("given Storm Drain, when passive-immunity is checked for Water move in singles, then ability does not activate", () => {
+    // Source: Bulbapedia — Storm Drain (Gen 4): no effect in singles
+    // Triangulation: passive-immunity must return not-activated for Water moves
     const ctx = makeAbilityContext({
       ability: "storm-drain",
       types: ["ground"],
       move: makeMove("water"),
     });
-    const abilityResult = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability("passive-immunity", ctx);
 
-    expect(abilityResult.activated).toBe(false);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Storm Drain, when hit by non-Water move, then ability does not activate", () => {
+    // Triangulation: Storm Drain also does nothing against non-Water moves
+    const ctx = makeAbilityContext({
+      ability: "storm-drain",
+      types: ["ground"],
+      move: makeMove("fire"),
+    });
+    const result = applyGen4Ability("passive-immunity", ctx);
+
+    expect(result.activated).toBe(false);
   });
 });
 
@@ -591,31 +612,39 @@ describe("Suction Cups — prevent forced switching", () => {
 // Stench
 // ---------------------------------------------------------------------------
 
-describe("Stench — Gen 4: no battle effect (flinch added in Gen 5)", () => {
-  it("given Stench in Gen 4, when on-after-move-hit triggers, then ability does NOT activate", () => {
-    // Source: Bulbapedia — Stench (Gen 4): "Helps avoid wild Pokemon" (overworld only)
-    //   The 10% flinch chance was added in Gen 5. In Gen 4, Stench has no in-battle effect.
-    // Source: Showdown Gen 4 mod — Stench has no onAfterMoveHit handler
+describe("Stench — Gen 4: no battle effect (flinch is Gen 5+)", () => {
+  it("given Stench and RNG < 0.1 (guaranteed flinch check), when on-after-move-hit triggers, then flinch is NOT applied (Stench has no Gen 4 battle effect)", () => {
+    // Source: Bulbapedia — Stench (Generation IV): "Has no effect in battle."
+    //   The 10% flinch chance was introduced in Generation V.
+    // Source: Showdown — Stench onModifyMove flinch only in Gen 5+ scripts
+    //
+    // Bug #384: Previous code gave Stench a 10% flinch chance (Gen 5+ behavior).
+    // In Gen 4, Stench only reduces wild encounter rate in the overworld.
     const ctx = makeAbilityContext({
       ability: "stench",
-      rngNextValues: [0.05], // Would trigger if Gen 5, but not in Gen 4
+      rngNextValues: [0.05], // < 0.1 threshold (would trigger Gen 5+ flinch if bug present)
     });
 
     const result = applyGen4Ability("on-after-move-hit", ctx);
 
     expect(result.activated).toBe(false);
+    const flinchEffect = result.effects.find(
+      (e) => e.effectType === "volatile-inflict" && "volatile" in e && e.volatile === "flinch",
+    );
+    expect(flinchEffect).toBeUndefined();
   });
 
-  it("given Stench in Gen 4 with any RNG value, when on-after-move-hit triggers, then always no activation", () => {
-    // Triangulation: Stench never activates in Gen 4 regardless of RNG
+  it("given Stench with any RNG value, when on-after-move-hit triggers, then no flinch is applied (battle-inert in Gen 4)", () => {
+    // Triangulation: Stench is always no-op in Gen 4, regardless of RNG
     const ctx = makeAbilityContext({
       ability: "stench",
-      rngNextValues: [0.0], // Even with RNG = 0, should not activate
+      rngNextValues: [0.5],
     });
 
     const result = applyGen4Ability("on-after-move-hit", ctx);
 
     expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
   });
 });
 
