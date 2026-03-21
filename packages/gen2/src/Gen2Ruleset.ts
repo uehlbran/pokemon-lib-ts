@@ -626,6 +626,7 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   confusionSelfHitTargetsOpponentSub(): boolean {
+    // Source: pret/pokecrystal battle confusion handling — Gen 2 does not apply Gen 1 opponent-substitute bug
     // Gen 2: confusion self-hit always damages the confused Pokemon itself (Gen 1 bug fixed).
     return false;
   }
