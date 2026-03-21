@@ -337,22 +337,28 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given a Pokemon with Trace switching in against Flower Gift, then does NOT copy Flower Gift", () => {
-    // Source: Bulbapedia — Trace cannot copy Flower Gift
+  it("given a Pokemon with Trace switching in against Flower Gift, then DOES copy Flower Gift in Gen 4", () => {
+    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+    //   Gen 4 Trace banned list is ['forecast', 'multitype', 'trace'] only.
+    //   Flower Gift is copyable in Gen 4 (banned only in Gen 5+).
     const opponent = makeActivePokemon({ ability: "flower-gift" });
     const ctx = makeContext({ ability: "trace", opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({ effectType: "ability-change", newAbility: "flower-gift" });
   });
 
-  it("given a Pokemon with Trace switching in against Wonder Guard, then does NOT copy Wonder Guard", () => {
-    // Source: Bulbapedia — Trace cannot copy Wonder Guard
+  it("given a Pokemon with Trace switching in against Wonder Guard, then DOES copy Wonder Guard in Gen 4", () => {
+    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+    //   Gen 4 Trace banned list is ['forecast', 'multitype', 'trace'] only.
+    //   Wonder Guard is copyable in Gen 4; e.g., Gardevoir/Porygon2 Trace vs Shedinja was a known Gen 4 mechanic.
     const opponent = makeActivePokemon({ ability: "wonder-guard" });
     const ctx = makeContext({ ability: "trace", opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({ effectType: "ability-change", newAbility: "wonder-guard" });
   });
 
   it("given a Pokemon with Trace switching in with no opponent, then does NOT activate", () => {

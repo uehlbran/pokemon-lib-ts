@@ -229,12 +229,12 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "trace": {
       // Trace: copies the opponent's ability on switch-in.
-      // Cannot copy Trace, Multitype, Forecast, Flower Gift, or Wonder Guard.
-      // Source: Showdown Gen 4 mod — Trace copies foe's ability on switch-in
-      // Source: Bulbapedia — Trace: "Copies the opponent's Ability when the Pokémon
-      //   enters battle. Cannot copy Trace, Multitype, Forecast, Flower Gift, or Wonder Guard."
+      // Cannot copy Trace, Multitype, or Forecast in Gen 4.
+      // Wonder Guard and Flower Gift ARE copyable in Gen 4 (confirmed Showdown Gen 4 mod).
+      // Source: Showdown references/pokemon-showdown/data/mods/gen4/abilities.ts
+      //   Gen4 Trace banned list: ['forecast', 'multitype', 'trace'] only
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
-      const uncopyable = ["trace", "multitype", "forecast", "flower-gift", "wonder-guard"];
+      const uncopyable = ["trace", "multitype", "forecast"];
       const opponentAbility = context.opponent.ability;
       if (!opponentAbility || uncopyable.includes(opponentAbility)) {
         return { activated: false, effects: [], messages: [] };
