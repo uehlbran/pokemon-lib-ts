@@ -114,7 +114,7 @@ describe("on-contact ability hook", () => {
     // MockRuleset default fixedDamage = 10 and tackle has contact: true
     ruleset.setFixedDamage(10);
 
-    ruleset.setAbilityHandler((trigger, ctx) => {
+    ruleset.setAbilityHandler((trigger, _ctx) => {
       if (trigger === "on-contact") {
         return {
           activated: true,
@@ -153,7 +153,7 @@ describe("on-contact ability hook", () => {
     // Source: Showdown — only contact moves trigger contact abilities
     // Thunderbolt has contact: false
     // Both sides use Thunderbolt (non-contact) to ensure no on-contact triggers at all
-    const { engine, ruleset, events } = createTestEngine({
+    const { engine, ruleset } = createTestEngine({
       side0Moves: [{ moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 }],
       side1Moves: [{ moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 }],
     });
@@ -177,7 +177,7 @@ describe("on-contact ability hook", () => {
 
   it("given a contact move hitting a substitute, when move deals damage, then on-contact trigger does NOT fire", () => {
     // Source: Showdown — contact abilities do not activate if the hit goes to a Substitute
-    const { engine, ruleset, events } = createTestEngine();
+    const { engine, ruleset } = createTestEngine();
     ruleset.setFixedDamage(10);
 
     ruleset.setAbilityHandler((_trigger, _ctx) => {
@@ -209,7 +209,7 @@ describe("on-contact ability hook", () => {
 
   it("given a contact move that KOs the defender, when defender has 0 HP after damage, then on-contact trigger does NOT fire", () => {
     // Source: Showdown — contact abilities do not activate if the defender fainted from the hit
-    const { engine, ruleset, events } = createTestEngine({ side1Hp: 5 });
+    const { engine, ruleset } = createTestEngine({ side1Hp: 5 });
     // Damage > defender HP so defender will faint
     ruleset.setFixedDamage(10);
 
@@ -395,7 +395,7 @@ describe("processAbilityResult: status-inflict effect", () => {
     // Source: Showdown — Static paralysis on contact
     const { engine, ruleset, events } = createTestEngine();
 
-    ruleset.setAbilityHandler((trigger, ctx) => {
+    ruleset.setAbilityHandler((trigger, _ctx) => {
       if (trigger === "on-contact") {
         return {
           activated: true,

@@ -393,6 +393,14 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
+  // 2a. Flash Fire volatile: 1.5x power for Fire moves when flash-fire volatile is active
+  // Source: Bulbapedia — Flash Fire: "raises the power of Fire-type moves by 50%
+  //   while it is in effect"
+  // Source: Showdown data/abilities.ts — Flash Fire onBasePowerPriority
+  if (move.type === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+    power = Math.floor(power * 1.5);
+  }
+
   // 3. Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin defenders.
   // Showdown processes onSourceBasePower callbacks by priority (ascending = runs first).
   // Dry Skin has priority 17; Technician has priority 30 — so Dry Skin runs first.

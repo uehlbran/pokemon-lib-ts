@@ -6,13 +6,14 @@ import type { AbilityTrigger } from "@pokemon-lib-ts/core";
  *
  * Handles triggers that the battle engine currently calls:
  *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream, Snow Warning,
- *                     Download, Anticipation, Forewarn, Frisk, Slow Start
+ *                     Download, Anticipation, Forewarn, Frisk, Slow Start, Trace
  *   - "on-turn-end": Speed Boost, Rain Dish, Ice Body, Dry Skin, Solar Power,
  *                    Hydration, Shed Skin, Bad Dreams, Poison Heal
  *   - "on-contact": Static, Flame Body, Poison Point, Rough Skin, Effect Spore,
  *                   Cute Charm
  *   - "passive-immunity": Water Absorb, Volt Absorb, Motor Drive, Dry Skin,
- *                         Flash Fire, Levitate
+ *                         Flash Fire (with volatile boost), Levitate
+ *   - "on-flinch": Steadfast
  *
  * Deferred abilities (require engine hooks not yet available):
  *   - Magic Guard: passive damage immunity (needs engine check before applying chip)
@@ -21,9 +22,7 @@ import type { AbilityTrigger } from "@pokemon-lib-ts/core";
  *   - Normalize / Scrappy: type-change mechanics
  *   - Flower Gift: ally stat boost in sun
  *   - Leaf Guard: status prevention in sun
- *   - Trace: ability copy on switch-in
  *   - Klutz: item suppression
- *   - Steadfast: needs "on-flinch" trigger (not yet in AbilityTrigger type)
  *
  * Source: Showdown sim/battle.ts Gen 4 mod — ability trigger dispatch
  * Source: Bulbapedia — individual ability mechanics
@@ -44,6 +43,8 @@ export function applyGen4Ability(trigger: AbilityTrigger, context: AbilityContex
       return handleOnContact(abilityId, context);
     case "passive-immunity":
       return handlePassiveImmunity(abilityId, context);
+    case "on-flinch":
+      return handleOnFlinch(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };
   }
@@ -223,6 +224,32 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
         messages: [`${name} can't get it going because of its Slow Start!`],
+      };
+    }
+
+    case "trace": {
+      // Trace: copies the opponent's ability on switch-in.
+      // Cannot copy Trace, Multitype, or Forecast in Gen 4.
+      // Wonder Guard and Flower Gift ARE copyable in Gen 4 (confirmed Showdown Gen 4 mod).
+      // Source: Showdown references/pokemon-showdown/data/mods/gen4/abilities.ts
+      //   Gen4 Trace banned list: ['forecast', 'multitype', 'trace'] only
+      if (!context.opponent) return { activated: false, effects: [], messages: [] };
+      const uncopyable = ["trace", "multitype", "forecast"];
+      const opponentAbility = context.opponent.ability;
+      if (!opponentAbility || uncopyable.includes(opponentAbility)) {
+        return { activated: false, effects: [], messages: [] };
+      }
+      const oppName =
+        context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+      const effect: AbilityEffect = {
+        effectType: "ability-change",
+        target: "self",
+        newAbility: opponentAbility,
+      };
+      return {
+        activated: true,
+        effects: [effect],
+        messages: [`${name} traced ${oppName}'s ${opponentAbility}!`],
       };
     }
 
@@ -598,12 +625,22 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
 
     case "flash-fire": {
       // Source: Bulbapedia — Flash Fire: Fire moves are absorbed; powers up holder's Fire moves
-      // Source: Showdown Gen 4 mod — Flash Fire immunity (volatile boost deferred to Part 7)
+      //   "Flash Fire raises the power of Fire-type moves by 50% while it is in effect."
+      // Source: Showdown Gen 4 mod — Flash Fire immunity + volatile status for damage boost
       if (moveType !== "fire") return { activated: false, effects: [], messages: [] };
+      const hasBoost = context.pokemon.volatileStatuses.has("flash-fire");
+      const effects: AbilityEffect[] = [];
+      if (!hasBoost) {
+        effects.push({ effectType: "volatile-inflict", target: "self", volatile: "flash-fire" });
+      }
       return {
         activated: true,
-        effects: [],
-        messages: [],
+        effects,
+        messages: [
+          hasBoost
+            ? `${context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId)}'s Flash Fire is already boosted!`
+            : `${context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId)}'s Flash Fire was activated!`,
+        ],
       };
     }
 
@@ -621,4 +658,40 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
     default:
       return { activated: false, effects: [], messages: [] };
   }
+}
+
+// ---------------------------------------------------------------------------
+// on-flinch
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle "on-flinch" abilities for Gen 4.
+ *
+ * Fires when a Pokemon flinches (before the flinch prevents its move).
+ * Currently only Steadfast uses this trigger.
+ *
+ * Source: Showdown Gen 4 mod — Steadfast on-flinch trigger
+ * Source: Bulbapedia — Steadfast: "Raises the Pokemon's Speed by one stage
+ *   each time it flinches."
+ */
+function handleOnFlinch(abilityId: string, context: AbilityContext): AbilityResult {
+  if (abilityId !== "steadfast") {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  // Steadfast: raises Speed by 1 stage when the Pokemon flinches
+  // Source: Showdown Gen 4 mod — Steadfast +1 Speed on flinch
+  // Source: Bulbapedia — Steadfast: raises Speed by 1 stage when the holder flinches
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+  const effect: AbilityEffect = {
+    effectType: "stat-change",
+    target: "self",
+    stat: "speed",
+    stages: 1,
+  };
+  return {
+    activated: true,
+    effects: [effect],
+    messages: [`${name}'s Steadfast raised its Speed!`],
+  };
 }
