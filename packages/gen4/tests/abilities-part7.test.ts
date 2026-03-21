@@ -346,7 +346,10 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ effectType: "ability-change", newAbility: "flower-gift" });
+    expect(result.effects[0]).toMatchObject({
+      effectType: "ability-change",
+      newAbility: "flower-gift",
+    });
   });
 
   it("given a Pokemon with Trace switching in against Wonder Guard, then DOES copy Wonder Guard in Gen 4", () => {
@@ -358,7 +361,10 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ effectType: "ability-change", newAbility: "wonder-guard" });
+    expect(result.effects[0]).toMatchObject({
+      effectType: "ability-change",
+      newAbility: "wonder-guard",
+    });
   });
 
   it("given a Pokemon with Trace switching in with no opponent, then does NOT activate", () => {
