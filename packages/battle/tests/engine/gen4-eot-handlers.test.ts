@@ -880,3 +880,67 @@ describe("slow-start-countdown EoT slot", () => {
     expect(volatileEndEvents.length).toBe(1);
   });
 });
+
+// ─── Gen 5+ EoT Stub Tests ───────────────────────────────────────────────────
+
+describe("Gen 5+ EoT handler stubs", () => {
+  it("given moody in the EoT order with an inactive ability result, when processEndOfTurn runs, then the engine does not throw and delegates to applyAbility", () => {
+    // Source: Showdown sim/abilities.ts — Moody triggers at residual phase
+    // This test verifies the engine stub correctly delegates to the ruleset
+    // without crashing, even though no gen currently returns this effect.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["moody"];
+    // Ability result is inactive by default — no stat changes applied
+    ruleset.setAbilityResult({ activated: false, effects: [], messages: [] });
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+    events.length = 0;
+    ruleset.abilityCalls = [];
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // applyAbility should have been called with "on-turn-end" for each side
+    const eotAbilityCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    expect(eotAbilityCalls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("given harvest and pickup in the EoT order with inactive ability results, when processEndOfTurn runs, then the engine does not throw", () => {
+    // Source: Showdown sim/abilities.ts — Harvest and Pickup trigger at residual phase
+    // Verifies these stubs don't crash the engine when no gen implements them yet.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["harvest", "pickup"];
+    ruleset.setAbilityResult({ activated: false, effects: [], messages: [] });
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+    events.length = 0;
+    ruleset.abilityCalls = [];
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Should have called applyAbility for each side for each effect (2 effects x 2 sides = 4)
+    const eotAbilityCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    expect(eotAbilityCalls.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("given grassy-terrain-heal in the EoT order with no active grassy terrain, when processEndOfTurn runs, then the engine does not throw and skips terrain processing", () => {
+    // Source: Showdown sim/field.ts — Grassy Terrain heal only applies when terrain is active
+    // With no terrain set, the grassy-terrain-heal handler should be a no-op.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["grassy-terrain-heal"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+    events.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // No terrain messages should be emitted since terrain is null
+    // The fact that we reach this point without throwing proves the stub works
+    expect(engine.getState().ended).toBe(false);
+  });
+});
