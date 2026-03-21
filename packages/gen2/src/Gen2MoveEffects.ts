@@ -44,6 +44,7 @@ export type MutableResult = {
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
+  batonPass?: boolean;
   messages: string[];
   weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
   hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
@@ -175,6 +176,12 @@ export function applyMoveEffect(
       if (move.category !== "status" && !rollEffectChance(effect.chance, rng)) {
         break;
       }
+      // Encore and Disable have custom failure conditions and volatile data —
+      // delegate to handleCustomEffect which implements their full logic.
+      if (effect.status === "encore" || effect.status === "disable") {
+        handleCustomEffect(move, result, context);
+        break;
+      }
       result.volatileInflicted = effect.status;
       break;
     }
@@ -206,7 +213,11 @@ export function applyMoveEffect(
     case "switch-out": {
       if (effect.target === "self") {
         // Baton Pass — switch out preserving stat changes and volatile statuses
+        // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
         result.switchOut = true;
+        if (move.id === "baton-pass") {
+          result.batonPass = true;
+        }
       }
       break;
     }
@@ -319,7 +330,64 @@ export function handleCustomEffect(
 
     case "baton-pass": {
       // Switch out preserving stat changes and volatile statuses
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
       result.switchOut = true;
+      result.batonPass = true;
+      break;
+    }
+
+    case "encore": {
+      // Force target to repeat its last used move for 2-6 turns
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm EncoreEffect
+      // Fails if the defender hasn't used a move yet
+      const lastMoveId = defender.lastMoveUsed;
+      if (!lastMoveId) {
+        result.messages.push("But it failed!");
+        break;
+      }
+      // Find the move index in the defender's moveset
+      const moveIndex = defender.pokemon.moves.findIndex((m) => m.moveId === lastMoveId);
+      if (moveIndex < 0 || (defender.pokemon.moves[moveIndex]?.currentPP ?? 0) <= 0) {
+        result.messages.push("But it failed!");
+        break;
+      }
+      // Encore lasts 2-6 turns in Gen 2
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm EncoreEffect duration
+      const encoreTurns = context.rng.int(2, 6);
+      result.volatileInflicted = "encore";
+      result.volatileData = { turnsLeft: encoreTurns, data: { moveIndex } };
+      result.messages.push(`${defender.pokemon.nickname ?? "The foe"} got an Encore!`);
+      break;
+    }
+
+    case "disable": {
+      // Disable prevents the target from using its last-used move for 1-7 turns
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm DisableEffect
+      // Fails if target has no last move or already disabled
+      if (defender.volatileStatuses.has("disable")) {
+        result.messages.push("But it failed!");
+        break;
+      }
+      const disableLastMoveId = defender.lastMoveUsed;
+      if (!disableLastMoveId) {
+        result.messages.push("But it failed!");
+        break;
+      }
+      const disableMoveIndex = defender.pokemon.moves.findIndex(
+        (m) => m.moveId === disableLastMoveId,
+      );
+      if (disableMoveIndex < 0 || (defender.pokemon.moves[disableMoveIndex]?.currentPP ?? 0) <= 0) {
+        result.messages.push("But it failed!");
+        break;
+      }
+      // Disable lasts 1-7 turns in Gen 2
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm DisableEffect duration
+      const disableTurns = context.rng.int(1, 7);
+      result.volatileInflicted = "disable";
+      result.volatileData = { turnsLeft: disableTurns, data: { moveId: disableLastMoveId } };
+      result.messages.push(
+        `${defender.pokemon.nickname ?? "The foe"}'s ${disableLastMoveId} was disabled!`,
+      );
       break;
     }
 
