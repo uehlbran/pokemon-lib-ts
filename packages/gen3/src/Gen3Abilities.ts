@@ -4,16 +4,24 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import type {
+  AbilityTrigger,
+  PokemonType,
+  PrimaryStatus,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
 
 /**
  * Gen 3 Abilities — applyAbility dispatch.
  *
  * Handles triggers:
- *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream
+ *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream, Trace, Pressure
  *   - "on-contact": Static, Flame Body, Poison Point, Rough Skin, Effect Spore, Cute Charm
  *   - "on-turn-end": Speed Boost, Rain Dish, Shed Skin
  *   - "passive-immunity": Volt Absorb, Water Absorb, Flash Fire, Levitate, Lightning Rod, Soundproof, Sturdy
+ *   - "on-before-move": Truant
+ *   - "on-damage-taken": Color Change
+ *   - "on-status-inflicted": Synchronize
  *
  * Note: Snow Warning is NOT a Gen 3 ability. It was introduced in Gen 4 with
  * Abomasnow in Diamond/Pearl. Do not implement it here.
@@ -141,6 +149,12 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
       return handleTurnEnd(abilityId, context);
     case "passive-immunity":
       return handlePassiveImmunity(abilityId, context);
+    case "on-before-move":
+      return handleBeforeMove(abilityId, context);
+    case "on-damage-taken":
+      return handleDamageTaken(abilityId, context);
+    case "on-status-inflicted":
+      return handleStatusInflicted(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };
   }
@@ -156,9 +170,10 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
  *   - Drizzle: sets permanent rain
  *   - Drought: sets permanent sun
  *   - Sand Stream: sets permanent sandstorm
+ *   - Trace: copies opponent's ability
+ *   - Pressure: announces on switch-in (PP cost handled via getPPCost)
  *
- * Not implemented (require more engine support or volatile state tracking):
- *   - Trace: copies opponent's ability (needs engine to apply ability change)
+ * Not implemented (require more engine support):
  *   - Cloud Nine / Air Lock: suppresses weather (needs weather suppression system)
  *
  * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects ABILITYEFFECT_ON_SWITCHIN
@@ -229,6 +244,45 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
         activated: true,
         effects: [effect],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
+      };
+    }
+
+    case "trace": {
+      // Trace: copies the opponent's ability on switch-in.
+      // Gen 3 banned list: only Trace itself (no Multitype/Forecast in Gen 3).
+      // Source: pret/pokeemerald — ABILITY_TRACE: copies foe's ability on entry
+      // Source: Bulbapedia — "Trace copies the opponent's Ability when entering battle"
+      if (!context.opponent) return { activated: false, effects: [], messages: [] };
+      const uncopyable = ["trace"]; // Gen 3: only Trace is uncopyable
+      const opponentAbility = context.opponent.ability;
+      if (!opponentAbility || uncopyable.includes(opponentAbility)) {
+        return { activated: false, effects: [], messages: [] };
+      }
+      const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+      const oppName =
+        context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+      const effect: AbilityEffect = {
+        effectType: "ability-change",
+        target: "self",
+        newAbility: opponentAbility,
+      };
+      return {
+        activated: true,
+        effects: [effect],
+        messages: [`${name} traced ${oppName}'s ${opponentAbility}!`],
+      };
+    }
+
+    case "pressure": {
+      // Pressure: announced on switch-in, no immediate effect.
+      // The actual PP doubling is handled via getPPCost() in Gen3Ruleset.
+      // Source: pret/pokeemerald — ABILITY_PRESSURE announces on entry
+      // Source: Bulbapedia — "Pressure is announced on entry"
+      const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+      return {
+        activated: true,
+        effects: [],
+        messages: [`${name} is exerting its Pressure!`],
       };
     }
 
@@ -570,4 +624,139 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
     default:
       return { activated: false, effects: [], messages: [] };
   }
+}
+
+// ─── On-Before-Move ──────────────────────────────────────────────────────
+
+/**
+ * Handle "on-before-move" abilities for Gen 3.
+ *
+ * Implemented:
+ *   - Truant: alternates between acting and loafing each turn.
+ *
+ * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects ABILITYEFFECT_MOVES_BLOCK
+ */
+function handleBeforeMove(abilityId: string, context: AbilityContext): AbilityResult {
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+  if (abilityId === "truant") {
+    // Truant: alternates between acting and loafing.
+    // Toggle logic: "truant-turn" volatile absent -> set it, move proceeds.
+    // "truant-turn" volatile present -> delete it, return movePrevented.
+    //
+    // Source: pret/pokeemerald src/battle_util.c — ABILITY_TRUANT
+    // Source: Bulbapedia — "Truant causes the Pokemon to use a move only every other turn"
+    const hasTruantTurn = context.pokemon.volatileStatuses.has("truant-turn");
+    if (hasTruantTurn) {
+      // This is the "loaf" turn — remove volatile and block the move.
+      // TODO: Replace direct deletion with a "volatile-remove" AbilityEffect once the engine
+      // supports it (track via GitHub issue). For now, direct mutation is the only option.
+      context.pokemon.volatileStatuses.delete("truant-turn");
+      return {
+        activated: true,
+        movePrevented: true,
+        effects: [],
+        messages: [`${name} is loafing around!`],
+      };
+    }
+    // This is the "act" turn — set volatile (will loaf next turn), move proceeds.
+    // Direct mutation is intentional here: the unit-testable path does not run through the engine,
+    // and both act-turn (set) and loaf-turn (delete) use the same direct-mutation pattern for
+    // symmetry. A future "volatile-remove" effect type would allow the loaf-turn delete to go
+    // through the effect pipeline too.
+    // Source: pret/pokeemerald src/battle_util.c — truantCounter ^= 1 at ABILITYEFFECT_ENDTURN
+    // NOTE: Ideally this toggle would happen at on-turn-end (even when move is blocked by sleep/
+    // freeze) to match pokeemerald's ABILITYEFFECT_ENDTURN. Engine lacks on-turn-end per-pokemon
+    // ability trigger; see issue for tracking. For now, on-before-move gives correct behavior for
+    // the common case.
+    context.pokemon.volatileStatuses.set("truant-turn", { turnsLeft: -1 });
+    return { activated: false, effects: [], messages: [] };
+  }
+  return { activated: false, effects: [], messages: [] };
+}
+
+// ─── On-Damage-Taken ─────────────────────────────────────────────────────
+
+/**
+ * Handle "on-damage-taken" abilities for Gen 3.
+ *
+ * Implemented:
+ *   - Color Change: changes the holder's type to match the type of the move that hit it.
+ *
+ * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects ABILITYEFFECT_ON_DAMAGE
+ */
+function handleDamageTaken(abilityId: string, context: AbilityContext): AbilityResult {
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+  if (abilityId === "color-change") {
+    // Color Change: changes the holder's type to match the type of the move that just hit it.
+    // Only activates on damaging moves. Does not activate if the holder is already
+    // purely that type (already mono-typed to that type).
+    //
+    // Source: pret/pokeemerald src/battle_util.c — ABILITY_COLOR_CHANGE
+    // Source: Bulbapedia — "Color Change changes the user's type to that of the move that hits it"
+    const moveType = context.move?.type;
+    if (!moveType) return { activated: false, effects: [], messages: [] };
+    // Don't change if already that type (pokeemerald IS_BATTLER_OF_TYPE checks both slots)
+    // Source: pret/pokeemerald src/battle_util.c — gBattleMons[battler].types[0/1] == type
+    const currentTypes = context.pokemon.types;
+    if (currentTypes.includes(moveType as PokemonType)) {
+      return { activated: false, effects: [], messages: [] };
+    }
+    return {
+      activated: true,
+      effects: [{ effectType: "type-change", target: "self", types: [moveType as PokemonType] }],
+      messages: [`${name}'s Color Change made it the ${moveType} type!`],
+    };
+  }
+  return { activated: false, effects: [], messages: [] };
+}
+
+// ─── On-Status-Inflicted ─────────────────────────────────────────────────
+
+/**
+ * Handle "on-status-inflicted" abilities for Gen 3.
+ *
+ * Implemented:
+ *   - Synchronize: when the holder receives a burn, paralysis, or poison,
+ *     the opponent also receives the same status condition.
+ *
+ * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects ABILITYEFFECT_SYNCHRONIZE
+ */
+function handleStatusInflicted(abilityId: string, context: AbilityContext): AbilityResult {
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+  if (abilityId === "synchronize") {
+    // Synchronize: when the holder receives a burn, paralysis, or poison, the
+    // opponent also receives the same status condition.
+    // Synchronize does NOT activate for sleep or freeze.
+    //
+    // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
+    // Source: Bulbapedia — "Synchronize passes burn, paralysis, and poison to the opponent"
+    const status = context.pokemon.pokemon.status;
+    if (!status) return { activated: false, effects: [], messages: [] };
+    // Only burn, paralysis, poison, and badly-poisoned are Synchronized
+    const syncableStatuses: readonly PrimaryStatus[] = [
+      "burn",
+      "paralysis",
+      "poison",
+      "badly-poisoned",
+    ];
+    if (!syncableStatuses.includes(status)) {
+      return { activated: false, effects: [], messages: [] };
+    }
+    // Cannot synchronize if opponent has no valid target or already has a status
+    if (!context.opponent) return { activated: false, effects: [], messages: [] };
+    if (context.opponent.pokemon.status !== null) {
+      return { activated: false, effects: [], messages: [] };
+    }
+    const oppName = context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+    // In Gen 3, Synchronize converts badly-poisoned -> regular poison before mirroring.
+    // Source: pret/pokeemerald src/battle_util.c — synchronizeMoveEffect == MOVE_EFFECT_TOXIC
+    //   sets synchronizeMoveEffect = MOVE_EFFECT_POISON (lines 2976-2977, 2992-2993)
+    const mirroredStatus = status === "badly-poisoned" ? "poison" : status;
+    return {
+      activated: true,
+      effects: [{ effectType: "status-inflict", target: "opponent", status: mirroredStatus }],
+      messages: [`${name}'s Synchronize shared its ${mirroredStatus} with ${oppName}!`],
+    };
+  }
+  return { activated: false, effects: [], messages: [] };
 }
