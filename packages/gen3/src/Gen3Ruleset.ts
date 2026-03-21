@@ -564,6 +564,43 @@ export class Gen3Ruleset extends BaseRuleset {
     return Math.max(1, effective);
   }
 
+  // --- Semi-Invulnerable Targeting ---
+
+  /**
+   * Gen 3 semi-invulnerable move targeting.
+   *
+   * Certain moves can hit targets during the semi-invulnerable turn of two-turn moves:
+   *   - "flying" (Fly): Thunder, Twister, Gust, Sky Uppercut can hit
+   *   - "underground" (Dig): Earthquake, Magnitude can hit
+   *   - "underwater" (Dive): Surf, Whirlpool can hit
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c — semi-invulnerable checks
+   * Source: Bulbapedia — Two-turn move vulnerability table
+   */
+  override canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+    switch (volatile) {
+      case "flying":
+        // Thunder, Twister, Gust, Sky Uppercut can hit Fly
+        // Source: pret/pokeemerald — STATUS3_ON_AIR hit checks
+        return ["thunder", "twister", "gust", "sky-uppercut"].includes(moveId);
+      case "underground":
+        // Earthquake, Magnitude can hit Dig
+        // Source: pret/pokeemerald — STATUS3_UNDERGROUND hit checks
+        return ["earthquake", "magnitude"].includes(moveId);
+      case "underwater":
+        // Surf, Whirlpool can hit Dive
+        // Source: pret/pokeemerald — STATUS3_UNDERWATER hit checks
+        return ["surf", "whirlpool"].includes(moveId);
+      case "charging":
+        // Generic charging moves (SolarBeam, Skull Bash, Razor Wind, Sky Attack, Bounce on
+        // second turn) are NOT semi-invulnerable — all moves can hit a charging Pokemon.
+        // Source: pret/pokeemerald — no hit-immunity for EFFECT_SKULL_BASH/RAZOR_WIND/SKY_ATTACK
+        return true;
+      default:
+        return false;
+    }
+  }
+
   // --- Switch Restrictions (#229: trapping abilities) ---
 
   /**

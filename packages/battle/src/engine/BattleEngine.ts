@@ -838,7 +838,7 @@ export class BattleEngine implements BattleEventEmitter {
     // emitted during this turn (fixes #84 — slice(-50) captured cross-turn events).
     this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
 
-    // Reset move tracking for next turn
+    // Reset per-turn tracking for next turn
     for (const side of this.state.sides) {
       for (const active of side.active) {
         if (active) {
