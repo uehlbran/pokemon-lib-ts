@@ -9,13 +9,15 @@
 import type {
   AccuracyContext,
   ActivePokemon,
+  BattleConfig,
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { BattleEngine } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen1Ruleset } from "../src/Gen1Ruleset";
+import { createGen1DataManager, Gen1Ruleset } from "../src";
 
 // ============================================================================
 // Shared test infrastructure
@@ -925,6 +927,145 @@ describe("#408 — Self-Destruct/Explosion move properties for engine faint hand
     // Act / Assert
     expect(explosionMove.id).toBe("explosion");
     expect(explosionMove.effect).toEqual({ type: "custom", handler: "explosion" });
+  });
+});
+
+// ============================================================================
+// #473 — Explosion/Self-Destruct: BattleEngine integration test for faint-on-miss
+//
+// The ruleset-side tests (#408) verify move data properties only. This test
+// exercises the engine path: BattleEngine.executeMove() must set attacker HP = 0
+// when Explosion misses, even though no damage is dealt to the defender.
+//
+// RNG sequence analysis (Gen 1, no abilities/items, clean Pokemon):
+//   1. engine.start() → no RNG consumed (Gen 1 has no entry abilities)
+//   2. submitAction() × 2 → resolves turn immediately
+//   3. resolveTurnOrder() → consumes rng.next() × 2 (one tiebreak per action)
+//   4. First mover (attacker, higher speed) → canExecuteMove → no status/volatiles → no RNG
+//   5. doesMoveHit() → rng.int(0, 255): threshold=255 for 100% accuracy,
+//      MISS when roll = 255 (the Gen 1 1/256 miss bug)
+//
+// Seed 491: rng.next(), rng.next() (tiebreaks), then rng.int(0,255) = 255 → MISS.
+// Derivation verified with inline Mulberry32 simulation (see spec: Gen 1 1/256 miss bug).
+// ============================================================================
+
+describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () => {
+  const dataManager = createGen1DataManager();
+  const ruleset = new Gen1Ruleset();
+
+  // Helper: minimal Gen 1 PokemonInstance
+  let uidSeq = 0;
+  function makeGen1Pokemon(
+    speciesId: number,
+    level: number,
+    moveIds: string[],
+    speedOverride?: number,
+  ): PokemonInstance {
+    const moves = moveIds.map((id) => {
+      const mv = dataManager.getMove(id);
+      return { moveId: id, currentPP: mv.pp, maxPP: mv.pp, ppUps: 0 };
+    });
+    return {
+      uid: `test-${++uidSeq}`,
+      speciesId,
+      nickname: null,
+      level,
+      experience: 0,
+      nature: "hardy",
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      currentHp: 200,
+      moves,
+      ability: "",
+      abilitySlot: "normal1" as const,
+      heldItem: null,
+      status: null,
+      friendship: 70,
+      gender: "male" as const,
+      isShiny: false,
+      metLocation: "pallet-town",
+      metLevel: level,
+      originalTrainer: "Red",
+      originalTrainerId: 12345,
+      pokeball: "poke-ball",
+      // Override speed via calculatedStats so engine sees our explicit value.
+      // This is set post-construction below for the attacker.
+    } as unknown as PokemonInstance;
+  }
+
+  it("given Explosion misses via 1/256 bug (seed 491), when BattleEngine resolves the turn, then attacker faints and defender HP is unchanged", () => {
+    // Source: pret/pokered ExplosionEffect — user always faints regardless of hit/miss.
+    // Source: pokered engine/battle/core.asm — 1/256 miss bug: 100% accuracy moves have
+    //   threshold=255, and roll=255 causes a miss (roll < threshold is the hit condition).
+    //
+    // Seed derivation (Mulberry32):
+    //   SeededRandom(491).next()       = tiebreak for action 0
+    //   SeededRandom(491).next()       = tiebreak for action 1
+    //   SeededRandom(491).int(0, 255)  = 255 → MISS (255 >= threshold 255)
+    //
+    // Attacker speed=200, defender speed=50 → attacker always goes first regardless of tiebreak.
+
+    // Arrange
+    const config: BattleConfig = {
+      generation: 1,
+      format: "singles",
+      teams: [
+        // Side 0: attacker knows Explosion (move index 0)
+        // Using Weezing (#110) — learns Explosion in Gen 1
+        [makeGen1Pokemon(110, 50, ["explosion", "tackle"])],
+        // Side 1: defender knows Tackle
+        [makeGen1Pokemon(143, 50, ["tackle"])], // Snorlax
+      ],
+      seed: 491,
+    };
+    const engine = new BattleEngine(config, ruleset, dataManager);
+    engine.start();
+
+    // Manually set calculatedStats so attacker has speed=200 (goes first) and
+    // defender has speed=50 (goes second). The engine reads calculatedStats for turn order.
+    const attackerActive = engine.getActive(0);
+    const defenderActive = engine.getActive(1);
+    if (!attackerActive || !defenderActive)
+      throw new Error("Setup failed: active pokemon not found");
+
+    // Override stats so speed ordering is deterministic
+    attackerActive.pokemon.calculatedStats = {
+      hp: 200,
+      attack: 100,
+      defense: 80,
+      spAttack: 80,
+      spDefense: 80,
+      speed: 200, // attacker goes first
+    };
+    attackerActive.pokemon.currentHp = 200;
+    defenderActive.pokemon.calculatedStats = {
+      hp: 200,
+      attack: 100,
+      defense: 80,
+      spAttack: 80,
+      spDefense: 80,
+      speed: 50, // defender goes second
+    };
+    defenderActive.pokemon.currentHp = 200;
+
+    // Act — submit actions: attacker uses Explosion (move index 0), defender uses Tackle (move index 0)
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert
+    // The attacker must faint (Explosion always faints the user even on miss)
+    expect(attackerActive.pokemon.currentHp).toBe(0);
+    // The defender must NOT have taken damage (move missed)
+    expect(defenderActive.pokemon.currentHp).toBe(200);
+
+    // The event log must contain a move-miss event for side 0
+    const events = engine.getEventLog();
+    const missEvent = events.find((e) => e.type === "move-miss" && e.side === 0);
+    expect(missEvent).toBeDefined();
+
+    // The event log must contain a faint event for side 0 (attacker fainted)
+    const faintEvent = events.find((e) => e.type === "faint" && e.side === 0);
+    expect(faintEvent).toBeDefined();
   });
 });
 
