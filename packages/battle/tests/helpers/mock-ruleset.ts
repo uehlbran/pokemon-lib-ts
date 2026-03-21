@@ -472,14 +472,19 @@ export class MockRuleset implements GenerationRuleset {
     _currentHp: number,
     _status: PrimaryStatus | null,
     _ballModifier: number,
-    _rng: SeededRandom,
+    rng: SeededRandom,
   ): CatchResult {
     if (this.nextCatchResult) {
       const result = this.nextCatchResult;
       this.nextCatchResult = null;
       return result;
     }
-    return { shakes: 3, caught: true };
+    // Consume RNG so determinism tests exercise actual seeded behavior.
+    // A roll < 0.5 → caught; shakes proportional to remaining roll.
+    const roll = rng.next();
+    const caught = roll < 0.5;
+    const shakes = caught ? 4 : Math.floor(rng.next() * 4);
+    return { shakes, caught };
   }
 
   processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
