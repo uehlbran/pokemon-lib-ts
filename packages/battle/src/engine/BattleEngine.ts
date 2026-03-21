@@ -3479,17 +3479,17 @@ export class BattleEngine implements BattleEventEmitter {
     const winnerParticipants = [...participants].filter((uid) =>
       winnerTeam.some((t) => t.uid === uid),
     );
+    if (winnerParticipants.length === 0) return;
 
-    // Total count for EXP formula — includes fainted participants (they dilute EXP but don't receive it)
-    // Source: Showdown sim/battle-actions.ts — participantCount used in EXP divisor
-    const participantCount = winnerParticipants.length;
-    if (participantCount === 0) return;
-
-    // Only living participants actually receive EXP
+    // Only living participants receive EXP and count toward the divisor.
+    // Source: Bulbapedia — "Experience Points are divided equally among all Pokémon
+    // who participated in the battle and have not fainted."
     const livingParticipants = winnerParticipants.filter((uid) => {
       const p = winnerTeam.find((t) => t.uid === uid);
       return p !== undefined && p.currentHp > 0;
     });
+    const participantCount = livingParticipants.length;
+    if (participantCount === 0) return;
 
     for (const participantUid of livingParticipants) {
       const participant = winnerTeam.find((p) => p.uid === participantUid);
@@ -3504,7 +3504,7 @@ export class BattleEngine implements BattleEventEmitter {
         defeatedLevel: faintedPokemon.level,
         participantLevel: participant.level,
         isTrainerBattle: !this.state.isWildBattle,
-        participantCount, // full count (includes fainted) for EXP split calculation
+        participantCount, // living participants only — Source: Bulbapedia EXP mechanics
         hasLuckyEgg: false, // TODO: check held item in a future pass
         hasExpShare: false, // TODO: Gen 2+ Exp. Share in a future pass
         affectionBonus: false,

@@ -92,12 +92,12 @@ describe("BattleEngine - EXP gain on faint", () => {
       // Blastoise baseExp=239 (from mock-data-manager.ts), defeatedLevel=30, participantCount=1
       // → floor(239 * 30 / (5 * 1)) = floor(1434) = 1434
       const expGainEvent = events.find((e): e is ExpGainEvent => e.type === "exp-gain");
-      expect(expGainEvent).toBeDefined();
+      if (!expGainEvent) throw new Error("Expected an exp-gain event to be emitted");
       // EXP goes to side 0 (the winner, opposite the fainted pokemon on side 1)
-      expect(expGainEvent?.side).toBe(0);
-      expect(expGainEvent?.pokemon).toBe("charizard-1");
+      expect(expGainEvent.side).toBe(0);
+      expect(expGainEvent.pokemon).toBe("charizard-1");
       // Source: mock-configured value — see MockRuleset.calculateExpGain formula above
-      expect(expGainEvent?.amount).toBe(1434);
+      expect(expGainEvent.amount).toBe(1434);
     });
   });
 
@@ -130,17 +130,28 @@ describe("BattleEngine - EXP gain on faint", () => {
       // Assert
       // Source: BattleEngine.awardExpForFaint level-up loop — emits LevelUpEvent per level gained
       const levelUpEvent = events.find((e): e is LevelUpEvent => e.type === "level-up");
-      expect(levelUpEvent).toBeDefined();
+      if (!levelUpEvent) throw new Error("Expected a level-up event to be emitted");
       // Source: Charizard started at level 50, gained 1434 EXP → crossed level 51 threshold
-      expect(levelUpEvent?.newLevel).toBe(51);
-      expect(levelUpEvent?.side).toBe(0);
-      expect(levelUpEvent?.pokemon).toBe("charizard-1");
+      expect(levelUpEvent.newLevel).toBe(51);
+      expect(levelUpEvent.side).toBe(0);
+      expect(levelUpEvent.pokemon).toBe("charizard-1");
     });
 
-    it("given pokemon needs 3 levels to reach current experience, when pokemon faints, then 3 LevelUpEvents emitted in sequence", () => {
-      // Arrange: Charizard at level 5 with 0 EXP; inject huge EXP via setNextExpGain to trigger 3+ level-ups.
-      // Source: getExpForLevel("medium-slow", N) — medium-slow formula above
-      // With expPastLevel8 injected, the level-up loop should fire at levels 6, 7, 8 (3 times).
+    it("given pokemon has enough EXP for 8 level-ups, when fainted opponent awards EXP, then 8 LevelUpEvents emitted in ascending order from level 6 to 13", () => {
+      // Arrange: Charizard at level 5 with 0 EXP; inject EXP via setNextExpGain to trigger 8 level-ups.
+      // Source: getExpForLevel("medium-slow", N) — medium-slow formula: floor(1.2*n³ - 15*n² + 100*n - 140)
+      // expPastLevel8 = getExpForLevel("medium-slow", 8) + 1000 = 314 + 1000 = 1314
+      // Starting at level 5 with 0 EXP, after gaining 1314 EXP:
+      //   Level 6 threshold: 179  → 1314 ≥ 179  ✓ (level up to 6)
+      //   Level 7 threshold: 236  → 1314 ≥ 236  ✓ (level up to 7)
+      //   Level 8 threshold: 314  → 1314 ≥ 314  ✓ (level up to 8)
+      //   Level 9 threshold: 419  → 1314 ≥ 419  ✓ (level up to 9)
+      //   Level 10 threshold: 560 → 1314 ≥ 560  ✓ (level up to 10)
+      //   Level 11 threshold: 742 → 1314 ≥ 742  ✓ (level up to 11)
+      //   Level 12 threshold: 973 → 1314 ≥ 973  ✓ (level up to 12)
+      //   Level 13 threshold: 1261 → 1314 ≥ 1261 ✓ (level up to 13)
+      //   Level 14 threshold: 1612 → 1314 < 1612  ✗ (stop)
+      // Total: 8 level-ups (levels 6 through 13)
       const expPastLevel8 = getExpForLevel("medium-slow", 8) + 1000;
 
       const ruleset = new MockRuleset();
@@ -166,8 +177,11 @@ describe("BattleEngine - EXP gain on faint", () => {
       // Assert
       // Source: BattleEngine.awardExpForFaint — emits one LevelUpEvent per level gained
       const levelUpEvents = events.filter((e): e is LevelUpEvent => e.type === "level-up");
-      expect(levelUpEvents.length).toBeGreaterThanOrEqual(3);
-      // Events must be in ascending order (level 6 → 7 → 8 → ...)
+      // Source: formula derivation above — exactly 8 level-ups (levels 6 through 13)
+      expect(levelUpEvents.length).toBe(8);
+      expect(levelUpEvents[0].newLevel).toBe(6);
+      expect(levelUpEvents[7].newLevel).toBe(13);
+      // Events must be in ascending order (level 6 → 7 → 8 → ... → 13)
       for (let i = 0; i < levelUpEvents.length - 1; i++) {
         expect(levelUpEvents[i + 1].newLevel).toBe(levelUpEvents[i].newLevel + 1);
       }
@@ -175,13 +189,15 @@ describe("BattleEngine - EXP gain on faint", () => {
   });
 
   describe("participant count", () => {
-    it("given two participants who each had a turn against fainted pokemon, when awarding EXP, then participantCount=2 passed to calculateExpGain", () => {
+    it("given two participants who each had a turn against fainted pokemon but one fainted, when awarding EXP, then participantCount=1 passed to calculateExpGain", () => {
       // Arrange: Charizard (side 0) and Pikachu (side 0 bench) both fight Blastoise.
       // Round 1: Charizard (speed 120) hits Blastoise (20→10 HP).
       //          Blastoise (speed 61) hits Charizard (10 HP exactly → faint).
       // Switch prompt: side 0 sends Pikachu in.
       // Round 2: Pikachu (speed ~112) > Blastoise (~66); Pikachu hits Blastoise (10→0 HP, faint).
-      // participantCount should be 2 (Charizard + Pikachu both fought Blastoise).
+      // participantCount should be 1 — Charizard fainted before Blastoise did, so only
+      // Pikachu (the sole living participant) counts toward EXP division.
+      // Source: Bulbapedia — "EXP divided among Pokémon that participated and have not fainted."
       let capturedParticipantCount = 0;
       const ruleset = new MockRuleset();
       const originalCalcExp = ruleset.calculateExpGain.bind(ruleset);
@@ -227,9 +243,9 @@ describe("BattleEngine - EXP gain on faint", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      // Source: participation tracker — Charizard was recorded against Blastoise in round 1,
-      //         Pikachu was recorded in round 2 → participantCount=2
-      expect(capturedParticipantCount).toBe(2);
+      // Source: Bulbapedia EXP mechanics — Charizard fainted before Blastoise, so only
+      // Pikachu (living participant) counts → participantCount=1
+      expect(capturedParticipantCount).toBe(1);
     });
   });
 
@@ -317,7 +333,7 @@ describe("BattleEngine - EXP gain on faint", () => {
 
       // Assert
       const levelUpEvent = events.find((e): e is LevelUpEvent => e.type === "level-up");
-      expect(levelUpEvent).toBeDefined();
+      if (!levelUpEvent) throw new Error("Expected a level-up event to be emitted");
 
       // Source: MockRuleset calcHp at level 51 = 156; started at 153 (full HP)
       // After level-up: currentHp = min(153 + (156-153), 156) = min(156, 156) = 156
