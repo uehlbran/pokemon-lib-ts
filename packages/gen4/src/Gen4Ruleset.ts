@@ -270,7 +270,11 @@ export class Gen4Ruleset extends BaseRuleset {
 
     const isFlying = pokemon.types.includes("flying");
     const hasLevitate = pokemon.ability === "levitate";
-    const isGrounded = !isFlying && !hasLevitate;
+    // Magnet Rise: grants levitation — immune to ground-based hazards (Spikes, Toxic Spikes)
+    // Source: Bulbapedia — Magnet Rise: "makes the user immune to Ground-type moves"
+    // Source: Showdown Gen 4 mod — Magnet Rise grants same grounding immunity as Levitate
+    const hasMagnetRise = pokemon.volatileStatuses.has("magnet-rise");
+    const isGrounded = !isFlying && !hasLevitate && !hasMagnetRise;
 
     // --- Stealth Rock ---
     const stealthRock = side.hazards.find((h) => h.type === "stealth-rock");
@@ -592,6 +596,18 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Showdown data/abilities.ts — Slow Start onModifySpe
     if (active.ability === "slow-start" && active.volatileStatuses.has("slow-start")) {
       effective = Math.floor(effective / 2);
+    }
+
+    // Unburden: 2x Speed when held item is consumed/lost AND currently has no item.
+    // Source: Bulbapedia — Unburden: "Doubles the Pokemon's Speed stat when its held
+    //   item is used or lost."
+    // Source: Showdown data/abilities.ts — Unburden onModifySpe
+    if (
+      active.ability === "unburden" &&
+      active.volatileStatuses.has("unburden") &&
+      !active.pokemon.heldItem
+    ) {
+      effective = effective * 2;
     }
 
     // Quick Feet: 1.5x Speed when statused, overrides paralysis penalty
@@ -1153,6 +1169,7 @@ export class Gen4Ruleset extends BaseRuleset {
       "disable-countdown", // Disable timer (4 turns in Gen 4)
       "heal-block-countdown", // Heal Block (5 turns)
       "embargo-countdown", // Embargo (5 turns)
+      "magnet-rise-countdown", // Magnet Rise (5 turns)
       "perish-song", // Perish Song countdown
       "screen-countdown", // Reflect / Light Screen
       "safeguard-countdown", // Safeguard

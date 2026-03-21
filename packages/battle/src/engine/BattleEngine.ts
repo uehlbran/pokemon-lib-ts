@@ -2434,6 +2434,30 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
+        case "magnet-rise-countdown": {
+          // Magnet Rise volatile countdown — remove when turnsLeft reaches 0
+          // Source: Bulbapedia — Magnet Rise: "The user levitates for five turns."
+          // Source: Showdown Gen 4 mod — Magnet Rise lasts 5 turns
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const mrState = active.volatileStatuses.get("magnet-rise");
+            if (!mrState) continue;
+            if (mrState.turnsLeft > 0) {
+              mrState.turnsLeft--;
+              if (mrState.turnsLeft <= 0) {
+                active.volatileStatuses.delete("magnet-rise");
+                this.emit({
+                  type: "volatile-end",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  volatile: "magnet-rise",
+                });
+              }
+            }
+          }
+          break;
+        }
         default:
           // Many effects not yet implemented
           break;

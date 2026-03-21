@@ -1084,6 +1084,99 @@ function handleNullEffectMoves(
       break;
     }
 
+    case "bind":
+    case "wrap":
+    case "fire-spin":
+    case "clamp":
+    case "whirlpool":
+    case "sand-tomb":
+    case "magma-storm": {
+      // Binding moves: trap target for 4-5 turns (or 7 with Grip Claw).
+      // Source: Showdown Gen 4 mod — binding moves set "bound" volatile with duration
+      // Source: Bulbapedia — Binding moves last 4-5 turns in Gen 4 (2-5 in Gen 3);
+      //   Grip Claw extends to 7 turns.
+      const { attacker: bindAtk, defender: bindDef } = context;
+      const defName = bindDef.pokemon.nickname ?? "The foe";
+      if (bindDef.volatileStatuses.has("bound")) {
+        break; // Already bound
+      }
+      // Grip Claw: binding lasts 7 turns instead of randomly 4-5
+      // Source: Bulbapedia — Grip Claw: "Extends the duration of binding moves to 7 turns"
+      // Source: Showdown Gen 4 mod — Grip Claw sets binding duration to 7
+      const hasGripClaw = bindAtk.pokemon.heldItem === "grip-claw" && bindAtk.ability !== "klutz";
+      const turnsLeft = hasGripClaw ? 7 : context.rng.int(4, 5);
+      result.volatileInflicted = "bound";
+      result.volatileData = { turnsLeft };
+      result.messages.push(`${defName} was squeezed by ${moveId}!`);
+      break;
+    }
+
+    case "power-swap": {
+      // Swap Atk and SpAtk stat stages between attacker and defender.
+      // Source: Showdown Gen 4 mod — Power Swap swaps Attack and SpAtk stat boosts/drops
+      // Source: Bulbapedia — Power Swap: "The user swaps its Attack and Sp. Atk stat
+      //   changes with the target's."
+      const { attacker: pswAtk, defender: pswDef } = context;
+      const pswAtkName = pswAtk.pokemon.nickname ?? "The Pokemon";
+
+      const tempAtk = pswAtk.statStages.attack;
+      const tempSpAtk = pswAtk.statStages.spAttack;
+      pswAtk.statStages.attack = pswDef.statStages.attack;
+      pswAtk.statStages.spAttack = pswDef.statStages.spAttack;
+      pswDef.statStages.attack = tempAtk;
+      pswDef.statStages.spAttack = tempSpAtk;
+
+      result.messages.push(
+        `${pswAtkName} switched all changes to its Attack and Sp. Atk with the target!`,
+      );
+      break;
+    }
+
+    case "guard-swap": {
+      // Swap Def and SpDef stat stages between attacker and defender.
+      // Source: Showdown Gen 4 mod — Guard Swap swaps Defense and SpDef stat boosts/drops
+      // Source: Bulbapedia — Guard Swap: "The user swaps its Defense and Sp. Def stat
+      //   changes with the target's."
+      const { attacker: gswAtk, defender: gswDef } = context;
+      const gswAtkName = gswAtk.pokemon.nickname ?? "The Pokemon";
+
+      const tempDef = gswAtk.statStages.defense;
+      const tempSpDef = gswAtk.statStages.spDefense;
+      gswAtk.statStages.defense = gswDef.statStages.defense;
+      gswAtk.statStages.spDefense = gswDef.statStages.spDefense;
+      gswDef.statStages.defense = tempDef;
+      gswDef.statStages.spDefense = tempSpDef;
+
+      result.messages.push(
+        `${gswAtkName} switched all changes to its Defense and Sp. Def with the target!`,
+      );
+      break;
+    }
+
+    case "heart-swap": {
+      // Swap ALL stat stages between attacker and defender.
+      // Source: Showdown Gen 4 mod — Heart Swap swaps all stat stage changes
+      // Source: Bulbapedia — Heart Swap: "The user swaps all stat changes with the target."
+      const { attacker: hswAtk, defender: hswDef } = context;
+      const hswAtkName = hswAtk.pokemon.nickname ?? "The Pokemon";
+      const allStats: Array<keyof typeof hswAtk.statStages> = [
+        "attack",
+        "defense",
+        "spAttack",
+        "spDefense",
+        "speed",
+        "accuracy",
+        "evasion",
+      ];
+      for (const stat of allStats) {
+        const temp = hswAtk.statStages[stat];
+        hswAtk.statStages[stat] = hswDef.statStages[stat];
+        hswDef.statStages[stat] = temp;
+      }
+      result.messages.push(`${hswAtkName} swapped all stat changes with the target!`);
+      break;
+    }
+
     case "counter": {
       // Counter: returns 2x the physical damage taken this turn
       // Source: Showdown Gen 4 sim — Counter returns double physical damage received this turn
@@ -1192,6 +1285,14 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       context.defender.pokemon.heldItem = null;
       const defenderName = context.defender.pokemon.nickname ?? "The foe";
       result.messages.push(`${defenderName} lost its ${item}!`);
+      // Unburden: if the defender had Unburden, set the volatile now that its item is gone
+      // Source: Showdown Gen 4 mod — Unburden activates when item is knocked off
+      if (
+        context.defender.ability === "unburden" &&
+        !context.defender.volatileStatuses.has("unburden")
+      ) {
+        context.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      }
     }
     return result;
   }
@@ -1495,6 +1596,26 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     } else if (attackerItem) {
       result.messages.push(`${attackerName} gave ${attackerItem} to ${defenderName}!`);
     }
+
+    // Unburden: if either Pokemon had an item and now doesn't, and has Unburden, activate it.
+    // Source: Showdown Gen 4 mod — Unburden activates when item is lost via Trick/Switcheroo
+    if (
+      attackerItem &&
+      !attacker.pokemon.heldItem &&
+      attacker.ability === "unburden" &&
+      !attacker.volatileStatuses.has("unburden")
+    ) {
+      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    }
+    if (
+      defenderItem &&
+      !defender.pokemon.heldItem &&
+      defender.ability === "unburden" &&
+      !defender.volatileStatuses.has("unburden")
+    ) {
+      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    }
+
     return result;
   }
 
@@ -1528,6 +1649,83 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     };
     result.messages.push(`${attackerName} chose Doom Desire as its destiny!`);
     return result;
+  }
+
+  // Magnet Rise: apply "magnet-rise" volatile to user for 5 turns.
+  // Fails if user is already under Gravity or already has Magnet Rise.
+  // Source: Showdown Gen 4 mod — Magnet Rise sets volatile on self for 5 turns
+  // Source: Bulbapedia — Magnet Rise: "The user levitates using electrically generated
+  //   magnetism for five turns." Fails under Gravity.
+  if (context.move.id === "magnet-rise") {
+    const { attacker, state } = context;
+    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+    // Fail if Gravity is active
+    if (state.gravity?.active) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    // Fail if already has Magnet Rise
+    if (attacker.volatileStatuses.has("magnet-rise")) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    result.selfVolatileInflicted = "magnet-rise";
+    result.selfVolatileData = { turnsLeft: 5 };
+    result.messages.push(`${attackerName} levitated with electromagnetism!`);
+    return result;
+  }
+
+  // Acupressure: +2 to a random stat stage (from stats not already at +6).
+  // Source: Showdown Gen 4 mod — Acupressure boosts a random stat by 2
+  // Source: Bulbapedia — Acupressure: "Sharply raises one of the user's stats at random"
+  if (context.move.id === "acupressure") {
+    const { attacker, rng } = context;
+    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+    const allStats: BattleStat[] = [
+      "attack",
+      "defense",
+      "spAttack",
+      "spDefense",
+      "speed",
+      "accuracy",
+      "evasion",
+    ];
+    const boostableStats = allStats.filter((stat) => attacker.statStages[stat] < 6);
+    if (boostableStats.length === 0) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    const chosenIndex = rng.int(0, boostableStats.length - 1);
+    const chosen = boostableStats[chosenIndex] as BattleStat;
+    result.statChanges.push({ target: "attacker", stat: chosen, stages: 2 });
+    result.messages.push(`${attackerName}'s ${chosen} rose sharply!`);
+    return result;
+  }
+
+  // Curse (Ghost-type): user loses 1/2 max HP, target gets "curse" volatile.
+  // Non-Ghost Curse (stat changes) is handled by data-driven effect (stat-change type).
+  // Ghost-type Curse is intercepted by ID + type check.
+  // Source: Showdown Gen 4 mod — Ghost Curse: user sacrifices 1/2 HP, target gets cursed
+  // Source: Bulbapedia — Curse: "If the user is a Ghost-type, the user loses 1/2 of its
+  //   maximum HP and the target is cursed."
+  if (context.move.id === "curse") {
+    const { attacker, defender } = context;
+    if (attacker.types.includes("ghost")) {
+      const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+      const defenderName = defender.pokemon.nickname ?? "The foe";
+      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+      const hpCost = Math.max(1, Math.floor(maxHp / 2));
+      // Already cursed — fail
+      if (defender.volatileStatuses.has("curse")) {
+        result.messages.push("But it failed!");
+        return result;
+      }
+      result.customDamage = { target: "attacker", amount: hpCost, source: "curse" };
+      result.volatileInflicted = "curse";
+      result.messages.push(`${attackerName} cut its own HP and laid a curse on ${defenderName}!`);
+      return result;
+    }
+    // Non-Ghost: fall through to data-driven effect (stat changes +Atk +Def -Spd)
   }
 
   // Handle null-effect moves (stealth-rock, toxic-spikes, trick-room, etc.)

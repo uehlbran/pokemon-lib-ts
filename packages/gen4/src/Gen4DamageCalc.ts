@@ -649,6 +649,22 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
+  // 4b. Magnet Rise: grants Ground immunity to the holder for 5 turns.
+  // NOT an ability — Mold Breaker does NOT bypass Magnet Rise.
+  // Gravity suppresses Magnet Rise (grounded Pokemon lose the levitation).
+  // Iron Ball also grounds the holder, suppressing Magnet Rise.
+  // Source: Showdown Gen 4 mod — Magnet Rise grants Ground immunity (not ability-based)
+  // Source: Bulbapedia — Magnet Rise: "The user levitates using electrically generated
+  //   magnetism for five turns."
+  if (
+    effectiveMoveType === "ground" &&
+    defender.volatileStatuses.has("magnet-rise") &&
+    !gravityActive &&
+    !ironBallGrounded
+  ) {
+    return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
+  }
+
   // 5. Physical/Special determination — THE key Gen 4 change
   // In Gen 4, category is per-move, NOT per-type (unlike Gen 1-3).
   // Source: Bulbapedia — Physical/special split: "Starting in Generation IV,

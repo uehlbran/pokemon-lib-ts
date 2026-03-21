@@ -519,7 +519,8 @@ export type EndOfTurnEffect =
   | "gravity-countdown"
   | "yawn-countdown"
   | "heal-block-countdown"
-  | "embargo-countdown";
+  | "embargo-countdown"
+  | "magnet-rise-countdown";
 
 /**
  * Configuration object passed to the `BattleEngine` constructor.
