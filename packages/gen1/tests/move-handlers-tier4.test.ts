@@ -413,6 +413,7 @@ describe("Gen 1 Mimic handler", () => {
 
   it("given Mimic replaced a slot, when onSwitchOut is called, then the original move is restored", () => {
     // Source: pret/pokered — Mimic replacement reverts on switch-out
+    // This tests the fallback path (no PP fields in volatile data → use base PP)
     // Arrange
     const pokemon = makeActivePokemon({
       pokemon: {
@@ -432,10 +433,47 @@ describe("Gen 1 Mimic handler", () => {
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
-    // Assert — mimic (PP 10) should be restored
+    // Assert — mimic (PP 10) should be restored via base PP fallback
     // Source: pret/pokered — PP restored to max for the original move
     expect(pokemon.pokemon.moves[0]!.moveId).toBe("mimic");
     expect(pokemon.pokemon.moves[0]!.maxPP).toBe(10);
+  });
+
+  it("given Mimic replaced a slot with partial PP, when onSwitchOut is called, then original PP values are precisely restored", () => {
+    // Source: pret/pokered — Mimic replacement reverts on switch-out preserving original PP
+    // This tests the primary path where PP fields were stored in the volatile data by the handler.
+    // Ensures a player who had spent some PP on Mimic gets the correct PP back, not a full restore.
+    // Arrange
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [
+          { moveId: "thunderbolt", currentPP: 5, maxPP: 5, ppUps: 0 }, // currently mimicked move
+          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+        ],
+      } as PokemonInstance,
+    });
+    // volatile data includes original PP values (as stored by the Mimic handler)
+    pokemon.volatileStatuses.set("mimic-slot", {
+      turnsLeft: -1,
+      data: {
+        slot: 0,
+        originalMoveId: "mimic",
+        originalCurrentPP: 6,
+        originalMaxPP: 10,
+        originalPpUps: 1,
+      },
+    });
+    const state = makeBattleState();
+
+    // Act
+    ruleset.onSwitchOut(pokemon, state);
+
+    // Assert — original move is restored with exact PP values from before Mimic was used
+    expect(pokemon.pokemon.moves[0]!.moveId).toBe("mimic");
+    expect(pokemon.pokemon.moves[0]!.currentPP).toBe(6);
+    expect(pokemon.pokemon.moves[0]!.maxPP).toBe(10);
+    expect(pokemon.pokemon.moves[0]!.ppUps).toBe(1);
   });
 });
 
