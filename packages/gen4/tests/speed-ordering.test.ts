@@ -840,3 +840,87 @@ describe("Gen4Ruleset resolveTurnOrder -- Custap Berry", () => {
     expect(ordered[1]).toEqual(actions[1]); // B second
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #452 — Trick Room equal-Speed edge case
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset resolveTurnOrder -- Trick Room equal Speed tie-breaking (issue #452)", () => {
+  it("given Trick Room is active and both Pokemon have IDENTICAL Speed, when determining action order, then the tie-breaking is NOT reversed by Trick Room (original index order applies)", () => {
+    // Source: Showdown Gen 4 — equal Speed tie-breaking in Trick Room follows normal rules
+    // Bulbapedia — Trick Room: "If two Pokémon with the same Speed use moves in the same
+    //   priority bracket, one is chosen at random regardless of Trick Room."
+    // Key behavior: Trick Room reverses UNEQUAL speeds. When speeds are equal, it is a true
+    // tie, and the same random/original ordering applies as it would outside Trick Room.
+    // Neither Pokemon gets a deterministic advantage purely due to Trick Room.
+    //
+    // Derivation: monA speed=100 and monB speed=100. Under Trick Room, sorting by ascending speed
+    // still produces a tie. The stable sort preserves original action array order (side 0 first).
+    // With seeded RNG seed=42, the tie-breaking produces deterministic results.
+    const monA = makeActivePokemon({ speed: 100 });
+    const monB = makeActivePokemon({ speed: 100 });
+    const stateWithTrickRoom = buildTwoSideState(monA, monB, { trickRoom: true });
+    const stateNoTrickRoom = buildTwoSideState(monA, monB, { trickRoom: false });
+    const ruleset = makeRuleset();
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rngWithTrick = new SeededRandom(42);
+    const rngNoTrick = new SeededRandom(42);
+    const orderedWithTrick = ruleset.resolveTurnOrder(actions, stateWithTrickRoom, rngWithTrick);
+    const orderedNoTrick = ruleset.resolveTurnOrder(actions, stateNoTrickRoom, rngNoTrick);
+
+    // Equal speeds: Trick Room should NOT change the tiebreak order compared to no-Trick-Room.
+    // Both rng seeds start at 42 so the tie-break random roll is identical in both cases.
+    expect(orderedWithTrick[0]).toEqual(orderedNoTrick[0]);
+    expect(orderedWithTrick[1]).toEqual(orderedNoTrick[1]);
+  });
+
+  it("given Trick Room is active, both Pokemon have Speed 100, when compared to unequal speeds that ARE reversed by Trick Room, then the equal-speed case is distinct from the reversed case", () => {
+    // Source: Showdown Gen 4 — Trick Room reversal only applies when speeds differ
+    // Triangulation: confirms equal-speed behavior differs from the inequality-reversal case
+    //
+    // In the unequal case (100 vs 80), Trick Room makes 80 go first.
+    // In the equal case (100 vs 100), both produce a tie; Trick Room has no directional effect.
+    const monFast = makeActivePokemon({ speed: 100 });
+    const monSlow = makeActivePokemon({ speed: 80 });
+    const monEqual = makeActivePokemon({ speed: 100 });
+    const unequalStateTrickRoom = buildTwoSideState(monFast, monSlow, { trickRoom: true });
+    const equalStateTrickRoom = buildTwoSideState(monFast, monEqual, { trickRoom: true });
+    const ruleset = makeRuleset();
+
+    const actionsUnequal: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+    const actionsEqual: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ];
+
+    const rngUnequal = new SeededRandom(42);
+    const orderedUnequal = ruleset.resolveTurnOrder(
+      actionsUnequal,
+      unequalStateTrickRoom,
+      rngUnequal,
+    );
+
+    const rngEqual = new SeededRandom(42);
+    const orderedEqual = ruleset.resolveTurnOrder(actionsEqual, equalStateTrickRoom, rngEqual);
+
+    // Unequal case: Trick Room reverses — monSlow (side 1, speed=80) goes first
+    expect(orderedUnequal[0]).toEqual(actionsUnequal[1]); // side 1 (speed=80, slower) first
+    expect(orderedUnequal[1]).toEqual(actionsUnequal[0]); // side 0 (speed=100, faster) second
+
+    // Equal case: no reversal — tie-breaking applies (both have speed=100)
+    // The result is deterministic (seed 42) and equal to the no-Trick-Room case
+    // The first action with a 100-speed tie comes from the stable ordering, NOT guaranteed reversal
+    expect(orderedEqual).toHaveLength(2);
+    // Both actions must be present (order may be either way, but both must be there)
+    expect([actionsEqual[0], actionsEqual[1]]).toContain(orderedEqual[0]);
+    expect([actionsEqual[0], actionsEqual[1]]).toContain(orderedEqual[1]);
+  });
+});

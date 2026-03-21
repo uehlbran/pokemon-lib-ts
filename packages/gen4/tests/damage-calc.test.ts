@@ -4115,3 +4115,836 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     expect(result.damage).toBe(35);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #429 — null-power branch coverage
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — null power / status moves (issue #429)", () => {
+  it("given a move with power === null, when calculating damage, then returns 0 damage with effectiveness 1", () => {
+    // Exercises calculateGen4Damage null-power branch (Gen4DamageCalc.ts:528-534)
+    // Status moves and variable-power moves that haven't resolved yet have power === null.
+    // Source: Showdown sim/battle.ts — status moves skip damage calc and return 0
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    // Construct a move with power explicitly set to null (status move)
+    const statusMove: MoveData = {
+      id: "growl",
+      displayName: "Growl",
+      type: "normal",
+      category: "status",
+      power: null,
+      accuracy: 100,
+      pp: 40,
+      priority: 0,
+      target: "adjacent-foe",
+      flags: {
+        contact: false,
+        sound: true,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: true,
+        mirror: true,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: null,
+      description: "",
+      generation: 4,
+    };
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move: statusMove }),
+      chart,
+    );
+
+    expect(result.damage).toBe(0);
+    expect(result.effectiveness).toBe(1);
+    expect(result.isCrit).toBe(false);
+  });
+
+  it("given a move with power === 0, when calculating damage, then returns 0 damage", () => {
+    // Exercises calculateGen4Damage power===0 branch (Gen4DamageCalc.ts:531)
+    // Some moves that conditionally deal no damage (e.g., failed variable-power moves) have power=0.
+    // Source: Showdown sim/battle.ts — power === 0 treated same as null (no damage)
+    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
+    const zeroPowerMove: MoveData = {
+      id: "splash",
+      displayName: "Splash",
+      type: "normal",
+      category: "status",
+      power: 0,
+      accuracy: 100,
+      pp: 40,
+      priority: 0,
+      target: "self",
+      flags: {
+        contact: false,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: false,
+        mirror: false,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: null,
+      description: "",
+      generation: 4,
+    };
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move: zeroPowerMove }),
+      chart,
+    );
+
+    expect(result.damage).toBe(0);
+    expect(result.isCrit).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #430 — Heatproof fire-damage halving
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
+  it("given defender has Heatproof, when hit by a Fire-type physical move, then damage is halved compared to no-Heatproof", () => {
+    // Source: Showdown data/abilities.ts — Heatproof onSourceModifyAtk: chainModify(0.5) for Fire
+    // Source: Bulbapedia — Heatproof: "Halves the damage from Fire-type moves."
+    // Verified: pret/pokeplatinum src/battle/battle_script_commands.c — ABILITY_HEATPROOF halves fire damage
+    //
+    // Derivation (L50, power=80 Fire physical, Atk=100, Def=100, no STAB [fighting attacker], no weather, rng=100):
+    //   Without Heatproof: baseDmg = floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    //   With Heatproof: attack halved to 50:
+    //     baseDmg = floor(floor(22*80*50/100)/50)+2 = floor(floor(88000/100)/50)+2
+    //             = floor(880/50)+2 = floor(17.6)+2 = 17+2 = 19
+    //   Attacker is Fighting-type to avoid STAB on the Fire move.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defenderNoHeatproof = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const defenderHeatproof = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      ability: "heatproof",
+    });
+    const firePhysicalMove = createMove({
+      type: "fire",
+      power: 80,
+      category: "physical",
+      id: "fire-punch",
+    });
+    const chart = createNeutralTypeChart();
+
+    const noHeatproofResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: defenderNoHeatproof,
+        move: firePhysicalMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const heatproofResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: defenderHeatproof,
+        move: firePhysicalMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Without Heatproof: 37; with Heatproof (attack halved): 19
+    expect(noHeatproofResult.damage).toBe(37);
+    expect(heatproofResult.damage).toBe(19);
+  });
+
+  it("given defender has Heatproof, when hit by a Fire-type special move, then damage is halved compared to no-Heatproof", () => {
+    // Source: Showdown data/abilities.ts — Heatproof onSourceModifySpA: chainModify(0.5) for Fire
+    // Source: Bulbapedia — Heatproof halves ALL Fire-type move damage (physical and special)
+    //
+    // Derivation (L50, power=90 Fire special, SpAtk=100, SpDef=100, no STAB [fighting attacker], rng=100):
+    //   Without Heatproof: baseDmg = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
+    //   With Heatproof (SpAtk halved to 50):
+    //     baseDmg = floor(floor(22*90*50/100)/50)+2 = floor(floor(99000/100)/50)+2
+    //             = floor(990/50)+2 = 19+2 = 21
+    //   Attacker is Fighting-type to avoid STAB on the Fire move.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defenderNoHeatproof = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const defenderHeatproof = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      ability: "heatproof",
+    });
+    const fireSpecialMove = createMove({
+      type: "fire",
+      power: 90,
+      category: "special",
+      id: "flamethrower",
+    });
+    const chart = createNeutralTypeChart();
+
+    const noHeatproofResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: defenderNoHeatproof,
+        move: fireSpecialMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const heatproofResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: defenderHeatproof,
+        move: fireSpecialMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Without Heatproof: 41; with Heatproof (SpAtk halved): 21
+    expect(noHeatproofResult.damage).toBe(41);
+    expect(heatproofResult.damage).toBe(21);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #430 addendum — Mold Breaker bypasses Heatproof
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Mold Breaker bypasses Heatproof (issue #430 addendum)", () => {
+  it("given attacker has Mold Breaker and defender has Heatproof, when hit by a Fire-type physical move, then damage equals the no-Heatproof baseline (Heatproof ignored)", () => {
+    // Source: Showdown data/abilities.ts — Mold Breaker onModifyAtk/onSourceModifyAtk null-out
+    //   defender ability callbacks, so Heatproof's 0.5x modifier is not applied.
+    // Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this Ability ignore
+    //   Abilities of other Pokemon that hinder or prevent those moves."
+    // Source: pret/pokeplatinum — ABILITY_MOLD_BREAKER check before ABILITY_HEATPROOF in
+    //   BattleScript_AttackAnimationHitFromAtkDefend
+    //
+    // Derivation (L50, power=80 Fire physical, Atk=100, Def=100, no STAB [Pinsir attacker], rng=100):
+    //   Attacker has Mold Breaker and is Bug-type (no STAB on Fire move).
+    //   With Heatproof + no Mold Breaker: damage = 19 (attack halved to 50)
+    //   With Heatproof + Mold Breaker:   damage = 37 (Heatproof bypassed, Atk stays at 100)
+    //   baseDmg (Mold Breaker): floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    const attackerMoldBreaker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["bug"],
+      ability: "mold-breaker",
+    });
+    const defenderHeatproof = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      ability: "heatproof",
+    });
+    const firePhysicalMove = createMove({
+      type: "fire",
+      power: 80,
+      category: "physical",
+      id: "fire-punch",
+    });
+    const chart = createNeutralTypeChart();
+
+    const moldBreakerResult = calculateGen4Damage(
+      createDamageContext({
+        attacker: attackerMoldBreaker,
+        defender: defenderHeatproof,
+        move: firePhysicalMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Mold Breaker bypasses Heatproof → damage is 37, NOT the halved 19
+    expect(moldBreakerResult.damage).toBe(37);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #440 — Sandstorm Rock-type SpDef boost (dedicated test)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — sandstorm Rock SpDef boost (issue #440)", () => {
+  it("given a Rock-type defender in sandstorm, when hit by a special move, then damage is lower than without sandstorm (1.5x SpDef boost)", () => {
+    // Source: Showdown sim/battle.ts — sandstorm boosts Rock-type SpDef by 1.5x
+    // Source: pret/pokeplatinum src/battle_util.c — Rock type gets 1.5x SpDef in sandstorm
+    // Source: Bulbapedia — Sandstorm: "Rock-type Pokemon have their Special Defense
+    //   raised by 50% during a sandstorm. (Generation IV+)"
+    //
+    // Derivation (L50, power=80 Water special, SpAtk=100, SpDef=100, Rock defender, rng=100):
+    //   Attacker is Ice-type (not Water) to avoid Water STAB on the Water move.
+    //   Without sandstorm: baseDmg = floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 37
+    //   In sandstorm: Rock SpDef boosted: floor(100 * 150/100) = 150
+    //     baseDmg = floor(floor(22*80*100/150)/50)+2 = floor(floor(176000/150)/50)+2
+    //             = floor(floor(1173.3)/50)+2 = floor(1173/50)+2 = floor(23.46)+2 = 23+2 = 25
+    //   NOTE: The 1.5x SpDef is applied in getDefenseStat which uses floor((stat * 150) / 100)
+    //   Recalculation with SpDef=150 (from boost): floor(floor(22*80*100/150)/50)+2
+    //     22*80*100 = 176000; 176000/150 = 1173.33; floor = 1173; /50 = 23.46; floor = 23; +2 = 25
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["ice"],
+    });
+    const rockDefender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["rock"],
+    });
+    const specialMove = createMove({
+      type: "water",
+      power: 80,
+      category: "special",
+    });
+    const chart = createNeutralTypeChart();
+
+    const noSandstormResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: rockDefender,
+        move: specialMove,
+        rng: createMockRng(100),
+        weather: null,
+      }),
+      chart,
+    );
+    const sandstormResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: rockDefender,
+        move: specialMove,
+        rng: createMockRng(100),
+        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+      }),
+      chart,
+    );
+
+    // Without sandstorm: SpDef=100, damage=37
+    // With sandstorm: SpDef boosted to 150, damage=25
+    expect(noSandstormResult.damage).toBe(37);
+    expect(sandstormResult.damage).toBe(25);
+    expect(sandstormResult.damage).toBeLessThan(noSandstormResult.damage);
+  });
+
+  it("given a non-Rock-type defender in sandstorm, when hit by a special move, then SpDef is NOT boosted (sandstorm boost only applies to Rock types)", () => {
+    // Source: Showdown sim/battle.ts — sandstorm SpDef boost is Rock-type ONLY
+    // Source: Bulbapedia — Sandstorm SpDef boost: applies only to Rock-type Pokemon
+    //
+    // Derivation (L50, power=80 Water special, SpAtk=100, SpDef=100, Normal defender, rng=100):
+    //   Attacker is Ice-type to avoid Water STAB.
+    //   Without sandstorm: floor(floor(22*80*100/100)/50)+2 = 37
+    //   In sandstorm (Normal type — NO SpDef boost): floor(floor(22*80*100/100)/50)+2 = 37
+    //   Same damage regardless of sandstorm (no chip damage in damage calc, no SpDef boost for Normal)
+    const attacker = createActivePokemon({
+      level: 50,
+      spAttack: 100,
+      types: ["ice"],
+    });
+    const normalDefender = createActivePokemon({
+      level: 50,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const noSandstormResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: normalDefender,
+        move: specialMove,
+        rng: createMockRng(100),
+        weather: null,
+      }),
+      chart,
+    );
+    const sandstormResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: normalDefender,
+        move: specialMove,
+        rng: createMockRng(100),
+        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+      }),
+      chart,
+    );
+
+    // Normal type gets NO SpDef boost in sandstorm — identical damage
+    expect(noSandstormResult.damage).toBe(37);
+    expect(sandstormResult.damage).toBe(37);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #444 — Explosion/Self-Destruct halving defender Defense
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense (issue #444)", () => {
+  it("given attacker uses Explosion against defender with 100 Defense, when calculating damage, then defender Defense is halved to 50 during calculation", () => {
+    // Source: Showdown sim/battle.ts — Gen 4 Explosion/Self-Destruct halve defense
+    // Source: Bulbapedia — Explosion: "Halves the target's Defense stat during damage
+    //   calculation. (Generations I–IV)"
+    //
+    // Derivation (L50, power=250 Explosion physical, Atk=100, Def=100, rng=100, no STAB [fighting attacker]):
+    //   Normal physical move (Def=100):
+    //     baseDmg = floor(floor(22*250*100/100)/50)+2 = floor(5500/50)+2 = 110+2 = 112
+    //   With Explosion (Def halved to 50):
+    //     baseDmg = floor(floor(22*250*100/50)/50)+2 = floor(11000/50)+2 = 220+2 = 222
+    //   Attacker is Fighting-type to avoid STAB on the Normal move.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const explosionMove = createMove({
+      type: "normal",
+      power: 250,
+      category: "physical",
+      id: "explosion",
+    });
+    const normalPhysicalMove = createMove({
+      type: "normal",
+      power: 250,
+      category: "physical",
+      id: "hyper-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    const explosionResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: explosionMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const normalResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: normalPhysicalMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Explosion halves defense → more damage than a normal move of equal power
+    expect(normalResult.damage).toBe(112);
+    expect(explosionResult.damage).toBe(222);
+    expect(explosionResult.damage).toBeGreaterThan(normalResult.damage);
+  });
+
+  it("given attacker uses Self-Destruct against defender with 100 Defense, when calculating damage, then damage equals Explosion with same power (both halve defense)", () => {
+    // Source: Showdown sim/battle.ts — Self-Destruct also halves defender Defense in Gen 1-4
+    // Source: Bulbapedia — Self-Destruct: same halving behavior as Explosion in Gen I-IV
+    //
+    // Derivation: identical to Explosion above since both trigger the same defense-halving code
+    // self-destruct has base power 200 in Gen 4 (not 250 like Explosion)
+    // With self-destruct (power=200, Def halved to 50):
+    //   baseDmg = floor(floor(22*200*100/50)/50)+2 = floor(8800/50)+2 = 176+2 = 178
+    // Normal move power=200 (Def=100):
+    //   baseDmg = floor(floor(22*200*100/100)/50)+2 = floor(4400/50)+2 = 88+2 = 90
+    //   Attacker is Fighting-type to avoid STAB on the Normal move.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const selfDestructMove = createMove({
+      type: "normal",
+      power: 200,
+      category: "physical",
+      id: "self-destruct",
+    });
+    const normalMove200 = createMove({
+      type: "normal",
+      power: 200,
+      category: "physical",
+      id: "double-edge",
+    });
+    const chart = createNeutralTypeChart();
+
+    const selfDestructResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: selfDestructMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const normalResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: normalMove200,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Self-Destruct halves defense (same as Explosion): higher damage than same-power normal move
+    expect(normalResult.damage).toBe(90);
+    expect(selfDestructResult.damage).toBe(178);
+    expect(selfDestructResult.damage).toBeGreaterThan(normalResult.damage);
+  });
+
+  it("given same attacker and defender, when comparing Explosion (250 BP) to Self-Destruct (200 BP), then Explosion deals more damage than Self-Destruct (both halve defense)", () => {
+    // Source: Showdown data/moves.json Gen 4 — Explosion basePower=250, Self-Destruct basePower=200
+    // Source: Bulbapedia — Explosion BP 250, Self-Destruct BP 200 in all gens; both halve defense in Gen I-IV
+    //
+    // Derivation (L50, Atk=100, Def=100, Fighting-type attacker, rng=100):
+    //   Explosion (power=250, Def halved to 50):
+    //     baseDmg = floor(floor(22*250*100/50)/50)+2 = floor(11000/50)+2 = 220+2 = 222
+    //   Self-Destruct (power=200, Def halved to 50):
+    //     baseDmg = floor(floor(22*200*100/50)/50)+2 = floor(8800/50)+2 = 176+2 = 178
+    //   Explosion (222) > Self-Destruct (178) confirms the lower BP of Self-Destruct results in less damage.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const explosionMove = createMove({
+      type: "normal",
+      power: 250,
+      category: "physical",
+      id: "explosion",
+    });
+    const selfDestructMove = createMove({
+      type: "normal",
+      power: 200,
+      category: "physical",
+      id: "self-destruct",
+    });
+    const chart = createNeutralTypeChart();
+
+    const explosionResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: explosionMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const selfDestructResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: selfDestructMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Explosion (250 BP) deals more than Self-Destruct (200 BP) — both halve defense
+    expect(explosionResult.damage).toBe(222);
+    expect(selfDestructResult.damage).toBe(178);
+    expect(explosionResult.damage).toBeGreaterThan(selfDestructResult.damage);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #445 — SolarBeam power halving in rain/sand/hail
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)", () => {
+  it("given SolarBeam user in Rain, when calculating damage, then SolarBeam power is halved (120 → 60)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam power halved in non-sun weather
+    // Source: Bulbapedia — Solar Beam: "Has its base power halved in all weather conditions
+    //   aside from harsh sunlight."
+    //
+    // Derivation (L50, power=120 SolarBeam Grass special, SpAtk=100, SpDef=100, rng=100):
+    //   Attacker is Water-type to avoid Grass STAB on SolarBeam.
+    //   Without rain: baseDmg = floor(floor(22*120*100/100)/50)+2 = floor(2640/50)+2 = 52+2 = 54
+    //   With rain (power halved to 60, Grass is NOT boosted/weakened by rain):
+    //     baseDmg = floor(floor(22*60*100/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
+    //   Note: Water STAB would boost Surf in rain, but SolarBeam is Grass-type; Water STAB not applied.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["water"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    const noWeatherResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: null,
+      }),
+      chart,
+    );
+    const rainResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      }),
+      chart,
+    );
+
+    // No weather: full 120 BP → damage 54; Rain: halved to 60 BP → damage 28
+    expect(noWeatherResult.damage).toBe(54);
+    expect(rainResult.damage).toBe(28);
+  });
+
+  it("given SolarBeam user in Sandstorm, when calculating damage, then SolarBeam power is halved (120 → 60)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam power halved in non-sun weather
+    // Source: Bulbapedia — SolarBeam halved in sandstorm
+    //
+    // Derivation (same as rain — sandstorm does not modify Grass-type damage):
+    //   Attacker is Water-type to avoid Grass STAB.
+    //   No weather: floor(floor(22*120*100/100)/50)+2 = 54
+    //   Sandstorm (power=60): floor(floor(22*60*100/100)/50)+2 = 28
+    const attacker = createActivePokemon({
+      level: 50,
+      spAttack: 100,
+      types: ["water"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    const sandstormResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+      }),
+      chart,
+    );
+
+    expect(sandstormResult.damage).toBe(28);
+  });
+
+  it("given SolarBeam user in Hail, when calculating damage, then SolarBeam power is halved (120 → 60)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam power halved in non-sun weather
+    // Source: Bulbapedia — SolarBeam halved in hail
+    //
+    // Derivation (same as rain/sand — hail does not modify Grass-type damage):
+    //   Attacker is Water-type to avoid Grass STAB.
+    //   Hail (power=60): floor(floor(22*60*100/100)/50)+2 = 28
+    const attacker = createActivePokemon({
+      level: 50,
+      spAttack: 100,
+      types: ["water"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    const hailResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "hail", turnsLeft: 5, source: "hail" },
+      }),
+      chart,
+    );
+
+    expect(hailResult.damage).toBe(28);
+  });
+
+  it("given SolarBeam user in Harsh Sun (sun), when calculating damage, then SolarBeam power is NOT halved (full 120 BP)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam power is NOT halved in sun/harsh-sun
+    // Source: Bulbapedia — SolarBeam: "In sunshine, the Pokémon can attack without charging"
+    //   with full 120 BP and no power reduction
+    //
+    // Derivation (L50, power=120, SpAtk=100, SpDef=100, Grass no weather modifier for sun/grass):
+    //   Attacker is Water-type to avoid Grass STAB.
+    //   Sun (no halving): floor(floor(22*120*100/100)/50)+2 = 54
+    //   (Note: sun boosts Fire 1.5x and halves Water — Grass is unchanged by sun weather modifier)
+    const attacker = createActivePokemon({
+      level: 50,
+      spAttack: 100,
+      types: ["water"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    const sunResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      }),
+      chart,
+    );
+
+    // Sun: power NOT halved → same as no weather
+    expect(sunResult.damage).toBe(54);
+  });
+});
