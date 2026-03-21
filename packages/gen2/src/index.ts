@@ -1,7 +1,11 @@
 // @pokemon-lib-ts/gen2 — Gen2Ruleset + complete Gen 2 data
 export { createGen2DataManager } from "./data";
 export { GEN2_CRIT_RATES, getGen2CritStage, rollGen2Critical } from "./Gen2CritCalc";
-export { calculateGen2Damage, isGen2PhysicalType } from "./Gen2DamageCalc";
+export {
+  calculateGen2Damage,
+  calculateGen2HiddenPower,
+  isGen2PhysicalType,
+} from "./Gen2DamageCalc";
 export { applyGen2HeldItem } from "./Gen2Items";
 export {
   applyMoveEffect,

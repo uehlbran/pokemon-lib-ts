@@ -3317,7 +3317,7 @@
     "displayName": "Hidden Power",
     "type": "normal",
     "category": "physical",
-    "power": null,
+    "power": 1,
     "accuracy": 100,
     "pp": 15,
     "priority": 0,

@@ -44,6 +44,10 @@ export class BattleEngine implements BattleEventEmitter {
   // preventing duplicate faint events and double faintCount increments when
   // checkMidTurnFaints() is called multiple times per turn. Cleared at turn start.
   private faintedPokemonThisTurn: Set<string> = new Set();
+  // Tracks which sides had their active Pokemon phased out (Roar/Whirlwind) during
+  // the current turn resolution. The replacement Pokemon should not execute the
+  // phased-out Pokemon's queued action.
+  private phasedSides: Set<0 | 1> = new Set();
 
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     this.ruleset = ruleset;
@@ -539,6 +543,12 @@ export class BattleEngine implements BattleEventEmitter {
         enumerable: false,
         configurable: false,
       },
+      phasedSides: {
+        value: new Set(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
     });
 
     return engine;
@@ -682,6 +692,8 @@ export class BattleEngine implements BattleEventEmitter {
     // Reset per-turn faint deduplication set so a new faint on a new turn is
     // correctly recorded (fixes #78 — duplicate faint events across checkMidTurnFaints calls).
     this.faintedPokemonThisTurn.clear();
+    // Reset per-turn phazing tracking.
+    this.phasedSides.clear();
 
     // Record the event log position before any events are emitted this turn
     // so that turn history captures only current-turn events (fixes #84).
@@ -744,6 +756,12 @@ export class BattleEngine implements BattleEventEmitter {
       // Check if the acting pokemon fainted before it could act
       const actor = this.getActive(action.side);
       if (!actor || actor.pokemon.currentHp <= 0) continue;
+
+      // Skip if this side's Pokemon was phased out (Roar/Whirlwind) earlier this turn.
+      // The replacement should not execute the phased-out Pokemon's queued action.
+      if (action.type === "move" && this.phasedSides.has(action.side)) {
+        continue;
+      }
 
       switch (action.type) {
         case "move":
@@ -825,6 +843,11 @@ export class BattleEngine implements BattleEventEmitter {
       for (const active of side.active) {
         if (active) {
           active.movedThisTurn = false;
+          // Reset per-turn damage tracking so Counter/Mirror Coat only reflect
+          // damage taken during the current turn.
+          active.lastDamageTaken = 0;
+          active.lastDamageType = null;
+          active.lastDamageCategory = null;
         }
       }
     }
@@ -1098,8 +1121,8 @@ export class BattleEngine implements BattleEventEmitter {
       } else {
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
-        defender.lastDamageType = effectiveMoveData.type;
-        defender.lastDamageCategory = effectiveMoveData.category;
+        defender.lastDamageType = result.effectiveType ?? effectiveMoveData.type;
+        defender.lastDamageCategory = result.effectiveCategory ?? effectiveMoveData.category;
         this.emit({
           type: "damage",
           side: defenderSide as 0 | 1,
@@ -2394,6 +2417,50 @@ export class BattleEngine implements BattleEventEmitter {
           type: "message",
           text: `${getPokemonName(attacker)} learned ${newMoveId}!`,
         });
+      }
+    }
+
+    // Forced switch (phazing: Whirlwind, Roar) — the DEFENDER is forced out.
+    // switchOut=true + forcedSwitch=true means the defender must switch to a random
+    // valid party member. If no valid targets exist, the move effectively fails.
+    // Source: Bulbapedia — "Whirlwind forces the target to switch out"
+    if (result.switchOut && result.forcedSwitch) {
+      const defenderSideState = this.state.sides[defenderSide];
+      const defenderTeamSlot = defenderSideState.active[0]?.teamSlot ?? -1;
+      const validTargets = defenderSideState.team
+        .map((p, i) => ({ p, i }))
+        .filter(({ p, i }) => p.currentHp > 0 && i !== defenderTeamSlot);
+      if (validTargets.length > 0) {
+        const randomIndex = this.state.rng.int(0, validTargets.length - 1);
+        const switchTarget = validTargets[randomIndex];
+        if (switchTarget) {
+          // Perform the switch using the same infrastructure as voluntary switches
+          const outgoing = defenderSideState.active[0];
+          if (outgoing) {
+            this.ruleset.onSwitchOut(outgoing, this.state);
+            this.emit({
+              type: "switch-out",
+              side: defenderSide,
+              pokemon: createPokemonSnapshot(outgoing),
+            });
+            outgoing.statStages = createDefaultStatStages();
+            outgoing.consecutiveProtects = 0;
+            outgoing.turnsOnField = 0;
+            outgoing.movedThisTurn = false;
+            outgoing.lastMoveUsed = null;
+            outgoing.lastDamageTaken = 0;
+            outgoing.lastDamageType = null;
+            outgoing.lastDamageCategory = null;
+          }
+          this.sendOut(defenderSideState, switchTarget.i);
+          // Mark this side as phased — the replacement should not execute the
+          // original Pokemon's queued action for this turn.
+          this.phasedSides.add(defenderSide);
+          this.emit({
+            type: "message",
+            text: `${getPokemonName(defender)} was blown away!`,
+          });
+        }
       }
     }
   }

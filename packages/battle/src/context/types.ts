@@ -56,6 +56,10 @@ export interface DamageResult {
   readonly randomFactor: number;
   /** Optional per-modifier breakdown; present when `BattleConfig` requests detailed logging */
   readonly breakdown?: DamageBreakdown;
+  /** The effective move type used for damage (may differ from move.type for Hidden Power etc.) */
+  readonly effectiveType?: PokemonType;
+  /** The effective category used for damage (may differ from move.category for type-split gens) */
+  readonly effectiveCategory?: "physical" | "special" | "status";
 }
 
 /**
@@ -176,6 +180,8 @@ export interface MoveEffectResult {
    * Only meaningful when `switchOut` is also `true`.
    */
   readonly batonPass?: boolean;
+  /** When `true` along with `switchOut`, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
+  readonly forcedSwitch?: boolean;
   /** Freeform messages to emit as `MessageEvent`s after the move resolves */
   readonly messages: readonly string[];
   /** Wave 1: Set a screen (Reflect/Light Screen) on the attacker's side */

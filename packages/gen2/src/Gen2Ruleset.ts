@@ -309,6 +309,7 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    const { move, attacker, defender, damage } = context;
     const result: MutableResult = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -323,21 +324,33 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Dispatch them to handleCustomEffect before the null-effect guard so their
     // cases in handleCustomEffect are reachable.
     // Source: pret/pokecrystal engine/battle/effect_commands.asm
-    const id = context.move.id;
     if (
-      id === "explosion" ||
-      id === "self-destruct" ||
-      id === "safeguard" ||
-      id === "mean-look" ||
-      id === "spider-web"
+      move.id === "explosion" ||
+      move.id === "self-destruct" ||
+      move.id === "safeguard" ||
+      move.id === "mean-look" ||
+      move.id === "spider-web" ||
+      move.id === "counter" ||
+      move.id === "mirror-coat" ||
+      move.id === "whirlwind" ||
+      move.id === "roar"
     ) {
-      handleCustomEffect(context.move, result, context);
+      handleCustomEffect(move, result, context);
       return result;
     }
 
-    if (!context.move.effect) return result;
+    // Hyper Beam: skip recharge when target faints OR when the move misses (damage === 0).
+    // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
+    // NOTE: By the time executeMoveEffect is called, the engine has already applied
+    // damage to defender.pokemon.currentHp (clamped to 0 on KO). So a KO is detected
+    // by checking currentHp === 0. A miss is detected by damage === 0.
+    if (move.flags?.recharge && (damage === 0 || defender.pokemon.currentHp === 0)) {
+      result.noRecharge = true;
+    }
 
-    applyMoveEffect(context.move.effect, context.move, result, context);
+    if (move.effect) {
+      applyMoveEffect(move.effect, move, result, context);
+    }
 
     return result;
   }

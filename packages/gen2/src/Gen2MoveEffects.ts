@@ -45,6 +45,7 @@ export type MutableResult = {
   healAmount: number;
   switchOut: boolean;
   batonPass?: boolean;
+  forcedSwitch?: boolean;
   messages: string[];
   weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
   hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
@@ -409,6 +410,60 @@ export function handleCustomEffect(
         side: "attacker",
       };
       result.messages.push(`${pokemonName}'s party is protected by Safeguard!`);
+      break;
+    }
+
+    case "counter": {
+      // Counter reflects 2x the physical damage taken back at the attacker.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
+      // Gen 2: Counter works against any physical-type move (Normal, Fighting, Rock, etc.)
+      // This is a Gen 2 change from Gen 1 (which restricted to Normal/Fighting).
+      // Source: Bulbapedia "Counter (move) — Generation II onwards: works on any physical move"
+      // Counter is -1 priority (handled by move data).
+      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
+        result.messages.push("But it failed!");
+        break;
+      }
+      result.customDamage = {
+        target: "defender",
+        amount: attacker.lastDamageTaken * 2,
+        source: "counter",
+      };
+      break;
+    }
+
+    case "mirror-coat": {
+      // Mirror Coat reflects 2x the special damage taken back at the attacker.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_MirrorCoat
+      // Mirror Coat is -1 priority (handled by move data).
+      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "special") {
+        result.messages.push("But it failed!");
+        break;
+      }
+      result.customDamage = {
+        target: "defender",
+        amount: attacker.lastDamageTaken * 2,
+        source: "mirror-coat",
+      };
+      break;
+    }
+
+    case "whirlwind":
+    case "roar": {
+      // Force the opponent to switch to a random party member.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Whirlwind
+      // In Gen 2, Whirlwind/Roar work (unlike Gen 1 where they always fail in trainer battles).
+      // These are -1 priority in Gen 2 data. No ability checks needed (Gen 2 has no abilities).
+      result.switchOut = true;
+      result.forcedSwitch = true;
+      break;
+    }
+
+    case "hidden-power": {
+      // Hidden Power's type and base power are calculated from the attacker's DVs.
+      // The actual type/power override is handled in Gen2DamageCalc.ts (calculateGen2HiddenPower).
+      // This case exists to prevent the "unknown custom effect" fallthrough.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
       break;
     }
 
