@@ -1,4 +1,4 @@
-import type { DataManager, MoveData } from "@pokemon-lib-ts/core";
+import type { DataManager, MoveData, PrimaryStatus } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
@@ -586,13 +586,7 @@ export class BattleEngine implements BattleEventEmitter {
         });
       }
       if (hazardResult.statusInflicted && !active.pokemon.status) {
-        active.pokemon.status = hazardResult.statusInflicted;
-        this.emit({
-          type: "status-inflict",
-          side: side.index,
-          pokemon: getPokemonName(active),
-          status: hazardResult.statusInflicted,
-        });
+        this.applyPrimaryStatus(active, hazardResult.statusInflicted, side.index);
       }
       // Source: Bulbapedia — Poison-type absorbs Toxic Spikes on switch-in
       if (hazardResult.hazardsToRemove && hazardResult.hazardsToRemove.length > 0) {
@@ -1466,6 +1460,53 @@ export class BattleEngine implements BattleEventEmitter {
     return true;
   }
 
+  /**
+   * Centralized helper: apply a primary status condition, emit the event, and
+   * initialize companion volatile statuses (toxic-counter, sleep-counter,
+   * just-frozen) that the turn loop and end-of-turn handlers depend on.
+   *
+   * All code paths that inflict a primary status MUST call this method instead
+   * of setting `pokemon.status` directly — otherwise companion volatiles will
+   * be missing and mechanics like escalating Toxic damage or the
+   * processEndOfTurnDefrost "just-frozen" guard will break.
+   */
+  private applyPrimaryStatus(
+    target: ActivePokemon,
+    status: PrimaryStatus,
+    side: 0 | 1,
+    sleepTurnsOverride?: number,
+  ): void {
+    target.pokemon.status = status;
+
+    // Initialize companion volatiles that downstream mechanics depend on.
+    // Must run BEFORE emitting status-inflict so synchronous listeners see fully-initialized state.
+    if (status === "badly-poisoned") {
+      // Source: Showdown sim/battle-actions.ts — toxic counter starts at 1, increments each EoT
+      target.volatileStatuses.set("toxic-counter", {
+        turnsLeft: -1,
+        data: { counter: 1 },
+      });
+    } else if (status === "sleep") {
+      // Source: Showdown sim/battle-actions.ts — sleep turns rolled on infliction, tracked by sleep-counter
+      const turns = sleepTurnsOverride ?? this.ruleset.rollSleepTurns(this.state.rng);
+      target.volatileStatuses.set("sleep-counter", {
+        turnsLeft: turns,
+        data: {},
+      });
+    } else if (status === "freeze") {
+      // Source: pret/pokecrystal engine/battle/core.asm:1538-1540 — wPlayerJustGotFrozen
+      // Prevents EoT processEndOfTurnDefrost from thawing on the same turn.
+      target.volatileStatuses.set("just-frozen", { turnsLeft: 1 });
+    }
+
+    this.emit({
+      type: "status-inflict",
+      side,
+      pokemon: getPokemonName(target),
+      status,
+    });
+  }
+
   private processEffectResult(
     result: MoveEffectResult,
     attacker: ActivePokemon,
@@ -1475,34 +1516,7 @@ export class BattleEngine implements BattleEventEmitter {
   ): void {
     // Status infliction
     if (result.statusInflicted && !defender.pokemon.status) {
-      defender.pokemon.status = result.statusInflicted;
-      this.emit({
-        type: "status-inflict",
-        side: defenderSide,
-        pokemon: getPokemonName(defender),
-        status: result.statusInflicted,
-      });
-      // Initialize toxic counter volatile so end-of-turn damage can scale correctly
-      if (result.statusInflicted === "badly-poisoned") {
-        defender.volatileStatuses.set("toxic-counter", {
-          turnsLeft: -1,
-          data: { counter: 1 },
-        });
-      }
-      // Initialize sleep counter volatile so processSleepTurn can track remaining turns
-      if (result.statusInflicted === "sleep") {
-        const sleepTurns = this.ruleset.rollSleepTurns(this.state.rng);
-        defender.volatileStatuses.set("sleep-counter", {
-          turnsLeft: sleepTurns,
-          data: {},
-        });
-      }
-      // Set just-frozen volatile so EoT processEndOfTurnDefrost skips the thaw check
-      // for the same turn the Pokemon was frozen (wPlayerJustGotFrozen guard).
-      // Source: pret/pokecrystal engine/battle/core.asm:1538-1540 — wPlayerJustGotFrozen
-      if (result.statusInflicted === "freeze") {
-        defender.volatileStatuses.set("just-frozen", { turnsLeft: 1 });
-      }
+      this.applyPrimaryStatus(defender, result.statusInflicted, defenderSide);
     }
 
     // Volatile status infliction — use volatileData for turnsLeft if provided
@@ -1870,29 +1884,10 @@ export class BattleEngine implements BattleEventEmitter {
 
     // selfStatusInflicted — apply a status condition to the ATTACKER
     if (result.selfStatusInflicted && !attacker.pokemon.status) {
-      attacker.pokemon.status = result.selfStatusInflicted;
-      this.emit({
-        type: "status-inflict",
-        side: attackerSide,
-        pokemon: getPokemonName(attacker),
-        status: result.selfStatusInflicted,
-      });
-      if (result.selfStatusInflicted === "badly-poisoned") {
-        attacker.volatileStatuses.set("toxic-counter", {
-          turnsLeft: -1,
-          data: { counter: 1 },
-        });
-      }
-      if (result.selfStatusInflicted === "sleep") {
-        // Use selfVolatileData.turnsLeft if provided (e.g., Rest's fixed 2-turn sleep)
-        // otherwise roll normally
-        const sleepTurns =
-          result.selfVolatileData?.turnsLeft ?? this.ruleset.rollSleepTurns(this.state.rng);
-        attacker.volatileStatuses.set("sleep-counter", {
-          turnsLeft: sleepTurns,
-          data: {},
-        });
-      }
+      // Use selfVolatileData.turnsLeft if provided (e.g., Rest's fixed 2-turn sleep)
+      const sleepOverride =
+        result.selfStatusInflicted === "sleep" ? result.selfVolatileData?.turnsLeft : undefined;
+      this.applyPrimaryStatus(attacker, result.selfStatusInflicted, attackerSide, sleepOverride);
     }
 
     // selfVolatileInflicted — add a volatile status to the ATTACKER
@@ -2678,15 +2673,9 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "status-inflict": {
-          const statusToInflict = effect.value as import("@pokemon-lib-ts/core").PrimaryStatus;
+          const statusToInflict = effect.value as PrimaryStatus;
           if (!pokemon.pokemon.status) {
-            pokemon.pokemon.status = statusToInflict;
-            this.emit({
-              type: "status-inflict",
-              side,
-              pokemon: getPokemonName(pokemon),
-              status: statusToInflict,
-            });
+            this.applyPrimaryStatus(pokemon, statusToInflict, side);
           }
           break;
         }
@@ -2826,24 +2815,7 @@ export class BattleEngine implements BattleEventEmitter {
           const target = effect.target === "self" ? pokemon : opponent;
           const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
           if (!target.pokemon.status) {
-            target.pokemon.status = effect.status;
-            this.emit({
-              type: "status-inflict",
-              side: targetSide,
-              pokemon: getPokemonName(target),
-              status: effect.status,
-            });
-            // Initialize counters for statuses that require them — same ordering as processEffectResult
-            if (effect.status === "badly-poisoned") {
-              target.volatileStatuses.set("toxic-counter", { turnsLeft: -1, data: { counter: 1 } });
-            }
-            if (effect.status === "sleep") {
-              const sleepTurns = this.ruleset.rollSleepTurns(this.state.rng);
-              target.volatileStatuses.set("sleep-counter", { turnsLeft: sleepTurns, data: {} });
-            }
-            if (effect.status === "freeze") {
-              target.volatileStatuses.set("just-frozen", { turnsLeft: 1 });
-            }
+            this.applyPrimaryStatus(target, effect.status, targetSide);
           }
           break;
         }

@@ -466,7 +466,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       // Source: Showdown Gen 4 mod — Static trigger (30% = rng.next() < 0.3)
       if (attackerStatus) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
-      // Check type and ability immunities before inflicting
+      // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
       if (!canInflictGen4Status("paralysis", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
@@ -481,7 +481,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       // Source: Showdown Gen 4 mod — Flame Body trigger (30%)
       if (attackerStatus) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
-      // Check type and ability immunities before inflicting
+      // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
       if (!canInflictGen4Status("burn", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
@@ -496,7 +496,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       // Source: Showdown Gen 4 mod — Poison Point trigger (30%)
       if (attackerStatus) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
-      // Check type and ability immunities before inflicting
+      // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
       if (!canInflictGen4Status("poison", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
@@ -525,7 +525,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
       const roll = context.rng.next();
       if (roll < 1 / 3) {
-        // Check immunity before inflicting poison
+        // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
         if (!canInflictGen4Status("poison", attacker))
           return { activated: false, effects: [], messages: [] };
         return {
@@ -535,7 +535,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         };
       }
       if (roll < 2 / 3) {
-        // Check immunity before inflicting paralysis
+        // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
         if (!canInflictGen4Status("paralysis", attacker))
           return { activated: false, effects: [], messages: [] };
         return {
@@ -544,7 +544,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           messages: [],
         };
       }
-      // Check immunity before inflicting sleep
+      // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
       if (!canInflictGen4Status("sleep", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
@@ -570,7 +570,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       ) {
         return { activated: false, effects: [], messages: [] };
       }
-      // Check Oblivious immunity before inflicting infatuation
+      // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability volatile infliction
       if (isVolatileBlockedByAbility(attacker, "infatuation"))
         return { activated: false, effects: [], messages: [] };
       return {
