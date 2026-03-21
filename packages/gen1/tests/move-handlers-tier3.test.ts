@@ -387,12 +387,12 @@ describe("Gen 1 Disable handler", () => {
     effect: { type: "custom" as const, handler: "disable" },
   });
 
-  it("given defender used Tackle on last turn, when Disable hits, then disable volatile set with moveId=tackle", () => {
-    // Arrange — defender's last move was Tackle
-    // Source: pret/pokered DisableEffect — disables the last move used
+  it("given defender has moves with PP, when Disable hits, then disable volatile set with a random moveId from defender's moveset", () => {
+    // Arrange — defender has tackle with PP > 0
+    // Source: pret/pokered DisableEffect — picks a RANDOM move slot with PP > 0
+    // (NOT the last-used move; that's a Gen 2+ behavior)
     const defender = makeActivePokemon({
       types: ["normal"] as PokemonType[],
-      lastMoveUsed: "tackle",
     });
     const rng = new SeededRandom(42);
     const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
@@ -401,18 +401,25 @@ describe("Gen 1 Disable handler", () => {
     // Assert
     expect(result.volatileInflicted).toBe("disable");
     expect(result.volatileData).toBeDefined();
+    // The disabled move must be from the defender's moveset (tackle is the only move)
     expect(result.volatileData!.data).toEqual({ moveId: "tackle" });
     // Source: pret/pokered — duration is 1-8 turns (`and 7; inc a`)
     expect(result.volatileData!.turnsLeft).toBeGreaterThanOrEqual(1);
     expect(result.volatileData!.turnsLeft).toBeLessThanOrEqual(8);
   });
 
-  it("given defender used Thunderbolt on last turn, when Disable hits, then disable volatile set with moveId=thunderbolt", () => {
-    // Arrange — second triangulation case, different last move
-    // Source: pret/pokered DisableEffect — disables the LAST move used
+  it("given defender has two moves with PP, when Disable hits, then disables one of them randomly", () => {
+    // Arrange — second triangulation case: defender has two moves
+    // Source: pret/pokered DisableEffect — picks a RANDOM move slot with PP > 0
     const defender = makeActivePokemon({
       types: ["electric"] as PokemonType[],
-      lastMoveUsed: "thunderbolt",
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [
+          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
+        ],
+      } as PokemonInstance,
     });
     const rng = new SeededRandom(99);
     const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
@@ -420,16 +427,22 @@ describe("Gen 1 Disable handler", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.volatileInflicted).toBe("disable");
-    expect(result.volatileData!.data).toEqual({ moveId: "thunderbolt" });
+    // Disabled move must be one of the two valid moves
+    const disabledMoveId = (result.volatileData!.data as { moveId: string }).moveId;
+    expect(["tackle", "thunderbolt"]).toContain(disabledMoveId);
     expect(result.volatileData!.turnsLeft).toBeGreaterThanOrEqual(1);
     expect(result.volatileData!.turnsLeft).toBeLessThanOrEqual(8);
   });
 
-  it("given defender has not moved, when Disable used, then fails", () => {
-    // Arrange — defender has no lastMoveUsed
+  it("given defender has all moves at 0 PP, when Disable used, then fails", () => {
+    // Arrange — all moves at 0 PP, no valid target for Disable
+    // Source: pret/pokered DisableEffect — fails if no valid move to disable
     const defender = makeActivePokemon({
       types: ["normal"] as PokemonType[],
-      lastMoveUsed: null,
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }],
+      } as PokemonInstance,
     });
     const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0 });
     // Act
@@ -540,10 +553,11 @@ describe("Gen 1 Substitute handler", () => {
     expect(result.selfVolatileInflicted).toBe("substitute");
   });
 
-  it("given attacker with exactly 25 HP out of 100, when Substitute used, then succeeds and customDamage = 25", () => {
-    // Arrange — Gen 1 uses strict < check: at exactly 25% HP, Substitute succeeds
-    // Source: pret/pokered SubstituteEffect — uses < not <=, so 25 HP works with 100 max HP
-    // subHp = floor(100/4) = 25, currentHp = 25 >= 25 so it works
+  it("given attacker with exactly 25 HP out of 100, when Substitute used, then fails (boundary: currentHp <= subHp)", () => {
+    // Arrange — Gen 1 uses <= check: at exactly 25% HP, Substitute FAILS
+    // Source: pret/pokered SubstituteEffect — uses <= comparison: `cp b; jr c,.notEnoughHP`
+    // where b = subCost and a = currentHP. The carry flag triggers when a <= b.
+    // subHp = floor(100/4) = 25, currentHp = 25 <= 25, so it fails.
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
@@ -561,10 +575,10 @@ describe("Gen 1 Substitute handler", () => {
     const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
-    // Assert — succeeds: customDamage = 25, substituteHp = 25
-    expect(attacker.substituteHp).toBe(25);
-    expect(result.customDamage).toEqual({ target: "attacker", amount: 25, source: "substitute" });
-    expect(result.selfVolatileInflicted).toBe("substitute");
+    // Assert — fails: HP unchanged, no substitute created
+    expect(attacker.substituteHp).toBe(0);
+    expect(result.selfVolatileInflicted).toBeFalsy();
+    expect(result.messages).toContain("But it does not have enough HP!");
   });
 
   it("given attacker with 24 HP out of 100, when Substitute used, then fails (insufficient HP)", () => {

@@ -1084,6 +1084,28 @@ export class BattleEngine implements BattleEventEmitter {
         pokemon: getPokemonName(actor),
         move: moveData.id,
       });
+
+      // Source: pokered — Self-Destruct/Explosion: user always faints even on miss.
+      // The user explodes regardless of whether the move hits.
+      if (
+        moveData.effect?.type === "custom" &&
+        (moveData.effect.handler === "explosion" || moveData.effect.handler === "self-destruct")
+      ) {
+        actor.pokemon.currentHp = 0;
+        this.emit({
+          type: "faint",
+          side: action.side,
+          pokemon: getPokemonName(actor),
+        });
+      }
+
+      // Source: pokered RageEffect — Gen 1 Rage miss loop.
+      // When Rage misses while the user has the rage volatile, set a miss-lock
+      // that causes all subsequent Rage uses to auto-miss (cartridge infinite loop).
+      if (actor.volatileStatuses.has("rage")) {
+        actor.volatileStatuses.set("rage-miss-lock", { turnsLeft: -1 });
+      }
+
       actor.lastMoveUsed = moveData.id;
       actor.movedThisTurn = true;
       return;
@@ -1264,6 +1286,79 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
+
+    // Multi-hit move loop: repeat damage for additional hits beyond the first.
+    // Source: pokered multi-hit moves — the engine repeats the damage step for each
+    // additional hit. Only the first hit can be a critical hit (Gen 1 rule).
+    // Ends early if the target faints or the substitute breaks.
+    if (effectResult.multiHitCount && effectResult.multiHitCount > 0) {
+      let totalHits = 1; // already dealt the first hit
+      for (let i = 0; i < effectResult.multiHitCount; i++) {
+        // Stop if defender fainted
+        if (defender.pokemon.currentHp <= 0 && defender.substituteHp <= 0) break;
+        // Stop if substitute was broken (Gen 1: multi-hit ends when sub breaks)
+        if (brokeSubstitute) break;
+
+        // Process per-attack residuals (Gen 1: poison/burn/leech after each hit)
+        // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed
+        const postAttackResiduals = this.ruleset.getPostAttackResidualOrder();
+        if (postAttackResiduals.length > 0) {
+          this.processPostAttackResiduals(defenderSide as 0 | 1);
+          if (defender.pokemon.currentHp <= 0 || actor.pokemon.currentHp <= 0) break;
+          this.processPostAttackResiduals(action.side);
+          if (defender.pokemon.currentHp <= 0 || actor.pokemon.currentHp <= 0) break;
+        }
+
+        // Recalculate damage for this hit (no crit on subsequent hits in Gen 1)
+        const hitResult = this.ruleset.calculateDamage({
+          attacker: actor,
+          defender,
+          move: effectiveMoveData,
+          state: this.state,
+          rng: this.state.rng,
+          isCrit: false, // Gen 1: only first hit can crit
+        });
+
+        const hitDamage = hitResult.damage;
+        if (hitDamage <= 0) break;
+
+        // Apply damage to substitute or Pokemon
+        if (defender.substituteHp > 0 && !effectiveMoveData.flags.bypassSubstitute) {
+          defender.substituteHp = Math.max(0, defender.substituteHp - hitDamage);
+          this.emit({ type: "message", text: "The substitute took damage!" });
+          if (defender.substituteHp === 0) {
+            brokeSubstitute = true;
+            defender.volatileStatuses.delete("substitute");
+            this.emit({
+              type: "volatile-end",
+              side: defenderSide as 0 | 1,
+              pokemon: getPokemonName(defender),
+              volatile: "substitute",
+            });
+          }
+        } else {
+          defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - hitDamage);
+          defender.lastDamageTaken = hitDamage;
+          this.emit({
+            type: "damage",
+            side: defenderSide as 0 | 1,
+            pokemon: getPokemonName(defender),
+            amount: hitDamage,
+            currentHp: defender.pokemon.currentHp,
+            maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
+            source: effectiveMoveData.id,
+          });
+          if (hitDamage > 0) {
+            this.ruleset.onDamageReceived(defender, hitDamage, effectiveMoveData, this.state);
+          }
+        }
+        totalHits++;
+      }
+      this.emit({
+        type: "message",
+        text: `Hit ${totalHits} time${totalHits === 1 ? "" : "s"}!`,
+      });
+    }
 
     // Recursive move execution (Mirror Move, Metronome)
     // Source: pret/pokered MirrorMoveEffect, MetronomeEffect
@@ -1761,6 +1856,62 @@ export class BattleEngine implements BattleEventEmitter {
 
     if (!defender) return;
 
+    // Source: pokered — Struggle goes through the normal accuracy check (including 1/256 miss bug).
+    // Gen 1 Struggle has 100% accuracy but is still subject to accuracy/evasion modifiers.
+    // Build a minimal Struggle MoveData for the accuracy check.
+    const struggleMoveData: import("@pokemon-lib-ts/core").MoveData = {
+      id: "struggle",
+      displayName: "Struggle",
+      type: "normal",
+      category: "physical",
+      power: 50,
+      accuracy: 100,
+      pp: 1,
+      priority: 0,
+      target: "adjacent-foe",
+      flags: {
+        contact: true,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: false,
+        mirror: false,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: null,
+      description: "Struggle",
+      generation: 1,
+    };
+    if (
+      !this.ruleset.doesMoveHit({
+        attacker: actor,
+        defender,
+        move: struggleMoveData,
+        state: this.state,
+        rng: this.state.rng,
+      })
+    ) {
+      this.emit({
+        type: "move-miss",
+        side: action.side,
+        pokemon: getPokemonName(actor),
+        move: "struggle",
+      });
+      actor.lastMoveUsed = "struggle";
+      actor.movedThisTurn = true;
+      return;
+    }
+
     // Struggle damage: delegated to ruleset (Gen 1: Normal-type, Ghost immune; Gen 2+: typeless 50 BP)
     // Source: Showdown — Struggle delegates type/damage to the generation ruleset
     const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
@@ -1972,26 +2123,52 @@ export class BattleEngine implements BattleEventEmitter {
           });
           if (this.ruleset.rollConfusionSelfHit(this.state.rng)) {
             // Self-hit confusion damage — chance and formula delegated to ruleset
-            const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
             const selfDamage = this.ruleset.calculateConfusionDamage(
               actor,
               this.state,
               this.state.rng,
             );
-            actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
             this.emit({
               type: "message",
               text: "It hurt itself in its confusion!",
             });
-            this.emit({
-              type: "damage",
-              side,
-              pokemon: getPokemonName(actor),
-              amount: selfDamage,
-              currentHp: actor.pokemon.currentHp,
-              maxHp,
-              source: "confusion",
-            });
+
+            // Source: pokered — Gen 1 cartridge bug: confusion self-hit damages
+            // the opponent's Substitute if one is active.
+            const opponentSide = side === 0 ? 1 : 0;
+            const opponent = this.getActive(opponentSide as 0 | 1);
+            if (
+              this.ruleset.confusionSelfHitTargetsOpponentSub() &&
+              opponent &&
+              opponent.substituteHp > 0
+            ) {
+              opponent.substituteHp = Math.max(0, opponent.substituteHp - selfDamage);
+              this.emit({
+                type: "message",
+                text: "The substitute took damage!",
+              });
+              if (opponent.substituteHp === 0) {
+                opponent.volatileStatuses.delete("substitute");
+                this.emit({
+                  type: "volatile-end",
+                  side: opponentSide as 0 | 1,
+                  pokemon: getPokemonName(opponent),
+                  volatile: "substitute",
+                });
+              }
+            } else {
+              const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
+              actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
+              this.emit({
+                type: "damage",
+                side,
+                pokemon: getPokemonName(actor),
+                amount: selfDamage,
+                currentHp: actor.pokemon.currentHp,
+                maxHp,
+                source: "confusion",
+              });
+            }
             return false;
           }
         }

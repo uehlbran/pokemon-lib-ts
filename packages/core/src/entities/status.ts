@@ -59,6 +59,7 @@ export type VolatileStatus =
   | "slow-start" // Slow Start — halves Attack and Speed for 5 turns (Gen 4+ Regigigas)
   | "unburden" // Unburden — Speed doubles when held item is consumed/lost (Gen 4+)
   | "rage" // Gen 1 Rage lock-in; data: { moveIndex: number }
+  | "rage-miss-lock" // Gen 1 Rage miss loop — once Rage misses, all subsequent uses auto-miss
   | "bide" // Gen 1 Bide charging; data: { accumulatedDamage: number }
   | "thrash-lock" // Gen 1 Thrash / Petal Dance forced move; data: { moveId: string }
   | "mimic-slot" // Gen 1 Mimic — tracks which slot was replaced; data: { slot: number, originalMoveId: string }

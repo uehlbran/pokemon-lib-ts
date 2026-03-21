@@ -404,6 +404,10 @@ export class MockRuleset implements GenerationRuleset {
     return true;
   }
 
+  confusionSelfHitTargetsOpponentSub(): boolean {
+    return false; // Gen 3+ default: confusion self-hit damages the confused Pokemon, not sub
+  }
+
   canSwitch(_pokemon: ActivePokemon, _state: BattleState): boolean {
     return true;
   }

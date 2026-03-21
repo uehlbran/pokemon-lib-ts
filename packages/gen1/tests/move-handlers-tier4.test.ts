@@ -921,7 +921,10 @@ describe("Gen 1 Thrash handler", () => {
   });
 
   it("given Thrash used for the first time, when checking result, then selfVolatileInflicted is 'thrash-lock' and forcedMoveSet locks into Thrash", () => {
-    // Source: pret/pokered ThrashEffect — first use locks for 2-3 turns
+    // Source: pret/pokered ThrashEffect — first use locks for 2-3 turns total.
+    // The engine deals damage BEFORE calling executeMoveEffect, so the first turn
+    // of damage is already done. turnsLeft = (randomTurns - 1) to represent remaining
+    // forced turns beyond this one.
     // Arrange
     const attacker = makeActivePokemon({
       pokemon: {
@@ -937,9 +940,8 @@ describe("Gen 1 Thrash handler", () => {
 
     // Assert
     expect(result.selfVolatileInflicted).toBe("thrash-lock");
-    // Source: pret/pokered ThrashEffect — locks for 2-3 turns
-    // With SeededRandom(42), rng.int(2, 3) = 3
-    expect(result.selfVolatileData!.turnsLeft).toBe(3);
+    // With SeededRandom(42), rng.int(2, 3) = 3, so turnsLeft = 3 - 1 = 2
+    expect(result.selfVolatileData!.turnsLeft).toBe(2);
     expect(result.forcedMoveSet!.moveId).toBe("thrash");
   });
 
