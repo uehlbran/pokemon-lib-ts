@@ -130,6 +130,104 @@ function canInflictContactStatus(status: PrimaryStatus, target: ActivePokemon): 
   return true;
 }
 
+// ─── Stat-Drop Immunity ─────────────────────────────────────────────────────
+
+/**
+ * Check whether an ability blocks a stat drop for a specific stat in Gen 3.
+ *
+ * - Clear Body / White Smoke: block ALL stat drops from opponents
+ * - Hyper Cutter: blocks Attack drops from opponents
+ * - Keen Eye: blocks Accuracy drops from opponents
+ *
+ * Note: these abilities only block drops from OPPONENT sources.
+ * Self-inflicted drops (e.g., Superpower, Close Combat) are not blocked.
+ * The `certain` parameter in pokeemerald gates this — moves that forcibly lower
+ * stats on the user (like Overheat) set certain=TRUE, bypassing these checks.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:6987-7033
+ *   - ABILITY_CLEAR_BODY / ABILITY_WHITE_SMOKE: block all stat drops (!certain)
+ *   - ABILITY_KEEN_EYE: block accuracy drops (!certain && statId == STAT_ACC)
+ *   - ABILITY_HYPER_CUTTER: block attack drops (!certain && statId == STAT_ATK)
+ */
+export function isGen3StatDropBlocked(abilityId: string, stat: string): boolean {
+  // Clear Body / White Smoke: block ALL stat drops
+  if (abilityId === "clear-body" || abilityId === "white-smoke") {
+    return true;
+  }
+  // Hyper Cutter: blocks Attack drops only
+  if (abilityId === "hyper-cutter" && stat === "attack") {
+    return true;
+  }
+  // Keen Eye: blocks Accuracy drops only
+  if (abilityId === "keen-eye" && stat === "accuracy") {
+    return true;
+  }
+  return false;
+}
+
+// ─── Weather Suppression ────────────────────────────────────────────────────
+
+/**
+ * Abilities that suppress weather effects while the holder is on the field.
+ *
+ * When a Pokemon with one of these abilities is active, all weather effects
+ * (damage, type modifiers, weather-dependent accuracy/moves) are treated as
+ * if no weather is present.
+ *
+ * Source: pret/pokeemerald src/battle_util.c — ABILITY_CLOUD_NINE / ABILITY_AIR_LOCK
+ * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
+ */
+export const WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set([
+  "cloud-nine",
+  "air-lock",
+]);
+
+/**
+ * Check if weather effects are suppressed by an active Pokemon's ability.
+ *
+ * Returns true if either the pokemon or opponent has Cloud Nine / Air Lock,
+ * meaning weather should be treated as absent for damage, accuracy, and
+ * end-of-turn weather effects.
+ *
+ * Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+ *   checks IsAbilityOnField(ABILITY_CLOUD_NINE) || IsAbilityOnField(ABILITY_AIR_LOCK)
+ */
+export function isWeatherSuppressedGen3(
+  pokemon: ActivePokemon | undefined,
+  opponent: ActivePokemon | undefined,
+): boolean {
+  if (pokemon && WEATHER_SUPPRESSING_ABILITIES.has(pokemon.ability)) return true;
+  if (opponent && WEATHER_SUPPRESSING_ABILITIES.has(opponent.ability)) return true;
+  return false;
+}
+
+// ─── Forecast Helper ────────────────────────────────────────────────────────
+
+/**
+ * Determine Castform's type based on weather.
+ *
+ * Forecast changes Castform's type and form:
+ *   - Sun → Fire
+ *   - Rain → Water
+ *   - Hail → Ice
+ *   - No weather / Sandstorm → Normal
+ *
+ * Source: pret/pokeemerald src/battle_util.c — ABILITY_FORECAST / GetCastformForm
+ * Source: Bulbapedia — "Forecast changes Castform's type based on the weather"
+ */
+function getForecastType(weather: string | null): PokemonType {
+  switch (weather) {
+    case "sun":
+      return "fire";
+    case "rain":
+      return "water";
+    case "hail":
+      return "ice";
+    default:
+      return "normal"; // Sandstorm and no weather both → Normal
+  }
+}
+
 // ─── Main Dispatch ──────────────────────────────────────────────────────────
 
 /**
@@ -182,10 +280,26 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
   switch (abilityId) {
     case "intimidate": {
       // Source: pret/pokeemerald ABILITY_INTIMIDATE — lowers opponent's Attack by 1 stage
+      // Source: pret/pokeemerald src/battle_script_commands.c:4141-4145 — stat drop blocked by
+      //   Clear Body, White Smoke, Hyper Cutter (for Attack), and Keen Eye (for Accuracy)
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+
+      // Check if opponent's ability blocks the Attack drop
+      // Source: pret/pokeemerald src/battle_script_commands.c:4142-4145
+      if (isGen3StatDropBlocked(context.opponent.ability, "attack")) {
+        return {
+          activated: true,
+          effects: [],
+          messages: [
+            `${name}'s Intimidate!`,
+            `${oppName}'s ${context.opponent.ability === "hyper-cutter" ? "Hyper Cutter" : context.opponent.ability === "clear-body" ? "Clear Body" : "White Smoke"} prevents stat loss!`,
+          ],
+        };
+      }
+
       const effect: AbilityEffect = {
         effectType: "stat-change",
         target: "opponent",
@@ -249,11 +363,19 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "trace": {
       // Trace: copies the opponent's ability on switch-in.
-      // Gen 3 banned list: only Trace itself (no Multitype/Forecast in Gen 3).
-      // Source: pret/pokeemerald — ABILITY_TRACE: copies foe's ability on entry
-      // Source: Bulbapedia — "Trace copies the opponent's Ability when entering battle"
+      //
+      // Source: pret/pokeemerald src/battle_util.c:3020-3060 — ABILITYEFFECT_TRACE
+      //   pokeemerald only checks gBattleMons[target].ability != ABILITY_NONE &&
+      //   gBattleMons[target].hp != 0. There is NO explicit blocklist in Gen 3 —
+      //   Trace CAN copy Wonder Guard, Forecast, etc. on the original cartridge.
+      //
+      // Implementation note: we block Trace itself to prevent infinite-loop edge
+      // cases in our singles implementation. This matches Showdown Gen 3 behavior
+      // which also doesn't restrict Wonder Guard/Forecast in Gen 3.
+      //
+      // Source: Showdown data/mods/gen3/abilities.ts — trace.onStart copies foe ability
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
-      const uncopyable = ["trace"]; // Gen 3: only Trace is uncopyable
+      const uncopyable = ["trace"]; // Gen 3: only Trace blocked (implementation guard)
       const opponentAbility = context.opponent.ability;
       if (!opponentAbility || uncopyable.includes(opponentAbility)) {
         return { activated: false, effects: [], messages: [] };
@@ -283,6 +405,56 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
         activated: true,
         effects: [],
         messages: [`${name} is exerting its Pressure!`],
+      };
+    }
+
+    case "cloud-nine":
+    case "air-lock": {
+      // Cloud Nine / Air Lock: suppress all weather effects while on the field.
+      // The actual suppression is handled by isWeatherSuppressedGen3() checks in
+      // damage calc, accuracy, and weather effects. The switch-in handler just
+      // announces the ability.
+      //
+      // Source: pret/pokeemerald src/battle_util.c — ABILITY_CLOUD_NINE / ABILITY_AIR_LOCK
+      //   triggers ABILITYEFFECT_ON_SWITCHIN announcement
+      // Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
+      const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+      const abilityDisplayName = abilityId === "cloud-nine" ? "Cloud Nine" : "Air Lock";
+      return {
+        activated: true,
+        effects: [],
+        messages: [`${name}'s ${abilityDisplayName} negates the weather!`],
+      };
+    }
+
+    case "forecast": {
+      // Forecast: Castform changes type and form based on weather.
+      // On switch-in, set Castform's type to match the current weather.
+      // If weather is suppressed (Cloud Nine/Air Lock), Castform stays Normal.
+      //
+      // Source: pret/pokeemerald src/battle_util.c — ABILITY_FORECAST / GetCastformForm
+      // Source: Bulbapedia — "Forecast changes Castform's type based on the weather"
+      const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+      const weather = context.state.weather?.type ?? null;
+
+      // Weather is suppressed if Cloud Nine / Air Lock is on the field
+      const suppressed = isWeatherSuppressedGen3(context.pokemon, context.opponent);
+      const effectiveWeather = suppressed ? null : weather;
+      const newType = getForecastType(effectiveWeather);
+
+      // Only activate if the type would actually change
+      const currentTypes = context.pokemon.types;
+      if (currentTypes.length === 1 && currentTypes[0] === newType) {
+        return { activated: false, effects: [], messages: [] };
+      }
+      if (currentTypes.length === 0 && newType === "normal") {
+        return { activated: false, effects: [], messages: [] };
+      }
+
+      return {
+        activated: true,
+        effects: [{ effectType: "type-change", target: "self", types: [newType] }],
+        messages: [`${name} transformed into the ${newType} type!`],
       };
     }
 
@@ -466,7 +638,13 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
     case "rain-dish": {
       // Source: pret/pokeemerald — Rain Dish: heal 1/16 max HP in rain
       // Source: Bulbapedia — Rain Dish heals 1/16 each turn during rain
-      if (weather !== "rain") return { activated: false, effects: [], messages: [] };
+      // Cloud Nine / Air Lock suppress weather, so Rain Dish does not activate.
+      // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT check
+      const effectiveWeatherForRainDish = isWeatherSuppressedGen3(context.pokemon, context.opponent)
+        ? null
+        : weather;
+      if (effectiveWeatherForRainDish !== "rain")
+        return { activated: false, effects: [], messages: [] };
       const healAmt = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
