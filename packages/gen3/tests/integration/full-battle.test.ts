@@ -347,24 +347,29 @@ describe("Gen 3 Full Battle Integration", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert: both moves deal damage so at least 2 damage events (one per attacker)
+    // Assert: both moves deal damage so exactly 2 damage events (one per attacker)
     // Surf is 4x effective vs Blaziken (Water vs Fire/Fighting); Flamethrower vs Swampert is 0.5x
     const events = engine.getEventLog();
     const damageEvents = events.filter((e) => e.type === "damage");
     // Both moves hit — expect exactly 2 combat damage events this turn
     expect(damageEvents.length).toBe(2);
 
-    for (const evt of damageEvents) {
-      if (evt.type === "damage") {
-        // Each damage event must reference a valid side
-        expect(evt.side === 0 || evt.side === 1).toBe(true);
-        // Damage amount must be a positive integer (non-zero because both moves are super or neutral effective)
-        expect(evt.amount).toBeGreaterThanOrEqual(1);
-        // maxHp must equal the defender's actual calculated HP (Blaziken=155, Swampert=175)
-        // Source: HP formula — damage events carry maxHp from the defending Pokemon's calculated stats
-        expect(evt.maxHp === 155 || evt.maxHp === 175).toBe(true);
-      }
-    }
+    // Surf hits Blaziken (side 1 = Blaziken with maxHp=155)
+    // Flamethrower hits Swampert (side 0 = Swampert is the defender when side 1 attacks, so side 0 takes damage)
+    // Sort damage events by side: side 0 = Swampert is defender (Blaziken attacks it), side 1 = Blaziken is defender (Swampert attacks it)
+    // Note: damage event side = the side that takes damage
+    const side0Damage = damageEvents.find((e) => e.type === "damage" && e.side === 0);
+    const side1Damage = damageEvents.find((e) => e.type === "damage" && e.side === 1);
+
+    // Blaziken (side 0) takes Surf damage — Blaziken maxHp = 155
+    // Source: HP formula: floor((2*80+31)*50/100)+60 = 155
+    expect(side1Damage?.type === "damage" ? side1Damage.maxHp : undefined).toBe(155);
+    expect(side1Damage?.type === "damage" ? side1Damage.amount : undefined).toBeGreaterThan(0);
+
+    // Swampert (side 1) takes Flamethrower damage — Swampert maxHp = 175
+    // Source: HP formula: floor((2*100+31)*50/100)+60 = 175
+    expect(side0Damage?.type === "damage" ? side0Damage.maxHp : undefined).toBe(175);
+    expect(side0Damage?.type === "damage" ? side0Damage.amount : undefined).toBeGreaterThan(0);
   });
 
   it("given a Gen 3 battle, when moves execute, then move-start events are emitted", () => {
@@ -577,10 +582,14 @@ describe("Gen 3 Weather Integration", () => {
 
     // The single damage event must be Surf hitting Blaziken (side 1)
     const surfDamage = damageEvents[0];
-    expect(surfDamage?.type === "damage" && surfDamage.side).toBe(1);
-    // Surf must deal non-trivial damage (rain + 4x = 6x effective; should OHKOs Blaziken HP=155)
+    expect(surfDamage?.type).toBe("damage");
     if (surfDamage?.type === "damage") {
-      expect(surfDamage.amount).toBeGreaterThanOrEqual(155); // Blaziken HP = 155 → OHKO
+      // Surf hits Blaziken (side 1)
+      expect(surfDamage.side).toBe(1);
+      // Blaziken HP = 155 (floor((2*80+31)*50/100)+60 = 155); OHKO means amount = full HP
+      // Source: HP formula from pret/pokeemerald; an OHKO must deal exactly the target's full HP
+      expect(surfDamage.maxHp).toBe(155);
+      expect(surfDamage.amount).toBe(155);
     }
   });
 
