@@ -5,7 +5,7 @@ import type {
   DamageResult,
 } from "@pokemon-lib-ts/battle";
 import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { getStabModifier, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import { getGen12StatStageRatio, getStabModifier } from "@pokemon-lib-ts/core";
 
 import { getWeatherDamageModifier } from "./Gen2Weather";
 
@@ -133,8 +133,10 @@ function getAttackStat(
     // Crit with atkStage <= defStage: ignore ALL stat stages
     effective = baseStat;
   } else {
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
     const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
-    effective = Math.floor(baseStat * getStatStageMultiplier(stage));
+    const ratio = getGen12StatStageRatio(stage);
+    effective = Math.floor((baseStat * ratio.num) / ratio.den);
   }
 
   // Burn halves physical attack (unless ignored on crit)
@@ -185,8 +187,10 @@ function getDefenseStat(
     // Crit with atkStage <= defStage: ignore ALL stat stages
     effective = baseStat;
   } else {
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
     const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
-    effective = Math.floor(baseStat * getStatStageMultiplier(stage));
+    const ratio = getGen12StatStageRatio(stage);
+    effective = Math.floor((baseStat * ratio.num) / ratio.den);
   }
 
   // Metal Powder doubles Ditto's (132) Defense only (not SpDefense)
@@ -321,6 +325,25 @@ export function calculateGen2Damage(
   let attack = getAttackStat(attacker, effectiveMoveType, ignoreBoosts, ignoreBurn);
   let effectiveDefense = getDefenseStat(defender, effectiveMoveType, ignoreBoosts);
 
+  // Reflect/Light Screen doubles the defense stat (crits bypass screens)
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm:2553-2557 — sla c; rl b doubles
+  // defense BEFORE the crit check. Crits re-read base stats, so they bypass screen doubling.
+  // In our implementation, ignoreBoosts=true already uses base stats (bypassing screens).
+  if (!isCrit) {
+    const defenderSide = state.sides?.find((s) =>
+      s.active.some((a) => a?.pokemon === defender.pokemon),
+    );
+    if (defenderSide) {
+      const isPhysical = isGen2PhysicalType(effectiveMoveType);
+      const hasReflect = isPhysical && defenderSide.screens.some((s) => s.type === "reflect");
+      const hasLightScreen =
+        !isPhysical && defenderSide.screens.some((s) => s.type === "light-screen");
+      if (hasReflect || hasLightScreen) {
+        effectiveDefense = effectiveDefense * 2;
+      }
+    }
+  }
+
   // Explosion and Self-Destruct halve the defender's defense stat before damage calc
   if (move.id === "explosion" || move.id === "self-destruct") {
     effectiveDefense = Math.max(1, Math.floor(effectiveDefense / 2));
@@ -408,24 +431,6 @@ export function calculateGen2Damage(
       baseDamage = Math.floor((baseDamage * 5) / 10);
     }
     // factor === 1: no change
-  }
-
-  // Step 8.5: Apply Reflect / Light Screen halving (crits bypass screens)
-  // Source: pret/pokecrystal engine/battle/core.asm BattleCalcDamage — screens halve damage
-  // Critical hits bypass screens in Gen 2
-  if (!isCrit) {
-    const defenderSide = state.sides?.find((s) =>
-      s.active.some((a) => a?.pokemon === defender.pokemon),
-    );
-    if (defenderSide) {
-      const isPhysical = isGen2PhysicalType(effectiveMoveType);
-      const hasReflect = isPhysical && defenderSide.screens.some((s) => s.type === "reflect");
-      const hasLightScreen =
-        !isPhysical && defenderSide.screens.some((s) => s.type === "light-screen");
-      if (hasReflect || hasLightScreen) {
-        baseDamage = Math.floor(baseDamage / 2);
-      }
-    }
   }
 
   // Step 9: Random factor (217-255) / 255
