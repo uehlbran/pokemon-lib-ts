@@ -1036,8 +1036,22 @@ describe("3C: Damage Formula (exact expected values)", () => {
     // Act
     const overflowDamage = calculateGen1Damage(ctxOverflow, chart, species).damage;
     const postDamage = calculateGen1Damage(ctxPost, chart, species).damage;
-    // Assert — both should produce the same result
+    // Assert — equivalence: overflow path must yield same result as post-overflow path
     expect(overflowDamage).toBe(postDamage);
+    // Assert — exact intermediate values: independently verify the overflow arithmetic
+    // Source: Showdown scripts.ts lines 848-860 — attack >= 256: attack = floor(attack/4) % 256
+    // attack=300:  floor(300/4)  = 75,  75%256 = 75  (no modular wrap needed)
+    // defense=100: floor(100/4)  = 25,  25%256 = 25  (no modular wrap needed)
+    expect(Math.floor(300 / 4) % 256).toBe(75);
+    expect(Math.floor(100 / 4) % 256).toBe(25);
+    // Assert — exact final damage value: attack=75, defense=25, L100, BP=80, no STAB, neutral, roll=255
+    // Source: pret/pokered src/engine/battle/core.asm — damage calculation routine
+    //   levelFactor = floor(2*100/5)+2 = 42
+    //   inner = floor(42*80*75) / 25 = floor(252000)/25 = 10080
+    //   baseDamage = floor(10080/50)+2 = 201+2 = 203 (201 < 997 so cap does not apply)
+    //   No STAB, neutral type, roll=255: floor(203*255/255) = 203
+    expect(overflowDamage).toBe(203);
+    expect(postDamage).toBe(203);
   });
 });
 

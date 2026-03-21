@@ -229,10 +229,36 @@ describe("Gen 1 Full Battle Integration", () => {
       if (evt.type === "damage") {
         expect(evt.side === 0 || evt.side === 1).toBe(true);
         expect(typeof evt.pokemon).toBe("string");
-        expect(evt.amount).toBeGreaterThan(0);
-        expect(evt.currentHp).toBeGreaterThanOrEqual(0);
-        expect(evt.maxHp).toBeGreaterThan(0);
         expect(typeof evt.source).toBe("string");
+        expect(evt.currentHp).toBeGreaterThanOrEqual(0);
+        // Source: pret/pokered — damage formula with Gen 1 roll range 217-255.
+        // Charizard L50 (spAttack=129) uses Flamethrower (Fire BP=95, special) vs
+        // Blastoise L50 (spDefense=105). Fire is Special in Gen 1.
+        // Charizard is Fire type → STAB. Fire vs Water = 0.5x.
+        //   levelFactor=22; inner=floor(22*95*129)/105=floor(269940)/105=floor(2571)=2571
+        //   baseDamage=floor(2571/50)+2=51+2=53; STAB: floor(53*1.5)=79
+        //   0.5x resist: floor(79*5/10)=39
+        //   min(roll=217): floor(39*217/255)=floor(33.16)=33
+        //   max(roll=255): floor(39*255/255)=39
+        // Blastoise L50 (spAttack=105) uses Water Gun (Water BP=40, special) vs
+        // Charizard L50 (spDefense=129). Water is Special. Blastoise is Water → STAB.
+        // Water vs Fire = 2x, Water vs Flying = 1x → combined 2x.
+        //   levelFactor=22; inner=floor(22*40*105)/129=floor(92400)/129=floor(716.27)=716
+        //   baseDamage=floor(716/50)+2=14+2=16; STAB: floor(16*1.5)=24
+        //   2x (Water vs Fire): floor(24*20/10)=48; 1x (Water vs Flying): 48
+        //   min(roll=217): floor(48*217/255)=floor(40.84)=40
+        //   max(roll=255): floor(48*255/255)=48
+        // Seed 42 actual: Flamethrower deals 34, Water Gun deals 47 (within computed ranges).
+        // Assert damage is in the valid Gen 1 range for these specific Pokemon/moves:
+        if (evt.source === "flamethrower") {
+          expect(evt.amount).toBeGreaterThanOrEqual(33); // min roll=217
+          expect(evt.amount).toBeLessThanOrEqual(39); // max roll=255
+          expect(evt.maxHp).toBe(154); // Blastoise L50 max DVs: floor(((79+15)*2)*50/100)+60 = 154
+        } else if (evt.source === "water-gun") {
+          expect(evt.amount).toBeGreaterThanOrEqual(40); // min roll=217
+          expect(evt.amount).toBeLessThanOrEqual(48); // max roll=255
+          expect(evt.maxHp).toBe(153); // Charizard L50 max DVs: floor(((78+15)*2)*50/100)+60 = 153
+        }
       }
     }
   });
@@ -482,7 +508,7 @@ describe("Gen 1 Full Battle Integration", () => {
     expect(anyAlive).toBe(true);
   });
 
-  it("given a battle, when stats are calculated at start, then all Pokemon have calculatedStats", () => {
+  it("given a battle, when stats are calculated at start, then all Pokemon have calculatedStats with exact known values", () => {
     // Arrange
     const team1 = createTeam1();
     const team2 = createTeam2();
@@ -491,17 +517,56 @@ describe("Gen 1 Full Battle Integration", () => {
     // Act: Engine constructor calculates stats
     engine.start();
 
-    // Assert
+    // Assert — exact stat values for team1/team2 Pokemon at L50, max DVs (15), zero StatExp.
+    // Source: pret/pokered stat formula: floor(((base+dv)*2)*50/100)+5 for non-HP;
+    //         floor(((base+dv)*2)*50/100)+60 for HP.
+    // In Gen 1 the Special stat is unified: spAttack and spDefense use the same base value.
+    // Data is sourced from packages/gen1/data/pokemon.json (Gen 1 data from Showdown).
+    // Charizard (speciesId=6): base HP=78, Atk=84, Def=78, Spc=109, Spe=100, DV=15
+    //   hp: floor((78+15)*2*50/100)+60=93+60=153, atk: floor((84+15)*2*50/100)+5=99+5=104
+    //   def: floor((78+15)*2*50/100)+5=93+5=98, spc: floor((109+15)*2*50/100)+5=124+5=129
+    //   spe: floor((100+15)*2*50/100)+5=115+5=120
+    // Blastoise (speciesId=9): base HP=79, Atk=83, Def=100, Spc=85, Spe=78, DV=15
+    //   hp: floor((79+15)*2*50/100)+60=94+60=154, atk: floor((83+15)*2*50/100)+5=98+5=103
+    //   def: floor((100+15)*2*50/100)+5=115+5=120, spc: floor((85+15)*2*50/100)+5=100+5=105
+    //   spe: floor((78+15)*2*50/100)+5=93+5=98
+    // Venusaur (speciesId=3): base HP=80, Atk=82, Def=83, Spc=100, Spe=80, DV=15
+    //   hp=155, atk=102, def=103, spc=120, spe=100
+    // Alakazam (speciesId=65): base HP=55, Atk=50, Def=45, Spc=135, Spe=120, DV=15
+    //   hp=130, atk=70, def=65, spc=155, spe=140
+    // Gengar (speciesId=94): base HP=60, Atk=65, Def=60, Spc=130, Spe=110, DV=15
+    //   hp=135, atk=85, def=80, spc=150, spe=130
+    // Snorlax (speciesId=143): base HP=160, Atk=110, Def=65, Spc=65, Spe=30, DV=15
+    //   hp=235, atk=130, def=85, spc=85, spe=50
+    const expectedStats: Record<string, Record<string, number>> = {
+      Charizard: { hp: 153, attack: 104, defense: 98, spAttack: 129, spDefense: 129, speed: 120 },
+      Blastoise: { hp: 154, attack: 103, defense: 120, spAttack: 105, spDefense: 105, speed: 98 },
+      Venusaur: { hp: 155, attack: 102, defense: 103, spAttack: 120, spDefense: 120, speed: 100 },
+      Alakazam: { hp: 130, attack: 70, defense: 65, spAttack: 155, spDefense: 155, speed: 140 },
+      Gengar: { hp: 135, attack: 85, defense: 80, spAttack: 150, spDefense: 150, speed: 130 },
+      Snorlax: { hp: 235, attack: 130, defense: 85, spAttack: 85, spDefense: 85, speed: 50 },
+    };
+
     for (const sideIdx of [0, 1] as const) {
       const team = engine.getTeam(sideIdx);
       for (const pokemon of team) {
         expect(pokemon.calculatedStats).toBeDefined();
-        expect(pokemon.calculatedStats?.hp).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.attack).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.defense).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.spAttack).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.spDefense).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.speed).toBeGreaterThan(0);
+        const nickname = pokemon.nickname;
+        if (nickname && expectedStats[nickname]) {
+          const expected = expectedStats[nickname];
+          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
+          expect(pokemon.calculatedStats!.hp).toBe(expected.hp);
+          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
+          expect(pokemon.calculatedStats!.attack).toBe(expected.attack);
+          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
+          expect(pokemon.calculatedStats!.defense).toBe(expected.defense);
+          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
+          expect(pokemon.calculatedStats!.spAttack).toBe(expected.spAttack);
+          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
+          expect(pokemon.calculatedStats!.spDefense).toBe(expected.spDefense);
+          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
+          expect(pokemon.calculatedStats!.speed).toBe(expected.speed);
+        }
       }
     }
   });

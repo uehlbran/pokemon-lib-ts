@@ -148,7 +148,7 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
   });
 
   describe("Given a non-Ghost-type defender", () => {
-    it("should return positive damage against a Normal-type defender", () => {
+    it("should return exact damage against a Normal-type defender", () => {
       // Arrange
       const attacker = makeActivePokemon({ types: ["normal"], level: 50, attack: 80 });
       const defender = makeActivePokemon({ types: ["normal"], defense: 60 });
@@ -157,11 +157,19 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
 
-      // Assert — non-Ghost defenders take damage from Normal-type Struggle
-      expect(damage).toBeGreaterThan(0);
+      // Assert — calculateStruggleDamage uses SeededRandom(0); seed 0 → int(217,255) = 227
+      // Source: pret/pokered — Struggle is Normal-type BP=50 in Gen 1
+      // L50, Atk=80, Def=60, STAB (attacker types: [normal] matches move type normal):
+      //   levelFactor = floor(2*50/5)+2 = 22
+      //   inner = floor(22*50*80) / 60 = floor(88000) / 60 = floor(1466.67) = 1466
+      //   baseDamage = floor(1466/50)+2 = 29+2 = 31
+      //   STAB: floor(31 * 1.5) = 46
+      //   Normal vs Normal type: 1x → 46
+      //   Random: floor(46 * 227 / 255) = floor(10442/255) = 40
+      expect(damage).toBe(40);
     });
 
-    it("should return positive damage against an Electric-type defender", () => {
+    it("should return exact damage against an Electric-type defender", () => {
       // Arrange
       const attacker = makeActivePokemon({ types: ["fire"], level: 50, attack: 100 });
       const defender = makeActivePokemon({ types: ["electric"], defense: 80 });
@@ -170,8 +178,15 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
 
-      // Assert
-      expect(damage).toBeGreaterThan(0);
+      // Assert — calculateStruggleDamage uses SeededRandom(0); seed 0 → int(217,255) = 227
+      // Source: pret/pokered — Struggle is Normal-type BP=50 in Gen 1
+      // L50, Atk=100, Def=80, no STAB (fire != normal):
+      //   levelFactor = floor(2*50/5)+2 = 22
+      //   inner = floor(22*50*100) / 80 = floor(110000) / 80 = floor(1375) = 1375
+      //   baseDamage = floor(1375/50)+2 = 27+2 = 29
+      //   No STAB, Normal vs Electric = 1x → 29
+      //   Random: floor(29 * 227 / 255) = floor(6583/255) = 25
+      expect(damage).toBe(25);
     });
 
     it("should return at least 1 damage even against high-defense defenders", () => {
