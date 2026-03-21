@@ -126,7 +126,9 @@ describe("Gen2Ruleset.calculateStruggleDamage", () => {
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
 
       // Assert — Struggle is typeless in Gen 2, no immunity applies
-      expect(damage).toBeGreaterThan(0);
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Struggle formula: floor((2*L/5+2)*50*Atk/Def/50)+2
+      // L50, Atk=80, Def=60 → levelFactor=floor(2*50/5)+2=22, floor(22*50*80/60/50)+2=floor(29.33)+2=31
+      expect(damage).toBe(31);
     });
   });
 
@@ -141,7 +143,9 @@ describe("Gen2Ruleset.calculateStruggleDamage", () => {
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
 
       // Assert
-      expect(damage).toBeGreaterThan(0);
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Struggle formula: floor((2*L/5+2)*50*Atk/Def/50)+2
+      // L50, Atk=80, Def=60 → levelFactor=floor(2*50/5)+2=22, floor(22*50*80/60/50)+2=floor(29.33)+2=31
+      expect(damage).toBe(31);
     });
 
     it("should return at least 1 damage even against high-defense defenders", () => {

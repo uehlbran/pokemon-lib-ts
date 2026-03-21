@@ -14,7 +14,7 @@ export {
   rollEffectChance,
 } from "./Gen2MoveEffects";
 export { Gen2Ruleset } from "./Gen2Ruleset";
-export { calculateGen2Stats } from "./Gen2StatCalc";
+export { calculateGen2Stats, checkIsShinyByDVs } from "./Gen2StatCalc";
 export { calculateGen2StatusDamage, canInflictGen2Status } from "./Gen2Status";
 export { GEN2_TYPE_CHART, GEN2_TYPES } from "./Gen2TypeChart";
 export { applyGen2WeatherEffects, getWeatherDamageModifier } from "./Gen2Weather";

@@ -310,12 +310,17 @@ describe("Gen 2 Damage Calculation", () => {
     const result = calculateGen2Damage(context, chart, species);
 
     // Assert
-    expect(result.damage).toBeGreaterThan(0);
-    expect(result.damage).toBeLessThan(200);
-    expect(Number.isInteger(result.damage)).toBe(true);
+    // Source: pret/pokecrystal engine/battle/damage_calc.asm — Gen 2 damage formula
+    // floor((floor(2*L/5+2)*BP*Atk/Def)/50)+2, then floor(base*roll/255)
+    // L50, BP=80, Atk=100, Def=100, max roll (255/255):
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   base = floor((22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    //   damage = floor(37*255/255) = 37
+    expect(result.damage).toBe(37);
   });
 
   // --- Critical Hit ---
+  // Source: pret/pokecrystal engine/battle/damage_calc.asm — critical hit multiplier is 2x in Gen 2
 
   it("given a critical hit, when calculating damage, then applies 2x multiplier", () => {
     // Arrange
@@ -427,6 +432,7 @@ describe("Gen 2 Damage Calculation", () => {
   });
 
   // --- Weather Modifier ---
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm — weather boosts: rain/sun 1.5x for boosted type, 0.5x for opposing
 
   it("given rain weather and a water move, when calculating damage, then applies 1.5x weather boost", () => {
     // Arrange
@@ -481,6 +487,7 @@ describe("Gen 2 Damage Calculation", () => {
   });
 
   // --- STAB ---
+  // Source: pret/pokecrystal engine/battle/damage_calc.asm — STAB adds 50% damage bonus when move type matches user type
 
   it("given attacker type matches move type, when calculating damage, then applies 1.5x STAB", () => {
     // Arrange: Attacker is fire type using a fire move
@@ -542,6 +549,7 @@ describe("Gen 2 Damage Calculation", () => {
   });
 
   // --- Type Effectiveness ---
+  // Source: pret/pokecrystal data/type_effectiveness.asm — type multipliers: 2x super effective, 0.5x not very effective, 0x immune
 
   it("given a super effective move, when calculating damage, then approximately doubles damage", () => {
     // Arrange
@@ -648,6 +656,7 @@ describe("Gen 2 Damage Calculation", () => {
   });
 
   // --- Item Modifier ---
+  // Source: pret/pokecrystal engine/battle/damage_calc.asm — type-boosting held items give 1.1x (110%) damage boost
 
   it("given attacker holds a type-boosting item matching move type, when calculating damage, then applies 1.1x", () => {
     // Arrange
@@ -769,6 +778,7 @@ describe("Gen 2 Damage Calculation", () => {
   });
 
   // --- Burn ---
+  // Source: pret/pokecrystal engine/battle/damage_calc.asm — burn halves physical Attack stat before damage calculation
 
   it("given a burned attacker using a physical move, when calculating damage, then attack is halved", () => {
     // Arrange
