@@ -2357,6 +2357,83 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
+        case "yawn-countdown": {
+          // Yawn volatile countdown — inflict sleep when turnsLeft reaches 0
+          // Source: Bulbapedia — Yawn: "causes drowsiness; the target falls asleep at
+          //   the end of the next turn"
+          // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const yawnState = active.volatileStatuses.get("yawn");
+            if (!yawnState) continue;
+            if (yawnState.turnsLeft > 0) {
+              yawnState.turnsLeft--;
+            }
+            if (yawnState.turnsLeft <= 0) {
+              active.volatileStatuses.delete("yawn");
+              this.emit({
+                type: "volatile-end",
+                side: side.index,
+                pokemon: getPokemonName(active),
+                volatile: "yawn",
+              });
+              // Inflict sleep if the target has no primary status
+              if (active.pokemon.status === null) {
+                this.applyPrimaryStatus(active, "sleep", side.index);
+              }
+            }
+          }
+          break;
+        }
+        case "heal-block-countdown": {
+          // Heal Block volatile countdown — remove when turnsLeft reaches 0
+          // Source: Bulbapedia — Heal Block prevents HP recovery for 5 turns
+          // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const hbState = active.volatileStatuses.get("heal-block");
+            if (!hbState) continue;
+            if (hbState.turnsLeft > 0) {
+              hbState.turnsLeft--;
+              if (hbState.turnsLeft <= 0) {
+                active.volatileStatuses.delete("heal-block");
+                this.emit({
+                  type: "volatile-end",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  volatile: "heal-block",
+                });
+              }
+            }
+          }
+          break;
+        }
+        case "embargo-countdown": {
+          // Embargo volatile countdown — remove when turnsLeft reaches 0
+          // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
+          // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+            const embargoState = active.volatileStatuses.get("embargo");
+            if (!embargoState) continue;
+            if (embargoState.turnsLeft > 0) {
+              embargoState.turnsLeft--;
+              if (embargoState.turnsLeft <= 0) {
+                active.volatileStatuses.delete("embargo");
+                this.emit({
+                  type: "volatile-end",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  volatile: "embargo",
+                });
+              }
+            }
+          }
+          break;
+        }
         default:
           // Many effects not yet implemented
           break;

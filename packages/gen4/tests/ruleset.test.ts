@@ -580,7 +580,7 @@ describe("Gen4Ruleset getEndOfTurnOrder", () => {
     expect(order[0]).toBe("weather-damage");
   });
 
-  it("given Gen4Ruleset, when getEndOfTurnOrder, then returns all 30 Gen 4 EoT effects in correct order", () => {
+  it("given Gen4Ruleset, when getEndOfTurnOrder, then returns all 33 Gen 4 EoT effects in correct order", () => {
     // Source: Showdown sim/battle.ts Gen 4 mod — full EoT ordering
     // Source: Bulbapedia — Diamond/Pearl/Platinum end-of-turn processing order
     // Key Gen 4 ordering: weather-damage first, toxic/flame orb after weather-countdown,
@@ -604,9 +604,12 @@ describe("Gen4Ruleset getEndOfTurnOrder", () => {
       "curse",
       "bad-dreams",
       "bind",
+      "yawn-countdown",
       "encore-countdown",
       "taunt-countdown",
       "disable-countdown",
+      "heal-block-countdown",
+      "embargo-countdown",
       "perish-song",
       "screen-countdown",
       "safeguard-countdown",
