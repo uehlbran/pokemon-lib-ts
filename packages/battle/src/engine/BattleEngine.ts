@@ -2865,6 +2865,14 @@ export class BattleEngine implements BattleEventEmitter {
   private processEndOfTurn(): void {
     const effectOrder = this.ruleset.getEndOfTurnOrder();
 
+    // Bug #484 fix: Multiple EoT cases (weather-healing, shed-skin, speed-boost, etc.) all
+    // call applyAbility("on-turn-end") for every active Pokemon. The gen ruleset's ability
+    // handler fires whatever EoT ability the Pokemon has (e.g., Speed Boost) regardless of
+    // which EoT case triggered it. This Set ensures each Pokemon's on-turn-end ability fires
+    // at most once per turn, no matter how many EoT ability-dispatching cases appear.
+    // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ENDTURN fires once per Pokemon
+    const abilityEndOfTurnFired = new Set<string>();
+
     for (const effect of effectOrder) {
       switch (effect) {
         case "weather-damage":
@@ -2928,6 +2936,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -2946,6 +2957,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -2964,6 +2978,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -2982,6 +2999,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -3000,6 +3020,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -3378,6 +3401,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -3399,6 +3425,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -3420,6 +3449,9 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            const pokeKey = `${side.index}-0`;
+            if (abilityEndOfTurnFired.has(pokeKey)) continue;
+            abilityEndOfTurnFired.add(pokeKey);
             const opponent = this.getOpponentActive(side.index);
             const result = this.ruleset.applyAbility("on-turn-end", {
               pokemon: active,
@@ -3436,14 +3468,20 @@ export class BattleEngine implements BattleEventEmitter {
         }
         case "uproar": {
           // Source: pret/pokeemerald -- Uproar: countdown duration, wake sleeping Pokemon
-          // Process both sides: wake any sleeping Pokemon, decrement uproar volatile
+          // Source: Bulbapedia — Uproar prevents sleep while the user is in uproar
           // Note: "uproar" is added to VolatileStatus in core/entities/status.ts
+          //
+          // Bug #494 fix: first decrement all uproar counters, THEN check if any Pokemon
+          // still has the uproar volatile. Only wake sleepers if uproar is still active.
+          // Previously, the wake check ran inside the same loop as the decrement, so
+          // sleepers were woken even when the uproar expired on that turn.
           const uproarVolatile = "uproar" as import("@pokemon-lib-ts/core").VolatileStatus;
+
+          // Step 1: Decrement uproar counters for all active Pokemon
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
 
-            // If this Pokemon has the uproar volatile, decrement its turn count
             const uproarData = active.volatileStatuses.get(uproarVolatile);
             if (uproarData) {
               if (uproarData.turnsLeft !== undefined && uproarData.turnsLeft > 0) {
@@ -3463,20 +3501,34 @@ export class BattleEngine implements BattleEventEmitter {
                 }
               }
             }
+          }
 
-            // Wake any sleeping Pokemon on the field (Uproar prevents sleep)
-            if (active.pokemon.status === "sleep") {
-              active.pokemon.status = null;
-              this.emit({
-                type: "status-cure",
-                side: side.index,
-                pokemon: getPokemonName(active),
-                status: "sleep",
-              });
-              this.emit({
-                type: "message",
-                text: `${getPokemonName(active)} woke up due to the uproar!`,
-              });
+          // Step 2: Check if ANY active Pokemon on either side still has the uproar volatile
+          const anyUproarActive = this.state.sides.some((side) => {
+            const active = side.active[0];
+            return (
+              active && active.pokemon.currentHp > 0 && active.volatileStatuses.has(uproarVolatile)
+            );
+          });
+
+          // Step 3: Only wake sleeping Pokemon if uproar is still ongoing
+          if (anyUproarActive) {
+            for (const side of this.state.sides) {
+              const active = side.active[0];
+              if (!active || active.pokemon.currentHp <= 0) continue;
+              if (active.pokemon.status === "sleep") {
+                active.pokemon.status = null;
+                this.emit({
+                  type: "status-cure",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  status: "sleep",
+                });
+                this.emit({
+                  type: "message",
+                  text: `${getPokemonName(active)} woke up due to the uproar!`,
+                });
+              }
             }
           }
           break;
