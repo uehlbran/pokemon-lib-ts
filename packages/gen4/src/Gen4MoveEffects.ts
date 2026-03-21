@@ -68,6 +68,8 @@ type MutableResult = {
   typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
   tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
   trickRoomSet?: { turnsLeft: number } | null;
+  volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+  futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -615,6 +617,32 @@ function handleCustomEffect(
       break;
     }
 
+    case "destiny-bond": {
+      // Destiny Bond: if the user faints from the opponent's next move, the attacker faints too
+      // Source: Bulbapedia — "If the user faints after using Destiny Bond, the Pokemon
+      //   that KO'd it also faints"
+      // Source: Showdown Gen 4 — sets destiny-bond volatile
+      result.selfVolatileInflicted = "destiny-bond";
+      result.messages.push(`${attackerName} is trying to take its foe down with it!`);
+      break;
+    }
+
+    case "future-sight": {
+      // Future Sight: schedules a hit 3 end-of-turns later; damage calculated at hit time in Gen 4
+      // Source: Bulbapedia — "Future Sight hits 2 turns after being used (3 EoT ticks)"
+      // Source: Showdown Gen 4 — Future Sight schedules future attack
+      const attackerSideIndex = state.sides.findIndex((side) =>
+        side.active.some((a) => a?.pokemon === attacker.pokemon),
+      );
+      result.futureAttack = {
+        moveId: "future-sight",
+        turnsLeft: 3,
+        sourceSide: (attackerSideIndex === 0 ? 0 : 1) as 0 | 1,
+      };
+      result.messages.push(`${attackerName} foresaw an attack!`);
+      break;
+    }
+
     default: {
       // Unknown custom effect — no-op
       break;
@@ -843,6 +871,40 @@ function handleNullEffectMoves(
       break;
     }
 
+    case "counter": {
+      // Counter: returns 2x the physical damage taken this turn
+      // Source: Showdown Gen 4 sim — Counter returns double physical damage received this turn
+      // Source: Bulbapedia — "Counter deals damage equal to twice the damage dealt by the
+      //   last physical move that hit the user"
+      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
+        result.messages.push("But it failed!");
+        break;
+      }
+      result.customDamage = {
+        target: "defender",
+        amount: attacker.lastDamageTaken * 2,
+        source: "counter",
+      };
+      break;
+    }
+
+    case "mirror-coat": {
+      // Mirror Coat: returns 2x the special damage taken this turn
+      // Source: Showdown Gen 4 sim — Mirror Coat returns double special damage received this turn
+      // Source: Bulbapedia — "Mirror Coat deals damage equal to twice the damage dealt by the
+      //   last special move that hit the user"
+      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "special") {
+        result.messages.push("But it failed!");
+        break;
+      }
+      result.customDamage = {
+        target: "defender",
+        amount: attacker.lastDamageTaken * 2,
+        source: "mirror-coat",
+      };
+      break;
+    }
+
     default:
       break;
   }
@@ -911,6 +973,29 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       const defenderName = context.defender.pokemon.nickname ?? "The foe";
       result.messages.push(`${defenderName} lost its ${item}!`);
     }
+    return result;
+  }
+
+  // Taunt: data has volatile-status "taunt" but we need to set turnsLeft = 3 for Gen 4
+  // Source: Bulbapedia — "Taunt lasts for 3 turns in Generation IV"
+  // Source: Showdown Gen 4 — Taunt prevents status moves for 3 turns
+  if (context.move.id === "taunt") {
+    result.volatileInflicted = "taunt";
+    result.volatileData = { turnsLeft: 3 };
+    return result;
+  }
+
+  // Disable: data has volatile-status "disable" but we need turnsLeft and target's lastMoveUsed
+  // Source: Showdown Gen 4 — Disable lasts 4 turns, targets last used move
+  // Source: Bulbapedia — "Disable disables the target's last used move for 4 turns"
+  if (context.move.id === "disable") {
+    const { defender } = context;
+    if (!defender.lastMoveUsed) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    result.volatileInflicted = "disable";
+    result.volatileData = { turnsLeft: 4, data: { moveId: defender.lastMoveUsed } };
     return result;
   }
 
