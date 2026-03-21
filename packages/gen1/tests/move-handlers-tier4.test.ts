@@ -1,7 +1,14 @@
-import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import type {
+  ActivePokemon,
+  BattleConfig,
+  BattleState,
+  MoveEffectContext,
+} from "@pokemon-lib-ts/battle";
+import { BattleEngine } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager } from "../src/data";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 
 /**
@@ -535,8 +542,9 @@ describe("Gen 1 Metronome handler", () => {
     effect: { type: "custom" as const, handler: "metronome" },
   });
 
-  it("given Metronome is used, when checking result, then recursiveMove is a valid Gen 1 move (not 'metronome' or 'struggle')", () => {
+  it("given Metronome is used with seed 100, when checking result, then recursiveMove is 'body-slam'", () => {
     // Source: pret/pokered MetronomeEffect — picks random move excluding Metronome and Struggle
+    // With seed 100, rng.int(0, 162) = 33 which maps to 'body-slam' in the Gen 1 move pool
     // Arrange
     const rng = new SeededRandom(100);
     const context = makeMoveEffectContext({ move: metronomeMove, damage: 0, rng });
@@ -545,14 +553,12 @@ describe("Gen 1 Metronome handler", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert
-    expect(result.recursiveMove).toBeDefined();
-    expect(result.recursiveMove).not.toBe("metronome");
-    expect(result.recursiveMove).not.toBe("struggle");
-    expect(typeof result.recursiveMove).toBe("string");
+    expect(result.recursiveMove).toBe("body-slam");
   });
 
-  it("given Metronome is used with a different seed, when checking result, then a different move can be selected (demonstrating randomness)", () => {
+  it("given Metronome is used with seeds 1 and 999, when checking results, then different moves are selected deterministically", () => {
     // Source: pret/pokered MetronomeEffect — random selection from all Gen 1 moves
+    // Seed 1 -> 'screech', Seed 999 -> 'conversion' (verified via SeededRandom)
     // Arrange
     const rng1 = new SeededRandom(1);
     const rng2 = new SeededRandom(999);
@@ -563,15 +569,9 @@ describe("Gen 1 Metronome handler", () => {
     const result1 = ruleset.executeMoveEffect(context1);
     const result2 = ruleset.executeMoveEffect(context2);
 
-    // Assert — both should be valid moves; with different seeds, high probability of different results
-    expect(result1.recursiveMove).toBeDefined();
-    expect(result2.recursiveMove).toBeDefined();
-    expect(result1.recursiveMove).not.toBe("metronome");
-    expect(result2.recursiveMove).not.toBe("metronome");
-    // Note: theoretically they could be the same move by chance, but with 163 moves
-    // in the pool and very different seeds, this is astronomically unlikely.
-    // We avoid asserting inequality to prevent flakiness, and rely on the first test
-    // for exclusion correctness.
+    // Assert — exact values from deterministic PRNG
+    expect(result1.recursiveMove).toBe("screech");
+    expect(result2.recursiveMove).toBe("conversion");
   });
 });
 
@@ -755,12 +755,14 @@ describe("Gen 1 Bide handler", () => {
     // Assert
     expect(result.selfVolatileInflicted).toBe("bide");
     expect(result.selfVolatileData?.data?.accumulatedDamage).toBe(0);
-    // turnsLeft should be 2 or 3 (random)
     // Source: pret/pokered BideEffect — charges for 2-3 turns
-    expect(result.selfVolatileData!.turnsLeft).toBeGreaterThanOrEqual(2);
-    expect(result.selfVolatileData!.turnsLeft).toBeLessThanOrEqual(3);
-    expect(result.forcedMoveSet).toBeDefined();
-    expect(result.forcedMoveSet!.moveId).toBe("bide");
+    // With SeededRandom(42), rng.int(2, 3) = 3
+    expect(result.selfVolatileData!.turnsLeft).toBe(3);
+    expect(result.forcedMoveSet).toEqual({
+      moveIndex: 0,
+      moveId: "bide",
+      volatileStatus: "bide",
+    });
     expect(result.messages).toContain("The user is storing energy!");
   });
 
@@ -897,8 +899,9 @@ describe("Gen 1 Thrash handler", () => {
 
     // Assert
     expect(result.selfVolatileInflicted).toBe("thrash-lock");
-    expect(result.selfVolatileData!.turnsLeft).toBeGreaterThanOrEqual(2);
-    expect(result.selfVolatileData!.turnsLeft).toBeLessThanOrEqual(3);
+    // Source: pret/pokered ThrashEffect — locks for 2-3 turns
+    // With SeededRandom(42), rng.int(2, 3) = 3
+    expect(result.selfVolatileData!.turnsLeft).toBe(3);
     expect(result.forcedMoveSet!.moveId).toBe("thrash");
   });
 
@@ -941,10 +944,9 @@ describe("Gen 1 Thrash handler", () => {
     // Assert
     expect(attacker.volatileStatuses.has("thrash-lock")).toBe(false);
     expect(result.selfVolatileInflicted).toBe("confusion");
-    // Confusion lasts 2-5 turns in Gen 1
     // Source: pret/pokered — random(0-3)+2 = [2,5]
-    expect(result.selfVolatileData!.turnsLeft).toBeGreaterThanOrEqual(2);
-    expect(result.selfVolatileData!.turnsLeft).toBeLessThanOrEqual(5);
+    // With SeededRandom(42), rng.int(2, 5) = 4
+    expect(result.selfVolatileData!.turnsLeft).toBe(4);
     expect(result.forcedMoveSet).toBeUndefined();
   });
 
@@ -1102,5 +1104,141 @@ describe("Gen 1 onDamageReceived", () => {
 
     // Assert
     expect(defender.statStages.attack).toBe(3); // unchanged
+  });
+});
+
+// ============================================================================
+// Engine integration — multi-turn moves
+// ============================================================================
+
+describe("Gen 1 engine integration — multi-turn moves", () => {
+  const dataManager = createGen1DataManager();
+  const integrationRuleset = new Gen1Ruleset();
+  let uidCounter = 0;
+
+  function createPokemon(
+    speciesId: number,
+    level: number,
+    moveIds: string[],
+    nickname?: string,
+  ): PokemonInstance {
+    return {
+      uid: `tier4-${speciesId}-${level}-${++uidCounter}`,
+      speciesId,
+      nickname: nickname ?? null,
+      level,
+      experience: 0,
+      nature: "adamant",
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      currentHp: 999,
+      moves: moveIds.map((id) => {
+        const moveData = dataManager.getMove(id);
+        return {
+          moveId: id,
+          currentPP: moveData.pp,
+          maxPP: moveData.pp,
+          ppUps: 0,
+        };
+      }),
+      ability: "",
+      abilitySlot: "normal1" as const,
+      heldItem: null,
+      status: null,
+      friendship: 70,
+      gender: "male" as const,
+      isShiny: false,
+      metLocation: "pallet-town",
+      metLevel: level,
+      originalTrainer: "Red",
+      originalTrainerId: 12345,
+      pokeball: "poke-ball",
+    } as PokemonInstance;
+  }
+
+  function createBattle(
+    team1: PokemonInstance[],
+    team2: PokemonInstance[],
+    seed: number,
+  ): BattleEngine {
+    const config: BattleConfig = {
+      generation: 1,
+      format: "singles",
+      teams: [team1, team2],
+      seed,
+    };
+    return new BattleEngine(config, integrationRuleset, dataManager);
+  }
+
+  it("given attacker uses Rage and is hit, when engine processes 2 turns, then attacker is forced to use Rage again and Attack is boosted", () => {
+    // Source: pret/pokered RageEffect — Rage locks the user into repeating, and
+    // each hit boosts Attack by +1. The forcedMove mechanism forces Rage on turn 2.
+    // Arrange
+    // Snorlax (speciesId 143) has high HP so neither faints quickly
+    const rager = createPokemon(143, 50, ["rage", "tackle", "body-slam", "rest"], "Rager");
+    const hitter = createPokemon(143, 50, ["tackle", "body-slam", "rest", "headbutt"], "Hitter");
+    const engine = createBattle([rager], [hitter], 42);
+
+    // Act — Turn 1: Rager uses Rage (moveIndex 0), Hitter uses Tackle (moveIndex 0)
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // After turn 1, Rager should have rage volatile and forcedMove set
+    const ragerActive = engine.getActive(0);
+    expect(ragerActive).not.toBeNull();
+    expect(ragerActive!.volatileStatuses.has("rage")).toBe(true);
+
+    // Turn 2: Both submit actions, but Rager's is forced to Rage
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 }); // ignored, forced to rage
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 }); // Hitter uses Tackle
+
+    // Assert — Rager's attack should have been boosted by hits received
+    const ragerAfter = engine.getActive(0);
+    expect(ragerAfter).not.toBeNull();
+    // Rager was hit at least once while rage volatile was active, so attack should be > 0
+    expect(ragerAfter!.statStages.attack).toBeGreaterThanOrEqual(1);
+  });
+
+  it("given attacker uses Thrash, when engine processes multiple turns, then thrash-lock volatile is active during forced turns and confusion is applied after", () => {
+    // Source: pret/pokered ThrashEffect — locks for 2-3 turns, then confuses
+    // Arrange
+    const thrasher = createPokemon(143, 50, ["thrash", "tackle", "body-slam", "rest"], "Thrasher");
+    const defender = createPokemon(
+      143,
+      50,
+      ["tackle", "body-slam", "rest", "headbutt"],
+      "Defender",
+    );
+    const engine = createBattle([thrasher], [defender], 42);
+
+    // Act — Turn 1: Thrasher uses Thrash
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // After turn 1, thrash-lock volatile should be active
+    const thrasherT1 = engine.getActive(0);
+    expect(thrasherT1).not.toBeNull();
+    expect(thrasherT1!.volatileStatuses.has("thrash-lock")).toBe(true);
+
+    // Turn 2: Thrasher is forced to use Thrash again
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 }); // ignored
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Turn 3: Keep going — thrash should still be active or have just ended
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 }); // ignored if still locked
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // After enough turns, thrash-lock should be gone and confusion should be applied
+    // The lock lasts 2-3 turns with seed 42; the RNG in the engine determines exact duration.
+    // Check the event log for confusion application
+    const events = engine.getEventLog();
+    const confusionEvents = events.filter(
+      (e) => e.type === "volatile-start" && (e as any).volatile === "confusion",
+    );
+    // Source: pret/pokered ThrashEffect — confusion is applied when thrash ends
+    // The confusion volatile-start event should exist somewhere in the log
+    expect(confusionEvents.length).toBeGreaterThanOrEqual(1);
   });
 });

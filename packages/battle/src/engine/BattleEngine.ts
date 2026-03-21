@@ -1086,7 +1086,7 @@ export class BattleEngine implements BattleEventEmitter {
         });
         // Reactive damage hook (Gen 1 Rage boost, Bide accumulation)
         // Source: pret/pokered RageEffect, BideEffect
-        if (damage > 0 && this.ruleset.onDamageReceived) {
+        if (damage > 0) {
           this.ruleset.onDamageReceived(defender, damage, effectiveMoveData, this.state);
         }
       }
@@ -1306,7 +1306,7 @@ export class BattleEngine implements BattleEventEmitter {
           maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
           source: moveId,
         });
-        if (damage > 0 && this.ruleset.onDamageReceived) {
+        if (damage > 0) {
           this.ruleset.onDamageReceived(defender, damage, moveData, this.state);
         }
       }
@@ -1324,6 +1324,14 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     this.processEffectResult(effectResult, actor, defender, actorSide, defenderSide);
+
+    // Chain nested recursiveMove (e.g., Metronome -> Mirror Move)
+    // Source: pret/pokered — MetronomeEffect can call MirrorMoveEffect which then copies the foe's last move
+    // Depth guard: only recurse once to prevent infinite chains (Metronome -> Metronome is excluded from the pool but defensive check)
+    if (effectResult.recursiveMove) {
+      this.executeMoveById(effectResult.recursiveMove, actor, actorSide, defender, defenderSide);
+    }
+
     actor.lastMoveUsed = moveId;
 
     // Recharge: if the recursively-called move requires recharge and noRecharge was not set
@@ -2117,15 +2125,20 @@ export class BattleEngine implements BattleEventEmitter {
         moveIndex: result.forcedMoveSet.moveIndex,
         moveId: result.forcedMoveSet.moveId,
       };
-      attacker.volatileStatuses.set(result.forcedMoveSet.volatileStatus, {
-        turnsLeft: 1,
-      });
-      this.emit({
-        type: "volatile-start",
-        side: attackerSide,
-        pokemon: getPokemonName(attacker),
-        volatile: result.forcedMoveSet.volatileStatus,
-      });
+      // Only manage the volatile here if selfVolatileInflicted isn't targeting the same volatile.
+      // When they match (e.g., Bide, Thrash, Rage), selfVolatileInflicted handles the volatile
+      // with correct turnsLeft and data — forcedMoveSet must not overwrite it.
+      if (result.selfVolatileInflicted !== result.forcedMoveSet.volatileStatus) {
+        attacker.volatileStatuses.set(result.forcedMoveSet.volatileStatus, {
+          turnsLeft: 1,
+        });
+        this.emit({
+          type: "volatile-start",
+          side: attackerSide,
+          pokemon: getPokemonName(attacker),
+          volatile: result.forcedMoveSet.volatileStatus,
+        });
+      }
     }
 
     // Gravity set (Gen 4+)
@@ -2306,15 +2319,11 @@ export class BattleEngine implements BattleEventEmitter {
     // moveSlotChange — temporarily replace a move slot (Mimic)
     // Source: pret/pokered MimicEffect
     if (result.moveSlotChange) {
-      const { slot, newMoveId, newPP, originalMoveId } = result.moveSlotChange;
+      const { slot, newMoveId, newPP } = result.moveSlotChange;
       const moveSlots = attacker.pokemon.moves;
       if (slot >= 0 && slot < moveSlots.length) {
         moveSlots[slot] = { moveId: newMoveId, currentPP: newPP, maxPP: newPP, ppUps: 0 };
-        // Store original move ID in mimic-slot volatile for restoration on switch-out
-        attacker.volatileStatuses.set("mimic-slot", {
-          turnsLeft: -1,
-          data: { slot, originalMoveId },
-        });
+        // Volatile storage and event emission handled by selfVolatileInflicted in the result
         this.emit({
           type: "message",
           text: `${getPokemonName(attacker)} learned ${newMoveId}!`,

@@ -2,6 +2,7 @@ import type {
   AbilityTrigger,
   EntryHazardType,
   Generation,
+  MoveData,
   NonHpStat,
   PokemonInstance,
   PokemonSpeciesData,
@@ -278,6 +279,16 @@ export abstract class BaseRuleset implements GenerationRuleset {
    */
   canHitSemiInvulnerable(_moveId: string, _volatile: VolatileStatus): boolean {
     return false;
+  }
+
+  onDamageReceived(
+    _defender: ActivePokemon,
+    _damage: number,
+    _move: MoveData,
+    _state: BattleState,
+  ): void {
+    // No-op — Gen 3+ rulesets override if they need reactive damage triggers.
+    // Source: pret/pokered — Rage and Bide are Gen 1 only in base form
   }
 
   // Burn: Gen 7+ default (1/16 max HP); Gen 3-6 must override (1/8 max HP)

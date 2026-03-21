@@ -2,6 +2,7 @@ import type {
   AbilityTrigger,
   EntryHazardType,
   Generation,
+  MoveData,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
@@ -178,6 +179,15 @@ export class MockRuleset implements GenerationRuleset {
 
   canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
     return this.semiInvulnerableOverrides.get(moveId)?.has(volatile) ?? false;
+  }
+
+  onDamageReceived(
+    _defender: ActivePokemon,
+    _damage: number,
+    _move: MoveData,
+    _state: BattleState,
+  ): void {
+    // No-op for mock
   }
 
   executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {

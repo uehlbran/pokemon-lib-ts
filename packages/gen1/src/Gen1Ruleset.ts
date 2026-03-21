@@ -825,15 +825,34 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.messages.push("But it failed!");
           } else {
             // Find the slot Mimic occupies in the attacker's moveset
-            const slot = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
-            if (slot < 0) {
+            const mimicSlotIndex = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
+            if (mimicSlotIndex < 0) {
               result.messages.push("But it failed!");
             } else {
+              // Capture original PP before replacement
+              // Source: pret/pokered — Mimic replacement reverts on switch-out with original PP
+              const originalSlot = attacker.pokemon.moves[mimicSlotIndex];
+              const originalCurrentPP = originalSlot?.currentPP ?? 0;
+              const originalMaxPP = originalSlot?.maxPP ?? 0;
+              const originalPpUps = originalSlot?.ppUps ?? 0;
+
               result.moveSlotChange = {
-                slot,
+                slot: mimicSlotIndex,
                 newMoveId: lastMove,
                 newPP: 5,
                 originalMoveId: move.id,
+              };
+              // Store backup data via selfVolatileInflicted so engine uses standard volatile pathway
+              result.selfVolatileInflicted = "mimic-slot";
+              result.selfVolatileData = {
+                turnsLeft: -1,
+                data: {
+                  slot: mimicSlotIndex,
+                  originalMoveId: move.id,
+                  originalCurrentPP,
+                  originalMaxPP,
+                  originalPpUps,
+                },
               };
             }
           }
@@ -901,7 +920,12 @@ export class Gen1Ruleset implements GenerationRuleset {
           }));
           // Set transformed volatile to store originals
           attacker.transformed = true;
-          attacker.transformedSpecies = defender.transformedSpecies ?? null;
+          // Source: pret/pokered TransformEffect — Transform copies the defender's current species appearance.
+          // If defender has already transformed, use their transformedSpecies; otherwise look up defender's actual species.
+          attacker.transformedSpecies =
+            defender.transformedSpecies ??
+            this.dataManager.getSpecies(defender.pokemon.speciesId) ??
+            null;
           attacker.volatileStatuses.set("transform-data", {
             turnsLeft: -1,
             data: {
@@ -1364,17 +1388,23 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Source: pret/pokered — Mimic replacement reverts on switch-out
     const mimicSlot = pokemon.volatileStatuses.get("mimic-slot");
     if (mimicSlot?.data) {
-      const { slot, originalMoveId } = mimicSlot.data as {
-        slot: number;
-        originalMoveId: string;
-      };
+      const { slot, originalMoveId, originalCurrentPP, originalMaxPP, originalPpUps } =
+        mimicSlot.data as {
+          slot: number;
+          originalMoveId: string;
+          originalCurrentPP?: number;
+          originalMaxPP?: number;
+          originalPpUps?: number;
+        };
       if (pokemon.pokemon.moves[slot]) {
-        const maxPP = this.dataManager.getMove(originalMoveId).pp;
+        // Use stored original PP values if available; fall back to base PP for backward compatibility
+        // Source: pret/pokered — Mimic replacement reverts on switch-out with original PP
+        const fallbackPP = this.dataManager.getMove(originalMoveId).pp;
         pokemon.pokemon.moves[slot] = {
           moveId: originalMoveId,
-          currentPP: maxPP,
-          maxPP,
-          ppUps: 0,
+          currentPP: originalCurrentPP ?? fallbackPP,
+          maxPP: originalMaxPP ?? fallbackPP,
+          ppUps: originalPpUps ?? 0,
         };
       }
     }

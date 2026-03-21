@@ -125,10 +125,9 @@ export interface MoveSystem {
    * - Gen 1 Rage: boosts defender Attack by +1 stage
    * - Gen 1 Bide: accumulates received damage into `bide` volatile data
    *
-   * Optional — gen rulesets that don't use reactive damage hooks can omit this method.
    * Source: pret/pokered RageEffect, BideEffect
    */
-  onDamageReceived?(
+  onDamageReceived(
     defender: ActivePokemon,
     damage: number,
     move: MoveData,
