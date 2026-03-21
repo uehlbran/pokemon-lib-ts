@@ -26,11 +26,14 @@ export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
  * - overcoat: blocks weather damage (Gen 5 only blocks weather chip; Gen 6+ also blocks powder)
  * - sand-rush: immune to sandstorm chip + 2x speed in sandstorm
  * - sand-force: immune to sandstorm chip + 1.3x Rock/Ground/Steel moves in sandstorm
+ * - sand-veil: immune to sandstorm chip + evasion boost in sandstorm
  * - ice-body: immune to hail chip + heals 1/16 in hail
- * - snow-cloak: NOT immune to hail chip (only grants evasion boost)
+ * - snow-cloak: immune to hail chip + evasion boost in hail
  *
- * Source: Showdown data/abilities.ts -- immunity checks for weather damage
- * Source: Bulbapedia -- individual ability pages
+ * Source: Showdown data/abilities.ts -- sandveil.onImmunity / snowcloak.onImmunity each return
+ *   false for their respective weather type, which in Showdown's event system means the pokemon
+ *   IS immune (the damage is skipped via runStatusImmunity).
+ * Source: Bulbapedia -- Sand Veil: "immune to sandstorm damage"; Snow Cloak: "immune to hail damage"
  */
 const SAND_IMMUNE_ABILITIES: readonly string[] = [
   "magic-guard",

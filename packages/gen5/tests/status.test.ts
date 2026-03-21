@@ -154,7 +154,8 @@ describe("Gen5Ruleset status conditions", () => {
         }
       }
 
-      // Should be approximately 25% (with tolerance for PRNG variance)
+      // Tolerance derivation: Binomial(n=1000, p=0.25) → std dev = sqrt(1000*0.25*0.75) ≈ 13.7
+      // 3σ interval ≈ ±41 counts → ratio range [0.209, 0.291]; using ±0.07 gives comfortable margin
       const ratio = trueCount / iterations;
       expect(ratio).toBeGreaterThan(0.18);
       expect(ratio).toBeLessThan(0.32);
@@ -174,6 +175,7 @@ describe("Gen5Ruleset status conditions", () => {
         }
       }
 
+      // Tolerance derivation: Binomial(n=1000, p=0.25) → std dev ≈ 13.7; ±0.07 = ~5σ margin
       const ratio = trueCount / iterations;
       expect(ratio).toBeGreaterThan(0.18);
       expect(ratio).toBeLessThan(0.32);
@@ -196,6 +198,8 @@ describe("Gen5Ruleset status conditions", () => {
         }
       }
 
+      // Tolerance derivation: Binomial(n=1000, p=0.20) → std dev = sqrt(1000*0.2*0.8) ≈ 12.6
+      // 3σ interval ≈ ±38 counts → ratio range [0.162, 0.238]; using ±0.07 gives comfortable margin
       const ratio = thawCount / iterations;
       expect(ratio).toBeGreaterThan(0.13);
       expect(ratio).toBeLessThan(0.27);
@@ -215,6 +219,7 @@ describe("Gen5Ruleset status conditions", () => {
         }
       }
 
+      // Tolerance derivation: Binomial(n=1000, p=0.20) → std dev ≈ 12.6; ±0.07 = ~5.5σ margin
       const ratio = thawCount / iterations;
       expect(ratio).toBeGreaterThan(0.13);
       expect(ratio).toBeLessThan(0.27);
@@ -304,6 +309,8 @@ describe("Gen5Ruleset status conditions", () => {
           hitCount++;
         }
       }
+      // Tolerance derivation: Binomial(n=1000, p=0.50) → std dev = sqrt(1000*0.5*0.5) ≈ 15.8
+      // 3σ interval ≈ ±47 counts → ratio range [0.453, 0.547]; using ±0.07 gives comfortable margin
       const ratio = hitCount / iterations;
       expect(ratio).toBeGreaterThan(0.43);
       expect(ratio).toBeLessThan(0.57);
