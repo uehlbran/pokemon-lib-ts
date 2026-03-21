@@ -68,6 +68,8 @@ type MutableResult = {
   clearSideHazards?: "attacker" | "defender";
   itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
   screensCleared?: "attacker" | "defender" | "both" | null;
+  /** When set, only remove screens whose type is in this list (Brick Break: reflect, light-screen) */
+  screenTypesToRemove?: readonly string[];
   statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
   statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
   selfStatusInflicted?: PrimaryStatus | null;

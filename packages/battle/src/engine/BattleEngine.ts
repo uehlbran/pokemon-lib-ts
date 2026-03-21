@@ -1085,22 +1085,8 @@ export class BattleEngine implements BattleEventEmitter {
         move: moveData.id,
       });
 
-      // Source: pokered — Self-Destruct/Explosion: user always faints even on miss.
-      // The user explodes regardless of whether the move hits.
-      // Set currentHp = 0 only; faint event + faintCount are handled by checkMidTurnFaints().
-      if (
-        moveData.effect?.type === "custom" &&
-        (moveData.effect.handler === "explosion" || moveData.effect.handler === "self-destruct")
-      ) {
-        actor.pokemon.currentHp = 0;
-      }
-
-      // Source: pokered RageEffect — Gen 1 Rage miss loop.
-      // When Rage misses while the user has the rage volatile, set a miss-lock
-      // that causes all subsequent Rage uses to auto-miss (cartridge infinite loop).
-      if (actor.volatileStatuses.has("rage")) {
-        actor.volatileStatuses.set("rage-miss-lock", { turnsLeft: -1 });
-      }
+      // Delegate miss-related effects to the ruleset (explosion self-faint, Gen 1 rage-miss-lock)
+      this.ruleset.onMoveMiss(actor, moveData, this.state);
 
       actor.lastMoveUsed = moveData.id;
       actor.movedThisTurn = true;
@@ -1349,6 +1335,17 @@ export class BattleEngine implements BattleEventEmitter {
         type: "message",
         text: `Hit ${totalHits} time${totalHits === 1 ? "" : "s"}!`,
       });
+
+      // Process defender-side residuals after the final multi-hit strike.
+      // Between hits, residuals run inside the loop (line ~1292). After the loop
+      // exits, the Phase 1 post-attack call (line ~857) only processes the attacker's
+      // side. Without this, poison/burn/leech-seed on the defender are skipped
+      // after the final hit.
+      // Source: pokered -- each hit triggers residuals for the hit target
+      const finalPostAttackResiduals = this.ruleset.getPostAttackResidualOrder();
+      if (finalPostAttackResiduals.length > 0) {
+        this.processPostAttackResiduals(defenderSide as 0 | 1);
+      }
     }
 
     // Recursive move execution (Mirror Move, Metronome)
@@ -2397,6 +2394,9 @@ export class BattleEngine implements BattleEventEmitter {
         weather: result.weatherSet.weather,
         source: result.weatherSet.source,
       });
+      // Fire on-weather-change triggers (e.g., Forecast changes Castform's type)
+      // Source: pret/pokeemerald — ABILITY_FORECAST re-evaluated after weather changes
+      this.fireWeatherChangeAbilities();
     }
 
     // Hazard from move effects
@@ -2477,12 +2477,27 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Screen clear (Haze or switch-out removes screens from a side)
+    // Source: pret/pokeemerald EFFECT_BRICK_BREAK -- Brick Break only removes Reflect/Light Screen
+    // When screenTypesToRemove is set, filter instead of clearing all screens.
+    // This prevents Brick Break from incorrectly removing Safeguard.
     if (result.screensCleared) {
       if (result.screensCleared === "attacker" || result.screensCleared === "both") {
-        this.state.sides[attackerSide].screens = [];
+        if (result.screenTypesToRemove) {
+          this.state.sides[attackerSide].screens = this.state.sides[attackerSide].screens.filter(
+            (s) => !result.screenTypesToRemove?.includes(s.type),
+          );
+        } else {
+          this.state.sides[attackerSide].screens = [];
+        }
       }
       if (result.screensCleared === "defender" || result.screensCleared === "both") {
-        this.state.sides[defenderSide].screens = [];
+        if (result.screenTypesToRemove) {
+          this.state.sides[defenderSide].screens = this.state.sides[defenderSide].screens.filter(
+            (s) => !result.screenTypesToRemove?.includes(s.type),
+          );
+        } else {
+          this.state.sides[defenderSide].screens = [];
+        }
       }
     }
 
@@ -3409,6 +3424,53 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
+        case "uproar": {
+          // Source: pret/pokeemerald -- Uproar: countdown duration, wake sleeping Pokemon
+          // Process both sides: wake any sleeping Pokemon, decrement uproar volatile
+          // Note: "uproar" is added to VolatileStatus in core/entities/status.ts
+          const uproarVolatile = "uproar" as import("@pokemon-lib-ts/core").VolatileStatus;
+          for (const side of this.state.sides) {
+            const active = side.active[0];
+            if (!active || active.pokemon.currentHp <= 0) continue;
+
+            // If this Pokemon has the uproar volatile, decrement its turn count
+            const uproarData = active.volatileStatuses.get(uproarVolatile);
+            if (uproarData) {
+              if (uproarData.turnsLeft !== undefined && uproarData.turnsLeft > 0) {
+                uproarData.turnsLeft--;
+                if (uproarData.turnsLeft === 0) {
+                  active.volatileStatuses.delete(uproarVolatile);
+                  this.emit({
+                    type: "volatile-end",
+                    side: side.index,
+                    pokemon: getPokemonName(active),
+                    volatile: uproarVolatile,
+                  });
+                  this.emit({
+                    type: "message",
+                    text: `${getPokemonName(active)}'s uproar ended!`,
+                  });
+                }
+              }
+            }
+
+            // Wake any sleeping Pokemon on the field (Uproar prevents sleep)
+            if (active.pokemon.status === "sleep") {
+              active.pokemon.status = null;
+              this.emit({
+                type: "status-cure",
+                side: side.index,
+                pokemon: getPokemonName(active),
+                status: "sleep",
+              });
+              this.emit({
+                type: "message",
+                text: `${getPokemonName(active)} woke up due to the uproar!`,
+              });
+            }
+          }
+          break;
+        }
         case "grassy-terrain-heal": {
           // Gen 6+ terrain: heals grounded Pokemon for 1/16 max HP at EoT.
           // Stub: delegates to ruleset terrain effects. No gen currently returns this effect.
@@ -3999,6 +4061,9 @@ export class BattleEngine implements BattleEventEmitter {
               weather: effect.weather,
               source: pokemon.ability ?? "ability",
             });
+            // Fire on-weather-change triggers (e.g., Forecast changes Castform's type)
+            // Source: pret/pokeemerald — ABILITY_FORECAST re-evaluated after weather changes
+            this.fireWeatherChangeAbilities();
           }
           break;
         }
@@ -4126,6 +4191,31 @@ export class BattleEngine implements BattleEventEmitter {
     // Emit messages
     for (const msg of result.messages) {
       this.emit({ type: "message", text: msg });
+    }
+  }
+
+  /**
+   * Fire "on-weather-change" ability triggers for all active Pokemon on both sides.
+   * Called after any weather change (move-set weather, ability-set weather).
+   *
+   * Source: pret/pokeemerald src/battle_util.c — ABILITY_FORECAST checked after weather changes
+   */
+  private fireWeatherChangeAbilities(): void {
+    if (!this.ruleset.hasAbilities()) return;
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      const opponent = this.getOpponentActive(side.index);
+      const result = this.ruleset.applyAbility("on-weather-change", {
+        pokemon: active,
+        opponent: opponent ?? undefined,
+        state: this.state,
+        rng: this.state.rng,
+        trigger: "on-weather-change",
+      });
+      if (result.activated) {
+        this.processAbilityResult(result, active, opponent ?? active, side.index);
+      }
     }
   }
 

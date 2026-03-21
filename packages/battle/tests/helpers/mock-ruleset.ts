@@ -202,6 +202,10 @@ export class MockRuleset implements GenerationRuleset {
     return this.ppCostOverride ?? 1;
   }
 
+  onMoveMiss(_actor: ActivePokemon, _move: MoveData, _state: BattleState): void {
+    // No-op for mock
+  }
+
   onDamageReceived(
     _defender: ActivePokemon,
     _damage: number,

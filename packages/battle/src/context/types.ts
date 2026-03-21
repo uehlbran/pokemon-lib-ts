@@ -218,6 +218,14 @@ export interface MoveEffectResult {
   readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
   /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
   readonly screensCleared?: "attacker" | "defender" | "both" | null;
+  /**
+   * When set alongside `screensCleared`, only remove screens whose type is in this list.
+   * E.g., Brick Break sets `["reflect", "light-screen"]` to avoid removing Safeguard.
+   * If omitted, all screens are cleared (Defog behavior).
+   *
+   * Source: pret/pokeemerald EFFECT_BRICK_BREAK -- only removes Reflect and Light Screen
+   */
+  readonly screenTypesToRemove?: readonly string[];
   /** Reset stat stages for target(s) WITHOUT curing status (e.g. Haze resets attacker stages) */
   readonly statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
   /** Cure the attacker's status WITHOUT resetting stat stages (unlike statusCured which is Haze-only) */
