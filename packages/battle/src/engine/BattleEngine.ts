@@ -2105,8 +2105,11 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
-            if (active.ability !== "slow-start") continue;
             // Slow Start: decrement turnsLeft on the slow-start volatile each EoT.
+            // No ability check: the volatile should tick down even if the ability was
+            // temporarily changed (e.g., by Skill Swap). The stat-halving in damage/speed
+            // calcs already requires both the ability AND the volatile to be present.
+            // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown ticks volatile
             // When turnsLeft reaches 0, remove the volatile so the Attack/Speed halving stops.
             // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown
             // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns

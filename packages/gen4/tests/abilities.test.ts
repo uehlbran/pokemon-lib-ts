@@ -471,6 +471,7 @@ describe("applyGen4Ability on-switch-in — Slow Start", () => {
       effectType: "volatile-inflict",
       target: "self",
       volatile: "slow-start",
+      data: { turnsLeft: 5 },
     });
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]).toContain("Slow Start");

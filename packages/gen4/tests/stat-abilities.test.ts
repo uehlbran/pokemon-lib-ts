@@ -1023,54 +1023,22 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
 });
 
 // ===========================================================================
-// Slow Start — volatile countdown and expiry
+// Slow Start — damage calc behavior after volatile expiry
 // ===========================================================================
+// NOTE: The actual EoT countdown integration tests (volatile decrement + removal
+// through the real BattleEngine) are in:
+//   packages/battle/tests/engine/gen4-eot-handlers.test.ts → "slow-start-countdown EoT slot"
+// The tests below verify damage calc behavior when the volatile is absent (expired).
 
-describe("Gen4 Slow Start — volatile countdown and expiry", () => {
-  it("given Slow Start active with 5 turns, when 5 end-of-turn ticks pass, then slow-start volatile is removed and speed is no longer halved", () => {
-    // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns after switch-in
-    // Source: Showdown Gen 4 mod — Slow Start countdown on end-of-turn
-    //
-    // We directly manipulate the volatile status to simulate the EoT handler
-    // decrementing turnsLeft each turn, since the full engine EoT loop requires
-    // a complete BattleEngine setup. The behavior is: turnsLeft decrements by 1
-    // each EoT tick, and when it reaches 0 the volatile is deleted.
-
-    // Set up a Pokemon with slow-start volatile (turnsLeft: 5)
-    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 5 }]]);
+describe("Gen4 Slow Start — damage calc after volatile expiry", () => {
+  it("given Slow Start ability but no slow-start volatile (expired), when using a physical move, then full Attack is used (same as no-ability baseline)", () => {
+    // Source: Bulbapedia — Slow Start: halving only applies while the volatile is present
+    // Source: Showdown Gen 4 mod — Slow Start checks for volatile, not just ability
     const pokemon = createActivePokemon({
       ability: "slow-start",
-      volatiles: slowStartVolatiles,
-    });
-    pokemon.pokemon.calculatedStats = {
-      hp: 200,
       attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 200,
-    };
-
-    // Verify slow-start is active
-    expect(pokemon.volatileStatuses.has("slow-start")).toBe(true);
-    expect(pokemon.volatileStatuses.get("slow-start")!.turnsLeft).toBe(5);
-
-    // Simulate 5 end-of-turn decrements (matching BattleEngine slow-start-countdown handler)
-    for (let tick = 0; tick < 5; tick++) {
-      const slowStart = pokemon.volatileStatuses.get("slow-start");
-      if (slowStart && slowStart.turnsLeft > 0) {
-        slowStart.turnsLeft -= 1;
-        if (slowStart.turnsLeft === 0) {
-          pokemon.volatileStatuses.delete("slow-start");
-        }
-      }
-    }
-
-    // After 5 ticks, the volatile should be removed
-    expect(pokemon.volatileStatuses.has("slow-start")).toBe(false);
-
-    // Verify speed is no longer halved by checking damage calc behavior
-    // Without the volatile, Slow Start's attack halving should not apply
+      // No slow-start volatile = effect has expired
+    });
     const noAbilityPokemon = createActivePokemon({ ability: "", attack: 100 });
     const defender = createActivePokemon({ defense: 100 });
     const move = createMove({ type: "normal", power: 80, category: "physical" });
@@ -1089,32 +1057,45 @@ describe("Gen4 Slow Start — volatile countdown and expiry", () => {
 
     // Source: Gen4 damage formula — Slow Start expired, no halving applied
     // Both should deal the same damage since no volatile is present
-    // baseDamage=35; +2=37; random=37; STAB(Normal/Normal)=floor(37*1.5)=55
+    // Derivation: baseDamage=35; +2=37; random=37; STAB(Normal/Normal)=floor(37*1.5)=55
     expect(afterExpiry.damage).toBe(55);
     expect(baseline.damage).toBe(55);
   });
 
-  it("given Slow Start with 2 turns left, when 2 end-of-turn ticks pass, then slow-start volatile is removed at exactly turn 0", () => {
-    // Source: Showdown Gen 4 mod — Slow Start countdown is exact (not early or late)
-    // Second test case to triangulate countdown behavior
-    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 2 }]]);
-    const pokemon = createActivePokemon({
+  it("given Slow Start ability with volatile still active vs expired, when using a physical move, then active volatile halves damage and expired does not (triangulation)", () => {
+    // Source: Bulbapedia — Slow Start: halves Attack while volatile is present
+    // Triangulation: compare active volatile vs expired to confirm the volatile is the gate
+    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 3 }]]);
+    const activeSlowStart = createActivePokemon({
       ability: "slow-start",
+      attack: 100,
       volatiles: slowStartVolatiles,
     });
+    const expiredSlowStart = createActivePokemon({
+      ability: "slow-start",
+      attack: 100,
+      // No volatile
+    });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const rng = createMockRng(100);
+    const state = createMockState();
 
-    // After 1 tick: should still have the volatile with turnsLeft=1
-    const slowStart1 = pokemon.volatileStatuses.get("slow-start")!;
-    slowStart1.turnsLeft -= 1;
-    expect(pokemon.volatileStatuses.has("slow-start")).toBe(true);
-    expect(slowStart1.turnsLeft).toBe(1);
+    const withVolatile = calculateGen4Damage(
+      { attacker: activeSlowStart, defender, move, isCrit: false, state, rng } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
 
-    // After 2nd tick: turnsLeft reaches 0, volatile is removed
-    slowStart1.turnsLeft -= 1;
-    if (slowStart1.turnsLeft === 0) {
-      pokemon.volatileStatuses.delete("slow-start");
-    }
-    expect(pokemon.volatileStatuses.has("slow-start")).toBe(false);
+    const withoutVolatile = calculateGen4Damage(
+      { attacker: expiredSlowStart, defender, move, isCrit: false, state, rng } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    // Source: Gen4 damage formula with Slow Start active vs expired
+    // With volatile: atk=50, baseDamage=17; +2=19; random=19; STAB=floor(19*1.5)=28
+    expect(withVolatile.damage).toBe(28);
+    // Without volatile: atk=100, baseDamage=35; +2=37; random=37; STAB=floor(37*1.5)=55
+    expect(withoutVolatile.damage).toBe(55);
   });
 });
 
