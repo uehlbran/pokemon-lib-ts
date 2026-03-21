@@ -3,6 +3,12 @@ export { createGen2DataManager } from "./data";
 export { GEN2_CRIT_RATES, getGen2CritStage, rollGen2Critical } from "./Gen2CritCalc";
 export { calculateGen2Damage, isGen2PhysicalType } from "./Gen2DamageCalc";
 export { applyGen2HeldItem } from "./Gen2Items";
+export {
+  applyMoveEffect,
+  handleCustomEffect,
+  type MutableResult,
+  rollEffectChance,
+} from "./Gen2MoveEffects";
 export { Gen2Ruleset } from "./Gen2Ruleset";
 export { calculateGen2Stats } from "./Gen2StatCalc";
 export { calculateGen2StatusDamage, canInflictGen2Status } from "./Gen2Status";

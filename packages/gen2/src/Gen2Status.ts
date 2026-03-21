@@ -80,6 +80,7 @@ export function calculateGen2StatusDamage(
  * Checks:
  * 1. The target must not already have a primary status condition.
  * 2. The target must not be immune based on its type(s).
+ * 3. Safeguard on the target's side blocks all primary status conditions.
  *
  * Type immunities (Gen 2):
  * - Fire: immune to burn
@@ -91,9 +92,14 @@ export function calculateGen2StatusDamage(
  *
  * @param status - The status to attempt to inflict
  * @param target - The target Pokemon
+ * @param state - Optional battle state; when provided, checks for Safeguard on the target's side
  * @returns true if the status can be inflicted
  */
-export function canInflictGen2Status(status: PrimaryStatus, target: ActivePokemon): boolean {
+export function canInflictGen2Status(
+  status: PrimaryStatus,
+  target: ActivePokemon,
+  state?: BattleState,
+): boolean {
   // Can't have two primary statuses at once
   if (target.pokemon.status !== null) {
     return false;
@@ -106,6 +112,17 @@ export function canInflictGen2Status(status: PrimaryStatus, target: ActivePokemo
       if (immuneTypes.includes(type)) {
         return false;
       }
+    }
+  }
+
+  // Safeguard prevents status infliction on the target's side
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm CheckSafeguard
+  if (state) {
+    const defenderSide = state.sides.find((s) =>
+      s.active.some((a) => a?.pokemon === target.pokemon),
+    );
+    if (defenderSide?.screens.some((s) => s.type === "safeguard")) {
+      return false;
     }
   }
 
