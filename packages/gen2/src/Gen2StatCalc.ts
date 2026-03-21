@@ -34,6 +34,41 @@ function calculateGen2Stat(base: number, dv: number, statExp: number, level: num
 }
 
 /**
+ * Check whether a Pokemon is shiny in Gen 2, using the DV-based shininess formula.
+ *
+ * Source: pret/pokecrystal engine/gfx/color.asm — CheckShininess
+ * Source: Bulbapedia — "Shiny Pokemon" § Generation II
+ *
+ * In Gen 2, DVs are 0-15. Shininess requires:
+ *   - Defense DV = 10 (SHINY_DEF_DV)
+ *   - Speed DV = 10 (SHINY_SPD_DV)
+ *   - Special DV = 10 (SHINY_SPC_DV) — the unified Special DV, stored in spAttack
+ *   - Attack DV must have bit 1 set (SHINY_ATK_MASK = %0010), i.e., atkDv & 2 !== 0
+ *     This yields the set {2, 3, 6, 7, 10, 11, 14, 15}
+ *
+ * DVs are stored in the PokemonInstance `ivs` field:
+ *   ivs.attack → Attack DV
+ *   ivs.defense → Defense DV
+ *   ivs.speed → Speed DV
+ *   ivs.spAttack → Special DV (unified Gen 2 special DV for both SpAtk and SpDef)
+ *
+ * Note: HP DV is derived from other DVs in Gen 1/2 and is not directly relevant to shininess.
+ */
+export function checkIsShinyByDVs(
+  atkDv: number,
+  defDv: number,
+  speDv: number,
+  spcDv: number,
+): boolean {
+  // Source: pret/pokecrystal engine/gfx/color.asm:3 — SHINY_ATK_MASK EQU %0010
+  // The assembly checks [hl] (byte containing high-nibble AtkDV) AND (SHINY_ATK_MASK << 4)
+  // which is 0x20 — this is bit 1 of the Attack DV value (since high nibble = DV << 4, bit 5 of byte = bit 1 of DV)
+  const atkHasBit1 = (atkDv & 0b0010) !== 0;
+  // Source: pret/pokecrystal engine/gfx/color.asm:4-6 — SHINY_DEF_DV EQU 10, SHINY_SPD_DV EQU 10, SHINY_SPC_DV EQU 10
+  return atkHasBit1 && defDv === 10 && speDv === 10 && spcDv === 10;
+}
+
+/**
  * Calculate all six stats for a Gen 2 Pokemon.
  *
  * Gen 2 uses DV/StatExp formulas — NOT the Gen 3+ IV/EV formulas in core.
