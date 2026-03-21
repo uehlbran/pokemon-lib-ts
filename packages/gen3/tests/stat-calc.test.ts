@@ -228,3 +228,152 @@ describe("Gen 3 Stat Calculation — Level 100 verification", () => {
     expect(stats.attack).toBe(372);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #379: Shedinja HP=1 special case
+// ---------------------------------------------------------------------------
+
+describe("Gen 3 Stat Calculation — Shedinja HP=1 special case", () => {
+  // Shedinja (species id=292) always has exactly 1 HP in Gen 3 regardless of
+  // level, IVs, or EVs. This is a hardcoded special case in pokeemerald.
+  // Source: pret/pokeemerald src/pokemon.c:2845
+  //   "if (species == SPECIES_SHEDINJA) { newMaxHP = 1; }"
+
+  it("given Shedinja at L50 with 0 IVs and 0 EVs, when calculateStats called, then HP is 1", () => {
+    // Source: pret/pokeemerald src/pokemon.c:2845 — SPECIES_SHEDINJA hardcodes maxHP=1
+    // Without special case, formula would give: floor((2*1+0+0)*50/100)+50+10 = 61
+    const shedinja = dataManager.getSpecies(292); // Shedinja
+    const pokemon = createPokemonInstance(292, 50, "hardy", ZERO_IVS, ZERO_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, shedinja);
+
+    expect(stats.hp).toBe(1);
+  });
+
+  it("given Shedinja at L50 with 31 IVs and 252 EVs, when calculateStats called, then HP is still 1", () => {
+    // Source: pret/pokeemerald src/pokemon.c:2845 — hardcoded regardless of IVs/EVs
+    // Without special case, formula would give: floor((2*1+31+63)*50/100)+60 = 108
+    const shedinja = dataManager.getSpecies(292);
+    const pokemon = createPokemonInstance(292, 50, "hardy", MAX_IVS, MAX_HP_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, shedinja);
+
+    expect(stats.hp).toBe(1);
+  });
+
+  it("given Shedinja at L100 with 31 IVs and 252 EVs, when calculateStats called, then HP is still 1", () => {
+    // Source: pret/pokeemerald src/pokemon.c:2845 — level does not affect Shedinja HP
+    // Without special case, formula would give: floor((2*1+31+63)*100/100)+110 = 206
+    const shedinja = dataManager.getSpecies(292);
+    const pokemon = createPokemonInstance(292, 100, "hardy", MAX_IVS, MAX_HP_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, shedinja);
+
+    expect(stats.hp).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #389: Nature modifier coverage — +Def, +SpDef, +Speed, and -Def, -SpDef, -Speed
+// ---------------------------------------------------------------------------
+
+describe("Gen 3 Stat Calculation — Nature modifier coverage (Pikachu base stats)", () => {
+  // Pikachu Gen 3 base stats: HP=35, Atk=55, Def=30, SpAtk=50, SpDef=40, Speed=90
+  // Source: pret/pokeemerald include/constants/species.h + gSpeciesInfo
+  // Formula for non-HP stat: floor((floor((2*base + iv + floor(ev/4)) * level/100) + 5) * natMod)
+  //   natMod = 1.1 (boosted), 0.9 (reduced), 1.0 (neutral)
+  //
+  // L50, 31 IVs, 0 EVs base values (before nature):
+  //   Atk:   floor((2*55+31)*50/100)+5  = floor(141*0.5)+5 = 70+5 = 75
+  //   Def:   floor((2*30+31)*50/100)+5  = floor(91*0.5)+5  = 45+5 = 50
+  //   SpAtk: floor((2*50+31)*50/100)+5  = floor(131*0.5)+5 = 65+5 = 70
+  //   SpDef: floor((2*40+31)*50/100)+5  = floor(111*0.5)+5 = 55+5 = 60
+  //   Speed: floor((2*90+31)*50/100)+5  = floor(211*0.5)+5 = 105+5 = 110
+  //
+  // Source: Bulbapedia "Stat — Generation III onward"
+  //   nature modifier applied: floor(base_val * 1.1) or floor(base_val * 0.9)
+
+  it("given Pikachu L50 with 31 IVs, Bold nature (+Def/-Atk), then Def = 55 and Atk = 67", () => {
+    // Bold: +Def, -Atk
+    // Def neutral=50 → floor(50*1.1) = floor(55.0) = 55
+    // Atk neutral=75 → floor(75*0.9) = floor(67.5) = 67
+    // Source: pret/pokeemerald src/battle_script_commands.c — nature multiplier 1.1/0.9
+    const pikachu = dataManager.getSpecies(25);
+    const pokemon = createPokemonInstance(25, 50, "bold", MAX_IVS, ZERO_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, pikachu);
+
+    expect(stats.defense).toBe(55);
+    expect(stats.attack).toBe(67);
+  });
+
+  it("given Pikachu L50 with 31 IVs, Hasty nature (+Speed/-Def), then Def = 45 and Speed = 121", () => {
+    // Hasty: +Speed, -Def
+    // Def neutral=50 → floor(50*0.9) = floor(45.0) = 45
+    // Speed neutral=110 → floor(110*1.1) = floor(121.0) = 121
+    // Source: pret/pokeemerald src/battle_script_commands.c — nature multiplier 1.1/0.9
+    const pikachu = dataManager.getSpecies(25);
+    const pokemon = createPokemonInstance(25, 50, "hasty", MAX_IVS, ZERO_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, pikachu);
+
+    expect(stats.defense).toBe(45);
+    expect(stats.speed).toBe(121);
+  });
+
+  it("given Pikachu L50 with 31 IVs, Calm nature (+SpDef/-Atk), then SpDef = 66 and Atk = 67", () => {
+    // Calm: +SpDef, -Atk
+    // SpDef neutral=60 → floor(60*1.1) = floor(66.0) = 66
+    // Atk neutral=75 → floor(75*0.9) = floor(67.5) = 67
+    // Source: pret/pokeemerald src/battle_script_commands.c — nature multiplier 1.1/0.9
+    const pikachu = dataManager.getSpecies(25);
+    const pokemon = createPokemonInstance(25, 50, "calm", MAX_IVS, ZERO_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, pikachu);
+
+    expect(stats.spDefense).toBe(66);
+    expect(stats.attack).toBe(67);
+  });
+
+  it("given Pikachu L50 with 31 IVs, Naughty nature (+Atk/-SpDef), then SpDef = 54 and Atk = 82", () => {
+    // Naughty: +Atk, -SpDef
+    // SpDef neutral=60 → floor(60*0.9) = floor(54.0) = 54
+    // Atk neutral=75 → floor(75*1.1) = floor(82.5) = 82
+    // Source: pret/pokeemerald src/battle_script_commands.c — nature multiplier 1.1/0.9
+    const pikachu = dataManager.getSpecies(25);
+    const pokemon = createPokemonInstance(25, 50, "naughty", MAX_IVS, ZERO_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, pikachu);
+
+    expect(stats.spDefense).toBe(54);
+    expect(stats.attack).toBe(82);
+  });
+
+  it("given Pikachu L50 with 31 IVs, Timid nature (+Speed/-Atk), then Speed = 121 and Atk = 67", () => {
+    // Timid: +Speed, -Atk
+    // Speed neutral=110 → floor(110*1.1) = floor(121.0) = 121
+    // Atk neutral=75 → floor(75*0.9) = floor(67.5) = 67
+    // Source: pret/pokeemerald src/battle_script_commands.c — nature multiplier 1.1/0.9
+    const pikachu = dataManager.getSpecies(25);
+    const pokemon = createPokemonInstance(25, 50, "timid", MAX_IVS, ZERO_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, pikachu);
+
+    expect(stats.speed).toBe(121);
+    expect(stats.attack).toBe(67);
+  });
+
+  it("given Pikachu L50 with 31 IVs, Quiet nature (+SpAtk/-Speed), then Speed = 99 and SpAtk = 77", () => {
+    // Quiet: +SpAtk, -Speed
+    // Speed neutral=110 → floor(110*0.9) = floor(99.0) = 99
+    // SpAtk neutral=70 → floor(70*1.1) = floor(77.0) = 77
+    // Source: pret/pokeemerald src/battle_script_commands.c — nature multiplier 1.1/0.9
+    const pikachu = dataManager.getSpecies(25);
+    const pokemon = createPokemonInstance(25, 50, "quiet", MAX_IVS, ZERO_EVS);
+
+    const stats = ruleset.calculateStats(pokemon, pikachu);
+
+    expect(stats.speed).toBe(99);
+    expect(stats.spAttack).toBe(77);
+  });
+});

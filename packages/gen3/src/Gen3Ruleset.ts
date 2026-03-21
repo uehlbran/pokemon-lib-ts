@@ -22,9 +22,12 @@ import {
 import type {
   AbilityTrigger,
   EntryHazardType,
+  PokemonInstance,
+  PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
+  StatBlock,
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
@@ -92,6 +95,27 @@ export class Gen3Ruleset extends BaseRuleset {
 
   getAvailableTypes(): readonly PokemonType[] {
     return GEN3_TYPES;
+  }
+
+  // --- Stat Calculation ---
+
+  /**
+   * Gen 3 stat calculation with Shedinja HP=1 special case.
+   *
+   * Shedinja (SPECIES_SHEDINJA, id=292) always has exactly 1 HP regardless of
+   * IVs, EVs, or level. This is a hardcoded special case in pokeemerald.
+   *
+   * Source: pret/pokeemerald src/pokemon.c CalculateMonStats:2845
+   *   "if (species == SPECIES_SHEDINJA) { newMaxHP = 1; }"
+   */
+  override calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
+    const stats = super.calculateStats(pokemon, species);
+    // Shedinja has hardcoded HP=1 — override formula result
+    // Source: pret/pokeemerald src/pokemon.c:2845 — SPECIES_SHEDINJA sets newMaxHP=1
+    if (species.id === 292) {
+      return { ...stats, hp: 1 };
+    }
+    return stats;
   }
 
   // --- Damage Calculation (Phase 2 placeholder) ---
@@ -502,6 +526,25 @@ export class Gen3Ruleset extends BaseRuleset {
     // Never-miss moves (accuracy === null)
     if (context.move.accuracy === null) return true;
 
+    // --- OHKO level-based accuracy check ---
+    // Source: pret/pokeemerald src/battle_script_commands.c:7525-7529 (Cmd_ohkoattempt)
+    //   chance = gBattleMoves[gCurrentMove].accuracy + (attackerLevel - defenderLevel);
+    //   if (Random() % 100 + 1 < chance && attackerLevel >= defenderLevel) → hits
+    //   else → misses
+    // OHKO moves have base accuracy 30 in the data, so effective chance = 30 + (attackerLevel - defenderLevel).
+    // Auto-miss when attackerLevel < defenderLevel (regardless of chance value).
+    // Hit condition: rng.int(1, 100) < chance  (strict less-than, matching pokeemerald's "< chance").
+    if (context.move.effect?.type === "ohko") {
+      const attackerLevel = context.attacker.pokemon.level;
+      const defenderLevel = context.defender.pokemon.level;
+      // Auto-miss if attacker is lower level than defender
+      if (attackerLevel < defenderLevel) return false;
+      // OHKO moves have base accuracy 30; effective chance = 30 + (attackerLevel - defenderLevel)
+      const ohkoAccuracy = (context.move.accuracy ?? 30) + (attackerLevel - defenderLevel);
+      // pokeemerald: Random() % 100 + 1 < chance  (strictly less-than)
+      return context.rng.int(1, 100) < ohkoAccuracy;
+    }
+
     // --- Weather-based accuracy overrides ---
     // Source: pret/pokeemerald src/battle_script_commands.c Cmd_accuracycheck
     // Source: Showdown data/moves.ts — Thunder/Blizzard onModifyMove
@@ -682,18 +725,14 @@ export class Gen3Ruleset extends BaseRuleset {
   /**
    * Gen 3 Protect/Detect consecutive activation formula.
    *
-   * Success rate halves each consecutive use, capped at 12.5% (1/8):
-   *   consecutiveUses=0: always succeeds (100%)
-   *   consecutiveUses=1: 50% (0x7FFF / 0xFFFF)
-   *   consecutiveUses=2: 25% (0x3FFF / 0xFFFF)
-   *   consecutiveUses=3+: 12.5% (0x1FFF / 0xFFFF) — CAPS HERE
+   * Gen 3 uses a halving formula: each additional consecutive protect halves the chance.
+   *   - consecutiveProtects=0: always succeeds (first use is guaranteed)
+   *   - consecutiveProtects=1: 50% (1/2)
+   *   - consecutiveProtects=2: 25% (1/4)
+   *   - consecutiveProtects>=3: 12.5% (1/8) — capped at index 3
    *
-   * Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate
-   *   has exactly 4 entries (0xFFFF, 0x7FFF, 0x3FFF, 0x1FFF). Counter caps at
-   *   index 3. Minimum is 12.5%, NOT zero.
-   *   Same halving table as Gen 4 (pret/pokeplatinum battle_script.c:5351-5356).
-   *
-   * BaseRuleset defaults to Gen 5+ behavior (1/3^N) which is incorrect for Gen 3.
+   * Source: pret/pokeemerald src/battle_script_commands.c — sProtectSuccessRate table
+   * has 4 entries [65535, 32768, 16384, 8192] (out of 65535 max), then caps counter at 3.
    */
   override rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
     if (consecutiveProtects === 0) return true;

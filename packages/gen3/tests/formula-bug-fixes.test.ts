@@ -559,3 +559,118 @@ describe("Regression #341: Uproar in end-of-turn order", () => {
     expect(order).toHaveLength(20);
   });
 });
+
+// ===========================================================================
+// #392 — OHKO level-based accuracy formula
+// ===========================================================================
+
+describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + level difference)", () => {
+  /**
+   * Source: pret/pokeemerald src/battle_script_commands.c:7525-7529 (Cmd_ohkoattempt):
+   *   chance = gBattleMoves[gCurrentMove].accuracy + (attackerLevel - defenderLevel);
+   *   if (Random() % 100 + 1 < chance && attackerLevel >= defenderLevel) → hits
+   *   else → misses
+   *
+   * OHKO moves (Fissure, Horn Drill, Guillotine, Sheer Cold) have base accuracy 30.
+   * Formula: ohkoAccuracy = 30 + (attackerLevel - defenderLevel)
+   *   - Auto-miss if attackerLevel < defenderLevel (regardless of computed accuracy)
+   *   - Otherwise: hit if rng.int(1, 100) < ohkoAccuracy  (strict less-than, matching "< chance")
+   *
+   * Examples with base accuracy 30:
+   *   L50 vs L40: 30 + (50-40) = 40; auto-miss? No (50>=40); hit if roll < 40 (rolls 1-39 hit)
+   *   L40 vs L50: auto-miss (40 < 50); always misses
+   *   L50 vs L50: 30 + 0 = 30; hit if roll < 30 (rolls 1-29 hit)
+   *   L60 vs L50: 30 + 10 = 40; hit if roll < 40 (rolls 1-39 hit)
+   */
+
+  function makeOhkoMove(): MoveData {
+    return createMove("normal", 0, "fissure", {
+      accuracy: 30, // base accuracy for OHKO moves (Fissure, Horn Drill, Guillotine)
+      effect: { type: "ohko" },
+    });
+  }
+
+  it("given L50 attacker vs L40 defender with OHKO move, when roll=39, then hits (39 < 40)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:7525-7526
+    // Derivation: ohkoAccuracy = 30 + (50 - 40) = 40; hit if roll < 40 → roll 39 < 40 → hits
+    const ruleset = makeRuleset();
+    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
+    const defender = createActivePokemon({ level: 40, types: ["normal"] });
+    const move = makeOhkoMove();
+    const state = { weather: null } as BattleState;
+
+    const rng = createMockRng(39); // rng.int(1, 100) returns 39; 39 < 40 → hits
+    const ctx: AccuracyContext = { attacker, defender, move, state, rng } as AccuracyContext;
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+  });
+
+  it("given L50 attacker vs L40 defender with OHKO move, when roll=40, then misses (40 is NOT < 40)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:7526 — "< chance" is strict
+    // Derivation: ohkoAccuracy = 30 + (50 - 40) = 40; hit if roll < 40 → roll 40 is NOT < 40 → misses
+    const ruleset = makeRuleset();
+    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
+    const defender = createActivePokemon({ level: 40, types: ["normal"] });
+    const move = makeOhkoMove();
+    const state = { weather: null } as BattleState;
+
+    const rng = createMockRng(40); // rng.int(1, 100) returns 40; 40 NOT < 40 → misses
+    const ctx: AccuracyContext = { attacker, defender, move, state, rng } as AccuracyContext;
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
+
+  it("given L40 attacker vs L50 defender with OHKO move, when any roll, then always misses (attacker level < defender level)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:7526 — "attackerLevel >= defenderLevel" condition
+    // Derivation: 40 < 50 → auto-miss regardless of roll; roll=1 still misses
+    const ruleset = makeRuleset();
+    const attacker = createActivePokemon({ level: 40, types: ["normal"] });
+    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const move = makeOhkoMove();
+    const state = { weather: null } as BattleState;
+
+    const rng = createMockRng(1); // lowest possible roll; still misses due to level check
+    const ctx: AccuracyContext = { attacker, defender, move, state, rng } as AccuracyContext;
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
+
+  it("given L49 attacker vs L50 defender with OHKO move, when roll=1, then always misses (attacker level < defender level)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:7526 — auto-miss enforced at exact level boundary
+    // Derivation: 49 < 50 → auto-miss regardless of roll
+    const ruleset = makeRuleset();
+    const attacker = createActivePokemon({ level: 49, types: ["normal"] });
+    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const move = makeOhkoMove();
+    const state = { weather: null } as BattleState;
+
+    const rng = createMockRng(1); // lowest possible roll; still misses
+    const ctx: AccuracyContext = { attacker, defender, move, state, rng } as AccuracyContext;
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
+
+  it("given equal-level L50 attacker vs L50 defender with OHKO move, when roll=29, then hits (29 < 30)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:7525-7526
+    // Derivation: ohkoAccuracy = 30 + (50 - 50) = 30; hit if roll < 30 → roll 29 < 30 → hits
+    const ruleset = makeRuleset();
+    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
+    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const move = makeOhkoMove();
+    const state = { weather: null } as BattleState;
+
+    const rng = createMockRng(29); // 29 < 30 → hits
+    const ctx: AccuracyContext = { attacker, defender, move, state, rng } as AccuracyContext;
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+  });
+
+  it("given equal-level L50 attacker vs L50 defender with OHKO move, when roll=30, then misses (30 is NOT < 30)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c:7526 — strict less-than check
+    // Derivation: ohkoAccuracy = 30 + (50 - 50) = 30; hit if roll < 30 → roll 30 NOT < 30 → misses
+    const ruleset = makeRuleset();
+    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
+    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const move = makeOhkoMove();
+    const state = { weather: null } as BattleState;
+
+    const rng = createMockRng(30); // 30 NOT < 30 → misses
+    const ctx: AccuracyContext = { attacker, defender, move, state, rng } as AccuracyContext;
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
+});

@@ -270,3 +270,93 @@ describe("Gen3 paralysis speed penalty", () => {
     expect(ordered[1]).toEqual(actions[1]); // slow Pokemon moves second
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #381: Freeze thaw — 20% chance per turn (Gen 3+)
+// ---------------------------------------------------------------------------
+
+describe("Gen3 freeze thaw check (20% probability)", () => {
+  /**
+   * In Gen 3, a frozen Pokemon has a 20% chance to thaw at the start of its turn,
+   * checked via checkFreezeThaw. This is handled pre-move (not end-of-turn).
+   *
+   * Source: pret/pokeemerald src/battle_util.c — DoFreezeStatusCallback:
+   *   "if (Random() % 100 >= 80)" — thaws if random value is 80-99 (20 out of 100)
+   * Source: BaseRuleset.checkFreezeThaw — returns rng.chance(0.2)
+   *   rng.chance(p) = next() < p  (thaws if next() < 0.2)
+   */
+
+  /** Creates a mock RNG that always returns the given next() value. */
+  function makeMockRng(nextValue: number): SeededRandom {
+    return {
+      next: () => nextValue,
+      int: (_min: number, _max: number) => Math.floor(nextValue * (_max - _min + 1)) + _min,
+      chance: (p: number) => nextValue < p,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: T[]) => arr,
+      getState: () => 0,
+      setState: () => {},
+    } as unknown as SeededRandom;
+  }
+
+  it("given a frozen Pokemon, when RNG roll is below 0.2 (thaw threshold), then checkFreezeThaw returns true (thawed)", () => {
+    // Source: pret/pokeemerald src/battle_util.c — 20% thaw: if(Random()%100 >= 80)
+    // rng.chance(0.2) returns true when next() < 0.2 → thaws
+    // Test value 0.19 < 0.2 → should thaw
+    const ruleset = makeRuleset();
+    const frozenMon = makeActivePokemon({ status: "freeze" });
+    const rng = makeMockRng(0.19); // 0.19 < 0.2 → thaws
+
+    const thawed = ruleset.checkFreezeThaw(frozenMon, rng);
+
+    expect(thawed).toBe(true);
+  });
+
+  it("given a frozen Pokemon, when RNG roll is at or above 0.2 (stay frozen), then checkFreezeThaw returns false", () => {
+    // Source: pret/pokeemerald src/battle_util.c — 20% thaw: if(Random()%100 >= 80)
+    // rng.chance(0.2) returns false when next() >= 0.2 → stays frozen
+    // Test value 0.20 >= 0.2 → should stay frozen
+    const ruleset = makeRuleset();
+    const frozenMon = makeActivePokemon({ status: "freeze" });
+    const rng = makeMockRng(0.2); // 0.20 == 0.2 → stays frozen (chance uses <, not <=)
+
+    const thawed = ruleset.checkFreezeThaw(frozenMon, rng);
+
+    expect(thawed).toBe(false);
+  });
+
+  it("given a frozen Pokemon, when RNG roll is well above threshold (0.99), then checkFreezeThaw returns false", () => {
+    // Source: pret/pokeemerald src/battle_util.c — 80% chance to stay frozen
+    // Test value 0.99 >> 0.2 → stays frozen
+    const ruleset = makeRuleset();
+    const frozenMon = makeActivePokemon({ status: "freeze" });
+    const rng = makeMockRng(0.99); // well above 0.2 → stays frozen
+
+    const thawed = ruleset.checkFreezeThaw(frozenMon, rng);
+
+    expect(thawed).toBe(false);
+  });
+
+  it("given a frozen Pokemon with SeededRandom, when 100 trials run, then approximately 20% thaw", () => {
+    // Source: pret/pokeemerald — 20% thaw probability over many trials
+    // Use a fixed seed for reproducibility. Statistical verification: at least 15% and at most 30%
+    // of 100 trials should thaw at the 20% threshold.
+    const ruleset = makeRuleset();
+    const rng = new SeededRandom(12345);
+    let thawCount = 0;
+    const trials = 200;
+
+    for (let i = 0; i < trials; i++) {
+      const frozenMon = makeActivePokemon({ status: "freeze" });
+      if (ruleset.checkFreezeThaw(frozenMon, rng)) {
+        thawCount++;
+      }
+    }
+
+    // Statistical bounds: expect roughly 40 thaws (20%) out of 200 trials
+    // Acceptable range: 24-56 (12%-28%) to account for PRNG variance
+    const thawRate = thawCount / trials;
+    expect(thawRate).toBeGreaterThanOrEqual(0.12);
+    expect(thawRate).toBeLessThanOrEqual(0.28);
+  });
+});
