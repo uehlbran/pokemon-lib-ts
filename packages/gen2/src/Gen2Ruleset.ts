@@ -670,7 +670,9 @@ export class Gen2Ruleset implements GenerationRuleset {
    * Note: Gen 2 cartridge used a slightly different catch formula (pokecrystal BallCalc),
    * but this uses the core Gen 3+ utilities for consistency with the CatchSystem interface.
    *
-   * Source: calculateModifiedCatchRate and calculateShakeChecks from @pokemon-lib-ts/core
+   * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow — Gen 3+ catch formula
+   * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+   * Divergence: Gen 2 cartridge used pokecrystal BallCalc; this uses Gen 3+ formula instead
    */
   rollCatchAttempt(
     catchRate: number,
