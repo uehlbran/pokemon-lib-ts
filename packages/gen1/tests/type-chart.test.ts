@@ -343,13 +343,14 @@ describe("Gen 1 Type Chart", () => {
 
   // --- Validate all diagonal entries are defined ---
 
-  it("given Gen 1 type chart, when checking all types against themselves, then multiplier is defined", () => {
-    // Arrange
+  it("given Gen 1 type chart, when checking all types against themselves, then multiplier is a valid effectiveness value", () => {
+    // Source: pret/pokered data/type_effects.asm — all self-matchup entries are defined
+    // in the type chart with valid values (0, 0.5, 1, or 2).
+    // Using toContain proves the value is exactly one of the valid options — not just defined.
     const types = Object.keys(chart);
     // Act / Assert
     for (const t of types) {
       const multiplier = getEffectiveness(chart, t, t);
-      expect(multiplier).toBeDefined();
       expect([0, 0.5, 1, 2]).toContain(multiplier);
     }
   });

@@ -4244,15 +4244,15 @@ describe("Gen 4 damage calc — null power / status moves (issue #429)", () => {
 
 describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
   it("given defender has Heatproof, when hit by a Fire-type physical move, then damage is halved compared to no-Heatproof", () => {
-    // Source: Showdown data/abilities.ts — Heatproof onSourceModifyAtk: chainModify(0.5) for Fire
+    // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage 0.5x for Fire moves
+    //   (post-formula, post-type-effectiveness modifier — NOT a pre-formula attack modifier)
     // Source: Bulbapedia — Heatproof: "Halves the damage from Fire-type moves."
-    // Verified: pret/pokeplatinum src/battle/battle_script_commands.c — ABILITY_HEATPROOF halves fire damage
+    // See also: Bug #355 fix in Gen4DamageCalc.ts — Heatproof applies post-formula, not to attack stat.
     //
     // Derivation (L50, power=80 Fire physical, Atk=100, Def=100, no STAB [fighting attacker], no weather, rng=100):
+    //   levelFactor = floor(2*50/5)+2 = 22
     //   Without Heatproof: baseDmg = floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
-    //   With Heatproof: attack halved to 50:
-    //     baseDmg = floor(floor(22*80*50/100)/50)+2 = floor(floor(88000/100)/50)+2
-    //             = floor(880/50)+2 = floor(17.6)+2 = 17+2 = 19
+    //   With Heatproof (post-formula 0.5x): floor(37*0.5) = floor(18.5) = 18
     //   Attacker is Fighting-type to avoid STAB on the Fire move.
     const attacker = createActivePokemon({
       level: 50,
@@ -4306,20 +4306,20 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       chart,
     );
 
-    // Without Heatproof: 37; with Heatproof (attack halved): 19
+    // Without Heatproof: 37; with Heatproof (post-formula halved): 18
     expect(noHeatproofResult.damage).toBe(37);
-    expect(heatproofResult.damage).toBe(19);
+    expect(heatproofResult.damage).toBe(18);
   });
 
   it("given defender has Heatproof, when hit by a Fire-type special move, then damage is halved compared to no-Heatproof", () => {
-    // Source: Showdown data/abilities.ts — Heatproof onSourceModifySpA: chainModify(0.5) for Fire
+    // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage 0.5x for Fire moves
+    //   (post-formula, post-type-effectiveness modifier — NOT a pre-formula SpAtk modifier)
     // Source: Bulbapedia — Heatproof halves ALL Fire-type move damage (physical and special)
     //
     // Derivation (L50, power=90 Fire special, SpAtk=100, SpDef=100, no STAB [fighting attacker], rng=100):
+    //   levelFactor = floor(2*50/5)+2 = 22
     //   Without Heatproof: baseDmg = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
-    //   With Heatproof (SpAtk halved to 50):
-    //     baseDmg = floor(floor(22*90*50/100)/50)+2 = floor(floor(99000/100)/50)+2
-    //             = floor(990/50)+2 = 19+2 = 21
+    //   With Heatproof (post-formula 0.5x): floor(41*0.5) = floor(20.5) = 20
     //   Attacker is Fighting-type to avoid STAB on the Fire move.
     const attacker = createActivePokemon({
       level: 50,
@@ -4373,9 +4373,9 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       chart,
     );
 
-    // Without Heatproof: 41; with Heatproof (SpAtk halved): 21
+    // Without Heatproof: 41; with Heatproof (post-formula halved): 20
     expect(noHeatproofResult.damage).toBe(41);
-    expect(heatproofResult.damage).toBe(21);
+    expect(heatproofResult.damage).toBe(20);
   });
 });
 
