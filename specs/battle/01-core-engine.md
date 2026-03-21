@@ -52,7 +52,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.dataManager = dataManager;
 
     this.state = {
-      phase: 'BATTLE_START',
+      phase: 'battle-start',
       generation: config.generation,
       format: config.format,
       turnNumber: 0,
@@ -68,6 +68,8 @@ export class BattleEngine implements BattleEventEmitter {
       gravity: { active: false, turnsLeft: 0 },
       turnHistory: [],
       rng: new SeededRandom(config.seed),
+      isWildBattle: config.isWildBattle ?? false,
+      fleeAttempts: 0,
       ended: false,
       winner: null,
     };
@@ -78,6 +80,8 @@ export class BattleEngine implements BattleEventEmitter {
 **Field Documentation**:
 
 - `faintedPokemonThisTurn: Set<string>` — Tracks which Pokémon have already emitted a `faint` event during the current turn. This prevents duplicate faint events when `checkMidTurnFaints()` is called multiple times per turn (e.g., after Pursuit execution and again after the main action). Each entry is a key of format `${sideIndex}-${pokemonUid}`. The set is cleared at turn start in `resolveTurn()` (line ~581).
+- `isWildBattle: boolean` — Set from `BattleConfig.isWildBattle`; defaults to `false`. When `true`, the engine permits RunAction flee attempts and will support CatchAction Poké Ball throws. Trainer battles block flee with a message.
+- `fleeAttempts: number` — Incremented by `executeRun()` on each RunAction. Passed to `ruleset.rollFleeSuccess()` to increase the success probability with each consecutive attempt.
 
 ### 1.2 Starting the Battle
 
@@ -614,8 +618,9 @@ The following effect identifiers have stubs in the engine switch statement that 
 - `"pickup"` — Pickup ability item collection (Gen 5+; stub delegates to `applyAbility("on-turn-end")`)
 - `"grassy-terrain-heal"` — Grassy Terrain HP recovery (Gen 6+; stub delegates to `applyTerrainEffects()`)
 
-### NOT YET IMPLEMENTED Features
-- EXP gain calculation — not yet implemented; will be delegated to the ruleset
+### IN PROGRESS Features
+- EXP gain on faint — feat/battle-exp-gain (participation tracker, awardExpForFaint, ExpGainEvent, LevelUpEvent)
+- Poke Ball catch mechanics — feat/battle-catch-attempt (CatchSystem interface, CatchResult, BaseRuleset.rollCatchAttempt, executeCatchAttempt)
 
 ---
 
@@ -703,6 +708,64 @@ private sendOut(side: BattleSide, teamSlot: number): void {
 
 ---
 
+## 4a. Flee Mechanic (RunAction) — IMPLEMENTED (PR #242)
+
+When a `RunAction` is submitted, `executeRun()` runs:
+
+1. If `state.isWildBattle` is `false`, emit `"Can't run from a trainer battle!"` and return.
+2. Only side 0 (the player) can flee; side 1 attempts are silently ignored.
+3. Increment `state.fleeAttempts`.
+4. Compute effective speeds for both sides: `floor(baseStat * getStatStageMultiplier(stage))`, minimum 1.
+5. Delegate to `ruleset.rollFleeSuccess(playerSpeed, wildSpeed, attempts, rng)`.
+6. Emit `{ type: 'flee-attempt', side: 0, success }`.
+7. If success: emit `"Got away safely!"`, set `state.ended = true`, emit `{ type: 'battle-end', winner: null }`.
+8. If failure: emit `"Can't escape!"`.
+
+**FleeAttemptEvent** (`packages/battle/src/events/BattleEvent.ts`):
+```typescript
+export interface FleeAttemptEvent {
+  readonly type: 'flee-attempt';
+  readonly side: 0 | 1;
+  readonly success: boolean;
+}
+```
+
+**FleeSystem interface** (`packages/battle/src/ruleset/GenerationRuleset.ts`):
+```typescript
+export interface FleeSystem {
+  rollFleeSuccess(playerSpeed: number, wildSpeed: number, attempts: number, rng: SeededRandom): boolean;
+}
+```
+- Gen 3+ formula (BaseRuleset): `F = floor(playerSpeed * 128 / wildSpeed) + 30 * attempts`. Succeeds if `playerSpeed >= wildSpeed` OR `F >= 256` OR `rng(0, 255) < F`.
+- Gen 1/2 override with generation-specific formulas in their respective rulesets.
+
+---
+
+## 4b. Bag Item Action (ItemAction) — IMPLEMENTED (PR #243)
+
+When an `ItemAction` is submitted, `executeItem()` runs:
+
+1. Call `ruleset.canUseBagItems()` — if `false`, emit `"Items cannot be used here!"` and return.
+2. Resolve the target: `action.target ?? 0` (team slot). Active Pokémon use the active slot directly; bench Pokémon (e.g., Revive targets) get a temporary wrapper.
+3. Call `ruleset.applyBagItem(action.itemId, target, state)` → `BagItemResult`.
+4. If `result.activated` is `false`, emit any `result.messages` and return.
+5. Apply effects from the result in order:
+   - `healAmount` — `heal` event; for revives, sets HP directly from 0.
+   - `statusCured` — clears `target.pokemon.status`, emits `status-cure`.
+   - `statChange` — applies stage clamp `[-6, 6]`, emits `stat-change`.
+   - `messages` — emit each as `message`.
+
+**BagItemSystem interface** (`packages/battle/src/ruleset/GenerationRuleset.ts`):
+```typescript
+export interface BagItemSystem {
+  canUseBagItems(): boolean;
+  applyBagItem(itemId: string, target: ActivePokemon, state: BattleState): BagItemResult;
+}
+```
+BaseRuleset provides default implementations for all standard item categories (Potions, Antidotes, X items, Revives). Gen rulesets can override for battle-context restrictions (e.g., Battle Frontier).
+
+---
+
 ## 5. Win Condition & Battle End
 
 ```typescript
@@ -714,9 +777,9 @@ private checkBattleEnd(): boolean {
       this.state.ended = true;
       this.state.winner = winner as 0 | 1;
 
-      // NOTE: EXP gain calculation is NOT YET IMPLEMENTED.
-      // The processExpGains() method below is aspirational and should not be called.
-      // EXP gain logic will be delegated to the ruleset once implemented.
+      // NOTE: EXP gain on faint is IN PROGRESS (feat/battle-exp-gain).
+      // When implemented, awardExpForFaint() will be called here, delegating to
+      // ruleset.calculateExpGain() and emitting ExpGainEvent / LevelUpEvent.
 
       this.emit({ type: 'battle-end', winner: winner as 0 | 1 });
       return true;
@@ -1006,6 +1069,11 @@ The `'bound'` volatile status is set on the target. End-of-turn processing is ha
 | Pursuit intercept | `packages/battle/src/engine/BattleEngine.ts` | search `"pursuit"` |
 | Protect success roll | `packages/battle/src/engine/BattleEngine.ts` | search `rollProtectSuccess` |
 | Partial trapping damage | `packages/battle/src/engine/BattleEngine.ts` | `processBindDamage()` |
+| Flee mechanic (RunAction) | `packages/battle/src/engine/BattleEngine.ts` | `executeRun()` ~line 1406; delegates to `ruleset.rollFleeSuccess()` |
+| Bag item action (ItemAction) | `packages/battle/src/engine/BattleEngine.ts` | `executeItem()` ~line 1221; delegates to `ruleset.applyBagItem()` |
+| FleeSystem interface | `packages/battle/src/ruleset/GenerationRuleset.ts` | `rollFleeSuccess()` method |
+| BagItemSystem interface | `packages/battle/src/ruleset/GenerationRuleset.ts` | `canUseBagItems()`, `applyBagItem()` methods |
+| FleeAttemptEvent | `packages/battle/src/events/BattleEvent.ts` | `FleeAttemptEvent` interface |
 
 ---
 
@@ -1013,6 +1081,7 @@ The `'bound'` volatile status is set on the target. End-of-turn processing is ha
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.2 | 2026-03-21 | **Flee and item action docs added**: (1) Added sections 4a (RunAction flee — PR #242) and 4b (ItemAction bag items — PR #243) documenting executeRun(), executeItem(), FleeSystem interface, BagItemSystem interface, and FleeAttemptEvent. (2) Updated constructor snippet to include isWildBattle and fleeAttempts fields with correct lowercase phase string 'battle-start'. (3) Added isWildBattle/fleeAttempts to Field Documentation. (4) Changed EXP gain from "NOT YET IMPLEMENTED" to "IN PROGRESS" (feat/battle-exp-gain); added Poke Ball catch as IN PROGRESS (feat/battle-catch-attempt). (5) Updated Implementation Cross-Reference with flee and item rows. |
 | 3.1 | 2026-03-17 | **Delegation fixes applied**: (1) Struggle damage now fully delegated to `ruleset.calculateStruggleDamage(actor, defender, state)` (was noted as hardcoded). (2) Leech Seed drain fixed — now calls `ruleset.calculateLeechSeedDrain(active)` at ~line 1933. (3) Curse damage fixed — now calls `ruleset.calculateCurseDamage(active)` at ~line 2008. (4) Nightmare damage fixed — now calls `ruleset.calculateNightmareDamage(active)` at ~line 2035. (5) Added documentation for new `faintedPokemonThisTurn: Set<string>` field to prevent duplicate faint events per turn. (6) Updated Known Delegation Bugs section from "BUG" to "FIXED in latest code". (7) Updated section 8 (Struggle) to reflect actual delegation behavior. (8) Updated Implementation Cross-Reference table with correct line numbers and delegation call details. |
 | 3.0 | 2026-03-17 | **Major corrections applied**: (1) Constructor signature changed to 3-arg with ruleset parameter; added fromGeneration() factory method reference. (2) Removed applyAbility('on-switch-in') from sendOut(); added note that entry abilities are only triggered in start() for leads. (3) Marked on-before-move abilities (Protean/Libero) as NOT YET IMPLEMENTED. (4) Marked on-after-move-hit contact abilities as NOT YET IMPLEMENTED. (5) Added Pursuit pre-switch handling note with code reference. (6) Changed processLeftovers() to processHeldItemEndOfTurn(). (7) Removed processExpGains() call and marked EXP gain as NOT YET IMPLEMENTED. (8) Updated confusion damage signature to include state and rng parameters. (9) Added ruleset.onSwitchOut() call before volatile cleanup. (10) Expanded volatile cleanup with specific field resets (lastDamageTaken, lastDamageType). (11) Changed Struggle recoil method from getStruggleRecoilFraction() to calculateStruggleRecoil(actor, actualDamage). (12) Added note that Struggle uses fixed maxHp/4 damage, not damage formula. (13) Corrected multi-hit method reference: no separate executeMultiHitMove(). (14) Updated test helper to use BattleEngine.fromGeneration(). (15) Updated line numbers for known delegation bugs (~1711, ~1781, ~1804). (16) Expanded end-of-turn effects section with implemented vs. NOT YET IMPLEMENTED split, detailing 13 unimplemented effects. (17) Added EngineWarningEvent documentation note. |
 | 2.0 | 2026-03-15 | Added Quick Start with delegation bugs, added 6 missing sections (Struggle, Multi-Hit, Protect formula, Pursuit, Partial Trapping, Status Reference), documented end-of-turn delegation pattern, added Cross-Reference, fixed paralysis/confusion delegation documentation |
