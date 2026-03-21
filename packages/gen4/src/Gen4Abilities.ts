@@ -1,5 +1,6 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger } from "@pokemon-lib-ts/core";
+import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
 
 /**
  * Gen 4 Abilities — applyAbility dispatch.
@@ -465,6 +466,9 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       // Source: Showdown Gen 4 mod — Static trigger (30% = rng.next() < 0.3)
       if (attackerStatus) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      // Check type and ability immunities before inflicting
+      if (!canInflictGen4Status("paralysis", attacker))
+        return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
         effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
@@ -477,6 +481,9 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       // Source: Showdown Gen 4 mod — Flame Body trigger (30%)
       if (attackerStatus) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      // Check type and ability immunities before inflicting
+      if (!canInflictGen4Status("burn", attacker))
+        return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
         effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
@@ -489,6 +496,9 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       // Source: Showdown Gen 4 mod — Poison Point trigger (30%)
       if (attackerStatus) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      // Check type and ability immunities before inflicting
+      if (!canInflictGen4Status("poison", attacker))
+        return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
         effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
@@ -515,6 +525,9 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
       const roll = context.rng.next();
       if (roll < 1 / 3) {
+        // Check immunity before inflicting poison
+        if (!canInflictGen4Status("poison", attacker))
+          return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
           effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
@@ -522,12 +535,18 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         };
       }
       if (roll < 2 / 3) {
+        // Check immunity before inflicting paralysis
+        if (!canInflictGen4Status("paralysis", attacker))
+          return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
           effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
           messages: [],
         };
       }
+      // Check immunity before inflicting sleep
+      if (!canInflictGen4Status("sleep", attacker))
+        return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
         effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
@@ -551,6 +570,9 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       ) {
         return { activated: false, effects: [], messages: [] };
       }
+      // Check Oblivious immunity before inflicting infatuation
+      if (isVolatileBlockedByAbility(attacker, "infatuation"))
+        return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
         effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],

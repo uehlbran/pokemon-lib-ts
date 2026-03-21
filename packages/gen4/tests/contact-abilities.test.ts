@@ -3,6 +3,23 @@ import type { Gender, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core"
 import { describe, expect, it } from "vitest";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 
+// ---------------------------------------------------------------------------
+// RNG helpers
+// ---------------------------------------------------------------------------
+
+/** RNG that always passes the 30% roll (next() returns 0) */
+function makeAlwaysTriggersRng() {
+  return {
+    next: () => 0,
+    int: () => 1,
+    chance: (_p: number) => false,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
+    shuffle: <T>(arr: T[]) => arr,
+    getState: () => 0,
+    setState: () => {},
+  };
+}
+
 /**
  * Gen 4 Contact Abilities Tests — Aftermath
  *
@@ -303,5 +320,248 @@ describe("applyGen4Ability on-contact -- Aftermath (NEW in Gen 4)", () => {
 
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("Aftermath");
+  });
+});
+
+// ===========================================================================
+// Status immunity checks for contact abilities
+// ===========================================================================
+
+describe("applyGen4Ability on-contact -- Static immunity checks", () => {
+  it("given attacker with Limber ability, when Static triggers, then paralysis is blocked", () => {
+    // Source: Bulbapedia — Limber: prevents paralysis
+    // Source: Showdown Gen 4 mod — ability immunity table (ABILITY_STATUS_IMMUNITIES)
+    // Static fires (rng returns 0) but Limber blocks the paralysis infliction.
+    const attacker = makeActivePokemon({ ability: "limber" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "static" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given attacker without status immunity, when Static triggers, then paralysis is inflicted", () => {
+    // Triangulation: confirm Static does fire when no immunity is present.
+    // Source: Bulbapedia — Static: 30% chance to paralyze attacker on contact
+    const attacker = makeActivePokemon({ ability: "blaze" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "static" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({ effectType: "status-inflict", status: "paralysis" });
+  });
+});
+
+describe("applyGen4Ability on-contact -- Flame Body immunity checks", () => {
+  it("given Fire-type attacker, when Flame Body triggers, then burn is blocked", () => {
+    // Source: Bulbapedia — Fire-types are immune to burn
+    // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: burn: ['fire']
+    const attacker = makeActivePokemon({ types: ["fire"] });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "flame-body" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given attacker with Water Veil, when Flame Body triggers, then burn is blocked", () => {
+    // Source: Bulbapedia — Water Veil: prevents burn
+    // Source: Showdown Gen 4 mod — ABILITY_STATUS_IMMUNITIES: 'water-veil': ['burn']
+    const attacker = makeActivePokemon({ ability: "water-veil", types: ["water"] });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "flame-body" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+describe("applyGen4Ability on-contact -- Poison Point immunity checks", () => {
+  it("given attacker with Immunity ability, when Poison Point triggers, then poison is blocked", () => {
+    // Source: Bulbapedia — Immunity: prevents poisoning
+    // Source: Showdown Gen 4 mod — ABILITY_STATUS_IMMUNITIES: immunity: ['poison', 'badly-poisoned']
+    const attacker = makeActivePokemon({ ability: "immunity" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "poison-point" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Poison-type attacker, when Poison Point triggers, then poison is blocked", () => {
+    // Source: Bulbapedia — Poison-types are immune to being poisoned
+    // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: poison: ['poison', 'steel']
+    const attacker = makeActivePokemon({ types: ["poison"] });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "poison-point" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Steel-type attacker, when Poison Point triggers, then poison is blocked", () => {
+    // Source: Bulbapedia — Steel-types are immune to being poisoned
+    // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: poison: ['poison', 'steel']
+    const attacker = makeActivePokemon({ types: ["steel"] });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "poison-point" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+describe("applyGen4Ability on-contact -- Effect Spore immunity checks", () => {
+  it("given Steel-type attacker, when Effect Spore rolls poison (roll < 1/3), then poison is blocked", () => {
+    // Source: Bulbapedia — Steel-types are immune to poison
+    // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: poison: ['poison', 'steel']
+    // Effect Spore gate roll = 0 (triggers), effect roll = 0 (< 1/3 → poison path)
+    const attacker = makeActivePokemon({ types: ["steel"] });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(), // next() always returns 0: gate passes, roll=0 → poison path
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given attacker with Insomnia, when Effect Spore rolls sleep (roll >= 2/3), then sleep is blocked", () => {
+    // Source: Bulbapedia — Insomnia: prevents sleep
+    // Source: Showdown Gen 4 mod — ABILITY_STATUS_IMMUNITIES: insomnia: ['sleep']
+    // Effect Spore gate roll = 0 (triggers), then second roll = 0.9 (>= 2/3 → sleep path)
+    const attacker = makeActivePokemon({ ability: "insomnia" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "effect-spore" });
+    let callCount = 0;
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: {
+        next: () => {
+          // First call: gate check (0 = triggers); second call: effect roll (0.9 → sleep)
+          return callCount++ === 0 ? 0 : 0.9;
+        },
+        int: () => 1,
+        chance: (_p: number) => false,
+        pick: <T>(arr: readonly T[]) => arr[0] as T,
+        shuffle: <T>(arr: T[]) => arr,
+        getState: () => 0,
+        setState: () => {},
+      },
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
+describe("applyGen4Ability on-contact -- Cute Charm immunity checks", () => {
+  it("given attacker with Oblivious, when Cute Charm triggers, then infatuation is blocked", () => {
+    // Source: Bulbapedia — Oblivious: prevents infatuation
+    // Source: Showdown Gen 4 mod — ABILITY_VOLATILE_IMMUNITIES: oblivious: ['infatuation']
+    const attacker = makeActivePokemon({ ability: "oblivious", gender: "male" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "cute-charm", gender: "female" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given attacker without Oblivious and opposite gender, when Cute Charm triggers, then infatuation is inflicted", () => {
+    // Triangulation: confirm Cute Charm fires when no immunity is present.
+    // Source: Bulbapedia — Cute Charm: 30% chance to infatuate attacker of opposite gender
+    const attacker = makeActivePokemon({ ability: "blaze", gender: "male" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "cute-charm", gender: "female" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeAlwaysTriggersRng(),
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "volatile-inflict",
+      volatile: "infatuation",
+    });
   });
 });
