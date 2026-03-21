@@ -48,6 +48,9 @@ export class BattleEngine implements BattleEventEmitter {
   // the current turn resolution. The replacement Pokemon should not execute the
   // phased-out Pokemon's queued action.
   private phasedSides: Set<0 | 1> = new Set();
+  // Stores the actions submitted for the current turn (after priority sort).
+  // Used to populate defenderSelectedMove in MoveEffectContext for Sucker Punch.
+  private currentTurnActions: BattleAction[] = [];
   // Maps fainted pokemon UID → Set of participant UIDs who were active against it.
   // Used to award EXP after a faint. Both sides are tracked symmetrically but only
   // the winning side's participants receive EXP.
@@ -586,6 +589,12 @@ export class BattleEngine implements BattleEventEmitter {
         enumerable: false,
         configurable: false,
       },
+      currentTurnActions: {
+        value: [],
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
     });
 
     return engine;
@@ -750,6 +759,8 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Sort actions by priority / speed / random
     const orderedActions = this.ruleset.resolveTurnOrder(actions, this.state, this.state.rng);
+    // Store for use by executeMove (defenderSelectedMove for Sucker Punch)
+    this.currentTurnActions = orderedActions;
 
     // --- PURSUIT PRE-CHECK (Gen 2-7) ---
     // If a Pokemon uses Pursuit and the opponent is switching, Pursuit fires first
@@ -1249,6 +1260,7 @@ export class BattleEngine implements BattleEventEmitter {
       state: this.state,
       rng: this.state.rng,
       brokeSubstitute,
+      defenderSelectedMove: this.getDefenderSelectedMove(defenderSide as 0 | 1),
     });
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
@@ -1432,6 +1444,7 @@ export class BattleEngine implements BattleEventEmitter {
       state: this.state,
       rng: this.state.rng,
       brokeSubstitute,
+      defenderSelectedMove: this.getDefenderSelectedMove(defenderSide),
     });
 
     this.processEffectResult(effectResult, actor, defender, actorSide, defenderSide);
@@ -1617,6 +1630,8 @@ export class BattleEngine implements BattleEventEmitter {
       volatileStatuses: new Map(),
       types: [],
       ability: benchPokemon.ability,
+      suppressedAbility: null,
+      itemKnockedOff: false,
       lastMoveUsed: null,
       lastDamageTaken: 0,
       lastDamageType: null,
@@ -3615,6 +3630,34 @@ export class BattleEngine implements BattleEventEmitter {
       if (side.active[0] === active) return side.index;
     }
     throw new Error(`BattleEngine: ActivePokemon not found in any side`);
+  }
+
+  /**
+   * Look up the defender's selected move from the current turn's actions.
+   * Used to populate `defenderSelectedMove` in MoveEffectContext for Sucker Punch.
+   * Returns `null` if the defender isn't using a move action this turn.
+   *
+   * Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch checks target's selected move
+   */
+  private getDefenderSelectedMove(
+    defenderSide: 0 | 1,
+  ): { id: string; category: import("@pokemon-lib-ts/core").MoveCategory } | null {
+    const defenderAction = this.currentTurnActions.find((a) => a.side === defenderSide);
+    if (!defenderAction) return null;
+    // Struggle is a damaging (physical) action — Sucker Punch should succeed against it.
+    // Source: Showdown sim — Sucker Punch succeeds when target is using Struggle
+    if (defenderAction.type === "struggle") return { id: "struggle", category: "physical" };
+    if (defenderAction.type !== "move") return null;
+    const defenderActive = this.getActive(defenderSide);
+    if (!defenderActive) return null;
+    const moveSlot = defenderActive.pokemon.moves[defenderAction.moveIndex];
+    if (!moveSlot) return null;
+    try {
+      const moveData = this.dataManager.getMove(moveSlot.moveId);
+      return { id: moveData.id, category: moveData.category };
+    } catch {
+      return null;
+    }
   }
 
   private processHeldItemEndOfTurn(): void {

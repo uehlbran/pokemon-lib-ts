@@ -43,6 +43,8 @@ export function createActivePokemon(
     volatileStatuses: new Map(),
     types,
     ability: pokemon.ability,
+    suppressedAbility: null,
+    itemKnockedOff: false,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,

@@ -1050,19 +1050,36 @@ export class Gen4Ruleset extends BaseRuleset {
     return true;
   }
 
+  // --- PP Cost ---
+
+  /**
+   * Gen 4 Pressure: opposing moves that target this Pokemon cost 2 PP instead of 1.
+   *
+   * Source: Showdown sim/battle.ts Gen 4 — ABILITY_PRESSURE deducts 2 PP
+   * Source: Bulbapedia — Pressure: "When this Pokémon is the target of a foe's move,
+   *   one additional PP is deducted."
+   */
   // --- Switch Out ---
 
   /**
    * Gen 4 switch-out handler: Natural Cure cures status before clearing volatiles.
+   * Also restores abilities suppressed by Gastro Acid.
    *
    * Source: Bulbapedia — Natural Cure: "All status conditions heal when the
    *   Pokemon switches out."
    * Source: Showdown data/abilities.ts — Natural Cure onSwitchOut
+   * Source: Showdown Gen 4 mod — Gastro Acid's suppression is cleared on switch-out
    */
   override onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Natural Cure: cure status condition on switch-out
     if (pokemon.ability === "natural-cure" && pokemon.pokemon.status !== null) {
       pokemon.pokemon.status = null;
+    }
+    // Restore ability suppressed by Gastro Acid
+    // Use != null (loose) to safely handle undefined from pre-migration deserialized states
+    if (pokemon.suppressedAbility != null) {
+      pokemon.ability = pokemon.suppressedAbility;
+      pokemon.suppressedAbility = null;
     }
     // Delegate to BaseRuleset for standard volatile clearing
     super.onSwitchOut(pokemon, state);

@@ -20,7 +20,6 @@
 import type {
   ActivePokemon,
   BattleState,
-  MoveAction,
   MoveEffectContext,
   MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
@@ -723,33 +722,20 @@ function handleCustomEffect(
     }
 
     case "pain-split": {
-      // Average HP between attacker and defender: floor((a + b) / 2)
-      // Source: Showdown Gen 4 — Pain Split averages current HP
-      // Source: Bulbapedia — Pain Split: "The user and the target each have their HP
-      // set to the average of the two Pokémon's HP values."
+      // Set both sides to the average HP, capped at maxHp.
+      // Directly mutates currentHp for both Pokemon — consistent with Knock Off's
+      // direct mutation pattern (no engine extension needed).
+      // Source: Showdown Gen 4 — Pain Split sets both to floor((a + b) / 2)
+      // Source: Bulbapedia — "each have their HP set to the average of the two"
       const average = Math.floor((attacker.pokemon.currentHp + defender.pokemon.currentHp) / 2);
-      const attackerDiff = average - attacker.pokemon.currentHp;
-      const defenderDiff = defender.pokemon.currentHp - average;
-
-      if (attackerDiff > 0) {
-        // Attacker has LESS HP than average → attacker heals
-        result.healAmount = attackerDiff;
-        if (defenderDiff > 0) {
-          // Defender has MORE HP than average → defender takes damage
-          result.customDamage = { target: "defender", amount: defenderDiff, source: "pain-split" };
-        }
-      } else if (attackerDiff < 0) {
-        // Attacker has MORE HP than average → attacker takes damage
-        // Source: Showdown Gen 4 — Pain Split reduces attacker HP when above average
-        result.customDamage = {
-          target: "attacker",
-          amount: Math.abs(attackerDiff),
-          source: "pain-split",
-        };
-        // Note: Defender gains HP when below average, but MoveEffectResult has no
-        // "heal defender" field. Defender-side healing in this case requires an engine
-        // extension (tracked as a known limitation).
-      }
+      attacker.pokemon.currentHp = Math.min(
+        average,
+        attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp,
+      );
+      defender.pokemon.currentHp = Math.min(
+        average,
+        defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp,
+      );
       result.messages.push("The battlers shared their pain!");
       break;
     }
@@ -1305,10 +1291,13 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Showdown Gen 4 — Knock Off removes defender's item, no damage boost in Gen 4
   // (Gen 5+ adds 50% damage boost)
   // Note: Directly mutates defender.pokemon.heldItem (consistent with Gen 3 pattern).
+  // The itemKnockedOff flag prevents Trick/Switcheroo from re-giving an item.
+  // Source: Showdown Gen 4 — itemKnockedOff flag suppresses item re-giving
   if (context.move.id === "knock-off") {
     if (context.defender.pokemon.heldItem) {
       const item = context.defender.pokemon.heldItem;
       context.defender.pokemon.heldItem = null;
+      context.defender.itemKnockedOff = true;
       const defenderName = context.defender.pokemon.nickname ?? "The foe";
       result.messages.push(`${defenderName} lost its ${item}!`);
       // Unburden: if the defender had Unburden, set the volatile now that its item is gone
@@ -1473,8 +1462,16 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       result.messages.push("But it failed!");
       return result;
     }
-    // Suppress ability by clearing it (persists until switch-out)
-    // Source: Showdown Gen 4 mod — Gastro Acid sets suppressedAbility
+    // Fail if the ability is already suppressed (prevents double-application from corrupting
+    // the saved original ability). Uses loose equality to treat undefined the same as null.
+    // Source: Showdown Gen 4 mod — Gastro Acid is idempotent; second use fails
+    if (defender.suppressedAbility != null) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    // Save the original ability so it can be restored on switch-out
+    // Source: Showdown Gen 4 mod — Gastro Acid sets suppressedAbility; restored on switch-out
+    defender.suppressedAbility = defender.ability;
     defender.ability = "";
     result.messages.push(`${defenderName}'s ability was suppressed!`);
     return result;
@@ -1482,20 +1479,15 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
 
   // Sucker Punch: fails if the target is not about to use a damaging move this turn.
   // Sucker Punch has +1 priority so it normally resolves before the target acts.
-  // We check turnHistory for the current turn's actions (set by the engine before
-  // action resolution) to determine whether the target selected a damaging move.
-  // If turnHistory doesn't contain the current turn yet (engine hasn't recorded it),
-  // fall back to checking whether the defender has a pending move action.
+  // The engine populates defenderSelectedMove in MoveEffectContext with the defender's
+  // selected move and its category, allowing us to check directly.
   //
   // Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch onTry: fails if
   //   target is not using a damaging move or has already moved
   // Source: Bulbapedia — "Sucker Punch will fail if the target does not select a
   //   move that deals damage, or if the target moves before the user."
   if (context.move.id === "sucker-punch") {
-    const { defender, state } = context;
-    const defenderSideIndex = state.sides.findIndex((side) =>
-      side.active.some((a) => a?.pokemon === defender.pokemon),
-    );
+    const { defender } = context;
 
     // If the defender already moved this turn, Sucker Punch fails (target acted first).
     // Source: Showdown Gen 4 — Sucker Punch fails if target already moved
@@ -1504,34 +1496,22 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       return result;
     }
 
-    // Check the current turn's recorded actions to see if the defender selected
-    // a damaging move. The engine records actions in turnHistory at end of turn;
-    // for mid-turn checking we look at the latest turnHistory entry matching the
-    // current turn number.
-    const currentTurnRecord = state.turnHistory.find((r) => r.turn === state.turnNumber);
-    if (currentTurnRecord) {
-      const defenderAction = currentTurnRecord.actions.find((a) => a.side === defenderSideIndex);
-      // Fail if the defender didn't select a move action (e.g., switching)
-      if (!defenderAction || defenderAction.type !== "move") {
-        result.messages.push("But it failed!");
-        return result;
-      }
-      // The defender selected a move action — check if it's a damaging move.
-      // We need to verify the move category. Since we only have the moveIndex,
-      // we check the defender's move slot. Status moves cause Sucker Punch to fail.
-      const defMoveAction = defenderAction as MoveAction;
-      const defMoveSlot = defender.pokemon.moves[defMoveAction.moveIndex];
-      if (defMoveSlot) {
-        // Look up the move in the defender's active moveset metadata.
-        // Since we can't call DataManager from here, we use a heuristic:
-        // if the move is known to be status (the engine should tag this),
-        // Sucker Punch fails. For now, check if the defender's lastMoveUsed
-        // has category info available via lastDamageCategory.
-        // Note: Full integration requires engine to pass move metadata.
-      }
+    // Check if the defender selected a move action this turn
+    const defMove = context.defenderSelectedMove;
+    if (!defMove) {
+      // Defender is not using a move (switching, using item, etc.) — Sucker Punch fails
+      result.messages.push("But it failed!");
+      return result;
     }
 
-    // If we get here, Sucker Punch succeeds (default: damage already applied by engine)
+    // Fail if the defender selected a status move (non-damaging)
+    // Source: Showdown Gen 4 — Sucker Punch fails if target's move is status category
+    if (defMove.category === "status") {
+      result.messages.push("But it failed!");
+      return result;
+    }
+
+    // If we get here, Sucker Punch succeeds (damage already applied by engine)
     return result;
   }
 
@@ -1590,11 +1570,18 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Showdown sim/battle-actions.ts Gen 4 — Trick/Switcheroo swap items
   // Source: Bulbapedia — "The user swaps held items with the target"
   // Fails if: both have no item, target has Sticky Hold, either has Multitype,
-  //   or either holds a Mail or Griseous Orb.
+  //   or either holds a Mail or Griseous Orb, or either had their item knocked off.
   if (context.move.id === "trick" || context.move.id === "switcheroo") {
     const { attacker, defender } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const defenderName = defender.pokemon.nickname ?? "The foe";
+
+    // Fail if either party had their item knocked off (Knock Off flag)
+    // Source: Showdown Gen 4 — itemKnockedOff flag prevents Trick/Switcheroo from re-giving items
+    if (attacker.itemKnockedOff || defender.itemKnockedOff) {
+      result.messages.push("But it failed!");
+      return result;
+    }
 
     // Fail if neither Pokemon is holding an item
     // Source: Showdown Gen 4 — Trick fails if both have no item

@@ -149,6 +149,12 @@ export interface MoveEffectContext {
    * Source: gen1-ground-truth.md — Hyper Beam skips recharge if it breaks a Substitute.
    */
   readonly brokeSubstitute?: boolean;
+  /**
+   * The move the defender selected this turn, if known. Used by Sucker Punch
+   * to fail when the defender chose a status move.
+   * Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch onTry
+   */
+  readonly defenderSelectedMove?: { id: string; category: MoveCategory } | null;
 }
 
 /**
