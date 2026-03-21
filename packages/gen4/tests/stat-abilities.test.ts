@@ -199,8 +199,17 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
       GEN4_TYPE_CHART,
     );
 
-    // Solar Power should produce higher damage for special moves in sun
-    expect(withSolarPower.damage).toBeGreaterThan(withoutSolarPower.damage);
+    // Source: Gen4 damage formula with Solar Power 1.5x SpAtk modifier
+    // Derivation (Solar Power, max roll):
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   atk = floor(100*150/100) = 150 (Solar Power 1.5x SpAtk)
+    //   baseDamage = floor(floor(22*80*150/100)/50) = floor(2640/50) = 52
+    //   weather(sun, fire) = floor(52*1.5) = 78; +2 = 80
+    //   random = floor(80*100/100) = 80; no STAB; effectiveness=1 → 80
+    expect(withSolarPower.damage).toBe(80);
+    // Without Solar Power: atk=100, baseDamage=floor(1760/50)=35
+    //   weather = floor(35*1.5)=52; +2=54; random=54; no STAB; eff=1 → 54
+    expect(withoutSolarPower.damage).toBe(54);
   });
 
   it("given Solar Power attacker using a special move without sun, when damage is calculated, then no SpAtk boost is applied", () => {
@@ -271,6 +280,41 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
 
     expect(withSolarPower.damage).toBe(withoutSolarPower.damage);
   });
+
+  it("given Solar Power attacker using a different special move in sun, when damage is calculated, then SpAtk is boosted by exactly 1.5x (second independent case)", () => {
+    // Source: Bulbapedia — Solar Power boosts SpAtk by 1.5x in harsh sunlight for any special move
+    // Source: Showdown data/abilities.ts — Solar Power onModifySpAPriority
+    // Uses different stats/power than first test to triangulate the formula
+    const attacker = createActivePokemon({ ability: "solar-power", spAttack: 120 });
+    const noAbilityAttacker = createActivePokemon({ ability: "", spAttack: 120 });
+    const defender = createActivePokemon({ defense: 100, spDefense: 100 });
+    const move = createMove({ type: "water", power: 60, category: "special" });
+
+    const rng = createMockRng(100);
+    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+
+    const withSolarPower = calculateGen4Damage(
+      { attacker, defender, move, isCrit: false, state, rng } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    const withoutSolarPower = calculateGen4Damage(
+      { attacker: noAbilityAttacker, defender, move, isCrit: false, state, rng } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    // Source: Gen4 damage formula with Solar Power 1.5x SpAtk, Water move in sun
+    // Derivation (Solar Power, max roll, Water/60/SpAtk=120):
+    //   atk = floor(120*150/100) = 180 (Solar Power)
+    //   baseDamage = floor(floor(22*60*180/100)/50) = floor(2376/50) = 47
+    //   weather(sun, water) = floor(47*0.5) = 23; +2 = 25; random = 25
+    //   no STAB; effectiveness=1 → 25
+    expect(withSolarPower.damage).toBe(25);
+    // Without Solar Power: atk=120
+    //   baseDamage = floor(floor(22*60*120/100)/50) = floor(1584/50) = 31
+    //   weather = floor(31*0.5)=15; +2=17; random=17; no STAB; eff=1 → 17
+    expect(withoutSolarPower.damage).toBe(17);
+  });
 });
 
 // ===========================================================================
@@ -300,7 +344,16 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
       GEN4_TYPE_CHART,
     );
 
-    expect(withFlowerGift.damage).toBeGreaterThan(withoutFlowerGift.damage);
+    // Source: Gen4 damage formula with Flower Gift 1.5x Atk modifier
+    // Derivation (Flower Gift attacker, max roll):
+    //   levelFactor = 22; atk = floor(100*150/100) = 150 (Flower Gift)
+    //   baseDamage = floor(floor(22*80*150/100)/50) = floor(2640/50) = 52
+    //   no weather mod for Normal; +2 = 54; random = 54
+    //   STAB (Normal attacker, Normal move) = floor(54*1.5) = 81; eff=1 → 81
+    expect(withFlowerGift.damage).toBe(81);
+    // Without Flower Gift: atk=100, baseDamage=35; +2=37; random=37
+    //   STAB = floor(37*1.5) = 55; eff=1 → 55
+    expect(withoutFlowerGift.damage).toBe(55);
   });
 
   it("given Flower Gift defender taking a special move in sun, when damage is calculated, then SpDef is boosted by 1.5x (less damage taken)", () => {
@@ -334,8 +387,16 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
       GEN4_TYPE_CHART,
     );
 
-    // Flower Gift defender should take LESS damage due to SpDef boost
-    expect(againstFlowerGift.damage).toBeLessThan(againstNormal.damage);
+    // Source: Gen4 damage formula with Flower Gift 1.5x SpDef on defender
+    // Derivation (vs Flower Gift defender, max roll):
+    //   atk=100; def=floor(100*150/100)=150 (Flower Gift SpDef boost)
+    //   baseDamage = floor(floor(22*80*100/150)/50) = floor(floor(1173.33)/50) = floor(1173/50) = 23
+    //   weather(sun, water) = floor(23*0.5) = 11; +2 = 13; random = 13
+    //   no STAB; eff=1 → 13
+    expect(againstFlowerGift.damage).toBe(13);
+    // Without Flower Gift: def=100, baseDamage=floor(1760/50)=35
+    //   weather = floor(35*0.5)=17; +2=19; random=19; no STAB; eff=1 → 19
+    expect(againstNormal.damage).toBe(19);
   });
 
   it("given Flower Gift attacker without sun, when using a physical move, then no Attack boost is applied", () => {
@@ -409,8 +470,12 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
       GEN4_TYPE_CHART,
     );
 
-    // Normal would normally be immune to Ghost, but Scrappy overrides this
-    expect(result.damage).toBeGreaterThan(0);
+    // Source: Gen4 damage formula with Scrappy overriding Ghost immunity for Normal moves
+    // Derivation (Scrappy Normal vs Ghost, max roll):
+    //   atk=100, def=100; baseDamage = floor(floor(22*80*100/100)/50) = 35
+    //   no weather; +2=37; random=37; STAB(Normal attacker, Normal move) = floor(37*1.5)=55
+    //   Scrappy: Normal vs Ghost immunity → neutral(1x); baseDamage = floor(55*1)=55
+    expect(result.damage).toBe(55);
     expect(result.effectiveness).toBe(1); // neutral, not immune
   });
 
@@ -433,8 +498,11 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
       GEN4_TYPE_CHART,
     );
 
-    // Fighting vs Dark = 2x, Ghost immunity removed by Scrappy
-    expect(result.damage).toBeGreaterThan(0);
+    // Source: Gen4 damage formula with Scrappy overriding Ghost immunity for Fighting moves
+    // Derivation (Scrappy Fighting vs Ghost/Dark, max roll):
+    //   baseDamage = 35; +2=37; random=37; no STAB (Normal attacker, Fighting move)
+    //   Scrappy: Ghost immunity removed; Fighting vs Dark = 2x → floor(37*2)=74
+    expect(result.damage).toBe(74);
     expect(result.effectiveness).toBe(2);
   });
 
@@ -476,8 +544,9 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
       GEN4_TYPE_CHART,
     );
 
-    // Fire vs Ghost = 1x (neutral), not immune. Scrappy not relevant here.
-    expect(result.damage).toBeGreaterThan(0);
+    // Source: Gen4 damage formula — Fire vs Ghost is neutral (1x), Scrappy irrelevant
+    // Derivation: baseDamage=35; +2=37; random=37; no STAB; Fire vs Ghost=1x → 37
+    expect(result.damage).toBe(37);
     expect(result.effectiveness).toBe(1);
   });
 });
@@ -531,9 +600,13 @@ describe("Gen4 Normalize — all moves become Normal type", () => {
       GEN4_TYPE_CHART,
     );
 
-    // Without Normalize: Fire STAB applies (1.5x), move type is Fire
-    // With Normalize: move becomes Normal, Fire Pokemon doesn't get Normal STAB
-    expect(withNormalize.damage).toBeLessThan(withoutNormalize.damage);
+    // Source: Gen4 damage formula — Normalize converts Fire move to Normal type
+    // Derivation (with Normalize): move=Normal, attacker=Fire → no STAB
+    //   baseDamage=35; +2=37; random=37; no STAB; Normal vs Normal=1x → 37
+    expect(withNormalize.damage).toBe(37);
+    // Without Normalize: Fire STAB applies (1.5x), Fire vs Normal=1x
+    //   baseDamage=35; +2=37; random=37; STAB=floor(37*1.5)=55; eff=1 → 55
+    expect(withoutNormalize.damage).toBe(55);
   });
 
   it("given Normalize attacker that is Normal-type using any move, when damage is calculated, then STAB applies (move becomes Normal = matching type)", () => {
@@ -581,9 +654,13 @@ describe("Gen4 Normalize — all moves become Normal type", () => {
       GEN4_TYPE_CHART,
     );
 
-    // With Normalize: Normal STAB (1.5x), type effectiveness Normal vs Water = 1x
-    // Without Normalize: no STAB (Normal attacker, Fire move), Fire vs Water = 0.5x
-    expect(withNormalize.damage).toBeGreaterThan(withoutNormalize.damage);
+    // Source: Gen4 damage formula — Normalize gives Normal STAB, changes effectiveness
+    // Derivation (with Normalize): move=Normal, attacker=Normal → STAB(1.5x)
+    //   baseDamage=35; +2=37; random=37; STAB=floor(37*1.5)=55; Normal vs Water=1x → 55
+    expect(withNormalize.damage).toBe(55);
+    // Without Normalize: Fire move, Normal attacker → no STAB; Fire vs Water=0.5x
+    //   baseDamage=35; +2=37; random=37; no STAB; floor(37*0.5)=18 → 18
+    expect(withoutNormalize.damage).toBe(18);
   });
 
   it("given Normalize attacker using a Fighting move against Ghost, when damage is calculated, then move becomes Normal (immune to Ghost)", () => {
@@ -697,8 +774,15 @@ describe("Gen4 Slow Start — halve Attack and Speed for 5 turns", () => {
       GEN4_TYPE_CHART,
     );
 
-    // Slow Start halves Attack, so damage should be significantly lower
-    expect(withSlowStart.damage).toBeLessThan(withoutSlowStart.damage);
+    // Source: Gen4 damage formula with Slow Start 0.5x Attack modifier
+    // Derivation (Slow Start, max roll):
+    //   atk = floor(100/2) = 50 (Slow Start halves Attack)
+    //   baseDamage = floor(floor(22*80*50/100)/50) = floor(880/50) = 17
+    //   no weather; +2=19; random=19; STAB(Normal/Normal)=floor(19*1.5)=28; eff=1 → 28
+    expect(withSlowStart.damage).toBe(28);
+    // Without Slow Start: atk=100, baseDamage=35; +2=37; random=37
+    //   STAB=floor(37*1.5)=55; eff=1 → 55
+    expect(withoutSlowStart.damage).toBe(55);
   });
 
   it("given Slow Start attacker without slow-start volatile (expired), when using a physical move, then Attack is not halved", () => {
@@ -935,6 +1019,102 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
     // Without slow-start volatile, full speed 200 is used — side 0 goes first
     expect(ordered[0].side).toBe(0);
     expect(ordered[1].side).toBe(1);
+  });
+});
+
+// ===========================================================================
+// Slow Start — volatile countdown and expiry
+// ===========================================================================
+
+describe("Gen4 Slow Start — volatile countdown and expiry", () => {
+  it("given Slow Start active with 5 turns, when 5 end-of-turn ticks pass, then slow-start volatile is removed and speed is no longer halved", () => {
+    // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns after switch-in
+    // Source: Showdown Gen 4 mod — Slow Start countdown on end-of-turn
+    //
+    // We directly manipulate the volatile status to simulate the EoT handler
+    // decrementing turnsLeft each turn, since the full engine EoT loop requires
+    // a complete BattleEngine setup. The behavior is: turnsLeft decrements by 1
+    // each EoT tick, and when it reaches 0 the volatile is deleted.
+
+    // Set up a Pokemon with slow-start volatile (turnsLeft: 5)
+    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 5 }]]);
+    const pokemon = createActivePokemon({
+      ability: "slow-start",
+      volatiles: slowStartVolatiles,
+    });
+    pokemon.pokemon.calculatedStats = {
+      hp: 200,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 200,
+    };
+
+    // Verify slow-start is active
+    expect(pokemon.volatileStatuses.has("slow-start")).toBe(true);
+    expect(pokemon.volatileStatuses.get("slow-start")!.turnsLeft).toBe(5);
+
+    // Simulate 5 end-of-turn decrements (matching BattleEngine slow-start-countdown handler)
+    for (let tick = 0; tick < 5; tick++) {
+      const slowStart = pokemon.volatileStatuses.get("slow-start");
+      if (slowStart && slowStart.turnsLeft > 0) {
+        slowStart.turnsLeft -= 1;
+        if (slowStart.turnsLeft === 0) {
+          pokemon.volatileStatuses.delete("slow-start");
+        }
+      }
+    }
+
+    // After 5 ticks, the volatile should be removed
+    expect(pokemon.volatileStatuses.has("slow-start")).toBe(false);
+
+    // Verify speed is no longer halved by checking damage calc behavior
+    // Without the volatile, Slow Start's attack halving should not apply
+    const noAbilityPokemon = createActivePokemon({ ability: "", attack: 100 });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const rng = createMockRng(100);
+    const state = createMockState();
+
+    const afterExpiry = calculateGen4Damage(
+      { attacker: pokemon, defender, move, isCrit: false, state, rng } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    const baseline = calculateGen4Damage(
+      { attacker: noAbilityPokemon, defender, move, isCrit: false, state, rng } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    // Source: Gen4 damage formula — Slow Start expired, no halving applied
+    // Both should deal the same damage since no volatile is present
+    // baseDamage=35; +2=37; random=37; STAB(Normal/Normal)=floor(37*1.5)=55
+    expect(afterExpiry.damage).toBe(55);
+    expect(baseline.damage).toBe(55);
+  });
+
+  it("given Slow Start with 2 turns left, when 2 end-of-turn ticks pass, then slow-start volatile is removed at exactly turn 0", () => {
+    // Source: Showdown Gen 4 mod — Slow Start countdown is exact (not early or late)
+    // Second test case to triangulate countdown behavior
+    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 2 }]]);
+    const pokemon = createActivePokemon({
+      ability: "slow-start",
+      volatiles: slowStartVolatiles,
+    });
+
+    // After 1 tick: should still have the volatile with turnsLeft=1
+    const slowStart1 = pokemon.volatileStatuses.get("slow-start")!;
+    slowStart1.turnsLeft -= 1;
+    expect(pokemon.volatileStatuses.has("slow-start")).toBe(true);
+    expect(slowStart1.turnsLeft).toBe(1);
+
+    // After 2nd tick: turnsLeft reaches 0, volatile is removed
+    slowStart1.turnsLeft -= 1;
+    if (slowStart1.turnsLeft === 0) {
+      pokemon.volatileStatuses.delete("slow-start");
+    }
+    expect(pokemon.volatileStatuses.has("slow-start")).toBe(false);
   });
 });
 

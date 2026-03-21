@@ -2106,13 +2106,27 @@ export class BattleEngine implements BattleEventEmitter {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
             if (active.ability !== "slow-start") continue;
-            // Slow Start ends after 5 turns on the field
-            // Source: Pokemon Showdown Gen 4 mod — slowstart ability
-            if (active.turnsOnField === 5) {
-              this.emit({
-                type: "message",
-                text: `${active.pokemon.nickname ?? String(active.pokemon.speciesId)}'s Slow Start wore off!`,
-              });
+            // Slow Start: decrement turnsLeft on the slow-start volatile each EoT.
+            // When turnsLeft reaches 0, remove the volatile so the Attack/Speed halving stops.
+            // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown
+            // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns
+            const slowStart = active.volatileStatuses.get("slow-start");
+            if (slowStart && slowStart.turnsLeft > 0) {
+              slowStart.turnsLeft -= 1;
+              if (slowStart.turnsLeft === 0) {
+                active.volatileStatuses.delete("slow-start");
+                const pokeName = active.pokemon.nickname ?? String(active.pokemon.speciesId);
+                this.emit({
+                  type: "volatile-end",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  volatile: "slow-start",
+                });
+                this.emit({
+                  type: "message",
+                  text: `${pokeName}'s Slow Start wore off!`,
+                });
+              }
             }
           }
           break;
@@ -2820,12 +2834,18 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "volatile-inflict": {
-          // Source: Showdown — abilities that inflict volatile statuses (e.g., Cute Charm)
+          // Source: Showdown — abilities that inflict volatile statuses (e.g., Cute Charm, Slow Start)
           const target = effect.target === "self" ? pokemon : opponent;
           const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
           if (!target.volatileStatuses.has(effect.volatile)) {
+            // Use turnsLeft from effect data if provided (e.g., Slow Start sets turnsLeft: 5),
+            // otherwise default to -1 (permanent until explicitly removed).
+            const turnsLeft =
+              effect.data?.turnsLeft !== undefined && typeof effect.data.turnsLeft === "number"
+                ? effect.data.turnsLeft
+                : -1;
             target.volatileStatuses.set(effect.volatile, {
-              turnsLeft: -1,
+              turnsLeft,
               ...(effect.data ? { data: effect.data } : {}),
             });
             this.emit({
