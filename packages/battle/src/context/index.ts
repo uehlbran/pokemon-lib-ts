@@ -9,6 +9,7 @@ export type {
   BagItemResult,
   BattleConfig,
   BattleGimmick,
+  CatchResult,
   CritContext,
   DamageBreakdown,
   DamageContext,

@@ -14,6 +14,7 @@ export type {
   BagItemResult,
   BattleConfig,
   BattleGimmick,
+  CatchResult,
   CritContext,
   DamageBreakdown,
   DamageContext,
@@ -92,6 +93,7 @@ export type {
 export type {
   AbilitySystem,
   BagItemSystem,
+  CatchSystem,
   CriticalHitSystem,
   DamageSystem,
   EndOfTurnSystem,

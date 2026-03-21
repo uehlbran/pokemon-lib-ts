@@ -211,7 +211,10 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Source: Bulbapedia — "Marvel Scale: If the Pokemon has a status condition, its Defense
   //   stat is 1.5x."
   if (physical && defender.ability === "marvel-scale" && defender.pokemon.status !== null) {
-    baseStat = Math.floor(baseStat * 1.5);
+    // Integer arithmetic matching pokeemerald: (defense * 150) / 100
+    // Source: pret/pokeemerald src/pokemon.c ABILITY_MARVEL_SCALE
+    // Fix: #155 — was Math.floor(baseStat * 1.5) (float), now integer math
+    baseStat = Math.floor((baseStat * 150) / 100);
   }
 
   // Get the appropriate stage
@@ -413,8 +416,21 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // Screens (Reflect / Light Screen) — non-crit only
-  // Source: pret/pokeemerald src/pokemon.c:3266-3273 (physical) / 3317-3324 (special)
-  // TODO: Phase 6+ — apply screen halving when screens are tracked on BattleSide
+  // Source: pret/pokeemerald src/pokemon.c:3266-3273 (Reflect) / 3317-3324 (Light Screen)
+  // "if (!criticalHit && HasReflect(defender)) damage /= 2"
+  if (!isCrit && context.state.sides) {
+    const defenderSideIdx = context.state.sides.findIndex((side) =>
+      side.active.some((a) => a?.pokemon === context.defender.pokemon),
+    );
+    if (defenderSideIdx !== -1) {
+      const defenderScreens = context.state.sides[defenderSideIdx]?.screens ?? [];
+      const screenType = physical ? "reflect" : "light-screen";
+      const hasScreen = defenderScreens.some((s) => s.type === screenType);
+      if (hasScreen) {
+        baseDamage = Math.floor(baseDamage / 2);
+      }
+    }
+  }
 
   // Spread move penalty — doubles only
   // Source: pret/pokeemerald src/pokemon.c:3275-3277

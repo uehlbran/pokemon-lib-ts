@@ -1,4 +1,4 @@
-import type { DataManager, MoveData, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type { DataManager, ItemData, MoveData, PrimaryStatus } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
@@ -838,7 +838,7 @@ export class BattleEngine implements BattleEventEmitter {
     // emitted during this turn (fixes #84 — slice(-50) captured cross-turn events).
     this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
 
-    // Reset move tracking for next turn
+    // Reset per-turn tracking for next turn
     for (const side of this.state.sides) {
       for (const active of side.active) {
         if (active) {
@@ -1455,6 +1455,18 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
+    // Check if this is a Poke Ball (catch-type item) — fork to catch attempt logic
+    let itemData: ItemData | null = null;
+    try {
+      itemData = this.dataManager.getItem(action.itemId);
+    } catch {
+      // Item not in data manager — fall through to normal bag item logic
+    }
+    if (itemData?.useEffect?.type === "catch") {
+      this.executeCatchAttempt(action, itemData);
+      return;
+    }
+
     const side = this.state.sides[action.side];
     // Determine target pokemon — default to active slot 0
     const targetSlot = action.target ?? 0;
@@ -1578,6 +1590,103 @@ export class BattleEngine implements BattleEventEmitter {
       isTerastallized: false,
       forcedMove: null,
     };
+  }
+
+  /**
+   * Execute a catch attempt (Poke Ball thrown at a wild Pokemon).
+   * Only valid in wild battles, only side 0 can throw.
+   *
+   * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+   * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
+   */
+  private executeCatchAttempt(action: ItemAction, itemData: ItemData): void {
+    // Only valid in wild battles
+    if (!this.state.isWildBattle) {
+      this.emit({ type: "message", text: "You can't throw a Poke Ball at a trainer's Pokemon!" });
+      return;
+    }
+
+    // Only side 0 (player) can throw balls
+    if (action.side !== 0) {
+      return;
+    }
+
+    const wildActive = this.state.sides[1].active[0];
+    if (!wildActive) return;
+
+    // Extract ball modifier from item data
+    // Guard: catchRateModifier may be absent on a ball item with a missing field — default to 1
+    const useEffect = itemData.useEffect;
+    const ballModifier = useEffect?.type === "catch" ? (useEffect.catchRateModifier ?? 1) : 1;
+
+    // Get wild Pokemon's species catch rate.
+    // Abort the catch attempt with an engine message if species data is unavailable —
+    // silently substituting a default (45) would distort capture odds for the player.
+    let baseCatchRate: number;
+    try {
+      const species = this.dataManager.getSpecies(wildActive.pokemon.speciesId);
+      baseCatchRate = species.catchRate;
+    } catch {
+      this.emit({
+        type: "message",
+        text: "The Poke Ball missed! (species data unavailable)",
+      });
+      return;
+    }
+
+    // maxHp must come from calculatedStats, not currentHp — using currentHp when the Pokemon
+    // has taken damage would make it appear at full health (HP ratio = 1.0), incorrectly
+    // lowering the catch rate bonus for damaged Pokemon.
+    // Abort if calculatedStats is absent (e.g., after deserialize without species data).
+    const maxHp = wildActive.pokemon.calculatedStats?.hp;
+    if (maxHp === undefined) {
+      this.emit({
+        type: "message",
+        text: "The Poke Ball missed! (stat data unavailable)",
+      });
+      return;
+    }
+
+    // Delegate to ruleset for the actual roll
+    const result = this.ruleset.rollCatchAttempt(
+      baseCatchRate,
+      maxHp,
+      wildActive.pokemon.currentHp,
+      wildActive.pokemon.status,
+      ballModifier,
+      this.state.rng,
+    );
+
+    // Emit catch attempt event
+    this.emit({
+      type: "catch-attempt",
+      ball: action.itemId,
+      pokemon: getPokemonName(wildActive),
+      shakes: result.shakes,
+      caught: result.caught,
+    });
+
+    if (result.caught) {
+      this.emit({ type: "message", text: `${getPokemonName(wildActive)} was caught!` });
+      // Synchronize state before emitting battle-end so getWinner() and getPhase() are
+      // consistent for synchronous listeners — mirrors the checkBattleEnd() pattern.
+      this.state.ended = true;
+      this.state.winner = 0;
+      this.transitionTo("battle-end");
+      // Side 0 (player) wins by catching
+      this.emit({ type: "battle-end", winner: 0 });
+    } else {
+      const shakeMessages = [
+        "Oh no! The Pokemon broke free!",
+        "Aww! It appeared to be caught!",
+        "Aargh! Almost had it!",
+        "Gah! It was so close, too!",
+      ];
+      this.emit({
+        type: "message",
+        text: shakeMessages[result.shakes] ?? "The Pokemon broke free!",
+      });
+    }
   }
 
   private executeStruggle(action: import("../events").StruggleAction, actor: ActivePokemon): void {

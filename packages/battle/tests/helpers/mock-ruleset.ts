@@ -18,6 +18,7 @@ import type {
   AccuracyContext,
   BagItemResult,
   BattleGimmick,
+  CatchResult,
   CritContext,
   DamageContext,
   DamageResult,
@@ -457,6 +458,33 @@ export class MockRuleset implements GenerationRuleset {
     _rng: SeededRandom,
   ): boolean {
     return this.fleeSuccess;
+  }
+
+  private nextCatchResult: CatchResult | null = null;
+
+  setNextCatchResult(result: CatchResult): void {
+    this.nextCatchResult = result;
+  }
+
+  rollCatchAttempt(
+    _catchRate: number,
+    _maxHp: number,
+    _currentHp: number,
+    _status: PrimaryStatus | null,
+    _ballModifier: number,
+    rng: SeededRandom,
+  ): CatchResult {
+    if (this.nextCatchResult) {
+      const result = this.nextCatchResult;
+      this.nextCatchResult = null;
+      return result;
+    }
+    // Consume RNG so determinism tests exercise actual seeded behavior.
+    // A roll < 0.5 → caught; shakes proportional to remaining roll.
+    const roll = rng.next();
+    const caught = roll < 0.5;
+    const shakes = caught ? 4 : Math.floor(rng.next() * 4);
+    return { shakes, caught };
   }
 
   processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {

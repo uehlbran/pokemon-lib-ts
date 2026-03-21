@@ -745,6 +745,80 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
   });
 });
 
+describe("Gen 3 Marvel Scale — Integer math fix (#155)", () => {
+  it("given Marvel Scale with Defense 133, when calculating defense, then uses integer math floor((133 * 150) / 100) = 199", () => {
+    // Source: pret/pokeemerald src/pokemon.c ABILITY_MARVEL_SCALE — (defense * 150) / 100
+    // Fix: #155 — changed from Math.floor(baseStat * 1.5) to Math.floor((baseStat * 150) / 100)
+    // For stat 133: float 1.5 = floor(199.5) = 199; integer = floor(19950/100) = floor(199.5) = 199
+    // Both produce 199 here, but the integer form matches pokeemerald decomp exactly.
+    //
+    // L50, 100 Atk vs 133 Def (boosted to 199 by Marvel Scale), 80 BP Normal, max roll
+    //   levelFactor = 22
+    //   baseDamage = floor(floor(22 * 80 * 100 / 199) / 50)
+    //             = floor(floor(176000 / 199) / 50)
+    //             = floor(884 / 50) = floor(17.68) = 17
+    //   +2 = 19, final = 19
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 133,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["water"],
+      ability: "marvel-scale",
+      status: "burn",
+    });
+    const move = createMove("normal", 80, "body-slam");
+    const ctx = createDamageContext({ attacker, defender, move });
+    const result = calculateGen3Damage(ctx, createNeutralTypeChart());
+
+    // Source: manual formula trace with floor((133 * 150) / 100) = 199 defense
+    expect(result.damage).toBe(19);
+  });
+
+  it("given Marvel Scale with Defense 67, when calculating defense, then uses integer math floor((67 * 150) / 100) = 100", () => {
+    // Source: pret/pokeemerald src/pokemon.c ABILITY_MARVEL_SCALE
+    // Triangulation: different stat value to prove formula works for multiple inputs
+    // For stat 67: floor((67 * 150) / 100) = floor(100.5) = 100
+    //
+    // L50, 100 Atk vs 67 Def (boosted to 100), 80 BP Normal, max roll
+    //   baseDamage = floor(floor(22 * 80 * 100 / 100) / 50) = floor(35.2) = 35
+    //   +2 = 37, final = 37
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 67,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["water"],
+      ability: "marvel-scale",
+      status: "paralysis",
+    });
+    const move = createMove("normal", 80, "body-slam");
+    const ctx = createDamageContext({ attacker, defender, move });
+    const result = calculateGen3Damage(ctx, createNeutralTypeChart());
+
+    // Source: manual formula trace with floor((67 * 150) / 100) = 100 defense
+    expect(result.damage).toBe(37);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // #144 — Rock Head recoil prevention
 // ---------------------------------------------------------------------------
