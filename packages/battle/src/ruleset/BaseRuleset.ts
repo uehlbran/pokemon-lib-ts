@@ -299,6 +299,22 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return defender?.ability === "pressure" ? 2 : 1;
   }
 
+  /**
+   * Handle effects when a move misses.
+   * Explosion/Self-Destruct: user faints even on miss (all gens).
+   *
+   * Source: pret/pokered engine/battle/core.asm — actor faints regardless of hit/miss
+   * Source: pret/pokeemerald — Self-Destruct/Explosion: user always faints even on miss
+   */
+  onMoveMiss(actor: ActivePokemon, move: MoveData, _state: BattleState): void {
+    if (
+      move.effect?.type === "custom" &&
+      (move.effect.handler === "explosion" || move.effect.handler === "self-destruct")
+    ) {
+      actor.pokemon.currentHp = 0;
+    }
+  }
+
   onDamageReceived(
     _defender: ActivePokemon,
     _damage: number,

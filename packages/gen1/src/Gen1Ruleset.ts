@@ -1441,6 +1441,32 @@ export class Gen1Ruleset implements GenerationRuleset {
     return bound.turnsLeft > 0;
   }
 
+  // --- Move Miss Hook ---
+
+  /**
+   * Handle effects when a move misses.
+   * - Explosion/Self-Destruct: user faints even on miss (all gens)
+   * - Rage: set rage-miss-lock volatile, causing subsequent Rage uses to auto-miss
+   *
+   * Source: pret/pokered engine/battle/core.asm — actor faints regardless of hit/miss
+   * Source: pret/pokered RageEffect — Gen 1 Rage miss loop
+   */
+  onMoveMiss(actor: ActivePokemon, move: MoveData, _state: BattleState): void {
+    // Explosion/Self-Destruct: user faints even on miss
+    if (
+      move.effect?.type === "custom" &&
+      (move.effect.handler === "explosion" || move.effect.handler === "self-destruct")
+    ) {
+      actor.pokemon.currentHp = 0;
+    }
+    // Rage miss-lock: Gen 1 only
+    // When Rage misses while the user has the rage volatile, set a miss-lock
+    // that causes all subsequent Rage uses to auto-miss (cartridge infinite loop).
+    if (actor.volatileStatuses.has("rage")) {
+      actor.volatileStatuses.set("rage-miss-lock", { turnsLeft: -1 });
+    }
+  }
+
   // --- Reactive Damage Hook ---
 
   onDamageReceived(

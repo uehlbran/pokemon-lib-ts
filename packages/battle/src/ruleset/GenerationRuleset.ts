@@ -129,6 +129,16 @@ export interface MoveSystem {
   getPPCost(actor: ActivePokemon, defender: ActivePokemon | null, state: BattleState): number;
 
   /**
+   * Called when a move misses its target. Allows gen-specific miss-related effects:
+   * - Explosion/Self-Destruct: user faints even on miss (all gens)
+   * - Gen 1 Rage: rage-miss-lock volatile causes subsequent Rage uses to auto-miss
+   *
+   * Source: pret/pokered engine/battle/core.asm — Explosion/Self-Destruct always faint user
+   * Source: pret/pokered RageEffect — Rage miss loop
+   */
+  onMoveMiss(actor: ActivePokemon, move: MoveData, state: BattleState): void;
+
+  /**
    * Called after the defender takes direct damage (not absorbed by a substitute).
    * Allows gen-specific reactive effects triggered by taking a hit:
    * - Gen 1 Rage: boosts defender Attack by +1 stage
