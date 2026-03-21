@@ -1477,14 +1477,9 @@ export class BattleEngine implements BattleEventEmitter {
     sleepTurnsOverride?: number,
   ): void {
     target.pokemon.status = status;
-    this.emit({
-      type: "status-inflict",
-      side,
-      pokemon: getPokemonName(target),
-      status,
-    });
 
-    // Initialize companion volatiles that downstream mechanics depend on
+    // Initialize companion volatiles that downstream mechanics depend on.
+    // Must run BEFORE emitting status-inflict so synchronous listeners see fully-initialized state.
     if (status === "badly-poisoned") {
       // Source: Showdown sim/battle-actions.ts — toxic counter starts at 1, increments each EoT
       target.volatileStatuses.set("toxic-counter", {
@@ -1503,6 +1498,13 @@ export class BattleEngine implements BattleEventEmitter {
       // Prevents EoT processEndOfTurnDefrost from thawing on the same turn.
       target.volatileStatuses.set("just-frozen", { turnsLeft: 1 });
     }
+
+    this.emit({
+      type: "status-inflict",
+      side,
+      pokemon: getPokemonName(target),
+      status,
+    });
   }
 
   private processEffectResult(

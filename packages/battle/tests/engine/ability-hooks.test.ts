@@ -475,9 +475,10 @@ describe("processAbilityResult: status-inflict effect", () => {
 
 describe("processAbilityResult: companion volatile initialization after status infliction", () => {
   it("given ability inflicts badly-poisoned on opponent, when processAbilityResult runs, then target has toxic-counter volatile with turnsLeft=-1 and counter=1", () => {
-    // Source: Showdown — badly-poisoned via ability (e.g., Poison Point could theoretically
-    // inflict toxic; engine must initialize toxic-counter for escalating damage)
-    // The applyPrimaryStatus helper sets toxic-counter { turnsLeft: -1, data: { counter: 1 } }
+    // Source: Showdown sim/battle-actions.ts — Toxic (badly-poisoned) damage multiplier starts at
+    // 1/16 max HP and increases by 1/16 each EoT (counter starts at 1, increments each turn).
+    // turnsLeft:-1 means no countdown (volatile persists until status ends). counter:1 is the
+    // initial damage multiplier (N/16 where N = counter value).
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
