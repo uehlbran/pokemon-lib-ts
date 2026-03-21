@@ -1,4 +1,5 @@
 import type { ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
+import type { BattleStat, MoveData, MoveEffect } from "@pokemon-lib-ts/core";
 
 /** No-op result for when an item doesn't activate. */
 const NO_ACTIVATION: ItemResult = {
@@ -65,6 +66,8 @@ export function applyGen3HeldItem(trigger: string, context: ItemContext): ItemRe
       return handleOnDamageTaken(item, context);
     case "on-hit":
       return handleOnHit(item, context);
+    case "stat-boost-between-turns":
+      return handleStatBoostBetweenTurns(item, context);
     default:
       return NO_ACTIVATION;
   }
@@ -348,10 +351,18 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
-    // King's Rock: 10% flinch chance on damaging moves
-    // Source: pret/pokeemerald HOLD_EFFECT_FLINCH — 10% chance in Gen 3
+    // King's Rock: 10% flinch chance on damaging moves that don't already have a flinch effect.
+    // Source: pret/pokeemerald src/battle_util.c HOLD_EFFECT_FLINCH — 10% chance in Gen 3
     // (Gen 2 was 30/256 ~11.72%; Gen 3 simplified to flat 10%)
+    // Source: Bulbapedia — "King's Rock only activates on moves that do not already have
+    //   a chance to flinch."
     case "kings-rock": {
+      // Only apply flinch for moves that don't already have a flinch effect
+      // Source: pret/pokeemerald — King's Rock checked only when move has no inherent flinch
+      const move = context.move;
+      if (move && moveHasInherentFlinch(move)) {
+        return NO_ACTIVATION;
+      }
       if (context.rng.chance(0.1)) {
         return {
           activated: true,
@@ -372,6 +383,79 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
           activated: true,
           effects: [{ type: "heal", target: "self", value: healAmount }],
           messages: [`${pokemonName}'s Shell Bell restored HP!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    default:
+      return NO_ACTIVATION;
+  }
+}
+
+/**
+ * Check if a move has an inherent flinch chance (e.g., Bite, Headbutt, Air Slash).
+ * King's Rock only applies to moves that do NOT already have a flinch effect.
+ *
+ * Source: pret/pokeemerald src/battle_util.c — King's Rock checked only when move has no flinch
+ * Source: Bulbapedia — "King's Rock will not activate on moves that already have
+ *   a chance of flinching."
+ */
+function moveHasInherentFlinch(move: MoveData): boolean {
+  if (!move.effect) return false;
+  return checkEffectForFlinch(move.effect);
+}
+
+/**
+ * Recursively check a MoveEffect for a flinch volatile status.
+ */
+function checkEffectForFlinch(effect: NonNullable<MoveData["effect"]>): boolean {
+  if (effect.type === "volatile-status" && effect.status === "flinch") {
+    return true;
+  }
+  if (effect.type === "multi") {
+    return effect.effects.some((e: MoveEffect) => checkEffectForFlinch(e));
+  }
+  return false;
+}
+
+/**
+ * Handle stat-boost-between-turns item effects.
+ *
+ * Source: pret/pokeemerald src/battle_util.c ItemBattleEffects (ITEMEFFECT_ON_STAT_BOOST)
+ */
+function handleStatBoostBetweenTurns(item: string, context: ItemContext): ItemResult {
+  const pokemon = context.pokemon;
+  const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+
+  switch (item) {
+    // White Herb: consumed on first stat decrease, restoring all lowered stats to 0 stages.
+    // Source: pret/pokeemerald src/battle_util.c HOLD_EFFECT_RESTORE_STATS
+    // Source: Bulbapedia — "White Herb restores any lowered stat stages to 0 when held.
+    //   It is consumed after use."
+    case "white-herb": {
+      const statNames: BattleStat[] = [
+        "attack",
+        "defense",
+        "spAttack",
+        "spDefense",
+        "speed",
+        "accuracy",
+        "evasion",
+      ];
+      let anyLowered = false;
+      for (const stat of statNames) {
+        const stage = pokemon.statStages[stat];
+        if (stage !== undefined && stage < 0) {
+          anyLowered = true;
+          pokemon.statStages[stat] = 0;
+        }
+      }
+      if (anyLowered) {
+        return {
+          activated: true,
+          effects: [{ type: "consume", target: "self", value: "white-herb" }],
+          messages: [`${pokemonName}'s White Herb restored its stats!`],
         };
       }
       return NO_ACTIVATION;

@@ -49,6 +49,8 @@ type MutableResult = {
   switchOut: boolean;
   messages: string[];
   selfFaint?: boolean;
+  /** When true along with switchOut, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
+  forcedSwitch?: boolean;
   customDamage?: {
     target: "attacker" | "defender";
     amount: number;
@@ -65,6 +67,8 @@ type MutableResult = {
   volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
   forcedMoveSet?: { moveIndex: number; moveId: string; volatileStatus: VolatileStatus } | null;
+  /** Screens to clear from the defender's side (e.g., Brick Break removes Reflect/Light Screen) */
+  screensCleared?: "attacker" | "defender" | "both" | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -373,7 +377,9 @@ function handleTwoTurnEffect(
   }
 
   // Find move index in attacker's moveset
-  const moveIndex = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
+  const moveIndex = attacker.pokemon.moves.findIndex(
+    (m: { moveId: string }) => m.moveId === move.id,
+  );
 
   // Set up forced move for next turn
   result.forcedMoveSet = {
@@ -677,16 +683,24 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     // --- Whirlwind / Roar ---
     case "whirlwind":
     case "roar": {
-      // Force switch — engine handles phazing logic
-      // Source: pret/pokeemerald — Whirlwind/Roar force random switch
+      // Force switch — engine handles phazing logic when both switchOut and forcedSwitch are set
+      // Source: pret/pokeemerald src/battle_script_commands.c — Whirlwind/Roar force random switch
       // Suction Cups: prevents forced switch
-      // Source: pret/pokeemerald — ABILITY_SUCTION_CUPS blocks phazing
+      // Source: pret/pokeemerald src/battle_util.c — ABILITY_SUCTION_CUPS blocks phazing
       if (defender.ability === "suction-cups") {
         const dName = defender.pokemon.nickname ?? "The foe";
         result.messages.push(`${dName} anchored itself with Suction Cups!`);
         return true;
       }
+      // Ingrain: prevents forced switch
+      // Source: pret/pokeemerald src/battle_util.c — STATUS3_ROOTED blocks phazing
+      if (defender.volatileStatuses.has("ingrain")) {
+        const dName = defender.pokemon.nickname ?? "The foe";
+        result.messages.push(`${dName} anchored itself with its roots!`);
+        return true;
+      }
       result.switchOut = true;
+      result.forcedSwitch = true;
       return true;
     }
 
@@ -744,6 +758,91 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       }
       // Focus Punch succeeds — damage applied by engine
       return false; // Fall through to data-driven (no effect for focus-punch, so engine applies damage)
+    }
+
+    // --- Pursuit ---
+    case "pursuit": {
+      // Pursuit: if the target is switching out this turn, deal double damage.
+      // The engine tracks switching via the defender's action. In the move effect handler,
+      // we can only check if the defender is switching by examining the context.
+      // Since we don't have direct access to the defender's chosen action here,
+      // we set up the pursuit mechanic as a damage multiplier that the engine can apply.
+      //
+      // In practice: the engine handles Pursuit's switch-doubling at the action resolution level.
+      // The move effect handler just needs to exist so Pursuit isn't a no-op.
+      // Damage is handled by the engine's normal damage path.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_PURSUIT
+      // Source: Showdown data/mods/gen3/moves.ts — Pursuit beforeTurnCallback
+      return false; // Fall through to data-driven effects (damage is normal)
+    }
+
+    // --- Brick Break ---
+    case "brick-break": {
+      // Brick Break: removes Reflect and Light Screen from the target's side before dealing damage.
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_BRICK_BREAK
+      // Source: Bulbapedia — "Brick Break removes Reflect and Light Screen from the target's
+      //   side of the field, then inflicts damage."
+      result.screensCleared = "defender";
+      // Only show message if there are actually screens to remove
+      const defenderSideIndex = state.sides.findIndex((side) =>
+        side.active.some((a) => a?.pokemon === defender.pokemon),
+      );
+      const defenderSide = state.sides[defenderSideIndex];
+      const hasScreens =
+        defenderSide?.screens.some((s) => s.type === "reflect" || s.type === "light-screen") ??
+        false;
+      if (hasScreens) {
+        result.messages.push("The wall shattered!");
+      }
+      return false; // Fall through — Brick Break still deals normal damage
+    }
+
+    // --- Secret Power ---
+    case "secret-power": {
+      // Secret Power: 30% chance of a secondary effect that varies by terrain.
+      // Since terrain is not modeled, default to paralysis (building/indoor terrain effect).
+      // The move data already has: effect = { type: 'status-chance', status: 'paralysis', chance: 30 }
+      // So the data-driven dispatch handles the secondary effect entirely.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_SECRET_POWER
+      // Source: Bulbapedia — "In battle, Secret Power always has a 30% chance of inflicting
+      //   a secondary effect. This effect varies depending on the terrain."
+      return false; // Fall through to data-driven effects for paralysis chance + normal damage
+    }
+
+    // --- Torment ---
+    case "torment": {
+      // Torment: prevents the target from using the same move twice in a row.
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_TORMENT
+      // Source: Bulbapedia — "Torment prevents the target from selecting the same move
+      //   for use twice in a row."
+      if (defender.volatileStatuses.has("torment")) {
+        result.messages.push("But it failed!");
+        return true;
+      }
+      result.volatileInflicted = "torment";
+      const defenderNameT = defender.pokemon.nickname ?? "The foe";
+      result.messages.push(`${defenderNameT} was subjected to torment!`);
+      return true;
+    }
+
+    // --- Ingrain ---
+    case "ingrain": {
+      // Ingrain: user roots itself, gaining 1/16 HP recovery per turn.
+      // Cannot switch out (except via Baton Pass). Phazing moves fail against the user.
+      // The engine handles the 1/16 HP restoration via the "ingrain" end-of-turn effect.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_INGRAIN
+      // Source: Bulbapedia — "Ingrain causes the user to restore 1/16 of its maximum HP
+      //   at the end of each turn. The user cannot be switched out or flee."
+      if (attacker.volatileStatuses.has("ingrain")) {
+        result.messages.push("But it failed!");
+        return true;
+      }
+      result.selfVolatileInflicted = "ingrain";
+      result.messages.push(`${attackerName} planted its roots!`);
+      return true;
     }
 
     default:

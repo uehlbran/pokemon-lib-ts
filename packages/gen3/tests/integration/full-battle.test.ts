@@ -664,6 +664,7 @@ describe("Gen 3 End-of-Turn Order", () => {
       "wish",
       "weather-healing",
       "leftovers",
+      "ingrain",
       "status-damage",
       "leech-seed",
       "curse",
