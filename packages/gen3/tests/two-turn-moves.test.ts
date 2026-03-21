@@ -441,11 +441,11 @@ describe("Gen 3 Semi-Invulnerable Targeting", () => {
     expect(ruleset.canHitSemiInvulnerable("ice-beam", "underwater")).toBe(false);
   });
 
-  it("given any move vs 'charging' volatile, when canHitSemiInvulnerable is called, then returns false", () => {
-    // Source: pret/pokeemerald — charging moves (SolarBeam, Skull Bash) are NOT semi-invulnerable
-    // The "charging" volatile does not grant evasion — all moves can hit normally.
-    // However, canHitSemiInvulnerable returns false because the engine should not
-    // use this method for "charging" — only for Fly/Dig/Dive semi-invulnerable states.
-    expect(ruleset.canHitSemiInvulnerable("tackle", "charging")).toBe(false);
+  it("given any move vs 'charging' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+    // Source: pret/pokeemerald — charging moves (SolarBeam, Skull Bash, Razor Wind, Sky Attack)
+    // do NOT grant semi-invulnerability. Any move can hit a charging Pokemon.
+    // canHitSemiInvulnerable returns true for "charging" meaning: "yes, this move can hit."
+    expect(ruleset.canHitSemiInvulnerable("tackle", "charging")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable("ice-beam", "charging")).toBe(true);
   });
 });

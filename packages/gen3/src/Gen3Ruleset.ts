@@ -591,6 +591,11 @@ export class Gen3Ruleset extends BaseRuleset {
         // Surf, Whirlpool can hit Dive
         // Source: pret/pokeemerald — STATUS3_UNDERWATER hit checks
         return ["surf", "whirlpool"].includes(moveId);
+      case "charging":
+        // Generic charging moves (SolarBeam, Skull Bash, Razor Wind, Sky Attack, Bounce on
+        // second turn) are NOT semi-invulnerable — all moves can hit a charging Pokemon.
+        // Source: pret/pokeemerald — no hit-immunity for EFFECT_SKULL_BASH/RAZOR_WIND/SKY_ATTACK
+        return true;
       default:
         return false;
     }

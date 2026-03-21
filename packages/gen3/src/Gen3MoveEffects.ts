@@ -283,10 +283,9 @@ function applyMoveEffect(
       // Reflect / Light Screen — set screen on attacker's side
       // Duration in Gen 3: 5 turns normally (no Light Clay in Gen 3)
       // Source: pret/pokeemerald src/battle_script_commands.c — Reflect/Light Screen effect
-      const screenEffect = effect as { screen: string; turns: number };
       result.screenSet = {
-        screen: screenEffect.screen,
-        turnsLeft: screenEffect.turns,
+        screen: effect.screen,
+        turnsLeft: effect.turns,
         side: "attacker",
       };
       break;
@@ -310,15 +309,16 @@ function applyMoveEffect(
  * Maps move ID to the volatile status applied during the charge turn.
  *
  * Gen 3 differences from Gen 4:
- *   - NO Bounce (Gen 4+ move)
  *   - NO Shadow Force (Gen 4 move)
  *   - NO Power Herb (Gen 4 item)
+ *   - Bounce IS in Gen 3 (RSE) — maps to "flying" like Fly
  *
  * Source: pret/pokeemerald src/battle_script_commands.c — two-turn move handling
  * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Two-turn_move
  */
 const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
   fly: "flying",
+  bounce: "flying", // Bounce grants STATUS3_ON_AIR like Fly — Source: pret/pokeemerald
   dig: "underground",
   dive: "underwater",
   "solar-beam": "charging",
@@ -334,10 +334,14 @@ const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
  */
 const TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
   fly: "{pokemon} flew up high!",
+  bounce: "{pokemon} sprang up!",
   dig: "{pokemon} dug underground!",
   dive: "{pokemon} dived underwater!",
   "solar-beam": "{pokemon} is absorbing sunlight!",
   "skull-bash": "{pokemon} lowered its head!",
+  // Source: pret/pokeemerald src/battle_script_commands.c — charge turn messages
+  "razor-wind": "{pokemon} whipped up a whirlwind!",
+  "sky-attack": "{pokemon} is glowing!",
 };
 
 /**
@@ -377,6 +381,12 @@ function handleTwoTurnEffect(
     moveId: move.id,
     volatileStatus: volatile,
   };
+
+  // Skull Bash raises Defense by 1 stage on the charge turn
+  // Source: pret/pokeemerald — EFFECT_SKULL_BASH: RaiseStat(STAT_DEF) before charging
+  if (move.id === "skull-bash") {
+    result.statChanges.push({ target: "attacker", stat: "defense", stages: 1 });
+  }
 
   const messageTemplate = TWO_TURN_MESSAGES[move.id] ?? "{pokemon} is charging up!";
   result.messages.push(messageTemplate.replace("{pokemon}", attackerName));
