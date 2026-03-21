@@ -10,6 +10,7 @@ import {
   type CritContext,
   type DamageContext,
   type DamageResult,
+  type EndOfTurnEffect,
   type EntryHazardResult,
   type ExpContext,
   type ItemContext,
@@ -21,8 +22,6 @@ import {
 import type {
   AbilityTrigger,
   EntryHazardType,
-  MoveData,
-  MoveEffect,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
@@ -40,6 +39,7 @@ import { applyGen3Ability } from "./Gen3Abilities";
 import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
 import { calculateGen3Damage } from "./Gen3DamageCalc";
 import { applyGen3HeldItem } from "./Gen3Items";
+import { executeGen3MoveEffect } from "./Gen3MoveEffects";
 import { GEN3_TYPE_CHART, GEN3_TYPES } from "./Gen3TypeChart";
 import { applyGen3WeatherEffects } from "./Gen3Weather";
 
@@ -341,413 +341,40 @@ export class Gen3Ruleset extends BaseRuleset {
   /**
    * Gen 3 move effect execution.
    *
-   * Processes secondary effects (status infliction, stat changes, recoil, drain,
-   * weather, entry hazards, protect, volatile statuses, custom effects).
-   *
-   * Gen 3 differences from Gen 2:
-   * - Uses 0-99 scale for effect chance (Random() % 100 < percentChance)
-   *   100% effects ALWAYS succeed (unlike Gen 2's 1/256 failure on 0-255 scale)
-   * - Knock Off removes defender's item (no damage boost — Gen 5+ only)
-   * - Electric types immune to paralysis (unlike Gen 2)
-   * - Abilities may grant additional immunities (handled separately in damage calc)
+   * Delegates to executeGen3MoveEffect in Gen3MoveEffects.ts for all move effect
+   * processing including data-driven effects, ID-based interceptors, and custom handlers.
    *
    * Source: pret/pokeemerald src/battle_script_commands.c
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    const result: {
-      statusInflicted: PrimaryStatus | null;
-      volatileInflicted: VolatileStatus | null;
-      statChanges: Array<{
-        target: "attacker" | "defender";
-        stat:
-          | "hp"
-          | "attack"
-          | "defense"
-          | "spAttack"
-          | "spDefense"
-          | "speed"
-          | "accuracy"
-          | "evasion";
-        stages: number;
-      }>;
-      recoilDamage: number;
-      healAmount: number;
-      switchOut: boolean;
-      messages: string[];
-      weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
-      hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
-      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-      clearSideHazards?: "attacker" | "defender";
-      itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
-      selfFaint?: boolean;
-    } = {
-      statusInflicted: null,
-      volatileInflicted: null,
-      statChanges: [],
-      recoilDamage: 0,
-      healAmount: 0,
-      switchOut: false,
-      messages: [],
-    };
-
-    // Knock Off: custom handler — move data has effect: null so we handle by ID
-    // Source: pret/pokeemerald src/battle_script_commands.c — Knock Off removes item
-    if (context.move.id === "knock-off") {
-      if (context.defender.pokemon.heldItem) {
-        const item = context.defender.pokemon.heldItem;
-        context.defender.pokemon.heldItem = null;
-        const defenderName = context.defender.pokemon.nickname ?? "The foe";
-        result.messages.push(`${defenderName} lost its ${item}!`);
-        // Source: pokeemerald — no damage boost in Gen 3 (Gen 5+ only)
-      }
-    }
-
-    if (!context.move.effect) return result;
-
-    this.applyMoveEffect(context.move.effect, context.move, result, context);
-
-    return result;
+    return executeGen3MoveEffect(context);
   }
 
   /**
-   * Roll for a secondary effect chance on the 0-99 scale.
-   * 100% effects ALWAYS succeed (0-99 < 100 is always true).
+   * Gen 3 end-of-turn effect ordering.
    *
-   * Serene Grace: doubles the chance before the roll (capped at 100).
-   *
-   * Source: pret/pokeemerald src/battle_script_commands.c:2908-2935 Cmd_seteffectwithchance
-   * "else if (Random() % 100 < percentChance ...)"
-   * Random() % 100 produces 0-99; percentChance=100 means 0-99 < 100 always true.
-   *
-   * Source: pret/pokeemerald src/battle_util.c — ABILITY_SERENE_GRACE
-   * "percentChance *= 2" before the Random() % 100 check.
+   * Source: pret/pokeemerald src/battle_main.c — end-of-turn phase ordering
    */
-  private rollEffectChance(chance: number, rng: SeededRandom, attacker?: ActivePokemon): boolean {
-    let effectiveChance = chance;
-
-    // Serene Grace: double the secondary effect chance (cap at 100)
-    // Source: pret/pokeemerald src/battle_util.c — ABILITY_SERENE_GRACE doubles percentChance
-    if (attacker?.ability === "serene-grace") {
-      effectiveChance = Math.min(chance * 2, 100);
-    }
-
-    // 100% effects always succeed — skip the roll entirely
-    // Source: pret/pokeemerald — Random() % 100 < 100 is always true
-    if (effectiveChance >= 100) return true;
-    return rng.int(0, 99) < effectiveChance;
-  }
-
-  /**
-   * Apply a single MoveEffect to the mutable result object.
-   * Handles all effect types defined in the MoveEffect discriminated union.
-   *
-   * Source: pret/pokeemerald src/battle_script_commands.c
-   */
-  private applyMoveEffect(
-    effect: MoveEffect,
-    move: MoveData,
-    result: {
-      statusInflicted: PrimaryStatus | null;
-      volatileInflicted: VolatileStatus | null;
-      statChanges: Array<{
-        target: "attacker" | "defender";
-        stat:
-          | "hp"
-          | "attack"
-          | "defense"
-          | "spAttack"
-          | "spDefense"
-          | "speed"
-          | "accuracy"
-          | "evasion";
-        stages: number;
-      }>;
-      recoilDamage: number;
-      healAmount: number;
-      switchOut: boolean;
-      messages: string[];
-      weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
-      hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
-      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-      clearSideHazards?: "attacker" | "defender";
-      itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
-      selfFaint?: boolean;
-    },
-    context: MoveEffectContext,
-  ): void {
-    const { attacker, defender, damage, rng } = context;
-
-    switch (effect.type) {
-      case "status-chance": {
-        // Roll for status infliction on 0-255 scale (1/256 failure rate even at 100%)
-        // Source: pret/pokeemerald — secondary effect probability check
-        if (this.rollEffectChance(effect.chance, rng, attacker)) {
-          if (!defender.pokemon.status) {
-            if (canInflictGen3Status(effect.status, defender)) {
-              result.statusInflicted = effect.status;
-            }
-          }
-        }
-        break;
-      }
-
-      case "status-guaranteed": {
-        // Guaranteed status (e.g., Thunder Wave, Toxic, Will-O-Wisp)
-        // Source: pret/pokeemerald — primary effect status infliction
-        if (!defender.pokemon.status) {
-          if (canInflictGen3Status(effect.status, defender)) {
-            result.statusInflicted = effect.status;
-          }
-        }
-        break;
-      }
-
-      case "stat-change": {
-        // Only apply the secondary-effect roll for damaging moves — status moves
-        // (e.g., Swords Dance, Dragon Dance) have guaranteed primary effects and
-        // must never incur the 1/256 failure.
-        // Source: pret/pokeemerald — secondary effect check only for damaging moves
-        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng, attacker)) {
-          break;
-        }
-        for (const change of effect.changes) {
-          result.statChanges.push({
-            target: effect.target === "self" ? "attacker" : "defender",
-            stat: change.stat,
-            stages: change.stages,
-          });
-        }
-        break;
-      }
-
-      case "recoil": {
-        // Rock Head: prevents recoil damage from recoil moves (NOT Struggle).
-        // Struggle recoil is handled separately by calculateStruggleRecoil.
-        // Source: pret/pokeemerald ABILITY_ROCK_HEAD
-        // Source: Bulbapedia — "Rock Head: Protects the Pokemon from recoil damage."
-        if (attacker.ability === "rock-head") {
-          break;
-        }
-        // Recoil damage is a fraction of damage dealt
-        // Source: pret/pokeemerald — recoil = floor(damage * fraction)
-        result.recoilDamage = Math.max(1, Math.floor(damage * effect.amount));
-        break;
-      }
-
-      case "drain": {
-        // Drain heals a fraction of damage dealt
-        // Source: pret/pokeemerald — drain = floor(damage * fraction)
-        result.healAmount = Math.max(1, Math.floor(damage * effect.amount));
-        break;
-      }
-
-      case "heal": {
-        // Heal a fraction of max HP (e.g., Recover, Milk Drink)
-        // Source: pret/pokeemerald — heal = floor(maxHP * fraction)
-        const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-        result.healAmount = Math.max(1, Math.floor(maxHp * effect.amount));
-        break;
-      }
-
-      case "multi": {
-        // Process each sub-effect (e.g., Scald = damage + 30% burn)
-        for (const subEffect of effect.effects) {
-          this.applyMoveEffect(subEffect, move, result, context);
-        }
-        break;
-      }
-
-      case "volatile-status": {
-        // For damaging moves, roll the effect chance
-        // For status moves (e.g., Focus Energy, Substitute), guaranteed
-        if (move.category !== "status" && !this.rollEffectChance(effect.chance, rng, attacker)) {
-          break;
-        }
-        result.volatileInflicted = effect.status;
-        break;
-      }
-
-      case "weather": {
-        // Set weather for 5 turns (Gen 3 default, no weather rocks)
-        // Source: pret/pokeemerald — weather moves set 5-turn weather
-        result.weatherSet = {
-          weather: effect.weather,
-          turns: effect.turns ?? 5,
-          source: move.id,
-        };
-        break;
-      }
-
-      case "entry-hazard": {
-        // Entry hazard targets the opponent's side
-        // Source: pret/pokeemerald — Spikes placed on foe's side
-        const attackerSideIndex = context.state.sides.findIndex((side) =>
-          side.active.some((a) => a?.pokemon === attacker.pokemon),
-        );
-        const targetSide = attackerSideIndex === 0 ? 1 : 0;
-        result.hazardSet = {
-          hazard: effect.hazard,
-          targetSide: targetSide as 0 | 1,
-        };
-        break;
-      }
-
-      case "switch-out": {
-        if (effect.target === "self") {
-          // Baton Pass — switch out preserving stat changes and volatile statuses
-          // Source: pret/pokeemerald — Baton Pass transfers volatiles
-          result.switchOut = true;
-        }
-        break;
-      }
-
-      case "protect": {
-        // Protect/Detect — engine handles protect volatile + consecutive-use scaling
-        // Source: pret/pokeemerald — Protect sets PROTECTED status
-        result.volatileInflicted = "protect";
-        break;
-      }
-
-      case "custom": {
-        this.handleCustomEffect(move, result, context);
-        break;
-      }
-
-      case "remove-hazards": {
-        // Intentionally no-op: all Gen 3 remove-hazards effects (Rapid Spin)
-        // are handled via the "custom" case in handleCustomEffect.
-        // clearSideHazards is set there, not here.
-        // Source: pret/pokeemerald — Rapid Spin uses EFFECT_RAPID_SPIN (custom)
-        break;
-      }
-
-      case "fixed-damage":
-      case "level-damage":
-      case "ohko":
-      case "damage":
-        // These are handled by the damage calculation itself
-        break;
-
-      case "terrain":
-      case "screen":
-      case "multi-hit":
-      case "two-turn":
-        // Handled by the engine or N/A in Gen 3
-        break;
-    }
-  }
-
-  /**
-   * Handle custom move effects specific to Gen 3.
-   *
-   * Source: pret/pokeemerald src/battle_script_commands.c
-   */
-  private handleCustomEffect(
-    move: MoveData,
-    result: {
-      statusInflicted: PrimaryStatus | null;
-      volatileInflicted: VolatileStatus | null;
-      statChanges: Array<{
-        target: "attacker" | "defender";
-        stat:
-          | "hp"
-          | "attack"
-          | "defense"
-          | "spAttack"
-          | "spDefense"
-          | "speed"
-          | "accuracy"
-          | "evasion";
-        stages: number;
-      }>;
-      recoilDamage: number;
-      healAmount: number;
-      switchOut: boolean;
-      messages: string[];
-      weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
-      hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
-      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-      clearSideHazards?: "attacker" | "defender";
-      itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
-      selfFaint?: boolean;
-    },
-    context: MoveEffectContext,
-  ): void {
-    const { attacker, defender } = context;
-    const pokemonName = attacker.pokemon.nickname ?? "The Pokemon";
-
-    switch (move.id) {
-      case "belly-drum": {
-        // Lose 50% max HP, maximize Attack to +6
-        // Source: pret/pokeemerald — Belly Drum cuts HP and maximizes Attack
-        const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-        const halfHp = Math.floor(maxHp / 2);
-        if (attacker.pokemon.currentHp > halfHp) {
-          result.recoilDamage = halfHp;
-          result.statChanges.push({
-            target: "attacker",
-            stat: "attack",
-            stages: 6 - attacker.statStages.attack,
-          });
-          result.messages.push(`${pokemonName} cut its own HP and maximized Attack!`);
-        } else {
-          result.messages.push(`${pokemonName} is too weak to use Belly Drum!`);
-        }
-        break;
-      }
-
-      case "rapid-spin": {
-        // Remove leech-seed and binding volatiles from user, spikes from user's side
-        // Source: pret/pokeemerald — Rapid Spin clears Spikes, Leech Seed, Wrap
-        result.volatilesToClear = [
-          { target: "attacker", volatile: "leech-seed" },
-          { target: "attacker", volatile: "bound" },
-        ];
-        result.clearSideHazards = "attacker";
-        result.messages.push(`${pokemonName} blew away leech seed and spikes!`);
-        break;
-      }
-
-      case "mean-look":
-      case "spider-web":
-      case "block": {
-        // Trapping effect — prevents switching
-        // Source: pret/pokeemerald — Mean Look / Spider Web / Block set TRAPPED flag
-        result.volatileInflicted = "trapped";
-        break;
-      }
-
-      case "thief": {
-        // Steal defender's item if user has no item
-        // Source: pret/pokeemerald — Thief takes held item
-        if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
-          result.itemTransfer = { from: "defender", to: "attacker" };
-          result.messages.push(
-            `${pokemonName} stole ${defender.pokemon.nickname ?? "the foe"}'s ${defender.pokemon.heldItem}!`,
-          );
-        }
-        break;
-      }
-
-      case "baton-pass": {
-        // Switch out preserving stat changes and volatile statuses
-        // Source: pret/pokeemerald — Baton Pass
-        result.switchOut = true;
-        break;
-      }
-
-      case "explosion":
-      case "self-destruct": {
-        result.selfFaint = true;
-        result.messages.push(`${pokemonName} exploded!`);
-        break;
-      }
-
-      default: {
-        // Unknown custom effect — no-op
-        break;
-      }
-    }
+  getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    return [
+      "weather-damage",
+      "future-attack",
+      "wish",
+      "weather-healing",
+      "leftovers",
+      "status-damage",
+      "leech-seed",
+      "curse",
+      "nightmare",
+      "bind",
+      "encore-countdown",
+      "disable-countdown",
+      "taunt-countdown",
+      "perish-song",
+      "speed-boost",
+      "shed-skin",
+      "weather-countdown",
+    ] as const;
   }
 
   // --- Turn Order (Quick Claw) ---
