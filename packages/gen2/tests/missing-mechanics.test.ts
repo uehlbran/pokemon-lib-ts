@@ -470,9 +470,12 @@ describe("Issue #363 — Pursuit double power on switch-out", () => {
       species,
     );
 
-    // Assert: normal 40 BP damage (positive, non-zero)
-    // Dark is special, so it uses SpAttack/SpDefense, but we're testing that the move fires
-    expect(result.damage).toBeGreaterThan(0);
+    // Assert: normal 40 BP dark (special) move: L50, SpAtk=100, SpDef=100, no STAB (attacker types=dark but default spAttack=100)
+    // Formula: levelFactor=22, power=40, atk=100 (spAtk, dark=special), def=100 (spDef)
+    // baseDamage = floor(floor(22*40*100)/100)/50 = floor(880)/50 = 17; +2 = 19
+    // STAB (attacker dark, move dark): floor(19*1.5) = 28; RNG=255 (max): floor(28*255/255) = 28
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_DamageCalc
+    expect(result.damage).toBe(28);
   });
 
   it("given Gen2Ruleset, when calling shouldExecutePursuitPreSwitch, then returns true", () => {
@@ -530,11 +533,10 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
     expect(misses).toBe(0);
   });
 
-  it("given no weather, when Thunder is used, then hit rate approximately matches base 70% accuracy", () => {
+  it("given no weather and roll=177, when Thunder is used, then hits (177 < 178 accuracy threshold)", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm ThunderAccuracy
-    // Without rain, Thunder uses its base 70% accuracy (178/255 on 0-255 scale).
-    // Over 1000 trials, miss rate should be approximately 30%.
-    // Arrange
+    // Without rain, Thunder uses base 70% accuracy → floor(70*255/100) = 178 on 0-255 scale.
+    // Hit condition: rng.int(0,255) < 178. Roll 177 is the highest-roll hit.
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(
@@ -543,28 +545,39 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
       null, // no weather
     );
 
-    // Act
-    let hits = 0;
-    const trials = 2000;
-    for (let seed = 0; seed < trials; seed++) {
-      const rng = new SeededRandom(seed);
-      if (
-        ruleset.doesMoveHit({
-          attacker,
-          defender,
-          move: thunderMove,
-          state,
-          rng,
-        } as unknown as AccuracyContext)
-      ) {
-        hits++;
-      }
-    }
+    const rngHit = { int: (_min: number, _max: number) => 177 } as SeededRandom;
+    const hitResult = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: thunderMove,
+      state,
+      rng: rngHit,
+    } as unknown as AccuracyContext);
 
-    // Assert: hit rate should be roughly 65-75% (within 5% of 70% base accuracy)
-    const hitRate = hits / trials;
-    expect(hitRate).toBeGreaterThan(0.6);
-    expect(hitRate).toBeLessThan(0.8);
+    expect(hitResult).toBe(true);
+  });
+
+  it("given no weather and roll=178, when Thunder is used, then misses (178 >= 178 accuracy threshold)", () => {
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm ThunderAccuracy
+    // Thunder base accuracy = 70% → 178 on 0-255 scale. Roll 178 is exactly the miss boundary.
+    const attacker = createMockActive();
+    const defender = createMockActive();
+    const state = createMockState(
+      createMockSide(0, attacker),
+      createMockSide(1, defender),
+      null, // no weather
+    );
+
+    const rngMiss = { int: (_min: number, _max: number) => 178 } as SeededRandom;
+    const hitResult = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: thunderMove,
+      state,
+      rng: rngMiss,
+    } as unknown as AccuracyContext);
+
+    expect(hitResult).toBe(false);
   });
 
   it("given SolarBeam in Rain weather, when calculating damage, then power is halved (60 instead of 120)", () => {
@@ -699,8 +712,13 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
       species,
     );
 
-    // Assert: sunny day does NOT halve SolarBeam, so sun damage >= clear damage
-    expect(sunDmg.damage).toBeGreaterThanOrEqual(clearDmg.damage);
+    // Assert: sun does NOT halve SolarBeam (no power reduction), same damage as clear weather.
+    // Formula: levelFactor=22, power=120, spAtk=100, spDef=100, STAB (grass vs grass), RNG=255
+    // baseDamage = floor(floor(22*120*100)/100)/50 = floor(2640)/50 = 52; clamp: 52; +2 = 54
+    // Weather: grass in sun has no modifier; STAB: floor(54*1.5) = 81; RNG=255: 81
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm SolarBeamPower — sun = no halving
+    expect(sunDmg.damage).toBe(81);
+    expect(clearDmg.damage).toBe(81);
   });
 });
 
@@ -772,37 +790,43 @@ describe("Issue #365 — OHKO moves level-based accuracy formula", () => {
     expect(anyHit).toBe(false);
   });
 
-  it("given attacker L100 vs defender L50, when checking OHKO accuracy, then ohkoAcc = min(255, 30+100) = 130, so high hit rate", () => {
+  it("given attacker L100 vs defender L50 and roll=129, when checking OHKO accuracy, then hits (129 < 130 threshold)", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:5440 BattleCommand_OHKO
-    // Level diff = 50, doubled = 100, base moveAcc = 30 → ohkoAcc = 130 out of 255
-    // Hit rate ≈ 130/255 ≈ 51%
-    // Arrange
+    // ohkoAcc = min(255, 30 + 2*(100-50)) = min(255, 130) = 130
+    // Hit condition: rng.int(0,255) < 130. Roll 129 is the highest-roll hit.
     const attacker = createMockActive({ level: 100 });
     const defender = createMockActive({ level: 50 });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
-    // Act: test over many seeds, expect approximately 51% hit rate
-    let hits = 0;
-    const trials = 2000;
-    for (let seed = 0; seed < trials; seed++) {
-      const rng = new SeededRandom(seed);
-      if (
-        ruleset.doesMoveHit({
-          attacker,
-          defender,
-          move: fissureMove,
-          state,
-          rng,
-        } as unknown as AccuracyContext)
-      ) {
-        hits++;
-      }
-    }
+    const rngHit = { int: (_min: number, _max: number) => 129 } as SeededRandom;
+    const hitResult = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: fissureMove,
+      state,
+      rng: rngHit,
+    } as unknown as AccuracyContext);
 
-    // Assert: hit rate approximately 51% ± 5%
-    const hitRate = hits / trials;
-    expect(hitRate).toBeGreaterThan(0.4);
-    expect(hitRate).toBeLessThan(0.65);
+    expect(hitResult).toBe(true);
+  });
+
+  it("given attacker L100 vs defender L50 and roll=130, when checking OHKO accuracy, then misses (130 >= 130 threshold)", () => {
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5440 BattleCommand_OHKO
+    // ohkoAcc = 130. Roll 130 is exactly the miss boundary: 130 < 130 is false → miss.
+    const attacker = createMockActive({ level: 100 });
+    const defender = createMockActive({ level: 50 });
+    const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+    const rngMiss = { int: (_min: number, _max: number) => 130 } as SeededRandom;
+    const hitResult = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: fissureMove,
+      state,
+      rng: rngMiss,
+    } as unknown as AccuracyContext);
+
+    expect(hitResult).toBe(false);
   });
 
   it("given attacker same level as defender (L50 vs L50), when checking OHKO accuracy, then uses base accuracy 30", () => {
