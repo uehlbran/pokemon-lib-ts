@@ -283,7 +283,11 @@ export class Gen3Ruleset extends BaseRuleset {
    *
    * Source: pret/pokeemerald src/battle_util.c — SetSpikesDamage routine
    */
-  applyEntryHazards(pokemon: ActivePokemon, side: BattleSide): EntryHazardResult {
+  applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    _state?: BattleState,
+  ): EntryHazardResult {
     // Gen 3: only spikes available — no Stealth Rock (Gen 4) or Toxic Spikes (Gen 4)
     const spikes = side.hazards.find((h) => h.type === "spikes");
     if (!spikes) return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };

@@ -766,9 +766,10 @@ describe("Gen 4 Flash Fire volatile damage boost", () => {
 
   it("given attacker with flash-fire volatile using Fire move with power=80, when damage calc, then base power is boosted by 1.5x (case 1: Atk=100)", () => {
     // Derivation: L50, power=80, Atk=100, Def=100, rng=100, neutral type chart
-    //   Flash Fire boosts power: 80 * 1.5 = 120
-    //   levelFactor=22, baseDmg=floor(floor(22*120*100/100)/50)+2
-    //     =floor(floor(264000/100)/50)+2=floor(2640/50)+2=52+2=54
+    //   Flash Fire is now a damage modifier (ModifyDamagePhase1), not base power.
+    //   Source: Showdown data/mods/gen4/abilities.ts — Flash Fire onModifyDamagePhase1
+    //   baseDmg = floor(floor(22*80*100/100)/50) = 35
+    //   Flash Fire: floor(35*1.5) = 52; +2 = 54
     // Source: inline formula derivation
     const attacker = createActivePokemon({ attack: 100, hasFlashFire: true });
     const defender = createActivePokemon({ defense: 100 });
@@ -781,9 +782,10 @@ describe("Gen 4 Flash Fire volatile damage boost", () => {
 
   it("given attacker with flash-fire volatile using Fire move with power=60, when damage calc, then base power is boosted by 1.5x (case 2: Atk=120)", () => {
     // Derivation: L50, power=60, Atk=120, Def=100, rng=100
-    //   Flash Fire boosts power: floor(60 * 1.5) = 90
-    //   levelFactor=22, baseDmg=floor(floor(22*90*120/100)/50)+2
-    //     =floor(floor(237600/100)/50)+2=floor(2376/50)+2=47+2=49
+    //   Flash Fire is now a damage modifier (ModifyDamagePhase1), not base power.
+    //   Source: Showdown data/mods/gen4/abilities.ts — Flash Fire onModifyDamagePhase1
+    //   baseDmg = floor(floor(22*60*120/100)/50) = floor(1584/50) = 31
+    //   Flash Fire: floor(31*1.5) = 46; +2 = 48
     // Source: inline formula derivation — triangulation with different power and Atk
     const attacker = createActivePokemon({ attack: 120, hasFlashFire: true });
     const defender = createActivePokemon({ defense: 100 });
@@ -791,7 +793,7 @@ describe("Gen 4 Flash Fire volatile damage boost", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
-    expect(result.damage).toBe(49);
+    expect(result.damage).toBe(48);
   });
 
   it("given attacker with flash-fire volatile using non-Fire move, then no power boost", () => {

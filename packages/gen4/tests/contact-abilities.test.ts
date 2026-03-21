@@ -469,10 +469,14 @@ describe("applyGen4Ability on-contact -- Poison Point immunity checks", () => {
 });
 
 describe("applyGen4Ability on-contact -- Effect Spore immunity checks", () => {
-  it("given Steel-type attacker, when Effect Spore rolls poison (roll < 1/3), then poison is blocked", () => {
+  // Gen 4 Effect Spore uses a SINGLE random(100) roll:
+  //   0-9 = sleep, 10-19 = paralysis, 20-29 = poison
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts
+
+  it("given Steel-type attacker, when Effect Spore rolls poison (roll in [20,30)), then poison is blocked", () => {
     // Source: Bulbapedia — Steel-types are immune to poison
     // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: poison: ['poison', 'steel']
-    // Effect Spore gate roll = 0 (triggers), effect roll = 0 (< 1/3 → poison path)
+    // rng.next() = 0.25 => Math.floor(0.25 * 100) = 25 => poison path, blocked by Steel type
     const attacker = makeActivePokemon({ types: ["steel"] });
     const state = makeBattleState();
     const defender = makeActivePokemon({ ability: "effect-spore" });
@@ -481,7 +485,7 @@ describe("applyGen4Ability on-contact -- Effect Spore immunity checks", () => {
       opponent: attacker,
       state,
       trigger: "on-contact",
-      rng: makeAlwaysTriggersRng(), // next() always returns 0: gate passes, roll=0 → poison path
+      rng: makeSequenceRng([0.25]), // single roll: 25 => poison path, Steel immune
     } as unknown as AbilityContext;
 
     const result = applyGen4Ability("on-contact", ctx);
@@ -489,31 +493,19 @@ describe("applyGen4Ability on-contact -- Effect Spore immunity checks", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given attacker with Insomnia, when Effect Spore rolls sleep (roll >= 2/3), then sleep is blocked", () => {
+  it("given attacker with Insomnia, when Effect Spore rolls sleep (roll in [0,10)), then sleep is blocked", () => {
     // Source: Bulbapedia — Insomnia: prevents sleep
     // Source: Showdown Gen 4 mod — ABILITY_STATUS_IMMUNITIES: insomnia: ['sleep']
-    // Effect Spore gate roll = 0 (triggers), then second roll = 0.9 (>= 2/3 → sleep path)
+    // rng.next() = 0.05 => Math.floor(0.05 * 100) = 5 => sleep path, blocked by Insomnia
     const attacker = makeActivePokemon({ ability: "insomnia" });
     const state = makeBattleState();
     const defender = makeActivePokemon({ ability: "effect-spore" });
-    let callCount = 0;
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
       state,
       trigger: "on-contact",
-      rng: {
-        next: () => {
-          // First call: gate check (0 = triggers); second call: effect roll (0.9 → sleep)
-          return callCount++ === 0 ? 0 : 0.9;
-        },
-        int: () => 1,
-        chance: (_p: number) => false,
-        pick: <T>(arr: readonly T[]) => arr[0] as T,
-        shuffle: <T>(arr: T[]) => arr,
-        getState: () => 0,
-        setState: () => {},
-      },
+      rng: makeSequenceRng([0.05]), // single roll: 5 => sleep path, Insomnia immune
     } as unknown as AbilityContext;
 
     const result = applyGen4Ability("on-contact", ctx);
@@ -601,11 +593,11 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     });
   });
 
-  it("given non-immune attacker, when Effect Spore triggers and type roll selects poison (roll < 1/3), then attacker is poisoned", () => {
-    // Source: Bulbapedia — Effect Spore: 30% total chance on contact; if triggered,
-    //   1/3 chance each for poison, paralysis, sleep
-    // Source: Showdown Gen 4 mod — Effect Spore trigger (30% gate, then 1/3 splits)
-    // First rng.next() = 0.1 (< 0.3, gate passes), second rng.next() = 0.1 (< 1/3, poison path)
+  it("given non-immune attacker, when Effect Spore triggers and roll selects poison (roll in [20,30)), then attacker is poisoned", () => {
+    // Gen 4 Effect Spore uses a SINGLE random(100) roll:
+    //   0-9 = sleep, 10-19 = paralysis, 20-29 = poison
+    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts
+    // rng.next() = 0.25 => Math.floor(0.25 * 100) = 25 => poison path
     const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
     const state = makeBattleState();
     const defender = makeActivePokemon({ ability: "effect-spore" });
@@ -614,7 +606,7 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
       opponent: attacker,
       state,
       trigger: "on-contact",
-      rng: makeSequenceRng([0.1, 0.1]), // gate passes, roll < 1/3 = poison
+      rng: makeSequenceRng([0.25]), // single roll: 25 => poison path
     } as unknown as AbilityContext;
 
     const result = applyGen4Ability("on-contact", ctx);
@@ -654,10 +646,11 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     });
   });
 
-  it("given non-immune attacker, when Effect Spore triggers and type roll selects sleep (roll >= 2/3), then attacker is put to sleep", () => {
-    // Source: Bulbapedia — Effect Spore: 30% total; 1/3 splits
-    // Source: Showdown Gen 4 mod — Effect Spore sleep path
-    // First rng.next() = 0.1 (gate passes), second rng.next() = 0.9 (>= 2/3 = sleep)
+  it("given non-immune attacker, when Effect Spore triggers and roll selects sleep (roll in [0,10)), then attacker is put to sleep", () => {
+    // Gen 4 Effect Spore uses a SINGLE random(100) roll:
+    //   0-9 = sleep, 10-19 = paralysis, 20-29 = poison
+    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts
+    // rng.next() = 0.05 => Math.floor(0.05 * 100) = 5 => sleep path
     const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
     const state = makeBattleState();
     const defender = makeActivePokemon({ ability: "effect-spore" });
@@ -666,7 +659,7 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
       opponent: attacker,
       state,
       trigger: "on-contact",
-      rng: makeSequenceRng([0.1, 0.9]), // gate passes, roll 0.9 = sleep path
+      rng: makeSequenceRng([0.05]), // single roll: 5 => sleep path
     } as unknown as AbilityContext;
 
     const result = applyGen4Ability("on-contact", ctx);

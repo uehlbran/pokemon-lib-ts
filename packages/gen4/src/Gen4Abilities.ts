@@ -41,7 +41,7 @@ export const PLATE_TO_TYPE: Record<string, PokemonType> = {
  *   - "passive-immunity": Water Absorb, Volt Absorb, Motor Drive, Dry Skin,
  *                         Flash Fire (with volatile boost), Levitate
  *   - "on-flinch": Steadfast
- *   - "on-after-move-hit": Stench (10% flinch)
+ *   - "on-after-move-hit": (none in Gen 4 — Stench flinch is Gen 5+)
  *
  * Stat-modifying abilities (damage calc / speed calc integration):
  *   - Solar Power: 1.5x SpAtk in sun (damage calc) + 1/8 HP chip (turn-end)
@@ -54,7 +54,7 @@ export const PLATE_TO_TYPE: Record<string, PokemonType> = {
  * Implemented elsewhere:
  *   - Leaf Guard: status prevention in sun (canInflictGen4Status in Gen4MoveEffects.ts)
  *   - Klutz: item suppression (Gen4Items.ts, Gen4DamageCalc.ts, Gen4Ruleset.ts)
- *   - Storm Drain: Water immunity + SpAtk boost (passive-immunity handler + Gen4DamageCalc.ts)
+ *   - Storm Drain: doubles-only Water redirection (no immunity/boost in Gen 4; those are Gen 5+)
  *   - Suction Cups: forced switch prevention (Gen4MoveEffects.ts Whirlwind/Roar handler)
  *
  * Source: Showdown sim/battle.ts Gen 4 mod — ability trigger dispatch
@@ -682,24 +682,26 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
     }
 
     case "effect-spore": {
-      // Source: Bulbapedia — Effect Spore: 30% total chance on contact; if triggered,
-      //   1/3 chance each for poison, paralysis, sleep
-      // Source: Showdown Gen 4 mod — Effect Spore trigger (30% gate, then 1/3 splits)
+      // Effect Spore: 30% total chance on contact. Uses a SINGLE random(100) roll
+      // with ranges: 0-9 = sleep, 10-19 = paralysis, 20-29 = poison.
+      // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+      //   effectspore.onDamagingHit: const r = this.random(100);
+      //   if (r < 10) sleep, else if (r < 20) paralysis, else if (r < 30) poison
       if (attackerStatus) return { activated: false, effects: [], messages: [] };
-      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
-      const roll = context.rng.next();
-      if (roll < 1 / 3) {
-        // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
-        if (!canInflictGen4Status("poison", attacker))
+      // Single RNG call matching Showdown's pattern for seeded determinism
+      const roll = Math.floor(context.rng.next() * 100);
+      if (roll < 10) {
+        // 0-9: sleep
+        if (!canInflictGen4Status("sleep", attacker))
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
           messages: [],
         };
       }
-      if (roll < 2 / 3) {
-        // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
+      if (roll < 20) {
+        // 10-19: paralysis
         if (!canInflictGen4Status("paralysis", attacker))
           return { activated: false, effects: [], messages: [] };
         return {
@@ -708,14 +710,18 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           messages: [],
         };
       }
-      // Source: Showdown Gen 4 mod — type/ability immunity check before contact-ability status infliction
-      if (!canInflictGen4Status("sleep", attacker))
-        return { activated: false, effects: [], messages: [] };
-      return {
-        activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
-        messages: [],
-      };
+      if (roll < 30) {
+        // 20-29: poison
+        if (!canInflictGen4Status("poison", attacker))
+          return { activated: false, effects: [], messages: [] };
+        return {
+          activated: true,
+          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          messages: [],
+        };
+      }
+      // 30-99: no effect
+      return { activated: false, effects: [], messages: [] };
     }
 
     case "cute-charm": {
@@ -876,23 +882,12 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       };
     }
 
-    case "storm-drain": {
-      // Storm Drain: Water-type moves are absorbed, raising SpAtk by 1 stage.
-      // Source: Bulbapedia — Storm Drain (Gen 4): "Draws in all Water-type moves.
-      //   When hit by a Water-type move, the Pokemon's Sp. Atk is raised by one stage."
-      // Source: Showdown Gen 4 mod — Storm Drain onTryHit boosts SpAtk by 1
-      if (moveType !== "water") return { activated: false, effects: [], messages: [] };
-      const pokeName =
-        context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-      const effects: AbilityEffect[] = [
-        { effectType: "stat-change", target: "self", stat: "spAttack", stages: 1 },
-      ];
-      return {
-        activated: true,
-        effects,
-        messages: [`${pokeName}'s Storm Drain raised its Sp. Atk!`],
-      };
-    }
+    // Storm Drain: in Gen 4, Storm Drain ONLY redirects Water moves in doubles.
+    // It does NOT grant Water immunity or SpAtk boost — those were added in Gen 5.
+    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+    //   stormDrain.onTryHit is empty (no immunity, no boost)
+    // Storm Drain redirection is a doubles-only targeting mechanic handled by the engine,
+    // not a passive-immunity trigger, so no case is needed here.
 
     default:
       return { activated: false, effects: [], messages: [] };
@@ -946,28 +941,12 @@ function handleOnFlinch(abilityId: string, context: AbilityContext): AbilityResu
  * is the attacker (whose ability triggers), `context.opponent` is the
  * defender that was hit.
  *
- * Currently only handles Stench.
- *
- * Source: Showdown Gen 4 mod — Stench on-after-move-hit flinch chance
- * Source: Bulbapedia — Stench (Gen 4): "10% chance of causing the target to flinch"
+ * In Gen 4, Stench has NO battle effect — the 10% flinch was added in Gen 5.
+ * Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+ *   stench entry has rating: 0 and no onModifyMove/onDamagingHit hook
  */
-function handleOnAfterMoveHit(abilityId: string, context: AbilityContext): AbilityResult {
-  if (abilityId !== "stench") {
-    return { activated: false, effects: [], messages: [] };
-  }
-
-  // Stench: 10% flinch chance after dealing damage
-  // Note: Stench does NOT stack with King's Rock / Razor Fang
-  // Source: Bulbapedia — Stench (Gen 4): "Has a 10% chance of making a target flinch
-  //   when the holder deals damage."
-  // Source: Showdown Gen 4 mod — Stench onModifyMove adds flinch chance
-  if (context.rng.next() >= 0.1) {
-    return { activated: false, effects: [], messages: [] };
-  }
-
-  return {
-    activated: true,
-    effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "flinch" }],
-    messages: [],
-  };
+function handleOnAfterMoveHit(_abilityId: string, _context: AbilityContext): AbilityResult {
+  // No abilities currently use on-after-move-hit in Gen 4.
+  // Stench's 10% flinch chance is a Gen 5+ mechanic.
+  return { activated: false, effects: [], messages: [] };
 }

@@ -50,6 +50,8 @@ type MutableResult = {
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
+  /** When true along with switchOut, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
+  forcedSwitch?: boolean;
   messages: string[];
   screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
   selfFaint?: boolean;
@@ -960,11 +962,15 @@ function handleNullEffectMoves(
     }
 
     case "rest": {
-      // Full heal + self-inflict sleep
-      // Source: Showdown Gen 4 — Rest heals fully and inflicts 2-turn sleep
+      // Full heal + self-inflict exactly 2-turn sleep (wakes on turn 3 and can act).
+      // The engine uses selfVolatileData.turnsLeft as a sleep duration override
+      // (see BattleEngine line ~2547-2549), so we MUST set it to avoid random rollSleepTurns().
+      // Source: Showdown Gen 4 — Rest sets sleep duration to exactly 2 turns
+      // Source: Bulbapedia — Rest: "The user goes to sleep for two turns, fully restoring its HP"
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       result.healAmount = maxHp;
       result.selfStatusInflicted = "sleep";
+      result.selfVolatileData = { turnsLeft: 2 };
       result.messages.push(`${attackerName} went to sleep and became healthy!`);
       break;
     }
@@ -1071,17 +1077,28 @@ function handleNullEffectMoves(
     case "whirlwind":
     case "roar": {
       // Force switch — engine handles phazing logic
-      // Source: Showdown Gen 4 — Whirlwind/Roar force random switch
+      // Source: Showdown Gen 4 — Whirlwind/Roar force random switch (onDragOut handler)
       // Suction Cups: prevents forced switch effects (Whirlwind, Roar)
       // Source: Bulbapedia — Suction Cups: "Prevents the Pokemon from being forced to switch out"
       // Source: Showdown data/abilities.ts — Suction Cups onDragOut
-      const { defender } = context;
-      if (defender.ability === "suction-cups") {
-        const dName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+      const { defender: phazeDef } = context;
+      if (phazeDef.ability === "suction-cups") {
+        const dName = phazeDef.pokemon.nickname ?? String(phazeDef.pokemon.speciesId);
         result.messages.push(`${dName} anchored itself with Suction Cups!`);
         break;
       }
+      // Ingrain: prevents forced switch (rooted Pokemon cannot be phazed)
+      // Source: Showdown Gen 4 — onDragOut checks Ingrain volatile alongside Suction Cups
+      // Source: Bulbapedia — Ingrain: "The user can't be switched out by Whirlwind, Roar, etc."
+      if (phazeDef.volatileStatuses.has("ingrain")) {
+        const dName = phazeDef.pokemon.nickname ?? String(phazeDef.pokemon.speciesId);
+        result.messages.push(`${dName} anchored itself with its roots!`);
+        break;
+      }
+      // Set both switchOut and forcedSwitch so the engine processes phazing correctly.
+      // switchOut alone = voluntary switch; forcedSwitch = opponent forced to swap to random Pokemon.
       result.switchOut = true;
+      result.forcedSwitch = true;
       break;
     }
 
@@ -1092,20 +1109,20 @@ function handleNullEffectMoves(
     case "whirlpool":
     case "sand-tomb":
     case "magma-storm": {
-      // Binding moves: trap target for 4-5 turns (or 7 with Grip Claw).
-      // Source: Showdown Gen 4 mod — binding moves set "bound" volatile with duration
-      // Source: Bulbapedia — Binding moves last 4-5 turns in Gen 4 (2-5 in Gen 3);
-      //   Grip Claw extends to 7 turns.
+      // Binding moves: trap target for 3-6 turns (or 6 with Grip Claw).
+      // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/conditions.ts —
+      //   partiallytrapped.durationCallback: if gripclaw => 6, else this.random(3, 7)
+      //   Showdown random(3, 7) = exclusive upper bound = 3, 4, 5, or 6 turns
+      // Our rng.int() is inclusive, so rng.int(3, 6) gives the same range.
       const { attacker: bindAtk, defender: bindDef } = context;
       const defName = bindDef.pokemon.nickname ?? "The foe";
       if (bindDef.volatileStatuses.has("bound")) {
         break; // Already bound
       }
-      // Grip Claw: binding lasts 7 turns instead of randomly 4-5
-      // Source: Bulbapedia — Grip Claw: "Extends the duration of binding moves to 7 turns"
-      // Source: Showdown Gen 4 mod — Grip Claw sets binding duration to 7
+      // Grip Claw: binding lasts 6 turns (not random)
+      // Source: Showdown Gen 4 mod conditions.ts — if gripclaw => return 6
       const hasGripClaw = bindAtk.pokemon.heldItem === "grip-claw" && bindAtk.ability !== "klutz";
-      const turnsLeft = hasGripClaw ? 7 : context.rng.int(4, 5);
+      const turnsLeft = hasGripClaw ? 6 : context.rng.int(3, 6);
       result.volatileInflicted = "bound";
       result.volatileData = { turnsLeft };
       result.messages.push(`${defName} was squeezed by ${moveId}!`);
@@ -1932,7 +1949,8 @@ export const NATURAL_GIFT_TABLE: Readonly<Record<string, { type: PokemonType; po
   "liechi-berry": { type: "grass", power: 80 },
   "ganlon-berry": { type: "ice", power: 80 },
   "salac-berry": { type: "fighting", power: 80 },
-  "petaya-berry": { type: "electric", power: 80 },
+  // Source: Showdown Gen 4 data — Natural Gift: Petaya Berry => Poison type, 80 power
+  "petaya-berry": { type: "poison", power: 80 },
   "apicot-berry": { type: "ground", power: 80 },
   "lansat-berry": { type: "flying", power: 80 },
   "starf-berry": { type: "psychic", power: 80 },

@@ -331,13 +331,12 @@ describe("Leaf Guard — prevent all status in sun", () => {
 // Storm Drain
 // ---------------------------------------------------------------------------
 
-describe("Storm Drain — Water immunity + SpAtk boost", () => {
-  it("given Storm Drain, when hit by Water move, then damage = 0 AND SpAtk raised by 1", () => {
-    // Source: Bulbapedia — Storm Drain (Gen 4): "Draws in all Water-type moves.
-    //   When hit by a Water-type move, the Pokemon's Sp. Atk is raised by one stage."
-    // Source: Showdown Gen 4 mod — Storm Drain onTryHit
-
-    // Test via damage calc — Storm Drain is in ABILITY_TYPE_IMMUNITIES
+describe("Storm Drain — Gen 4: redirect only, no immunity or SpAtk boost", () => {
+  it("given Storm Drain in Gen 4, when hit by Water move, then damage is NOT zero (no immunity)", () => {
+    // Source: Bulbapedia — Storm Drain (Gen 4): "All Water-type moves are drawn to this Pokemon."
+    //   In Gen 4, Storm Drain ONLY redirects Water moves in Doubles; it does NOT grant
+    //   immunity or SpAtk boost. The immunity + SpAtk boost was added in Gen 5.
+    // Source: Showdown Gen 4 mod — Storm Drain is not in ABILITY_TYPE_IMMUNITIES
     const attacker = makeActivePokemon({ types: ["water"], attack: 100 });
     const defender = makeActivePokemon({ ability: "storm-drain", types: ["ground"] });
     const move = makeMove("water", { power: 90, category: "special" });
@@ -355,10 +354,14 @@ describe("Storm Drain — Water immunity + SpAtk boost", () => {
       GEN4_TYPE_CHART,
     );
 
-    expect(damageResult.damage).toBe(0);
-    expect(damageResult.effectiveness).toBe(0);
+    // Water is super-effective against Ground, so damage should be > 0
+    expect(damageResult.damage).toBeGreaterThan(0);
+    expect(damageResult.effectiveness).toBe(2);
+  });
 
-    // Test via passive-immunity ability handler — SpAtk boost
+  it("given Storm Drain in Gen 4, when passive-immunity trigger fires with Water move, then ability does NOT activate", () => {
+    // Source: Showdown Gen 4 mod — Storm Drain removed from passive-immunity handler
+    // In Gen 4, Storm Drain has no passive-immunity behavior (only redirect in doubles)
     const ctx = makeAbilityContext({
       ability: "storm-drain",
       types: ["ground"],
@@ -366,29 +369,7 @@ describe("Storm Drain — Water immunity + SpAtk boost", () => {
     });
     const abilityResult = applyGen4Ability("passive-immunity", ctx);
 
-    expect(abilityResult.activated).toBe(true);
-    expect(abilityResult.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          effectType: "stat-change",
-          target: "self",
-          stat: "spAttack",
-          stages: 1,
-        }),
-      ]),
-    );
-  });
-
-  it("given Storm Drain, when hit by non-Water move, then ability does not activate", () => {
-    // Triangulation: Storm Drain only triggers on Water moves
-    const ctx = makeAbilityContext({
-      ability: "storm-drain",
-      types: ["ground"],
-      move: makeMove("fire"),
-    });
-    const result = applyGen4Ability("passive-immunity", ctx);
-
-    expect(result.activated).toBe(false);
+    expect(abilityResult.activated).toBe(false);
   });
 });
 
@@ -610,34 +591,26 @@ describe("Suction Cups — prevent forced switching", () => {
 // Stench
 // ---------------------------------------------------------------------------
 
-describe("Stench — 10% flinch on damaging moves", () => {
-  it("given Stench and RNG < 0.1, when attacker deals damage, then target flinches", () => {
-    // Source: Bulbapedia — Stench (Gen 4): "Has a 10% chance of making a target flinch"
-    // Source: Showdown Gen 4 mod — Stench onModifyMove flinch chance
+describe("Stench — Gen 4: no battle effect (flinch added in Gen 5)", () => {
+  it("given Stench in Gen 4, when on-after-move-hit triggers, then ability does NOT activate", () => {
+    // Source: Bulbapedia — Stench (Gen 4): "Helps avoid wild Pokemon" (overworld only)
+    //   The 10% flinch chance was added in Gen 5. In Gen 4, Stench has no in-battle effect.
+    // Source: Showdown Gen 4 mod — Stench has no onAfterMoveHit handler
     const ctx = makeAbilityContext({
       ability: "stench",
-      rngNextValues: [0.05], // < 0.1 threshold
+      rngNextValues: [0.05], // Would trigger if Gen 5, but not in Gen 4
     });
 
     const result = applyGen4Ability("on-after-move-hit", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          effectType: "volatile-inflict",
-          target: "opponent",
-          volatile: "flinch",
-        }),
-      ]),
-    );
+    expect(result.activated).toBe(false);
   });
 
-  it("given Stench and RNG >= 0.1, when attacker deals damage, then target does NOT flinch", () => {
-    // Triangulation: 90% of the time, Stench does not cause flinch
+  it("given Stench in Gen 4 with any RNG value, when on-after-move-hit triggers, then always no activation", () => {
+    // Triangulation: Stench never activates in Gen 4 regardless of RNG
     const ctx = makeAbilityContext({
       ability: "stench",
-      rngNextValues: [0.5], // >= 0.1 threshold
+      rngNextValues: [0.0], // Even with RNG = 0, should not activate
     });
 
     const result = applyGen4Ability("on-after-move-hit", ctx);

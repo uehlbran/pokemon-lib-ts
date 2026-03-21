@@ -1163,53 +1163,20 @@ describe("applyGen4Ability on-contact -- Rough Skin", () => {
 // ===========================================================================
 
 describe("applyGen4Ability on-contact -- Effect Spore", () => {
-  it("given Effect Spore and RNG triggers (< 0.3) and split roll < 1/3, when contact is made, then inflicts poison", () => {
-    // Source: Bulbapedia -- Effect Spore: 30% total, then 1/3 each for poison/paralysis/sleep
-    // Source: Showdown Gen 4 mod -- Effect Spore trigger
-    // RNG sequence: [0.1 (< 0.3, activates), 0.1 (< 1/3, poison)]
+  // Gen 4 Effect Spore uses a SINGLE random(100) roll:
+  //   0-9 = sleep, 10-19 = paralysis, 20-29 = poison, 30-99 = no effect
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+  //   effectspore.onDamagingHit: const r = this.random(100);
+  //   if (r < 10) sleep, else if (r < 20) paralysis, else if (r < 30) poison
+
+  it("given Effect Spore and RNG roll in [0, 10), when contact is made, then inflicts sleep", () => {
+    // rng.next() = 0.05 => Math.floor(0.05 * 100) = 5, which is < 10 => sleep
+    // Source: Showdown Gen 4 mod — Effect Spore single roll pattern
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
       ability: "effect-spore",
       opponent: attacker,
-      rngNextValues: [0.1, 0.1],
-    });
-    const result = applyGen4Ability("on-contact", ctx);
-
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({
-      effectType: "status-inflict",
-      target: "opponent",
-      status: "poison",
-    });
-  });
-
-  it("given Effect Spore and RNG triggers and split roll in [1/3, 2/3), when contact is made, then inflicts paralysis", () => {
-    // Source: Bulbapedia -- Effect Spore: middle 1/3 = paralysis
-    // RNG sequence: [0.2 (< 0.3, activates), 0.5 (>= 1/3, < 2/3, paralysis)]
-    const attacker = makeActivePokemon({ maxHp: 200 });
-    const ctx = makeContext({
-      ability: "effect-spore",
-      opponent: attacker,
-      rngNextValues: [0.2, 0.5],
-    });
-    const result = applyGen4Ability("on-contact", ctx);
-
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({
-      effectType: "status-inflict",
-      target: "opponent",
-      status: "paralysis",
-    });
-  });
-
-  it("given Effect Spore and RNG triggers and split roll >= 2/3, when contact is made, then inflicts sleep", () => {
-    // Source: Bulbapedia -- Effect Spore: last 1/3 = sleep
-    // RNG sequence: [0.1 (< 0.3, activates), 0.8 (>= 2/3, sleep)]
-    const attacker = makeActivePokemon({ maxHp: 200 });
-    const ctx = makeContext({
-      ability: "effect-spore",
-      opponent: attacker,
-      rngNextValues: [0.1, 0.8],
+      rngNextValues: [0.05],
     });
     const result = applyGen4Ability("on-contact", ctx);
 
@@ -1221,13 +1188,52 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     });
   });
 
-  it("given Effect Spore and RNG >= 0.3, when contact is made, then does not activate", () => {
-    // Source: Bulbapedia -- Effect Spore: 30% gate, RNG >= 0.3 means no trigger
+  it("given Effect Spore and RNG roll in [10, 20), when contact is made, then inflicts paralysis", () => {
+    // rng.next() = 0.15 => Math.floor(0.15 * 100) = 15, which is >= 10 and < 20 => paralysis
+    // Source: Showdown Gen 4 mod — Effect Spore single roll pattern
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
       ability: "effect-spore",
       opponent: attacker,
-      rngNextValues: [0.5], // >= 0.3, no trigger
+      rngNextValues: [0.15],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "paralysis",
+    });
+  });
+
+  it("given Effect Spore and RNG roll in [20, 30), when contact is made, then inflicts poison", () => {
+    // rng.next() = 0.25 => Math.floor(0.25 * 100) = 25, which is >= 20 and < 30 => poison
+    // Source: Showdown Gen 4 mod — Effect Spore single roll pattern
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "effect-spore",
+      opponent: attacker,
+      rngNextValues: [0.25],
+    });
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "poison",
+    });
+  });
+
+  it("given Effect Spore and RNG roll >= 30, when contact is made, then does not activate", () => {
+    // rng.next() = 0.5 => Math.floor(0.5 * 100) = 50, which is >= 30 => no effect
+    // Source: Showdown Gen 4 mod — Effect Spore: 70% no-effect range
+    const attacker = makeActivePokemon({ maxHp: 200 });
+    const ctx = makeContext({
+      ability: "effect-spore",
+      opponent: attacker,
+      rngNextValues: [0.5],
     });
     const result = applyGen4Ability("on-contact", ctx);
 
@@ -1236,11 +1242,12 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
 
   it("given Effect Spore and attacker already has status, when contact is made, then does not activate", () => {
     // Source: Bulbapedia -- Effect Spore: cannot inflict status if attacker already has one
+    // Source: Showdown Gen 4 mod — early return if target has status
     const attacker = makeActivePokemon({ maxHp: 200, status: "poison" });
     const ctx = makeContext({
       ability: "effect-spore",
       opponent: attacker,
-      rngNextValues: [0.1, 0.1],
+      rngNextValues: [0.05],
     });
     const result = applyGen4Ability("on-contact", ctx);
 

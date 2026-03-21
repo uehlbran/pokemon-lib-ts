@@ -54,7 +54,7 @@ import { applyGen4WeatherEffects } from "./Gen4Weather";
  *   - Weather rocks extend weather to 8 turns
  *   - Rock-type SpDef +50% in sandstorm (NEW vs Gen 3)
  *   - Struggle recoil: 1/4 max HP (Gen 3 was 1/4 damage dealt)
- *   - Sleep: 1-5 turns (Gen 3 was 2-5 turns)
+ *   - Sleep: 1-4 effective turns (Gen 3 was 1-4 turns via 2-5 counter)
  *
  * Overrides implemented here:
  *   - calculateBindDamage — 1/16 max HP (Gen 2-4; Gen 5+ uses 1/8)
@@ -72,7 +72,7 @@ import { applyGen4WeatherEffects } from "./Gen4Weather";
  *   - getQuickClawActivated — 20% pre-roll (same as Gen 3)
  *   - applyEntryHazards — Spikes + Stealth Rock + Toxic Spikes (Gen 4 full set)
  *   - resolveTurnOrder — Tailwind speed doubling + Trick Room reversal (Gen 4)
- *   - processSleepTurn — cannot act on wake turn (Gen 1-4 behavior; Gen 5+ can act)
+ *   - processSleepTurn — can act on wake turn (Gen 3-4 behavior; Gen 1-2 cannot)
  *   - canSwitch — Shadow Tag, Arena Trap, Magnet Pull, trapped volatile
  */
 export class Gen4Ruleset extends BaseRuleset {
@@ -191,19 +191,40 @@ export class Gen4Ruleset extends BaseRuleset {
   }
 
   /**
-   * Gen 4 critical hit roll with Battle Armor / Shell Armor immunity.
+   * Gen 4 critical hit roll with Battle Armor / Shell Armor immunity
+   * and Lucky Chant blocking.
    *
    * If the defender has Battle Armor or Shell Armor, critical hits are
    * completely prevented — return false immediately without rolling.
+   * If Lucky Chant is active on the defender's side, critical hits are
+   * blocked entirely.
    * Otherwise, defer to BaseRuleset.rollCritical for normal crit logic.
    *
-   * Source: pret/pokeplatinum — same Battle Armor / Shell Armor check as Gen 3
+   * Source: pret/pokeplatinum src/battle/battle_lib.c BattleSystem_CalcCriticalMulti
+   *   line 7137: (sideConditions & SIDE_CONDITION_LUCKY_CHANT) == FALSE
+   * Source: pret/pokeplatinum — Battle Armor / Shell Armor check
    */
   override rollCritical(context: CritContext): boolean {
     const defenderAbility = context.defender?.ability;
     if (defenderAbility === "battle-armor" || defenderAbility === "shell-armor") {
       return false;
     }
+
+    // Lucky Chant: blocks critical hits on the defender's side
+    // Source: pret/pokeplatinum battle_lib.c BattleSystem_CalcCriticalMulti —
+    //   checks SIDE_CONDITION_LUCKY_CHANT before allowing crits
+    if (context.defender && context.state?.sides) {
+      for (const side of context.state.sides) {
+        const active = side.active;
+        if (active && active.some((a) => a === context.defender)) {
+          if (side.luckyChant?.active) {
+            return false;
+          }
+          break;
+        }
+      }
+    }
+
     return super.rollCritical(context);
   }
 
@@ -247,7 +268,11 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: pret/pokeplatinum — entry hazard damage / effect tables
    * Source: Bulbapedia — Stealth Rock, Toxic Spikes
    */
-  applyEntryHazards(pokemon: ActivePokemon, side: BattleSide): EntryHazardResult {
+  applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    state?: BattleState,
+  ): EntryHazardResult {
     // Magic Guard: immune to all indirect damage, including entry hazard damage
     // Note: Toxic Spikes status infliction is ALSO prevented by Magic Guard
     // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
@@ -274,7 +299,19 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Bulbapedia — Magnet Rise: "makes the user immune to Ground-type moves"
     // Source: Showdown Gen 4 mod — Magnet Rise grants same grounding immunity as Levitate
     const hasMagnetRise = pokemon.volatileStatuses.has("magnet-rise");
-    const isGrounded = !isFlying && !hasLevitate && !hasMagnetRise;
+
+    // Gravity: grounds all Pokemon, overriding Flying type, Levitate, and Magnet Rise
+    // Source: Bulbapedia — Gravity: "All Pokemon are grounded."
+    // Source: Showdown Gen 4 mod — Gravity grounds for hazard purposes
+    const gravityActive = state?.gravity?.active ?? false;
+
+    // Iron Ball: grounds the holder, making them susceptible to ground-based hazards
+    // Source: Bulbapedia — Iron Ball: "makes the holder grounded"
+    // Source: Showdown data/items.ts — Iron Ball onImmunity removes Ground immunity
+    const hasIronBall = pokemon.pokemon.heldItem === "iron-ball";
+
+    const isGrounded =
+      gravityActive || hasIronBall || (!isFlying && !hasLevitate && !hasMagnetRise);
 
     // --- Stealth Rock ---
     const stealthRock = side.hazards.find((h) => h.type === "stealth-rock");
@@ -420,39 +457,46 @@ export class Gen4Ruleset extends BaseRuleset {
   // --- Status System ---
 
   /**
-   * Gen 4 (international) sleep duration: 1-5 turns.
-   * Gen 3 was 2-5 turns. Gen 5+ is 1-3 turns (BaseRuleset default).
+   * Gen 4 (international) sleep duration: 1-4 effective turns.
    *
-   * Source: Bulbapedia — Sleep (status condition), international Gen 4: 1-5 turns
-   * Source: specs/battle/05-gen4.md — "Duration: 1-5 turns (international Gen 4)"
+   * Showdown Gen 4 uses counter = random(2, 6) giving 2-5, decremented before
+   * the wake check each turn. This yields 1-4 effective sleep turns.
+   * Our processSleepTurn decrements turnsLeft and wakes when it hits 0,
+   * so we return 1-4 directly.
+   *
+   * Source: Showdown Gen 4 data/mods/gen4/conditions.ts line 32 —
+   *   this.effectState.time = this.random(2, 6); // 2-5 inclusive counter
+   *   Counter 2 = 1 effective turn, Counter 5 = 4 effective turns
    */
   rollSleepTurns(rng: SeededRandom): number {
-    return rng.int(1, 5);
+    return rng.int(1, 4);
   }
 
   /**
-   * Gen 4 sleep processing: the Pokemon CANNOT act on the turn it wakes up.
+   * Gen 4 sleep processing: the Pokemon CAN act on the turn it wakes up.
    *
-   * In Gen 5+ (BaseRuleset default), a Pokemon can act on the turn it wakes.
-   * In Gen 1-4, waking up consumes the turn — the Pokemon loses its action.
+   * The sleep counter is decremented each turn. When it reaches 0, the Pokemon
+   * wakes up and CAN act that turn. The "lose turn on wake" mechanic is Gen 1-2 only.
    *
-   * Source: pret/pokeplatinum — sleep counter decrements at turn start; wake = can't act
-   * Source: Showdown Gen 4 mod — pokemon.status === 'slp' prevents action on wake turn
+   * Source: Showdown Gen 4 data/mods/gen4/conditions.ts lines 39-52 —
+   *   when time <= 0, cureStatus() is called and the function returns without
+   *   "return false", allowing the Pokemon to act.
+   * Source: pret/pokeplatinum — sleep counter decrements; wake turn allows action
    */
   override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
-      // No counter found or already at 0 — wake up, but cannot act (Gen 4)
+      // No counter found or already at 0 — wake up and CAN act
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false;
+      return true;
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
-      // Counter just reached 0 — wake up, but cannot act (Gen 4)
+      // Counter just reached 0 — wake up and CAN act
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false;
+      return true;
     }
     return false; // Still sleeping — cannot act
   }
@@ -486,6 +530,23 @@ export class Gen4Ruleset extends BaseRuleset {
     }
     // All other statuses use the BaseRuleset default logic
     return super.applyStatusDamage(pokemon, status, state);
+  }
+
+  /**
+   * Gen 4 full paralysis check: Magic Guard prevents the 25% move loss.
+   *
+   * In Gen 4, Magic Guard prevents the 25% chance of being fully paralyzed
+   * (losing the turn). The speed penalty from paralysis still applies.
+   *
+   * Source: Showdown Gen 4 data/mods/gen4/conditions.ts lines 15-19 —
+   *   if (!pokemon.hasAbility('magicguard') && this.randomChance(1, 4)) {
+   *     return false; // fully paralyzed
+   *   }
+   */
+  override checkFullParalysis(pokemon: ActivePokemon, rng: SeededRandom): boolean {
+    // Magic Guard: immune to full paralysis (25% move loss)
+    if (pokemon.ability === "magic-guard") return false;
+    return rng.chance(0.25);
   }
 
   // --- Experience ---
@@ -841,10 +902,21 @@ export class Gen4Ruleset extends BaseRuleset {
         const active = side?.active[0];
         if (!active) continue;
         if (active.pokemon.heldItem !== "custap-berry") continue;
+        // Klutz prevents item activation
+        if (active.ability === "klutz") continue;
+        // Embargo prevents item activation
+        if (active.volatileStatuses.has("embargo")) continue;
         const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
-        // Source: Bulbapedia — Custap Berry activates at <=25% HP
-        if (active.pokemon.currentHp <= Math.floor(maxHp * 0.25)) {
+        // Gluttony: activates at <=50% HP instead of <=25% HP
+        // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+        //   custapberry: if (pokemon.hp <= pokemon.maxhp / 4 ||
+        //     (pokemon.hp <= pokemon.maxhp / 2 && pokemon.ability === 'gluttony'))
+        const threshold = active.ability === "gluttony" ? 0.5 : 0.25;
+        if (active.pokemon.currentHp <= Math.floor(maxHp * threshold)) {
           activated.add(i);
+          // Consume the berry after activation (single-use)
+          // Source: Showdown Gen 4 mod — Custap Berry: pokemon.eatItem() consumes the berry
+          active.pokemon.heldItem = null;
         }
       }
     }

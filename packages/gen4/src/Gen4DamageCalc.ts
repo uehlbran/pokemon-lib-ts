@@ -129,6 +129,10 @@ export const TYPE_RESIST_BERRIES: Readonly<Record<string, string>> = {
  * Source: Showdown sim/battle.ts — Gen 4 immunity abilities
  * Source: Bulbapedia — Motor Drive, Dry Skin
  */
+// Note: Storm Drain is intentionally absent — in Gen 4 it only redirects Water moves
+// in doubles, it does NOT grant water immunity or SpAtk boost. That was added in Gen 5.
+// Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+//   stormDrain.onTryHit is empty (no immunity)
 const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
   levitate: "ground",
   "volt-absorb": "electric",
@@ -136,7 +140,6 @@ const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
   "flash-fire": "fire",
   "motor-drive": "electric",
   "dry-skin": "water",
-  "storm-drain": "water",
 };
 
 // ─── Simple / Unaware Stat Stage Helper ───────────────────────────────────
@@ -162,13 +165,17 @@ function getEffectiveStatStage(
   stat: string,
   opponent?: ActivePokemon,
 ): number {
+  // Unaware: opponent ignores this Pokemon's stat stages entirely.
+  // Unaware takes priority over Simple — if the opponent has Unaware,
+  // it sees 0 stages regardless of Simple doubling.
+  // Source: Showdown Gen 4 — Unaware's onAnyModifyBoost sets boosts to 0,
+  //   which runs independently of and overrides Simple's doubling
+  if (opponent?.ability === "unaware") return 0;
+
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
   // Simple: double the stage, clamped to [-6, +6]
   // Source: Showdown Gen 4 — Simple doubles stat stage
   if (pokemon.ability === "simple") return Math.max(-6, Math.min(6, raw * 2));
-  // Unaware: opponent ignores this Pokemon's stat stages
-  // Source: Showdown Gen 4 — Unaware ignores foe's stat changes in damage calc
-  if (opponent?.ability === "unaware") return 0;
   return raw;
 }
 
@@ -287,14 +294,12 @@ function getAttackStat(
     rawStat = rawStat * 2;
   }
 
-  // Light Ball: 2x Atk AND SpAtk for Pikachu (25)
-  // CHANGED from Gen 3: Gen 3 was SpAtk only; Gen 4+ boosts BOTH Attack and SpAttack.
-  // Source: Bulbapedia — Light Ball: "When held by a Pikachu, doubles its Attack and
-  //   Special Attack. (Generation IV+)"
-  // Source: Showdown sim/items.ts — Light Ball Gen 4+ behavior
-  if (!attackerHasKlutz && attackerItem === "light-ball" && attackerSpecies === 25) {
-    rawStat = rawStat * 2;
-  }
+  // Light Ball: In Gen 4, Light Ball doubles BASE POWER (not attack stat) for Pikachu.
+  // Showdown Gen 4 mod explicitly removes onModifyAtk/onModifySpA and replaces with onBasePower.
+  // The base power doubling is applied in the base power section below, not here.
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+  //   lightball: onModifyAtk() {}, onModifySpA() {},
+  //   onBasePower(basePower, pokemon) { if Pikachu => chainModify(2) }
 
   // Thick Club: 2x Attack for Cubone (104) / Marowak (105)
   // Source: Bulbapedia — Thick Club: "When held by Cubone or Marowak, doubles Attack."
@@ -456,10 +461,9 @@ function getDefenseStat(
   //   stats of the Pokemon with this Ability and its allies are boosted by 50%."
   // Source: Bulbapedia — Mold Breaker: ignores ability effects on the opposing Pokemon
   // Source: Showdown data/abilities.ts — Flower Gift onAllyModifySpDPriority
-  const flowerGiftMoldBreaker =
-    attacker?.ability === "mold-breaker" ||
-    attacker?.ability === "teravolt" ||
-    attacker?.ability === "turboblaze";
+  // Only Mold Breaker exists in Gen 4; Teravolt/Turboblaze are Gen 5+ (Zekrom/Reshiram).
+  // Source: Bulbapedia — Teravolt (Gen V, Zekrom), Turboblaze (Gen V, Reshiram)
+  const flowerGiftMoldBreaker = attacker?.ability === "mold-breaker";
   if (
     !isPhysical &&
     !flowerGiftMoldBreaker &&
@@ -554,11 +558,13 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     power = Math.floor(power / 2);
   }
 
-  // Normalize: all moves used by the Pokemon become Normal type.
-  // This happens before everything else — affects STAB, type effectiveness, weather, etc.
+  // Normalize: all moves used by the Pokemon become Normal type, EXCEPT Struggle.
+  // Struggle is typeless ("???") in Gen 4 and Normalize must not affect it.
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
+  //   normalize.onModifyMove: if (move.id !== 'struggle') move.type = 'Normal'
   // Source: Bulbapedia — Normalize: "All the Pokemon's moves become Normal-type."
-  // Source: Showdown data/abilities.ts — Normalize onModifyMove
-  const effectiveMoveType: PokemonType = attackerAbility === "normalize" ? "normal" : move.type;
+  const effectiveMoveType: PokemonType =
+    attackerAbility === "normalize" && move.id !== "struggle" ? "normal" : move.type;
 
   // Klutz: holder cannot use its held item — suppresses all held-item modifiers
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
@@ -579,6 +585,26 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     power = Math.floor((power * 4915) / 4096);
   }
 
+  // 1c. Muscle Band (physical) / Wise Glasses (special): ~1.1x base power.
+  // Applied to base power via onBasePower (priority 16), same as type-boost items.
+  // Exact multiplier: 4505/4096 (~1.0998x), NOT 1.1x.
+  // Source: Showdown data/items.ts lines 4240-4244 — Muscle Band onBasePower chainModify([4505, 4096])
+  // Source: Showdown data/items.ts lines 7755-7759 — Wise Glasses onBasePower chainModify([4505, 4096])
+  if (
+    !attackerHasKlutz &&
+    attacker.pokemon.heldItem === "muscle-band" &&
+    move.category === "physical"
+  ) {
+    power = Math.floor((power * 4505) / 4096);
+  }
+  if (
+    !attackerHasKlutz &&
+    attacker.pokemon.heldItem === "wise-glasses" &&
+    move.category === "special"
+  ) {
+    power = Math.floor((power * 4505) / 4096);
+  }
+
   // Mold Breaker: attacker's ability bypasses defender's defensive abilities
   // Source: Showdown Gen 4 — Mold Breaker negates defender abilities in damage calc
   // Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this Ability
@@ -597,13 +623,12 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
-  // 2a. Flash Fire volatile: 1.5x power for Fire moves when flash-fire volatile is active
-  // Source: Bulbapedia — Flash Fire: "raises the power of Fire-type moves by 50%
-  //   while it is in effect"
-  // Source: Showdown data/abilities.ts — Flash Fire onBasePowerPriority
-  if (effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
-    power = Math.floor(power * 1.5);
-  }
+  // 2a. Flash Fire volatile: 1.5x damage modifier for Fire moves when flash-fire volatile is active.
+  // In Gen 4, Flash Fire is applied via onModifyDamagePhase1 (a post-formula modifier),
+  // NOT to base power. Handled below in the ModifyDamagePhase1 section (after burn).
+  // Source: Showdown data/mods/gen4/abilities.ts line 135 — Flash Fire onModifyDamagePhase1
+  const flashFireActive =
+    effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire");
 
   // 3. Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin defenders.
   // Showdown processes onSourceBasePower callbacks by priority (ascending = runs first).
@@ -689,6 +714,29 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   ) {
     power = Math.floor((power * 4915) / 4096);
   }
+  // Griseous Orb: 1.2x base power for Giratina (487) on Ghost/Dragon moves
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+  //   griseousorb.onBasePower: user.species.num === 487 && (Ghost || Dragon) => chainModify(1.2)
+  // Source: Bulbapedia — Griseous Orb: boosts Giratina's Ghost/Dragon moves by 20%
+  if (
+    !attackerHasKlutzPower &&
+    attackerItemPower === "griseous-orb" &&
+    attackerSpeciesIdPower === 487 && // Giratina
+    (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
+  ) {
+    power = Math.floor((power * 4915) / 4096);
+  }
+  // Light Ball: 2x base power for Pikachu (speciesId 25) on ALL moves
+  // In Gen 4, Light Ball doubles base power (onBasePower), not the attack stat.
+  // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+  //   lightball: onBasePower(basePower, pokemon) { if Pikachu => chainModify(2) }
+  if (
+    !attackerHasKlutzPower &&
+    attackerItemPower === "light-ball" &&
+    attackerSpeciesIdPower === 25 // Pikachu
+  ) {
+    power = power * 2;
+  }
 
   // 4. Defender ability type immunities
   // Mold Breaker bypasses all defender ability-based immunities
@@ -747,25 +795,27 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Track multipliers for breakdown
   let abilityMultiplier = 1;
 
-  // 6. Thick Fat: halves the attacker's effective stat for fire/ice moves
+  // 6. Thick Fat: halves base power for fire/ice moves (Gen 4 uses onSourceBasePower)
   // Mold Breaker bypasses Thick Fat
+  // Source: Showdown data/mods/gen4/abilities.ts lines 502-512 — Thick Fat onSourceBasePower
+  //   chainModify(0.5) on base power for Ice/Fire moves
   // Source: Bulbapedia — Thick Fat: "Fire-type and Ice-type moves deal half damage."
-  // Source: Showdown sim/abilities.ts — Thick Fat
   if (
     !moldBreaker &&
     defenderAbility === "thick-fat" &&
     (effectiveMoveType === "fire" || effectiveMoveType === "ice")
   ) {
-    attack = Math.floor(attack / 2);
+    power = Math.floor(power / 2);
     abilityMultiplier = 0.5;
   }
 
-  // 6a. Heatproof: halves fire damage to the holder
+  // 6a. Heatproof: halves the attacker's effective Atk/SpAtk for fire moves
   // Mold Breaker bypasses Heatproof
+  // Source: Showdown data/abilities.ts lines 1776-1790 — Heatproof onSourceModifyAtk/onSourceModifySpA
+  //   chainModify(0.5) on attacker's offensive stat for Fire moves
   // Source: Bulbapedia — Heatproof: "Halves the damage from Fire-type moves."
-  // Source: Showdown sim/abilities.ts — Heatproof onSourceModifyAtk
   if (!moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === "fire") {
-    power = Math.floor(power / 2);
+    attack = Math.floor(attack / 2);
     abilityMultiplier *= 0.5;
   }
 
@@ -795,23 +845,57 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     baseDamage = Math.floor(baseDamage / 2);
   }
 
-  // 10. Add 2 (before weather — matches the Bulbapedia formula order)
-  // Source: Bulbapedia — Gen 4 damage formula: floor(floor(.../ 50 + 2) * Modifier)
-  // Source: pret/pokeplatinum — "+2" added before weather modifier is applied
-  baseDamage += 2;
+  // --- ModifyDamagePhase1: Flash Fire, Reflect/Light Screen ---
+  // These modifiers run after burn but before weather/+2/crit.
+  // Source: Showdown data/mods/gen4/scripts.ts — ModifyDamagePhase1 slot
 
-  // 11. Weather modifier (applied after +2)
-  // Source: Showdown sim/battle.ts — Gen 4 weather damage modifier
+  // Flash Fire: 1.5x damage modifier for Fire moves (ModifyDamagePhase1)
+  // Source: Showdown data/mods/gen4/abilities.ts line 135 — Flash Fire onModifyDamagePhase1
+  if (flashFireActive) {
+    baseDamage = Math.floor(baseDamage * 1.5);
+    abilityMultiplier *= 1.5;
+  }
+
+  // Reflect / Light Screen: halve damage in singles (ModifyDamagePhase1)
+  // Conditions: screen must be active on defender's side, not a crit, not Brick Break.
+  // Source: pret/pokeplatinum battle_lib.c lines 6982-6991 (Reflect) and 7023-7032 (Light Screen)
+  // Source: Showdown data/mods/gen4/scripts.ts — Reflect/LightScreen in ModifyDamagePhase1
+  const sides = context.state.sides;
+  if (sides && !isCrit && move.id !== "brick-break") {
+    const defenderSideIndex = sides[0]?.active?.includes(defender) ? 0 : 1;
+    const defenderSide = sides[defenderSideIndex];
+    if (defenderSide?.screens) {
+      const hasReflect =
+        isPhysical && defenderSide.screens.some((s: { type: string }) => s.type === "reflect");
+      const hasLightScreen =
+        !isPhysical &&
+        defenderSide.screens.some((s: { type: string }) => s.type === "light-screen");
+      if (hasReflect || hasLightScreen) {
+        baseDamage = Math.floor(baseDamage / 2);
+      }
+    }
+  }
+
+  // 10. Weather modifier (applied BEFORE +2)
+  // Source: Showdown data/mods/gen4/scripts.ts lines 56-58 — weather runs before +2
+  // Source: pret/pokeplatinum battle_lib.c — weather modifier in damage calc
   // Rain: Water 1.5x, Fire 0.5x; Sun: Fire 1.5x, Water 0.5x
   const weatherMod = getWeatherDamageModifier(effectiveMoveType, weather);
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
   }
 
+  // 11. Add 2 (AFTER weather — matches Showdown Gen 4 order)
+  // Source: Showdown data/mods/gen4/scripts.ts lines 56-58 — baseDamage += 2 after weather
+  baseDamage += 2;
+
   // Record the base damage before post-formula modifiers for breakdown
   const rawBaseDamage = baseDamage;
 
   // --- Post-formula modifiers ---
+
+  // Track item multiplier for breakdown (used across Phase 2 and final modifier sections)
+  let itemMultiplier = 1;
 
   // 12. Critical hit multiplier
   // Gen 4: 2.0x normally, 3.0x with Sniper (NEW ability in Gen 4)
@@ -822,6 +906,36 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (isCrit) {
     critMultiplier = attackerAbility === "sniper" ? 3 : 2;
     baseDamage = baseDamage * critMultiplier;
+  }
+
+  // 12a. Life Orb: 1.3x damage (Phase 2 — after crit, before random/STAB/types)
+  // Recoil is handled separately by the engine.
+  // Source: Showdown data/mods/gen4/items.ts lines 228-240 — Life Orb onModifyDamagePhase2
+  //   (onModifyDamage is nulled out; only onModifyDamagePhase2 fires in Gen 4)
+  // Source: Bulbapedia — Life Orb: "Boosts the power of moves by 30%."
+  if (!attackerHasKlutz && attackerItem === "life-orb") {
+    baseDamage = Math.floor(baseDamage * 1.3);
+    itemMultiplier = 1.3;
+  }
+
+  // 12b. Metronome item: consecutive use of the same move boosts damage (Phase 2).
+  // Gen 4: Each consecutive use adds 0.1x (10%), capping at 1.5x (5 boost steps).
+  // Gen 5+ uses 0.2x per step up to 2.0x — but Gen 4 uses the smaller values.
+  // Applied alongside Life Orb, Expert Belt, etc. NOT base power.
+  // The consecutive count is tracked via the "metronome-count" volatile's data.count field.
+  // First use: data.count = 1 (1.0x = no boost); second consecutive use: data.count = 2 (1.1x), etc.
+  // Source: Showdown data/mods/gen4/items.ts line 326 — Metronome onModifyDamagePhase2:
+  //   return damage * (1 + numConsecutive / 10), numConsecutive capped at 5
+  if (!attackerHasKlutz && attackerItem === "metronome") {
+    const metronomeState = attacker.volatileStatuses.get("metronome-count");
+    if (metronomeState?.data?.count) {
+      const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
+      if (boostSteps > 0) {
+        const multiplier = 1 + boostSteps * 0.1;
+        baseDamage = Math.floor(baseDamage * multiplier);
+        itemMultiplier = multiplier;
+      }
+    }
   }
 
   // 13. Random factor: integer from 85 to 100 inclusive, divided by 100
@@ -985,67 +1099,27 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
-  // 20. Item damage modifiers (NEW in Gen 4)
-  // Source: Showdown sim/items.ts — Life Orb, Expert Belt, Muscle Band, Wise Glasses
-  // Klutz: suppresses all held item effects (attackerHasKlutz computed earlier)
-  let itemMultiplier = 1;
+  // 20. Item damage modifiers (Final modifier phase)
+  // Life Orb and Metronome moved to Phase 2 above. Expert Belt remains here.
+  // Muscle Band and Wise Glasses moved to base power above.
+  // Source: Showdown sim/items.ts — Expert Belt, type-resist berries
 
-  // Life Orb: 1.3x damage (recoil is handled separately by the engine)
-  // Source: Bulbapedia — Life Orb: "Boosts the power of moves by 30%."
-  // Source: Showdown sim/items.ts — Life Orb onModifyDamage
-  if (!attackerHasKlutz && attackerItem === "life-orb") {
-    baseDamage = Math.floor(baseDamage * 1.3);
-    itemMultiplier = 1.3;
-  }
+  // Life Orb: moved to Phase 2 (after crit, before random/STAB/types).
+  // See step 12a above.
 
   // Expert Belt: 1.2x damage for super-effective moves
   // Source: Bulbapedia — Expert Belt: "Boosts the power of super effective moves by 20%."
   // Source: Showdown sim/items.ts — Expert Belt
   if (!attackerHasKlutz && attackerItem === "expert-belt" && effectiveness > 1) {
-    baseDamage = Math.floor(baseDamage * 1.2);
-    itemMultiplier = 1.2;
+    baseDamage = Math.floor((baseDamage * 4915) / 4096);
+    itemMultiplier = 4915 / 4096;
   }
 
-  // Muscle Band: 1.1x damage for physical moves
-  // Source: Bulbapedia — Muscle Band: "Boosts the power of physical moves by 10%."
-  // Source: Showdown sim/items.ts — Muscle Band
-  if (!attackerHasKlutz && attackerItem === "muscle-band" && isPhysical) {
-    baseDamage = Math.floor(baseDamage * 1.1);
-    itemMultiplier = 1.1;
-  }
+  // Muscle Band and Wise Glasses: now applied to base power (moved to early base power section).
+  // See step 1c in the base power modifiers above.
 
-  // Wise Glasses: 1.1x damage for special moves
-  // Source: Bulbapedia — Wise Glasses: "Boosts the power of special moves by 10%."
-  // Source: Showdown sim/items.ts — Wise Glasses
-  if (!attackerHasKlutz && attackerItem === "wise-glasses" && !isPhysical) {
-    baseDamage = Math.floor(baseDamage * 1.1);
-    itemMultiplier = 1.1;
-  }
-
-  // Metronome item: consecutive use of the same move boosts baseDamage.
-  // Each consecutive use adds 0.2x: 1.0x (first use), 1.2x, 1.4x, 1.6x, 1.8x, 2.0x (caps at 2.0x)
-  // Applied to baseDamage (alongside Life Orb, Expert Belt, etc.), NOT to power.
-  // The consecutive count is tracked via the "metronome-count" volatile's data.count field.
-  // First use: data.count = 1 (1.0x = no boost); second consecutive use: data.count = 2 (1.2x), etc.
-  // Source: Showdown sim/items.ts — Metronome item onModifyDamage
-  // Source: Bulbapedia — Metronome (item): "Boosts the power of moves used
-  //   consecutively. +20% per consecutive use, up to 100% (2.0x)."
-  if (!attackerHasKlutz && attackerItem === "metronome") {
-    const metronomeState = attacker.volatileStatuses.get("metronome-count");
-    if (metronomeState?.data?.count) {
-      // count tracks consecutive uses including the first:
-      //   count=1 -> first use (1.0x, no boost)
-      //   count=2 -> second consecutive (1.2x)
-      //   count=3 -> third consecutive (1.4x)
-      //   count=6+ -> capped at 5 boost steps (2.0x)
-      const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
-      if (boostSteps > 0) {
-        const multiplier = 1 + boostSteps * 0.2;
-        baseDamage = Math.floor(baseDamage * multiplier);
-        itemMultiplier = multiplier;
-      }
-    }
-  }
+  // Metronome item: moved to Phase 2 (after crit, before random/STAB/types).
+  // See step 12b above.
 
   // Type-boost items and Plates now modify base power (not attack stat),
   // so they're already baked into baseDamage. No separate itemMultiplier needed for them.

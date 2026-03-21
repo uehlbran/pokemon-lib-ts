@@ -152,6 +152,37 @@ function handleBeforeMove(item: string, context: ItemContext): ItemResult {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Find the opponent's max HP from the battle state.
+ * Used by Jaboca/Rowap Berry to deal retaliation damage based on the attacker's HP.
+ *
+ * @param context - The item context (pokemon is the berry holder / defender)
+ * @returns The opponent's max HP, or the holder's max HP as fallback
+ */
+function getOpponentMaxHp(context: ItemContext): number {
+  const pokemon = context.pokemon;
+  const sides = context.state?.sides;
+  if (!sides) {
+    return pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+  }
+  const holderSide = sides.findIndex((s) =>
+    s.active.some((a) => a && a.pokemon === pokemon.pokemon),
+  );
+  if (holderSide === -1) {
+    return pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+  }
+  const opponentSide = holderSide === 0 ? 1 : 0;
+  const opponent = sides[opponentSide]?.active?.[0];
+  if (!opponent) {
+    return pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+  }
+  return opponent.pokemon.calculatedStats?.hp ?? opponent.pokemon.currentHp;
+}
+
+// ---------------------------------------------------------------------------
 // end-of-turn
 // ---------------------------------------------------------------------------
 
@@ -614,14 +645,17 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Jaboca Berry: when hit by a physical move, attacker takes 1/8 max HP retaliation damage.
+    // Jaboca Berry: when hit by a physical move, attacker takes 1/8 of ATTACKER's max HP.
     // Source: Bulbapedia — Jaboca Berry: "If holder is hit by a physical move,
     //   attacker loses 1/8 of its max HP."
-    // Source: Showdown sim/items.ts — Jaboca Berry onDamagingHit
+    // Source: Showdown data/items.ts — Jaboca Berry onDamagingHit:
+    //   this.damage(source.baseMaxhp / 8, source, target) — source is the attacker
     case "jaboca-berry": {
       const moveCategory = context.move?.category;
       if (moveCategory === "physical" && damage > 0) {
-        const retaliationDamage = Math.max(1, Math.floor(maxHp / 8));
+        // Find the attacker's max HP from the battle state
+        const attackerMaxHp = getOpponentMaxHp(context);
+        const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
         return {
           activated: true,
           effects: [
@@ -634,14 +668,17 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Rowap Berry: when hit by a special move, attacker takes 1/8 max HP retaliation damage.
+    // Rowap Berry: when hit by a special move, attacker takes 1/8 of ATTACKER's max HP.
     // Source: Bulbapedia — Rowap Berry: "If holder is hit by a special move,
     //   attacker loses 1/8 of its max HP."
-    // Source: Showdown sim/items.ts — Rowap Berry onDamagingHit
+    // Source: Showdown data/items.ts — Rowap Berry onDamagingHit:
+    //   this.damage(source.baseMaxhp / 8, source, target) — source is the attacker
     case "rowap-berry": {
       const moveCategory = context.move?.category;
       if (moveCategory === "special" && damage > 0) {
-        const retaliationDamage = Math.max(1, Math.floor(maxHp / 8));
+        // Find the attacker's max HP from the battle state
+        const attackerMaxHp = getOpponentMaxHp(context);
+        const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
         return {
           activated: true,
           effects: [
@@ -703,6 +740,219 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 // ---------------------------------------------------------------------------
 
 /**
+ * Gen 4 whitelist of moves eligible for King's Rock / Razor Fang flinch.
+ * In Gen 4, these items only add a 10% flinch chance to moves that don't
+ * already have a secondary effect (roughly ~200 moves).
+ *
+ * Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+ *   kingsrock.onModifyMove and razorfang.onModifyMove use this exact list
+ */
+const KINGS_ROCK_ELIGIBLE_MOVES = new Set([
+  "aerial-ace",
+  "aeroblast",
+  "air-cutter",
+  "air-slash",
+  "aqua-jet",
+  "aqua-tail",
+  "arm-thrust",
+  "assurance",
+  "attack-order",
+  "aura-sphere",
+  "avalanche",
+  "barrage",
+  "beat-up",
+  "bide",
+  "bind",
+  "blast-burn",
+  "bone-rush",
+  "bonemerang",
+  "bounce",
+  "brave-bird",
+  "brick-break",
+  "brine",
+  "bug-bite",
+  "bullet-punch",
+  "bullet-seed",
+  "charge-beam",
+  "clamp",
+  "close-combat",
+  "comet-punch",
+  "crabhammer",
+  "cross-chop",
+  "cross-poison",
+  "crush-grip",
+  "cut",
+  "dark-pulse",
+  "dig",
+  "discharge",
+  "dive",
+  "double-hit",
+  "double-kick",
+  "double-slap",
+  "double-edge",
+  "draco-meteor",
+  "dragon-breath",
+  "dragon-claw",
+  "dragon-pulse",
+  "dragon-rage",
+  "dragon-rush",
+  "drain-punch",
+  "drill-peck",
+  "earth-power",
+  "earthquake",
+  "egg-bomb",
+  "endeavor",
+  "eruption",
+  "explosion",
+  "extreme-speed",
+  "false-swipe",
+  "feint-attack",
+  "fire-fang",
+  "fire-spin",
+  "flail",
+  "flash-cannon",
+  "fly",
+  "force-palm",
+  "frenzy-plant",
+  "frustration",
+  "fury-attack",
+  "fury-cutter",
+  "fury-swipes",
+  "giga-impact",
+  "grass-knot",
+  "gunk-shot",
+  "gust",
+  "gyro-ball",
+  "hammer-arm",
+  "head-smash",
+  "hidden-power",
+  "high-jump-kick",
+  "horn-attack",
+  "hydro-cannon",
+  "hydro-pump",
+  "hyper-beam",
+  "ice-ball",
+  "ice-fang",
+  "ice-shard",
+  "icicle-spear",
+  "iron-head",
+  "judgment",
+  "jump-kick",
+  "karate-chop",
+  "last-resort",
+  "lava-plume",
+  "leaf-blade",
+  "leaf-storm",
+  "low-kick",
+  "mach-punch",
+  "magical-leaf",
+  "magma-storm",
+  "magnet-bomb",
+  "magnitude",
+  "mega-kick",
+  "mega-punch",
+  "megahorn",
+  "meteor-mash",
+  "mirror-shot",
+  "mud-bomb",
+  "mud-shot",
+  "muddy-water",
+  "night-shade",
+  "night-slash",
+  "ominous-wind",
+  "outrage",
+  "overheat",
+  "pay-day",
+  "payback",
+  "peck",
+  "petal-dance",
+  "pin-missile",
+  "pluck",
+  "poison-jab",
+  "poison-tail",
+  "pound",
+  "power-gem",
+  "power-whip",
+  "psycho-boost",
+  "psycho-cut",
+  "psywave",
+  "punishment",
+  "quick-attack",
+  "rage",
+  "rapid-spin",
+  "razor-leaf",
+  "razor-wind",
+  "return",
+  "revenge",
+  "reversal",
+  "roar-of-time",
+  "rock-blast",
+  "rock-climb",
+  "rock-throw",
+  "rock-wrecker",
+  "rolling-kick",
+  "rollout",
+  "sand-tomb",
+  "scratch",
+  "seed-bomb",
+  "seed-flare",
+  "seismic-toss",
+  "self-destruct",
+  "shadow-claw",
+  "shadow-force",
+  "shadow-punch",
+  "shadow-sneak",
+  "shock-wave",
+  "signal-beam",
+  "silver-wind",
+  "skull-bash",
+  "sky-attack",
+  "sky-uppercut",
+  "slam",
+  "slash",
+  "snore",
+  "solar-beam",
+  "sonic-boom",
+  "spacial-rend",
+  "spike-cannon",
+  "spit-up",
+  "steel-wing",
+  "stone-edge",
+  "strength",
+  "struggle",
+  "submission",
+  "sucker-punch",
+  "surf",
+  "swift",
+  "tackle",
+  "take-down",
+  "thrash",
+  "thunder-fang",
+  "triple-kick",
+  "trump-card",
+  "twister",
+  "u-turn",
+  "uproar",
+  "vacuum-wave",
+  "vice-grip",
+  "vine-whip",
+  "vital-throw",
+  "volt-tackle",
+  "wake-up-slap",
+  "water-gun",
+  "water-pulse",
+  "waterfall",
+  "weather-ball",
+  "whirlpool",
+  "wing-attack",
+  "wood-hammer",
+  "wrap",
+  "wring-out",
+  "x-scissor",
+  "zen-headbutt",
+]);
+
+/**
  * Handle on-hit item effects (attacker's perspective, after dealing damage).
  *
  * Source: Showdown Gen 4 mod — ItemBattleEffects (on-hit phase)
@@ -713,9 +963,13 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
-    // King's Rock: 10% flinch chance on damaging moves
-    // Source: Showdown Gen 4 mod — King's Rock 10% flinch (same as Gen 3)
+    // King's Rock: 10% flinch chance ONLY on moves in the Gen 4 whitelist.
+    // In Gen 4, these items only affect moves without existing secondary effects.
+    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+    //   kingsrock.onModifyMove checks affectedByKingsRock list
     case "kings-rock": {
+      const moveId = context.move?.id;
+      if (!moveId || !KINGS_ROCK_ELIGIBLE_MOVES.has(moveId)) return NO_ACTIVATION;
       if (context.rng.chance(0.1)) {
         return {
           activated: true,
@@ -726,10 +980,12 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Razor Fang: 10% flinch chance on damaging moves (NEW in Gen 4 — same mechanic as King's Rock)
-    // Source: Bulbapedia — Razor Fang: 10% chance to cause flinch on contact moves
-    // Source: Showdown Gen 4 mod — Razor Fang trigger
+    // Razor Fang: 10% flinch chance ONLY on moves in the Gen 4 whitelist (same as King's Rock).
+    // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
+    //   razorfang.onModifyMove checks identical affectedByRazorFang list
     case "razor-fang": {
+      const moveId = context.move?.id;
+      if (!moveId || !KINGS_ROCK_ELIGIBLE_MOVES.has(moveId)) return NO_ACTIVATION;
       if (context.rng.chance(0.1)) {
         return {
           activated: true,
