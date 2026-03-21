@@ -288,6 +288,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return rng.int(0, 255) < accuracy;
   }
 
+  // Gen 2 has no semi-invulnerable two-turn moves in the Gen 3+ sense.
+  canHitSemiInvulnerable(_moveId: string, _volatile: VolatileStatus): boolean {
+    return false;
+  }
+
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
     const result: {
       statusInflicted: PrimaryStatus | null;

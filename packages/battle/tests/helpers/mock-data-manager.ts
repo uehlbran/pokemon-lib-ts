@@ -284,6 +284,40 @@ export function createMockDataManager(): DataManager {
     }
   }
 
+  const flyMoveData: MoveData = {
+    id: "fly",
+    displayName: "Fly",
+    type: "flying",
+    category: "physical",
+    power: 90,
+    accuracy: 95,
+    pp: 15,
+    priority: 0,
+    target: "adjacent-foe",
+    flags: {
+      contact: true,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: true,
+      mirror: true,
+      snatch: false,
+      gravity: true,
+      defrost: false,
+      recharge: false,
+      charge: true,
+      bypassSubstitute: false,
+    },
+    effect: null,
+    description: "The user flies up high, then strikes on the next turn.",
+    generation: 1,
+  };
+
   const flameWheelMoveData: MoveData = {
     id: "flame-wheel",
     displayName: "Flame Wheel",
@@ -326,6 +360,7 @@ export function createMockDataManager(): DataManager {
       thunderboltMoveData,
       scratchMoveData,
       quickAttackMoveData,
+      flyMoveData,
       flameWheelMoveData,
     ],
     typeChart: typeChart as unknown as TypeChart,

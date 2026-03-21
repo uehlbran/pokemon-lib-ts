@@ -9,6 +9,7 @@ import type {
   SeededRandom,
   StatBlock,
   TypeChart,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
@@ -104,6 +105,17 @@ export interface MoveSystem {
    * Handles secondary effects, stat changes, status infliction.
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult;
+  /**
+   * Check whether a move can hit a target in a semi-invulnerable state.
+   * E.g., Thunder/Hurricane can hit "flying", Earthquake can hit "underground",
+   * Surf can hit "underwater". Returns false by default — most moves miss.
+   *
+   * Gen 1 has no two-turn semi-invulnerable moves in the Gen 3+ sense
+   * (Fly/Dig exist but engine handles them differently), so Gen 1 returns false.
+   *
+   * Source: Showdown sim/battle-actions.ts — semi-invulnerable immunity checks
+   */
+  canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean;
 }
 
 /**

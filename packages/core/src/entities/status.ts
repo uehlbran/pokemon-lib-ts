@@ -49,4 +49,9 @@ export type VolatileStatus =
   | "just-frozen" // Gen 2 — tracks whether a Pokemon was frozen this turn (cannot thaw same turn, per pokecrystal wPlayerJustGotFrozen)
   | "destiny-bond" // Destiny Bond — if the user faints from the opponent's move, the opponent faints too
   | "choice-locked" // Choice item (Band/Specs/Scarf) — locks the user into one move
-  | "flash-fire"; // Flash Fire — boosts Fire-type moves by 50% when hit by a Fire move
+  | "flash-fire" // Flash Fire — boosts Fire-type moves by 50% when hit by a Fire move
+  | "flying" // Semi-invulnerable turn of Fly, Bounce (Gen 2+)
+  | "underground" // Semi-invulnerable turn of Dig (Gen 2+)
+  | "underwater" // Semi-invulnerable turn of Dive (Gen 3+)
+  | "shadow-force-charging" // Semi-invulnerable turn of Shadow Force (Gen 4+)
+  | "charging"; // Generic charge turn (SolarBeam, Skull Bash, Razor Wind, Sky Attack) — NOT semi-invulnerable

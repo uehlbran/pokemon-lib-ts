@@ -299,6 +299,34 @@ export class BattleEngine implements BattleEventEmitter {
     const active = this.state.sides[side].active[0];
     if (!active) return [];
 
+    // If the Pokemon has a forced move (two-turn move second turn), only that move is available
+    // Source: Showdown — during the execution turn of a two-turn move, only that move can be selected
+    if (active.forcedMove) {
+      const forcedSlot = active.pokemon.moves[active.forcedMove.moveIndex];
+      if (forcedSlot) {
+        return active.pokemon.moves.map((slot, index) => {
+          const isForcedMove = index === active.forcedMove?.moveIndex;
+          let moveData: MoveData | undefined;
+          try {
+            moveData = this.dataManager.getMove(slot.moveId);
+          } catch {
+            // skip
+          }
+          return {
+            index,
+            moveId: slot.moveId,
+            displayName: moveData?.displayName ?? slot.moveId,
+            type: moveData?.type ?? ("normal" as const),
+            category: moveData?.category ?? ("physical" as const),
+            pp: slot.currentPP,
+            maxPp: slot.maxPP,
+            disabled: !isForcedMove,
+            disabledReason: isForcedMove ? undefined : "Locked into move",
+          };
+        });
+      }
+    }
+
     return active.pokemon.moves.flatMap((slot, index) => {
       let moveData: MoveData | undefined;
       try {
@@ -623,6 +651,16 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Enforce forced move (two-turn moves): override submitted action
+    // Source: Showdown — two-turn moves force the second-turn action
+    for (let side = 0 as 0 | 1; side <= 1; side = (side + 1) as 0 | 1) {
+      const active = this.getActive(side);
+      if (active && active.pokemon.currentHp > 0 && active.forcedMove) {
+        actions[side] = { type: "move", side, moveIndex: active.forcedMove.moveIndex };
+        active.forcedMove = null;
+      }
+    }
+
     // Reset per-turn faint deduplication set so a new faint on a new turn is
     // correctly recorded (fixes #78 — duplicate faint events across checkMidTurnFaints calls).
     this.faintedPokemonThisTurn.clear();
@@ -847,6 +885,27 @@ export class BattleEngine implements BattleEventEmitter {
       actor.consecutiveProtects = 0;
     }
 
+    // Remove semi-invulnerable volatile from attacker on the second (execution) turn
+    // of a two-turn move. The volatile was applied during the charge turn; it must be
+    // removed before damage calculation so the attacker is targetable again.
+    // Source: Showdown — semi-invulnerable status cleared at move execution start
+    const semiInvulnerableVolatiles: readonly import("@pokemon-lib-ts/core").VolatileStatus[] = [
+      "flying",
+      "underground",
+      "underwater",
+      "shadow-force-charging",
+    ];
+    for (const vol of semiInvulnerableVolatiles) {
+      if (actor.volatileStatuses.has(vol)) {
+        actor.volatileStatuses.delete(vol);
+        break; // A Pokemon can only have one semi-invulnerable volatile at a time
+      }
+    }
+    // Also remove the non-semi-invulnerable charge volatile (SolarBeam, Skull Bash, etc.)
+    if (actor.volatileStatuses.has("charging")) {
+      actor.volatileStatuses.delete("charging");
+    }
+
     // Find the target
     const defenderSide = action.side === 0 ? 1 : 0;
     const defender = this.getActive(defenderSide as 0 | 1);
@@ -861,6 +920,27 @@ export class BattleEngine implements BattleEventEmitter {
       actor.lastMoveUsed = moveData.id;
       actor.movedThisTurn = true;
       return;
+    }
+
+    // Semi-invulnerable check: if the defender is in a semi-invulnerable state
+    // (Fly, Dig, Dive, Shadow Force), most moves auto-miss unless the ruleset
+    // says otherwise (e.g., Thunder can hit flying targets, Earthquake hits underground).
+    // Source: Showdown sim/battle-actions.ts — semi-invulnerable immunity checks
+    for (const vol of semiInvulnerableVolatiles) {
+      if (defender.volatileStatuses.has(vol)) {
+        if (!this.ruleset.canHitSemiInvulnerable(moveData.id, vol)) {
+          this.emit({
+            type: "move-miss",
+            side: action.side,
+            pokemon: getPokemonName(actor),
+            move: moveData.id,
+          });
+          actor.lastMoveUsed = moveData.id;
+          actor.movedThisTurn = true;
+          return;
+        }
+        break; // Only one semi-invulnerable volatile at a time
+      }
     }
 
     // Accuracy check
@@ -1335,6 +1415,16 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Gravity check — prevents moves with the gravity flag (Fly, Bounce, etc.)
+    // Source: Showdown Gen 4 mod — Gravity disables gravity-flagged moves
+    if (this.state.gravity.active && move.flags.gravity) {
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(actor)} can't use ${move.displayName} because of gravity!`,
+      });
+      return false;
+    }
+
     // Taunt check — prevents status moves (runtime enforcement, mirrors getAvailableMoves check)
     // Source: Bulbapedia — "Taunt prevents the target from using status moves"
     if (actor.volatileStatuses.has("taunt") && move.category === "status") {
@@ -1628,6 +1718,31 @@ export class BattleEngine implements BattleEventEmitter {
           text: `${getPokemonName(attacker)} foresaw an attack!`,
         });
       }
+    }
+
+    // Forced move set (two-turn moves: Fly, Dig, Dive, SolarBeam, etc.)
+    // Source: Showdown — two-turn moves set forcedMove on charge turn; volatile applied immediately
+    if (result.forcedMoveSet) {
+      attacker.forcedMove = {
+        moveIndex: result.forcedMoveSet.moveIndex,
+        moveId: result.forcedMoveSet.moveId,
+      };
+      attacker.volatileStatuses.set(result.forcedMoveSet.volatileStatus, {
+        turnsLeft: 1,
+      });
+      this.emit({
+        type: "volatile-start",
+        side: attackerSide,
+        pokemon: getPokemonName(attacker),
+        volatile: result.forcedMoveSet.volatileStatus,
+      });
+    }
+
+    // Gravity set (Gen 4+)
+    // Source: Showdown Gen 4 mod — Gravity lasts 5 turns, grounds all Pokemon
+    if (result.gravitySet) {
+      this.state.gravity = { active: true, turnsLeft: 5 };
+      this.emit({ type: "message", text: "Gravity intensified!" });
     }
 
     // Self-faint (Explosion / Self-Destruct)
@@ -2200,6 +2315,18 @@ export class BattleEngine implements BattleEventEmitter {
                   volatile: "disable",
                 });
               }
+            }
+          }
+          break;
+        }
+        case "gravity-countdown": {
+          // Gravity field countdown — deactivate when turnsLeft reaches 0
+          // Source: Showdown Gen 4 mod — Gravity lasts 5 turns
+          if (this.state.gravity.active) {
+            this.state.gravity.turnsLeft--;
+            if (this.state.gravity.turnsLeft <= 0) {
+              this.state.gravity.active = false;
+              this.emit({ type: "message", text: "Gravity returned to normal!" });
             }
           }
           break;

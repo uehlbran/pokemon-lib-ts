@@ -111,6 +111,12 @@ export interface ActivePokemon {
   isTerastallized: boolean;
   /** Active Tera Type after terastallization, or `null` if not terastallized (Gen 9) */
   teraType: PokemonType | null;
+  /**
+   * Forced move for the next turn (two-turn moves like Fly, Dig, SolarBeam).
+   * When set, the engine overrides the submitted action with this move on the next turn.
+   * Cleared after the forced move executes.
+   */
+  forcedMove: { moveIndex: number; moveId: string } | null;
 }
 
 /**

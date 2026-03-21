@@ -9,6 +9,7 @@ import type {
   SeededRandom,
   StatBlock,
   TypeChart,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
@@ -154,6 +155,23 @@ export class MockRuleset implements GenerationRuleset {
 
   doesMoveHit(_context: AccuracyContext): boolean {
     return this.alwaysHit;
+  }
+
+  private semiInvulnerableOverrides = new Map<string, Set<string>>();
+
+  /**
+   * Configure specific moves to hit specific semi-invulnerable states.
+   * E.g., `setCanHitSemiInvulnerable("thunder", "flying")` makes Thunder hit flying targets.
+   */
+  setCanHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): void {
+    if (!this.semiInvulnerableOverrides.has(moveId)) {
+      this.semiInvulnerableOverrides.set(moveId, new Set());
+    }
+    this.semiInvulnerableOverrides.get(moveId)!.add(volatile);
+  }
+
+  canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+    return this.semiInvulnerableOverrides.get(moveId)?.has(volatile) ?? false;
   }
 
   executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {
