@@ -785,6 +785,23 @@ export class Gen4Ruleset extends BaseRuleset {
       return true;
     }
 
+    // Weather-based accuracy overrides (checked before the normal accuracy formula)
+    // Source: Showdown sim/battle-actions.ts — weather accuracy overrides
+    // Source: Bulbapedia — Thunder: "100% accuracy in rain, 50% accuracy in sun"
+    // Source: Bulbapedia — Blizzard: "100% accuracy in hail" (NEW in Gen 4)
+    const weather = context.state.weather?.type ?? null;
+    if (context.move.id === "thunder") {
+      if (weather === "rain") return true; // Thunder always hits in rain
+      if (weather === "sun") {
+        // Thunder has 50% accuracy in sun (overrides base 70%)
+        return context.rng.int(1, 100) <= 50;
+      }
+    }
+    if (context.move.id === "blizzard" && weather === "hail") {
+      // Blizzard always hits in hail (NEW in Gen 4)
+      return true;
+    }
+
     const moveAcc = context.move.accuracy;
 
     // Unaware accuracy/evasion interaction:
@@ -827,7 +844,6 @@ export class Gen4Ruleset extends BaseRuleset {
 
     // Sand Veil: 0.8x accuracy in sandstorm
     // Source: pret/pokeplatinum — Sand Veil evasion boost in sandstorm
-    const weather = context.state.weather?.type ?? null;
     if (context.defender.ability === "sand-veil" && weather === "sand") {
       calc = Math.floor((calc * 80) / 100);
     }
@@ -847,8 +863,28 @@ export class Gen4Ruleset extends BaseRuleset {
 
     // Wide Lens: 1.1x accuracy (NEW held item in Gen 4)
     // Source: Bulbapedia — Wide Lens: accuracy * 1.1
+    // Source: Showdown sim/items.ts — Wide Lens onSourceModifyAccuracy
     if (context.attacker.pokemon.heldItem === "wide-lens") {
       calc = Math.floor((calc * 110) / 100);
+    }
+
+    // Zoom Lens: 1.2x accuracy if attacker moves after the target (NEW in Gen 4)
+    // The condition is that the defender has already moved this turn.
+    // Source: Bulbapedia — Zoom Lens: "Boosts the accuracy of moves by 20%
+    //   if the holder moves after its target."
+    // Source: Showdown sim/items.ts — Zoom Lens onSourceModifyAccuracy
+    if (context.attacker.pokemon.heldItem === "zoom-lens" && context.defender.movedThisTurn) {
+      calc = Math.floor((calc * 120) / 100);
+    }
+
+    // BrightPowder / Lax Incense: reduce attacker's accuracy by 10% (defender held items)
+    // These are functionally identical — they both reduce the opponent's accuracy by 10%.
+    // Source: Bulbapedia — BrightPowder: "Lowers the opposing Pokemon's accuracy by 10%."
+    // Source: Bulbapedia — Lax Incense: "Lowers the opposing Pokemon's accuracy by 10%."
+    // Source: Showdown sim/items.ts — BrightPowder/Lax Incense onModifyAccuracy
+    const defenderItem = context.defender.pokemon.heldItem;
+    if (defenderItem === "bright-powder" || defenderItem === "lax-incense") {
+      calc = Math.floor((calc * 90) / 100);
     }
 
     // Gravity: multiply accuracy by 5/3 when gravity is active
