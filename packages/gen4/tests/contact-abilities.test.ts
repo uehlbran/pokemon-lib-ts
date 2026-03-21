@@ -522,6 +522,165 @@ describe("applyGen4Ability on-contact -- Effect Spore immunity checks", () => {
   });
 });
 
+// ===========================================================================
+// Positive triangulation: abilities successfully inflict status
+// ===========================================================================
+
+/**
+ * Creates an RNG mock where next() returns values from a provided sequence.
+ * Each successive call to next() returns the next value in the array.
+ * After the array is exhausted, returns 0.
+ */
+function makeSequenceRng(values: number[]) {
+  let callIndex = 0;
+  return {
+    next: () => {
+      const val = values[callIndex] ?? 0;
+      callIndex++;
+      return val;
+    },
+    int: () => 1,
+    chance: (_p: number) => false,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
+    shuffle: <T>(arr: T[]) => arr,
+    getState: () => 0,
+    setState: () => {},
+  };
+}
+
+describe("applyGen4Ability on-contact -- positive status infliction (triangulation)", () => {
+  it("given non-Fire non-Water-Veil attacker, when Flame Body triggers (rng < 0.3), then attacker is burned", () => {
+    // Source: Bulbapedia — Flame Body: 30% chance to burn attacker on contact
+    // Source: Showdown Gen 4 mod — Flame Body trigger fires when rng.next() < 0.3
+    // RNG returns 0.1 (< 0.3) to guarantee activation.
+    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "flame-body" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeSequenceRng([0.1]), // below 30% threshold
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "burn",
+    });
+  });
+
+  it("given non-Poison non-Steel non-Immunity attacker, when Poison Point triggers (rng < 0.3), then attacker is poisoned", () => {
+    // Source: Bulbapedia — Poison Point: 30% chance to poison attacker on contact
+    // Source: Showdown Gen 4 mod — Poison Point trigger fires when rng.next() < 0.3
+    // RNG returns 0.1 (< 0.3) to guarantee activation.
+    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "poison-point" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeSequenceRng([0.1]), // below 30% threshold
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "poison",
+    });
+  });
+
+  it("given non-immune attacker, when Effect Spore triggers and type roll selects poison (roll < 1/3), then attacker is poisoned", () => {
+    // Source: Bulbapedia — Effect Spore: 30% total chance on contact; if triggered,
+    //   1/3 chance each for poison, paralysis, sleep
+    // Source: Showdown Gen 4 mod — Effect Spore trigger (30% gate, then 1/3 splits)
+    // First rng.next() = 0.1 (< 0.3, gate passes), second rng.next() = 0.1 (< 1/3, poison path)
+    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeSequenceRng([0.1, 0.1]), // gate passes, roll < 1/3 = poison
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "poison",
+    });
+  });
+
+  it("given non-immune attacker, when Effect Spore triggers and type roll selects paralysis (1/3 <= roll < 2/3), then attacker is paralyzed", () => {
+    // Source: Bulbapedia — Effect Spore: 30% total; 1/3 splits
+    // Source: Showdown Gen 4 mod — Effect Spore paralysis path
+    // First rng.next() = 0.1 (gate passes), second rng.next() = 0.5 (>= 1/3, < 2/3 = paralysis)
+    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeSequenceRng([0.1, 0.5]), // gate passes, roll 0.5 = paralysis path
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "paralysis",
+    });
+  });
+
+  it("given non-immune attacker, when Effect Spore triggers and type roll selects sleep (roll >= 2/3), then attacker is put to sleep", () => {
+    // Source: Bulbapedia — Effect Spore: 30% total; 1/3 splits
+    // Source: Showdown Gen 4 mod — Effect Spore sleep path
+    // First rng.next() = 0.1 (gate passes), second rng.next() = 0.9 (>= 2/3 = sleep)
+    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const state = makeBattleState();
+    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const ctx: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      trigger: "on-contact",
+      rng: makeSequenceRng([0.1, 0.9]), // gate passes, roll 0.9 = sleep path
+    } as unknown as AbilityContext;
+
+    const result = applyGen4Ability("on-contact", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "sleep",
+    });
+  });
+});
+
 describe("applyGen4Ability on-contact -- Cute Charm immunity checks", () => {
   it("given attacker with Oblivious, when Cute Charm triggers, then infatuation is blocked", () => {
     // Source: Bulbapedia — Oblivious: prevents infatuation

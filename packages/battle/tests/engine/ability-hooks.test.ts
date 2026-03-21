@@ -471,6 +471,130 @@ describe("processAbilityResult: status-inflict effect", () => {
   });
 });
 
+// ---- processAbilityResult: companion volatile initialization ----
+
+describe("processAbilityResult: companion volatile initialization after status infliction", () => {
+  it("given ability inflicts badly-poisoned on opponent, when processAbilityResult runs, then target has toxic-counter volatile with turnsLeft=-1 and counter=1", () => {
+    // Source: Showdown — badly-poisoned via ability (e.g., Poison Point could theoretically
+    // inflict toxic; engine must initialize toxic-counter for escalating damage)
+    // The applyPrimaryStatus helper sets toxic-counter { turnsLeft: -1, data: { counter: 1 } }
+    const { engine, ruleset, events } = createTestEngine();
+
+    ruleset.setAbilityHandler((trigger, _ctx) => {
+      if (trigger === "on-contact") {
+        return {
+          activated: true,
+          effects: [
+            {
+              effectType: "status-inflict" as const,
+              target: "opponent" as const,
+              status: "badly-poisoned" as const,
+            },
+          ],
+          messages: ["Toxic status inflicted!"],
+        };
+      }
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    events.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Charizard (side 0) gets badly-poisoned when attacking Blastoise (on-contact fires for defender Blastoise, targeting opponent=Charizard)
+    const charizard = engine.getActive(0);
+    expect(charizard).not.toBeNull();
+    expect(charizard!.pokemon.status).toBe("badly-poisoned");
+    expect(charizard!.volatileStatuses.has("toxic-counter")).toBe(true);
+    const toxicCounter = charizard!.volatileStatuses.get("toxic-counter");
+    expect(toxicCounter).toBeDefined();
+    expect(toxicCounter!.turnsLeft).toBe(-1);
+    expect(toxicCounter!.data).toEqual({ counter: 1 });
+  });
+
+  it("given ability inflicts sleep on opponent, when processAbilityResult runs, then target has sleep-counter volatile with turnsLeft > 0", () => {
+    // Source: Showdown — sleep via ability (e.g., Effect Spore sleep path)
+    // The applyPrimaryStatus helper calls rollSleepTurns and sets sleep-counter
+    const { engine, ruleset, events } = createTestEngine();
+
+    ruleset.setAbilityHandler((trigger, _ctx) => {
+      if (trigger === "on-contact") {
+        return {
+          activated: true,
+          effects: [
+            {
+              effectType: "status-inflict" as const,
+              target: "opponent" as const,
+              status: "sleep" as const,
+            },
+          ],
+          messages: ["Sleep inflicted!"],
+        };
+      }
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    events.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Charizard gets sleep when it attacks Blastoise (on-contact fires for Blastoise, targeting Charizard)
+    const charizard = engine.getActive(0);
+    expect(charizard).not.toBeNull();
+    expect(charizard!.pokemon.status).toBe("sleep");
+    expect(charizard!.volatileStatuses.has("sleep-counter")).toBe(true);
+    const sleepCounter = charizard!.volatileStatuses.get("sleep-counter");
+    expect(sleepCounter).toBeDefined();
+    // MockRuleset.rollSleepTurns returns rng.int(1, 3), so turnsLeft is 1-3
+    expect(sleepCounter!.turnsLeft).toBeGreaterThanOrEqual(1);
+    expect(sleepCounter!.turnsLeft).toBeLessThanOrEqual(3);
+  });
+
+  it("given ability inflicts freeze on opponent, when processAbilityResult runs, then target has just-frozen volatile with turnsLeft=1", () => {
+    // Source: pret/pokecrystal engine/battle/core.asm:1538-1540 — wPlayerJustGotFrozen
+    // No Gen 4 ability directly causes freeze, but the engine must handle it if
+    // any ability result includes status: 'freeze'. The applyPrimaryStatus helper
+    // sets just-frozen { turnsLeft: 1 } to guard against same-turn EoT thaw.
+    const { engine, ruleset, events } = createTestEngine();
+
+    ruleset.setAbilityHandler((trigger, _ctx) => {
+      if (trigger === "on-contact") {
+        return {
+          activated: true,
+          effects: [
+            {
+              effectType: "status-inflict" as const,
+              target: "opponent" as const,
+              status: "freeze" as const,
+            },
+          ],
+          messages: ["Frozen via ability!"],
+        };
+      }
+      return { activated: false, effects: [], messages: [] };
+    });
+
+    engine.start();
+    events.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Charizard gets frozen when it attacks Blastoise
+    const charizard = engine.getActive(0);
+    expect(charizard).not.toBeNull();
+    expect(charizard!.pokemon.status).toBe("freeze");
+    expect(charizard!.volatileStatuses.has("just-frozen")).toBe(true);
+    const justFrozen = charizard!.volatileStatuses.get("just-frozen");
+    expect(justFrozen).toBeDefined();
+    expect(justFrozen!.turnsLeft).toBe(1);
+  });
+});
+
 // ---- processAbilityResult: volatile-inflict effect ----
 
 describe("processAbilityResult: volatile-inflict effect", () => {
