@@ -17,7 +17,12 @@
  * Source: pret/pokeplatinum — where decompiled functions exist
  */
 
-import type { ActivePokemon, MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
+import type {
+  ActivePokemon,
+  BattleState,
+  MoveEffectContext,
+  MoveEffectResult,
+} from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
   EntryHazardType,
@@ -164,13 +169,25 @@ export function isVolatileBlockedByAbility(target: ActivePokemon, volatile: stri
  *
  * @param status - The status to attempt to inflict
  * @param target - The target Pokemon
+ * @param state - Optional battle state (used for Leaf Guard + sun check)
  * @returns true if the status can be inflicted
  *
  * Source: Showdown sim/battle.ts Gen 4 mod — status type immunities
  */
-export function canInflictGen4Status(status: PrimaryStatus, target: ActivePokemon): boolean {
+export function canInflictGen4Status(
+  status: PrimaryStatus,
+  target: ActivePokemon,
+  state?: BattleState,
+): boolean {
   // Can't have two primary statuses at once
   if (target.pokemon.status !== null) {
+    return false;
+  }
+
+  // Leaf Guard: all status conditions blocked in sun weather
+  // Source: Bulbapedia — Leaf Guard: "Prevents status conditions in sunny weather"
+  // Source: Showdown data/abilities.ts — Leaf Guard onSetStatus
+  if (target.ability === "leaf-guard" && state?.weather?.type === "sun") {
     return false;
   }
 
@@ -287,7 +304,7 @@ function applyMoveEffect(
       // Source: Showdown Gen 4 — secondary status effect roll
       if (rollEffectChance(effect.chance, rng, attacker, defender, true)) {
         if (!defender.pokemon.status) {
-          if (canInflictGen4Status(effect.status, defender)) {
+          if (canInflictGen4Status(effect.status, defender, context.state)) {
             result.statusInflicted = effect.status;
           }
         }
@@ -299,7 +316,7 @@ function applyMoveEffect(
       // Guaranteed status (e.g., Thunder Wave, Toxic, Will-O-Wisp)
       // Source: Showdown Gen 4 — primary effect status infliction
       if (!defender.pokemon.status) {
-        if (canInflictGen4Status(effect.status, defender)) {
+        if (canInflictGen4Status(effect.status, defender, context.state)) {
           result.statusInflicted = effect.status;
         }
       }
@@ -1053,6 +1070,15 @@ function handleNullEffectMoves(
     case "roar": {
       // Force switch — engine handles phazing logic
       // Source: Showdown Gen 4 — Whirlwind/Roar force random switch
+      // Suction Cups: prevents forced switch effects (Whirlwind, Roar)
+      // Source: Bulbapedia — Suction Cups: "Prevents the Pokemon from being forced to switch out"
+      // Source: Showdown data/abilities.ts — Suction Cups onDragOut
+      const { defender } = context;
+      if (defender.ability === "suction-cups") {
+        const dName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+        result.messages.push(`${dName} anchored itself with Suction Cups!`);
+        break;
+      }
       result.switchOut = true;
       break;
     }

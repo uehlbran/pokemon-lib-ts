@@ -104,6 +104,7 @@ const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
   "flash-fire": "fire",
   "motor-drive": "electric",
   "dry-skin": "water",
+  "storm-drain": "water",
 };
 
 // ─── Simple / Unaware Stat Stage Helper ───────────────────────────────────
@@ -198,6 +199,11 @@ function getAttackStat(
   const attackerItem = attacker.pokemon.heldItem;
   const attackerSpecies = attacker.pokemon.speciesId;
 
+  // Klutz: holder cannot use its held item — all item-based stat modifiers are suppressed
+  // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
+  // Source: Showdown data/abilities.ts — Klutz gates item modifiers
+  const attackerHasKlutz = ability === "klutz";
+
   // 1. Huge Power / Pure Power: doubles physical attack
   // Source: Showdown sim/battle.ts — Huge Power / Pure Power in Gen 4
   // Source: pret/pokeplatinum — same as Gen 3
@@ -208,28 +214,28 @@ function getAttackStat(
   // 2. Type-boosting held items (1.1x): applied to raw attack/spAttack stat
   // Source: Showdown sim/battle.ts — type boost items
   // Source: pret/pokeplatinum — same as pokeemerald: (attack * 110) / 100
-  if (typeBoostItemType === moveType) {
+  if (!attackerHasKlutz && typeBoostItemType === moveType) {
     rawStat = Math.floor((rawStat * 110) / 100);
   }
 
   // 3. Plates (1.2x, NEW in Gen 4): applied to raw stat
   // Source: Bulbapedia — Plate items boost matching type moves by 20%
   // Source: Showdown sim/items.ts — Plate onBasePowerPriority
-  if (plateItemType === moveType) {
+  if (!attackerHasKlutz && plateItemType === moveType) {
     rawStat = Math.floor((rawStat * 120) / 100);
   }
 
   // 4. Choice Band: 1.5x physical attack (applied to raw stat)
   // Source: Showdown sim/battle.ts — Choice Band Gen 4
   // Source: pret/pokeplatinum — (150 * attack) / 100
-  if (isPhysical && attackerItem === "choice-band") {
+  if (!attackerHasKlutz && isPhysical && attackerItem === "choice-band") {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
   // 4a. Choice Specs (NEW in Gen 4): 1.5x special attack (applied to raw stat)
   // Source: Showdown sim/items.ts — Choice Specs
   // Source: Bulbapedia — Choice Specs: "Boosts Sp. Atk by 50%, but locks into one move."
-  if (!isPhysical && attackerItem === "choice-specs") {
+  if (!attackerHasKlutz && !isPhysical && attackerItem === "choice-specs") {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
@@ -240,6 +246,7 @@ function getAttackStat(
   // Source: Bulbapedia — Soul Dew: "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
   // Source: Showdown sim/items.ts — Soul Dew Gen 3-6 behavior
   if (
+    !attackerHasKlutz &&
     !isPhysical &&
     attackerItem === "soul-dew" &&
     (attackerSpecies === 380 || attackerSpecies === 381)
@@ -250,7 +257,12 @@ function getAttackStat(
   // Deep Sea Tooth: 2x SpAtk for Clamperl (366)
   // Source: Bulbapedia — Deep Sea Tooth: "When held by Clamperl, doubles its Special Attack."
   // Source: Showdown sim/items.ts — Deep Sea Tooth
-  if (!isPhysical && attackerItem === "deep-sea-tooth" && attackerSpecies === 366) {
+  if (
+    !attackerHasKlutz &&
+    !isPhysical &&
+    attackerItem === "deep-sea-tooth" &&
+    attackerSpecies === 366
+  ) {
     rawStat = rawStat * 2;
   }
 
@@ -259,7 +271,7 @@ function getAttackStat(
   // Source: Bulbapedia — Light Ball: "When held by a Pikachu, doubles its Attack and
   //   Special Attack. (Generation IV+)"
   // Source: Showdown sim/items.ts — Light Ball Gen 4+ behavior
-  if (attackerItem === "light-ball" && attackerSpecies === 25) {
+  if (!attackerHasKlutz && attackerItem === "light-ball" && attackerSpecies === 25) {
     rawStat = rawStat * 2;
   }
 
@@ -267,6 +279,7 @@ function getAttackStat(
   // Source: Bulbapedia — Thick Club: "When held by Cubone or Marowak, doubles Attack."
   // Source: Showdown sim/items.ts — Thick Club
   if (
+    !attackerHasKlutz &&
     isPhysical &&
     attackerItem === "thick-club" &&
     (attackerSpecies === 104 || attackerSpecies === 105)
@@ -361,10 +374,16 @@ function getDefenseStat(
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
 
+  // Klutz: holder cannot use its held item — all item-based stat modifiers are suppressed
+  // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
+  // Source: Showdown data/abilities.ts — Klutz gates item modifiers
+  const defenderHasKlutz = defender.ability === "klutz";
+
   // Soul Dew: 1.5x SpDef for Latias (380) / Latios (381)
   // Source: Bulbapedia — Soul Dew: "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
   // Source: Showdown sim/items.ts — Soul Dew Gen 3-6 behavior
   if (
+    !defenderHasKlutz &&
     !isPhysical &&
     defenderItem === "soul-dew" &&
     (defenderSpecies === 380 || defenderSpecies === 381)
@@ -375,7 +394,12 @@ function getDefenseStat(
   // Deep Sea Scale: 2x SpDef for Clamperl (366)
   // Source: Bulbapedia — Deep Sea Scale: "When held by Clamperl, doubles its Special Defense."
   // Source: Showdown sim/items.ts — Deep Sea Scale
-  if (!isPhysical && defenderItem === "deep-sea-scale" && defenderSpecies === 366) {
+  if (
+    !defenderHasKlutz &&
+    !isPhysical &&
+    defenderItem === "deep-sea-scale" &&
+    defenderSpecies === 366
+  ) {
     baseStat = baseStat * 2;
   }
 
@@ -869,12 +893,16 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // 20. Item damage modifiers (NEW in Gen 4)
   // Source: Showdown sim/items.ts — Life Orb, Expert Belt, Muscle Band, Wise Glasses
+  // Klutz: suppresses all held item effects (including damage modifiers)
+  // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
+  // Source: Showdown data/abilities.ts — Klutz gates item modifiers
   let itemMultiplier = 1;
+  const attackerHasKlutz = attackerAbility === "klutz";
 
   // Life Orb: 1.3x damage (recoil is handled separately by the engine)
   // Source: Bulbapedia — Life Orb: "Boosts the power of moves by 30%."
   // Source: Showdown sim/items.ts — Life Orb onModifyDamage
-  if (attackerItem === "life-orb") {
+  if (!attackerHasKlutz && attackerItem === "life-orb") {
     baseDamage = Math.floor(baseDamage * 1.3);
     itemMultiplier = 1.3;
   }
@@ -882,7 +910,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Expert Belt: 1.2x damage for super-effective moves
   // Source: Bulbapedia — Expert Belt: "Boosts the power of super effective moves by 20%."
   // Source: Showdown sim/items.ts — Expert Belt
-  if (attackerItem === "expert-belt" && effectiveness > 1) {
+  if (!attackerHasKlutz && attackerItem === "expert-belt" && effectiveness > 1) {
     baseDamage = Math.floor(baseDamage * 1.2);
     itemMultiplier = 1.2;
   }
@@ -890,7 +918,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Muscle Band: 1.1x damage for physical moves
   // Source: Bulbapedia — Muscle Band: "Boosts the power of physical moves by 10%."
   // Source: Showdown sim/items.ts — Muscle Band
-  if (attackerItem === "muscle-band" && isPhysical) {
+  if (!attackerHasKlutz && attackerItem === "muscle-band" && isPhysical) {
     baseDamage = Math.floor(baseDamage * 1.1);
     itemMultiplier = 1.1;
   }
@@ -898,7 +926,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Wise Glasses: 1.1x damage for special moves
   // Source: Bulbapedia — Wise Glasses: "Boosts the power of special moves by 10%."
   // Source: Showdown sim/items.ts — Wise Glasses
-  if (attackerItem === "wise-glasses" && !isPhysical) {
+  if (!attackerHasKlutz && attackerItem === "wise-glasses" && !isPhysical) {
     baseDamage = Math.floor(baseDamage * 1.1);
     itemMultiplier = 1.1;
   }
@@ -911,7 +939,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown sim/items.ts — Metronome item onModifyDamage
   // Source: Bulbapedia — Metronome (item): "Boosts the power of moves used
   //   consecutively. +20% per consecutive use, up to 100% (2.0x)."
-  if (attackerItem === "metronome") {
+  if (!attackerHasKlutz && attackerItem === "metronome") {
     const metronomeState = attacker.volatileStatuses.get("metronome-count");
     if (metronomeState?.data?.count) {
       // count tracks consecutive uses including the first:

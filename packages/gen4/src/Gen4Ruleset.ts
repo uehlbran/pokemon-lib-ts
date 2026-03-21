@@ -560,10 +560,15 @@ export class Gen4Ruleset extends BaseRuleset {
 
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(speedStage));
 
+    // Klutz: held item has no effect (including Choice Scarf speed boost)
+    // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
+    // Source: Showdown data/abilities.ts — Klutz gates all item battle effects
+    const hasKlutz = active.ability === "klutz";
+
     // Choice Scarf: 1.5x Speed
     // Source: Bulbapedia — Choice Scarf raises Speed by 50%
     // Source: Showdown sim/items.ts — Choice Scarf onModifySpe
-    if (active.pokemon.heldItem === "choice-scarf") {
+    if (!hasKlutz && active.pokemon.heldItem === "choice-scarf") {
       effective = Math.floor(effective * 1.5);
     }
 
@@ -601,10 +606,10 @@ export class Gen4Ruleset extends BaseRuleset {
       effective = Math.floor(effective * 0.25);
     }
 
-    // Iron Ball: halve Speed
+    // Iron Ball: halve Speed (Klutz suppresses Iron Ball's speed penalty)
     // Source: Bulbapedia — Iron Ball: "Cuts the Speed stat of the holder to half."
     // Source: Showdown data/items.ts — Iron Ball onModifySpe halves speed
-    if (active.pokemon.heldItem === "iron-ball") {
+    if (!hasKlutz && active.pokemon.heldItem === "iron-ball") {
       effective = Math.floor(effective * 0.5);
     }
 
@@ -1071,7 +1076,7 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: Showdown sim/battle.ts Gen 4 mod
    */
   applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
-    return applyGen4Ability(trigger, context);
+    return applyGen4Ability(trigger, context, this.dataManager);
   }
 
   // --- Held Item Triggers ---

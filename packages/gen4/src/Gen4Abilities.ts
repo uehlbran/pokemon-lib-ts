@@ -1,6 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
+import { GEN4_TYPE_CHART } from "./Gen4TypeChart";
 
 /**
  * Gen 4 Abilities — applyAbility dispatch.
@@ -15,6 +16,7 @@ import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffe
  *   - "passive-immunity": Water Absorb, Volt Absorb, Motor Drive, Dry Skin,
  *                         Flash Fire (with volatile boost), Levitate
  *   - "on-flinch": Steadfast
+ *   - "on-after-move-hit": Stench (10% flinch)
  *
  * Stat-modifying abilities (damage calc / speed calc integration):
  *   - Solar Power: 1.5x SpAtk in sun (damage calc) + 1/8 HP chip (turn-end)
@@ -24,9 +26,11 @@ import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffe
  *   - Slow Start: halve Attack/Speed for 5 turns (volatile tracking + damage calc + speed calc)
  *   - Download: compare foe Def/SpDef, raise Atk or SpAtk (switch-in)
  *
- * Deferred abilities (require engine hooks not yet available):
- *   - Leaf Guard: status prevention in sun
- *   - Klutz: item suppression
+ * Implemented elsewhere:
+ *   - Leaf Guard: status prevention in sun (canInflictGen4Status in Gen4MoveEffects.ts)
+ *   - Klutz: item suppression (Gen4Items.ts, Gen4DamageCalc.ts, Gen4Ruleset.ts)
+ *   - Storm Drain: Water immunity + SpAtk boost (passive-immunity handler + Gen4DamageCalc.ts)
+ *   - Suction Cups: forced switch prevention (Gen4MoveEffects.ts Whirlwind/Roar handler)
  *
  * Source: Showdown sim/battle.ts Gen 4 mod — ability trigger dispatch
  * Source: Bulbapedia — individual ability mechanics
@@ -34,13 +38,21 @@ import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffe
 
 /**
  * Dispatch an ability trigger for Gen 4.
+ *
+ * @param trigger - The ability trigger type
+ * @param context - The ability context
+ * @param dataManager - Optional DataManager for move lookups (Anticipation, Forewarn)
  */
-export function applyGen4Ability(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+export function applyGen4Ability(
+  trigger: AbilityTrigger,
+  context: AbilityContext,
+  dataManager?: DataManager,
+): AbilityResult {
   const abilityId = context.pokemon.ability;
 
   switch (trigger) {
     case "on-switch-in":
-      return handleSwitchIn(abilityId, context);
+      return handleSwitchIn(abilityId, context, dataManager);
     case "on-turn-end":
       return handleTurnEnd(abilityId, context);
     case "on-contact":
@@ -49,6 +61,8 @@ export function applyGen4Ability(trigger: AbilityTrigger, context: AbilityContex
       return handlePassiveImmunity(abilityId, context);
     case "on-flinch":
       return handleOnFlinch(abilityId, context);
+    case "on-after-move-hit":
+      return handleOnAfterMoveHit(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };
   }
@@ -63,7 +77,11 @@ export function applyGen4Ability(trigger: AbilityTrigger, context: AbilityContex
  *
  * Source: Showdown sim/battle.ts Gen 4 mod — switch-in ability triggers
  */
-function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResult {
+function handleSwitchIn(
+  abilityId: string,
+  context: AbilityContext,
+  dataManager?: DataManager,
+): AbilityResult {
   const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
 
   switch (abilityId) {
@@ -179,7 +197,43 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // NEW in Gen 4 — Warns if foe has a super-effective or OHKO move.
       // Informational only — no mechanical effect on stats or state.
       // Source: Bulbapedia — Anticipation: alerts trainer if foe has SE or OHKO move
-      // Source: Showdown Gen 4 mod — Anticipation (advisory, no game-state change)
+      // Source: Showdown data/abilities.ts — Anticipation onStart
+      if (!context.opponent || !dataManager) {
+        return { activated: false, effects: [], messages: [] };
+      }
+
+      const selfTypes = context.pokemon.types;
+      const ohkoMoveIds = ["sheer-cold", "fissure", "guillotine", "horn-drill"];
+      const typeChart: TypeChart = GEN4_TYPE_CHART;
+
+      let hasThreateningMove = false;
+      for (const moveSlot of context.opponent.pokemon.moves) {
+        if (!moveSlot) continue;
+        try {
+          const move = dataManager.getMove(moveSlot.moveId);
+          if (!move) continue;
+          // OHKO moves are always threatening
+          if (ohkoMoveIds.includes(move.id)) {
+            hasThreateningMove = true;
+            break;
+          }
+          // Check type effectiveness — if SE against any of self's types
+          if (move.power && move.power > 0) {
+            let effectiveness = 1;
+            for (const selfType of selfTypes) {
+              effectiveness *= typeChart[move.type]?.[selfType] ?? 1;
+            }
+            if (effectiveness > 1) {
+              hasThreateningMove = true;
+              break;
+            }
+          }
+        } catch {}
+      }
+
+      if (!hasThreateningMove) {
+        return { activated: false, effects: [], messages: [] };
+      }
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -191,14 +245,38 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // NEW in Gen 4 — Reveals foe's move with highest base power.
       // Informational only — no mechanical effect on stats or state.
       // Source: Bulbapedia — Forewarn: reveals foe's strongest move on switch-in
-      // Source: Showdown Gen 4 mod — Forewarn (advisory, no game-state change)
-      if (!context.opponent) return { activated: false, effects: [], messages: [] };
-      const oppName =
-        context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+      // Source: Showdown data/abilities.ts — Forewarn onStart
+      if (!context.opponent || !dataManager) {
+        return { activated: false, effects: [], messages: [] };
+      }
+
+      // OHKO moves count as base power 160 for Forewarn purposes
+      // Source: Bulbapedia — Forewarn counts OHKO moves as BP 160
+      const ohkoMoveIds = ["sheer-cold", "fissure", "guillotine", "horn-drill"];
+
+      let strongestMove: string | null = null;
+      let strongestPower = 0;
+
+      for (const moveSlot of context.opponent.pokemon.moves) {
+        if (!moveSlot) continue;
+        try {
+          const move = dataManager.getMove(moveSlot.moveId);
+          if (!move) continue;
+          const power = ohkoMoveIds.includes(move.id) ? 160 : (move.power ?? 0);
+          if (power > strongestPower) {
+            strongestPower = power;
+            strongestMove = move.displayName ?? move.id;
+          }
+        } catch {}
+      }
+
+      if (!strongestMove) {
+        return { activated: false, effects: [], messages: [] };
+      }
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
-        messages: [`${name}'s Forewarn let it know ${oppName}'s moves!`],
+        messages: [`${name}'s Forewarn alerted it to ${strongestMove}!`],
       };
     }
 
@@ -717,6 +795,24 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       };
     }
 
+    case "storm-drain": {
+      // Storm Drain: Water-type moves are absorbed, raising SpAtk by 1 stage.
+      // Source: Bulbapedia — Storm Drain (Gen 4): "Draws in all Water-type moves.
+      //   When hit by a Water-type move, the Pokemon's Sp. Atk is raised by one stage."
+      // Source: Showdown Gen 4 mod — Storm Drain onTryHit boosts SpAtk by 1
+      if (moveType !== "water") return { activated: false, effects: [], messages: [] };
+      const pokeName =
+        context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+      const effects: AbilityEffect[] = [
+        { effectType: "stat-change", target: "self", stat: "spAttack", stages: 1 },
+      ];
+      return {
+        activated: true,
+        effects,
+        messages: [`${pokeName}'s Storm Drain raised its Sp. Atk!`],
+      };
+    }
+
     default:
       return { activated: false, effects: [], messages: [] };
   }
@@ -755,5 +851,42 @@ function handleOnFlinch(abilityId: string, context: AbilityContext): AbilityResu
     activated: true,
     effects: [effect],
     messages: [`${name}'s Steadfast raised its Speed!`],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// on-after-move-hit
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle "on-after-move-hit" abilities for Gen 4.
+ *
+ * Fires after the attacker's move hits and deals damage. `context.pokemon`
+ * is the attacker (whose ability triggers), `context.opponent` is the
+ * defender that was hit.
+ *
+ * Currently only handles Stench.
+ *
+ * Source: Showdown Gen 4 mod — Stench on-after-move-hit flinch chance
+ * Source: Bulbapedia — Stench (Gen 4): "10% chance of causing the target to flinch"
+ */
+function handleOnAfterMoveHit(abilityId: string, context: AbilityContext): AbilityResult {
+  if (abilityId !== "stench") {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  // Stench: 10% flinch chance after dealing damage
+  // Note: Stench does NOT stack with King's Rock / Razor Fang
+  // Source: Bulbapedia — Stench (Gen 4): "Has a 10% chance of making a target flinch
+  //   when the holder deals damage."
+  // Source: Showdown Gen 4 mod — Stench onModifyMove adds flinch chance
+  if (context.rng.next() >= 0.1) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  return {
+    activated: true,
+    effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "flinch" }],
+    messages: [],
   };
 }

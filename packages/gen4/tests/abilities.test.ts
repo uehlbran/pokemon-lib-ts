@@ -415,27 +415,23 @@ describe("applyGen4Ability on-switch-in — Download (NEW in Gen 4)", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-switch-in — Anticipation", () => {
-  it("given Anticipation, when Pokemon switches in, then activates with none effect and a message", () => {
-    // Source: Bulbapedia — Anticipation: alerts trainer if foe has SE/OHKO move (informational)
+  it("given Anticipation without DataManager, when Pokemon switches in, then does not activate", () => {
+    // Anticipation requires DataManager to scan opponent moves; without one it returns false
     const ctx = makeContext({ ability: "anticipation" });
     const result = applyGen4Ability("on-switch-in", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("none");
-    expect(result.messages).toHaveLength(1);
+    expect(result.activated).toBe(false);
   });
 });
 
 describe("applyGen4Ability on-switch-in — Forewarn", () => {
-  it("given Forewarn with an opponent, when Pokemon switches in, then activates with none effect and a message", () => {
-    // Source: Bulbapedia — Forewarn: reveals foe's strongest move on switch-in (informational)
+  it("given Forewarn without DataManager, when Pokemon switches in, then does not activate", () => {
+    // Forewarn requires DataManager to scan opponent moves; without one it returns false
     const opponent = makeActivePokemon({ speciesId: 2 });
     const ctx = makeContext({ ability: "forewarn", opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("none");
-    expect(result.messages).toHaveLength(1);
+    expect(result.activated).toBe(false);
   });
 
   it("given Forewarn with no opponent, when Pokemon switches in, then does not activate", () => {
