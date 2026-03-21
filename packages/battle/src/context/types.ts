@@ -543,6 +543,7 @@ export type EndOfTurnEffect =
   | "wish"
   | "future-attack"
   | "perish-song"
+  | "uproar"
   | "screen-countdown"
   | "tailwind-countdown"
   | "trick-room-countdown"

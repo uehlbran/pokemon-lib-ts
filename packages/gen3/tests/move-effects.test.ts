@@ -377,8 +377,10 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
     expect(result.statusInflicted).toBeNull();
   });
 
-  it("given Electric-type defender, when Thunderbolt paralysis chance succeeds, then paralysis NOT inflicted (Gen 3 type immunity)", () => {
-    // Source: pret/pokeemerald — Electric types are immune to paralysis in Gen 3+
+  it("given Electric-type defender, when Thunderbolt paralysis chance succeeds, then paralysis IS inflicted (no Electric immunity in Gen 3)", () => {
+    // Source: pret/pokeemerald src/battle_util.c — CanBeStatusd has no Electric-type paralysis check.
+    // Electric-type paralysis immunity was introduced in Gen 6.
+    // Source: Bulbapedia — "In Generation VI onward, Electric-type Pokemon are immune to paralysis."
     const attacker = createActivePokemon({ types: ["electric"] });
     const defender = createActivePokemon({ types: ["electric"] });
     const move = dataManager.getMove("thunderbolt");
@@ -387,7 +389,7 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe("paralysis");
   });
 
   it("given Toxic used on non-immune target, when executeMoveEffect called, then statusInflicted = 'badly-poisoned'", () => {
@@ -619,10 +621,12 @@ describe("Gen 3 canInflictGen3Status — Type Immunities", () => {
     expect(canInflictGen3Status("freeze", defender)).toBe(false);
   });
 
-  it("given Electric-type defender, when checking paralysis infliction, then returns false (Gen 3 immunity)", () => {
-    // Source: pret/pokeemerald — Electric types gained paralysis immunity in Gen 3
-    const defender = createActivePokemon({ types: ["electric"] });
-    expect(canInflictGen3Status("paralysis", defender)).toBe(false);
+  it("given Electric-type defender, when checking paralysis infliction, then returns true (no Electric immunity in Gen 3)", () => {
+    // Source: pret/pokeemerald src/battle_util.c — CanBeStatusd has no Electric-type paralysis check
+    // Electric-type paralysis immunity was introduced in Gen 6.
+    // Source: Bulbapedia — "In Generation VI onward, Electric-type Pokemon are immune to paralysis."
+    const target = createActivePokemon({ types: ["electric"] });
+    expect(canInflictGen3Status("paralysis", target)).toBe(true);
   });
 
   it("given Poison-type defender, when checking poison infliction, then returns false", () => {

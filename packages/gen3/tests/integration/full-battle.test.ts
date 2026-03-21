@@ -658,6 +658,7 @@ describe("Gen 3 End-of-Turn Order", () => {
   it("given the Gen 3 ruleset, when getting EoT order, then effects are in correct pokeemerald order", () => {
     // Source: pret/pokeemerald src/battle_main.c — end-of-turn phase ordering
     const order = ruleset.getEndOfTurnOrder();
+    // Source: pret/pokeemerald src/battle_main.c — Uproar processing in end-of-turn loop
     expect(order).toEqual([
       "weather-damage",
       "future-attack",
@@ -673,6 +674,7 @@ describe("Gen 3 End-of-Turn Order", () => {
       "disable-countdown",
       "taunt-countdown",
       "perish-song",
+      "uproar",
       "speed-boost",
       "shed-skin",
       "weather-countdown",

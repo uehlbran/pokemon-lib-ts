@@ -415,8 +415,8 @@ describe("Gen 3 getEndOfTurnOrder", () => {
     // Verify weather-countdown comes last
     expect(order[order.length - 1]).toBe("weather-countdown");
 
-    // Verify total count matches expected
-    expect(order).toHaveLength(17);
+    // Verify total count matches expected (18 with uproar added)
+    expect(order).toHaveLength(18);
 
     // Verify key effects are present
     expect(order).toContain("future-attack");
@@ -429,6 +429,14 @@ describe("Gen 3 getEndOfTurnOrder", () => {
     expect(order).toContain("disable-countdown");
     expect(order).toContain("taunt-countdown");
     expect(order).toContain("shed-skin");
+
+    // Verify uproar is present between perish-song and speed-boost
+    // Source: pret/pokeemerald src/battle_main.c — Uproar processing in end-of-turn loop
+    // Source: Spec 04-gen3.md line 1038 — "13. Uproar wake-up check"
+    const uproarIdx = order.indexOf("uproar");
+    expect(uproarIdx).toBeGreaterThan(-1);
+    expect(uproarIdx).toBeGreaterThan(perishIdx);
+    expect(uproarIdx).toBeLessThan(speedBoostIdx);
   });
 
   it("given Gen3Ruleset, when getEndOfTurnOrder called, then status-damage comes before leech-seed", () => {

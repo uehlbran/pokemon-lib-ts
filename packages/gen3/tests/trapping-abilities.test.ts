@@ -302,7 +302,9 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
     const state = createMinimalBattleState(pokemon, opponent);
 
     const canAct = ruleset.processSleepTurn(pokemon, state);
-    expect(canAct).toBe(false); // Gen 3: cannot act on wake turn
+    // Source: pret/pokeemerald src/battle_script_commands.c — Gen 3+ Pokemon CAN act on wake turn
+    // Source: Bulbapedia — "Starting in Generation III, a Pokemon can attack on the turn it wakes up."
+    expect(canAct).toBe(true); // Gen 3+: CAN act on wake turn
     expect(pokemon.pokemon.status).toBe(null); // woke up
     expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
   });
@@ -319,7 +321,8 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
     const state = createMinimalBattleState(pokemon, opponent);
 
     const canAct = ruleset.processSleepTurn(pokemon, state);
-    expect(canAct).toBe(false);
+    // Source: pret/pokeemerald — Gen 3+ CAN act on wake turn
+    expect(canAct).toBe(true);
     expect(pokemon.pokemon.status).toBe(null);
     expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
   });
@@ -332,7 +335,8 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
     const state = createMinimalBattleState(pokemon, opponent);
 
     const canAct = ruleset.processSleepTurn(pokemon, state);
-    expect(canAct).toBe(false); // Gen 3: cannot act on wake turn
+    // Source: pret/pokeemerald — Gen 3+ CAN act on wake turn
+    expect(canAct).toBe(true); // Gen 3+: CAN act on wake turn
     expect(pokemon.pokemon.status).toBe(null);
     expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
   });
@@ -344,7 +348,8 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
     const state = createMinimalBattleState(pokemon, opponent);
 
     const canAct = ruleset.processSleepTurn(pokemon, state);
-    expect(canAct).toBe(false); // Gen 3: cannot act on wake turn
+    // Source: pret/pokeemerald — Gen 3+ CAN act on wake turn
+    expect(canAct).toBe(true); // Gen 3+: CAN act on wake turn
     expect(pokemon.pokemon.status).toBe(null);
   });
 });

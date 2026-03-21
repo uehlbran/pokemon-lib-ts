@@ -231,8 +231,10 @@ describe("Gen 3 Static ability (on-contact)", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given attacker is Electric-type, when Static triggers, then paralysis is blocked by type immunity", () => {
-    // Source: pret/pokeemerald -- Electric types immune to paralysis in Gen 3
+  it("given attacker is Electric-type, when Static triggers, then paralysis IS inflicted (no Electric immunity in Gen 3)", () => {
+    // Source: pret/pokeemerald src/battle_util.c — CanBeStatusd has no Electric-type paralysis check.
+    // Electric-type paralysis immunity was introduced in Gen 6 (blanket).
+    // Source: Bulbapedia — "In Generation VI onward, Electric-type Pokemon are immune to paralysis."
     const defender = createMockPokemon({ types: ["electric"], ability: "static" });
     const attacker = createMockPokemon({ types: ["electric"] });
     const state = createMinimalBattleState(attacker, defender);
@@ -248,7 +250,8 @@ describe("Gen 3 Static ability (on-contact)", () => {
     };
 
     const result = applyGen3Ability("on-contact", context);
-    expect(result.activated).toBe(false);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("status-inflict");
   });
 
   it("given attacker has Limber, when Static triggers, then paralysis is blocked by ability immunity", () => {
