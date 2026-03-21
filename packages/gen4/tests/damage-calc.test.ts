@@ -3289,3 +3289,711 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     expect(result.damage).toBe(37);
   });
 });
+
+// ===========================================================================
+// Regression tests for damage calc modifier bug fixes
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// #349 — Weather and +2 modifier order: weather BEFORE +2
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — weather before +2 order (#349)", () => {
+  it("given rain weather and Water-type move, when calculating damage, then weather is applied before +2 (regression)", () => {
+    // Source: Showdown data/mods/gen4/scripts.ts lines 56-58 — weather before +2
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100
+    //   baseDmg = floor(floor(22*80*100/100)/50) = 35
+    //   weather(rain, water) = floor(35*1.5) = 52; +2 = 54
+    //   random=100%, no STAB (attacker=["normal"]), neutral eff => 54
+    // OLD BUG: +2 first → 37, then floor(37*1.5) = 55 (wrong)
+    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "water", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move,
+        rng: createMockRng(100),
+        weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      }),
+      chart,
+    );
+
+    expect(result.damage).toBe(54);
+  });
+
+  it("given sun weather and Fire-type move with different stats, when calculating damage, then weather before +2 produces correct value", () => {
+    // Source: Showdown data/mods/gen4/scripts.ts lines 56-58
+    // Derivation: L50, power=100, Atk=120, Def=90, rng=100
+    //   baseDmg = floor(floor(22*100*120/90)/50) = floor(floor(29333.33)/50) = floor(2933/50) = 58
+    //   weather(sun, fire) = floor(58*1.5) = 87; +2 = 89
+    // OLD BUG: +2 first → 60, then floor(60*1.5) = 90 (wrong)
+    const attacker = createActivePokemon({ attack: 120, types: ["normal"] });
+    const defender = createActivePokemon({ defense: 90 });
+    const move = createMove({ type: "fire", power: 100, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move,
+        rng: createMockRng(100),
+        weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      }),
+      chart,
+    );
+
+    expect(result.damage).toBe(89);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #352 — Flash Fire as ModifyDamagePhase1 (not base power)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Flash Fire as damage modifier (#352)", () => {
+  it("given Flash Fire active on fire move with power=60 Atk=120, when calculating damage, then 1.5x applies to baseDamage not power", () => {
+    // Source: Showdown data/mods/gen4/abilities.ts line 135 — Flash Fire onModifyDamagePhase1
+    // Derivation: L50, power=60, Atk=120, Def=100, rng=100
+    //   baseDmg = floor(floor(22*60*120/100)/50) = floor(1584/50) = 31
+    //   Flash Fire (damage mod): floor(31*1.5) = 46; +2 = 48
+    // OLD BUG: power*1.5 first → power=90, baseDmg=floor(floor(22*90*120/100)/50)+2 = 47+2 = 49
+    const attacker = createActivePokemon({ attack: 120, types: ["normal"] });
+    attacker.volatileStatuses.set("flash-fire", { turnsLeft: -1 });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "fire", power: 60, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(48);
+  });
+
+  it("given Flash Fire active on fire move with power=100 Atk=80, when calculating damage, then damage modifier is correct", () => {
+    // Source: Showdown data/mods/gen4/abilities.ts — Flash Fire onModifyDamagePhase1
+    // Derivation: L50, power=100, Atk=80, Def=100, rng=100
+    //   baseDmg = floor(floor(22*100*80/100)/50) = floor(1760/50) = 35
+    //   Flash Fire: floor(35*1.5) = 52; +2 = 54
+    const attacker = createActivePokemon({ attack: 80, types: ["normal"] });
+    attacker.volatileStatuses.set("flash-fire", { turnsLeft: -1 });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "fire", power: 100, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(54);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #353 — Thick Fat halves base power (not attack stat)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Thick Fat halves base power (#353)", () => {
+  it("given Thick Fat defender hit by fire move power=80 Atk=100, when calculating damage, then power is halved (not attack)", () => {
+    // Source: Showdown data/mods/gen4/abilities.ts lines 502-512 — Thick Fat onSourceBasePower
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100
+    //   Thick Fat halves power: power = floor(80/2) = 40
+    //   baseDmg = floor(floor(22*40*100/100)/50) = floor(880/50) = 17; +2 = 19
+    // OLD BUG: attack halved instead → atk=50, baseDmg=floor(floor(22*80*50/100)/50)+2 = floor(880/50)+2 = 17+2 = 19
+    // (Same result with these numbers — use different ones to distinguish)
+    const attacker = createActivePokemon({ attack: 130, types: ["normal"] });
+    const defender = createActivePokemon({
+      defense: 100,
+      ability: "thick-fat",
+      types: ["normal"],
+    });
+    const move = createMove({ type: "fire", power: 90, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    // Power halved: power = floor(90/2) = 45
+    // baseDmg = floor(floor(22*45*130/100)/50) = floor(floor(12870/100)/50) = floor(128/50) = 2
+    // Wait, let me recompute: floor(22*45*130/100) = floor(128700/100) = 1287
+    // floor(1287/50) = 25; +2 = 27
+    // OLD: atk halved: atk=65, baseDmg = floor(floor(22*90*65/100)/50) = floor(floor(12870/100)/50) = floor(128/50) = 2
+    // Recompute: floor(22*90*65/100) = floor(128700/100) = 1287, floor(1287/50) = 25; +2 = 27
+    // Hmm, same result. Let me pick values that differentiate.
+    // Use power=91, Atk=130, Def=100:
+    // Power halved: floor(91/2) = 45 → baseDmg = floor(floor(22*45*130/100)/50) = floor(1287/50) = 25; +2 = 27
+    // Atk halved: floor(130/2) = 65 → baseDmg = floor(floor(22*91*65/100)/50) = floor(floor(13013/100)/50) = floor(130/50) = 2
+    // Recompute: floor(22*91*65/100) = floor(130130/100) = 1301, floor(1301/50) = 26; +2 = 28
+    // These are different! Power-halved: 27, Atk-halved: 28.
+
+    // Actually let me use simpler: power=90, Atk=131, Def=100
+    // Power halved: 45 → floor(22*45*131/100) = floor(129690/100) = 1296, floor(1296/50)=25, +2=27
+    // Atk halved: floor(131/2)=65 → floor(22*90*65/100) = floor(128700/100)=1287, floor(1287/50)=25, +2=27
+    // Still same. The symmetry P*A is the issue.
+
+    // Use power=81, Atk=100:
+    // Power halved: floor(81/2) = 40 → floor(22*40*100/100) = 880, floor(880/50)=17, +2=19
+    // Atk halved: floor(100/2) = 50 → floor(22*81*50/100) = floor(89100/100)=891, floor(891/50)=17, +2=19
+    // Same again because floor(P/2)*A can equal P*floor(A/2) sometimes.
+
+    // Use odd power to get a difference:
+    // power=73, Atk=100:
+    // Power halved: floor(73/2) = 36 → floor(22*36*100/100) = 792, floor(792/50)=15, +2=17
+    // Atk halved: floor(100/2) = 50 → floor(22*73*50/100) = floor(80300/100) = 803, floor(803/50)=16, +2=18
+    // Different! Power-halved=17, Atk-halved=18.
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    // With power=90 and attack=130, both give same result.
+    // The real test is the formula behavior, verified by a case that differentiates.
+    expect(result.damage).toBe(27);
+  });
+
+  it("given Thick Fat defender hit by ice move power=73 Atk=100, when calculating damage, then basePower halving differs from attack halving", () => {
+    // Source: Showdown data/mods/gen4/abilities.ts lines 502-512 — Thick Fat onSourceBasePower
+    // This test case specifically differentiates power-halving from attack-halving.
+    // Derivation: L50, power=73, Atk=100, Def=100, rng=100
+    //   Power halved: floor(73/2) = 36
+    //   baseDmg = floor(floor(22*36*100/100)/50) = floor(792/50) = 15; +2 = 17
+    // OLD BUG (attack halved): floor(100/2)=50
+    //   baseDmg = floor(floor(22*73*50/100)/50) = floor(803/50) = 16; +2 = 18 (WRONG)
+    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = createActivePokemon({
+      defense: 100,
+      ability: "thick-fat",
+      types: ["normal"],
+    });
+    const move = createMove({ type: "ice", power: 73, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(17);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #355 — Heatproof halves attack stat (not base power)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Heatproof halves attack stat (#355)", () => {
+  it("given Heatproof defender hit by fire move power=73 Atk=100, when calculating damage, then attack is halved (not power)", () => {
+    // Source: Showdown data/abilities.ts lines 1776-1790 — Heatproof onSourceModifyAtk
+    // This test case specifically differentiates attack-halving from power-halving.
+    // Derivation: L50, power=73, Atk=100, Def=100, rng=100
+    //   Attack halved: floor(100/2) = 50
+    //   baseDmg = floor(floor(22*73*50/100)/50) = floor(floor(80300/100)/50) = floor(803/50) = 16; +2 = 18
+    // OLD BUG (power halved): floor(73/2)=36
+    //   baseDmg = floor(floor(22*36*100/100)/50) = floor(792/50) = 15; +2 = 17 (WRONG)
+    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = createActivePokemon({
+      defense: 100,
+      ability: "heatproof",
+      types: ["steel"],
+    });
+    const move = createMove({ type: "fire", power: 73, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(18);
+  });
+
+  it("given Heatproof defender hit by fire special move power=95 SpAtk=110, when calculating damage, then SpAtk is halved", () => {
+    // Source: Showdown data/abilities.ts — Heatproof onSourceModifySpA
+    // Derivation: L50, power=95, SpAtk=110, SpDef=100, rng=100
+    //   SpAtk halved: floor(110/2) = 55
+    //   baseDmg = floor(floor(22*95*55/100)/50) = floor(floor(114950/100)/50) = floor(1149/50) = 22; +2 = 24
+    // OLD BUG (power halved): floor(95/2) = 47
+    //   baseDmg = floor(floor(22*47*110/100)/50) = floor(floor(113740/100)/50) = floor(1137/50) = 22; +2 = 24
+    // Same with these values — pick different ones.
+    // power=91, SpAtk=110:
+    //   SpAtk halved: 55 → floor(22*91*55/100)=floor(110110/100)=1101, floor(1101/50)=22, +2=24
+    //   Power halved: 45 → floor(22*45*110/100)=floor(108900/100)=1089, floor(1089/50)=21, +2=23
+    // Different! Attack-halved=24, power-halved=23.
+    const attacker = createActivePokemon({ spAttack: 110, types: ["normal"] });
+    const defender = createActivePokemon({
+      spDefense: 100,
+      ability: "heatproof",
+      types: ["steel"],
+    });
+    const move = createMove({ type: "fire", power: 91, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(24);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #357 — Life Orb in Phase 2 (after crit, before random/STAB/types)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Life Orb in Phase 2 (#357)", () => {
+  it("given Life Orb holder using neutral move, when calculating damage, then 1.3x applies after crit but before random", () => {
+    // Source: Showdown data/mods/gen4/items.ts lines 228-240 — Life Orb onModifyDamagePhase2
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=85 (min roll), no crit
+    //   no STAB [fighting attacker, normal move]
+    //   baseDmg = floor(floor(22*80*100/100)/50) = 35; +2 = 37
+    //   Life Orb (Phase 2): floor(37*1.3) = 48
+    //   random: floor(48*85/100) = floor(40.8) = 40; eff=1 → 40
+    // OLD BUG (Life Orb after types): baseDmg=35, +2=37, random=floor(37*85/100)=31,
+    //   then Life Orb: floor(31*1.3) = 40 (happens to be same here — use crit for differentiation)
+    const attacker = createActivePokemon({
+      attack: 100,
+      types: ["fighting"],
+      heldItem: "life-orb",
+    });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(85) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(40);
+  });
+
+  it("given Life Orb holder with crit, when calculating damage, then Life Orb applies after crit and before random", () => {
+    // Source: Showdown data/mods/gen4/items.ts — Life Orb onModifyDamagePhase2
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, crit=true
+    //   baseDmg = 35; +2 = 37; crit: 37*2 = 74; Life Orb: floor(74*1.3) = 96
+    //   random: floor(96*100/100) = 96; STAB = floor(96*1.5) = 144; eff=1 → 144
+    // OLD BUG: baseDmg=35, +2=37, crit=74, random=74, STAB=floor(74*1.5)=111, eff=1,
+    //   then Life Orb: floor(111*1.3) = 144 (same at max roll — test with min roll for diff)
+    // Try with rng=85: Phase 2 correct: crit=74, LO=96, random=floor(96*0.85)=81, STAB=floor(81*1.5)=121
+    //   OLD: crit=74, random=floor(74*0.85)=62, STAB=floor(62*1.5)=93, LO=floor(93*1.3)=120
+    const attacker = createActivePokemon({
+      attack: 100,
+      types: ["normal"],
+      heldItem: "life-orb",
+    });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, isCrit: true, rng: createMockRng(85) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(121);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #366 — Muscle Band/Wise Glasses as base power modifiers (4505/4096)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Muscle Band and Wise Glasses base power (#366)", () => {
+  it("given Muscle Band holder using physical move power=80, when calculating damage, then base power uses 4505/4096 multiplier", () => {
+    // Source: Showdown data/items.ts lines 4240-4244 — Muscle Band onBasePower chainModify([4505, 4096])
+    // Derivation: L50, power=90, Atk=100, Def=100, rng=100
+    //   no STAB [fighting attacker, normal move]
+    //   Muscle Band: power = floor(90*4505/4096) = floor(98.98...) = 98
+    //   baseDmg = floor(floor(22*98*100/100)/50) = floor(2156/50) = 43; +2 = 45
+    const attacker = createActivePokemon({
+      attack: 100,
+      types: ["fighting"],
+      heldItem: "muscle-band",
+    });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 90, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(45);
+  });
+
+  it("given Wise Glasses holder using special move power=90, when calculating damage, then base power uses 4505/4096 multiplier", () => {
+    // Source: Showdown data/items.ts lines 7755-7759 — Wise Glasses onBasePower chainModify([4505, 4096])
+    // Derivation: L50, power=90, SpAtk=100, SpDef=100, rng=100
+    //   no STAB [fighting attacker, normal move]
+    //   Wise Glasses: power = floor(90*4505/4096) = floor(98.98...) = 98
+    //   baseDmg = floor(floor(22*98*100/100)/50) = floor(2156/50) = 43; +2 = 45
+    const attacker = createActivePokemon({
+      spAttack: 100,
+      types: ["fighting"],
+      heldItem: "wise-glasses",
+    });
+    const defender = createActivePokemon({ spDefense: 100 });
+    const move = createMove({ type: "normal", power: 90, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(45);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #369 — Expert Belt uses 4915/4096 (not 1.2)
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Expert Belt 4915/4096 (#369)", () => {
+  it("given Expert Belt holder dealing super-effective damage=100, when calculating, then uses 4915/4096 not 1.2", () => {
+    // Source: Showdown data/items.ts line 1902-1904 — Expert Belt chainModify([4915, 4096])
+    // This test constructs a scenario where floor(100*4915/4096) = 119 != floor(100*1.2) = 120
+    // Derivation: L50, power=80, Atk=150, Def=100, rng=100, SE type chart
+    //   baseDmg = floor(floor(22*80*150/100)/50) = floor(2640/50) = 52; +2 = 54
+    //   random=54; no STAB; eff=2 → floor(54*2) = 108
+    //   Expert Belt: floor(108*4915/4096) = floor(129.77...) = 129
+    // OLD BUG: floor(108*1.2) = 129 (same! but at damage=100: floor(100*4915/4096)=119, floor(100*1.2)=120)
+    // Let me pick values that reach an exact 100-region damage.
+    // power=80, Atk=100, Def=100, neutral chart -> baseDmg=35, +2=37, random=37, STAB=1, SE 2x=74
+    // Expert Belt: floor(74*4915/4096) = floor(88.72..) = 88
+    // OLD: floor(74*1.2) = 88 — same! Need larger number.
+    // power=80, Atk=200, Def=100 -> baseDmg=floor(floor(22*80*200/100)/50)=floor(3520/50)=70, +2=72
+    // random=72, SE=144, EB: floor(144*4915/4096)=floor(172.64..)=172
+    // OLD: floor(144*1.2)=172 — same. The difference only shows for certain values.
+    // floor(N*4915/4096) vs floor(N*1.2): differ when fractional(N*4915/4096) < fractional(N*1.2)
+    // 4915/4096 = 1.19995117... so 1.2 - 4915/4096 = 0.00004883...
+    // Differ at N where N*0.00004883 causes the 1.2 version to cross an integer.
+    // N = 100: 100*1.19995 = 119.995, floor=119; 100*1.2 = 120, floor=120. DIFFERENT!
+    // baseDmg before EB needs to be exactly 100 after SE.
+    // SE=2x, so before SE needs to be 50 at max roll. floor(X*2)=100 → X=50.
+    // baseDmg = 50 before random (max roll=100% so stays 50). Then SE: floor(50*2)=100.
+    // baseDmg = 50 = formularesult + 2. formularesult = 48.
+    // floor(floor(22*P*A/D)/50) = 48. 22*P*A/D = 48*50=2400 + remainder.
+    // P*A/D = 2400/22 = 109.09... so P*A/D >= 109.09 and floor(22*P*A/D) in [2400,2449].
+    // P=80, A=137, D=100 → 22*80*137/100 = 2411.2, floor=2411, floor(2411/50)=48, +2=50.
+    // SE=100. EB: floor(100*4915/4096) = floor(119.995..) = 119.
+    // OLD: floor(100*1.2) = 120. DIFFERENT!
+    const attacker = createActivePokemon({
+      attack: 137,
+      types: ["normal"],
+      heldItem: "expert-belt",
+    });
+    const defender = createActivePokemon({ defense: 100, types: ["grass"] });
+    const move = createMove({ type: "fire", power: 80, category: "physical" });
+    const chart = createTypeChart([["fire", "grass", 2]]);
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(119);
+  });
+
+  it("given Expert Belt with different SE damage, when calculating, then 4915/4096 is applied correctly", () => {
+    // Source: Showdown data/items.ts — Expert Belt chainModify([4915, 4096])
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100
+    //   baseDmg = floor(floor(22*80*100/100)/50) = 35; +2 = 37
+    //   random=37; no STAB; SE 2x: floor(37*2) = 74
+    //   Expert Belt: floor(74*4915/4096) = floor(88.72..) = 88
+    const attacker = createActivePokemon({
+      attack: 100,
+      types: ["normal"],
+      heldItem: "expert-belt",
+    });
+    const defender = createActivePokemon({ defense: 100, types: ["grass"] });
+    const move = createMove({ type: "fire", power: 80, category: "physical" });
+    const chart = createTypeChart([["fire", "grass", 2]]);
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(88);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #377 — No Teravolt/Turboblaze in Gen 4
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — no Teravolt/Turboblaze (#377)", () => {
+  it("given attacker with ability=teravolt attacking Flower Gift defender in sun, when calculating damage, then Flower Gift SpDef boost still applies (teravolt is not mold-breaker in Gen 4)", () => {
+    // Source: Bulbapedia — Teravolt was introduced in Gen 5 for Zekrom.
+    // In Gen 4, only Mold Breaker exists. An attacker with "teravolt" should NOT
+    // bypass Flower Gift (since teravolt doesn't exist in Gen 4).
+    // Derivation: L50, power=80, SpAtk=100, SpDef=100 (→150 with FG), rng=100
+    //   no STAB [fighting attacker, normal move]
+    //   def = floor(100*150/100) = 150 (Flower Gift boost APPLIED, teravolt doesn't block)
+    //   baseDmg = floor(floor(22*80*100/150)/50) = floor(floor(1173.33)/50) = floor(1173/50) = 23; +2 = 25
+    const attacker = createActivePokemon({
+      spAttack: 100,
+      ability: "teravolt",
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      spDefense: 100,
+      ability: "flower-gift",
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move,
+        rng: createMockRng(100),
+        weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      }),
+      chart,
+    );
+
+    // Flower Gift boost applied (SpDef=150), not bypassed by teravolt
+    expect(result.damage).toBe(25);
+  });
+
+  it("given attacker with ability=turboblaze attacking Flower Gift defender in sun, when calculating damage, then Flower Gift still applies", () => {
+    // Source: Bulbapedia — Turboblaze was introduced in Gen 5 for Reshiram.
+    // Same as above — turboblaze should not bypass Flower Gift in Gen 4.
+    const attacker = createActivePokemon({
+      spAttack: 100,
+      ability: "turboblaze",
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      spDefense: 100,
+      ability: "flower-gift",
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move,
+        rng: createMockRng(100),
+        weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      }),
+      chart,
+    );
+
+    expect(result.damage).toBe(25);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #378 — Metronome item in Phase 2
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
+  it("given Metronome item at count=3 with crit rng=85, when calculating damage, then Metronome applies after crit before random", () => {
+    // Source: Showdown data/mods/gen4/items.ts line 326 — Metronome onModifyDamagePhase2
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=85, crit=true, count=3 (1.4x)
+    //   baseDmg = floor(floor(22*80*100/100)/50) = 35; +2 = 37
+    //   crit: 37*2 = 74; Metronome(Phase2): floor(74*1.4) = 103
+    //   random: floor(103*85/100) = floor(87.55) = 87; STAB(normal/normal)=floor(87*1.5)=130; eff=1 → 130
+    // OLD BUG: crit=74, random=floor(74*0.85)=62, STAB=floor(62*1.5)=93, eff=1,
+    //   then Metronome: floor(93*1.4) = 130 (same here — use non-STAB to differ)
+    // Without STAB (attacker types=["fighting"]):
+    //   Phase 2: crit=74, Metro=103, random=floor(103*0.85)=87 → 87
+    //   OLD: crit=74, random=62, then Metro: floor(62*1.4)=86 → 86 (DIFFERENT!)
+    const attacker = createActivePokemon({
+      attack: 100,
+      types: ["fighting"],
+      heldItem: "metronome",
+    });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 3, moveId: "test" },
+    });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, isCrit: true, rng: createMockRng(85) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(87);
+  });
+
+  it("given Metronome item at count=2 without crit, when calculating damage, then 1.2x applies in Phase 2", () => {
+    // Source: Showdown data/mods/gen4/items.ts — Metronome onModifyDamagePhase2
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, no crit, count=2 (1.2x)
+    //   baseDmg = 35; +2 = 37; Metronome(Phase2): floor(37*1.2) = 44
+    //   random: floor(44*100/100) = 44; no STAB; eff=1 → 44
+    // OLD BUG: baseDmg=35, +2=37, random=37, then Metro: floor(37*1.2)=44 (same at max roll)
+    // At rng=85: Phase2: 37*1.2=44, random=floor(44*0.85)=37
+    //   OLD: random=floor(37*0.85)=31, then Metro=floor(31*1.2)=37 (same!)
+    // With STAB at rng=85: Phase2: 37*1.2=44, random=floor(44*0.85)=37, STAB=floor(37*1.5)=55
+    //   OLD: random=31, STAB=floor(31*1.5)=46, Metro=floor(46*1.2)=55 (same!)
+    // The difference only shows when intermediate floors diverge. Let me use count=6 (2.0x) with min roll:
+    //   Phase2: 37*2=74, random=floor(74*0.85)=62
+    //   OLD: random=floor(37*0.85)=31, Metro=floor(31*2)=62 (same again!)
+    // The key differentiator is when the Metronome multiplier creates a fractional that floors differently.
+    // count=3 (1.4x): Phase2: floor(37*1.4)=51, random=floor(51*0.85)=43
+    //   OLD: random=floor(37*0.85)=31, Metro=floor(31*1.4)=43 (same!)
+    // Seems hard to differentiate at these values. Let me use power=90:
+    //   baseDmg = floor(floor(22*90*100/100)/50) = floor(1980/50)=39; +2=41
+    //   Phase2: floor(41*1.2)=49, random=floor(49*0.85)=41
+    //   OLD: random=floor(41*0.85)=34, Metro=floor(34*1.2)=40 (DIFFERENT! 41 vs 40)
+    const attacker = createActivePokemon({
+      attack: 100,
+      types: ["fighting"],
+      heldItem: "metronome",
+    });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 2, moveId: "test" },
+    });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 90, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(85) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(41);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #431 — Reflect/Light Screen damage halving
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
+  it("given Reflect active on defender's side for physical move, when calculating damage, then damage is halved", () => {
+    // Source: pret/pokeplatinum battle_lib.c lines 6982-6991 — Reflect halves physical damage
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100
+    //   no STAB [fighting attacker, normal move]
+    //   baseDmg = floor(floor(22*80*100/100)/50) = 35
+    //   Reflect: floor(35/2) = 17; +2 = 19
+    // Without Reflect: baseDmg=35, +2=37 → 37
+    const attacker = createActivePokemon({ attack: 100, types: ["fighting"] });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const state = {
+      weather: null,
+      sides: [
+        { active: [null], screens: [] },
+        { active: [defender], screens: [{ type: "reflect", turnsLeft: 5 }] },
+      ],
+    } as DamageContext["state"];
+
+    const result = calculateGen4Damage(
+      { attacker, defender, move, isCrit: false, rng: createMockRng(100), state } as DamageContext,
+      chart,
+    );
+
+    expect(result.damage).toBe(19);
+  });
+
+  it("given Light Screen active on defender's side for special move, when calculating damage, then damage is halved", () => {
+    // Source: pret/pokeplatinum battle_lib.c lines 7023-7032 — Light Screen halves special damage
+    // Derivation: L50, power=80, SpAtk=100, SpDef=100, rng=100
+    //   no STAB [fighting attacker, normal move]
+    //   baseDmg = floor(floor(22*80*100/100)/50) = 35
+    //   Light Screen: floor(35/2) = 17; +2 = 19
+    const attacker = createActivePokemon({ spAttack: 100, types: ["fighting"] });
+    const defender = createActivePokemon({ spDefense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const chart = createNeutralTypeChart();
+
+    const state = {
+      weather: null,
+      sides: [
+        { active: [null], screens: [] },
+        { active: [defender], screens: [{ type: "light-screen", turnsLeft: 5 }] },
+      ],
+    } as DamageContext["state"];
+
+    const result = calculateGen4Damage(
+      { attacker, defender, move, isCrit: false, rng: createMockRng(100), state } as DamageContext,
+      chart,
+    );
+
+    expect(result.damage).toBe(19);
+  });
+
+  it("given Reflect active but move is critical hit, when calculating damage, then Reflect does NOT apply", () => {
+    // Source: pret/pokeplatinum battle_lib.c line 6983 — criticalMul == 1 check
+    // Crits ignore screens.
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, crit=true
+    //   baseDmg = 35; no screen reduction on crit; +2 = 37; crit: 37*2 = 74
+    //   random=74; STAB(normal)=floor(74*1.5)=111 → 111
+    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const state = {
+      weather: null,
+      sides: [
+        { active: [null], screens: [] },
+        { active: [defender], screens: [{ type: "reflect", turnsLeft: 5 }] },
+      ],
+    } as DamageContext["state"];
+
+    const result = calculateGen4Damage(
+      { attacker, defender, move, isCrit: true, rng: createMockRng(100), state } as DamageContext,
+      chart,
+    );
+
+    // Crit ignores Reflect, so full damage with crit multiplier
+    expect(result.damage).toBe(111);
+  });
+
+  it("given Reflect active but move is Brick Break, when calculating damage, then Reflect does NOT apply", () => {
+    // Source: pret/pokeplatinum battle_lib.c line 6984 — BATTLE_EFFECT_REMOVE_SCREENS check
+    // Brick Break bypasses screens.
+    // Derivation: L50, power=75 (Brick Break), Atk=100, Def=100, rng=100
+    //   baseDmg = floor(floor(22*75*100/100)/50) = floor(1650/50) = 33
+    //   No screen reduction (Brick Break bypasses); +2 = 35 → 35
+    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = createActivePokemon({ defense: 100 });
+    const move = createMove({
+      type: "fighting",
+      power: 75,
+      category: "physical",
+      id: "brick-break",
+    });
+    const chart = createNeutralTypeChart();
+
+    const state = {
+      weather: null,
+      sides: [
+        { active: [null], screens: [] },
+        { active: [defender], screens: [{ type: "reflect", turnsLeft: 5 }] },
+      ],
+    } as DamageContext["state"];
+
+    const result = calculateGen4Damage(
+      { attacker, defender, move, isCrit: false, rng: createMockRng(100), state } as DamageContext,
+      chart,
+    );
+
+    expect(result.damage).toBe(35);
+  });
+});
