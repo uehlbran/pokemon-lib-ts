@@ -3,7 +3,7 @@ import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
-import type { BattleEvent } from "../../src/events";
+import type { BattleEvent, ExpGainEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -198,6 +198,89 @@ describe("BattleEngine.deserialize", () => {
     const restoredActive = restored.getActive(0)!;
     expect(restoredActive.pokemon.currentHp).toBe(1);
     expect(restoredActive.pokemon.currentHp).not.toBe(maxHp);
+  });
+
+  it("given participation was recorded before serialize, when deserialized and foe faints, then EXP is awarded to the pre-serialization participant", () => {
+    // Arrange — regression test for participantTracker not being serialized.
+    // Setup: two side-0 pokemon (Charizard, Pikachu). Charizard faces Blastoise for one turn
+    // (recording participation), then we serialize. On load, Pikachu comes in and Blastoise faints.
+    // Without the fix, Charizard's participation would be forgotten and it would receive 0 EXP;
+    // with the fix, Charizard is still a recorded participant and receives a share of EXP.
+    //
+    // Source: Qodo/CodeRabbit review on PR #280 — participantTracker not included in serialize().
+    const ruleset = new MockRuleset();
+    ruleset.setFixedDamage(5); // won't KO either pokemon in one hit; we'll set HP manually
+
+    const dataManager = createMockDataManager();
+
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      }),
+      createTestPokemon(25, 50, {
+        uid: "pikachu-1",
+        nickname: "Pikachu",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      }),
+    ];
+
+    const team2 = [
+      createTestPokemon(9, 30, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      }),
+    ];
+
+    const config: BattleConfig = {
+      generation: 1,
+      format: "singles",
+      teams: [team1, team2],
+      seed: 12345,
+      isWildBattle: true,
+    };
+
+    const engine = new BattleEngine(config, ruleset, dataManager);
+    engine.start();
+
+    // Set Blastoise HP to 15 (survives turn 1's 5-damage hit, faints next turn from manual set)
+    // and Charizard HP high so it doesn't faint in turn 1.
+    engine.getActive(1)!.pokemon.currentHp = 15;
+    engine.getActive(0)!.pokemon.currentHp = 200;
+
+    // Turn 1: Charizard faces Blastoise — records Charizard as participant vs Blastoise.
+    // Blastoise survives (15 - 5 = 10 HP). Blastoise hits Charizard (200 - 5 = 195 HP).
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Serialize mid-battle — Charizard is a recorded participant for Blastoise.
+    const serialized = engine.serialize();
+
+    // Act — deserialize and manually set Blastoise HP to 1 so it faints next attack.
+    const restored = BattleEngine.deserialize(serialized, ruleset, dataManager);
+    const restoredEvents: BattleEvent[] = [];
+    restored.on((e) => restoredEvents.push(e));
+
+    // Override: set Blastoise HP to 1 in the restored engine so it faints on next hit.
+    restored.getActive(1)!.pokemon.currentHp = 1;
+
+    // Turn 2: Charizard (still active) hits Blastoise (1 → faint).
+    // Source: MockRuleset.calculateExpGain — floor(defeatedSpecies.baseExp * defeatedLevel / (5 * participantCount))
+    // Blastoise baseExp=239, defeatedLevel=30, participantCount=1 (only Charizard, who is living)
+    // → floor(239 * 30 / (5 * 1)) = 1434
+    restored.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    restored.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — Charizard was a participant before the serialize, and should still receive EXP.
+    const expGainEvents = restoredEvents.filter((e): e is ExpGainEvent => e.type === "exp-gain");
+    expect(expGainEvents.length).toBeGreaterThanOrEqual(1);
+
+    const charizardExpEvent = expGainEvents.find((e) => e.pokemon === "charizard-1");
+    if (!charizardExpEvent) throw new Error("Expected charizard-1 to receive an exp-gain event");
+    // Source: MockRuleset.calculateExpGain — floor(239 * 30 / (5 * 1)) = 1434
+    expect(charizardExpEvent.amount).toBe(1434);
   });
 
   it("given a deserialized engine, when on() is called, then listeners receive events", () => {

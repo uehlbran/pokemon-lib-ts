@@ -490,18 +490,29 @@ export class BattleEngine implements BattleEventEmitter {
 
   /** Serialize battle state for save/load or network transmission */
   serialize(): string {
-    return JSON.stringify(this.state, (_key, value) => {
-      if (value instanceof Map) {
-        return { __type: "Map", entries: [...value.entries()] };
-      }
-      if (value instanceof Set) {
-        return { __type: "Set", values: [...value.values()] };
-      }
-      if (value instanceof SeededRandom) {
-        return { __type: "SeededRandom", state: value.getState() };
-      }
-      return value;
-    });
+    // participantTracker is an engine-private field (not in BattleState), so we must
+    // include it separately. Convert Map<string, Set<string>> → plain object for JSON.
+    // Source: bug fix — tracker was silently dropped on serialize/deserialize round-trips,
+    // causing benched participants to lose EXP eligibility after a mid-battle load.
+    const participantTrackerObj = Object.fromEntries(
+      [...this.participantTracker.entries()].map(([k, v]) => [k, [...v]]),
+    );
+
+    return JSON.stringify(
+      { state: this.state, participantTracker: participantTrackerObj },
+      (_key, value) => {
+        if (value instanceof Map) {
+          return { __type: "Map", entries: [...value.entries()] };
+        }
+        if (value instanceof Set) {
+          return { __type: "Set", values: [...value.values()] };
+        }
+        if (value instanceof SeededRandom) {
+          return { __type: "SeededRandom", state: value.getState() };
+        }
+        return value;
+      },
+    );
   }
 
   /** Restore a battle from serialized state.
@@ -526,17 +537,25 @@ export class BattleEngine implements BattleEventEmitter {
         return rng;
       }
       return value;
-    }) as BattleState;
+    }) as { state: BattleState; participantTracker?: Record<string, string[]> };
 
     // Create the engine instance without running the constructor.
     // This avoids: (1) stat recalculation, (2) HP reset to max,
     // (3) requiring DataManager to have species data loaded.
     const engine = Object.create(BattleEngine.prototype) as BattleEngine;
 
+    // Reconstruct the participantTracker from the serialized plain object.
+    // Source: bug fix — tracker was not serialized, causing benched participants to be
+    // forgotten on load and receiving no EXP when the foe later faints.
+    const restoredTracker = new Map<string, Set<string>>();
+    for (const [uid, participants] of Object.entries(parsed.participantTracker ?? {})) {
+      restoredTracker.set(uid, new Set(participants));
+    }
+
     // Initialize all instance fields. Uses Object.defineProperties to set
     // private/readonly fields without requiring type casts to `any`.
     Object.defineProperties(engine, {
-      state: { value: parsed, writable: false, enumerable: true, configurable: false },
+      state: { value: parsed.state, writable: false, enumerable: true, configurable: false },
       ruleset: { value: ruleset, writable: false, enumerable: false, configurable: false },
       dataManager: { value: dataManager, writable: false, enumerable: false, configurable: false },
       listeners: { value: new Set(), writable: true, enumerable: false, configurable: false },
@@ -562,7 +581,7 @@ export class BattleEngine implements BattleEventEmitter {
         configurable: false,
       },
       participantTracker: {
-        value: new Map(),
+        value: restoredTracker,
         writable: false,
         enumerable: false,
         configurable: false,
@@ -3469,8 +3488,13 @@ export class BattleEngine implements BattleEventEmitter {
     const faintedSpecies = this.dataManager.getSpecies(faintedPokemon.speciesId);
     if (!faintedSpecies) return;
 
-    const participants = this.participantTracker.get(faintedUid);
-    if (!participants || participants.size === 0) return;
+    // Copy and immediately clear the tracker entry so that if this pokemon is somehow
+    // revived and faints again (e.g., via a revive item), the second payout uses only
+    // post-revival participants and does not inflate participantCount with first-life data.
+    // Source: CodeRabbit review on PR #280 — defensive cleanup after payout.
+    const participants = new Set(this.participantTracker.get(faintedUid) ?? []);
+    this.participantTracker.delete(faintedUid);
+    if (participants.size === 0) return;
 
     // Count only living participants on the winner's side (dead pokemon don't get EXP)
     const winnerTeam = this.state.sides[winnerSide].team;
