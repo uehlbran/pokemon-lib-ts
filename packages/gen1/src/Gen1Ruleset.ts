@@ -38,14 +38,11 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   calculateExpGainClassic,
-  calculateModifiedCatchRate,
-  calculateShakeChecks,
   gen12FullParalysisCheck,
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
-  getStatStageMultiplier,
+  getGen12StatStageRatio,
   SeededRandom,
-  STATUS_CATCH_MODIFIERS,
 } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "./data";
 import { rollGen1Critical } from "./Gen1CritCalc";
@@ -224,8 +221,9 @@ export class Gen1Ruleset implements GenerationRuleset {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
 
-    // Apply stat stages
-    let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+    // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+    const speedRatio = getGen12StatStageRatio(active.statStages.speed);
+    let effective = Math.floor((baseSpeed * speedRatio.num) / speedRatio.den);
 
     // Paralysis reduces speed to 25%
     if (active.pokemon.status === "paralysis") {
@@ -240,11 +238,20 @@ export class Gen1Ruleset implements GenerationRuleset {
   doesMoveHit(context: AccuracyContext): boolean {
     const { attacker, defender, move, rng } = context;
 
-    // OHKO (Fissure, Guillotine, Horn Drill): only hits if user is strictly faster than target
+    // Source: pokered RageEffect — Gen 1 Rage miss loop.
+    // If the attacker is locked into Rage and has missed once (rage-miss-lock),
+    // all subsequent Rage uses auto-miss (replicating the cartridge infinite loop).
+    if (attacker.volatileStatuses.has("rage-miss-lock") && move.id === "rage") {
+      return false;
+    }
+
+    // OHKO (Fissure, Guillotine, Horn Drill): only hits if user's in-battle speed >= target's
+    // Source: pret/pokered engine/battle/core.asm — compares in-battle speed values
+    // Source: gen1-ground-truth.md section 5: "Fail automatically if user's Speed < target's Speed"
     if (move.effect?.type === "ohko") {
-      const attackerSpeed = attacker.pokemon.calculatedStats?.speed ?? 0;
-      const defenderSpeed = defender.pokemon.calculatedStats?.speed ?? 0;
-      if (attackerSpeed <= defenderSpeed) return false;
+      const attackerSpeed = this.getEffectiveSpeed(attacker);
+      const defenderSpeed = this.getEffectiveSpeed(defender);
+      if (attackerSpeed < defenderSpeed) return false;
     }
 
     // Moves with null accuracy never miss (e.g., Swift)
@@ -366,6 +373,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         moveId: string;
         volatileStatus: VolatileStatus;
       } | null;
+      multiHitCount?: number | null;
     } = {
       statusInflicted: null,
       volatileInflicted: null,
@@ -452,6 +460,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         moveId: string;
         volatileStatus: VolatileStatus;
       } | null;
+      multiHitCount?: number | null;
     },
     context: MoveEffectContext,
   ): void {
@@ -459,8 +468,11 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     switch (effect.type) {
       case "status-chance": {
-        // Roll for status infliction
-        if (rng.int(1, 100) <= effect.chance) {
+        // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
+        // Roll: random(0..255) < floor(chance * 256 / 100)
+        // e.g. 10% chance = threshold 25, probability = 25/256 ~ 9.77%
+        const statusThreshold = Math.floor((effect.chance * 256) / 100);
+        if (rng.int(0, 255) < statusThreshold) {
           // Can't inflict status if target already has one
           if (!defender.pokemon.status) {
             // Can't burn fire types, can't freeze ice types, etc.
@@ -623,7 +635,9 @@ export class Gen1Ruleset implements GenerationRuleset {
       case "volatile-status": {
         // In Gen 1: Confusion, Bind, Wrap, etc.
         if (effect.status === "confusion") {
-          if (rng.int(1, 100) <= effect.chance) {
+          // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
+          const confThreshold = Math.floor((effect.chance * 256) / 100);
+          if (rng.int(0, 255) < confThreshold) {
             if (!defender.volatileStatuses.has("confusion")) {
               // Confusion lasts 2-5 turns in Gen 1
               // Source: pokered effects.asm:1143-1147 — `and $3; inc a; inc a` = random(0-3)+2 = [2,5]
@@ -686,9 +700,24 @@ export class Gen1Ruleset implements GenerationRuleset {
             source: "super-fang",
           };
         } else if (effect.handler === "psywave") {
-          // Source: pret/pokered — PsywaveEffect generates [0, floor(level*1.5)-1], rerolls zero → [1, floor(level*1.5)-1]
+          // Source: pret/pokered engine/battle/core.asm lines 4664-4788
+          // Player Psywave: rerolls 0 → damage range [1, floor(level*1.5)-1]
+          // Enemy Psywave: allows 0 → damage range [0, floor(level*1.5)-1]
           const maxDamage = Math.floor(attacker.pokemon.level * 1.5);
-          const amount = Math.max(1, rng.int(1, Math.max(1, maxDamage - 1)));
+          const upperBound = Math.max(1, maxDamage - 1);
+          // Determine if attacker is on the "enemy" side (index 1)
+          const attackerSide = context.state.sides.findIndex((side) =>
+            side.active.includes(attacker),
+          );
+          const isEnemySide = attackerSide === 1;
+          let amount: number;
+          if (isEnemySide) {
+            // Enemy Psywave: [0, floor(level*1.5)-1] — can deal 0 damage
+            amount = rng.int(0, upperBound);
+          } else {
+            // Player Psywave: reroll zeros → [1, floor(level*1.5)-1]
+            amount = rng.int(1, upperBound);
+          }
           result.customDamage = {
             target: "defender",
             amount,
@@ -771,30 +800,40 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.messages.push("Counter failed!");
           }
         } else if (effect.handler === "disable") {
-          // Source: pret/pokered DisableEffect — disables the last move used by the target.
+          // Source: pret/pokered DisableEffect — picks a RANDOM move slot (and $3),
+          // checks if the move in that slot is non-zero, and disables it.
           // Duration: random 1-8 turns (pokered `and 7; inc a` = 0-7 + 1 = 1-8).
-          // Fails if target already disabled or has not used a move yet.
+          // Fails if target already disabled or all moves have 0 PP.
+          // NOTE: Gen 1 Disable targets a random move, NOT the last-used move (Gen 2+).
           if (defender.volatileStatuses.has("disable")) {
             result.messages.push("But it failed!");
-          } else if (!defender.lastMoveUsed) {
-            result.messages.push("But it failed!");
           } else {
-            const duration = rng.int(1, 8);
-            result.volatileInflicted = "disable";
-            result.volatileData = {
-              turnsLeft: duration,
-              data: { moveId: defender.lastMoveUsed },
-            };
+            // Pick a random move slot with PP > 0 (pokered loops until non-zero)
+            const validMoves = defender.pokemon.moves
+              .map((m, i) => ({ moveId: m.moveId, index: i, pp: m.currentPP }))
+              .filter((m) => m.moveId && m.pp > 0);
+            if (validMoves.length === 0) {
+              result.messages.push("But it failed!");
+            } else {
+              const pickedIndex = rng.int(0, validMoves.length - 1);
+              const picked = validMoves[pickedIndex];
+              const duration = rng.int(1, 8);
+              result.volatileInflicted = "disable";
+              result.volatileData = {
+                turnsLeft: duration,
+                data: { moveId: picked?.moveId ?? "" },
+              };
+            }
           }
         } else if (effect.handler === "substitute") {
           // Source: pret/pokered SubstituteEffect + gen1-ground-truth.md
           // Creates a substitute that absorbs damage. Costs 1/4 max HP.
-          // Gen 1 uses strict < check: at exactly 25% HP it succeeds (user goes to 0).
+          // Source: pokered SubstituteEffect — cartridge uses <= comparison: if currentHP <= subCost, Substitute fails.
           const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
           const subHp = Math.floor(maxHp / 4);
           if (attacker.substituteHp > 0) {
             result.messages.push("But it failed!");
-          } else if (attacker.pokemon.currentHp < subHp) {
+          } else if (attacker.pokemon.currentHp <= subHp) {
             result.messages.push("But it does not have enough HP!");
           } else {
             // Set substituteHp directly; HP cost is handled by customDamage so the
@@ -870,7 +909,8 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Executes the move the defender used last turn.
           const lastMove = defender.lastMoveUsed;
           // Cannot mirror: no previous move, or certain uncopyable moves
-          const cannotMirror = new Set(["mirror-move", "metronome", "struggle"]);
+          // Source: pokered MirrorMoveEffect — only Mirror Move itself is blocked from copying.
+          const cannotMirror = new Set(["mirror-move"]);
           if (!lastMove || cannotMirror.has(lastMove)) {
             result.messages.push("But it failed!");
           } else {
@@ -992,19 +1032,32 @@ export class Gen1Ruleset implements GenerationRuleset {
           }
         } else if (effect.handler === "thrash") {
           // Source: pret/pokered src/engine/battle/move_effects.asm ThrashEffect
-          // Locks into Thrash for 2-3 turns, then confuses the user.
+          // Locks into Thrash for 2-3 turns of damage, then confuses the user.
           // Petal Dance uses the same handler.
+          // The engine deals damage BEFORE calling executeMoveEffect, so the
+          // first use already counts as one damage turn. We store turnsLeft
+          // as (randomTurns - 1) to account for this, ensuring the total
+          // number of damage turns matches pokered (2 or 3).
           const lockVolatile = attacker.volatileStatuses.get("thrash-lock");
           if (!lockVolatile) {
-            // First use: set lock
+            // First use: damage already dealt this turn, so remaining forced turns = turns - 1
             const turns = rng.int(2, 3);
             result.selfVolatileInflicted = "thrash-lock";
-            result.selfVolatileData = { turnsLeft: turns, data: { moveId: move.id } };
-            result.forcedMoveSet = {
-              moveIndex: attacker.pokemon.moves.findIndex((m) => m.moveId === move.id),
-              moveId: move.id,
-              volatileStatus: "thrash-lock",
-            };
+            result.selfVolatileData = { turnsLeft: turns - 1, data: { moveId: move.id } };
+            if (turns - 1 > 0) {
+              result.forcedMoveSet = {
+                moveIndex: attacker.pokemon.moves.findIndex((m) => m.moveId === move.id),
+                moveId: move.id,
+                volatileStatus: "thrash-lock",
+              };
+            } else {
+              // turns=1 edge (shouldn't happen with int(2,3), but defensive)
+              attacker.volatileStatuses.delete("thrash-lock");
+              if (!attacker.volatileStatuses.has("confusion")) {
+                result.selfVolatileInflicted = "confusion";
+                result.selfVolatileData = { turnsLeft: rng.int(2, 5) };
+              }
+            }
           } else {
             const turnsLeft = lockVolatile.turnsLeft;
             if (turnsLeft > 1) {
@@ -1015,7 +1068,7 @@ export class Gen1Ruleset implements GenerationRuleset {
                 volatileStatus: "thrash-lock",
               };
             } else {
-              // Last turn: remove lock, confuse user
+              // Last forced turn: damage was already dealt, now remove lock and confuse
               attacker.volatileStatuses.delete("thrash-lock");
               if (!attacker.volatileStatuses.has("confusion")) {
                 result.selfVolatileInflicted = "confusion";
@@ -1027,11 +1080,22 @@ export class Gen1Ruleset implements GenerationRuleset {
         break;
       }
 
+      case "multi-hit": {
+        // Source: pokered multi-hit moves — 37.5/37.5/12.5/12.5% for 2/3/4/5 hits.
+        // Roll the hit count and signal the engine to repeat damage calculation.
+        // The engine will loop, applying damage for each additional hit.
+        // Only the first hit can be a critical hit (Gen 1 rule).
+        const hitCount = this.rollMultiHitCount(attacker, rng);
+        // multiHitCount is the number of ADDITIONAL hits beyond the first
+        // (the engine already dealt damage for the first hit before calling this).
+        result.multiHitCount = Math.max(0, hitCount - 1);
+        break;
+      }
+
       case "weather":
       case "terrain":
       case "entry-hazard":
       case "remove-hazards":
-      case "multi-hit":
       case "two-turn":
       case "protect":
         // These effects are N/A in Gen 1
@@ -1331,8 +1395,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     const baseAtk = calcStats?.attack ?? 50;
     const baseDef = calcStats?.defense ?? 50;
 
-    let atk = Math.max(1, Math.floor(baseAtk * getStatStageMultiplier(pokemon.statStages.attack)));
-    let def = Math.max(1, Math.floor(baseDef * getStatStageMultiplier(pokemon.statStages.defense)));
+    // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+    const atkRatio = getGen12StatStageRatio(pokemon.statStages.attack);
+    const defRatio = getGen12StatStageRatio(pokemon.statStages.defense);
+    let atk = Math.max(1, Math.floor((baseAtk * atkRatio.num) / atkRatio.den));
+    let def = Math.max(1, Math.floor((baseDef * defRatio.num) / defRatio.den));
 
     // Gen 1 stat overflow: same transform as calculateGen1Damage
     if (atk >= 256 || def >= 256) {
@@ -1345,12 +1412,20 @@ export class Gen1Ruleset implements GenerationRuleset {
       atk = Math.floor(atk / 2);
     }
 
+    // Source: pret/pokered engine/battle/core.asm lines 4388-4450 — same formula as main damage calc
+    // Must apply Math.min(997, ...) before adding +2 constant, matching calculateGen1Damage.
     const levelFactor = Math.floor((2 * level) / 5) + 2;
-    const damage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
+    const damage = Math.min(997, Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50)) + 2;
     return Math.max(1, damage);
   }
 
-  // Source: Gen 1 confusion lasts 1-4 turns
+  confusionSelfHitTargetsOpponentSub(): boolean {
+    // Source: pokered engine/battle/core.asm — Gen 1 cartridge bug:
+    // confusion self-hit damage is applied to the opponent's Substitute if active.
+    return true;
+  }
+
+  // Source: pokered effects.asm:1143-1147 — confusion lasts 2-5 turns (and ; inc a; inc a)
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
     const conf = active.volatileStatuses.get("confusion");
     if (!conf) return false;
@@ -1492,16 +1567,20 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   /**
-   * Roll a catch attempt using the Gen 3+ formula (applied retroactively to Gen 1 data).
+   * Roll a catch attempt using the Gen 1 cartridge algorithm (BallThrowCalc).
    *
-   * Note: The original Gen 1 cartridge used a different multi-step algorithm
-   * (pret/pokered engine/battle/core.asm BallThrowCalc). This implementation uses
-   * the modern Gen 3+ formula for consistency with the engine's CatchSystem interface,
-   * since the core catch-rate utilities implement the Gen 3+ math.
+   * Source: pret/pokered engine/items/item_effects.asm — ItemUseBall
+   * The Gen 1 algorithm is a two-step process:
+   * 1. Generate Rand1 in ball-specific range, subtract status modifier. If < 0, caught.
+   *    If (Rand1 - Status) > catchRate, fail. Calculate X from HP formula.
+   *    Generate Rand2. If Rand2 <= X, caught.
+   * 2. If not caught, calculate shake count from Z = (X * Y / 255) + Status2.
    *
-   * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow — Gen 3+ catch formula
-   * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
-   * Divergence: Gen 1 cartridge used pokered BallThrowCalc; this uses Gen 3+ formula instead
+   * ballModifier maps to ball type:
+   *   1.0 = Poke Ball (rand range 0-255, BallFactor 12, BallFactor2 255)
+   *   1.5 = Great Ball (rand range 0-200, BallFactor 8, BallFactor2 200)
+   *   2.0 = Ultra Ball (rand range 0-150, BallFactor 12, BallFactor2 150)
+   *   1.5 (Safari) = Safari Ball (same as Ultra: rand range 0-150, BallFactor 12, BallFactor2 150)
    */
   rollCatchAttempt(
     catchRate: number,
@@ -1511,19 +1590,109 @@ export class Gen1Ruleset implements GenerationRuleset {
     ballModifier: number,
     rng: SeededRandom,
   ): CatchResult {
-    const statusModifier = status ? (STATUS_CATCH_MODIFIERS[status] ?? 1) : 1;
-    const modifiedRate = calculateModifiedCatchRate(
-      maxHp,
-      currentHp,
-      catchRate,
-      ballModifier,
-      statusModifier,
-    );
-    const shakeChecks = calculateShakeChecks(modifiedRate, rng);
-    if (shakeChecks >= 4) {
+    // Step 1: Determine ball parameters from ballModifier
+    // Source: pokered ItemUseBall — ball types determine Rand1 range, BallFactor, BallFactor2
+    let randMax: number;
+    let ballFactor: number;
+    let ballFactor2: number;
+    if (ballModifier >= 2.0) {
+      // Ultra Ball / Safari Ball
+      randMax = 150;
+      ballFactor = 12;
+      ballFactor2 = 150;
+    } else if (ballModifier >= 1.5) {
+      // Great Ball
+      randMax = 200;
+      ballFactor = 8;
+      ballFactor2 = 200;
+    } else {
+      // Poke Ball (default)
+      randMax = 255;
+      ballFactor = 12;
+      ballFactor2 = 255;
+    }
+
+    // Step 2: Generate Rand1 in [0, randMax]
+    // Source: pokered .loop — rejects values > randMax for Great/Ultra/Safari balls
+    const rand1 = rng.int(0, randMax);
+
+    // Step 3: Status modifier subtraction
+    // Source: pokered .checkForAilments — freeze/sleep=25, burn/para/poison=12, none=0
+    let statusValue = 0;
+    if (status === "freeze" || status === "sleep") {
+      statusValue = 25;
+    } else if (
+      status === "burn" ||
+      status === "paralysis" ||
+      status === "poison" ||
+      status === "badly-poisoned"
+    ) {
+      statusValue = 12;
+    }
+
+    // If Status > Rand1, caught immediately
+    if (statusValue > rand1) {
       return { caught: true, shakes: 3 };
     }
-    return { caught: false, shakes: shakeChecks as 0 | 1 | 2 };
+    const adjustedRand1 = rand1 - statusValue;
+
+    // Step 4: Calculate X = min(255, floor(MaxHP * 255 / ballFactor / max(floor(HP/4), 1)))
+    // Source: pokered — W = ((MaxHP * 255) / BallFactor) / max(HP / 4, 1); X = min(W, 255)
+    // We compute X before the catchRate check because the shake calculation needs it.
+    const hpDiv4 = Math.max(1, Math.floor(currentHp / 4));
+    const w = Math.floor(Math.floor((maxHp * 255) / ballFactor) / hpDiv4);
+    const x = Math.min(255, w);
+
+    // Step 5: If (Rand1 - Status) > catchRate, fail
+    // Source: pokered — `cp b / jr c, .failedToCapture`
+    if (adjustedRand1 > catchRate) {
+      return {
+        caught: false,
+        shakes: Gen1Ruleset.gen1CalcShakes(x, catchRate, ballFactor2, statusValue),
+      };
+    }
+
+    // If W > 255, caught (pokered checks hQuotient+2 which is nonzero when W > 255)
+    if (w > 255) {
+      return { caught: true, shakes: 3 };
+    }
+
+    // Step 6: Generate Rand2. If Rand2 <= X, caught.
+    // Source: pokered — `cp b / jr c, .failedToCapture` (if X < Rand2, fail)
+    const rand2 = rng.int(0, 255);
+    if (rand2 <= x) {
+      return { caught: true, shakes: 3 };
+    }
+
+    // Failed to capture — calculate shakes
+    return {
+      caught: false,
+      shakes: Gen1Ruleset.gen1CalcShakes(x, catchRate, ballFactor2, statusValue),
+    };
+  }
+
+  /**
+   * Calculate the number of shakes for a failed Gen 1 catch attempt.
+   * Source: pokered ItemUseBall .failedToCapture — shake count from Z thresholds.
+   * Z = floor(X * Y / 255) + Status2
+   * where X = min(255, W) from HP formula, Y = floor(catchRate * 100 / ballFactor2)
+   * Status2: none=0, burn/para/poison=5, freeze/sleep=10
+   * Z < 10: 0 shakes, 10 <= Z < 30: 1 shake, 30 <= Z < 70: 2 shakes, Z >= 70: 3 shakes
+   * Note: 3 shakes is a real failure tier — the Pokemon gives 3 shakes but still escapes.
+   */
+  private static gen1CalcShakes(
+    x: number,
+    catchRate: number,
+    ballFactor2: number,
+    statusValue: number,
+  ): 0 | 1 | 2 | 3 {
+    const y = Math.floor((catchRate * 100) / ballFactor2);
+    const status2 = statusValue >= 25 ? 10 : statusValue >= 12 ? 5 : 0;
+    const z = Math.floor((x * y) / 255) + status2;
+    if (z < 10) return 0;
+    if (z < 30) return 1;
+    if (z < 70) return 2;
+    return 3;
   }
 
   shouldExecutePursuitPreSwitch(): boolean {
@@ -1664,8 +1833,10 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
-    // Gen 1 keeps existing behavior — per-attack residuals are handled separately in pokered
-    // Tracked in GitHub issue #129 for future implementation
-    return [];
+    // Source: pokered engine/battle/core.asm:546 HandlePoisonBurnLeechSeed
+    // Gen 1 processes poison/burn/leech-seed damage after each individual attack,
+    // not just at end of turn. This is particularly relevant for multi-hit moves
+    // where the defender could faint between hits from residual damage.
+    return ["status-damage", "leech-seed"];
   }
 }

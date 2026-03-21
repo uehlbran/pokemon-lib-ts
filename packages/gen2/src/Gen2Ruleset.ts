@@ -625,6 +625,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, baseDamage);
   }
 
+  confusionSelfHitTargetsOpponentSub(): boolean {
+    // Source: pret/pokecrystal battle confusion handling — Gen 2 does not apply Gen 1 opponent-substitute bug
+    // Gen 2: confusion self-hit always damages the confused Pokemon itself (Gen 1 bug fixed).
+    return false;
+  }
+
   // Source: Gen 2 confusion lasts 1-4 turns (same as Gen 1)
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
     const conf = active.volatileStatuses.get("confusion");

@@ -623,6 +623,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.max(1, damage);
   }
 
+  confusionSelfHitTargetsOpponentSub(): boolean {
+    // Gen 3+: confusion self-hit always damages the confused Pokemon itself.
+    return false;
+  }
+
   // Source: default for Gen 3-6; Gen 7+ overrides to 2-5 turn range
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
     const conf = active.volatileStatuses.get("confusion");

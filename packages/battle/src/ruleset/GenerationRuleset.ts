@@ -200,6 +200,14 @@ export interface StatusSystem {
    * @returns `true` if still confused, `false` if confusion ended this turn.
    */
   processConfusionTurn(active: ActivePokemon, state: BattleState): boolean;
+  /**
+   * Whether confusion self-hit damage targets the opponent's Substitute (Gen 1 bug).
+   * In Gen 1, when a confused Pokemon hits itself, the damage goes to the opponent's
+   * Substitute if one is active — this is a documented cartridge bug.
+   * Source: pokered engine/battle/core.asm — confusion self-hit checks opponent sub.
+   * All other gens: self-hit always damages the confused Pokemon itself.
+   */
+  confusionSelfHitTargetsOpponentSub(): boolean;
 }
 
 /** Whether this generation has abilities, and how to apply them. */

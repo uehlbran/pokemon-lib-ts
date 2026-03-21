@@ -266,6 +266,13 @@ export interface MoveEffectResult {
     moveId: string;
     volatileStatus: VolatileStatus;
   } | null;
+  /**
+   * Number of additional hits for multi-hit moves (Fury Attack, Pin Missile, etc.).
+   * When set, the engine repeats the damage calculation this many additional times
+   * (e.g., multiHitCount=4 means 4 MORE hits after the initial one, for 5 total).
+   * Source: pokered multi-hit distribution — 37.5/37.5/12.5/12.5% for 2/3/4/5 hits.
+   */
+  readonly multiHitCount?: number | null;
 }
 
 /**
@@ -718,6 +725,9 @@ export type CatchResult =
     }
   | {
       readonly caught: false;
-      /** 0–2 shake checks passed before the Pokemon broke free */
-      readonly shakes: 0 | 1 | 2;
+      /** 0–3 shake checks passed before the Pokemon broke free.
+       * In Gen 1, Z >= 70 gives 3 shakes even on a failed catch.
+       * Source: pokered ItemUseBall .failedToCapture — Z thresholds 0/1/2/3 shakes.
+       */
+      readonly shakes: 0 | 1 | 2 | 3;
     };
