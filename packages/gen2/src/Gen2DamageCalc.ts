@@ -10,6 +10,77 @@ import { getStabModifier, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { getWeatherDamageModifier } from "./Gen2Weather";
 
 /**
+ * Gen 2 Hidden Power type/power lookup table.
+ * Source: Bulbapedia — "Hidden Power (move)/Generation II"
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+ *
+ * Type index = (AtkDV % 2) * 8 + (DefDV % 2) * 4 + (SpeDV % 2) * 2 + (SpcDV % 2)
+ * Power = floor(((bit3Atk*32 + bit3Def*16 + bit3Spe*8 + bit3Spc*4 + bit2Atk*2 + bit2Def) * 40) / 63) + 31
+ *
+ * In Gen 2 "Spc" DV is the unified special DV — the same value used for both SpAtk and SpDef.
+ * In our data model, `ivs.spAttack` holds this value (0-15 DV range).
+ */
+const HP_TYPES: readonly PokemonType[] = [
+  "fighting",
+  "flying",
+  "poison",
+  "ground",
+  "rock",
+  "bug",
+  "ghost",
+  "steel",
+  "fire",
+  "water",
+  "grass",
+  "electric",
+  "psychic",
+  "ice",
+  "dragon",
+  "dark",
+];
+
+/**
+ * Calculate Hidden Power's type and base power from the attacker's DVs (Gen 2).
+ *
+ * Source: Bulbapedia — "Hidden Power (move)/Generation II"
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+ *
+ * Type range: one of 16 types (Fighting through Dark — excludes Normal)
+ * Power range: 31 to 70
+ */
+export function calculateGen2HiddenPower(attacker: ActivePokemon): {
+  type: PokemonType;
+  power: number;
+} {
+  const ivs = attacker.pokemon.ivs;
+  // In Gen 2, IVs are stored as 0-15 DVs; spAttack holds the unified Special DV
+  const atkDv = ivs.attack ?? 15;
+  const defDv = ivs.defense ?? 15;
+  const speDv = ivs.speed ?? 15;
+  // In Gen 2 the special DV applies to both SpAtk and SpDef; we read spAttack as the canonical source
+  const spcDv = ivs.spAttack ?? 15;
+
+  // Type calculation: uses low bit of each DV
+  const typeIndex = (atkDv % 2) * 8 + (defDv % 2) * 4 + (speDv % 2) * 2 + (spcDv % 2);
+  const hpType = HP_TYPES[typeIndex] ?? "fighting";
+
+  // Power calculation: uses bits 3 and 2 (counting from bit 0) of each DV
+  // bit3X = (DV >> 3) & 1  (the 4th bit, value 8)
+  // bit2X = (DV >> 2) & 1  (the 3rd bit, value 4)
+  const bit3Atk = (atkDv >> 3) & 1;
+  const bit3Def = (defDv >> 3) & 1;
+  const bit3Spe = (speDv >> 3) & 1;
+  const bit3Spc = (spcDv >> 3) & 1;
+  const bit2Atk = (atkDv >> 2) & 1;
+  const bit2Def = (defDv >> 2) & 1;
+
+  const powerBits = bit3Atk * 32 + bit3Def * 16 + bit3Spe * 8 + bit3Spc * 4 + bit2Atk * 2 + bit2Def;
+  const hpPower = Math.floor((powerBits * 40) / 63) + 31;
+
+  return { type: hpType, power: hpPower };
+}
+
+/**
  * Physical types in Gen 2.
  * In Gen 2 (like Gen 1), the category (physical/special) is determined by the move's TYPE,
  * not by a per-move flag. Steel is physical, Dark is special.
@@ -214,6 +285,16 @@ export function calculateGen2Damage(
     dynamicPower = Math.max(1, Math.floor((255 - friendship) / 2.5));
   }
 
+  // Hidden Power: calculate type and power from DVs before any early returns.
+  // Source: Bulbapedia — "Hidden Power (move)/Generation II"
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+  let effectiveMoveType = move.type;
+  if (move.id === "hidden-power") {
+    const hp = calculateGen2HiddenPower(attacker);
+    effectiveMoveType = hp.type;
+    dynamicPower = hp.power;
+  }
+
   // Status moves do no damage
   if (move.category === "status" || dynamicPower === null || dynamicPower === 0) {
     return {
@@ -228,15 +309,15 @@ export function calculateGen2Damage(
   const power = dynamicPower;
 
   // Determine crit boost interaction (Showdown scripts.ts:589-600)
-  const physical = isGen2PhysicalType(move.type);
+  const physical = isGen2PhysicalType(effectiveMoveType);
   const atkStage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
   const defStage = physical ? defender.statStages.defense : defender.statStages.spDefense;
   // When atkStage <= defStage on a crit: ignore ALL boosts on both sides AND ignore burn
   const ignoreBoosts = isCrit && atkStage <= defStage;
   const ignoreBurn = ignoreBoosts;
 
-  let attack = getAttackStat(attacker, move.type, ignoreBoosts, ignoreBurn);
-  let effectiveDefense = getDefenseStat(defender, move.type, ignoreBoosts);
+  let attack = getAttackStat(attacker, effectiveMoveType, ignoreBoosts, ignoreBurn);
+  let effectiveDefense = getDefenseStat(defender, effectiveMoveType, ignoreBoosts);
 
   // Explosion and Self-Destruct halve the defender's defense stat before damage calc
   if (move.id === "explosion" || move.id === "self-destruct") {
@@ -257,7 +338,7 @@ export function calculateGen2Damage(
 
   // Step 2: Item modifier (type-boosting items at 1.1x) — BEFORE crit
   // Source: pret/pokecrystal engine/battle/effect_commands.asm:2983 — items applied before crit
-  const itemMod = getItemModifier(attacker, move.type);
+  const itemMod = getItemModifier(attacker, effectiveMoveType);
   if (itemMod !== 1) {
     baseDamage = Math.floor(baseDamage * itemMod);
   }
@@ -277,14 +358,14 @@ export function calculateGen2Damage(
   // Step 6: Weather modifier — BEFORE STAB
   // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1270 — weather before STAB
   const weather = state.weather?.type ?? null;
-  const weatherMod = weather ? getWeatherDamageModifier(move.type, weather) : 1;
+  const weatherMod = weather ? getWeatherDamageModifier(effectiveMoveType, weather) : 1;
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
   }
 
   // Step 7: STAB — AFTER weather
   // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1251+
-  const stabMod = getStabModifier(move.type, attacker.types);
+  const stabMod = getStabModifier(effectiveMoveType, attacker.types);
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
   }
@@ -297,7 +378,7 @@ export function calculateGen2Damage(
   // Check immunity first (a 0x interaction means 0 total damage)
   let isImmune = false;
   for (const defType of defenderTypes) {
-    const factor = typeChart[move.type]?.[defType] ?? 1;
+    const factor = typeChart[effectiveMoveType]?.[defType] ?? 1;
     if (factor === 0) {
       isImmune = true;
       break;
@@ -316,7 +397,7 @@ export function calculateGen2Damage(
 
   // Apply each defender type's multiplier sequentially with floor after each step
   for (const defType of defenderTypes) {
-    const factor = typeChart[move.type]?.[defType] ?? 1;
+    const factor = typeChart[effectiveMoveType]?.[defType] ?? 1;
     if (factor === 2) {
       // SE: floor(damage * 20 / 10) = floor(damage * 2)
       baseDamage = Math.floor((baseDamage * 20) / 10);
@@ -335,7 +416,7 @@ export function calculateGen2Damage(
       s.active.some((a) => a?.pokemon === defender.pokemon),
     );
     if (defenderSide) {
-      const isPhysical = isGen2PhysicalType(move.type);
+      const isPhysical = isGen2PhysicalType(effectiveMoveType);
       const hasReflect = isPhysical && defenderSide.screens.some((s) => s.type === "reflect");
       const hasLightScreen =
         !isPhysical && defenderSide.screens.some((s) => s.type === "light-screen");

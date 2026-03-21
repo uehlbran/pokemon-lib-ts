@@ -2330,6 +2330,47 @@ export class BattleEngine implements BattleEventEmitter {
         });
       }
     }
+
+    // Forced switch (phazing: Whirlwind, Roar) — the DEFENDER is forced out.
+    // switchOut=true + forcedSwitch=true means the defender must switch to a random
+    // valid party member. If no valid targets exist, the move effectively fails.
+    // Source: Bulbapedia — "Whirlwind forces the target to switch out"
+    if (result.switchOut && result.forcedSwitch) {
+      const defenderSideState = this.state.sides[defenderSide];
+      const defenderTeamSlot = defenderSideState.active[0]?.teamSlot ?? -1;
+      const validTargets = defenderSideState.team
+        .map((p, i) => ({ p, i }))
+        .filter(({ p, i }) => p.currentHp > 0 && i !== defenderTeamSlot);
+      if (validTargets.length > 0) {
+        const randomIndex = this.state.rng.int(0, validTargets.length - 1);
+        const switchTarget = validTargets[randomIndex];
+        if (switchTarget) {
+          // Perform the switch using the same infrastructure as voluntary switches
+          const outgoing = defenderSideState.active[0];
+          if (outgoing) {
+            this.ruleset.onSwitchOut(outgoing, this.state);
+            this.emit({
+              type: "switch-out",
+              side: defenderSide,
+              pokemon: createPokemonSnapshot(outgoing),
+            });
+            outgoing.statStages = createDefaultStatStages();
+            outgoing.consecutiveProtects = 0;
+            outgoing.turnsOnField = 0;
+            outgoing.movedThisTurn = false;
+            outgoing.lastMoveUsed = null;
+            outgoing.lastDamageTaken = 0;
+            outgoing.lastDamageType = null;
+            outgoing.lastDamageCategory = null;
+          }
+          this.sendOut(defenderSideState, switchTarget.i);
+          this.emit({
+            type: "message",
+            text: `${getPokemonName(defender)} was blown away!`,
+          });
+        }
+      }
+    }
   }
 
   private processPostAttackResiduals(sideIndex: 0 | 1): void {

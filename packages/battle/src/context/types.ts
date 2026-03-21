@@ -176,6 +176,8 @@ export interface MoveEffectResult {
    * Only meaningful when `switchOut` is also `true`.
    */
   readonly batonPass?: boolean;
+  /** When `true` along with `switchOut`, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
+  readonly forcedSwitch?: boolean;
   /** Freeform messages to emit as `MessageEvent`s after the move resolves */
   readonly messages: readonly string[];
   /** Wave 1: Set a screen (Reflect/Light Screen) on the attacker's side */
