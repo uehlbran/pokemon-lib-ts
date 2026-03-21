@@ -2105,14 +2105,31 @@ export class BattleEngine implements BattleEventEmitter {
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
-            if (active.ability !== "slow-start") continue;
-            // Slow Start ends after 5 turns on the field
-            // Source: Pokemon Showdown Gen 4 mod — slowstart ability
-            if (active.turnsOnField === 5) {
-              this.emit({
-                type: "message",
-                text: `${active.pokemon.nickname ?? String(active.pokemon.speciesId)}'s Slow Start wore off!`,
-              });
+            // Slow Start: decrement turnsLeft on the slow-start volatile each EoT.
+            // No ability check: the volatile should tick down even if the ability was
+            // temporarily changed (e.g., by Skill Swap). The stat-halving in damage/speed
+            // calcs already requires both the ability AND the volatile to be present.
+            // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown ticks volatile
+            // When turnsLeft reaches 0, remove the volatile so the Attack/Speed halving stops.
+            // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown
+            // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns
+            const slowStart = active.volatileStatuses.get("slow-start");
+            if (slowStart && slowStart.turnsLeft > 0) {
+              slowStart.turnsLeft -= 1;
+              if (slowStart.turnsLeft === 0) {
+                active.volatileStatuses.delete("slow-start");
+                const pokeName = active.pokemon.nickname ?? String(active.pokemon.speciesId);
+                this.emit({
+                  type: "volatile-end",
+                  side: side.index,
+                  pokemon: getPokemonName(active),
+                  volatile: "slow-start",
+                });
+                this.emit({
+                  type: "message",
+                  text: `${pokeName}'s Slow Start wore off!`,
+                });
+              }
             }
           }
           break;
@@ -2820,13 +2837,19 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "volatile-inflict": {
-          // Source: Showdown — abilities that inflict volatile statuses (e.g., Cute Charm)
+          // Source: Showdown — abilities that inflict volatile statuses (e.g., Cute Charm, Slow Start)
           const target = effect.target === "self" ? pokemon : opponent;
           const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
           if (!target.volatileStatuses.has(effect.volatile)) {
+            // Use turnsLeft from effect data if provided (e.g., Slow Start sets turnsLeft: 5),
+            // otherwise default to -1 (permanent until explicitly removed).
+            // Strip turnsLeft from the data payload to avoid storing it in two places —
+            // the top-level counter is the single source of truth for the EoT decrement.
+            const { turnsLeft: explicitTurnsLeft, ...volatileData } = effect.data ?? {};
+            const turnsLeft = typeof explicitTurnsLeft === "number" ? explicitTurnsLeft : -1;
             target.volatileStatuses.set(effect.volatile, {
-              turnsLeft: -1,
-              ...(effect.data ? { data: effect.data } : {}),
+              turnsLeft,
+              ...(Object.keys(volatileData).length > 0 ? { data: volatileData } : {}),
             });
             this.emit({
               type: "volatile-start",

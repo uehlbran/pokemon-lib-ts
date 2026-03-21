@@ -188,6 +188,7 @@ function getAttackStat(
   typeBoostItemType: string | null,
   plateItemType: string | null,
   defender?: ActivePokemon,
+  weather?: string | null,
 ): number {
   const statKey = isPhysical ? "attack" : "spAttack";
   const stats = attacker.pokemon.calculatedStats;
@@ -288,6 +289,30 @@ function getAttackStat(
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
+  // 7a. Solar Power: 1.5x SpAtk in Harsh Sunlight
+  // Source: Bulbapedia — Solar Power: "During harsh sunlight, the Pokemon's Special Attack
+  //   stat is boosted by 50%."
+  // Source: Showdown data/abilities.ts — Solar Power onModifySpAPriority
+  if (!isPhysical && ability === "solar-power" && weather === "sun") {
+    rawStat = Math.floor((rawStat * 150) / 100);
+  }
+
+  // 7b. Flower Gift: 1.5x Attack in Harsh Sunlight (for the user with the ability)
+  // In singles, only the Pokemon with Flower Gift gets the boost.
+  // Source: Bulbapedia — Flower Gift: "During harsh sunlight, the Attack and Special Defense
+  //   stats of the Pokemon with this Ability and its allies are boosted by 50%."
+  // Source: Showdown data/abilities.ts — Flower Gift onAllyModifyAtkPriority
+  if (isPhysical && ability === "flower-gift" && weather === "sun") {
+    rawStat = Math.floor((rawStat * 150) / 100);
+  }
+
+  // 7c. Slow Start: halve Attack for the first 5 turns after entering battle
+  // Source: Bulbapedia — Slow Start: "Halves Attack and Speed for 5 turns upon entering battle."
+  // Source: Showdown data/abilities.ts — Slow Start onModifyAtkPriority
+  if (isPhysical && ability === "slow-start" && attacker.volatileStatuses.has("slow-start")) {
+    rawStat = Math.floor(rawStat / 2);
+  }
+
   // 8. Apply stat stages (with Simple/Unaware adjustments)
   // Source: Showdown sim/battle.ts — stat stage application
   // Source: pret/pokeplatinum — same APPLY_STAT_MOD as pokeemerald
@@ -379,6 +404,26 @@ function getDefenseStat(
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
+  // Flower Gift: 1.5x SpDef in Harsh Sunlight (for the defender with the ability)
+  // In singles, only the Pokemon with Flower Gift gets the boost.
+  // Mold Breaker (and Teravolt/Turboblaze) ignore the defender's ability, so no boost applies.
+  // Source: Bulbapedia — Flower Gift: "During harsh sunlight, the Attack and Special Defense
+  //   stats of the Pokemon with this Ability and its allies are boosted by 50%."
+  // Source: Bulbapedia — Mold Breaker: ignores ability effects on the opposing Pokemon
+  // Source: Showdown data/abilities.ts — Flower Gift onAllyModifySpDPriority
+  const flowerGiftMoldBreaker =
+    attacker?.ability === "mold-breaker" ||
+    attacker?.ability === "teravolt" ||
+    attacker?.ability === "turboblaze";
+  if (
+    !isPhysical &&
+    !flowerGiftMoldBreaker &&
+    weather === "sun" &&
+    defender.ability === "flower-gift"
+  ) {
+    baseStat = Math.floor((baseStat * 150) / 100);
+  }
+
   // Get the appropriate stat stage (with Simple/Unaware adjustments)
   const defStatKey = isPhysical ? "defense" : "spDefense";
   const stage = getEffectiveStatStage(defender, defStatKey, attacker);
@@ -463,6 +508,12 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     power = Math.floor(power / 2);
   }
 
+  // Normalize: all moves used by the Pokemon become Normal type.
+  // This happens before everything else — affects STAB, type effectiveness, weather, etc.
+  // Source: Bulbapedia — Normalize: "All the Pokemon's moves become Normal-type."
+  // Source: Showdown data/abilities.ts — Normalize onModifyMove
+  const effectiveMoveType: PokemonType = attackerAbility === "normalize" ? "normal" : move.type;
+
   // Mold Breaker: attacker's ability bypasses defender's defensive abilities
   // Source: Showdown Gen 4 — Mold Breaker negates defender abilities in damage calc
   // Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this Ability
@@ -473,7 +524,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown sim/battle.ts — Gen 4 pinch ability check
   // Source: Bulbapedia — Overgrow / Blaze / Torrent / Swarm
   const pinchType = PINCH_ABILITY_TYPES[attackerAbility];
-  if (pinchType && move.type === pinchType) {
+  if (pinchType && effectiveMoveType === pinchType) {
     const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
     const threshold = Math.floor(maxHp / 3);
     if (attacker.pokemon.currentHp <= threshold) {
@@ -485,7 +536,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Flash Fire: "raises the power of Fire-type moves by 50%
   //   while it is in effect"
   // Source: Showdown data/abilities.ts — Flash Fire onBasePowerPriority
-  if (move.type === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+  if (effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
     power = Math.floor(power * 1.5);
   }
 
@@ -497,7 +548,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Dry Skin's water immunity is handled in step 5 (early return of 0 damage).
   // Source: Showdown data/abilities.ts — Dry Skin onSourceBasePower (priority 17)
   // Source: Bulbapedia — Dry Skin: "Fire-type moves deal 1.25× damage to the user."
-  if (!moldBreaker && defenderAbility === "dry-skin" && move.type === "fire") {
+  if (!moldBreaker && defenderAbility === "dry-skin" && effectiveMoveType === "fire") {
     power = Math.floor(power * 1.25);
   }
 
@@ -555,12 +606,12 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const gravityActive = context.state.gravity?.active ?? false;
   if (!moldBreaker) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
-    if (immuneType && move.type === immuneType) {
+    if (immuneType && effectiveMoveType === immuneType) {
       // Gravity grounds all Pokemon — Levitate no longer grants Ground immunity
       // Source: Showdown Gen 4 mod — Gravity suppresses Levitate
       // Source: Bulbapedia — Gravity: "Levitate will not give immunity to Ground-type moves."
       const isLevitateGrounded =
-        defenderAbility === "levitate" && move.type === "ground" && gravityActive;
+        defenderAbility === "levitate" && effectiveMoveType === "ground" && gravityActive;
       if (!isLevitateGrounded) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
       }
@@ -581,12 +632,13 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Get effective stats (pass opponent for Simple/Unaware stat stage adjustments)
   let attack = getAttackStat(
     attacker,
-    move.type,
+    effectiveMoveType,
     isPhysical,
     isCrit,
     typeBoostItemType,
     plateItemType,
     defender,
+    weather,
   );
   let defense = getDefenseStat(defender, isPhysical, isCrit, weather, attacker);
 
@@ -600,7 +652,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !moldBreaker &&
     defenderAbility === "thick-fat" &&
-    (move.type === "fire" || move.type === "ice")
+    (effectiveMoveType === "fire" || effectiveMoveType === "ice")
   ) {
     attack = Math.floor(attack / 2);
     abilityMultiplier = 0.5;
@@ -610,7 +662,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Mold Breaker bypasses Heatproof
   // Source: Bulbapedia — Heatproof: "Halves the damage from Fire-type moves."
   // Source: Showdown sim/abilities.ts — Heatproof onSourceModifyAtk
-  if (!moldBreaker && defenderAbility === "heatproof" && move.type === "fire") {
+  if (!moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === "fire") {
     power = Math.floor(power / 2);
     abilityMultiplier *= 0.5;
   }
@@ -641,18 +693,18 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     baseDamage = Math.floor(baseDamage / 2);
   }
 
-  // 10. Weather modifier
+  // 10. Add 2 (before weather — matches the Bulbapedia formula order)
+  // Source: Bulbapedia — Gen 4 damage formula: floor(floor(.../ 50 + 2) * Modifier)
+  // Source: pret/pokeplatinum — "+2" added before weather modifier is applied
+  baseDamage += 2;
+
+  // 11. Weather modifier (applied after +2)
   // Source: Showdown sim/battle.ts — Gen 4 weather damage modifier
   // Rain: Water 1.5x, Fire 0.5x; Sun: Fire 1.5x, Water 0.5x
-  const weatherMod = getWeatherDamageModifier(move.type, weather);
+  const weatherMod = getWeatherDamageModifier(effectiveMoveType, weather);
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
   }
-
-  // 11. Add 2 (the constant at the end of the base damage formula)
-  // Source: Showdown sim/battle.ts — Gen 4 base damage + 2
-  // Source: pret/pokeplatinum — "return damage + 2"
-  baseDamage += 2;
 
   // Record the base damage before post-formula modifiers for breakdown
   const rawBaseDamage = baseDamage;
@@ -682,7 +734,11 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Adaptability: "Increases the same-type attack bonus from
   //   1.5x to 2x."
   // Source: Showdown sim/abilities.ts — Adaptability
-  const stabMod = getStabModifier(move.type, attacker.types, attackerAbility === "adaptability");
+  const stabMod = getStabModifier(
+    effectiveMoveType,
+    attacker.types,
+    attackerAbility === "adaptability",
+  );
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
   }
@@ -694,13 +750,33 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Gravity: "All Pokémon on the ground are no longer immune to
   //   Ground-type moves because of their Flying type."
   let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
-  if (gravityActive && move.type === "ground" && defender.types.includes("flying")) {
+  if (gravityActive && effectiveMoveType === "ground" && defender.types.includes("flying")) {
     // Remove Flying from the defender's types for effectiveness calculation
     // so Ground moves can hit. If the defender is pure Flying, treat as Normal.
     const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
     effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
   }
-  const effectiveness = getTypeEffectiveness(move.type, effectiveDefenderTypes, typeChart);
+  let effectiveness = getTypeEffectiveness(effectiveMoveType, effectiveDefenderTypes, typeChart);
+
+  // Scrappy: Normal-type and Fighting-type moves used by a Pokemon with Scrappy
+  // hit Ghost-type Pokemon for neutral damage (instead of being immune).
+  // Source: Bulbapedia — Scrappy: "Allows the Pokemon's Normal- and Fighting-type moves
+  //   to hit Ghost-type Pokemon."
+  // Source: Showdown data/abilities.ts — Scrappy onModifyMovePriority
+  if (
+    attackerAbility === "scrappy" &&
+    effectiveness === 0 &&
+    (effectiveMoveType === "normal" || effectiveMoveType === "fighting") &&
+    defender.types.includes("ghost")
+  ) {
+    // Recalculate effectiveness treating Ghost as neutral to Normal/Fighting.
+    // Remove Ghost from defender types for this recalculation.
+    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== "ghost");
+    effectiveness =
+      nonGhostTypes.length > 0
+        ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart)
+        : 1;
+  }
 
   const burnMultiplier = burnApplied ? 0.5 : 1;
 
@@ -841,10 +917,10 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // Account for type-boost items and plates in itemMultiplier for breakdown
-  if (typeBoostItemType === move.type) {
+  if (typeBoostItemType === effectiveMoveType) {
     itemMultiplier = itemMultiplier === 1 ? 1.1 : itemMultiplier;
   }
-  if (plateItemType === move.type) {
+  if (plateItemType === effectiveMoveType) {
     itemMultiplier = itemMultiplier === 1 ? 1.2 : itemMultiplier;
   }
 

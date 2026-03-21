@@ -55,4 +55,5 @@ export type VolatileStatus =
   | "underwater" // Semi-invulnerable turn of Dive (Gen 3+)
   | "shadow-force-charging" // Semi-invulnerable turn of Shadow Force (Gen 4+)
   | "charging" // Generic charge turn (SolarBeam, Skull Bash, Razor Wind, Sky Attack) — NOT semi-invulnerable
-  | "metronome-count"; // Metronome item — tracks consecutive same-move uses (Gen 4+)
+  | "metronome-count" // Metronome item — tracks consecutive same-move uses (Gen 4+)
+  | "slow-start"; // Slow Start — halves Attack and Speed for 5 turns (Gen 4+ Regigigas)

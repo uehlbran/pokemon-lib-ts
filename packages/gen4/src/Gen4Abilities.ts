@@ -16,12 +16,15 @@ import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffe
  *                         Flash Fire (with volatile boost), Levitate
  *   - "on-flinch": Steadfast
  *
+ * Stat-modifying abilities (damage calc / speed calc integration):
+ *   - Solar Power: 1.5x SpAtk in sun (damage calc) + 1/8 HP chip (turn-end)
+ *   - Flower Gift: 1.5x Atk + 1.5x SpDef in sun (damage calc)
+ *   - Normalize: moves become Normal type (damage calc type override)
+ *   - Scrappy: Normal/Fighting hit Ghost neutrally (damage calc effectiveness override)
+ *   - Slow Start: halve Attack/Speed for 5 turns (volatile tracking + damage calc + speed calc)
+ *   - Download: compare foe Def/SpDef, raise Atk or SpAtk (switch-in)
+ *
  * Deferred abilities (require engine hooks not yet available):
- *   - Magic Guard: passive damage immunity (needs engine check before applying chip)
- *   - Mold Breaker: ability bypass in damage flow
- *   - Simple / Unaware: stat-reading hooks
- *   - Normalize / Scrappy: type-change mechanics
- *   - Flower Gift: ally stat boost in sun
  *   - Leaf Guard: status prevention in sun
  *   - Klutz: item suppression
  *
@@ -217,13 +220,20 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
     case "slow-start": {
       // NEW in Gen 4 — Regigigas only. Halves Attack and Speed for 5 turns.
-      // Informational here — the stat halving requires engine support to track volatile state.
-      // The 5-turn counter is a volatile status that the engine needs to decrement each turn.
+      // Sets "slow-start" volatile with turnsLeft=5. The damage calc and speed calc
+      // check for this volatile to apply the halving. The EoT handler decrements it.
       // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns after switch-in
       // Source: Showdown Gen 4 mod — Slow Start counter initialized on switch-in
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          {
+            effectType: "volatile-inflict",
+            target: "self",
+            volatile: "slow-start",
+            data: { turnsLeft: 5 },
+          },
+        ],
         messages: [`${name} can't get it going because of its Slow Start!`],
       };
     }

@@ -774,3 +774,109 @@ describe("processItemResult — status-inflict and self-damage effect types", ()
     expect(heldItemDamageEvents.length).toBeGreaterThanOrEqual(1);
   });
 });
+
+// ─── Slow Start Countdown EoT Handler ─────────────────────────────────────────
+
+describe("slow-start-countdown EoT slot", () => {
+  it("given a Pokemon with slow-start volatile (turnsLeft=5), when 5 turns of EoT ticks pass, then slow-start volatile is removed and volatile-end event is emitted", () => {
+    // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown on end-of-turn
+    // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns after switch-in
+    const ruleset = new Gen4MockRuleset();
+    // Only run slow-start-countdown in EoT (no damage, no weather, etc.)
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    // Set up the slow-start volatile on side 0's active Pokemon
+    const active0 = engine.getActive(0);
+    if (active0) {
+      active0.ability = "slow-start";
+      active0.volatileStatuses.set("slow-start", { turnsLeft: 5 });
+    }
+
+    // Run 5 turns — each turn triggers EoT which decrements turnsLeft by 1
+    for (let turn = 0; turn < 5; turn++) {
+      events.length = 0;
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+    }
+
+    // After 5 EoT ticks, the slow-start volatile should be removed
+    expect(active0?.volatileStatuses.has("slow-start")).toBe(false);
+
+    // A volatile-end event for slow-start should have been emitted
+    const volatileEndEvents = events.filter(
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "slow-start",
+    );
+    expect(volatileEndEvents.length).toBe(1);
+
+    // A message about Slow Start wearing off should have been emitted
+    const slowStartMessages = events.filter(
+      (e) => e.type === "message" && "text" in e && e.text.includes("Slow Start wore off"),
+    );
+    expect(slowStartMessages.length).toBe(1);
+  });
+
+  it("given a Pokemon with slow-start volatile (turnsLeft=2), when 1 turn of EoT ticks passes, then slow-start volatile still present with turnsLeft=1", () => {
+    // Source: Showdown Gen 4 mod — Slow Start countdown is exact (not early or late)
+    // Triangulation: verify the countdown decrements by exactly 1 per turn, not all at once
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    const active0 = engine.getActive(0);
+    if (active0) {
+      active0.ability = "slow-start";
+      active0.volatileStatuses.set("slow-start", { turnsLeft: 2 });
+    }
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // After 1 tick, volatile should still be present with turnsLeft=1
+    expect(active0?.volatileStatuses.has("slow-start")).toBe(true);
+    expect(active0?.volatileStatuses.get("slow-start")?.turnsLeft).toBe(1);
+
+    // No volatile-end event yet
+    const volatileEndEvents = events.filter(
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "slow-start",
+    );
+    expect(volatileEndEvents.length).toBe(0);
+  });
+
+  it("given a Pokemon whose ability changed from slow-start but still has the volatile, when EoT ticks pass, then the volatile still counts down and is removed", () => {
+    // Source: Showdown Gen 4 mod — the volatile should tick down regardless of current ability
+    // This tests the fix that removed the ability check from the slow-start-countdown handler
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    const active0 = engine.getActive(0);
+    if (active0) {
+      // Ability was changed (e.g., by Skill Swap) but volatile remains
+      active0.ability = "pressure";
+      active0.volatileStatuses.set("slow-start", { turnsLeft: 1 });
+    }
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // The volatile should be removed even though the ability is no longer slow-start
+    expect(active0?.volatileStatuses.has("slow-start")).toBe(false);
+
+    const volatileEndEvents = events.filter(
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "slow-start",
+    );
+    expect(volatileEndEvents.length).toBe(1);
+  });
+});
