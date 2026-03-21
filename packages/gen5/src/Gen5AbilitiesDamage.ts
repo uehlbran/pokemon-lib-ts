@@ -267,11 +267,13 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     }
 
     case "reckless": {
-      // Reckless: 1.2x (4915/4096) power for recoil moves.
+      // Reckless: 1.2x (4915/4096) power for recoil AND crash-damage moves.
       // Source: Showdown data/abilities.ts -- reckless
       //   onBasePower: if move.recoil || move.hasCrashDamage, chainModify([4915, 4096])
+      // Crash damage moves (e.g., Jump Kick, High Jump Kick) deal self-damage on failure
+      // and are boosted identically to recoil moves.
       if (!ctx.move) return NO_ACTIVATION;
-      if (!hasRecoilEffect(ctx.move.effect)) return NO_ACTIVATION;
+      if (!hasRecoilEffect(ctx.move.effect) && !ctx.move.hasCrashDamage) return NO_ACTIVATION;
 
       return {
         activated: true,
@@ -629,9 +631,12 @@ export function getSturdyDamageCap(
   maxHp: number,
 ): number {
   if (abilityId !== "sturdy") return damage;
-  if (currentHp < maxHp) return damage;
+  // Strict equality matches Showdown: `target.hp === target.maxhp`
+  // Using >= would incorrectly trigger if currentHp ever exceeded maxHp due to a bug.
+  // Source: Showdown data/abilities.ts -- sturdy onDamage:
+  //   if (target.hp === target.maxhp && damage >= target.hp) return target.hp - 1
+  if (currentHp !== maxHp) return damage;
   if (damage < currentHp) return damage;
-  // Source: Showdown data/abilities.ts -- Sturdy: survive at 1 HP
   return maxHp - 1;
 }
 

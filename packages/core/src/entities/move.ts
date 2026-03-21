@@ -93,6 +93,16 @@ export interface MoveData {
    * Gen plugins use this field to look up the correct category for their gen.
    */
   readonly categoryByGen?: Partial<Record<Generation, MoveCategory>>;
+
+  /**
+   * True for moves that deal crash damage to the user on miss/failure.
+   * Crash damage moves are boosted by Reckless (same as recoil moves).
+   *
+   * Gen 5 crash damage moves: Jump Kick, High Jump Kick.
+   * Source: Showdown sim/dex-moves.ts — `hasCrashDamage?: boolean`
+   * Source: Showdown data/abilities.ts — Reckless: `if (move.recoil || move.hasCrashDamage)`
+   */
+  readonly hasCrashDamage?: boolean;
 }
 
 export interface MoveFlags {

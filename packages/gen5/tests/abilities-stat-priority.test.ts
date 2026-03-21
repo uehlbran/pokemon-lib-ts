@@ -186,6 +186,7 @@ function makeContext(opts: {
   nickname?: string;
   statStages?: Partial<Record<string, number>>;
   rngPick?: <T>(arr: readonly T[]) => T;
+  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
 }): AbilityContext {
   const state = makeBattleState();
   const pokemon = makeActivePokemon({
@@ -202,6 +203,7 @@ function makeContext(opts: {
     state,
     trigger: opts.trigger,
     move: opts.move,
+    statChange: opts.statChange,
     rng: {
       next: () => 0,
       int: () => 1,
@@ -355,6 +357,8 @@ describe("handleGen5StatAbility -- Defiant", () => {
       trigger: "on-stat-change",
       opponent,
       nickname: "Bisharp",
+      // Must supply statChange with a drop caused by opponent
+      statChange: { stat: "attack", stages: -1, source: "opponent" },
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -371,13 +375,28 @@ describe("handleGen5StatAbility -- Defiant", () => {
     expect(result.messages[0]).toContain("Bisharp");
   });
 
-  it("given Defiant and self-inflicted stat drop (no opponent), when on-stat-change fires, then does not activate", () => {
+  it("given Defiant and self-inflicted stat drop, when on-stat-change fires, then does not activate", () => {
     // Source: Showdown -- Defiant checks: if (!source || target.isAlly(source)) return;
-    // Self-inflicted drops (e.g., Close Combat) should not trigger
+    // Self-inflicted drops (e.g., Close Combat own stat drop) should not trigger Defiant.
     const ctx = makeContext({
       ability: "defiant",
       trigger: "on-stat-change",
-      // no opponent = self-inflicted
+      statChange: { stat: "defense", stages: -1, source: "self" },
+    });
+    const result = handleGen5StatAbility(ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
+  });
+
+  it("given Defiant and opponent-caused stat boost (not a drop), when on-stat-change fires, then does not activate", () => {
+    // Source: Showdown -- Defiant only fires on negative boosts, not positive
+    const opponent = makeActivePokemon({ ability: "moody" });
+    const ctx = makeContext({
+      ability: "defiant",
+      trigger: "on-stat-change",
+      opponent,
+      statChange: { stat: "attack", stages: 2, source: "opponent" },
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -401,6 +420,8 @@ describe("handleGen5StatAbility -- Competitive", () => {
       trigger: "on-stat-change",
       opponent,
       nickname: "Milotic",
+      // Must supply statChange with a drop caused by opponent
+      statChange: { stat: "spAttack", stages: -2, source: "opponent" },
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -417,11 +438,26 @@ describe("handleGen5StatAbility -- Competitive", () => {
     expect(result.messages[0]).toContain("Milotic");
   });
 
-  it("given Competitive and no opponent (self-inflicted), when on-stat-change fires, then does not activate", () => {
-    // Source: Showdown -- Competitive uses same guard as Defiant
+  it("given Competitive and self-inflicted stat drop, when on-stat-change fires, then does not activate", () => {
+    // Source: Showdown -- Competitive uses same guard as Defiant; self drops excluded
     const ctx = makeContext({
       ability: "competitive",
       trigger: "on-stat-change",
+      statChange: { stat: "spAttack", stages: -2, source: "self" },
+    });
+    const result = handleGen5StatAbility(ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Competitive and opponent-caused boost (not a drop), when on-stat-change fires, then does not activate", () => {
+    // Source: Showdown -- Competitive only triggers on drops, not boosts
+    const opponent = makeActivePokemon({ ability: "moody" });
+    const ctx = makeContext({
+      ability: "competitive",
+      trigger: "on-stat-change",
+      opponent,
+      statChange: { stat: "spAttack", stages: 1, source: "opponent" },
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -832,17 +868,18 @@ describe("handleGen5StatAbility -- Steadfast", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Unnerve (passive-immunity)
+// Unnerve (on-item-use)
 // ---------------------------------------------------------------------------
 
 describe("handleGen5StatAbility -- Unnerve", () => {
-  it("given Unnerve, when passive-immunity check fires, then activates with prevention message", () => {
+  it("given Unnerve, when on-item-use fires, then activates with prevention message", () => {
+    // Unnerve prevents berry consumption; fires on the on-item-use trigger (not passive-immunity).
     // Source: Showdown data/abilities.ts -- Unnerve onFoeTryEatItem:
-    //   return !this.effectState.unnerved;
+    //   `if (this.effectState.target.hasAbility('unnerve')) return null;`
     // Source: Bulbapedia -- Unnerve: "Prevents opposing Pokemon from eating Berries"
     const ctx = makeContext({
       ability: "unnerve",
-      trigger: "passive-immunity",
+      trigger: "on-item-use",
       nickname: "Axew",
     });
     const result = handleGen5StatAbility(ctx);
@@ -854,10 +891,22 @@ describe("handleGen5StatAbility -- Unnerve", () => {
     expect(result.messages[0]).toContain("Berries");
   });
 
-  it("given non-Unnerve ability, when passive-immunity check fires, then does not activate", () => {
-    // Source: Showdown -- only Unnerve has this passive berry-prevention
+  it("given non-Unnerve ability, when on-item-use fires, then does not activate", () => {
+    // Source: Showdown -- only Unnerve has this item-consumption prevention
     const ctx = makeContext({
       ability: "blaze",
+      trigger: "on-item-use",
+    });
+    const result = handleGen5StatAbility(ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Unnerve, when passive-immunity check fires (wrong trigger), then does not activate", () => {
+    // Regression: Unnerve was previously incorrectly wired to passive-immunity.
+    // Verify it no longer activates on that trigger.
+    const ctx = makeContext({
+      ability: "unnerve",
       trigger: "passive-immunity",
     });
     const result = handleGen5StatAbility(ctx);

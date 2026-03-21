@@ -19,7 +19,7 @@ import type { MoveCategory } from "@pokemon-lib-ts/core";
  *   - Moody: +2 random stat, -1 different random stat at end of turn (on-turn-end)
  *   - Speed Boost: +1 Speed at end of turn (on-turn-end)
  *   - Simple: Stat changes doubled (on-stat-change)
- *   - Unnerve: Prevents opponent from eating Berries (passive-immunity)
+ *   - Unnerve: Prevents opponent from eating Berries (on-item-use)
  *   - Steadfast: +1 Speed when flinched (on-flinch)
  *
  * Source: references/pokemon-showdown/data/abilities.ts (base definitions)
@@ -89,6 +89,8 @@ export function handleGen5StatAbility(ctx: AbilityContext): AbilityResult {
       return handleTurnEnd(abilityId, ctx);
     case "on-flinch":
       return handleFlinch(abilityId, ctx);
+    case "on-item-use":
+      return handleItemUse(abilityId, ctx);
     case "passive-immunity":
       return handlePassiveImmunity(abilityId, ctx);
     default:
@@ -198,11 +200,20 @@ function handleStatChange(abilityId: string, ctx: AbilityContext): AbilityResult
 /**
  * Defiant: +2 Attack when any of the user's stats are lowered by an opponent.
  *
+ * Must gate on: the change is a drop (stages < 0) AND caused by the opponent.
+ * Defiant does NOT trigger on self-caused drops (e.g., Close Combat own defense drop)
+ * or on boosts from any source.
+ *
  * Source: Showdown data/abilities.ts -- Defiant onAfterEachBoost
+ *   `if (source && source.isAlly(target)) return;` — ally (same side) changes excluded
+ *   `if (boost[stat]! < 0)` — only drops, not boosts
  * Source: Bulbapedia -- Defiant: "+2 Attack when any stat lowered by opponent"
  */
 function handleDefiant(ctx: AbilityContext): AbilityResult {
-  if (!ctx.opponent) return INACTIVE;
+  // Require opponent-caused stat DROP (stages < 0, source === "opponent")
+  if (!ctx.statChange || ctx.statChange.stages >= 0 || ctx.statChange.source !== "opponent") {
+    return INACTIVE;
+  }
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
@@ -221,11 +232,18 @@ function handleDefiant(ctx: AbilityContext): AbilityResult {
 /**
  * Competitive: +2 SpAtk when any of the user's stats are lowered by an opponent.
  *
+ * Must gate on: the change is a drop (stages < 0) AND caused by the opponent.
+ * Competitive does NOT trigger on self-caused drops or boosts.
+ *
  * Source: Showdown data/abilities.ts -- Competitive onAfterEachBoost
+ *   Same gating logic as Defiant — only opponent-caused drops trigger it.
  * Source: Bulbapedia -- Competitive: "+2 SpAtk when any stat lowered by opponent"
  */
 function handleCompetitive(ctx: AbilityContext): AbilityResult {
-  if (!ctx.opponent) return INACTIVE;
+  // Require opponent-caused stat DROP (stages < 0, source === "opponent")
+  if (!ctx.statChange || ctx.statChange.stages >= 0 || ctx.statChange.source !== "opponent") {
+    return INACTIVE;
+  }
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
@@ -482,18 +500,25 @@ function handleFlinch(abilityId: string, ctx: AbilityContext): AbilityResult {
 }
 
 // ---------------------------------------------------------------------------
-// passive-immunity
+// on-item-use
 // ---------------------------------------------------------------------------
 
 /**
- * Handle "passive-immunity" abilities.
+ * Handle "on-item-use" abilities.
  *
  * Unnerve: prevents the opponent from consuming Berries.
+ * This trigger fires when an opponent Pokemon attempts to use/eat a held Berry.
+ * Unnerve blocks the consumption — the Berry is not consumed and provides no effect.
  *
  * Source: Showdown data/abilities.ts -- Unnerve onFoeTryEatItem
- * Source: Bulbapedia -- Unnerve: "Prevents opposing Pokemon from eating Berries"
+ *   `if (this.effectState.target.hasAbility('unnerve')) return null;`
+ * Source: Bulbapedia -- Unnerve: "Prevents opposing Pokemon from eating Berries."
+ *
+ * Note: `on-item-use` replaces the incorrect `passive-immunity` routing.
+ * `passive-immunity` is for type-based move immunity (Levitate, Flash Fire, etc.).
+ * Unnerve is an item-consumption check, not a type immunity.
  */
-function handlePassiveImmunity(abilityId: string, ctx: AbilityContext): AbilityResult {
+function handleItemUse(abilityId: string, ctx: AbilityContext): AbilityResult {
   if (abilityId !== "unnerve") return INACTIVE;
 
   const name = getName(ctx);
@@ -502,6 +527,22 @@ function handlePassiveImmunity(abilityId: string, ctx: AbilityContext): AbilityR
     effects: [],
     messages: [`${name}'s Unnerve prevents the opponent from eating Berries!`],
   };
+}
+
+// ---------------------------------------------------------------------------
+// passive-immunity
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle "passive-immunity" abilities.
+ *
+ * This function is currently unused for abilities in this module — Unnerve
+ * was incorrectly routed here and has been moved to `on-item-use`.
+ * Retained for forward compatibility with any future passive-immunity abilities
+ * that may be added to this module.
+ */
+function handlePassiveImmunity(_abilityId: string, _ctx: AbilityContext): AbilityResult {
+  return INACTIVE;
 }
 
 // ---------------------------------------------------------------------------

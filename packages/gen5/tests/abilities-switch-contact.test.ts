@@ -209,6 +209,7 @@ function makeContext(opts: {
   gender?: Gender;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   substituteHp?: number;
+  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
 }): AbilityContext {
   const state = makeBattleState();
   const pokemon = makeActivePokemon({
@@ -234,6 +235,7 @@ function makeContext(opts: {
     state,
     trigger: opts.trigger,
     move: opts.move,
+    statChange: opts.statChange,
     rng: {
       next: () => {
         if (rngNextValues && nextIndex < rngNextValues.length) {
@@ -1097,17 +1099,17 @@ describe("handleGen5SwitchAbility on-damage-taken -- Illusion break", () => {
   });
 });
 
-describe("handleGen5SwitchAbility on-damage-taken -- Synchronize", () => {
-  it("given Synchronize with burn, when triggered, then spreads burn to opponent", () => {
-    // Source: Showdown data/abilities.ts — Synchronize: passes burn/paralysis/poison
+describe("handleGen5SwitchAbility on-status-inflicted -- Synchronize", () => {
+  it("given Synchronize with burn, when status inflicted, then spreads burn to opponent", () => {
+    // Source: Showdown data/abilities.ts — Synchronize: onAfterSetStatus fires when status is SET
     const opponent = makeActivePokemon({ ability: "blaze" });
     const ctx = makeContext({
       ability: "synchronize",
-      trigger: "on-damage-taken",
+      trigger: "on-status-inflicted",
       status: "burn",
       opponent,
     });
-    const result = handleGen5SwitchAbility("on-damage-taken", ctx);
+    const result = handleGen5SwitchAbility("on-status-inflicted", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
@@ -1117,16 +1119,16 @@ describe("handleGen5SwitchAbility on-damage-taken -- Synchronize", () => {
     });
   });
 
-  it("given Synchronize with sleep, when triggered, then does NOT spread (sleep excluded)", () => {
+  it("given Synchronize with sleep, when status inflicted, then does NOT spread (sleep excluded)", () => {
     // Source: Showdown data/abilities.ts — Synchronize: status.id !== 'slp' && !== 'frz'
     const opponent = makeActivePokemon({ ability: "blaze" });
     const ctx = makeContext({
       ability: "synchronize",
-      trigger: "on-damage-taken",
+      trigger: "on-status-inflicted",
       status: "sleep",
       opponent,
     });
-    const result = handleGen5SwitchAbility("on-damage-taken", ctx);
+    const result = handleGen5SwitchAbility("on-status-inflicted", ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -1449,21 +1451,55 @@ describe("handleGen5SwitchAbility passive-immunity -- Lightning Rod (Gen 5+)", (
 // ===========================================================================
 
 describe("handleGen5SwitchAbility on-stat-change -- Big Pecks", () => {
-  it("given Big Pecks, when stat change triggers, then activates to block Defense drop", () => {
-    // Source: Showdown data/abilities.ts — Big Pecks: prevents Defense from being lowered
-    const ctx = makeContext({ ability: "big-pecks", trigger: "on-stat-change" });
+  it("given Big Pecks and an incoming Defense drop, when stat change triggers, then activates to block it", () => {
+    // Source: Showdown data/abilities.ts — Big Pecks onTryBoost:
+    //   if (boost.def && boost.def < 0) { delete boost.def; ... }
+    // Source: Bulbapedia — Big Pecks: "Prevents Defense from being lowered."
+    const ctx = makeContext({
+      ability: "big-pecks",
+      trigger: "on-stat-change",
+      statChange: { stat: "defense", stages: -1, source: "opponent" },
+    });
     const result = handleGen5SwitchAbility("on-stat-change", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("Defense");
   });
 
-  it("given Big Pecks, when stat change triggers, then effect is informational only", () => {
-    // Source: Showdown data/abilities.ts — Big Pecks: engine reads activated=true to block
-    const ctx = makeContext({ ability: "big-pecks", trigger: "on-stat-change" });
+  it("given Big Pecks and an incoming Defense drop, when stat change triggers, then effect is informational only", () => {
+    // Source: Showdown — Big Pecks: engine reads activated=true to block the drop
+    const ctx = makeContext({
+      ability: "big-pecks",
+      trigger: "on-stat-change",
+      statChange: { stat: "defense", stages: -2, source: "opponent" },
+    });
     const result = handleGen5SwitchAbility("on-stat-change", ctx);
 
     expect(result.effects[0]).toEqual({ effectType: "none", target: "self" });
+  });
+
+  it("given Big Pecks and an incoming Attack drop (not Defense), when stat change triggers, then does NOT activate", () => {
+    // Source: Showdown — Big Pecks only blocks Defense drops, not other stat drops
+    const ctx = makeContext({
+      ability: "big-pecks",
+      trigger: "on-stat-change",
+      statChange: { stat: "attack", stages: -1, source: "opponent" },
+    });
+    const result = handleGen5SwitchAbility("on-stat-change", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Big Pecks and a Defense boost (positive stage), when stat change triggers, then does NOT activate", () => {
+    // Source: Showdown — Big Pecks only blocks drops; boosts are not blocked
+    const ctx = makeContext({
+      ability: "big-pecks",
+      trigger: "on-stat-change",
+      statChange: { stat: "defense", stages: 1, source: "opponent" },
+    });
+    const result = handleGen5SwitchAbility("on-stat-change", ctx);
+
+    expect(result.activated).toBe(false);
   });
 });
 

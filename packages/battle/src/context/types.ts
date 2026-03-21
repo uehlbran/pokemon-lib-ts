@@ -302,6 +302,17 @@ export interface AbilityContext {
   readonly move?: MoveData;
   /** Damage dealt this turn, if the trigger is damage-related */
   readonly damage?: number;
+  /**
+   * For `on-stat-change` triggers: describes the stat change being attempted.
+   * `stat` is the stat being changed, `stages` is the signed delta (negative = drop),
+   * `source` indicates whether the change was caused by an opponent or self.
+   * Absent for all other trigger types.
+   */
+  readonly statChange?: {
+    readonly stat: BattleStat;
+    readonly stages: number;
+    readonly source: "self" | "opponent";
+  };
 }
 
 /**

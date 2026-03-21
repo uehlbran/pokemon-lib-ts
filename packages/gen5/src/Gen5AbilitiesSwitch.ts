@@ -12,11 +12,12 @@ import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
  *   - on-switch-out: Regenerator, Natural Cure
  *   - on-contact: Static, Flame Body, Poison Point, Rough Skin, Iron Barbs,
  *     Effect Spore, Cute Charm, Aftermath, Mummy, Poison Touch, Pickpocket
- *   - on-damage-taken: Cursed Body, Rattled, Illusion (reveal), Synchronize
+ *   - on-damage-taken: Cursed Body, Rattled, Illusion (reveal)
+ *   - on-status-inflicted: Synchronize
  *   - passive-immunity: Levitate, Flash Fire, Water Absorb, Volt Absorb,
  *     Motor Drive, Dry Skin, Overcoat, Sap Sipper, Magic Guard,
  *     Storm Drain, Lightning Rod, Sand Rush
- *   - on-stat-change: Big Pecks
+ *   - on-stat-change: Big Pecks (stub — context does not carry which stat changed yet)
  *   - on-accuracy-check: Victory Star
  *   - trapping: Shadow Tag, Arena Trap, Magnet Pull
  *
@@ -89,6 +90,8 @@ export function handleGen5SwitchAbility(
       return handleOnContact(context);
     case "on-damage-taken":
       return handleOnDamageTaken(context);
+    case "on-status-inflicted":
+      return handleOnStatusInflicted(context);
     case "passive-immunity":
       return handlePassiveImmunity(context);
     case "on-stat-change":
@@ -607,16 +610,42 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
       };
     }
 
+    default:
+      return NO_EFFECT;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// on-status-inflicted
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle "on-status-inflicted" abilities for Gen 5.
+ *
+ * Fires when a Pokemon receives a primary status condition.
+ * `context.pokemon` is the Pokemon that was statused.
+ * `context.opponent` is the source that inflicted the status (if any).
+ */
+function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
+  const abilityId = ctx.pokemon.ability;
+  const name = getName(ctx);
+
+  switch (abilityId) {
     case "synchronize": {
-      // Source: Showdown data/abilities.ts — Synchronize: passes burn/paralysis/poison
-      //   to the foe that inflicted it. Does NOT pass sleep or freeze.
-      // Source: Bulbapedia — Synchronize: "Passes burn, paralysis, or poison to the foe
-      //   that inflicted it."
+      // Synchronize fires when the holder receives burn, paralysis, or poison from an
+      // opponent. It passes the same status back to the source.
+      // Does NOT spread sleep or freeze (excluded in Showdown).
+      //
+      // Source: Showdown data/abilities.ts — Synchronize: onAfterSetStatus
+      //   if (!source || source === target) return;    ← must be opponent-caused
+      //   if (effect.id === 'toxicspikes') return;    ← Toxic Spikes excluded
+      //   if (status.id === 'slp' || status.id === 'frz') return;
+      //   source.trySetStatus(status, target, { id: 'synchronize' })
+      // Source: Bulbapedia — Synchronize: "Passes burn, paralysis, or poison to the foe."
       if (!ctx.opponent) return NO_EFFECT;
       const status = ctx.pokemon.pokemon.status;
       if (!status) return NO_EFFECT;
       // Only spreads burn, paralysis, poison (not sleep, freeze, badly-poisoned)
-      // Source: Showdown data/abilities.ts — Synchronize: status.id !== 'slp' && !== 'frz'
       if (status !== "burn" && status !== "paralysis" && status !== "poison") return NO_EFFECT;
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       return {
@@ -817,8 +846,15 @@ function handleOnStatChange(ctx: AbilityContext): AbilityResult {
 
   switch (abilityId) {
     case "big-pecks": {
-      // Source: Showdown data/abilities.ts — Big Pecks: prevents Defense from being lowered
+      // Big Pecks only blocks Defense drops. It must NOT fire for other stats or boosts.
+      // Gate on: stat === "defense" AND stages < 0 (a drop, not a boost).
+      //
+      // Source: Showdown data/abilities.ts — Big Pecks onTryBoost:
+      //   if (boost.def && boost.def < 0) { delete boost.def; ... }
       // Source: Bulbapedia — Big Pecks (Gen 5 new): "Prevents Defense from being lowered."
+      if (ctx.statChange?.stat !== "defense" || (ctx.statChange?.stages ?? 0) >= 0) {
+        return NO_EFFECT;
+      }
       const name = getName(ctx);
       return {
         activated: true,
