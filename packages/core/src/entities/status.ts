@@ -54,4 +54,5 @@ export type VolatileStatus =
   | "underground" // Semi-invulnerable turn of Dig (Gen 2+)
   | "underwater" // Semi-invulnerable turn of Dive (Gen 3+)
   | "shadow-force-charging" // Semi-invulnerable turn of Shadow Force (Gen 4+)
-  | "charging"; // Generic charge turn (SolarBeam, Skull Bash, Razor Wind, Sky Attack) — NOT semi-invulnerable
+  | "charging" // Generic charge turn (SolarBeam, Skull Bash, Razor Wind, Sky Attack) — NOT semi-invulnerable
+  | "metronome-count"; // Metronome item — tracks consecutive same-move uses (Gen 4+)

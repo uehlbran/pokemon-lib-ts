@@ -2921,3 +2921,372 @@ describe("Gen 4 damage calc — Plates (1.2x type boost)", () => {
     expect(GEN4_TYPES.length).toBe(17);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Tests: SolarBeam half power in rain/sand/hail
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
+  it("given SolarBeam in rain weather, when calculating damage, then base power is halved (120 -> 60)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam power halved in non-sun weather
+    // Source: Bulbapedia — Solar Beam: "Has its base power halved in rain."
+    // Source: specs/battle/05-gen4.md line 497 — "Solar Beam: half power"
+    //
+    // Derivation (L50, power=60 [halved from 120], Atk=100, Def=100, rng=100):
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDmg = floor(floor(22*60*100/100)/50) + 2 = floor(floor(132000/100)/50) + 2
+    //           = floor(1320/50) + 2 = 26 + 2 = 28
+    //   Weather: rain boosts Water 1.5x / Fire 0.5x; Grass gets 1.0x.
+    //   Final damage = 28
+    //
+    // Without rain (full 120 power):
+    //   baseDmg = floor(floor(22*120*100/100)/50) + 2 = floor(2640/50) + 2 = 52 + 2 = 54
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["grass"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    // With rain weather
+    const rainResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      }),
+      chart,
+    );
+
+    // Without weather (full power)
+    const noWeatherResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // SolarBeam at half power in rain (60 BP + STAB 1.5x)
+    // levelFactor = 22; SpAtk=100, SpDef=100
+    // Half power: floor(floor(22*60*100/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
+    // With STAB: floor(28 * 1.5) = 42
+    expect(rainResult.damage).toBe(42);
+
+    // Full power no weather: floor(floor(22*120*100/100)/50)+2 = floor(2640/50)+2 = 52+2 = 54
+    // With STAB: floor(54 * 1.5) = 81
+    expect(noWeatherResult.damage).toBe(81);
+
+    // Rain result should be roughly half of no-weather result
+    expect(rainResult.damage).toBeLessThan(noWeatherResult.damage);
+  });
+
+  it("given SolarBeam in sandstorm weather, when calculating damage, then base power is halved (120 -> 60)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam power halved in non-sun weather
+    // Source: Bulbapedia — Solar Beam: "Has its base power halved in sandstorm."
+    // Source: specs/battle/05-gen4.md line 516 — "Solar Beam: half power (charge still required)"
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["normal"], // no STAB with grass
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    // With sandstorm weather
+    const sandResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+      }),
+      chart,
+    );
+
+    // Without weather (full power)
+    const noWeatherResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // SolarBeam at half power in sand (60 BP, no STAB):
+    // floor(floor(22*60*100/100)/50)+2 = 28
+    expect(sandResult.damage).toBe(28);
+    // Full power no weather: 54
+    expect(noWeatherResult.damage).toBe(54);
+    expect(sandResult.damage).toBeLessThan(noWeatherResult.damage);
+  });
+
+  it("given SolarBeam in hail weather, when calculating damage, then base power is halved (120 -> 60)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam power halved in non-sun weather
+    // Source: Bulbapedia — Solar Beam: "Has its base power halved in hail."
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["normal"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    const hailResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "hail", turnsLeft: 5, source: "hail" },
+      }),
+      chart,
+    );
+
+    // Half power: 28 (same derivation as above)
+    expect(hailResult.damage).toBe(28);
+  });
+
+  it("given SolarBeam in sun weather, when calculating damage, then base power is NOT halved (stays 120)", () => {
+    // Source: Showdown sim/battle-actions.ts — SolarBeam keeps full power in sun
+    // Source: Bulbapedia — Solar Beam: "Fires immediately in harsh sunlight with full power."
+    // Source: specs/battle/05-gen4.md line 505 — "Solar Beam: no charge (full power)"
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["normal"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const solarBeam = createMove({
+      type: "grass",
+      power: 120,
+      category: "special",
+      id: "solar-beam",
+    });
+    const chart = createNeutralTypeChart();
+
+    const sunResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: solarBeam,
+        rng: createMockRng(100),
+        weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      }),
+      chart,
+    );
+
+    // Full power in sun: 54 (no STAB, no weather type boost for Grass in sun)
+    expect(sunResult.damage).toBe(54);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: Metronome item consecutive-use power boost
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
+  // Metronome item applies to baseDamage (alongside Life Orb, Expert Belt), NOT to power.
+  // Source: Showdown sim/items.ts — Metronome item onModifyDamage
+  // Source: Bulbapedia — Metronome (item): "Each consecutive use adds 20% to damage"
+  // data.count tracks consecutive uses (including first): count=1 -> 1.0x, count=2 -> 1.2x, ...
+
+  it("given Metronome item with count=2 (2nd consecutive use), when calculating damage, then baseDamage boosted by 1.2x", () => {
+    // Derivation (L50, Atk=100, Def=100, power=80, rng=100):
+    //   levelFactor = 22
+    //   baseDmg = floor(floor(22*80*100/100)/50) + 2 = 35 + 2 = 37
+    //   STAB: Normal attacker, Normal move -> 1.5x: floor(37*1.5) = 55
+    //   Metronome 1.2x (boostSteps=1): floor(55*1.2) = 66
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["normal"],
+      heldItem: "metronome",
+    });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 2, moveId: "test" },
+    });
+
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(66);
+  });
+
+  it("given Metronome item with count=6 (6th consecutive use, max), when calculating damage, then baseDamage boosted by 2.0x", () => {
+    // Derivation (L50, Atk=100, Def=100, power=80, rng=100, no STAB):
+    //   baseDmg = 35 + 2 = 37
+    //   No STAB (fighting attacker, normal move): 37
+    //   Metronome 2.0x (boostSteps=5): floor(37*2.0) = 74
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["fighting"], // no STAB on normal move
+      heldItem: "metronome",
+    });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 6, moveId: "test" },
+    });
+
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    expect(result.damage).toBe(74);
+  });
+
+  it("given Metronome item with count=1 (first use), when calculating damage, then no boost applied (1.0x)", () => {
+    // Source: Showdown sim/items.ts — Metronome first use = 1.0x (no boost)
+    // boostSteps = min(1-1, 5) = 0 -> no multiplier applied
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["fighting"], // no STAB on normal move
+      heldItem: "metronome",
+    });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 1, moveId: "test" },
+    });
+
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    // No boost: baseDmg = 37
+    expect(result.damage).toBe(37);
+  });
+
+  it("given Metronome item with count=11 (exceeds cap), when calculating damage, then capped at 2.0x", () => {
+    // Source: Showdown sim/items.ts — Metronome caps at 2.0x (boostSteps capped at 5)
+    // boostSteps = min(11-1, 5) = 5 -> 2.0x
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["fighting"],
+      heldItem: "metronome",
+    });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 11, moveId: "test" },
+    });
+
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    // Capped at 2.0x: floor(37*2.0) = 74
+    expect(result.damage).toBe(74);
+  });
+
+  it("given no Metronome item even with metronome-count volatile, when calculating damage, then no boost applied", () => {
+    // Source: Showdown sim/items.ts — Metronome boost only applies when holding the item
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["fighting"],
+      heldItem: null, // NOT holding metronome
+    });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 6, moveId: "test" },
+    });
+
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      chart,
+    );
+
+    // No item = no boost: baseDmg = 37
+    expect(result.damage).toBe(37);
+  });
+});
