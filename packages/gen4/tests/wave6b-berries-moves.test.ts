@@ -670,6 +670,90 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
     );
   });
 
+  it("given defender holds ganlon-berry, when attacker uses Pluck, then attacker gets +1 Defense", () => {
+    // Source: Bulbapedia -- Ganlon Berry: when eaten, boosts Defense by 1 stage
+    // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
+    // Exercises Gen4MoveEffects.ts lines 2130-2132 — ganlon-berry case in applyBerryEffectToAttacker
+    const attacker = createActivePokemon({ types: ["flying"], nickname: "Staraptor" });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "ganlon-berry",
+    });
+    const move = createMove("pluck", { type: "flying", power: 60, category: "physical" });
+    const rng = createMockRng(0);
+    const ctx = createContext(attacker, defender, move, rng);
+
+    const result = executeGen4MoveEffect(ctx);
+
+    expect(defender.pokemon.heldItem).toBeNull();
+    expect(result.statChanges).toEqual(
+      expect.arrayContaining([{ target: "attacker", stat: "defense", stages: 1 }]),
+    );
+  });
+
+  it("given defender holds salac-berry, when attacker uses Pluck, then attacker gets +1 Speed", () => {
+    // Source: Bulbapedia -- Salac Berry: when eaten, boosts Speed by 1 stage
+    // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
+    // Exercises Gen4MoveEffects.ts lines 2133-2135 — salac-berry case in applyBerryEffectToAttacker
+    const attacker = createActivePokemon({ types: ["flying"], nickname: "Staraptor" });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "salac-berry",
+    });
+    const move = createMove("pluck", { type: "flying", power: 60, category: "physical" });
+    const rng = createMockRng(0);
+    const ctx = createContext(attacker, defender, move, rng);
+
+    const result = executeGen4MoveEffect(ctx);
+
+    expect(defender.pokemon.heldItem).toBeNull();
+    expect(result.statChanges).toEqual(
+      expect.arrayContaining([{ target: "attacker", stat: "speed", stages: 1 }]),
+    );
+  });
+
+  it("given defender holds petaya-berry, when attacker uses Pluck, then attacker gets +1 Sp. Atk", () => {
+    // Source: Bulbapedia -- Petaya Berry: when eaten, boosts Sp. Atk by 1 stage
+    // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
+    // Exercises Gen4MoveEffects.ts lines 2136-2138 — petaya-berry case in applyBerryEffectToAttacker
+    const attacker = createActivePokemon({ types: ["flying"], nickname: "Staraptor" });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "petaya-berry",
+    });
+    const move = createMove("pluck", { type: "flying", power: 60, category: "physical" });
+    const rng = createMockRng(0);
+    const ctx = createContext(attacker, defender, move, rng);
+
+    const result = executeGen4MoveEffect(ctx);
+
+    expect(defender.pokemon.heldItem).toBeNull();
+    expect(result.statChanges).toEqual(
+      expect.arrayContaining([{ target: "attacker", stat: "spAttack", stages: 1 }]),
+    );
+  });
+
+  it("given defender holds apicot-berry, when attacker uses Pluck, then attacker gets +1 Sp. Def", () => {
+    // Source: Bulbapedia -- Apicot Berry: when eaten, boosts Sp. Def by 1 stage
+    // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
+    // Exercises Gen4MoveEffects.ts lines 2139-2141 — apicot-berry case in applyBerryEffectToAttacker
+    const attacker = createActivePokemon({ types: ["flying"], nickname: "Staraptor" });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "apicot-berry",
+    });
+    const move = createMove("pluck", { type: "flying", power: 60, category: "physical" });
+    const rng = createMockRng(0);
+    const ctx = createContext(attacker, defender, move, rng);
+
+    const result = executeGen4MoveEffect(ctx);
+
+    expect(defender.pokemon.heldItem).toBeNull();
+    expect(result.statChanges).toEqual(
+      expect.arrayContaining([{ target: "attacker", stat: "spDefense", stages: 1 }]),
+    );
+  });
+
   it("given defender holds no berry, when attacker uses Pluck, then no berry effect occurs and move resolves normally", () => {
     // Source: Bulbapedia -- Pluck: "If the target is not holding a Berry, the move functions normally"
     const attacker = createActivePokemon({ types: ["flying"] });
@@ -718,6 +802,35 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
 
     expect(defender.pokemon.heldItem).toBeNull();
     expect(defender.volatileStatuses.has("unburden")).toBe(true);
+  });
+
+  it("given defender holds an unrecognized berry (not in the handler switch), when attacker uses Pluck, then berry is stolen but no additional effect occurs and no crash", () => {
+    // Source: Showdown Gen 4 -- applyBerryEffectToAttacker has a default: branch for berries
+    //   not listed (e.g. exotic event berries). The move still steals the item but grants no
+    //   additional battle effect. This exercises Gen4MoveEffects.ts lines 2142-2144.
+    const attacker = createActivePokemon({
+      types: ["flying"],
+      nickname: "Staraptor",
+      currentHp: 150,
+      maxHp: 200,
+    });
+    // "enigma-berry" is a real Gen 4 berry with no listed in-battle Pluck effect
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "enigma-berry",
+    });
+    const move = createMove("pluck", { type: "flying", power: 60, category: "physical" });
+    const rng = createMockRng(0);
+    const ctx = createContext(attacker, defender, move, rng);
+
+    const result = executeGen4MoveEffect(ctx);
+
+    // Berry is stolen (removed from defender)
+    expect(defender.pokemon.heldItem).toBeNull();
+    // No heal, no stat change, no status cure from the default branch
+    expect(result.healAmount).toBe(0);
+    expect(result.statChanges).toEqual([]);
+    expect(result.statusCuredOnly).toBeUndefined();
   });
 });
 
@@ -1104,6 +1217,112 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
     });
 
     expect(result.activated).toBe(false);
+  });
+
+  // ── Issue #434: Salac, Petaya and Apicot no-activation paths (Gen4Items.ts lines 613-614, 629, 645-646) ──
+
+  it("given holder has Salac Berry at full HP and takes small damage leaving HP above 25%, when on-damage-taken runs, then does NOT activate", () => {
+    // Source: Showdown Gen 4 -- pinch berries only activate when hpAfterDamage <= floor(maxHp * 0.25)
+    // Derivation: maxHp=200, threshold=floor(200*0.25)=50, damage=10 → hpAfterDamage=190 > 50 → NO_ACTIVATION
+    // Exercises Gen4Items.ts lines 613-614 — Salac no-activation return path
+    const pokemon = createActivePokemon({
+      types: ["water"],
+      heldItem: "salac-berry",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Floatzel",
+    });
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const rng = createMockRng(0);
+
+    const result = applyGen4HeldItem("on-damage-taken", {
+      pokemon,
+      state,
+      rng,
+      damage: 10,
+    });
+
+    expect(result.activated).toBe(false);
+    expect(pokemon.pokemon.heldItem).toBe("salac-berry");
+  });
+
+  it("given holder has Petaya Berry at full HP and takes small damage leaving HP above 25%, when on-damage-taken runs, then does NOT activate", () => {
+    // Source: Showdown Gen 4 -- pinch berries only activate when hpAfterDamage <= floor(maxHp * 0.25)
+    // Derivation: maxHp=200, threshold=floor(200*0.25)=50, damage=10 → hpAfterDamage=190 > 50 → NO_ACTIVATION
+    // Exercises Gen4Items.ts line 629 — Petaya no-activation return path
+    const pokemon = createActivePokemon({
+      types: ["psychic"],
+      heldItem: "petaya-berry",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Alakazam",
+    });
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const rng = createMockRng(0);
+
+    const result = applyGen4HeldItem("on-damage-taken", {
+      pokemon,
+      state,
+      rng,
+      damage: 10,
+    });
+
+    expect(result.activated).toBe(false);
+    expect(pokemon.pokemon.heldItem).toBe("petaya-berry");
+  });
+
+  it("given holder has Apicot Berry at full HP and takes small damage leaving HP above 25%, when on-damage-taken runs, then does NOT activate", () => {
+    // Source: Showdown Gen 4 -- pinch berries only activate when hpAfterDamage <= floor(maxHp * 0.25)
+    // Derivation: maxHp=200, threshold=floor(200*0.25)=50, damage=10 → hpAfterDamage=190 > 50 → NO_ACTIVATION
+    // Exercises Gen4Items.ts lines 645-646 — Apicot no-activation return path
+    const pokemon = createActivePokemon({
+      types: ["ice"],
+      heldItem: "apicot-berry",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Regice",
+    });
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const rng = createMockRng(0);
+
+    const result = applyGen4HeldItem("on-damage-taken", {
+      pokemon,
+      state,
+      rng,
+      damage: 10,
+    });
+
+    expect(result.activated).toBe(false);
+    expect(pokemon.pokemon.heldItem).toBe("apicot-berry");
+  });
+
+  it("given holder has Petaya Berry at exactly the 25% threshold after damage, when on-damage-taken runs, then DOES activate (boundary case)", () => {
+    // Source: Showdown Gen 4 -- boundary: hpAfterDamage == floor(maxHp * 0.25) activates
+    // Derivation: maxHp=200, threshold=floor(200*0.25)=50, damage=150 → hpAfterDamage=50 <= 50 → activates
+    const pokemon = createActivePokemon({
+      types: ["psychic"],
+      heldItem: "petaya-berry",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Alakazam",
+    });
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const rng = createMockRng(0);
+
+    const result = applyGen4HeldItem("on-damage-taken", {
+      pokemon,
+      state,
+      rng,
+      damage: 150,
+    });
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual(
+      expect.arrayContaining([
+        { type: "stat-boost", target: "self", value: "spAttack" },
+        { type: "consume", target: "self", value: "petaya-berry" },
+      ]),
+    );
   });
 });
 

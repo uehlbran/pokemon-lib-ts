@@ -26,6 +26,14 @@ describe("Gen 4 DataManager -- data loading", () => {
     expect(dm.getAllNatures().length).toBe(25);
   });
 
+  it("given gen4 data files, when loading DataManager, then loads 210 items", () => {
+    // Source: packages/gen4/data/items.json — jq '. | length' returns 210
+    // Gen 4 (Diamond/Pearl/Platinum/HeartGold/SoulSilver) adds many new items including
+    // held items, weather rocks, berries, plates, evolutionary items, and battle items.
+    const dm = createGen4DataManager();
+    expect(dm.getAllItems().length).toBe(210);
+  });
+
   it("given gen4 type chart, when loading DataManager, then has 17 types", () => {
     // Source: Gen 4 has 17 types (same as Gen 2-5, no Fairy yet)
     const dm = createGen4DataManager();

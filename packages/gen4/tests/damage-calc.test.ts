@@ -1129,6 +1129,73 @@ describe("Gen 4 damage calc — type effectiveness", () => {
     expect(result.effectiveness).toBe(0);
   });
 
+  it("given Flying-type defender holds Iron Ball, when hit by Ground-type move, then damage is > 0 (Iron Ball removes Ground immunity)", () => {
+    // Source: Showdown Gen 4 mod — Iron Ball grounds the holder, removing Flying-type Ground immunity
+    // Source: Bulbapedia — Iron Ball: "The holder becomes grounded."
+    // Source: Gen4DamageCalc.ts ironBallGrounded check — filters Flying from effectiveDefenderTypes
+    //
+    // Setup: Normal attacker (Atk=100), ground move (power=100), Flying defender (Def=100), rng=100
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   baseDmg = floor(floor(22*100*100/100)/50) + 2 = floor(floor(220000/100)/50) + 2
+    //           = floor(2200/50) + 2 = 44 + 2 = 46
+    //   random 100/100 = 1.0 → 46
+    //   no STAB → 46
+    //   Ground vs Flying without immunity (grounded by Iron Ball): chart = 1x → 46
+    // Without Iron Ball the type chart has ground vs flying = 0, damage = 0.
+    const attacker = createActivePokemon({ level: 50, attack: 100, types: ["normal"] });
+    const flyingDefender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["flying"],
+      heldItem: "iron-ball",
+    });
+    const groundMove = createMove({ type: "ground", power: 100, category: "physical" });
+    // Set type chart so ground vs flying would normally be immune (0), but Iron Ball overrides
+    const chart = createTypeChart([["ground", "flying", 0]]);
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: flyingDefender,
+        move: groundMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Iron Ball grounds the holder — Flying immunity is removed, treated as neutral (1x)
+    // Derivation: 46 * 1.0 (neutral after Iron Ball strips Flying) = 46
+    expect(result.damage).toBe(46);
+    expect(result.effectiveness).not.toBe(0);
+  });
+
+  it("given Flying-type defender WITHOUT Iron Ball, when hit by Ground-type move, then damage = 0 (normal Flying immunity)", () => {
+    // Source: Gen 4 type chart — Ground-type moves are immune vs Flying-type (0x)
+    // Triangulation: confirms Iron Ball is required for grounding (not an unconditional bypass)
+    const attacker = createActivePokemon({ level: 50, attack: 100, types: ["normal"] });
+    const flyingDefender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["flying"],
+      heldItem: null,
+    });
+    const groundMove = createMove({ type: "ground", power: 100, category: "physical" });
+    const chart = createTypeChart([["ground", "flying", 0]]);
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender: flyingDefender,
+        move: groundMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    expect(result.damage).toBe(0);
+    expect(result.effectiveness).toBe(0);
+  });
+
   it("given dual-type defender with 4x weakness (Ground vs Fire/Rock), when calculating, then typeMultiplier = 4", () => {
     // Source: Gen 4 type chart — Ground vs Fire = 2x, Ground vs Rock = 2x → 4x total
     const attacker = createActivePokemon({
