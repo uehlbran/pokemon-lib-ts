@@ -444,8 +444,4 @@ export class MockRuleset implements GenerationRuleset {
   getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
     return [];
   }
-
-  processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {
-    return false;
-  }
 }
