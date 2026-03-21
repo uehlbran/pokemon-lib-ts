@@ -314,6 +314,24 @@ export function calculateGen2Damage(
     // factor === 1: no change
   }
 
+  // Step 8.5: Apply Reflect / Light Screen halving (crits bypass screens)
+  // Source: pret/pokecrystal engine/battle/core.asm BattleCalcDamage — screens halve damage
+  // Critical hits bypass screens in Gen 2
+  if (!isCrit) {
+    const defenderSide = state.sides?.find((s) =>
+      s.active.some((a) => a?.pokemon === defender.pokemon),
+    );
+    if (defenderSide) {
+      const isPhysical = isGen2PhysicalType(move.type);
+      const hasReflect = isPhysical && defenderSide.screens.some((s) => s.type === "reflect");
+      const hasLightScreen =
+        !isPhysical && defenderSide.screens.some((s) => s.type === "light-screen");
+      if (hasReflect || hasLightScreen) {
+        baseDamage = Math.floor(baseDamage / 2);
+      }
+    }
+  }
+
   // Step 9: Random factor (217-255) / 255
   const randomRoll = rng.int(217, 255);
   const randomFactor = randomRoll / 255;

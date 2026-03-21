@@ -4,7 +4,7 @@ export type EntryHazardType =
   | "toxic-spikes" // Gen 4+
   | "sticky-web"; // Gen 6+
 
-export type ScreenType = "reflect" | "light-screen" | "aurora-veil"; // Gen 7+
+export type ScreenType = "reflect" | "light-screen" | "aurora-veil" | "safeguard";
 
 /** Max number of layers for stacking hazards */
 export const HAZARD_MAX_LAYERS: Record<EntryHazardType, number> = {
