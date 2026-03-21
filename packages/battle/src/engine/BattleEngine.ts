@@ -825,6 +825,11 @@ export class BattleEngine implements BattleEventEmitter {
       for (const active of side.active) {
         if (active) {
           active.movedThisTurn = false;
+          // Reset per-turn damage tracking so Counter/Mirror Coat only reflect
+          // damage taken during the current turn.
+          active.lastDamageTaken = 0;
+          active.lastDamageType = null;
+          active.lastDamageCategory = null;
         }
       }
     }
@@ -1073,8 +1078,8 @@ export class BattleEngine implements BattleEventEmitter {
       } else {
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
-        defender.lastDamageType = effectiveMoveData.type;
-        defender.lastDamageCategory = effectiveMoveData.category;
+        defender.lastDamageType = result.effectiveType ?? effectiveMoveData.type;
+        defender.lastDamageCategory = result.effectiveCategory ?? effectiveMoveData.category;
         this.emit({
           type: "damage",
           side: defenderSide as 0 | 1,

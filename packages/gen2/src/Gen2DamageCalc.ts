@@ -75,7 +75,9 @@ export function calculateGen2HiddenPower(attacker: ActivePokemon): {
   const bit2Def = (defDv >> 2) & 1;
 
   const powerBits = bit3Atk * 32 + bit3Def * 16 + bit3Spe * 8 + bit3Spc * 4 + bit2Atk * 2 + bit2Def;
-  const hpPower = Math.floor((powerBits * 40) / 63) + 31;
+  // Source: Bulbapedia — "The base power can range between 31 and 70"
+  // The raw formula gives 71 at max DVs (powerBits=63), so cap at 70.
+  const hpPower = Math.min(70, Math.floor((powerBits * 40) / 63) + 31);
 
   return { type: hpType, power: hpPower };
 }
@@ -448,11 +450,34 @@ export function calculateGen2Damage(
     finalDamage,
   };
 
+  // Gen 2 physical types for category determination
+  // Source: pret/pokecrystal — physical/special split is by type in Gen 2
+  const GEN2_PHYSICAL_SET = new Set([
+    "normal",
+    "fighting",
+    "flying",
+    "ground",
+    "rock",
+    "bug",
+    "ghost",
+    "poison",
+    "steel",
+  ]);
+
   return {
     damage: finalDamage,
     effectiveness,
     isCrit,
     randomFactor,
     breakdown,
+    // Propagate effective type/category when they differ from the move's declared values
+    // (Hidden Power computes type from DVs; category is derived from the computed type)
+    effectiveType: effectiveMoveType !== move.type ? effectiveMoveType : undefined,
+    effectiveCategory:
+      move.id === "hidden-power"
+        ? GEN2_PHYSICAL_SET.has(effectiveMoveType)
+          ? "physical"
+          : "special"
+        : undefined,
   };
 }

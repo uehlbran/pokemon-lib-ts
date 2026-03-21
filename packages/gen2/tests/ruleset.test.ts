@@ -2538,18 +2538,18 @@ describe("Gen2Ruleset", () => {
       expect(priority).toBe(1);
     });
 
-    it("given Gen 2 ruleset, when getting Roar move priority, then returns -1", () => {
-      // Source: gen2-ground-truth.md §9 — Roar: -1, forces opponent to flee
+    it("given Gen 2 ruleset, when getting Roar move priority, then returns -6", () => {
+      // Source: pret/pokecrystal — Roar uses priority -6 in Gen 2 (always moves last)
       const dm = createGen2DataManager();
       const move = dm.getMove("roar");
-      expect(move?.priority).toBe(-1);
+      expect(move?.priority).toBe(-6);
     });
 
-    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -1", () => {
-      // Source: gen2-ground-truth.md §9 — Whirlwind: -1, forces opponent to flee
+    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -6", () => {
+      // Source: pret/pokecrystal — Whirlwind uses priority -6 in Gen 2 (always moves last)
       const dm = createGen2DataManager();
       const move = dm.getMove("whirlwind");
-      expect(move?.priority).toBe(-1);
+      expect(move?.priority).toBe(-6);
     });
   });
 });

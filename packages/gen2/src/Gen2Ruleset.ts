@@ -334,13 +334,12 @@ export class Gen2Ruleset implements GenerationRuleset {
       return result;
     }
 
-    // Hyper Beam: skip recharge if the target faints from this hit.
+    // Hyper Beam: skip recharge when target faints OR when the move misses (damage === 0).
     // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
     // NOTE: By the time executeMoveEffect is called, the engine has already applied
     // damage to defender.pokemon.currentHp (clamped to 0 on KO). So a KO is detected
-    // by checking currentHp === 0. We also require damage > 0 to avoid triggering on
-    // missed moves (damage = 0).
-    if (move.flags?.recharge && damage > 0 && defender.pokemon.currentHp === 0) {
+    // by checking currentHp === 0. A miss is detected by damage === 0.
+    if (move.flags?.recharge && (damage === 0 || defender.pokemon.currentHp === 0)) {
       result.noRecharge = true;
     }
 

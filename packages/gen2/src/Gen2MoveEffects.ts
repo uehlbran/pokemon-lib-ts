@@ -416,8 +416,10 @@ export function handleCustomEffect(
     case "counter": {
       // Counter reflects 2x the physical damage taken back at the attacker.
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
-      // In Gen 2, Counter works against any move of a physical type (unlike Gen 1
-      // which only checked Normal/Fighting). Counter is -1 priority (handled by move data).
+      // Gen 2: Counter works against any physical-type move (Normal, Fighting, Rock, etc.)
+      // This is a Gen 2 change from Gen 1 (which restricted to Normal/Fighting).
+      // Source: Bulbapedia "Counter (move) — Generation II onwards: works on any physical move"
+      // Counter is -1 priority (handled by move data).
       if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
         result.messages.push("But it failed!");
         break;

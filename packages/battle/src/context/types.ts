@@ -56,6 +56,10 @@ export interface DamageResult {
   readonly randomFactor: number;
   /** Optional per-modifier breakdown; present when `BattleConfig` requests detailed logging */
   readonly breakdown?: DamageBreakdown;
+  /** The effective move type used for damage (may differ from move.type for Hidden Power etc.) */
+  readonly effectiveType?: PokemonType;
+  /** The effective category used for damage (may differ from move.category for type-split gens) */
+  readonly effectiveCategory?: "physical" | "special" | "status";
 }
 
 /**
