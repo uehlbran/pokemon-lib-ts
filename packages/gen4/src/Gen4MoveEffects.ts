@@ -70,6 +70,13 @@ type MutableResult = {
   trickRoomSet?: { turnsLeft: number } | null;
   volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;
+  gravitySet?: boolean;
+  forcedMoveSet?: {
+    moveIndex: number;
+    moveId: string;
+    volatileStatus: VolatileStatus;
+  } | null;
+  itemConsumed?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -382,10 +389,109 @@ function applyMoveEffect(
 
     case "terrain":
     case "multi-hit":
-    case "two-turn":
       // Handled by the engine or N/A in Gen 4
       break;
+
+    case "two-turn": {
+      // Two-turn moves: charge on turn 1, attack on turn 2.
+      // On the charge turn, set a volatile status and force the move next turn.
+      // Source: Showdown Gen 4 mod — two-turn move handling
+      // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Two-turn_move
+      handleTwoTurnEffect(move, result, context);
+      break;
+    }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Two-Turn Move Effect Handler
+// ---------------------------------------------------------------------------
+
+/**
+ * Volatile status map for two-turn semi-invulnerable moves.
+ * Maps move ID to the volatile status applied during the charge turn.
+ *
+ * Source: Showdown Gen 4 mod — semi-invulnerable states per move
+ * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Two-turn_move
+ */
+const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
+  fly: "flying",
+  bounce: "flying",
+  dig: "underground",
+  dive: "underwater",
+  "shadow-force": "shadow-force-charging",
+  "solar-beam": "charging",
+  "skull-bash": "charging",
+  "razor-wind": "charging",
+  "sky-attack": "charging",
+};
+
+/**
+ * Charge-turn messages for two-turn moves.
+ *
+ * Source: Showdown Gen 4 mod — charge turn messages
+ */
+const TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
+  fly: "{pokemon} flew up high!",
+  bounce: "{pokemon} sprang up!",
+  dig: "{pokemon} dug underground!",
+  dive: "{pokemon} dived underwater!",
+  "shadow-force": "{pokemon} vanished!",
+  "solar-beam": "{pokemon} is absorbing sunlight!",
+};
+
+/**
+ * Handle the charge turn of a two-turn move.
+ *
+ * On the charge turn:
+ *   1. Determine the volatile status from the move ID
+ *   2. Check skip-charge conditions (SolarBeam in sun, Power Herb)
+ *   3. If charging, set forcedMoveSet and emit a charge message
+ *
+ * Source: Showdown Gen 4 mod — two-turn move charge handling
+ * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Two-turn_move
+ */
+function handleTwoTurnEffect(
+  move: MoveData,
+  result: MutableResult,
+  context: MoveEffectContext,
+): void {
+  const { attacker } = context;
+  const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+
+  const volatile = TWO_TURN_VOLATILE_MAP[move.id] ?? "charging";
+
+  // SolarBeam in sun: skip charge, attack immediately
+  // Source: Showdown Gen 4 mod — SolarBeam fires immediately in sun
+  // Source: Bulbapedia — "In harsh sunlight, Solar Beam can be used without a charging turn."
+  if (move.id === "solar-beam" && context.state.weather?.type === "sun") {
+    return; // No forcedMoveSet — engine proceeds with the attack immediately
+  }
+
+  // Power Herb: skip charge, consume the item
+  // Source: Showdown Gen 4 mod — Power Herb allows immediate attack
+  // Source: Bulbapedia — "Power Herb allows the holder to skip the charge turn of a
+  //   two-turn move. It is consumed after use."
+  if (attacker.pokemon.heldItem === "power-herb") {
+    result.itemConsumed = true;
+    result.messages.push(`${attackerName} became fully charged due to its Power Herb!`);
+    return; // No forcedMoveSet — engine proceeds with the attack immediately
+  }
+
+  // Determine the move index from the attacker's moveset
+  // Source: Engine uses moveIndex to identify which move slot to force next turn
+  const moveIndex = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
+
+  // Set up the forced move for next turn
+  result.forcedMoveSet = {
+    moveIndex: moveIndex >= 0 ? moveIndex : 0,
+    moveId: move.id,
+    volatileStatus: volatile,
+  };
+
+  // Emit the charge message
+  const messageTemplate = TWO_TURN_MESSAGES[move.id] ?? "{pokemon} is charging up!";
+  result.messages.push(messageTemplate.replace("{pokemon}", attackerName));
 }
 
 // ---------------------------------------------------------------------------
@@ -857,8 +963,10 @@ function handleNullEffectMoves(
     }
 
     case "gravity": {
-      // Intensify gravity — engine handles field state
-      // Source: Showdown Gen 4 — Gravity lasts 5 turns
+      // Intensify gravity — engine applies the field state via gravitySet flag
+      // Source: Showdown Gen 4 — Gravity lasts 5 turns, grounds all Pokemon
+      // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Gravity_(move)
+      result.gravitySet = true;
       result.messages.push("Gravity intensified!");
       break;
     }

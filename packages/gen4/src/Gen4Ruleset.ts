@@ -26,6 +26,7 @@ import type {
   PrimaryStatus,
   SeededRandom,
   TypeChart,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
   calculateExpGainClassic,
@@ -124,6 +125,40 @@ export class Gen4Ruleset extends BaseRuleset {
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
     return executeGen4MoveEffect(context);
+  }
+
+  // --- Semi-Invulnerable Hit Check ---
+
+  /**
+   * Gen 4 semi-invulnerable move bypass check.
+   *
+   * Determines if a move can hit a target that is in a semi-invulnerable state
+   * (Fly, Dig, Dive, Shadow Force charge turn).
+   *
+   * - "flying" (Fly/Bounce): Thunder, Gust, Twister, Sky Uppercut can hit
+   * - "underground" (Dig): Earthquake, Magnitude, Fissure can hit
+   * - "underwater" (Dive): Surf, Whirlpool can hit
+   * - "shadow-force-charging" (Shadow Force): nothing bypasses
+   * - "charging" (SolarBeam, Skull Bash, etc.): not semi-invulnerable; all moves hit
+   *
+   * Source: Showdown Gen 4 mod — semi-invulnerable move immunity checks
+   * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Semi-invulnerable_turn
+   */
+  override canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+    switch (volatile) {
+      case "flying":
+        return ["gust", "twister", "thunder", "sky-uppercut"].includes(moveId);
+      case "underground":
+        return ["earthquake", "magnitude", "fissure"].includes(moveId);
+      case "underwater":
+        return ["surf", "whirlpool"].includes(moveId);
+      case "shadow-force-charging":
+        return false; // Nothing bypasses Shadow Force
+      case "charging":
+        return true; // Generic charging moves are NOT semi-invulnerable
+      default:
+        return false;
+    }
   }
 
   // --- Critical Hit System ---
@@ -673,6 +708,14 @@ export class Gen4Ruleset extends BaseRuleset {
       calc = Math.floor((calc * 110) / 100);
     }
 
+    // Gravity: multiply accuracy by 5/3 when gravity is active
+    // Source: Showdown Gen 4 mod — Gravity boosts accuracy by 5/3
+    // Source: Bulbapedia — Gravity: "The accuracy of all moves is boosted to 5/3 of their
+    //   original accuracy during the effect."
+    if (context.state.gravity?.active) {
+      calc = Math.floor((calc * 5) / 3);
+    }
+
     // Final accuracy check: (Random() % 100 + 1) > calc means miss
     // Source: pret/pokeplatinum — same check as pokeemerald
     // Equivalent: hit if roll <= calc, where roll is 1-100
@@ -714,9 +757,13 @@ export class Gen4Ruleset extends BaseRuleset {
     if (oppAbility === "shadow-tag" && pokemon.ability !== "shadow-tag") return false;
 
     // Arena Trap: traps grounded (non-Flying, non-Levitate) opponents
+    // Gravity grounds all Pokemon, so Arena Trap traps everyone under gravity
     // Source: Bulbapedia — Arena Trap does not affect Flying-types or Levitate holders
+    // Source: Bulbapedia — Gravity: "All Pokémon are grounded. Arena Trap can trap them."
     if (oppAbility === "arena-trap") {
-      const isGrounded = !pokemon.types.includes("flying") && pokemon.ability !== "levitate";
+      const gravityActive = state.gravity?.active ?? false;
+      const isGrounded =
+        gravityActive || (!pokemon.types.includes("flying") && pokemon.ability !== "levitate");
       if (isGrounded) return false;
     }
 
@@ -829,6 +876,7 @@ export class Gen4Ruleset extends BaseRuleset {
       "safeguard-countdown", // Safeguard
       "tailwind-countdown", // Tailwind
       "trick-room-countdown", // Trick Room
+      "gravity-countdown", // Gravity (Gen 4+)
       "weather-countdown", // Weather timer
       "toxic-orb-activation", // Toxic Orb
       "flame-orb-activation", // Flame Orb
