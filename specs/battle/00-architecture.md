@@ -1,6 +1,6 @@
 <!-- SPEC FRONT-MATTER -->
 <!-- status: IMPLEMENTED -->
-<!-- last-updated: 2026-03-17 -->
+<!-- last-updated: 2026-03-21 -->
 
 # Battle Library — Architecture
 
@@ -48,7 +48,7 @@ The engine is:
 
 Every generation implements this interface. It's the contract between the core engine and gen-specific behavior.
 
-> **Implementation Note:** While `GenerationRuleset` is presented here as a single large interface, the actual implementation uses Interface Segregation principles. The interface is composed of 15 sub-interfaces (TypeSystem, StatCalculator, DamageSystem, MoveExecutor, StatusHandler, WeatherSystem, TerrainSystem, HazardSystem, AbilitySystem, ItemSystem, GimmickSystem, ExpCalculator, SwitchValidator, and VolatileStatusHandler) internally. This composition maintains the interface contract for consumers while organizing code by concern. Consumers still interact with a single `GenerationRuleset` interface.
+> **Implementation Note:** While `GenerationRuleset` is presented here as a single large interface, the actual implementation uses Interface Segregation principles. The interface is composed of sub-interfaces (TypeSystem, StatCalculator, DamageSystem, CriticalHitSystem, TurnOrderSystem, MoveSystem, StatusSystem, AbilitySystem, ItemSystem, **BagItemSystem**, WeatherSystem, TerrainSystem, HazardSystem, SwitchSystem, **FleeSystem**, EndOfTurnSystem, and ValidationSystem) internally. This composition maintains the interface contract for consumers while organizing code by concern. Consumers still interact with a single `GenerationRuleset` interface.
 
 ```typescript
 /**
@@ -234,6 +234,31 @@ export interface GenerationRuleset {
 
   /** Calculate entry hazard damage on switch-in */
   applyEntryHazards(pokemon: ActivePokemon, side: BattleSide): EntryHazardResult;
+
+  // --- Flee Mechanics (wild battles only) ---
+
+  /**
+   * Roll whether a flee attempt succeeds.
+   * Gen 3+ formula (Bulbapedia): F = floor(playerSpeed * 128 / wildSpeed) + 30 * attempts.
+   * Flee succeeds if playerSpeed >= wildSpeed OR F >= 256 OR rng(0,255) < F.
+   * Gen 1/2 override with their own formulas.
+   */
+  rollFleeSuccess(playerSpeed: number, wildSpeed: number, attempts: number, rng: SeededRandom): boolean;
+
+  // --- Bag Items ---
+
+  /**
+   * Whether the trainer can use bag items in the current battle context.
+   * Returns `true` for standard trainer battles, `false` for Battle Frontier, etc.
+   */
+  canUseBagItems(): boolean;
+
+  /**
+   * Apply a bag item effect to a target Pokémon.
+   * Handles healing items, status cures, X items, and Revives.
+   * Poké Ball catch mechanics are separate — handled via executeCatchAttempt.
+   */
+  applyBagItem(itemId: string, target: ActivePokemon, state: BattleState): BagItemResult;
 
   // --- EXP Gain ---
 
@@ -464,22 +489,28 @@ export interface BattleState {
   /** Seeded RNG state */
   readonly rng: SeededRandom;
 
+  /** `true` if this is a wild Pokémon encounter (enables flee and catch mechanics) */
+  readonly isWildBattle: boolean;
+
+  /** Number of flee attempts made so far; incremented on each RunAction */
+  fleeAttempts: number;
+
   /** Whether the battle has ended */
   ended: boolean;
 
-  /** Winner (0 = side 0, 1 = side 1, null = not ended or draw) */
+  /** Winner (0 = side 0, 1 = side 1, null = not ended or draw/flee) */
   winner: 0 | 1 | null;
 }
 
 export type BattlePhase =
-  | 'BATTLE_START'
-  | 'TURN_START'
-  | 'ACTION_SELECT'
-  | 'TURN_RESOLVE'
-  | 'TURN_END'
-  | 'FAINT_CHECK'
-  | 'SWITCH_PROMPT'
-  | 'BATTLE_END';
+  | 'battle-start'
+  | 'turn-start'
+  | 'action-select'
+  | 'turn-resolve'
+  | 'turn-end'
+  | 'faint-check'
+  | 'switch-prompt'
+  | 'battle-end';
 
 export type BattleFormat =
   | 'singles'
@@ -775,6 +806,7 @@ export type BattleEvent =
   | { type: 'dynamax-end'; side: 0 | 1; pokemon: string }
   | { type: 'terastallize'; side: 0 | 1; pokemon: string; teraType: PokemonType }
   | { type: 'z-move'; side: 0 | 1; pokemon: string; move: string }
+  | { type: 'flee-attempt'; side: 0 | 1; success: boolean }
   | { type: 'catch-attempt'; ball: string; pokemon: string; shakes: number; caught: boolean }
   | { type: 'exp-gain'; side: 0 | 1; pokemon: string; amount: number }
   | { type: 'level-up'; side: 0 | 1; pokemon: string; newLevel: number }
@@ -1218,6 +1250,7 @@ Each gen package depends on `@pokemon-lib-ts/battle` (for `BaseRuleset` and `Gen
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.2 | 2026-03-21 | Added `isWildBattle` and `fleeAttempts` to BattleState interface; corrected BattlePhase strings from UPPERCASE to lowercase (matches actual code); added `flee-attempt` event to BattleEvent union; added `FleeSystem` (rollFleeSuccess) and `BagItemSystem` (canUseBagItems, applyBagItem) methods to GenerationRuleset; updated sub-interface list in ISP note |
 | 2.1 | 2026-03-17 | Renamed TrainerRef → TrainerDataRef, added EngineWarningEvent to events list, documented hazard-set event layers field, renamed getValidTypes() → getAvailableTypes(), added Interface Segregation Pattern note explaining internal composition of GenerationRuleset, updated last-updated timestamp |
 | 2.0 | 2026-03-15 | Added ~20 missing GenerationRuleset methods, fixed constructor signature (ruleset param), fixed TrainerData→TrainerRef, added ActivePokemon combat tracking fields (lastDamageTaken, lastDamageType), fixed freeze thaw rate (20%→~9.8% for Gen 2), added MoveEffectResult fields, added Quick Start and Cross-Reference, updated file structure to match actual layout |
 | 1.0 | 2024 | Initial battle architecture spec |
