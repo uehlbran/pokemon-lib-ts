@@ -664,6 +664,32 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
+  // 4e. Adamant Orb: 1.2x base power for Dialga's Dragon/Steel moves (NEW in Gen 4)
+  // Lustrous Orb: 1.2x base power for Palkia's Water/Dragon moves (NEW in Gen 4)
+  // Klutz suppresses held item effects
+  // Source: Showdown data/items.ts — Adamant Orb / Lustrous Orb onBasePower: basePower * 0x1333 / 0x1000
+  // Source: Bulbapedia — Adamant Orb boosts Dialga's Dragon/Steel moves by 20%
+  // Source: Bulbapedia — Lustrous Orb boosts Palkia's Water/Dragon moves by 20%
+  const attackerHasKlutzPower = attackerAbility === "klutz";
+  const attackerItemPower = attacker.pokemon.heldItem;
+  const attackerSpeciesIdPower = attacker.pokemon.speciesId;
+  if (
+    !attackerHasKlutzPower &&
+    attackerItemPower === "adamant-orb" &&
+    attackerSpeciesIdPower === 483 && // Dialga
+    (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
+  ) {
+    power = Math.floor((power * 4915) / 4096);
+  }
+  if (
+    !attackerHasKlutzPower &&
+    attackerItemPower === "lustrous-orb" &&
+    attackerSpeciesIdPower === 484 && // Palkia
+    (effectiveMoveType === "water" || effectiveMoveType === "dragon")
+  ) {
+    power = Math.floor((power * 4915) / 4096);
+  }
+
   // 4. Defender ability type immunities
   // Mold Breaker bypasses all defender ability-based immunities
   // Source: Showdown sim/battle.ts — Gen 4 ability immunities

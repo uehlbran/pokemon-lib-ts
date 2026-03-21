@@ -1086,8 +1086,9 @@ describe("Gen 4 executeMoveEffect — Trick Room", () => {
     expect(result.messages).toContain("The dimensions were twisted!");
   });
 
-  it("given Trick Room used when trickRoom is already active, when executeMoveEffect called, then trickRoomSet is not set and dimensions returned to normal", () => {
+  it("given Trick Room used when trickRoom is already active, when executeMoveEffect called, then trickRoomSet has turnsLeft 0 to deactivate", () => {
     // Source: Showdown Gen 4 — Using Trick Room while active ends it
+    // turnsLeft: 0 signals the engine to deactivate Trick Room
     const attacker = createActivePokemon({ types: ["psychic"] });
     const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove("trick-room");
@@ -1102,7 +1103,7 @@ describe("Gen 4 executeMoveEffect — Trick Room", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.trickRoomSet).toBeUndefined();
+    expect(result.trickRoomSet).toEqual({ turnsLeft: 0 });
     expect(result.messages).toContain("The twisted dimensions returned to normal!");
   });
 });

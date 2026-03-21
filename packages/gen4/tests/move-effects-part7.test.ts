@@ -434,41 +434,46 @@ describe("Gen 4 executeMoveEffect — Taunt", () => {
 
 describe("Gen 4 executeMoveEffect — Disable", () => {
   it("given target has lastMoveUsed = tackle, when Disable is used, then volatileInflicted is disable with data.moveId = tackle", () => {
-    // Source: Showdown Gen 4 — Disable targets the last used move for 4 turns
+    // Source: Showdown Gen 4 — Disable targets the last used move for 4-7 turns
+    // (this.random(4, 8) exclusive upper = 4-7 inclusive)
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({
       types: ["normal"],
       lastMoveUsed: "tackle",
     });
+    // Defender must have the last-used move in its moveset for Disable to succeed
+    defender.pokemon.moves = [{ moveId: "tackle", currentPP: 35, maxPP: 35 }];
     const move = dataManager.getMove("disable");
-    const rng = createMockRng(0);
+    const rng = createMockRng(5); // rng.int(4,7) returns 5
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.volatileInflicted).toBe("disable");
     expect(result.volatileData).toEqual({
-      turnsLeft: 4,
+      turnsLeft: 5,
       data: { moveId: "tackle" },
     });
   });
 
-  it("given target has lastMoveUsed = flamethrower, when Disable is used, then data.moveId = flamethrower and turnsLeft = 4", () => {
-    // Source: Showdown Gen 4 — Disable lasts 4 turns, records the move ID
-    // Triangulation: different move to ensure the handler reads lastMoveUsed dynamically
+  it("given target has lastMoveUsed = flamethrower, when Disable is used with rng returning 6, then data.moveId = flamethrower and turnsLeft = 6", () => {
+    // Source: Showdown Gen 4 — Disable lasts 4-7 turns, records the move ID
+    // Triangulation: different move + different rng value
     const attacker = createActivePokemon({ types: ["psychic"] });
     const defender = createActivePokemon({
       types: ["fire"],
       lastMoveUsed: "flamethrower",
     });
+    // Defender must have the last-used move in its moveset for Disable to succeed
+    defender.pokemon.moves = [{ moveId: "flamethrower", currentPP: 15, maxPP: 15 }];
     const move = dataManager.getMove("disable");
-    const rng = createMockRng(0);
+    const rng = createMockRng(6); // rng.int(4,7) returns 6
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.volatileInflicted).toBe("disable");
-    expect(result.volatileData!.turnsLeft).toBe(4);
+    expect(result.volatileData!.turnsLeft).toBe(6);
     expect(result.volatileData!.data!.moveId).toBe("flamethrower");
   });
 

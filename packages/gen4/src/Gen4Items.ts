@@ -202,11 +202,16 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     }
 
     // Toxic Orb: Badly poisons the holder at end of turn (NEW Gen 4)
-    // Only activates if the holder has no status yet.
+    // Only activates if the holder has no status yet and is not type-immune.
     // Source: Bulbapedia — Toxic Orb: badly poisons holder at end of first turn held
-    // Source: Showdown Gen 4 mod — Toxic Orb trigger
+    // Source: Showdown Gen 4 mod — Toxic Orb trigger; type immunity prevents activation
     case "toxic-orb": {
       if (status) return NO_ACTIVATION; // Already has a status
+      // Poison and Steel types are immune to poisoning
+      // Source: Showdown Gen 4 — type immunity prevents Orb activation
+      if (context.pokemon.types.includes("poison") || context.pokemon.types.includes("steel")) {
+        return NO_ACTIVATION;
+      }
       return {
         activated: true,
         effects: [{ type: "none", target: "self", value: "badly-poisoned" }],
@@ -215,11 +220,16 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     }
 
     // Flame Orb: Burns the holder at end of turn (NEW Gen 4)
-    // Only activates if the holder has no status yet.
+    // Only activates if the holder has no status yet and is not type-immune.
     // Source: Bulbapedia — Flame Orb: burns holder at end of first turn held
-    // Source: Showdown Gen 4 mod — Flame Orb trigger
+    // Source: Showdown Gen 4 mod — Flame Orb trigger; type immunity prevents activation
     case "flame-orb": {
       if (status) return NO_ACTIVATION; // Already has a status
+      // Fire types are immune to burns
+      // Source: Showdown Gen 4 — type immunity prevents Orb activation
+      if (context.pokemon.types.includes("fire")) {
+        return NO_ACTIVATION;
+      }
       return {
         activated: true,
         effects: [{ type: "none", target: "self", value: "burn" }],

@@ -112,7 +112,11 @@ function handleSwitchIn(
   switch (abilityId) {
     case "intimidate": {
       // Source: Showdown — Intimidate lowers opponent's Attack by 1 stage on switch-in
+      // Source: Showdown Gen 4 — Intimidate is blocked by Substitute
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
+      if (context.opponent.substituteHp > 0) {
+        return { activated: false, effects: [], messages: [] };
+      }
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       const effect: AbilityEffect = {
@@ -278,6 +282,9 @@ function handleSwitchIn(
       // OHKO moves count as base power 160 for Forewarn purposes
       // Source: Bulbapedia — Forewarn counts OHKO moves as BP 160
       const ohkoMoveIds = ["sheer-cold", "fissure", "guillotine", "horn-drill"];
+      // Counter/Mirror Coat/Metal Burst count as BP 120
+      // Source: Showdown Gen 4 — Forewarn assigns 120 to Counter/Mirror Coat/Metal Burst
+      const highBpMoveIds = ["counter", "mirror-coat", "metal-burst"];
 
       let strongestMove: string | null = null;
       let strongestPower = 0;
@@ -287,7 +294,16 @@ function handleSwitchIn(
         try {
           const move = dataManager.getMove(moveSlot.moveId);
           if (!move) continue;
-          const power = ohkoMoveIds.includes(move.id) ? 160 : (move.power ?? 0);
+          // Source: Showdown data/abilities.ts — Forewarn power assignments:
+          //   OHKO moves = 160, Counter/Mirror Coat/Metal Burst = 120,
+          //   other 0-BP damaging moves = 80, status moves = 0
+          const power = ohkoMoveIds.includes(move.id)
+            ? 160
+            : highBpMoveIds.includes(move.id)
+              ? 120
+              : (move.power ?? 0) === 0 && move.category !== "status"
+                ? 80
+                : (move.power ?? 0);
           if (power > strongestPower) {
             strongestPower = power;
             strongestMove = move.displayName ?? move.id;
@@ -814,6 +830,11 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       //   "Flash Fire raises the power of Fire-type moves by 50% while it is in effect."
       // Source: Showdown Gen 4 mod — Flash Fire immunity + volatile status for damage boost
       if (moveType !== "fire") return { activated: false, effects: [], messages: [] };
+      // Source: Showdown Gen 4 — frozen Pokemon cannot activate Flash Fire;
+      // the Fire move should proceed and thaw the frozen Pokemon instead
+      if (context.pokemon.pokemon.status === "freeze") {
+        return { activated: false, effects: [], messages: [] };
+      }
       const hasBoost = context.pokemon.volatileStatuses.has("flash-fire");
       const effects: AbilityEffect[] = [];
       if (!hasBoost) {

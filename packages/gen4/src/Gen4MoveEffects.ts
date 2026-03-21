@@ -713,8 +713,11 @@ function handleCustomEffect(
     case "perish-song": {
       // Both Pokemon get Perish Song volatile (3-turn countdown)
       // Source: Showdown Gen 4 — Perish Song affects both sides
+      // Source: Bulbapedia — Perish Song: "All Pokemon that hear this song will faint in 3 turns."
       result.selfVolatileInflicted = "perish-song";
+      result.selfVolatileData = { turnsLeft: 3 };
       result.volatileInflicted = "perish-song";
+      result.volatileData = { turnsLeft: 3 };
       result.messages.push("All Pokemon that heard the song will faint in 3 turns!");
       break;
     }
@@ -837,6 +840,15 @@ function handleCustomEffect(
       const attackerSideIndex = state.sides.findIndex((side) =>
         side.active.some((a) => a?.pokemon === attacker.pokemon),
       );
+
+      // Fail if there's already a future attack pending on the target's side
+      // Source: Showdown Gen 4 — Future Sight fails if a future attack is already set
+      const targetSideIndex = attackerSideIndex === 0 ? 1 : 0;
+      if (state.sides[targetSideIndex].futureAttack) {
+        result.messages.push("But it failed!");
+        break;
+      }
+
       result.futureAttack = {
         moveId: "future-sight",
         turnsLeft: 3,
@@ -904,6 +916,8 @@ function handleNullEffectMoves(
       // Toggle Trick Room: if already active, end it; otherwise start it (5 turns)
       // Source: Showdown Gen 4 — Trick Room reverses speed order for 5 turns
       if (context.state.trickRoom.active) {
+        // turnsLeft: 0 signals the engine to deactivate Trick Room
+        result.trickRoomSet = { turnsLeft: 0 };
         result.messages.push("The twisted dimensions returned to normal!");
       } else {
         result.trickRoomSet = { turnsLeft: 5 };
@@ -1319,16 +1333,28 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   }
 
   // Disable: data has volatile-status "disable" but we need turnsLeft and target's lastMoveUsed
-  // Source: Showdown Gen 4 — Disable lasts 4 turns, targets last used move
-  // Source: Bulbapedia — "Disable disables the target's last used move for 4 turns"
+  // Source: Showdown Gen 4 — Disable lasts 4-7 turns (this.random(4, 8) = exclusive upper bound)
+  // Source: Bulbapedia — "Disable disables the target's last used move for 4-7 turns in Gen 4"
   if (context.move.id === "disable") {
     const { defender } = context;
     if (!defender.lastMoveUsed) {
       result.messages.push("But it failed!");
       return result;
     }
+    // Disable fails if the target's last move is not a current move slot or has 0 PP
+    // Source: Showdown Gen 4 — Disable fails if target's last move has 0 PP or is not in moveset
+    const moveSlot = defender.pokemon.moves.find(
+      (slot) => slot && slot.moveId === defender.lastMoveUsed,
+    );
+    if (!moveSlot || moveSlot.currentPP <= 0) {
+      result.messages.push("But it failed!");
+      return result;
+    }
     result.volatileInflicted = "disable";
-    result.volatileData = { turnsLeft: 4, data: { moveId: defender.lastMoveUsed } };
+    result.volatileData = {
+      turnsLeft: context.rng.int(4, 7),
+      data: { moveId: defender.lastMoveUsed },
+    };
     return result;
   }
 

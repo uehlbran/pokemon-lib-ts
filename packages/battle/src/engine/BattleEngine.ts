@@ -2317,9 +2317,12 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Trick Room set (Gen 4+)
+    // When turnsLeft > 0, activate Trick Room. When turnsLeft <= 0, deactivate it (toggle off).
+    // Messaging is handled by the gen ruleset via result.messages — no hardcoded message here
+    // to avoid duplicates.
     if (result.trickRoomSet) {
-      this.state.trickRoom = { active: true, turnsLeft: result.trickRoomSet.turnsLeft };
-      this.emit({ type: "message", text: "The dimensions were twisted!" });
+      const trActive = result.trickRoomSet.turnsLeft > 0;
+      this.state.trickRoom = { active: trActive, turnsLeft: result.trickRoomSet.turnsLeft };
     }
 
     // Future attack (Future Sight / Doom Desire) — schedule on the target's side
