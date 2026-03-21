@@ -72,6 +72,14 @@ export class Gen3Ruleset extends BaseRuleset {
   readonly generation = 3 as const;
   readonly name = "Gen 3 (Ruby/Sapphire/Emerald)";
 
+  /**
+   * Weather context for speed-doubling abilities (Swift Swim, Chlorophyll).
+   * getEffectiveSpeed() only receives ActivePokemon (no BattleState), so weather
+   * must be stored as a class field during turn order resolution.
+   * Set to null outside of turn order resolution.
+   */
+  private _currentWeather: string | null = null;
+
   constructor(dataManager?: DataManager) {
     super(dataManager ?? new DataManager());
   }
@@ -439,6 +447,30 @@ export class Gen3Ruleset extends BaseRuleset {
     // Never-miss moves (accuracy === null)
     if (context.move.accuracy === null) return true;
 
+    // --- Weather-based accuracy overrides ---
+    // Source: pret/pokeemerald src/battle_script_commands.c Cmd_accuracycheck
+    // Source: Showdown data/moves.ts — Thunder/Blizzard onModifyMove
+    const weather = context.state.weather?.type ?? null;
+
+    // Thunder: 100% accuracy in Rain, 50% accuracy in Sun
+    // Source: pret/pokeemerald — Thunder bypasses accuracy in rain
+    // Source: Showdown data/moves.ts — Thunder: move.accuracy = true in raindance
+    if (context.move.id === "thunder") {
+      if (weather === "rain") return true;
+      if (weather === "sun") {
+        // Override accuracy to 50 and continue with normal check
+        const accStage = context.attacker.statStages.accuracy;
+        const evaStage = context.defender.statStages.evasion;
+        const netStage = Math.max(-6, Math.min(6, accStage - evaStage));
+        const ratio = GEN3_ACCURACY_STAGE_RATIOS[netStage + 6] as {
+          dividend: number;
+          divisor: number;
+        };
+        const calc = Math.floor((ratio.dividend * 50) / ratio.divisor);
+        return context.rng.int(1, 100) <= calc;
+      }
+    }
+
     const moveAcc = context.move.accuracy;
     const accStage = context.attacker.statStages.accuracy;
     const evaStage = context.defender.statStages.evasion;
@@ -465,8 +497,8 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Sand Veil: 0.8x accuracy in sandstorm (WeatherType uses "sand" for sandstorm)
     // Source: pret/pokeemerald src/battle_script_commands.c:1154-1155
-    const weather = context.state.weather?.type ?? null;
-    if (context.defender.ability === "sand-veil" && weather === "sand") {
+    const sandVeilWeather = context.state.weather?.type ?? null;
+    if (context.defender.ability === "sand-veil" && sandVeilWeather === "sand") {
       calc = Math.floor((calc * 80) / 100);
     }
 
@@ -509,6 +541,21 @@ export class Gen3Ruleset extends BaseRuleset {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+
+    // Chlorophyll: 2x Speed in sun
+    // Source: pret/pokeemerald src/battle_util.c — ABILITY_CHLOROPHYLL
+    // Source: Showdown data/abilities.ts — Chlorophyll onModifySpe
+    if (active.ability === "chlorophyll" && this._currentWeather === "sun") {
+      effective = effective * 2;
+    }
+
+    // Swift Swim: 2x Speed in rain
+    // Source: pret/pokeemerald src/battle_util.c — ABILITY_SWIFT_SWIM
+    // Source: Showdown data/abilities.ts — Swift Swim onModifySpe
+    if (active.ability === "swift-swim" && this._currentWeather === "rain") {
+      effective = effective * 2;
+    }
+
     if (active.pokemon.status === "paralysis") {
       // Gen 3-6: paralysis quarters speed (×0.25)
       // Source: pret/pokeemerald src/battle_util.c
@@ -615,6 +662,24 @@ export class Gen3Ruleset extends BaseRuleset {
     }
     // Delegate to BaseRuleset for standard volatile clearing
     super.onSwitchOut(pokemon, state);
+  }
+
+  /**
+   * Override resolveTurnOrder to set weather context for speed-doubling abilities
+   * (Swift Swim, Chlorophyll). Sets _currentWeather before sort so getEffectiveSpeed
+   * can access it, then clears it after.
+   *
+   * Source: pret/pokeemerald src/battle_main.c — speed modifiers applied during turn order
+   */
+  override resolveTurnOrder(
+    actions: BattleAction[],
+    state: BattleState,
+    rng: SeededRandom,
+  ): BattleAction[] {
+    this._currentWeather = state.weather?.type ?? null;
+    const result = super.resolveTurnOrder(actions, state, rng);
+    this._currentWeather = null;
+    return result;
   }
 }
 
