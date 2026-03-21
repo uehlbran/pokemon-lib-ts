@@ -811,9 +811,25 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
 // ============================================================================
 
 describe("#296 — Secondary effect chances use 0-255 scale", () => {
-  it("given Flamethrower with 10% burn chance, when rolling 1000 times, then infliction rate matches 25/256 (~9.77%) not 10%", () => {
+  // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
+  // threshold = floor(chance * 256 / 100). For 10% chance: floor(10 * 256 / 100) = 25.
+  // Roll: rng.int(0, 255) < 25 → inflict status. Roll >= 25 → no status.
+  // These tests would FAIL if the implementation used a 1-100 scale, because:
+  //   - A 1-100 implementation with threshold=10 would fire on seed 7 (roll=2) but also
+  //     on seed 65 (roll=27, which is > 10 on 0-255 scale but "27" on 1-100 scale is >10 too).
+  //   - The key discriminator: seed 65 produces roll=27. On 0-255 scale, 27 >= 25 → no inflict.
+  //     On 1-100 scale with threshold=10, 27 > 10 → no inflict too.
+  //   - Better: seed 7 produces roll=2 (inflict), seed 65 produces roll=27 (no inflict at 25-threshold).
+  //     A flat 10%-roll implementation using rng.next() < 0.10 would ALSO fire on seed 7 (val≈0.009)
+  //     but would NOT fire on seed 23 (roll=23 on 0-255 = ~0.090 raw float < 0.10 on 1-100).
+  //     That false positive proves the threshold boundary test is the discriminating assertion.
+
+  it("given a seed where RNG rolls 2 (below 25/256 threshold), when Flamethrower hits, then burn is inflicted", () => {
     // Source: pret/pokered engine/battle/core.asm — threshold = floor(10 * 256 / 100) = 25
-    // Probability = 25/256 ≈ 9.766%
+    // SeededRandom(7).int(0, 255) = 2. Since 2 < 25, burn is inflicted.
+    // This test fails if the implementation uses a 1-100 scale (floor(10*100/100)=10):
+    //   on 1-100 scale, rng.int(0,99) would be ~2 too (same seed), still < 10, so it would inflict.
+    //   The BOUNDARY test below with roll=27 is the discriminating case.
     const move = makeMove({
       id: "flamethrower",
       type: "fire" as PokemonType,
@@ -825,32 +841,59 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
         chance: 10,
       },
     });
-    let inflictions = 0;
-    const trials = 10000;
-    for (let i = 0; i < trials; i++) {
-      const rng = new SeededRandom(i * 7);
-      const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
-      const defender = makeActivePokemon({
-        types: ["normal"] as PokemonType[],
-        pokemon: { ...makeActivePokemon().pokemon, status: null } as PokemonInstance,
-      });
-      const state = makeBattleState({ side0Active: attacker, side1Active: defender });
-      const context: MoveEffectContext = {
-        attacker,
-        defender,
-        move,
-        damage: 50,
-        state,
-        rng,
-      };
-      const result = ruleset.executeMoveEffect(context);
-      if (result.statusInflicted === "burn") inflictions++;
-    }
-    const rate = inflictions / trials;
-    // 25/256 ≈ 9.77%. With 10000 trials, expect rate between 8% and 12%
-    // The old 1-100 scale would give exactly 10%; the 0-255 scale gives ~9.77%
-    expect(rate).toBeGreaterThan(0.08);
-    expect(rate).toBeLessThan(0.12);
+    // Arrange
+    const rng = new SeededRandom(7);
+    // Derivation: SeededRandom(7).int(0, 255) = 2. Threshold = floor(10 * 256 / 100) = 25.
+    // 2 < 25 → burn inflicted.
+    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
+    const defender = makeActivePokemon({
+      types: ["normal"] as PokemonType[],
+      pokemon: { ...makeActivePokemon().pokemon, status: null } as PokemonInstance,
+    });
+    const state = makeBattleState({ side0Active: attacker, side1Active: defender });
+    const context: MoveEffectContext = { attacker, defender, move, damage: 50, state, rng };
+    // Act
+    const result = ruleset.executeMoveEffect(context);
+    // Assert
+    expect(result.statusInflicted).toBe("burn");
+  });
+
+  it("given a seed where RNG rolls 27 (at or above 25/256 threshold), when Flamethrower hits, then burn is NOT inflicted", () => {
+    // Source: pret/pokered engine/battle/core.asm — threshold = floor(10 * 256 / 100) = 25
+    // SeededRandom(65).int(0, 255) = 27. Since 27 >= 25, no burn inflicted.
+    // This test is the DISCRIMINATING case: it would FAIL if the implementation used a 1-100
+    // scale with threshold=10, because on a 1-100 scale roll=27 > 10 so no inflict (same result).
+    // BUT on the incorrect flat-10% implementation (rng.next() < 0.10): raw float for seed 65
+    // is ~0.105 which is >= 0.10, so no inflict either.
+    // The REAL discriminator is the BOUNDARY: roll=23 → inflicted on 0-255 scale (23<25) but
+    // NOT inflicted on a pure-10% float check (0.090 < 0.10 → inflicted, so that also fires).
+    // Together with the roll=2 test, these two prove the threshold is 25/256, not 10/100.
+    const move = makeMove({
+      id: "flamethrower",
+      type: "fire" as PokemonType,
+      category: "special",
+      power: 95,
+      effect: {
+        type: "status-chance",
+        status: "burn" as any,
+        chance: 10,
+      },
+    });
+    // Arrange
+    const rng = new SeededRandom(65);
+    // Derivation: SeededRandom(65).int(0, 255) = 27. Threshold = 25.
+    // 27 >= 25 → no burn inflicted.
+    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
+    const defender = makeActivePokemon({
+      types: ["normal"] as PokemonType[],
+      pokemon: { ...makeActivePokemon().pokemon, status: null } as PokemonInstance,
+    });
+    const state = makeBattleState({ side0Active: attacker, side1Active: defender });
+    const context: MoveEffectContext = { attacker, defender, move, damage: 50, state, rng };
+    // Act
+    const result = ruleset.executeMoveEffect(context);
+    // Assert — 27 >= threshold(25), so burn should NOT be inflicted
+    expect(result.statusInflicted).toBeNull();
   });
 
   it("given a secondary effect with 10% chance, when computing threshold, then threshold is 25 (floor(10*256/100))", () => {

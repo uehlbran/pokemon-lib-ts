@@ -409,9 +409,12 @@ describe("Gen 1 Disable handler", () => {
     expect(result.volatileData!.turnsLeft).toBeLessThanOrEqual(8);
   });
 
-  it("given defender has two moves with PP, when Disable hits, then disables one of them randomly", () => {
-    // Arrange — second triangulation case: defender has two moves
-    // Source: pret/pokered DisableEffect — picks a RANDOM move slot with PP > 0
+  it("given defender has two moves with PP and seed 99, when Disable hits, then disables 'tackle' (slot 0)", () => {
+    // Source: pret/pokered DisableEffect — picks rng.int(0, validMoves.length - 1).
+    // Derivation: SeededRandom(99).int(0, 1) = 0 → picks validMoves[0] = tackle.
+    // Then SeededRandom(99).int(1, 8) = 7 → duration 7 turns.
+    // This test would FAIL if the implementation always picks slot 0 (no-op "fix")
+    // because the second triangulation test (seed 1 → thunderbolt) catches that.
     const defender = makeActivePokemon({
       types: ["electric"] as PokemonType[],
       pokemon: {
@@ -426,13 +429,40 @@ describe("Gen 1 Disable handler", () => {
     const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
-    // Assert
+    // Assert — seed 99 deterministically picks slot 0 = "tackle"
     expect(result.volatileInflicted).toBe("disable");
-    // Disabled move must be one of the two valid moves
     const disabledMoveId = (result.volatileData!.data as { moveId: string }).moveId;
-    expect(["tackle", "thunderbolt"]).toContain(disabledMoveId);
-    expect(result.volatileData!.turnsLeft).toBeGreaterThanOrEqual(1);
-    expect(result.volatileData!.turnsLeft).toBeLessThanOrEqual(8);
+    expect(disabledMoveId).toBe("tackle");
+    // Duration: SeededRandom(99) after the move-pick call gives int(1, 8) = 7
+    expect(result.volatileData!.turnsLeft).toBe(7);
+  });
+
+  it("given defender has two moves with PP and seed 1, when Disable hits, then disables 'thunderbolt' (slot 1)", () => {
+    // Source: pret/pokered DisableEffect — picks rng.int(0, validMoves.length - 1).
+    // Derivation: SeededRandom(1).int(0, 1) = 1 → picks validMoves[1] = thunderbolt.
+    // Then SeededRandom(1).int(1, 8) = 1 → duration 1 turn.
+    // Triangulation: proves random selection actually works (seed 99 picks slot 0,
+    // seed 1 picks slot 1 — an always-slot-0 impl would fail this test).
+    const defender = makeActivePokemon({
+      types: ["electric"] as PokemonType[],
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [
+          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
+        ],
+      } as PokemonInstance,
+    });
+    const rng = new SeededRandom(1);
+    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
+    // Act
+    const result = ruleset.executeMoveEffect(context);
+    // Assert — seed 1 deterministically picks slot 1 = "thunderbolt"
+    expect(result.volatileInflicted).toBe("disable");
+    const disabledMoveId = (result.volatileData!.data as { moveId: string }).moveId;
+    expect(disabledMoveId).toBe("thunderbolt");
+    // Duration: SeededRandom(1) after the move-pick call gives int(1, 8) = 1
+    expect(result.volatileData!.turnsLeft).toBe(1);
   });
 
   it("given defender has all moves at 0 PP, when Disable used, then fails", () => {
@@ -580,6 +610,8 @@ describe("Gen 1 Substitute handler", () => {
     expect(attacker.substituteHp).toBe(0);
     expect(result.selfVolatileInflicted).toBeFalsy();
     expect(result.messages).toContain("But it does not have enough HP!");
+    // HP must remain at 25 — Substitute creation failed so no HP was deducted
+    expect(attacker.pokemon.currentHp).toBe(25);
   });
 
   it("given attacker with 24 HP out of 100, when Substitute used, then fails (insufficient HP)", () => {
