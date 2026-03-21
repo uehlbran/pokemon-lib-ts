@@ -517,8 +517,9 @@ describe("Gen4Ruleset calculateExpGain", () => {
       hasExpShare: false,
       affectionBonus: false,
     });
-    // Derivation: floor((abra.baseExp * 50 / 7) / 1 * 1.0)
-    expect(result).toBe(Math.max(1, Math.floor(((abra.baseExp * 50) / 7 / 1) * 1.0)));
+    // Derivation: floor(62 * 50 / 7 / 1 * 1.0) = floor(442.857) = 442
+    // Source: pret/pokeplatinum src/battle/battle_script.c lines 2439-2461
+    expect(result).toBe(442);
   });
 
   it("given a trainer battle level 30 Bulbasaur, when calculateExpGain, then trainer result exceeds wild result", () => {
@@ -551,8 +552,10 @@ describe("Gen4Ruleset calculateExpGain", () => {
 
     // Trainer battle gives more EXP than wild battle
     expect(trainerResult).toBeGreaterThan(wildResult);
-    // Trainer result = floor(wild * 1.5) approximately
-    expect(trainerResult).toBe(Math.max(1, Math.floor(((bulbasaur.baseExp * 30) / 7 / 1) * 1.5)));
+    // Source: pret/pokeplatinum src/battle/battle_script.c lines 9960-9988
+    // Derivation: floor(64 * 30 / 7 / 1 * 1.5) = floor(274.285 * 1.5) = floor(411.428) = 411
+    // Bulbasaur baseExp=64, verified from packages/gen4/data/pokemon.json
+    expect(trainerResult).toBe(411);
   });
 });
 
