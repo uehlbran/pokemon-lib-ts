@@ -44,6 +44,10 @@ export class BattleEngine implements BattleEventEmitter {
   // preventing duplicate faint events and double faintCount increments when
   // checkMidTurnFaints() is called multiple times per turn. Cleared at turn start.
   private faintedPokemonThisTurn: Set<string> = new Set();
+  // Tracks which sides had their active Pokemon phased out (Roar/Whirlwind) during
+  // the current turn resolution. The replacement Pokemon should not execute the
+  // phased-out Pokemon's queued action.
+  private phasedSides: Set<0 | 1> = new Set();
 
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     this.ruleset = ruleset;
@@ -539,6 +543,12 @@ export class BattleEngine implements BattleEventEmitter {
         enumerable: false,
         configurable: false,
       },
+      phasedSides: {
+        value: new Set(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
     });
 
     return engine;
@@ -682,6 +692,8 @@ export class BattleEngine implements BattleEventEmitter {
     // Reset per-turn faint deduplication set so a new faint on a new turn is
     // correctly recorded (fixes #78 — duplicate faint events across checkMidTurnFaints calls).
     this.faintedPokemonThisTurn.clear();
+    // Reset per-turn phazing tracking.
+    this.phasedSides.clear();
 
     // Record the event log position before any events are emitted this turn
     // so that turn history captures only current-turn events (fixes #84).
@@ -744,6 +756,12 @@ export class BattleEngine implements BattleEventEmitter {
       // Check if the acting pokemon fainted before it could act
       const actor = this.getActive(action.side);
       if (!actor || actor.pokemon.currentHp <= 0) continue;
+
+      // Skip if this side's Pokemon was phased out (Roar/Whirlwind) earlier this turn.
+      // The replacement should not execute the phased-out Pokemon's queued action.
+      if (action.type === "move" && this.phasedSides.has(action.side)) {
+        continue;
+      }
 
       switch (action.type) {
         case "move":
@@ -2369,6 +2387,9 @@ export class BattleEngine implements BattleEventEmitter {
             outgoing.lastDamageCategory = null;
           }
           this.sendOut(defenderSideState, switchTarget.i);
+          // Mark this side as phased — the replacement should not execute the
+          // original Pokemon's queued action for this turn.
+          this.phasedSides.add(defenderSide);
           this.emit({
             type: "message",
             text: `${getPokemonName(defender)} was blown away!`,

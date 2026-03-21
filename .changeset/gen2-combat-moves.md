@@ -3,7 +3,7 @@
 "@pokemon-lib-ts/battle": minor
 ---
 
-feat(gen2): Counter/Mirror Coat, Hidden Power, Whirlwind/Roar, Hyper Beam recharge
+# feat(gen2): Counter/Mirror Coat, Hidden Power, Whirlwind/Roar, Hyper Beam recharge
 
 Gen 2 combat move mechanics:
 - Counter reflects 2x physical damage; Mirror Coat reflects 2x special damage

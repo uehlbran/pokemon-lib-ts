@@ -164,6 +164,16 @@ export class MockRuleset implements GenerationRuleset {
     return this.alwaysHit;
   }
 
+  private moveEffectOverride: Partial<MoveEffectResult> | null = null;
+
+  /**
+   * Override the result returned by executeMoveEffect for the next call.
+   * Merges with the default (empty) result. Consumed after one call.
+   */
+  setMoveEffectResult(overrides: Partial<MoveEffectResult>): void {
+    this.moveEffectOverride = overrides;
+  }
+
   private semiInvulnerableOverrides = new Map<string, Set<string>>();
 
   /**
@@ -191,7 +201,7 @@ export class MockRuleset implements GenerationRuleset {
   }
 
   executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {
-    return {
+    const base: MoveEffectResult = {
       statusInflicted: null,
       volatileInflicted: null,
       statChanges: [],
@@ -200,6 +210,12 @@ export class MockRuleset implements GenerationRuleset {
       switchOut: false,
       messages: [],
     };
+    if (this.moveEffectOverride) {
+      const merged = { ...base, ...this.moveEffectOverride };
+      this.moveEffectOverride = null;
+      return merged;
+    }
+    return base;
   }
 
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
