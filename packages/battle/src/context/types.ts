@@ -689,3 +689,28 @@ export interface BagItemResult {
   /** Freeform messages to emit as `MessageEvent`s */
   readonly messages: readonly string[];
 }
+
+/**
+ * Result of a catch attempt roll.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
+ * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+ */
+/**
+ * Discriminated union ensuring caught/shake count combinations are always valid.
+ * A successful catch always has shakes=3; a failed attempt always has shakes 0–2.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
+ * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+ */
+export type CatchResult =
+  | {
+      readonly caught: true;
+      /** Always 3 on a successful catch */
+      readonly shakes: 3;
+    }
+  | {
+      readonly caught: false;
+      /** 0–2 shake checks passed before the Pokemon broke free */
+      readonly shakes: 0 | 1 | 2;
+    };

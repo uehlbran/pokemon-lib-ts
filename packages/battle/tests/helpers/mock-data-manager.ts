@@ -1,4 +1,4 @@
-import type { MoveData, PokemonSpeciesData, TypeChart } from "@pokemon-lib-ts/core";
+import type { ItemData, MoveData, PokemonSpeciesData, TypeChart } from "@pokemon-lib-ts/core";
 import { DataManager } from "@pokemon-lib-ts/core";
 
 /**
@@ -353,6 +353,37 @@ export function createMockDataManager(): DataManager {
     generation: 2,
   };
 
+  // Poke Ball items for catch attempt testing
+  // Source: Bulbapedia -- Poke Ball catch rate modifier = 1x
+  const pokeBallItem: ItemData = {
+    id: "poke-ball",
+    displayName: "Poke Ball",
+    description: "A device for catching wild Pokemon.",
+    category: "pokeball",
+    pocket: "pokeballs",
+    price: 200,
+    battleUsable: true,
+    fieldUsable: false,
+    useEffect: { type: "catch", catchRateModifier: 1 },
+    generation: 1,
+    spriteKey: "poke-ball",
+  };
+
+  // Source: Bulbapedia -- Ultra Ball catch rate modifier = 2x
+  const ultraBallItem: ItemData = {
+    id: "ultra-ball",
+    displayName: "Ultra Ball",
+    description: "An ultra-high-performance Ball with a higher catch rate than a Great Ball.",
+    category: "pokeball",
+    pocket: "pokeballs",
+    price: 1200,
+    battleUsable: true,
+    fieldUsable: false,
+    useEffect: { type: "catch", catchRateModifier: 2 },
+    generation: 1,
+    spriteKey: "ultra-ball",
+  };
+
   dm.loadFromObjects({
     pokemon: [charizardSpecies, blastoiseSpecies, pikachuSpecies],
     moves: [
@@ -363,6 +394,7 @@ export function createMockDataManager(): DataManager {
       flyMoveData,
       flameWheelMoveData,
     ],
+    items: [pokeBallItem, ultraBallItem],
     typeChart: typeChart as unknown as TypeChart,
   });
 

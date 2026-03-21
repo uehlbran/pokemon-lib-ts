@@ -3,6 +3,7 @@ export { GenerationRegistry, generations } from "./GenerationRegistry";
 export type {
   AbilitySystem,
   BagItemSystem,
+  CatchSystem,
   CriticalHitSystem,
   DamageSystem,
   EndOfTurnSystem,

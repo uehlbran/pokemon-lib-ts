@@ -8,6 +8,7 @@ import type {
   BattleGimmick,
   BattleSide,
   BattleState,
+  CatchResult,
   CritContext,
   DamageContext,
   DamageResult,
@@ -39,10 +40,13 @@ import type {
 import {
   CRIT_MULTIPLIER_CLASSIC,
   calculateExpGainClassic,
+  calculateModifiedCatchRate,
+  calculateShakeChecks,
   gen12FullParalysisCheck,
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
   getStatStageMultiplier,
+  STATUS_CATCH_MODIFIERS,
 } from "@pokemon-lib-ts/core";
 import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";
@@ -658,6 +662,39 @@ export class Gen2Ruleset implements GenerationRuleset {
     const f = Math.floor((playerSpeed * 128) / wildSpeed) + 30 * attempts;
     if (f >= 256) return true;
     return rng.int(0, 255) < f;
+  }
+
+  /**
+   * Roll a catch attempt using the Gen 3+ formula (applied retroactively to Gen 2 data).
+   *
+   * Note: Gen 2 cartridge used a slightly different catch formula (pokecrystal BallCalc),
+   * but this uses the core Gen 3+ utilities for consistency with the CatchSystem interface.
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow — Gen 3+ catch formula
+   * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+   * Divergence: Gen 2 cartridge used pokecrystal BallCalc; this uses Gen 3+ formula instead
+   */
+  rollCatchAttempt(
+    catchRate: number,
+    maxHp: number,
+    currentHp: number,
+    status: PrimaryStatus | null,
+    ballModifier: number,
+    rng: SeededRandom,
+  ): CatchResult {
+    const statusModifier = status ? (STATUS_CATCH_MODIFIERS[status] ?? 1) : 1;
+    const modifiedRate = calculateModifiedCatchRate(
+      maxHp,
+      currentHp,
+      catchRate,
+      ballModifier,
+      statusModifier,
+    );
+    const shakeChecks = calculateShakeChecks(modifiedRate, rng);
+    if (shakeChecks >= 4) {
+      return { caught: true, shakes: 3 };
+    }
+    return { caught: false, shakes: shakeChecks as 0 | 1 | 2 };
   }
 
   shouldExecutePursuitPreSwitch(): boolean {
