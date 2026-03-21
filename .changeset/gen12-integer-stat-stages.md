@@ -17,4 +17,5 @@ is 1/4 of the normal crit rate (dividing by 2 instead of multiplying by 2). Gen 
 confirmed: "Divides crit rate by 4 instead of multiplying (does the opposite of what it
 should)".
 
-Fixes: #291
+Closes #287
+Closes #314
