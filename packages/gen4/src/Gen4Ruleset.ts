@@ -79,6 +79,14 @@ export class Gen4Ruleset extends BaseRuleset {
   readonly generation = 4 as const;
   readonly name = "Gen 4 (Diamond/Pearl/Platinum)";
 
+  /**
+   * Temporary weather state set during resolveTurnOrder so that getEffectiveSpeed
+   * can read it. The protected getEffectiveSpeed signature only takes ActivePokemon
+   * (inherited from BaseRuleset), but Chlorophyll/Swift Swim need weather context.
+   * Set to null outside of turn order resolution.
+   */
+  private _currentWeather: string | null = null;
+
   constructor(dataManager?: DataManager) {
     super(dataManager ?? new DataManager());
   }
@@ -526,11 +534,18 @@ export class Gen4Ruleset extends BaseRuleset {
    * Applies:
    *   - Stat stages
    *   - Choice Scarf: 1.5x Speed (NEW in Gen 4)
-   *   - Paralysis: 0.25x (Gen 3-6; Gen 7+ uses 0.5x)
+   *   - Chlorophyll: 2x Speed in sun (NEW in Gen 4)
+   *   - Swift Swim: 2x Speed in rain
+   *   - Quick Feet: 1.5x Speed when statused (OVERRIDES paralysis penalty)
+   *   - Paralysis: 0.25x (Gen 3-6; Gen 7+ uses 0.5x) — skipped if Quick Feet
    *
    * Source: pret/pokeplatinum — paralyzed speed = speed / 4
    * Source: Bulbapedia — Choice Scarf: "Raises the holder's Speed by 50%,
    *   but only allows the use of the first move selected."
+   * Source: Bulbapedia — Chlorophyll: "Doubles the Pokemon's Speed in sun."
+   * Source: Bulbapedia — Swift Swim: "Doubles the Pokemon's Speed in rain."
+   * Source: Bulbapedia — Quick Feet: "Boosts Speed by 50% when the Pokemon
+   *   has a status condition."
    */
   protected getEffectiveSpeed(active: ActivePokemon): number {
     const stats = active.pokemon.calculatedStats;
@@ -552,11 +567,32 @@ export class Gen4Ruleset extends BaseRuleset {
       effective = Math.floor(effective * 1.5);
     }
 
-    if (active.pokemon.status === "paralysis") {
+    // Chlorophyll: 2x Speed in sun
+    // Source: Bulbapedia — Chlorophyll doubles Speed in sun
+    // Source: Showdown data/abilities.ts — Chlorophyll onModifySpe
+    if (active.ability === "chlorophyll" && this._currentWeather === "sun") {
+      effective = effective * 2;
+    }
+
+    // Swift Swim: 2x Speed in rain
+    // Source: Bulbapedia — Swift Swim doubles Speed in rain
+    // Source: Showdown data/abilities.ts — Swift Swim onModifySpe
+    if (active.ability === "swift-swim" && this._currentWeather === "rain") {
+      effective = effective * 2;
+    }
+
+    // Quick Feet: 1.5x Speed when statused, overrides paralysis penalty
+    // Source: Bulbapedia — Quick Feet: "Boosts Speed by 50% when the Pokemon
+    //   has a status condition. The Speed drop from paralysis is also ignored."
+    // Source: Showdown data/abilities.ts — Quick Feet onModifySpe
+    if (active.ability === "quick-feet" && active.pokemon.status !== null) {
+      effective = Math.floor(effective * 1.5);
+    } else if (active.pokemon.status === "paralysis") {
       // Gen 3-6: paralysis quarters speed (x0.25)
       // Source: pret/pokeplatinum
       effective = Math.floor(effective * 0.25);
     }
+
     return Math.max(1, effective);
   }
 
@@ -587,6 +623,9 @@ export class Gen4Ruleset extends BaseRuleset {
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
+    // Set weather context so getEffectiveSpeed can read it for Chlorophyll/Swift Swim
+    this._currentWeather = state.weather?.type ?? null;
+
     // Pre-roll Quick Claw before tiebreak keys (preserves PRNG consumption order)
     const quickClawActivated = this.getQuickClawActivated(actions, state, rng);
 
@@ -671,6 +710,9 @@ export class Gen4Ruleset extends BaseRuleset {
       return a.tiebreak < b.tiebreak ? -1 : 1;
     });
 
+    // Clear weather context after sort
+    this._currentWeather = null;
+
     return tagged.map((t) => t.action);
   }
 
@@ -752,8 +794,19 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Showdown Gen 4 — Unaware in accuracy calculation
     const accStage =
       context.defender.ability === "unaware" ? 0 : context.attacker.statStages.accuracy;
-    const evaStage =
-      context.attacker.ability === "unaware" ? 0 : context.defender.statStages.evasion;
+    let evaStage = context.attacker.ability === "unaware" ? 0 : context.defender.statStages.evasion;
+
+    // Tangled Feet (NEW in Gen 4): doubles evasion when confused.
+    // Implemented as +2 to evasion stage (capped at +6).
+    // Source: Bulbapedia — Tangled Feet: "Raises evasion by one stage (effectively
+    //   doubles the evasion modifier) when the Pokemon is confused."
+    // Source: Showdown data/abilities.ts — Tangled Feet onModifyAccuracy
+    if (
+      context.defender.ability === "tangled-feet" &&
+      context.defender.volatileStatuses.has("confusion")
+    ) {
+      evaStage = Math.min(6, evaStage + 2);
+    }
 
     // Net stage calculation: acc - eva, clamped to [-6, +6]
     // Source: pret/pokeplatinum — same as pokeemerald
@@ -862,6 +915,24 @@ export class Gen4Ruleset extends BaseRuleset {
     if (oppAbility === "magnet-pull" && pokemon.types.includes("steel")) return false;
 
     return true;
+  }
+
+  // --- Switch Out ---
+
+  /**
+   * Gen 4 switch-out handler: Natural Cure cures status before clearing volatiles.
+   *
+   * Source: Bulbapedia — Natural Cure: "All status conditions heal when the
+   *   Pokemon switches out."
+   * Source: Showdown data/abilities.ts — Natural Cure onSwitchOut
+   */
+  override onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
+    // Natural Cure: cure status condition on switch-out
+    if (pokemon.ability === "natural-cure" && pokemon.pokemon.status !== null) {
+      pokemon.pokemon.status = null;
+    }
+    // Delegate to BaseRuleset for standard volatile clearing
+    super.onSwitchOut(pokemon, state);
   }
 
   // --- Held Items ---

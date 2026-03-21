@@ -101,6 +101,65 @@ const GEN4_STATUS_IMMUNITIES: Record<string, readonly PokemonType[]> = {
 };
 
 /**
+ * Ability-based status immunities in Gen 4.
+ *
+ * Maps ability ID to the set of primary statuses it blocks.
+ *
+ * Source: Showdown sim/abilities.ts Gen 4 mod — ability status immunities
+ * Source: Bulbapedia — individual ability pages (Immunity, Insomnia, etc.)
+ */
+const ABILITY_STATUS_IMMUNITIES: Record<string, readonly string[]> = {
+  immunity: ["poison", "badly-poisoned"],
+  insomnia: ["sleep"],
+  "vital-spirit": ["sleep"],
+  limber: ["paralysis"],
+  "water-veil": ["burn"],
+  "magma-armor": ["freeze"],
+};
+
+/**
+ * Check whether a target Pokemon's ability blocks a given primary status.
+ *
+ * @param target - The target Pokemon
+ * @param status - The status being inflicted
+ * @returns true if the ability blocks this status
+ *
+ * Source: Showdown sim/abilities.ts Gen 4 mod — ability-based status immunity
+ */
+export function isStatusBlockedByAbility(target: ActivePokemon, status: string): boolean {
+  const immuneStatuses = ABILITY_STATUS_IMMUNITIES[target.ability];
+  if (!immuneStatuses) return false;
+  return immuneStatuses.includes(status);
+}
+
+/**
+ * Volatile status immunity map for abilities in Gen 4.
+ *
+ * Source: Showdown sim/abilities.ts Gen 4 mod — volatile immunity abilities
+ * Source: Bulbapedia — Inner Focus, Own Tempo, Oblivious
+ */
+const ABILITY_VOLATILE_IMMUNITIES: Record<string, readonly string[]> = {
+  "inner-focus": ["flinch"],
+  "own-tempo": ["confusion"],
+  oblivious: ["infatuation"],
+};
+
+/**
+ * Check whether a target Pokemon's ability blocks a given volatile status.
+ *
+ * @param target - The target Pokemon
+ * @param volatile - The volatile status being applied
+ * @returns true if the ability blocks this volatile
+ *
+ * Source: Showdown sim/abilities.ts Gen 4 mod — ability volatile immunity
+ */
+export function isVolatileBlockedByAbility(target: ActivePokemon, volatile: string): boolean {
+  const immuneVolatiles = ABILITY_VOLATILE_IMMUNITIES[target.ability];
+  if (!immuneVolatiles) return false;
+  return immuneVolatiles.includes(volatile);
+}
+
+/**
  * Check whether a status condition can be inflicted on a target Pokemon in Gen 4.
  *
  * @param status - The status to attempt to inflict
@@ -124,6 +183,13 @@ export function canInflictGen4Status(status: PrimaryStatus, target: ActivePokemo
         return false;
       }
     }
+  }
+
+  // Check ability-based status immunities
+  // Source: Showdown sim/abilities.ts Gen 4 mod — Immunity, Insomnia, Vital Spirit,
+  //   Limber, Water Veil, Magma Armor
+  if (isStatusBlockedByAbility(target, status)) {
+    return false;
   }
 
   return true;
@@ -309,6 +375,12 @@ function applyMoveEffect(
         move.category !== "status" &&
         !rollEffectChance(effect.chance, rng, attacker, defender, true)
       ) {
+        break;
+      }
+      // Check ability-based volatile immunities before applying
+      // Source: Showdown sim/abilities.ts Gen 4 mod — Inner Focus (flinch),
+      //   Own Tempo (confusion), Oblivious (infatuation)
+      if (isVolatileBlockedByAbility(defender, effect.status)) {
         break;
       }
       result.volatileInflicted = effect.status;
