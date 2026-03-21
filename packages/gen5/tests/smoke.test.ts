@@ -3,16 +3,20 @@ import { Gen5Ruleset } from "../src/Gen5Ruleset";
 
 describe("Gen5Ruleset smoke tests", () => {
   it("given Gen5Ruleset, when checking generation property, then returns 5", () => {
+    // Source: Gen5Ruleset.generation is set to 5 in the class definition
+    // (Generation V: Black/White/Black2/White2, 2010-2012)
     const ruleset = new Gen5Ruleset();
     expect(ruleset.generation).toBe(5);
   });
 
   it("given Gen5Ruleset, when checking name, then includes Gen 5", () => {
+    // Source: Gen5Ruleset.name is set to "Gen 5 (Black/White/Black2/White2)" in the class definition
     const ruleset = new Gen5Ruleset();
     expect(ruleset.name).toContain("Gen 5");
   });
 
   it("given Gen5Ruleset, when getting type chart, then returns non-empty type chart", () => {
+    // Source: Gen 5 has 17 types (same as Gen 2-4)
     const ruleset = new Gen5Ruleset();
     const chart = ruleset.getTypeChart();
     expect(Object.keys(chart).length).toBeGreaterThan(0);
