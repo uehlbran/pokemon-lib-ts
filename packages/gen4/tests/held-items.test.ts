@@ -357,10 +357,12 @@ describe("applyGen4HeldItem on-damage-taken — Sitrus Berry (Gen 4 CHANGE)", ()
 // ---------------------------------------------------------------------------
 
 describe("applyGen4HeldItem on-hit — Razor Fang (NEW in Gen 4)", () => {
-  it("given Razor Fang and RNG succeeds, when on-hit triggers, then causes flinch on opponent", () => {
-    // Source: Bulbapedia — Razor Fang: 10% flinch chance (same mechanic as King's Rock)
-    // Source: Showdown Gen 4 mod — Razor Fang trigger
+  it("given Razor Fang with eligible move and RNG succeeds, when on-hit triggers, then causes flinch on opponent", () => {
+    // Source: Bulbapedia — Razor Fang: 10% flinch chance, only on eligible moves (no secondary effects)
+    // Source: Showdown Gen 4 mod — Razor Fang trigger with KINGS_ROCK_ELIGIBLE_MOVES whitelist
     const ctx = makeContext({ heldItem: "razor-fang", damage: 50, rngChance: true });
+    // Need to add move with eligible ID to context
+    (ctx as any).move = { id: "aerial-ace", category: "physical" };
     const result = applyGen4HeldItem("on-hit", ctx);
 
     expect(result.activated).toBe(true);
@@ -371,6 +373,17 @@ describe("applyGen4HeldItem on-hit — Razor Fang (NEW in Gen 4)", () => {
   it("given Razor Fang and RNG fails, when on-hit triggers, then does not cause flinch", () => {
     // Source: Bulbapedia — Razor Fang: 10% chance (RNG fail = no flinch)
     const ctx = makeContext({ heldItem: "razor-fang", damage: 50, rngChance: false });
+    (ctx as any).move = { id: "aerial-ace", category: "physical" };
+    const result = applyGen4HeldItem("on-hit", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Razor Fang with ineligible move (has secondary effect), when on-hit triggers, then does NOT flinch", () => {
+    // Source: Showdown Gen 4 mod — King's Rock/Razor Fang only work on ~200 whitelisted moves
+    // "thunderbolt" is NOT in the whitelist (it has a 10% paralysis secondary effect)
+    const ctx = makeContext({ heldItem: "razor-fang", damage: 50, rngChance: true });
+    (ctx as any).move = { id: "thunderbolt", category: "special" };
     const result = applyGen4HeldItem("on-hit", ctx);
 
     expect(result.activated).toBe(false);
@@ -416,13 +429,25 @@ describe("applyGen4HeldItem on-hit — Life Orb (NEW in Gen 4)", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4HeldItem on-hit — King's Rock", () => {
-  it("given King's Rock and RNG succeeds, when on-hit triggers, then causes flinch", () => {
-    // Source: Showdown Gen 4 mod — King's Rock 10% flinch (unchanged from Gen 3)
+  it("given King's Rock with eligible move and RNG succeeds, when on-hit triggers, then causes flinch", () => {
+    // Source: Showdown Gen 4 mod — King's Rock 10% flinch, only on eligible moves (whitelist)
+    // "tackle" is in the KINGS_ROCK_ELIGIBLE_MOVES whitelist
     const ctx = makeContext({ heldItem: "kings-rock", damage: 50, rngChance: true });
+    (ctx as any).move = { id: "tackle", category: "physical" };
     const result = applyGen4HeldItem("on-hit", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({ type: "flinch", target: "opponent" });
+  });
+
+  it("given King's Rock with ineligible move, when on-hit triggers, then does NOT flinch", () => {
+    // Source: Showdown Gen 4 mod — King's Rock only works on ~200 whitelisted moves
+    // "ice-beam" is NOT in the whitelist (it has a 10% freeze secondary effect)
+    const ctx = makeContext({ heldItem: "kings-rock", damage: 50, rngChance: true });
+    (ctx as any).move = { id: "ice-beam", category: "special" };
+    const result = applyGen4HeldItem("on-hit", ctx);
+
+    expect(result.activated).toBe(false);
   });
 });
 
