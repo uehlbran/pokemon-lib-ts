@@ -311,6 +311,13 @@ export interface SwitchSystem {
    * statuses that don't persist through switching (e.g., bind counter reset).
    */
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void;
+
+  /**
+   * Called when a Pokemon enters the field (initial send-out or mid-battle switch).
+   * Use for gen-specific switch-in effects like Gen 5 sleep counter reset.
+   * Default: no-op.
+   */
+  onSwitchIn(pokemon: ActivePokemon, state: BattleState): void;
 }
 
 /** Flee attempt mechanics (wild battles only). */

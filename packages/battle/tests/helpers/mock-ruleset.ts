@@ -404,6 +404,10 @@ export class MockRuleset implements GenerationRuleset {
     return bound.turnsLeft > 0;
   }
 
+  onSwitchIn(_pokemon: ActivePokemon, _state: BattleState): void {
+    // No-op for mock
+  }
+
   onSwitchOut(_pokemon: ActivePokemon, _state: BattleState): void {
     // No-op for mock
   }
