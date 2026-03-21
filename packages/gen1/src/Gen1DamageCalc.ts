@@ -7,8 +7,8 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
+  getGen12StatStageRatio,
   getStabModifier,
-  getStatStageMultiplier,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
 
@@ -60,7 +60,9 @@ function getAttackStat(
 
   const baseStat = stats ? stats[statKey] : 100;
   const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
-  let effective = Math.floor(baseStat * getStatStageMultiplier(stage));
+  // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+  const ratio = getGen12StatStageRatio(stage);
+  let effective = Math.floor((baseStat * ratio.num) / ratio.den);
 
   // Burn halves physical attack
   if (physical && attacker.pokemon.status === "burn") {
@@ -107,7 +109,9 @@ function getDefenseStat(
 
   const baseStat = stats ? stats[statKey] : 100;
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
-  let effective = Math.max(1, Math.floor(baseStat * getStatStageMultiplier(stage)));
+  // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+  const ratio = getGen12StatStageRatio(stage);
+  let effective = Math.max(1, Math.floor((baseStat * ratio.num) / ratio.den));
 
   // Source: gen1-ground-truth.md §7 — Reflect / Light Screen doubles the relevant defense stat
   const defenderSide = findSideForPokemon(state, defender);
@@ -223,7 +227,11 @@ export function calculateGen1Damage(
     // factor === 1: no-op
   }
 
-  // Source: pret/pokered src/engine/battle/core_battle_start.asm — non-immune moves deal minimum 1 damage
+  // Source: pret/pokered engine/battle/core.asm lines ~5171-5176 — non-immune moves deal minimum 1 damage
+  // After type effectiveness, if damage rounded to 0 but the move is not immune, set to 1.
+  if (baseDamage === 0) {
+    baseDamage = 1;
+  }
 
   // Step 4: Random factor (217-255) / 255
   // In Gen 1, the random factor ranges from 217 to 255 (inclusive), then divided by 255

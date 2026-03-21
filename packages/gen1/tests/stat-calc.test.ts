@@ -485,8 +485,10 @@ describe("calculateGen1Stats — DV monotonicity", () => {
     }
   });
 
-  it("given increasing DV from 0 to 15, when calculating HP, then HP is non-decreasing", () => {
-    // Arrange
+  it("given increasing DV from 0 to 15 (all stats together), when calculating HP, then HP DV is derived from LSBs of other DVs", () => {
+    // Source: pret/pokered home/move_mon.asm lines 109-133
+    // HP DV = ((atk&1)<<3)|((def&1)<<2)|((spe&1)<<1)|(spc&1)
+    // When all DVs are the same value, HP DV alternates between 0 (even) and 15 (odd).
     const species = makeSpecies({
       hp: 100,
       attack: 100,
@@ -495,22 +497,25 @@ describe("calculateGen1Stats — DV monotonicity", () => {
       spDefense: 100,
       speed: 100,
     });
-    const results: number[] = [];
-    // Act
-    for (let dv = 0; dv <= 15; dv++) {
-      const pokemon = makeInstance({
-        level: 100,
-        ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
-        evs: zeroStatExp(),
-      });
-      results.push(calculateGen1Stats(pokemon, species).hp);
-    }
-    // Assert
-    for (let i = 1; i < results.length; i++) {
-      const current = results[i] ?? 0;
-      const previous = results[i - 1] ?? 0;
-      expect(current).toBeGreaterThanOrEqual(previous);
-    }
+    // Act: dv=0 (all even) → HP DV = 0; dv=1 (all odd) → HP DV = 15
+    const evenPokemon = makeInstance({
+      level: 100,
+      ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      evs: zeroStatExp(),
+    });
+    const oddPokemon = makeInstance({
+      level: 100,
+      ivs: { hp: 0, attack: 1, defense: 1, spAttack: 1, spDefense: 1, speed: 1 },
+      evs: zeroStatExp(),
+    });
+    const evenHp = calculateGen1Stats(evenPokemon, species).hp;
+    const oddHp = calculateGen1Stats(oddPokemon, species).hp;
+    // Assert: all-even DVs → HP DV=0, all-odd DVs → HP DV=15
+    // Formula: floor(((100+DV)*2+0)*100/100)+100+10
+    // DV=0: floor((100+0)*2*100/100)+110 = floor(200)+110 = 310
+    // DV=15: floor((100+15)*2*100/100)+110 = floor(230)+110 = 340
+    expect(evenHp).toBe(310);
+    expect(oddHp).toBe(340);
   });
 
   it("given DV < 0 (dv=-1), when calculating stats, then result equals DV=0 (clamped to minimum)", () => {
