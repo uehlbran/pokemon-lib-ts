@@ -8878,7 +8878,8 @@
     },
     "effect": null,
     "description": "If this attack is not successful, the user loses half of its maximum HP, rounded down, as crash damage. Pokemon with the Magic Guard Ability are unaffected by crash damage.",
-    "generation": 1
+    "generation": 1,
+    "hasCrashDamage": true
   },
   {
     "id": "hone-claws",
@@ -9989,7 +9990,8 @@
     },
     "effect": null,
     "description": "If this attack is not successful, the user loses half of its maximum HP, rounded down, as crash damage. Pokemon with the Magic Guard Ability are unaffected by crash damage.",
-    "generation": 1
+    "generation": 1,
+    "hasCrashDamage": true
   },
   {
     "id": "karate-chop",
