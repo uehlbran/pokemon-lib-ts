@@ -519,8 +519,8 @@ function getDefenseStat(
  *   7. Explosion/Self-Destruct: halve defense
  *   8. Base formula: floor(floor((2*L/5+2) * Power * Atk / Def) / 50)
  *   9. Burn: floor(baseDamage / 2) if physical + burned + NOT Guts
- *  10. Weather modifier
- *  11. baseDamage += 2
+ *  10. baseDamage += 2
+ *  11. Weather modifier
  *  12. Crit: baseDamage * critMultiplier (2.0, or 3.0 with Sniper)
  *  13. Random: floor(baseDamage * rng(85,100) / 100)
  *  14. STAB (with Adaptability support)
@@ -529,6 +529,7 @@ function getDefenseStat(
  *  17. Apply effectiveness
  *  18. Tinted Lens: double damage if not very effective
  *  19. Filter/Solid Rock: 0.75x if super effective
+ *  19c. Heatproof: 0.5x for Fire-type moves (onSourceModifyDamage, post-type-effectiveness)
  *  20. Item damage modifiers (Life Orb, Expert Belt, Muscle Band, Wise Glasses)
  *  21. Minimum 1 damage
  *
@@ -914,14 +915,6 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // --- Post-formula modifiers ---
 
-  // 11a. Heatproof: 0.5x damage modifier on Fire-type moves (Gen 4 — applied post-formula)
-  // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage 0.5x for Fire moves
-  // Bug #355: previous code halved power (base power), which is the wrong phase
-  if (heatproofActive) {
-    baseDamage = Math.floor(baseDamage * 0.5);
-    abilityMultiplier *= 0.5;
-  }
-
   // 12. Critical hit multiplier
   // Gen 4: 2.0x normally, 3.0x with Sniper (NEW ability in Gen 4)
   // Source: Bulbapedia — Sniper: "Powers up moves if they become critical hits.
@@ -1105,6 +1098,16 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   ) {
     baseDamage = Math.floor(baseDamage * 0.75);
     abilityMultiplier *= 0.75;
+  }
+
+  // 19c. Heatproof: 0.5x on Fire-type moves (post-type-effectiveness modifier)
+  // Runs in the same chain as Filter/Solid Rock (onSourceModifyDamage), AFTER crit,
+  // random roll, STAB, and type effectiveness have all been applied.
+  // Source: Showdown Gen 4 mod — Heatproof uses onSourceModifyDamage with 0.5x for Fire moves
+  // Note: moved from pre-crit position (Bug #355 fix) — must be post-type-effectiveness
+  if (heatproofActive) {
+    baseDamage = Math.floor(baseDamage * 0.5);
+    abilityMultiplier *= 0.5;
   }
 
   // 19b. Type-resist berries: halve SE damage of the matching type (consumed).

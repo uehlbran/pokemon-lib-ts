@@ -453,12 +453,17 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
       chart,
     );
 
-    // Thick Fat should halve the damage — result should be half of the no-ability case
-    // (within floor rounding: floor(41/2)=20 or 21)
-    expect(resultWithThickFat.damage).toBeLessThan(resultWithout.damage);
-    // Confirm approximately 50% reduction
-    expect(resultWithThickFat.damage).toBeGreaterThanOrEqual(Math.floor(resultWithout.damage / 2));
-    expect(resultWithThickFat.damage).toBeLessThanOrEqual(Math.ceil(resultWithout.damage / 2) + 1);
+    // Derivation (L50, power=90 → 45 after Thick Fat halving, Atk=100, Def=100, rng=100):
+    // Attacker is Fire-type using Fire move → STAB 1.5x applies
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDmg = floor(floor(22*45*100/100)/50)+2 = floor(990/50)+2 = 19+2 = 21
+    //   STAB: floor(21 * 1.5) = floor(31.5) = 31
+    // Without Thick Fat (power=90, Atk=100, Def=100, STAB 1.5x):
+    //   baseDmg = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
+    //   STAB: floor(41 * 1.5) = floor(61.5) = 61
+    // Note: 31 ≠ floor(61/2)=30 — proves Thick Fat halves base power, not final damage
+    expect(resultWithThickFat.damage).toBe(31);
+    expect(resultWithout.damage).toBe(61);
   });
 
   it("given a defender with Thick Fat and an Ice move with base power 60, when calculating damage, then damage is halved compared to no Thick Fat", () => {
@@ -490,8 +495,13 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
       chart,
     );
 
-    expect(resultWithThickFat.damage).toBeLessThan(resultWithout.damage);
-    expect(resultWithThickFat.damage).toBeGreaterThanOrEqual(Math.floor(resultWithout.damage / 2));
+    // Derivation (L50, power=60 → 30 after Thick Fat halving, spAtk=100, spDef=100, rng=100):
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDmg = floor(floor(22*30*100/100)/50)+2 = floor(660/50)+2 = 13+2 = 15
+    // Without Thick Fat (power=60, spAtk=100, spDef=100):
+    //   baseDmg = floor(floor(22*60*100/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
+    expect(resultWithThickFat.damage).toBe(15);
+    expect(resultWithout.damage).toBe(28);
   });
 });
 
@@ -613,5 +623,72 @@ describe("Gen4DamageCalc Metronome item — Bug #358 correct Gen 4 step and cap"
 
     // Gen 4 cap at 1.5x — must equal the count=6 result
     expect(resultCapped.damage).toBe(Math.floor(resultBaseline.damage * 1.5));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug #355: Heatproof — 0.5x modifier applied POST-type-effectiveness (onSourceModifyDamage)
+// ---------------------------------------------------------------------------
+
+describe("Gen4DamageCalc Heatproof — Bug #355 post-type-effectiveness 0.5x modifier", () => {
+  it("given a Pokemon with Heatproof ability, when hit by a Fire move, then damage is halved (0.5x post-formula modifier)", () => {
+    // Source: Showdown Gen 4 mod — Heatproof uses onSourceModifyDamage with 0.5x for Fire moves
+    // onSourceModifyDamage runs AFTER crit, random roll, STAB, and type effectiveness.
+    //
+    // Derivation (L50, power=80 physical, Atk=100, Def=100, no STAB, neutral, rng=100, no crit):
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDmg = floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    //   crit=1x, random=100/100=1x, STAB=none, effectiveness=1x → 37
+    //   Heatproof: floor(37 * 0.5) = 18
+    const attacker = makeActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = makeActivePokemon({ ability: "heatproof", defense: 100, types: ["normal"] });
+    const fireMove = createMove({ type: "fire", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: fireMove,
+        rng: { ...createMockRng(), int: () => 100 },
+      }),
+      chart,
+    );
+
+    expect(result.damage).toBe(18);
+  });
+
+  it("given a Pokemon with Heatproof, when hit by a critical Fire move, then crit is applied first, then Heatproof halves the result", () => {
+    // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage runs after crit
+    // If crit were applied AFTER Heatproof the result would differ.
+    //
+    // Derivation (L50, power=80 physical, Atk=100, Def=100, no STAB, neutral, rng=100, crit=2x):
+    //   baseDmg = floor(floor(22*80*100/100)/50)+2 = 35+2 = 37
+    //   crit=2x: 37*2 = 74
+    //   random=100/100=1x: 74
+    //   STAB=none, effectiveness=1x: 74
+    //   Heatproof (post-type-effectiveness): floor(74 * 0.5) = 37
+    //
+    // If Heatproof were applied pre-crit (wrong order):
+    //   floor(37*0.5)=18, then crit: 18*2=36 (≠ 37 — distinguishes order)
+    const attacker = makeActivePokemon({ attack: 100, types: ["normal"] });
+    const defender = makeActivePokemon({ ability: "heatproof", defense: 100, types: ["normal"] });
+    const fireMove = createMove({ type: "fire", power: 80, category: "physical" });
+    const chart = createNeutralTypeChart();
+
+    const result = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: fireMove,
+        isCrit: true,
+        rng: { ...createMockRng(), int: () => 100 },
+      }),
+      chart,
+    );
+
+    // crit first (74), then Heatproof (floor(74*0.5)=37)
+    // Wrong pre-crit order would give: floor(37*0.5)=18, *2=36
+    expect(result.damage).toBe(37);
   });
 });
