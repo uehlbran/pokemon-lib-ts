@@ -564,7 +564,7 @@ export class Gen3Ruleset extends BaseRuleset {
     return Math.max(1, effective);
   }
 
-// --- Switch Restrictions (#229: trapping abilities) ---
+  // --- Switch Restrictions (#229: trapping abilities) ---
 
   /**
    * Gen 3 switch restrictions: "trapped" volatile + trapping abilities.
@@ -662,6 +662,7 @@ export class Gen3Ruleset extends BaseRuleset {
     }
     // Delegate to BaseRuleset for standard volatile clearing
     super.onSwitchOut(pokemon, state);
+  }
 
   /**
    * Override resolveTurnOrder to set weather context for speed-doubling abilities
