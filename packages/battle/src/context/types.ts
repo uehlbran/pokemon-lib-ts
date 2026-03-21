@@ -725,6 +725,9 @@ export type CatchResult =
     }
   | {
       readonly caught: false;
-      /** 0–2 shake checks passed before the Pokemon broke free */
-      readonly shakes: 0 | 1 | 2;
+      /** 0–3 shake checks passed before the Pokemon broke free.
+       * In Gen 1, Z >= 70 gives 3 shakes even on a failed catch.
+       * Source: pokered ItemUseBall .failedToCapture — Z thresholds 0/1/2/3 shakes.
+       */
+      readonly shakes: 0 | 1 | 2 | 3;
     };

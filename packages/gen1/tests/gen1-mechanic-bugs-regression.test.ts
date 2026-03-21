@@ -361,7 +361,7 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
     accuracy: 85,
     pp: 20,
     target: "adjacent-foe",
-    effect: { type: "multi-hit" as const, minHits: 2, maxHits: 5 },
+    effect: { type: "multi-hit" as const, min: 2, max: 5 },
   });
 
   it("given Fury Attack hits, when executeMoveEffect is called, then multiHitCount is set to (total hits - 1)", () => {
@@ -391,7 +391,7 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
       accuracy: 85,
       pp: 20,
       target: "adjacent-foe",
-      effect: { type: "multi-hit" as const, minHits: 2, maxHits: 5 },
+      effect: { type: "multi-hit" as const, min: 2, max: 5 },
     });
     // Arrange — find seed where rollMultiHitCount returns 2
     let testSeed = 0;

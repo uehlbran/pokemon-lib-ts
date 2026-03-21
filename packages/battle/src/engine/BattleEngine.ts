@@ -1286,8 +1286,12 @@ export class BattleEngine implements BattleEventEmitter {
     // Multi-hit move loop: repeat damage for additional hits beyond the first.
     // Source: pokered multi-hit moves — the engine repeats the damage step for each
     // additional hit. Only the first hit can be a critical hit (Gen 1 rule).
+    // Source: pokered — all hits after the first use the same damage as the first hit.
+    // The random factor and stat stage application are locked to the first calculation.
     // Ends early if the target faints or the substitute breaks.
     if (effectResult.multiHitCount && effectResult.multiHitCount > 0) {
+      // Capture first hit damage; subsequent hits reuse this value (Gen 1 multi-hit rule)
+      const firstHitDamage = damage;
       let totalHits = 1; // already dealt the first hit
       for (let i = 0; i < effectResult.multiHitCount; i++) {
         // Stop if defender fainted
@@ -1305,17 +1309,8 @@ export class BattleEngine implements BattleEventEmitter {
           if (defender.pokemon.currentHp <= 0 || actor.pokemon.currentHp <= 0) break;
         }
 
-        // Recalculate damage for this hit (no crit on subsequent hits in Gen 1)
-        const hitResult = this.ruleset.calculateDamage({
-          attacker: actor,
-          defender,
-          move: effectiveMoveData,
-          state: this.state,
-          rng: this.state.rng,
-          isCrit: false, // Gen 1: only first hit can crit
-        });
-
-        const hitDamage = hitResult.damage;
+        // Reuse first hit damage (Gen 1: multi-hit repeats the same damage each strike)
+        const hitDamage = firstHitDamage;
         if (hitDamage <= 0) break;
 
         // Apply damage to substitute or Pokemon

@@ -1678,19 +1678,21 @@ export class Gen1Ruleset implements GenerationRuleset {
    * where X = min(255, W) from HP formula, Y = floor(catchRate * 100 / ballFactor2)
    * Status2: none=0, burn/para/poison=5, freeze/sleep=10
    * Z < 10: 0 shakes, 10 <= Z < 30: 1 shake, 30 <= Z < 70: 2 shakes, Z >= 70: 3 shakes
+   * Note: 3 shakes is a real failure tier — the Pokemon gives 3 shakes but still escapes.
    */
   private static gen1CalcShakes(
     x: number,
     catchRate: number,
     ballFactor2: number,
     statusValue: number,
-  ): 0 | 1 | 2 {
+  ): 0 | 1 | 2 | 3 {
     const y = Math.floor((catchRate * 100) / ballFactor2);
     const status2 = statusValue >= 25 ? 10 : statusValue >= 12 ? 5 : 0;
     const z = Math.floor((x * y) / 255) + status2;
     if (z < 10) return 0;
     if (z < 30) return 1;
-    return 2;
+    if (z < 70) return 2;
+    return 3;
   }
 
   shouldExecutePursuitPreSwitch(): boolean {

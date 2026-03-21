@@ -334,10 +334,15 @@ describe("#287 — Integer stat stage ratios replace float multipliers", () => {
       state,
     };
     const result = calculateGen1Damage(context, GEN1_TYPE_CHART, species);
-    // The result should be deterministic and use integer ratios internally.
-    // We're testing that no float rounding artifacts appear.
-    expect(result.damage).toBeGreaterThan(0);
-    expect(Number.isInteger(result.damage)).toBe(true);
+    // Source: pret/pokered data/battle/stat_modifiers.asm — stage -1 ratio = 66/100
+    // Formula: levelFactor=22, attack=100, defense=floor(200*66/100)=132, power=100
+    //   baseDamage = min(997, floor(floor(22*100*100)/132/50)) + 2
+    //             = min(997, floor(floor(220000/132)/50)) + 2
+    //             = min(997, floor(1666/50)) + 2 = 33 + 2 = 35
+    // Normal vs Normal (defender) = 1x effectiveness, no STAB (attacker is electric)
+    // randomRoll = SeededRandom(42).int(217, 255) = 240
+    // finalDamage = max(1, floor(35*240/255)) = floor(32.94...) = 32
+    expect(result.damage).toBe(32);
   });
 });
 
