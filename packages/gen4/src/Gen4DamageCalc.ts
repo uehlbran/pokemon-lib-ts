@@ -604,14 +604,21 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown sim/battle.ts — Gen 4 ability immunities
   // Source: Showdown Gen 4 — Mold Breaker negates Levitate, Volt Absorb, Water Absorb, etc.
   const gravityActive = context.state.gravity?.active ?? false;
+  // Iron Ball grounds the holder — removes Ground immunity from Flying type and Levitate
+  // Source: Showdown data/items.ts — Iron Ball onImmunity removes Ground immunity
+  // Source: Bulbapedia — Iron Ball: "makes the holder grounded"
+  const ironBallGrounded =
+    defender.pokemon.heldItem === "iron-ball" && effectiveMoveType === "ground";
   if (!moldBreaker) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
     if (immuneType && effectiveMoveType === immuneType) {
-      // Gravity grounds all Pokemon — Levitate no longer grants Ground immunity
+      // Gravity or Iron Ball grounds all Pokemon — Levitate no longer grants Ground immunity
       // Source: Showdown Gen 4 mod — Gravity suppresses Levitate
       // Source: Bulbapedia — Gravity: "Levitate will not give immunity to Ground-type moves."
       const isLevitateGrounded =
-        defenderAbility === "levitate" && effectiveMoveType === "ground" && gravityActive;
+        defenderAbility === "levitate" &&
+        effectiveMoveType === "ground" &&
+        (gravityActive || ironBallGrounded);
       if (!isLevitateGrounded) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
       }
@@ -745,12 +752,17 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // 15. Type effectiveness
   // Source: Showdown sim/battle.ts — Gen 4 type effectiveness
-  // Gravity: Ground moves ignore Flying-type immunity
+  // Gravity / Iron Ball: Ground moves ignore Flying-type immunity
   // Source: Showdown Gen 4 mod — Gravity makes Ground moves hit Flying-types
   // Source: Bulbapedia — Gravity: "All Pokémon on the ground are no longer immune to
   //   Ground-type moves because of their Flying type."
+  // Source: Bulbapedia — Iron Ball: "makes the holder grounded"
   let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
-  if (gravityActive && effectiveMoveType === "ground" && defender.types.includes("flying")) {
+  if (
+    (gravityActive || ironBallGrounded) &&
+    effectiveMoveType === "ground" &&
+    defender.types.includes("flying")
+  ) {
     // Remove Flying from the defender's types for effectiveness calculation
     // so Ground moves can hit. If the defender is pure Flying, treat as Normal.
     const nonFlyingTypes = defender.types.filter((t) => t !== "flying");

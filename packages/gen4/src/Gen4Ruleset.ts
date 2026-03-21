@@ -601,6 +601,13 @@ export class Gen4Ruleset extends BaseRuleset {
       effective = Math.floor(effective * 0.25);
     }
 
+    // Iron Ball: halve Speed
+    // Source: Bulbapedia — Iron Ball: "Cuts the Speed stat of the holder to half."
+    // Source: Showdown data/items.ts — Iron Ball onModifySpe halves speed
+    if (active.pokemon.heldItem === "iron-ball") {
+      effective = Math.floor(effective * 0.5);
+    }
+
     return Math.max(1, effective);
   }
 
@@ -636,6 +643,9 @@ export class Gen4Ruleset extends BaseRuleset {
 
     // Pre-roll Quick Claw before tiebreak keys (preserves PRNG consumption order)
     const quickClawActivated = this.getQuickClawActivated(actions, state, rng);
+
+    // Pre-compute Custap Berry activations (deterministic, HP-based — no PRNG needed)
+    const custapActivated = this.getCustapBerryActivated(actions, state);
 
     // Assign one tiebreak key per action BEFORE sorting for deterministic PRNG consumption
     // Source: GitHub issue #120 -- V8 sort calls comparator non-deterministic number of times
@@ -685,6 +695,34 @@ export class Gen4Ruleset extends BaseRuleset {
         }
 
         if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
+
+        // Stall: always move last within priority bracket
+        // Source: Bulbapedia — Stall: "The Pokemon moves after all other Pokemon"
+        // Source: Showdown data/abilities.ts — Stall: onFractionalPriority -0.1
+        const stallA = activeA.ability === "stall";
+        const stallB = activeB.ability === "stall";
+        if (stallA && !stallB) return 1; // Stall goes LAST
+        if (stallB && !stallA) return -1; // Stall goes LAST
+
+        // Lagging Tail / Full Incense: holder always moves last within priority bracket
+        // Source: Bulbapedia — Lagging Tail / Full Incense: "Holder always moves last"
+        // Source: Showdown data/items.ts — Lagging Tail / Full Incense: onFractionalPriority -0.1
+        const laggingA =
+          activeA.pokemon.heldItem === "lagging-tail" ||
+          activeA.pokemon.heldItem === "full-incense";
+        const laggingB =
+          activeB.pokemon.heldItem === "lagging-tail" ||
+          activeB.pokemon.heldItem === "full-incense";
+        if (laggingA && !laggingB) return 1; // goes last
+        if (laggingB && !laggingA) return -1; // goes last
+
+        // Custap Berry: move first within priority bracket at <=25% HP
+        // Source: Bulbapedia — Custap Berry: "moves first in its priority bracket"
+        // Source: Showdown data/items.ts — Custap Berry: onFractionalPriority checks HP <= 0.25
+        const custapA = custapActivated.has(a.idx);
+        const custapB = custapActivated.has(b.idx);
+        if (custapA && !custapB) return -1; // Custap goes first
+        if (custapB && !custapA) return 1;
 
         // Quick Claw: activated holders go first within same priority bracket
         const qcA = quickClawActivated.has(a.idx);
@@ -759,6 +797,37 @@ export class Gen4Ruleset extends BaseRuleset {
       }
     }
     return quickClawActivated;
+  }
+
+  // --- Custap Berry ---
+
+  /**
+   * Pre-compute Custap Berry activations for turn ordering.
+   *
+   * Custap Berry gives the holder priority within their bracket when HP is at
+   * or below 25% of max HP. No PRNG involved — purely HP-based.
+   *
+   * Source: Bulbapedia — Custap Berry: "When the holder's HP drops to 1/4 or
+   *   less, it will move first in its priority bracket."
+   * Source: Showdown data/items.ts — Custap Berry: onFractionalPriority
+   */
+  private getCustapBerryActivated(actions: BattleAction[], state: BattleState): Set<number> {
+    const activated = new Set<number>();
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+      if (action && action.type === "move") {
+        const side = state.sides[action.side];
+        const active = side?.active[0];
+        if (!active) continue;
+        if (active.pokemon.heldItem !== "custap-berry") continue;
+        const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+        // Source: Bulbapedia — Custap Berry activates at <=25% HP
+        if (active.pokemon.currentHp <= Math.floor(maxHp * 0.25)) {
+          activated.add(i);
+        }
+      }
+    }
+    return activated;
   }
 
   // --- Accuracy System ---
