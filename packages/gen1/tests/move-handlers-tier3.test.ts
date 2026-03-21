@@ -227,12 +227,14 @@ describe("Gen 1 Focus Energy handler", () => {
 
   it("given Focus Energy active, when rolling crit for a 60-base-Speed attacker, then crit rate is 3/256 (bugged — /4 not /2)", () => {
     // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy uses >>2 (divide by 4)
-    // instead of <<2 (multiply by 4). Off-by-one bit shift: intended <<2, actual >>2.
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy executes a single
+    // `srl b` (>>1, divide by 2) instead of the intended `sla b` (<<1, multiply by 2).
+    // Net result is 1/4 of the normal crit rate (divide by 2 vs multiply by 2 = 1/4 ratio).
     // Base speed 60, Focus Energy active, normal move:
     //   Step 1: floor(60/2) = 30
-    //   Step 2 (Focus Energy /4): floor(30/4) = 7
-    //   Step 3 (normal move /2): floor(7/2) = 3
-    //   Rate: 3/256
+    //   Step 2 (Focus Energy >>1): floor(30/2) = 15
+    //   Step 3 (normal move /2): floor(15/2) = 7
+    //   Rate: 7/256
     // Without Focus Energy:
     //   Step 1: floor(60/2) = 30
     //   Step 2 (no Focus Energy): min(255, max(1, 30*2)) = 60
@@ -240,22 +242,22 @@ describe("Gen 1 Focus Energy handler", () => {
     //   Rate: 30/256
     const focusRate = getGen1CritRate(60, true, false);
     const normalRate = getGen1CritRate(60, false, false);
-    // Assert — Focus Energy gives a WORSE crit rate (the famous Gen 1 bug — /4 not /2)
-    expect(focusRate).toBe(3 / 256);
+    // Assert — Focus Energy gives a WORSE crit rate (the famous Gen 1 bug — single srl b)
+    expect(focusRate).toBe(7 / 256);
     expect(normalRate).toBe(30 / 256);
     expect(focusRate).toBeLessThan(normalRate);
   });
 
-  it("given Focus Energy active, when rolling crit for a 100-base-Speed attacker, then crit rate is 6/256 (bugged — /4 not /2)", () => {
-    // Source: pret/pokered engine/battle/effect_commands.asm — same >>2 shift applies
+  it("given Focus Energy active, when rolling crit for a 100-base-Speed attacker, then crit rate is 12/256 (bugged — srl b single right-shift)", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — same single `srl b` (>>1) applies
     // Base speed 100, Focus Energy active, normal move:
     //   Step 1: floor(100/2) = 50
-    //   Step 2 (Focus Energy /4): floor(50/4) = 12
-    //   Step 3 (normal move /2): floor(12/2) = 6
-    //   Rate: 6/256
+    //   Step 2 (Focus Energy >>1): floor(50/2) = 25
+    //   Step 3 (normal move /2): floor(25/2) = 12
+    //   Rate: 12/256
     const focusRate = getGen1CritRate(100, true, false);
     // Assert
-    expect(focusRate).toBe(6 / 256);
+    expect(focusRate).toBe(12 / 256);
   });
 });
 

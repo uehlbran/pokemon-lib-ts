@@ -135,27 +135,28 @@ describe("Gen 1 Critical Hit", () => {
     expect(focusEnergyRate).toBeLessThan(normalRate);
   });
 
-  it("given base speed 100 Pokemon with Focus Energy, when calculating crit rate, then threshold is floor(floor(100/2)/4)=12 then /2=6, giving rate 6/256", () => {
-    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy uses >>2 (divide by 4),
-    // not >>1 (divide by 2). Off-by-one bit shift: intended <<2, actual >>2.
-    // Algorithm: base=floor(100/2)=50; FE:/4=floor(50/4)=12; normal:/2=floor(12/2)=6 → 6/256
+  it("given base speed 100 Pokemon with Focus Energy, when calculating crit rate, then threshold is floor(floor(100/2)/2)=25 then /2=12, giving rate 12/256", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy executes a single
+    // `srl b` (>>1, divide by 2) instead of the intended `sla b` (<<1, multiply by 2).
+    // Net result is 1/4 of the normal crit rate (divide by 2 vs multiply by 2 = 1/4 ratio).
+    // Algorithm: base=floor(100/2)=50; FE:>>1=floor(50/2)=25; normal:/2=floor(25/2)=12 → 12/256
     // Arrange
     const baseSpeed = 100;
     // Act
     const rate = getGen1CritRate(baseSpeed, true, false);
-    // Assert: 6/256 ~ 0.0234 (not 12/256 — that was the /2 bug)
-    expect(rate).toBeCloseTo(6 / 256, 2);
+    // Assert: 12/256 (Focus Energy single right-shift gives 1/4 of the normal 48/256 rate)
+    expect(rate).toBeCloseTo(12 / 256, 2);
   });
 
   it("given Focus Energy active with low speed, when calculating crit rate, then rate drops to near-zero", () => {
-    // Source: pret/pokered engine/battle/effect_commands.asm — same >>2 shift applies
-    // Speed 20: floor(20/2)=10; FE:/4=floor(10/4)=2; normal:/2=floor(2/2)=1 → 1/256 ≈ 0.0039
+    // Source: pret/pokered engine/battle/effect_commands.asm — same `srl b` (>>1) applies
+    // Speed 20: floor(20/2)=10; FE:>>1=floor(10/2)=5; normal:/2=floor(5/2)=2 → 2/256 ≈ 0.0078
     // Arrange
     const baseSpeed = 20;
     // Act
     const rate = getGen1CritRate(baseSpeed, true, false);
-    // Assert: 1/256 — even lower than /2 bug would give
-    expect(rate).toBeCloseTo(1 / 256, 2);
+    // Assert: 2/256 — significantly lower than normal but not as extreme as the wrong /4 calculation
+    expect(rate).toBeCloseTo(2 / 256, 2);
   });
 
   // --- High Crit-Ratio Moves ---

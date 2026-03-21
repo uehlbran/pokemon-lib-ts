@@ -1360,24 +1360,33 @@ describe("Gen 1 Damage Calculation", () => {
     expect(result.damage).toBe(45);
   });
 
-  it("given a physical attacker with base Defense 150 at stat stage -1, when computing effective defense stat, then returns 99 (integer math) not 100 (float math)", () => {
-    // Source: pret/pokered data/battle/stat_modifiers.asm — same integer table for defense stages
-    // base 150 at stage -1: integer = floor(150*66/100) = 99, float = floor(150*0.6667) = 100
-    // Arrange: attacker at stage 0 (no boost), defender with defense 150 at stage -1
+  it("given a physical attacker with base Defense 270 at stat stage -1, when computing effective defense stat, then damage matches integer math (defense=178) not float math (defense=180)", () => {
+    // Source: pret/pokered data/battle/stat_modifiers.asm — stage -1 uses 66/100 (not 2/3 = 0.6667)
+    // base 270 at stage -1: integer = floor(270*66/100) = floor(17820/100) = 178
+    //                         float = floor(270*(2/3))  = floor(180.0)       = 180
+    // These diverge: 178 vs 180.
+    //
+    // To produce different final damage we need attack/power large enough:
+    //   levelFactor = floor(2*50/5)+2 = 22; attack=200; power=100
+    //   numerator = floor(22*200*100) = 440000
+    //   defense=178 (integer): floor(440000/178)=2471; floor(2471/50)=49; +2=51
+    //   defense=180 (float):   floor(440000/180)=2444; floor(2444/50)=48; +2=50
+    //   With max roll (255/255=1.0): floor(51*255/255)=51 vs floor(50*255/255)=50
+    // So integer math yields damage=51, float math yields damage=50.
     const attacker = createActivePokemon({
       level: 50,
-      attack: 100,
+      attack: 200,
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: ["fire"], // fire attacker with normal move = no STAB, avoids 1.5x factor
     });
     const defender = createActivePokemon({
       level: 50,
       attack: 100,
-      defense: 150,
+      defense: 270,
       spAttack: 100,
-      spDefense: 150,
+      spDefense: 270,
       types: ["normal"],
       statStages: { defense: -1 },
     });
@@ -1385,18 +1394,6 @@ describe("Gen 1 Damage Calculation", () => {
     const chart = createNeutralTypeChart();
     const species = createSpecies();
 
-    // With effective defense = 99 (integer) vs 100 (float):
-    // levelFactor = floor(2*50/5)+2 = 22; attack = 100; power = 100
-    // baseDamage with defense=99: floor(floor(22*100*100)/99/50)+2
-    //   = floor(220000/99/50)+2 = floor(2222.2.../50)+2 = floor(44.44)+2 = 44+2 = 46
-    // baseDamage with defense=100: floor(floor(22*100*100)/100/50)+2 = 44+2 = 46
-    // Hmm — these happen to be the same. Use power 80 to get divergence:
-    // Actually let me recompute with power=100, defense=99 vs 100:
-    //   floor(220000/99) = floor(2222.22) = 2222; floor(2222/50) = 44; +2 = 46
-    //   floor(220000/100) = 2200; floor(2200/50) = 44; +2 = 46  — same!
-    // Divergence only appears at base stat 150, which gives 99 vs 100 effective stat.
-    // The numerics happen to be equal here. Test with attack stage for the cleaner divergence.
-    // This test validates that the defense path uses the integer table:
     const ctx: DamageContext = {
       attacker,
       defender,
@@ -1406,9 +1403,8 @@ describe("Gen 1 Damage Calculation", () => {
       isCrit: false,
     };
     const result = calculateGen1Damage(ctx, chart, species);
-    // With defense=99: damage = 46. With defense=100: damage = 46. Same in this case.
-    // The key invariant is: damage must be an integer and must be >= 1.
-    expect(Number.isInteger(result.damage)).toBe(true);
-    expect(result.damage).toBeGreaterThanOrEqual(1);
+    // Integer math (66/100 table): effective defense=178 → damage=51
+    // Float math (2/3≈0.6667):     effective defense=180 → damage=50
+    expect(result.damage).toBe(51);
   });
 });
