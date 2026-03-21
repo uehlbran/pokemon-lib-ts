@@ -40,13 +40,11 @@ import type {
 import {
   CRIT_MULTIPLIER_CLASSIC,
   calculateExpGainClassic,
-  calculateModifiedCatchRate,
-  calculateShakeChecks,
   gen12FullParalysisCheck,
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
-  getStatStageMultiplier,
-  STATUS_CATCH_MODIFIERS,
+  getAccuracyStageRatio,
+  getGen12StatStageRatio,
 } from "@pokemon-lib-ts/core";
 import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";
@@ -247,8 +245,10 @@ export class Gen2Ruleset implements GenerationRuleset {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
 
-    // Apply stat stages
-    let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+    // Apply stat stages using integer ratio table
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
+    const ratio = getGen12StatStageRatio(active.statStages.speed);
+    let effective = Math.floor((baseSpeed * ratio.num) / ratio.den);
 
     // Paralysis reduces speed to 25%
     if (active.pokemon.status === "paralysis") {
@@ -268,20 +268,42 @@ export class Gen2Ruleset implements GenerationRuleset {
       return true;
     }
 
+    // OHKO moves use level-based accuracy formula
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5420-5462 BattleCommand_OHKO
+    // If attacker level < defender level, the move always fails.
+    // Otherwise: accuracy = moveAcc + 2 * (attackerLevel - defenderLevel)
+    // Then proceeds to normal BattleCommand_CheckHit.
+    if (move.effect?.type === "ohko") {
+      const attackerLevel = attacker.pokemon.level;
+      const defenderLevel = defender.pokemon.level;
+      if (attackerLevel < defenderLevel) {
+        return false;
+      }
+      // Source: decomp line 5440 — `add a` doubles the level difference
+      const levelBonus = 2 * (attackerLevel - defenderLevel);
+      const ohkoAcc = Math.min(255, move.accuracy + levelBonus);
+      // Convert percentage accuracy to 0-255 scale, then apply levelBonus
+      // Actually, the decomp works on the raw move accuracy byte (0-255 scale) directly.
+      // Move accuracy 30 in percentage = floor(30 * 255 / 100) = 76 on 0-255 scale.
+      // But the decomp just uses MOVE_ACC directly which is stored as a percentage (30).
+      // The `add e` instruction adds the doubled level diff to the raw byte.
+      // So: effective = min(255, moveAcc + 2 * levelDiff), then BattleCommand_CheckHit.
+      // BattleCommand_CheckHit: random 0-255, if random < accuracy, hit.
+      if (ohkoAcc >= 255) return true;
+      return rng.int(0, 255) < ohkoAcc;
+    }
+
     // Convert move accuracy from percentage to 0-255 scale
     let accuracy = Math.floor((move.accuracy * 255) / 100);
 
-    // Gen 2 accuracy boost lookup tables (not formula-based)
-    const GEN2_ACC_BOOST_POS = [1, 4 / 3, 5 / 3, 2, 7 / 3, 8 / 3, 3]; // stages +0 to +6
-    const GEN2_ACC_BOOST_NEG = [1, 3 / 4, 3 / 5, 1 / 2, 3 / 7, 3 / 8, 1 / 3]; // stages -0 to -6
-
+    // Apply accuracy/evasion stage modifiers using integer ratio table
+    // Source: pret/pokecrystal data/battle/accuracy_multipliers.asm — AccuracyLevelMultipliers
     const accStage = attacker.statStages.accuracy;
     const evaStage = defender.statStages.evasion;
     const netStage = Math.max(-6, Math.min(6, accStage - evaStage));
 
-    const multiplier =
-      netStage >= 0 ? (GEN2_ACC_BOOST_POS[netStage] ?? 1) : (GEN2_ACC_BOOST_NEG[-netStage] ?? 1);
-    accuracy = Math.floor(accuracy * multiplier);
+    const ratio = getAccuracyStageRatio(netStage);
+    accuracy = Math.floor((accuracy * ratio.num) / ratio.den);
 
     // Cap at [1, 255]
     accuracy = Math.max(1, Math.min(255, accuracy));
@@ -559,15 +581,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     const attack = stats?.attack ?? 100;
     const defense = stats?.defense ?? 100;
 
-    // Apply stat stages
-    const effectiveAttack = Math.max(
-      1,
-      Math.floor(attack * getStatStageMultiplier(pokemon.statStages.attack)),
-    );
-    const effectiveDefense = Math.max(
-      1,
-      Math.floor(defense * getStatStageMultiplier(pokemon.statStages.defense)),
-    );
+    // Apply stat stages using integer ratio table
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
+    const atkRatio = getGen12StatStageRatio(pokemon.statStages.attack);
+    const effectiveAttack = Math.max(1, Math.floor((attack * atkRatio.num) / atkRatio.den));
+    const defRatio = getGen12StatStageRatio(pokemon.statStages.defense);
+    const effectiveDefense = Math.max(1, Math.floor((defense * defRatio.num) / defRatio.den));
 
     // 40 base power typeless physical hit
     const levelFactor = Math.floor((2 * level) / 5) + 2;
@@ -665,14 +684,22 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   /**
-   * Roll a catch attempt using the Gen 3+ formula (applied retroactively to Gen 2 data).
+   * Roll a catch attempt using the Gen 2 BallCalc algorithm.
    *
-   * Note: Gen 2 cartridge used a slightly different catch formula (pokecrystal BallCalc),
-   * but this uses the core Gen 3+ utilities for consistency with the CatchSystem interface.
+   * Source: pret/pokecrystal engine/items/item_effects.asm PokeBallEffect (lines 212-411)
    *
-   * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow — Gen 3+ catch formula
-   * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
-   * Divergence: Gen 2 cartridge used pokecrystal BallCalc; this uses Gen 3+ formula instead
+   * Gen 2 catch formula (simplified, for non-special balls):
+   *   1. modifiedRate = catchRate * ballModifier (already applied by caller)
+   *   2. HP factor: maxHP * 2, currentHP * 3
+   *      F = floor(modifiedRate * (maxHP*2 - currentHP*3) / (maxHP*2))
+   *      F = max(1, F)
+   *   3. Status bonus: freeze/sleep +10, burn/poison/paralysis +5 (decomp: FRZ|SLP → c=10, else → c=0)
+   *      Note: decomp bug — BRN/PSN/PAR have no effect (second `and a` after clearing flags is always 0)
+   *      Source: pret/pokecrystal docs/bugs_and_glitches.md — "BRN/PSN/PAR do not affect catch rate"
+   *   4. finalRate = min(255, F + statusBonus)
+   *   5. Roll: random 0-255; catch if random < finalRate (or random == 0 and finalRate > 0)
+   *   6. Gen 2 has no shake checks — it's a single roll: caught or not.
+   *      The ball animation wobble count is separate from the catch decision.
    */
   rollCatchAttempt(
     catchRate: number,
@@ -682,19 +709,48 @@ export class Gen2Ruleset implements GenerationRuleset {
     ballModifier: number,
     rng: SeededRandom,
   ): CatchResult {
-    const statusModifier = status ? (STATUS_CATCH_MODIFIERS[status] ?? 1) : 1;
-    const modifiedRate = calculateModifiedCatchRate(
-      maxHp,
-      currentHp,
-      catchRate,
-      ballModifier,
-      statusModifier,
-    );
-    const shakeChecks = calculateShakeChecks(modifiedRate, rng);
-    if (shakeChecks >= 4) {
+    // Source: pret/pokecrystal engine/items/item_effects.asm:278-338 PokeBallEffect
+    // Step 1: Apply ball modifier to catch rate (caller already passes the product)
+    // In our interface, catchRate is the species base catch rate and ballModifier is the ball's
+    // multiplier. The decomp applies ball-specific functions first, then uses the result as `b`.
+    let modifiedRate = Math.floor(catchRate * ballModifier);
+    modifiedRate = Math.min(255, Math.max(1, modifiedRate));
+
+    // Step 2: HP factor
+    // Source: decomp lines 281-335
+    // maxHP*2 vs currentHP*3; F = floor(modifiedRate * (maxHP*2 - currentHP*3) / (maxHP*2))
+    const maxHp2 = maxHp * 2;
+    const curHp3 = currentHp * 3;
+    let hpFactor: number;
+    if (curHp3 >= maxHp2) {
+      // If current HP * 3 >= max HP * 2, HP factor is minimal
+      hpFactor = Math.max(1, Math.floor(modifiedRate / maxHp2));
+    } else {
+      hpFactor = Math.floor((modifiedRate * (maxHp2 - curHp3)) / maxHp2);
+      hpFactor = Math.max(1, hpFactor);
+    }
+
+    // Step 3: Status bonus
+    // Source: decomp lines 340-352 — BUG: only FRZ and SLP add +10; BRN/PSN/PAR have NO effect
+    // This is a known bug in pokecrystal — we replicate it for cartridge accuracy.
+    let statusBonus = 0;
+    if (status === "freeze" || status === "sleep") {
+      statusBonus = 10;
+    }
+    // BRN/PSN/PAR intentionally do NOT add a bonus — decomp bug replicated for accuracy
+
+    // Step 4: Final rate
+    const finalRate = Math.min(255, hpFactor + statusBonus);
+
+    // Step 5: Single roll — random 0-255, catch if random < finalRate
+    // Source: decomp lines 375-381 — `call Random; cp b; jr z, .catch; jr nc, .fail`
+    // cp b: carry set if random < b (catch), zero flag if random == b (also catch in decomp)
+    const roll = rng.int(0, 255);
+    if (roll < finalRate) {
       return { caught: true, shakes: 3 };
     }
-    return { caught: false, shakes: shakeChecks as 0 | 1 | 2 };
+    // Gen 2 wobble animation is cosmetic — we return 0 shakes on failure for simplicity
+    return { caught: false, shakes: 0 };
   }
 
   shouldExecutePursuitPreSwitch(): boolean {
@@ -738,14 +794,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     const level = attacker.pokemon.level;
     const attack = attacker.pokemon.calculatedStats?.attack ?? 100;
     const defense = defender.pokemon.calculatedStats?.defense ?? 100;
-    const effectiveAttack = Math.max(
-      1,
-      Math.floor(attack * getStatStageMultiplier(attacker.statStages.attack)),
-    );
-    const effectiveDefense = Math.max(
-      1,
-      Math.floor(defense * getStatStageMultiplier(defender.statStages.defense)),
-    );
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
+    const atkRatio = getGen12StatStageRatio(attacker.statStages.attack);
+    const effectiveAttack = Math.max(1, Math.floor((attack * atkRatio.num) / atkRatio.den));
+    const defRatio = getGen12StatStageRatio(defender.statStages.defense);
+    const effectiveDefense = Math.max(1, Math.floor((defense * defRatio.num) / defRatio.den));
     // Gen 2 damage formula: floor(floor(floor((2*L/5)+2) * P * A) / D) / 50) + 2
     const levelFactor = Math.floor((2 * level) / 5) + 2;
     let baseDamage = Math.floor(Math.floor(levelFactor * 50 * effectiveAttack) / effectiveDefense);
