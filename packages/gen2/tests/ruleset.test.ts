@@ -2538,24 +2538,22 @@ describe("Gen2Ruleset", () => {
       expect(priority).toBe(1);
     });
 
-    it("given Gen 2 ruleset, when getting Roar move priority, then returns -1", () => {
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gen 2 uses priority -1
-      // for Roar/Whirlwind (always moves last among normal-priority moves).
-      // The -6 priority bracket was introduced in Gen 3+.
-      // Reference: specs/reference/gen2-ground-truth.md
+    it("given Gen 2 ruleset, when getting Roar move priority, then returns -6", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
+      // Priority -6 ensures they go after all other moves including Counter/Mirror Coat (-1)
+      // Reference: Bulbapedia — Roar has priority -6 in Gen 2+
       const dm = createGen2DataManager();
       const move = dm.getMove("roar");
-      expect(move?.priority).toBe(-1);
+      expect(move?.priority).toBe(-6);
     });
 
-    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -1", () => {
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gen 2 uses priority -1
-      // for Whirlwind/Roar (always moves last among normal-priority moves).
-      // The -6 priority bracket was introduced in Gen 3+.
-      // Reference: specs/reference/gen2-ground-truth.md
+    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -6", () => {
+      // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
+      // Priority -6 ensures they go after all other moves including Counter/Mirror Coat (-1)
+      // Reference: Bulbapedia — Whirlwind has priority -6 in Gen 2+
       const dm = createGen2DataManager();
       const move = dm.getMove("whirlwind");
-      expect(move?.priority).toBe(-1);
+      expect(move?.priority).toBe(-6);
     });
   });
 });

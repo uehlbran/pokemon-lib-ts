@@ -416,11 +416,16 @@ export function handleCustomEffect(
     case "counter": {
       // Counter reflects 2x the physical damage taken back at the attacker.
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
-      // Gen 2: Counter works against any physical-type move (Normal, Fighting, Rock, etc.)
-      // This is a Gen 2 change from Gen 1 (which restricted to Normal/Fighting).
-      // Source: Bulbapedia "Counter (move) — Generation II onwards: works on any physical move"
-      // Counter is -1 priority (handled by move data).
-      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
+      // Gen 2: Counter only reflects Normal-type and Fighting-type moves.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5113-5142
+      //   cp NORMAL ; jr z, .counter_physical
+      //   cp FIGHTING ; jr nz, .failed
+      // This restricts Counter to Normal/Fighting only — NOT all physical moves.
+      if (
+        attacker.lastDamageTaken <= 0 ||
+        attacker.lastDamageCategory !== "physical" ||
+        (attacker.lastDamageType !== "normal" && attacker.lastDamageType !== "fighting")
+      ) {
         result.messages.push("But it failed!");
         break;
       }
@@ -464,6 +469,29 @@ export function handleCustomEffect(
       // The actual type/power override is handled in Gen2DamageCalc.ts (calculateGen2HiddenPower).
       // This case exists to prevent the "unknown custom effect" fallthrough.
       // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+      break;
+    }
+
+    case "moonlight":
+    case "morning-sun":
+    case "synthesis": {
+      // Weather-dependent healing moves
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
+      // No weather: 1/2 max HP
+      // Sunny Day: 2/3 max HP (floor)
+      // Rain Dance/Sandstorm: 1/4 max HP (floor)
+      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+      const currentWeather = context.state.weather?.type ?? null;
+      let healFraction: number;
+      if (currentWeather === "sun") {
+        healFraction = 2 / 3;
+      } else if (currentWeather === "rain" || currentWeather === "sand") {
+        healFraction = 1 / 4;
+      } else {
+        healFraction = 1 / 2;
+      }
+      result.healAmount = Math.max(1, Math.floor(maxHp * healFraction));
+      result.messages.push(`${pokemonName} recovered HP!`);
       break;
     }
 

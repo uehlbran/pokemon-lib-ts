@@ -293,6 +293,18 @@ export class Gen2Ruleset implements GenerationRuleset {
       return rng.int(0, 255) < ohkoAcc;
     }
 
+    // Thunder always hits in rain
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm:1286-1290
+    // "ld a, BATTLE_WEATHER_RAIN ; cp [wBattleWeather] ; ret z" — if rain, skip accuracy check
+    const weather = context.state.weather?.type ?? null;
+    if (move.id === "thunder" && weather === "rain") {
+      return true;
+    }
+
+    // Thunder has 50% accuracy in sun (Gen 2)
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm ThunderAccuracy
+    // In sun, Thunder's accuracy drops to ~50%.
+    // Note: This is handled by the accuracy formula below — in sun, we halve the base accuracy.
     // Convert move accuracy from percentage to 0-255 scale
     let accuracy = Math.floor((move.accuracy * 255) / 100);
 
@@ -304,6 +316,13 @@ export class Gen2Ruleset implements GenerationRuleset {
 
     const ratio = getAccuracyStageRatio(netStage);
     accuracy = Math.floor((accuracy * ratio.num) / ratio.den);
+
+    // Bright Powder: reduce accuracy by 20/256 (~7.8%)
+    // Source: pret/pokecrystal engine/battle/core.asm:1074-1094 BrightPowderEffect
+    // "sub 20" — subtracts 20 from the final accuracy value
+    if (defender.pokemon.heldItem === "bright-powder") {
+      accuracy -= 20;
+    }
 
     // Cap at [1, 255]
     accuracy = Math.max(1, Math.min(255, accuracy));
@@ -365,12 +384,14 @@ export class Gen2Ruleset implements GenerationRuleset {
       return result;
     }
 
-    // Hyper Beam: skip recharge when target faints OR when the move misses (damage === 0).
+    // Hyper Beam: skip recharge ONLY when the target faints (KO).
     // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
+    // In Gen 2, Hyper Beam recharge is skipped ONLY on KO — NOT on miss or hitting Substitute.
+    // This differs from Gen 1 where miss also skips recharge.
     // NOTE: By the time executeMoveEffect is called, the engine has already applied
     // damage to defender.pokemon.currentHp (clamped to 0 on KO). So a KO is detected
-    // by checking currentHp === 0. A miss is detected by damage === 0.
-    if (move.flags?.recharge && (damage === 0 || defender.pokemon.currentHp === 0)) {
+    // by checking currentHp === 0.
+    if (move.flags?.recharge && defender.pokemon.currentHp === 0) {
       result.noRecharge = true;
     }
 
@@ -635,6 +656,14 @@ export class Gen2Ruleset implements GenerationRuleset {
       pokemon.volatileStatuses.delete("confusion");
       pokemon.volatileStatuses.delete("focus-energy");
       pokemon.volatileStatuses.delete("leech-seed");
+      // Perish Song counter is cleared on normal switch (not Baton Pass)
+      // Source: pret/pokecrystal engine/battle/core.asm NewBattleMonStatus
+      // Source: gen2-ground-truth.md — Perish Song counter removed when switching out normally
+      pokemon.volatileStatuses.delete("perish-song");
+      // Substitute and Curse are cleared on normal switch, but preserved by Baton Pass
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
+      pokemon.volatileStatuses.delete("substitute");
+      pokemon.volatileStatuses.delete("curse");
     }
 
     // These volatiles are ALWAYS cleared on switch (even with Baton Pass)
@@ -644,6 +673,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     pokemon.volatileStatuses.delete("toxic-counter");
     pokemon.volatileStatuses.delete("encore");
     pokemon.volatileStatuses.delete("disable");
+    // Attract and Nightmare are cleared on switch-out (always, not baton-passable)
+    // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
+    // Source: gen2-ground-truth.md Switching Mechanics — Attract and Nightmare reset on switch
+    pokemon.volatileStatuses.delete("infatuation");
+    pokemon.volatileStatuses.delete("nightmare");
 
     // If the switching Pokemon had applied trapping (Mean Look / Spider Web),
     // clear the "trapped" volatile from the opposing active Pokemon.

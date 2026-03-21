@@ -176,6 +176,7 @@ describe("Gen 2 Combat Moves", () => {
       const attacker = createMockActive({
         lastDamageTaken: 40,
         lastDamageCategory: "physical",
+        lastDamageType: "normal",
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -205,6 +206,7 @@ describe("Gen 2 Combat Moves", () => {
       const attacker = createMockActive({
         lastDamageTaken: 100,
         lastDamageCategory: "physical",
+        lastDamageType: "fighting",
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -602,11 +604,11 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.noRecharge).toBe(true);
     });
 
-    it("given Hyper Beam misses (damage=0), when executeMoveEffect is called, then noRecharge is true", () => {
+    it("given Hyper Beam misses (damage=0 but defender alive), when executeMoveEffect is called, then noRecharge is NOT set (user must recharge)", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
-      // In Gen 2, if Hyper Beam misses (damage=0), the attacker skips the recharge turn.
-      // The engine passes damage=0 when a move misses.
+      // In Gen 2, Hyper Beam recharge is skipped ONLY on KO — NOT on miss.
+      // Unlike Gen 1 where miss skips recharge, Gen 2 always forces recharge unless KO.
       const attacker = createMockActive();
       const defender = createMockActive({ currentHp: 150, maxHp: 200 });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -621,8 +623,8 @@ describe("Gen 2 Combat Moves", () => {
         rng: new SeededRandom(42),
       });
 
-      // Assert -- miss means no recharge
-      expect(result.noRecharge).toBe(true);
+      // Assert -- miss does NOT skip recharge in Gen 2 (unlike Gen 1)
+      expect(result.noRecharge).toBeFalsy();
     });
   });
 
@@ -639,7 +641,7 @@ describe("Gen 2 Combat Moves", () => {
       power: null,
       accuracy: null,
       pp: 20,
-      priority: -1,
+      priority: -6,
       effect: null,
       flags: {},
     } as unknown as MoveData;
@@ -652,7 +654,7 @@ describe("Gen 2 Combat Moves", () => {
       power: null,
       accuracy: null,
       pp: 20,
-      priority: -1,
+      priority: -6,
       effect: null,
       flags: {},
     } as unknown as MoveData;

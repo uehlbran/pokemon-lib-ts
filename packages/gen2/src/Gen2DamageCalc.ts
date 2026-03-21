@@ -195,11 +195,13 @@ function getDefenseStat(
 
   // Metal Powder doubles Ditto's (132) Defense only (not SpDefense)
   // Source: pret/pokecrystal src/engine/battle/Items.asm — GetItemStatBoost applies to physical Defense only
-  // Note: transform detection not yet implemented; applied unconditionally when holding Metal Powder
+  // Metal Powder only works if Ditto has NOT Transformed — the boost is for untransformed Ditto only.
+  // Source: pret/pokecrystal engine/battle/core.asm — Metal Powder check skips if SUBSTATUS_TRANSFORMED
   if (
     physical &&
     defender.pokemon.heldItem === "metal-powder" &&
-    defender.pokemon.speciesId === 132
+    defender.pokemon.speciesId === 132 &&
+    !defender.transformed
   ) {
     effective = effective * 2;
   }
@@ -299,6 +301,16 @@ export function calculateGen2Damage(
     const hp = calculateGen2HiddenPower(attacker);
     effectiveMoveType = hp.type;
     dynamicPower = hp.power;
+  }
+
+  // SolarBeam: halve power in rain and sandstorm
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm SolarBeamPower
+  // In rain or sandstorm, SolarBeam deals half damage (power is halved).
+  if (move.id === "solar-beam") {
+    const currentWeather = state.weather?.type ?? null;
+    if (currentWeather === "rain" || currentWeather === "sand") {
+      dynamicPower = dynamicPower !== null ? Math.max(1, Math.floor(dynamicPower / 2)) : null;
+    }
   }
 
   // Status moves do no damage
