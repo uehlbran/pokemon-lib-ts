@@ -171,7 +171,18 @@ function applyMoveEffect(
     case "drain": {
       // Drain heals a fraction of damage dealt
       // Source: pret/pokeemerald — drain = floor(damage * fraction)
-      result.healAmount = Math.max(1, Math.floor(damage * effect.amount));
+      const drainAmount = Math.max(1, Math.floor(damage * effect.amount));
+
+      // Liquid Ooze: drain moves deal damage to the attacker instead of healing
+      // Source: pret/pokeemerald src/battle_util.c — ABILITY_LIQUID_OOZE
+      // Source: Showdown data/abilities.ts — Liquid Ooze: this.damage(damage); return 0;
+      if (defender.ability === "liquid-ooze") {
+        result.recoilDamage = drainAmount;
+        const drainUserName = attacker.pokemon.nickname ?? "The Pokemon";
+        result.messages.push(`${drainUserName} sucked up the liquid ooze!`);
+      } else {
+        result.healAmount = drainAmount;
+      }
       break;
     }
 
