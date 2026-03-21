@@ -21,7 +21,7 @@ fi
 # Extract PR number: scan ALL tokens in the command for a pure integer
 # (handles flags like --auto, --squash, --merge appearing before or after the number)
 PR_NUMBER=""
-TOKENS=$(printf '%s\n' "$FIRST_LINE" | sed 's/^gh[[:space:]]\+pr[[:space:]]\+merge[[:space:]]*//')
+TOKENS=$(printf '%s\n' "$FIRST_LINE" | sed -E 's/^gh[[:space:]]+pr[[:space:]]+merge[[:space:]]*//')
 for token in $TOKENS; do
   if [[ "$token" =~ ^[0-9]+$ ]]; then
     PR_NUMBER="$token"
