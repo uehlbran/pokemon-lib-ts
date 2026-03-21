@@ -1335,6 +1335,30 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Taunt check — prevents status moves (runtime enforcement, mirrors getAvailableMoves check)
+    // Source: Bulbapedia — "Taunt prevents the target from using status moves"
+    if (actor.volatileStatuses.has("taunt") && move.category === "status") {
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(actor)} can't use ${move.id} after the taunt!`,
+      });
+      return false;
+    }
+
+    // Choice lock check — prevents using a different move than the locked one
+    // Source: Bulbapedia — "Choice Band/Specs/Scarf lock the user into the first move selected"
+    if (actor.volatileStatuses.has("choice-locked")) {
+      const choiceData = actor.volatileStatuses.get("choice-locked")?.data;
+      const lockedMoveId = choiceData?.moveId as string | undefined;
+      if (lockedMoveId && move.id !== lockedMoveId) {
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(actor)} is locked into ${lockedMoveId} by its Choice item!`,
+        });
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -1574,10 +1598,29 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.futureAttack) {
       const targetSideState = this.state.sides[defenderSide];
       if (!targetSideState.futureAttack) {
+        // Pre-calculate damage at launch time as a fallback for when the source Pokemon
+        // has fainted or switched before the attack resolves. In Gen 4, damage is ideally
+        // recalculated at hit time (using current SpAtk/stats), but if the source is gone
+        // the stored value is used instead.
+        let launchDamage = 0;
+        try {
+          const futureMove = this.dataManager.getMove(result.futureAttack.moveId);
+          const calcResult = this.ruleset.calculateDamage({
+            attacker,
+            defender,
+            move: futureMove,
+            state: this.state,
+            rng: this.state.rng,
+            isCrit: false,
+          });
+          launchDamage = calcResult.damage;
+        } catch {
+          // Move data missing — launchDamage stays 0 as final fallback
+        }
         targetSideState.futureAttack = {
           moveId: result.futureAttack.moveId,
           turnsLeft: result.futureAttack.turnsLeft,
-          damage: 0, // Gen 4: damage calculated at hit time, not on use
+          damage: launchDamage, // fallback; engine prefers recalc at hit time when source is alive
           sourceSide: result.futureAttack.sourceSide,
         };
         this.emit({

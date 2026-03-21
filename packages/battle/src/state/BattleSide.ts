@@ -157,6 +157,12 @@ export interface FutureAttackState {
   turnsLeft: number;
   /** Pre-calculated damage to deal when the attack triggers */
   damage: number;
-  /** Side index that used the move (0 or 1), for attribution in damage events */
+  /**
+   * Side index that used the move (0 or 1).
+   * At hit time, damage is recalculated against whoever is currently active on this side —
+   * not necessarily the original user. This is Gen 4 cartridge-accurate behavior: if the
+   * original user switched out, the current active Pokemon's SpAtk is used for the calc.
+   * Do NOT replace with a `sourcePokemonUid` — the current-active lookup is intentional.
+   */
   sourceSide: 0 | 1;
 }
