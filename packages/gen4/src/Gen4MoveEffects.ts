@@ -1462,6 +1462,13 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       result.messages.push("But it failed!");
       return result;
     }
+    // Fail if the ability is already suppressed (prevents double-application from corrupting
+    // the saved original ability). Uses loose equality to treat undefined the same as null.
+    // Source: Showdown Gen 4 mod — Gastro Acid is idempotent; second use fails
+    if (defender.suppressedAbility != null) {
+      result.messages.push("But it failed!");
+      return result;
+    }
     // Save the original ability so it can be restored on switch-out
     // Source: Showdown Gen 4 mod — Gastro Acid sets suppressedAbility; restored on switch-out
     defender.suppressedAbility = defender.ability;

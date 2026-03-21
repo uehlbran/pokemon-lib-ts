@@ -1059,17 +1059,6 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: Bulbapedia — Pressure: "When this Pokémon is the target of a foe's move,
    *   one additional PP is deducted."
    */
-  override getPPCost(
-    actor: ActivePokemon,
-    defender: ActivePokemon | null,
-    state: BattleState,
-  ): number {
-    if (defender?.ability === "pressure") {
-      return 2;
-    }
-    return super.getPPCost(actor, defender, state);
-  }
-
   // --- Switch Out ---
 
   /**
@@ -1087,7 +1076,8 @@ export class Gen4Ruleset extends BaseRuleset {
       pokemon.pokemon.status = null;
     }
     // Restore ability suppressed by Gastro Acid
-    if (pokemon.suppressedAbility !== null) {
+    // Use != null (loose) to safely handle undefined from pre-migration deserialized states
+    if (pokemon.suppressedAbility != null) {
       pokemon.ability = pokemon.suppressedAbility;
       pokemon.suppressedAbility = null;
     }

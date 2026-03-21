@@ -290,11 +290,13 @@ export abstract class BaseRuleset implements GenerationRuleset {
   }
 
   /**
-   * Default PP cost is 1. Gen 3+ rulesets override to return 2 when the defender has Pressure.
+   * PP cost is 2 when the defender has Pressure, 1 otherwise.
+   * Pressure was introduced in Gen 3 and applies to all Gen 3+ rulesets.
    * Source: pret/pokeemerald — ABILITY_PRESSURE deducts 2 PP per move use
+   * Source: Showdown sim/battle.ts — ABILITY_PRESSURE check in deductPP
    */
-  getPPCost(_actor: ActivePokemon, _defender: ActivePokemon | null, _state: BattleState): number {
-    return 1;
+  getPPCost(_actor: ActivePokemon, defender: ActivePokemon | null, _state: BattleState): number {
+    return defender?.ability === "pressure" ? 2 : 1;
   }
 
   onDamageReceived(
