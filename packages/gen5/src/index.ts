@@ -9,7 +9,7 @@ export {
   GEN5_CRIT_RATE_DENOMINATORS,
   GEN5_CRIT_RATES,
 } from "./Gen5CritCalc";
-export { calculateGen5Damage } from "./Gen5DamageCalc";
+export { calculateGen5Damage, pokeRound } from "./Gen5DamageCalc";
 export { applyGen5HeldItem } from "./Gen5Items";
 export { executeGen5MoveEffect } from "./Gen5MoveEffects";
 export { Gen5Ruleset } from "./Gen5Ruleset";
