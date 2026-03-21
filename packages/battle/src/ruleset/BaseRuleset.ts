@@ -560,7 +560,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return ["stealth-rock", "spikes", "toxic-spikes"];
   }
 
-  applyEntryHazards(_pokemon: ActivePokemon, _side: BattleSide): EntryHazardResult {
+  applyEntryHazards(
+    _pokemon: ActivePokemon,
+    _side: BattleSide,
+    _state?: BattleState,
+  ): EntryHazardResult {
     return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
   }
 

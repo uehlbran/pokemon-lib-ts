@@ -652,7 +652,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Apply entry hazards
     if (this.ruleset.getAvailableHazards().length > 0 && side.hazards.length > 0) {
-      const hazardResult = this.ruleset.applyEntryHazards(active, side);
+      const hazardResult = this.ruleset.applyEntryHazards(active, side, this.state);
       if (hazardResult.damage > 0) {
         active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - hazardResult.damage);
         this.emit({

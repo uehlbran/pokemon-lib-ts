@@ -162,13 +162,17 @@ function getEffectiveStatStage(
   stat: string,
   opponent?: ActivePokemon,
 ): number {
+  // Unaware: opponent ignores this Pokemon's stat stages entirely.
+  // Unaware takes priority over Simple — if the opponent has Unaware,
+  // it sees 0 stages regardless of Simple doubling.
+  // Source: Showdown Gen 4 — Unaware's onAnyModifyBoost sets boosts to 0,
+  //   which runs independently of and overrides Simple's doubling
+  if (opponent?.ability === "unaware") return 0;
+
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
   // Simple: double the stage, clamped to [-6, +6]
   // Source: Showdown Gen 4 — Simple doubles stat stage
   if (pokemon.ability === "simple") return Math.max(-6, Math.min(6, raw * 2));
-  // Unaware: opponent ignores this Pokemon's stat stages
-  // Source: Showdown Gen 4 — Unaware ignores foe's stat changes in damage calc
-  if (opponent?.ability === "unaware") return 0;
   return raw;
 }
 

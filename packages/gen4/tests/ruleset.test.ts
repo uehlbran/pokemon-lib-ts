@@ -164,23 +164,24 @@ describe("Gen4Ruleset getAvailableHazards", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Sleep turns (1-5 in Gen 4 international)
+// Sleep turns (1-4 effective turns in Gen 4)
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset rollSleepTurns", () => {
-  it("given rollSleepTurns with seed 42, when called, then returns a value in range [1, 5]", () => {
-    // Source: Bulbapedia — Sleep (status condition), international Gen 4: 1-5 turns
-    // Source: specs/battle/05-gen4.md — "Duration: 1-5 turns (international Gen 4)"
-    // Gen 3 was 2-5 turns; Gen 4 expanded range to 1-5 turns
+  it("given rollSleepTurns with seed 42, when called, then returns a value in range [1, 4]", () => {
+    // Source: Showdown Gen 4 data/mods/gen4/conditions.ts line 32 —
+    //   this.effectState.time = this.random(2, 6); // counter 2-5
+    //   Effective sleep turns = counter - 1 = 1-4 turns
     const ruleset = makeRuleset();
     const rng = new SeededRandom(42);
     const turns = ruleset.rollSleepTurns(rng);
     expect(turns).toBeGreaterThanOrEqual(1);
-    expect(turns).toBeLessThanOrEqual(5);
+    expect(turns).toBeLessThanOrEqual(4);
   });
 
-  it("given rollSleepTurns called 1000 times, then always returns 1-5 and never 0 or 6+", () => {
-    // Source: Bulbapedia — Gen 4 international sleep: 1-5 turns
+  it("given rollSleepTurns called 1000 times, then always returns 1-4 and never 0 or 5+", () => {
+    // Source: Showdown Gen 4 data/mods/gen4/conditions.ts — counter is random(2,6)
+    //   giving 2-5 inclusive; effective sleep turns are 1-4.
     // Triangulation: 1000 iterations across different seeds exhausts the rng distribution
     const ruleset = makeRuleset();
     let min = Number.POSITIVE_INFINITY;
@@ -192,12 +193,12 @@ describe("Gen4Ruleset rollSleepTurns", () => {
       if (turns < min) min = turns;
       if (turns > max) max = turns;
       expect(turns).toBeGreaterThanOrEqual(1);
-      expect(turns).toBeLessThanOrEqual(5);
+      expect(turns).toBeLessThanOrEqual(4);
     }
 
-    // With 1000 seeds, we expect to see both the minimum (1) and maximum (5)
+    // With 1000 seeds, we expect to see both the minimum (1) and maximum (4)
     expect(min).toBe(1);
-    expect(max).toBe(5);
+    expect(max).toBe(4);
   });
 });
 

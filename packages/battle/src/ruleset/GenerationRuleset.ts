@@ -266,8 +266,13 @@ export interface HazardSystem {
    * Gen 6: Sticky Web.
    */
   getAvailableHazards(): readonly EntryHazardType[];
-  /** Calculate entry hazard damage on switch-in */
-  applyEntryHazards(pokemon: ActivePokemon, side: BattleSide): EntryHazardResult;
+  /** Calculate entry hazard damage on switch-in.
+   * @param state - Optional BattleState for checking field conditions (e.g., Gravity) */
+  applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    state?: BattleState,
+  ): EntryHazardResult;
 }
 
 /** Switch legality, Pursuit interaction, and switch-out hooks. */

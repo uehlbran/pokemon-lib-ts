@@ -152,28 +152,28 @@ const STUB_STATE = {} as BattleState;
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset processSleepTurn", () => {
-  it("given sleep counter already at 0, when processSleepTurn called, then returns false (cannot act on wake turn)", () => {
-    // Source: pret/pokeplatinum — sleep counter decrements at turn start; wake = can't act
-    // Source: Showdown Gen 4 mod — pokemon cannot act on wake turn
-    // Gen 4 difference vs Gen 5+: BaseRuleset returns true (can act), Gen 4 returns false
+  it("given sleep counter already at 0, when processSleepTurn called, then returns true (can act on wake turn in Gen 4)", () => {
+    // Source: Showdown Gen 4 data/mods/gen4/conditions.ts lines 39-52 —
+    //   when time <= 0, cureStatus() and return (no "return false"), so Pokemon CAN act.
+    // Gen 3-4 allow action on wake turn; only Gen 1-2 block it.
     const ruleset = makeRuleset();
     const mon = makeActivePokemon({ status: "sleep" });
     mon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
 
     const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
-    expect(canAct).toBe(false);
+    expect(canAct).toBe(true);
   });
 
-  it("given sleep counter is 1, when processSleepTurn called, then counter decrements to 0 and returns false", () => {
-    // Source: pret/pokeplatinum — sleep counter decrements; reaching 0 = wake but can't act
-    // Source: Showdown Gen 4 mod — wake turn is lost
-    // With turnsLeft=1: decrement to 0, wake up, but still return false (Gen 4)
+  it("given sleep counter is 1, when processSleepTurn called, then counter decrements to 0 and returns true (can act)", () => {
+    // Source: Showdown Gen 4 data/mods/gen4/conditions.ts — when counter reaches 0
+    //   after decrement, Pokemon wakes and CAN act that turn.
+    // turnsLeft=1: decrement to 0, wake up, return true (Gen 3-4 behavior)
     const ruleset = makeRuleset();
     const mon = makeActivePokemon({ status: "sleep" });
     mon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
 
     const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
-    expect(canAct).toBe(false);
+    expect(canAct).toBe(true);
   });
 
   it("given sleep counter reaches 0 after decrement, when processSleepTurn called, then clears status and sleep-counter volatile", () => {
@@ -203,8 +203,9 @@ describe("Gen4Ruleset processSleepTurn", () => {
     expect(mon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
   });
 
-  it("given no sleep-counter volatile present, when processSleepTurn called, then clears status and returns false", () => {
-    // Source: pret/pokeplatinum — if sleep counter is missing, treat as woken up
+  it("given no sleep-counter volatile present, when processSleepTurn called, then clears status and returns true (can act)", () => {
+    // Source: Showdown Gen 4 data/mods/gen4/conditions.ts — if counter missing,
+    //   treat as woken up; Pokemon CAN act on wake turn in Gen 3-4.
     // Edge case: sleep status present but no volatile counter
     const ruleset = makeRuleset();
     const mon = makeActivePokemon({ status: "sleep" });
@@ -212,7 +213,7 @@ describe("Gen4Ruleset processSleepTurn", () => {
 
     const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
 
-    expect(canAct).toBe(false);
+    expect(canAct).toBe(true);
     expect(mon.pokemon.status).toBeNull();
   });
 });
