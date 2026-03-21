@@ -13,7 +13,7 @@ fix(gen3): Shedinja HP=1 override, OHKO accuracy formula, and test coverage gaps
   Previous implementation used wrong auto-miss condition (`ohkoAccuracy <= 0`) and inclusive
   bound (`<= ohkoAccuracy`) instead of strict-less-than. Closes #392.
 
-- Added test coverage for: freeze thaw chance (30%, pokeemerald `HandleFrozenStatus`) (#381),
+- Added test coverage for: freeze thaw chance (20%, pokeemerald `HandleFrozenStatus` — `if(Random()%100 >= 80)`) (#381),
   nature modifiers (±10% from Bulbapedia formula) (#389), Choice Band power boost (#382),
   and Reflect/Light Screen damage halving (#399 already implemented; tests verified).
 

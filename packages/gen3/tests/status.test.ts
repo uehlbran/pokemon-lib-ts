@@ -337,10 +337,9 @@ describe("Gen3 freeze thaw check (20% probability)", () => {
     expect(thawed).toBe(false);
   });
 
-  it("given a frozen Pokemon with SeededRandom, when 100 trials run, then approximately 20% thaw", () => {
-    // Source: pret/pokeemerald — 20% thaw probability over many trials
-    // Use a fixed seed for reproducibility. Statistical verification: at least 15% and at most 30%
-    // of 100 trials should thaw at the 20% threshold.
+  it("given a frozen Pokemon with SeededRandom, when 200 trials run, then approximately 20% thaw", () => {
+    // Source: pret/pokeemerald src/battle_util.c — DoFreezeStatusCallback: if(Random()%100 >= 80) → 20%
+    // Use a fixed seed for reproducibility; toBeCloseTo with precision=1 checks within ±0.05
     const ruleset = makeRuleset();
     const rng = new SeededRandom(12345);
     let thawCount = 0;
@@ -353,10 +352,8 @@ describe("Gen3 freeze thaw check (20% probability)", () => {
       }
     }
 
-    // Statistical bounds: expect roughly 40 thaws (20%) out of 200 trials
-    // Acceptable range: 24-56 (12%-28%) to account for PRNG variance
+    // Expected: 20% thaw rate — toBeCloseTo with precision=1 checks within 0.05
     const thawRate = thawCount / trials;
-    expect(thawRate).toBeGreaterThanOrEqual(0.12);
-    expect(thawRate).toBeLessThanOrEqual(0.28);
+    expect(thawRate).toBeCloseTo(0.2, 1);
   });
 });
