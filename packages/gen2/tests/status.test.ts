@@ -147,7 +147,7 @@ function createMockBattleState(): BattleState {
  * - Burn: 1/8 max HP per turn, halves physical Attack stat
  * - Poison: 1/8 max HP per turn
  * - Badly-poisoned (Toxic): starts at 1/16, increments by 1/16. Counter resets on switch.
- * - Sleep: 1-6 turns, CANNOT attack on waking turn
+ * - Sleep: 1-6 turns, CAN attack on waking turn (unlike Gen 1)
  * - Freeze: ~9.8% (25/256) thaw chance per turn
  * - Paralysis: 25% full paralysis, Speed to 25%
  * - Confusion: 2-5 turns, 50% self-hit, 40 base power typeless physical

@@ -331,10 +331,13 @@ describe("Gen 2 Screens and Safeguard", () => {
       };
       const reflectResult = calculateGen2Damage(ctxWithReflect, typeChart, species as any);
 
-      // Source: manual formula derivation above
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:2553-2557 — Reflect doubles
+      // defense stat (sla c; rl b), not halves damage. Defense-doubling produces different
+      // results from damage-halving due to intermediate floor truncation.
+      // Without screen: levelFactor=22, base=floor(floor(22*80*100/100)/50)=35, +2=37
+      // With Reflect (def=200): base=floor(floor(22*80*100/200)/50)=floor(880/50)=17, +2=19
       expect(noScreenResult.damage).toBe(37);
-      expect(reflectResult.damage).toBe(18);
-      expect(reflectResult.damage).toBe(Math.floor(noScreenResult.damage / 2));
+      expect(reflectResult.damage).toBe(19);
     });
 
     it("given defender's side has Light Screen, when a special move hits (non-crit), then damage is halved", () => {
@@ -388,12 +391,13 @@ describe("Gen 2 Screens and Safeguard", () => {
       };
       const lsResult = calculateGen2Damage(ctxWithLS, typeChart, species as any);
 
-      // Source: manual formula derivation — same as above but with STAB
-      // baseDamage = 37, with STAB => floor(37 * 1.5) = 55
-      // With Light Screen: floor(55 / 2) = 27
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:2577-2581 — Light Screen
+      // doubles SpDef stat (sla c; rl b), not halves damage.
+      // Without screen: base=35, +2=37, STAB: floor(37*1.5)=55
+      // With Light Screen (spDef=200): base=floor(floor(22*80*100/200)/50)=17, +2=19,
+      //   STAB: floor(19*1.5)=28
       expect(noScreenResult.damage).toBe(55);
-      expect(lsResult.damage).toBe(27);
-      expect(lsResult.damage).toBe(Math.floor(noScreenResult.damage / 2));
+      expect(lsResult.damage).toBe(28);
     });
 
     it("given defender's side has Reflect, when a critical hit lands, then screens are bypassed", () => {
