@@ -8,6 +8,7 @@ import type {
   BattleGimmick,
   BattleSide,
   BattleState,
+  CatchResult,
   CritContext,
   DamageContext,
   DamageResult,
@@ -37,11 +38,14 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   calculateExpGainClassic,
+  calculateModifiedCatchRate,
+  calculateShakeChecks,
   gen12FullParalysisCheck,
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
   getStatStageMultiplier,
   SeededRandom,
+  STATUS_CATCH_MODIFIERS,
 } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "./data";
 import { rollGen1Critical } from "./Gen1CritCalc";
@@ -1481,6 +1485,38 @@ export class Gen1Ruleset implements GenerationRuleset {
     if (wildSpeedDiv === 0) return true;
     const a = (Math.floor((playerSpeed * 32) / wildSpeedDiv) + 30 * attempts) % 256;
     return rng.int(0, 255) < a;
+  }
+
+  /**
+   * Roll a catch attempt using the Gen 3+ formula (applied retroactively to Gen 1 data).
+   *
+   * Note: The original Gen 1 cartridge used a different multi-step algorithm
+   * (pret/pokered engine/battle/core.asm BallThrowCalc). This implementation uses
+   * the modern Gen 3+ formula for consistency with the engine's CatchSystem interface,
+   * since the core catch-rate utilities implement the Gen 3+ math.
+   *
+   * Source: calculateModifiedCatchRate and calculateShakeChecks from @pokemon-lib-ts/core
+   */
+  rollCatchAttempt(
+    catchRate: number,
+    maxHp: number,
+    currentHp: number,
+    status: PrimaryStatus | null,
+    ballModifier: number,
+    rng: SeededRandom,
+  ): CatchResult {
+    const statusModifier = status ? (STATUS_CATCH_MODIFIERS[status] ?? 1) : 1;
+    const modifiedRate = calculateModifiedCatchRate(
+      maxHp,
+      currentHp,
+      catchRate,
+      ballModifier,
+      statusModifier,
+    );
+    const shakeChecks = calculateShakeChecks(modifiedRate, rng);
+    const caught = shakeChecks >= 4;
+    const shakes = caught ? 3 : shakeChecks;
+    return { shakes, caught };
   }
 
   shouldExecutePursuitPreSwitch(): boolean {

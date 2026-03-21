@@ -13,13 +13,21 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { ALL_NATURES, DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  calculateModifiedCatchRate,
+  calculateShakeChecks,
+  DataManager,
+  getStatStageMultiplier,
+  STATUS_CATCH_MODIFIERS,
+} from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,
   AccuracyContext,
   BagItemResult,
   BattleGimmick,
+  CatchResult,
   CritContext,
   DamageContext,
   DamageResult,
@@ -644,6 +652,42 @@ export abstract class BaseRuleset implements GenerationRuleset {
     const f = Math.floor((playerSpeed * 128) / wildSpeed) + 30 * attempts;
     if (f >= 256) return true;
     return rng.int(0, 255) < f;
+  }
+
+  /**
+   * Roll a catch attempt using the Gen 3+ catch formula.
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
+   * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+   *
+   * Formula:
+   *   a = ((3 * HP_max - 2 * HP_current) * CatchRate * BallMod) / (3 * HP_max)) * StatusMod
+   *   b = 65536 / (255 / a)^0.1875
+   *   Each of 4 shake checks passes if rng(0,65535) < b
+   *   4 passes = caught; display shakes = min(failedCheck, 3)
+   */
+  rollCatchAttempt(
+    catchRate: number,
+    maxHp: number,
+    currentHp: number,
+    status: PrimaryStatus | null,
+    ballModifier: number,
+    rng: SeededRandom,
+  ): CatchResult {
+    const statusModifier = status ? (STATUS_CATCH_MODIFIERS[status] ?? 1) : 1;
+    const modifiedRate = calculateModifiedCatchRate(
+      maxHp,
+      currentHp,
+      catchRate,
+      ballModifier,
+      statusModifier,
+    );
+    const shakeChecks = calculateShakeChecks(modifiedRate, rng);
+    // calculateShakeChecks returns 0-4; 4 = caught
+    // CatchAttemptEvent uses shakes 0-3 where 3 = caught display
+    const caught = shakeChecks >= 4;
+    const shakes = caught ? 3 : shakeChecks;
+    return { shakes, caught };
   }
 
   // Gen 3-7 default (true); Gen 8+ must override (false)

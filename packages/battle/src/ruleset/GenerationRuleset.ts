@@ -18,6 +18,7 @@ import type {
   AccuracyContext,
   BagItemResult,
   BattleGimmick,
+  CatchResult,
   CritContext,
   DamageContext,
   DamageResult,
@@ -311,6 +312,34 @@ export interface FleeSystem {
   ): boolean;
 }
 
+/** Poke Ball catch attempt mechanics (wild battles only). */
+export interface CatchSystem {
+  /**
+   * Roll a catch attempt: compute the modified catch rate from the target's
+   * species catchRate, HP ratio, status, and ball modifier, then perform
+   * shake checks to determine catch success.
+   *
+   * @param catchRate - Base catch rate of the target species (0-255)
+   * @param maxHp - Target's maximum HP
+   * @param currentHp - Target's current HP
+   * @param status - Target's primary status condition, or `null` if healthy
+   * @param ballModifier - Ball catch rate modifier (e.g., 1 for Poke Ball, 2 for Ultra Ball)
+   * @param rng - Battle PRNG
+   * @returns CatchResult with shakes (0-3) and caught boolean
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
+   * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+   */
+  rollCatchAttempt(
+    catchRate: number,
+    maxHp: number,
+    currentHp: number,
+    status: PrimaryStatus | null,
+    ballModifier: number,
+    rng: SeededRandom,
+  ): CatchResult;
+}
+
 /**
  * End-of-turn damage sources and multi-turn mechanics.
  *
@@ -475,6 +504,7 @@ export interface GenerationRuleset
     HazardSystem,
     SwitchSystem,
     FleeSystem,
+    CatchSystem,
     EndOfTurnSystem,
     ValidationSystem {
   /** The generation number this ruleset implements (1–9). */

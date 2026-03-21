@@ -18,6 +18,7 @@ import type {
   AccuracyContext,
   BagItemResult,
   BattleGimmick,
+  CatchResult,
   CritContext,
   DamageContext,
   DamageResult,
@@ -457,6 +458,28 @@ export class MockRuleset implements GenerationRuleset {
     _rng: SeededRandom,
   ): boolean {
     return this.fleeSuccess;
+  }
+
+  private nextCatchResult: CatchResult | null = null;
+
+  setNextCatchResult(result: CatchResult): void {
+    this.nextCatchResult = result;
+  }
+
+  rollCatchAttempt(
+    _catchRate: number,
+    _maxHp: number,
+    _currentHp: number,
+    _status: PrimaryStatus | null,
+    _ballModifier: number,
+    _rng: SeededRandom,
+  ): CatchResult {
+    if (this.nextCatchResult) {
+      const result = this.nextCatchResult;
+      this.nextCatchResult = null;
+      return result;
+    }
+    return { shakes: 3, caught: true };
   }
 
   processEndOfTurnDefrost(_pokemon: ActivePokemon, _rng: SeededRandom): boolean {

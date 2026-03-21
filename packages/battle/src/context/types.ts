@@ -689,3 +689,16 @@ export interface BagItemResult {
   /** Freeform messages to emit as `MessageEvent`s */
   readonly messages: readonly string[];
 }
+
+/**
+ * Result of a catch attempt roll.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c Cmd_handleballthrow
+ * Source: Bulbapedia -- Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+ */
+export interface CatchResult {
+  /** Number of shake checks that succeeded (0-3 if not caught, always 3 if caught) */
+  readonly shakes: number;
+  /** Whether the Pokemon was successfully caught (shakes === 3 maps to caught) */
+  readonly caught: boolean;
+}
