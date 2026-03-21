@@ -1517,7 +1517,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.statChange) {
       const { stat, stages } = result.statChange;
       const current = target.statStages[stat] ?? 0;
-      const newStage = Math.min(6, current + stages);
+      const newStage = Math.max(-6, Math.min(6, current + stages));
       target.statStages[stat] = newStage;
       this.emit({
         type: "stat-change",

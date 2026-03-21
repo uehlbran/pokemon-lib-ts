@@ -1,0 +1,40 @@
+# PR Comment Handling (Enforced by Hook)
+
+## Merge Gate
+
+`enforce-comment-gate.sh` (PreToolUse) blocks `gh pr merge` if any unresolved review thread
+has zero replies — meaning it was never read or acknowledged.
+
+**A thread is "acknowledged" when it has at least one of:**
+- The thread is marked resolved (via GraphQL `resolveReviewThread` mutation)
+- A reply exists on the thread (agree + fix, or disagree + explain why)
+
+If blocked, run `/babysit-pr <number>` — it handles all of this automatically.
+
+## Mandatory Process
+
+1. After creating a PR, always use `/babysit-pr <number>` for the full lifecycle.
+2. Do NOT run `gh pr merge` directly — the comment gate will block it if threads are unaddressed.
+3. If you must assess comments manually:
+   ```bash
+   gh api repos/{owner}/{repo}/pulls/<N>/comments
+   gh api repos/{owner}/{repo}/issues/<N>/comments
+   ```
+   Then reply to each thread and resolve addressed ones before attempting merge.
+
+## What Counts as Addressing a Comment
+
+| Comment type | Required action |
+|---|---|
+| Bug report (correct) | Fix the code, reply confirming fix, resolve thread |
+| Bug report (incorrect) | Reply citing source authority explaining why code is correct, resolve thread |
+| Nitpick / informational | Brief reply ("Noted" or "Disagree — [reason]"), resolve thread |
+| Question from reviewer | Reply with answer |
+
+Nitpicks do not require code changes, but they do require a reply. Ignoring them entirely is not acceptable.
+
+## Never
+
+- Merge a PR without reading review comments
+- Use `gh pr merge` directly — use `/babysit-pr` instead
+- Leave CodeRabbit/Qodo threads with zero replies regardless of whether you agree or disagree
