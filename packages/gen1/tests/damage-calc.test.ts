@@ -59,6 +59,7 @@ function createActivePokemon(opts: {
   spDefense: number;
   types: PokemonType[];
   status?: "burn" | null;
+  statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
   const stats: StatBlock = {
     hp: 200,
@@ -100,10 +101,10 @@ function createActivePokemon(opts: {
     teamSlot: 0,
     statStages: {
       hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
+      attack: opts.statStages?.attack ?? 0,
+      defense: opts.statStages?.defense ?? 0,
+      spAttack: opts.statStages?.spAttack ?? 0,
+      spDefense: opts.statStages?.spDefense ?? 0,
       speed: 0,
       accuracy: 0,
       evasion: 0,
@@ -1308,5 +1309,102 @@ describe("Gen 1 Damage Calculation", () => {
     // Verify exact values
     expect(burnedDamage).toBe(37);
     expect(normalDamage).toBe(72);
+  });
+
+  // --- Integer Stat Stage Arithmetic (Gen 1 pret/pokered correctness) ---
+
+  it("given a physical attacker with base Attack 150 at stat stage -1, when computing effective attack stat, then returns 99 (integer math: floor(150*66/100)) not 100 (float math)", () => {
+    // Source: pret/pokered data/battle/stat_modifiers.asm — stage -1 ratio is 66/100 (not 2/3 = 0.6667)
+    // Float: Math.floor(150 * (2/3)) = Math.floor(100.0) = 100
+    // Integer: Math.floor(150 * 66 / 100) = Math.floor(99.0) = 99
+    // These diverge because 66/100 != 2/3 exactly.
+    // Arrange: level 50, attack 150, stage -1, power 100, defense 100, max roll.
+    // Use fire-type attacker with normal-type move to avoid STAB.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 150,
+      defense: 100,
+      spAttack: 150,
+      spDefense: 100,
+      types: ["fire"], // fire attacker with normal move = no STAB
+      statStages: { attack: -1 },
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const move = createPhysicalMove(100);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+
+    // Formula trace with effective attack = 99 (integer math) vs 100 (float math):
+    // levelFactor = floor(2*50/5)+2 = 22
+    // attack=99: floor(floor(22*100*99)/100) = floor(217800/100) = 2178; floor(2178/50)+2 = 43+2 = 45
+    // attack=100: floor(floor(22*100*100)/100) = floor(220000/100) = 2200; floor(2200/50)+2 = 44+2 = 46
+    // No STAB (fire attacker, normal move). Max roll 255: finalDamage = floor(45*255/255) = 45
+    // Source: pret/pokered data/battle/stat_modifiers.asm
+    const ctx: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+    const result = calculateGen1Damage(ctx, chart, species);
+    // Assert: integer math gives 45 (effective attack 99); float math gives 46 (effective attack 100)
+    expect(result.damage).toBe(45);
+  });
+
+  it("given a physical attacker with base Defense 270 at stat stage -1, when computing effective defense stat, then damage matches integer math (defense=178) not float math (defense=180)", () => {
+    // Source: pret/pokered data/battle/stat_modifiers.asm — stage -1 uses 66/100 (not 2/3 = 0.6667)
+    // base 270 at stage -1: integer = floor(270*66/100) = floor(17820/100) = 178
+    //                         float = floor(270*(2/3))  = floor(180.0)       = 180
+    // These diverge: 178 vs 180.
+    //
+    // To produce different final damage we need attack/power large enough:
+    //   levelFactor = floor(2*50/5)+2 = 22; attack=200; power=100
+    //   numerator = floor(22*200*100) = 440000
+    //   defense=178 (integer): floor(440000/178)=2471; floor(2471/50)=49; +2=51
+    //   defense=180 (float):   floor(440000/180)=2444; floor(2444/50)=48; +2=50
+    //   With max roll (255/255=1.0): floor(51*255/255)=51 vs floor(50*255/255)=50
+    // So integer math yields damage=51, float math yields damage=50.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 200,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fire"], // fire attacker with normal move = no STAB, avoids 1.5x factor
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 270,
+      spAttack: 100,
+      spDefense: 270,
+      types: ["normal"],
+      statStages: { defense: -1 },
+    });
+    const move = createPhysicalMove(100);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies();
+
+    const ctx: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state: {} as DamageContext["state"],
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+    const result = calculateGen1Damage(ctx, chart, species);
+    // Integer math (66/100 table): effective defense=178 → damage=51
+    // Float math (2/3≈0.6667):     effective defense=180 → damage=50
+    expect(result.damage).toBe(51);
   });
 });

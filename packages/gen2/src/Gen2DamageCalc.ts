@@ -133,7 +133,7 @@ function getAttackStat(
     // Crit with atkStage <= defStage: ignore ALL stat stages
     effective = baseStat;
   } else {
-    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer table (num/den), not float
     const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
     const ratio = getGen12StatStageRatio(stage);
     effective = Math.floor((baseStat * ratio.num) / ratio.den);
@@ -187,7 +187,7 @@ function getDefenseStat(
     // Crit with atkStage <= defStage: ignore ALL stat stages
     effective = baseStat;
   } else {
-    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer table (num/den), not float
     const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
     const ratio = getGen12StatStageRatio(stage);
     effective = Math.floor((baseStat * ratio.num) / ratio.den);

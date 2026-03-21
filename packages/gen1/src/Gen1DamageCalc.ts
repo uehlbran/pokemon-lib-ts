@@ -60,7 +60,8 @@ function getAttackStat(
 
   const baseStat = stats ? stats[statKey] : 100;
   const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
-  // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+  // Source: pret/pokered data/battle/stat_modifiers.asm — integer table (num/den), not float approximation
+  // e.g. stage -1: 66/100 (integer) vs 2/3 (float). floor(150*66/100)=99 vs floor(150*0.6667)=100.
   const ratio = getGen12StatStageRatio(stage);
   let effective = Math.floor((baseStat * ratio.num) / ratio.den);
 
@@ -109,9 +110,9 @@ function getDefenseStat(
 
   const baseStat = stats ? stats[statKey] : 100;
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
-  // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
-  const ratio = getGen12StatStageRatio(stage);
-  let effective = Math.max(1, Math.floor((baseStat * ratio.num) / ratio.den));
+  // Source: pret/pokered data/battle/stat_modifiers.asm — integer table (num/den), not float approximation
+  const defRatio = getGen12StatStageRatio(stage);
+  let effective = Math.max(1, Math.floor((baseStat * defRatio.num) / defRatio.den));
 
   // Source: gen1-ground-truth.md §7 — Reflect / Light Screen doubles the relevant defense stat
   const defenderSide = findSideForPokemon(state, defender);

@@ -121,9 +121,11 @@ describe("Gen 1 Critical Hit", () => {
   // --- Focus Energy Bug ---
 
   it("given Focus Energy active, when calculating crit rate, then rate DECREASES (Gen 1 bug)", () => {
-    // Gen 1 bug: Focus Energy divides critChance by 2 instead of multiplying by 4.
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy sets a flag that causes
+    // a `srl b` (>>1, divide by 2) instead of `sla b` (<<1, multiply by 2).
+    // The intended effect was to quadruple crit rate, but the bug inverts it.
     // Without FE: floor(100/2)=50, *2=100, /2=50 → 50/256 ~19.5%
-    // With FE:    floor(100/2)=50, /2=25,  /2=12 → 12/256 ~4.7% (lower!)
+    // With FE:    floor(100/2)=50, /4=12,  /2=6  → 6/256 ~2.3% (lower — bugged!)
     // Arrange
     const baseSpeed = 100;
     // Act
@@ -133,24 +135,28 @@ describe("Gen 1 Critical Hit", () => {
     expect(focusEnergyRate).toBeLessThan(normalRate);
   });
 
-  it("given Focus Energy active with base speed 100, when calculating crit rate, then rate is approximately 4.7%", () => {
-    // Showdown algorithm: 1→50, FE:/2→25, normal:/2→12 → 12/256 ≈ 0.0469
+  it("given base speed 100 Pokemon with Focus Energy, when calculating crit rate, then threshold is floor(floor(100/2)/2)=25 then /2=12, giving rate 12/256", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy executes a single
+    // `srl b` (>>1, divide by 2) instead of the intended `sla b` (<<1, multiply by 2).
+    // Net result is 1/4 of the normal crit rate (divide by 2 vs multiply by 2 = 1/4 ratio).
+    // Algorithm: base=floor(100/2)=50; FE:>>1=floor(50/2)=25; normal:/2=floor(25/2)=12 → 12/256
     // Arrange
     const baseSpeed = 100;
     // Act
     const rate = getGen1CritRate(baseSpeed, true, false);
-    // Assert: 12/256 ~ 0.0469
+    // Assert: 12/256 (Focus Energy single right-shift gives 1/4 of the normal 48/256 rate)
     expect(rate).toBeCloseTo(12 / 256, 2);
   });
 
-  it("given Focus Energy active with low speed, when calculating crit rate, then rate drops to 0 or near-zero", () => {
-    // Showdown algorithm: 1→10, FE:/2→5, normal:/2→2 → 2/256 ≈ 0.0078
+  it("given Focus Energy active with low speed, when calculating crit rate, then rate drops to near-zero", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — same `srl b` (>>1) applies
+    // Speed 20: floor(20/2)=10; FE:>>1=floor(10/2)=5; normal:/2=floor(5/2)=2 → 2/256 ≈ 0.0078
     // Arrange
     const baseSpeed = 20;
     // Act
     const rate = getGen1CritRate(baseSpeed, true, false);
-    // Assert: 2/256 ~ 0.0078
-    expect(rate).toBeLessThanOrEqual(3 / 256);
+    // Assert: 2/256 — significantly lower than normal but not as extreme as the wrong /4 calculation
+    expect(rate).toBeCloseTo(2 / 256, 2);
   });
 
   // --- High Crit-Ratio Moves ---

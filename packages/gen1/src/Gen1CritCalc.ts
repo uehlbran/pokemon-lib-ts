@@ -10,9 +10,14 @@ const HIGH_CRIT_MOVES: readonly string[] = ["slash", "karate-chop", "razor-leaf"
 /**
  * Calculate the Gen 1 critical hit probability.
  *
- * Matches Showdown's gen1 scripts.ts algorithm exactly:
+ * Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy executes a single
+ * `srl b` (>>1, divide by 2) instead of the intended `sla b` (<<1, multiply by 2).
+ * Net result is 1/4 of the normal crit rate (divide by 2 vs multiply by 2 = 1/4 ratio),
+ * hence the Bulbapedia description "1/4 the usual crit chance."
+ *
+ * Algorithm:
  *   1. critChance = floor(baseSpeed / 2)
- *   2. Focus Energy (bugged): divides by 2 instead of multiplying by 4
+ *   2. Focus Energy (bugged): single right-shift >>1 (divide by 2) instead of left-shift (multiply by 2)
  *      Normal: multiplies by 2 (clamped 1-255)
  *   3. Normal move: divide by 2
  *      High-crit move: multiply by 4 (clamped 1-255)
@@ -33,7 +38,10 @@ export function getGen1CritRate(
 
   // Step 2: Focus Energy modifier
   if (hasFocusEnergy) {
-    // Gen 1 Focus Energy bug: divides by 2 instead of multiplying by 4
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy executes a single
+    // `srl b` (>>1, divide by 2) instead of the intended `sla b` (<<1, multiply by 2).
+    // Net result is 1/4 of the normal crit rate (divide by 2 vs multiply by 2 = 1/4 ratio),
+    // hence the Bulbapedia description "1/4 the usual crit chance."
     critChance = Math.floor(critChance / 2);
   } else {
     // Normal: multiply by 2, clamped to 1-255

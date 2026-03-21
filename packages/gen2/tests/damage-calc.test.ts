@@ -2510,4 +2510,97 @@ describe("Gen 2 Damage Calculation", () => {
     // Assert
     expect(result1.damage).toBe(result2.damage);
   });
+
+  // --- Integer Stat Stage Arithmetic (Gen 2 pret/pokecrystal correctness) ---
+
+  it("given a physical attacker with base Attack 150 at stat stage -1, when computing effective attack stat, then returns damage consistent with integer math (floor(150*66/100)=99) not float math (floor(150*(2/3))=100)", () => {
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — stage -1 ratio is 66/100 (integer table)
+    // Float: Math.floor(150 * (2/3)) = Math.floor(100.0) = 100
+    // Integer: Math.floor(150 * 66 / 100) = Math.floor(99.0) = 99
+    // These diverge because 66/100 != 2/3 exactly.
+    // Arrange: fire-type attacker (no STAB with normal move), attack 150, stage -1, defense 100
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 150,
+      defense: 100,
+      spAttack: 150,
+      spDefense: 100,
+      types: ["fire"], // fire attacker + normal move = no STAB
+      statStages: { attack: -1 },
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const move = createMove("normal", 100);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies(["fire"]);
+
+    // Formula trace with effective attack = 99 (integer) vs 100 (float):
+    // levelFactor = floor(2*50/5)+2 = 22
+    // attack=99: floor(floor(22*100*99)/100) = floor(217800/100) = 2178; floor(2178/50)=43; clamp+2=45
+    // attack=100: floor(floor(22*100*100)/100) = 2200; floor(2200/50)=44; clamp+2=46
+    // No STAB, no weather. Max roll 255: finalDamage = floor(45*255/255) = 45
+    const ctx: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+    const result = calculateGen2Damage(ctx, chart, species);
+    // Assert: integer math gives 45 (effective attack 99); float math gives 46 (effective attack 100)
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — Gen 2 uses integer table, not float
+    expect(result.damage).toBe(45);
+  });
+
+  it("given a physical attacker with base Attack 270 at stat stage -1, when computing effective attack, then uses integer ratio 66/100 giving 178 not float (2/3) giving 180", () => {
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — stage -1 ratio is 66/100
+    // base 270, stage -1: integer = floor(270*66/100) = floor(178.2) = 178
+    //                      float  = floor(270*(2/3))  = floor(180.0) = 180
+    // Arrange: fire-type attacker (no STAB with normal move), attack 270, stage -1, defense 100
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 270,
+      defense: 100,
+      spAttack: 270,
+      spDefense: 100,
+      types: ["fire"], // fire attacker + normal move = no STAB
+      statStages: { attack: -1 },
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const move = createMove("normal", 80);
+    const chart = createNeutralTypeChart();
+    const species = createSpecies(["fire"]);
+
+    // Formula trace with effective attack = 178 (integer) vs 180 (float):
+    // levelFactor = floor(2*50/5)+2 = 22; power=80; defense=100
+    // attack=178: floor(floor(22*80*178)/100) = floor(313280/100) = 3132; floor(3132/50)=62; clamp+2=64
+    // attack=180: floor(floor(22*80*180)/100) = floor(316800/100) = 3168; floor(3168/50)=63; clamp+2=65
+    // No STAB, no weather. Max roll 255: finalDamage = floor(64*255/255)=64 vs floor(65*255/255)=65
+    const ctx: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state: createMockState(),
+      rng: createMockRng(255) as DamageContext["rng"],
+      isCrit: false,
+    };
+    const result = calculateGen2Damage(ctx, chart, species);
+    // Assert: integer math gives 64; float math gives 65
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm
+    expect(result.damage).toBe(64);
+  });
 });

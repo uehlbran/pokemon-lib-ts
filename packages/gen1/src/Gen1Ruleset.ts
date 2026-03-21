@@ -221,7 +221,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
 
-    // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+    // Apply stat stages (integer arithmetic — Source: pret/pokered data/battle/stat_modifiers.asm)
     const speedRatio = getGen12StatStageRatio(active.statStages.speed);
     let effective = Math.floor((baseSpeed * speedRatio.num) / speedRatio.den);
 
@@ -1395,11 +1395,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     const baseAtk = calcStats?.attack ?? 50;
     const baseDef = calcStats?.defense ?? 50;
 
-    // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
-    const atkRatio = getGen12StatStageRatio(pokemon.statStages.attack);
-    const defRatio = getGen12StatStageRatio(pokemon.statStages.defense);
-    let atk = Math.max(1, Math.floor((baseAtk * atkRatio.num) / atkRatio.den));
-    let def = Math.max(1, Math.floor((baseDef * defRatio.num) / defRatio.den));
+    // Integer stat-stage arithmetic — Source: pret/pokered data/battle/stat_modifiers.asm
+    const { num: atkNum, den: atkDen } = getGen12StatStageRatio(pokemon.statStages.attack);
+    let atk = Math.max(1, Math.floor((baseAtk * atkNum) / atkDen));
+    const { num: defNum, den: defDen } = getGen12StatStageRatio(pokemon.statStages.defense);
+    let def = Math.max(1, Math.floor((baseDef * defNum) / defDen));
 
     // Gen 1 stat overflow: same transform as calculateGen1Damage
     if (atk >= 256 || def >= 256) {
