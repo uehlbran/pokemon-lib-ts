@@ -656,3 +656,23 @@ describe("Gen 2 processEndOfTurnDefrost", () => {
     expect(foundNoThaw).toBe(true);
   });
 });
+
+describe("Gen2Status calculateGen2StatusDamage default branch", () => {
+  it("given an unknown status value, when calculateGen2StatusDamage is called, then returns 0 (default branch)", () => {
+    // Exercises Gen2Status.ts line 73 — default branch of status effect switch
+    // PrimaryStatus is a closed union (burn | poison | badly-poisoned | paralysis | sleep | freeze).
+    // The default branch is a safety net for any value that falls outside the union
+    // (e.g., future status additions or unexpected runtime values).
+    // We cast to PrimaryStatus to compile but pass a value not handled by any case.
+    // Arrange
+    const pokemon = createMockActivePokemon({ maxHp: 200 });
+    const state = createMockBattleState();
+    const unknownStatus = "frostbite" as PrimaryStatus;
+
+    // Act
+    const damage = calculateGen2StatusDamage(pokemon, unknownStatus, state);
+
+    // Assert — default branch returns 0 for unrecognized status conditions
+    expect(damage).toBe(0);
+  });
+});
