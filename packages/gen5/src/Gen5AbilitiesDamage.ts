@@ -20,6 +20,16 @@ import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
  * activates and what metadata to return. The actual numeric application happens
  * in the damage calc pipeline.
  *
+ * Activation pattern note: abilities split into two categories:
+ *   - Gated activation: ability checks a specific condition here (e.g., Technician
+ *     checks base power <= 60, Analytic checks whether the user moved last). If the
+ *     condition is not met, returns NO_ACTIVATION.
+ *   - Context-deferred activation: ability always returns activated: true because the
+ *     numeric effect depends on context only the damage calculator has. Examples:
+ *     Sniper (needs to know if the hit was a crit) and Tinted Lens (needs the computed
+ *     type-effectiveness value). These handlers signal "this ability is present and may
+ *     apply"; the damage calc applies the actual multiplier when the condition is met.
+ *
  * Source: references/pokemon-showdown/data/abilities.ts
  * Source: references/pokemon-showdown/data/mods/gen5/abilities.ts
  */
