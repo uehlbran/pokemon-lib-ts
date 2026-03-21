@@ -43,7 +43,7 @@ import {
   gen12FullParalysisCheck,
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
-  getStatStageMultiplier,
+  getGen12StatStageRatio,
   SeededRandom,
   STATUS_CATCH_MODIFIERS,
 } from "@pokemon-lib-ts/core";
@@ -224,8 +224,9 @@ export class Gen1Ruleset implements GenerationRuleset {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
 
-    // Apply stat stages
-    let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
+    // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+    const speedRatio = getGen12StatStageRatio(active.statStages.speed);
+    let effective = Math.floor((baseSpeed * speedRatio.num) / speedRatio.den);
 
     // Paralysis reduces speed to 25%
     if (active.pokemon.status === "paralysis") {
@@ -240,11 +241,13 @@ export class Gen1Ruleset implements GenerationRuleset {
   doesMoveHit(context: AccuracyContext): boolean {
     const { attacker, defender, move, rng } = context;
 
-    // OHKO (Fissure, Guillotine, Horn Drill): only hits if user is strictly faster than target
+    // OHKO (Fissure, Guillotine, Horn Drill): only hits if user's in-battle speed >= target's
+    // Source: pret/pokered engine/battle/core.asm — compares in-battle speed values
+    // Source: gen1-ground-truth.md section 5: "Fail automatically if user's Speed < target's Speed"
     if (move.effect?.type === "ohko") {
-      const attackerSpeed = attacker.pokemon.calculatedStats?.speed ?? 0;
-      const defenderSpeed = defender.pokemon.calculatedStats?.speed ?? 0;
-      if (attackerSpeed <= defenderSpeed) return false;
+      const attackerSpeed = this.getEffectiveSpeed(attacker);
+      const defenderSpeed = this.getEffectiveSpeed(defender);
+      if (attackerSpeed < defenderSpeed) return false;
     }
 
     // Moves with null accuracy never miss (e.g., Swift)
@@ -459,8 +462,11 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     switch (effect.type) {
       case "status-chance": {
-        // Roll for status infliction
-        if (rng.int(1, 100) <= effect.chance) {
+        // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
+        // Roll: random(0..255) < floor(chance * 256 / 100)
+        // e.g. 10% chance = threshold 25, probability = 25/256 ~ 9.77%
+        const statusThreshold = Math.floor((effect.chance * 256) / 100);
+        if (rng.int(0, 255) < statusThreshold) {
           // Can't inflict status if target already has one
           if (!defender.pokemon.status) {
             // Can't burn fire types, can't freeze ice types, etc.
@@ -623,7 +629,9 @@ export class Gen1Ruleset implements GenerationRuleset {
       case "volatile-status": {
         // In Gen 1: Confusion, Bind, Wrap, etc.
         if (effect.status === "confusion") {
-          if (rng.int(1, 100) <= effect.chance) {
+          // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
+          const confThreshold = Math.floor((effect.chance * 256) / 100);
+          if (rng.int(0, 255) < confThreshold) {
             if (!defender.volatileStatuses.has("confusion")) {
               // Confusion lasts 2-5 turns in Gen 1
               // Source: pokered effects.asm:1143-1147 — `and $3; inc a; inc a` = random(0-3)+2 = [2,5]
@@ -686,9 +694,24 @@ export class Gen1Ruleset implements GenerationRuleset {
             source: "super-fang",
           };
         } else if (effect.handler === "psywave") {
-          // Source: pret/pokered — PsywaveEffect generates [0, floor(level*1.5)-1], rerolls zero → [1, floor(level*1.5)-1]
+          // Source: pret/pokered engine/battle/core.asm lines 4664-4788
+          // Player Psywave: rerolls 0 → damage range [1, floor(level*1.5)-1]
+          // Enemy Psywave: allows 0 → damage range [0, floor(level*1.5)-1]
           const maxDamage = Math.floor(attacker.pokemon.level * 1.5);
-          const amount = Math.max(1, rng.int(1, Math.max(1, maxDamage - 1)));
+          const upperBound = Math.max(1, maxDamage - 1);
+          // Determine if attacker is on the "enemy" side (index 1)
+          const attackerSide = context.state.sides.findIndex((side) =>
+            side.active.includes(attacker),
+          );
+          const isEnemySide = attackerSide === 1;
+          let amount: number;
+          if (isEnemySide) {
+            // Enemy Psywave: [0, floor(level*1.5)-1] — can deal 0 damage
+            amount = rng.int(0, upperBound);
+          } else {
+            // Player Psywave: reroll zeros → [1, floor(level*1.5)-1]
+            amount = rng.int(1, upperBound);
+          }
           result.customDamage = {
             target: "defender",
             amount,
@@ -1327,8 +1350,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     const baseAtk = calcStats?.attack ?? 50;
     const baseDef = calcStats?.defense ?? 50;
 
-    let atk = Math.max(1, Math.floor(baseAtk * getStatStageMultiplier(pokemon.statStages.attack)));
-    let def = Math.max(1, Math.floor(baseDef * getStatStageMultiplier(pokemon.statStages.defense)));
+    // Source: pret/pokered data/battle/stat_modifiers.asm — integer ratio table
+    const atkRatio = getGen12StatStageRatio(pokemon.statStages.attack);
+    const defRatio = getGen12StatStageRatio(pokemon.statStages.defense);
+    let atk = Math.max(1, Math.floor((baseAtk * atkRatio.num) / atkRatio.den));
+    let def = Math.max(1, Math.floor((baseDef * defRatio.num) / defRatio.den));
 
     // Gen 1 stat overflow: same transform as calculateGen1Damage
     if (atk >= 256 || def >= 256) {
@@ -1341,12 +1367,14 @@ export class Gen1Ruleset implements GenerationRuleset {
       atk = Math.floor(atk / 2);
     }
 
+    // Source: pret/pokered engine/battle/core.asm lines 4388-4450 — same formula as main damage calc
+    // Must apply Math.min(997, ...) before adding +2 constant, matching calculateGen1Damage.
     const levelFactor = Math.floor((2 * level) / 5) + 2;
-    const damage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
+    const damage = Math.min(997, Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50)) + 2;
     return Math.max(1, damage);
   }
 
-  // Source: Gen 1 confusion lasts 1-4 turns
+  // Source: pokered effects.asm:1143-1147 — confusion lasts 2-5 turns (and ; inc a; inc a)
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
     const conf = active.volatileStatuses.get("confusion");
     if (!conf) return false;

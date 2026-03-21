@@ -279,7 +279,7 @@ If `threshold` computes to 256 (or higher after stage modifiers on a 100% move),
 
 ### Confusion
 
-- Duration: 1-4 turns (random, counter decremented before check)
+- Duration: 2-5 turns (random, counter decremented before check)
 - 50% chance to hit self each turn
 - Self-hit: 40 power, typeless, physical (uses attacker's own Attack/Defense)
 - Clears on switch-out

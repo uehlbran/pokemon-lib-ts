@@ -37,35 +37,34 @@ export function calculateGen1Stats(
   pokemon: PokemonInstance,
   species: PokemonSpeciesData,
 ): StatBlock {
+  // Source: pret/pokered home/move_mon.asm lines 109-133
+  // HP DV is derived from the LSBs of the other 4 DVs, not stored independently.
+  // HP_DV = ((Atk & 1) << 3) | ((Def & 1) << 2) | ((Spe & 1) << 1) | (Spc & 1)
+  const atkDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.attack)));
+  const defDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.defense)));
+  const speDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.speed)));
+  const spcDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.spAttack)));
+  const hpDv = ((atkDv & 1) << 3) | ((defDv & 1) << 2) | ((speDv & 1) << 1) | (spcDv & 1);
+
   // Gen 1 has a unified Special stat; spDefense inputs are intentionally ignored
   // and we use only spAttack to compute the single Special value
   const special = calculateGen1Stat(
     species.baseStats.spAttack,
-    pokemon.ivs.spAttack,
+    spcDv,
     pokemon.evs.spAttack,
     pokemon.level,
   );
   return {
-    hp: calculateGen1Hp(species.baseStats.hp, pokemon.ivs.hp, pokemon.evs.hp, pokemon.level),
-    attack: calculateGen1Stat(
-      species.baseStats.attack,
-      pokemon.ivs.attack,
-      pokemon.evs.attack,
-      pokemon.level,
-    ),
+    hp: calculateGen1Hp(species.baseStats.hp, hpDv, pokemon.evs.hp, pokemon.level),
+    attack: calculateGen1Stat(species.baseStats.attack, atkDv, pokemon.evs.attack, pokemon.level),
     defense: calculateGen1Stat(
       species.baseStats.defense,
-      pokemon.ivs.defense,
+      defDv,
       pokemon.evs.defense,
       pokemon.level,
     ),
     spAttack: special,
     spDefense: special,
-    speed: calculateGen1Stat(
-      species.baseStats.speed,
-      pokemon.ivs.speed,
-      pokemon.evs.speed,
-      pokemon.level,
-    ),
+    speed: calculateGen1Stat(species.baseStats.speed, speDv, pokemon.evs.speed, pokemon.level),
   };
 }
