@@ -418,8 +418,9 @@ export class Gen3Ruleset extends BaseRuleset {
    * Source: pret/pokeemerald src/battle_main.c — end-of-turn phase ordering
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    // Source: pret/pokeemerald src/battle_main.c — end-of-turn phase ordering
+    // Ingrain heals after Leftovers per pokeemerald residual order
     // "uproar" added between perish-song and speed-boost per pokeemerald end-of-turn order.
-    // Source: pret/pokeemerald src/battle_main.c — Uproar processing occurs in end-of-turn loop
     // Source: Spec 04-gen3.md line 1038 — "13. Uproar wake-up check"
     return [
       "weather-damage",
@@ -427,6 +428,7 @@ export class Gen3Ruleset extends BaseRuleset {
       "wish",
       "weather-healing",
       "leftovers",
+      "ingrain",
       "status-damage",
       "leech-seed",
       "curse",
@@ -559,6 +561,17 @@ export class Gen3Ruleset extends BaseRuleset {
       calc = Math.floor((calc * 80) / 100);
     }
 
+    // BrightPowder / Lax Incense: reduce accuracy by 10% (multiply by 90/100)
+    // Source: pret/pokeemerald src/battle_script_commands.c:1160-1165
+    // "if (IsHoldEffectActive(gBattlerTarget, HOLD_EFFECT_EVASION_UP))
+    //    calc -= calc * holdEffectModifier / 100;"
+    // holdEffectModifier = 10 for BrightPowder, 5 for Lax Incense (pokeemerald uses 10 for both)
+    // Source: Showdown data/mods/gen3/items.ts — BrightPowder/Lax Incense both use 0.9x accuracy
+    const defenderItem = context.defender.pokemon.heldItem;
+    if (defenderItem === "bright-powder" || defenderItem === "lax-incense") {
+      calc = Math.floor((calc * 90) / 100);
+    }
+
     // Hustle: 0.8x accuracy for physical moves
     // Source: pret/pokeemerald src/battle_script_commands.c:1156-1157
     if (context.attacker.ability === "hustle") {
@@ -622,6 +635,13 @@ export class Gen3Ruleset extends BaseRuleset {
     // Source: Showdown data/abilities.ts — Swift Swim onModifySpe
     if (active.ability === "swift-swim" && this._currentWeather === "rain") {
       effective = effective * 2;
+    }
+
+    // Macho Brace: halves Speed in battle
+    // Source: pret/pokeemerald src/battle_util.c — HOLD_EFFECT_MACHO_BRACE halves speed
+    // Source: Bulbapedia — "Macho Brace halves the holder's Speed stat"
+    if (active.pokemon.heldItem === "macho-brace") {
+      effective = Math.floor(effective / 2);
     }
 
     if (active.pokemon.status === "paralysis") {
