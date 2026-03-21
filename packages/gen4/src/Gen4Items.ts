@@ -521,6 +521,129 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
+    // Stat pinch berries: boost a stat by +1 when HP drops to <=25% (or <=50% with Gluttony)
+    // Source: Bulbapedia — Liechi/Ganlon/Salac/Petaya/Apicot berries
+    // Source: Showdown sim/items.ts — stat pinch berries onUpdate trigger
+    case "liechi-berry": {
+      const threshold = getPinchBerryThreshold(pokemon, 0.25);
+      const hpAfterDamage = currentHp - damage;
+      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "stat-boost", target: "self", value: "attack" },
+            { type: "consume", target: "self", value: "liechi-berry" },
+          ],
+          messages: [`${pokemonName}'s Liechi Berry raised its Attack!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    case "ganlon-berry": {
+      const threshold = getPinchBerryThreshold(pokemon, 0.25);
+      const hpAfterDamage = currentHp - damage;
+      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "stat-boost", target: "self", value: "defense" },
+            { type: "consume", target: "self", value: "ganlon-berry" },
+          ],
+          messages: [`${pokemonName}'s Ganlon Berry raised its Defense!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    case "salac-berry": {
+      const threshold = getPinchBerryThreshold(pokemon, 0.25);
+      const hpAfterDamage = currentHp - damage;
+      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "stat-boost", target: "self", value: "speed" },
+            { type: "consume", target: "self", value: "salac-berry" },
+          ],
+          messages: [`${pokemonName}'s Salac Berry raised its Speed!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    case "petaya-berry": {
+      const threshold = getPinchBerryThreshold(pokemon, 0.25);
+      const hpAfterDamage = currentHp - damage;
+      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "stat-boost", target: "self", value: "spAttack" },
+            { type: "consume", target: "self", value: "petaya-berry" },
+          ],
+          messages: [`${pokemonName}'s Petaya Berry raised its Sp. Atk!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    case "apicot-berry": {
+      const threshold = getPinchBerryThreshold(pokemon, 0.25);
+      const hpAfterDamage = currentHp - damage;
+      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "stat-boost", target: "self", value: "spDefense" },
+            { type: "consume", target: "self", value: "apicot-berry" },
+          ],
+          messages: [`${pokemonName}'s Apicot Berry raised its Sp. Def!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Jaboca Berry: when hit by a physical move, attacker takes 1/8 max HP retaliation damage.
+    // Source: Bulbapedia — Jaboca Berry: "If holder is hit by a physical move,
+    //   attacker loses 1/8 of its max HP."
+    // Source: Showdown sim/items.ts — Jaboca Berry onDamagingHit
+    case "jaboca-berry": {
+      const moveCategory = context.move?.category;
+      if (moveCategory === "physical" && damage > 0) {
+        const retaliationDamage = Math.max(1, Math.floor(maxHp / 8));
+        return {
+          activated: true,
+          effects: [
+            { type: "self-damage", target: "opponent", value: retaliationDamage },
+            { type: "consume", target: "self", value: "jaboca-berry" },
+          ],
+          messages: [`${pokemonName}'s Jaboca Berry hurt the attacker!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Rowap Berry: when hit by a special move, attacker takes 1/8 max HP retaliation damage.
+    // Source: Bulbapedia — Rowap Berry: "If holder is hit by a special move,
+    //   attacker loses 1/8 of its max HP."
+    // Source: Showdown sim/items.ts — Rowap Berry onDamagingHit
+    case "rowap-berry": {
+      const moveCategory = context.move?.category;
+      if (moveCategory === "special" && damage > 0) {
+        const retaliationDamage = Math.max(1, Math.floor(maxHp / 8));
+        return {
+          activated: true,
+          effects: [
+            { type: "self-damage", target: "opponent", value: retaliationDamage },
+            { type: "consume", target: "self", value: "rowap-berry" },
+          ],
+          messages: [`${pokemonName}'s Rowap Berry hurt the attacker!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
     default:
       return NO_ACTIVATION;
   }

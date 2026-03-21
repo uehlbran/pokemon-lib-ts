@@ -58,6 +58,7 @@ type MutableResult = {
     target: "attacker" | "defender";
     amount: number;
     source: string;
+    type?: PokemonType | null;
   } | null;
   statusCured?: { target: "attacker" | "defender" | "both" } | null;
   weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
@@ -1728,6 +1729,94 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     // Non-Ghost: fall through to data-driven effect (stat changes +Atk +Def -Spd)
   }
 
+  // Natural Gift: type + power determined by held berry, berry consumed after use.
+  // Fails if user has no held item, held item is not a berry, user has Klutz, or Embargo.
+  // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Natural_Gift_(move)
+  // Source: Showdown sim/battle-actions.ts Gen 4 — Natural Gift type/power lookup
+  if (context.move.id === "natural-gift") {
+    const { attacker } = context;
+    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+    const heldItem = attacker.pokemon.heldItem;
+    // Fails if no held item, not a berry, Klutz, or Embargo
+    if (
+      !heldItem ||
+      !NATURAL_GIFT_TABLE[heldItem] ||
+      attacker.ability === "klutz" ||
+      attacker.volatileStatuses.has("embargo")
+    ) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    const berryData = NATURAL_GIFT_TABLE[heldItem];
+    result.customDamage = {
+      target: "defender",
+      amount: 0, // Placeholder — actual damage uses overridden type/power in damage calc
+      source: "natural-gift",
+      type: berryData.type,
+    };
+    result.itemConsumed = true;
+    result.messages.push(
+      `${attackerName} used Natural Gift! (${berryData.type} / ${berryData.power} BP)`,
+    );
+    return result;
+  }
+
+  // Fling: throw held item at target for damage based on item's Fling power, item consumed.
+  // Fails if user has no held item, item has no Fling power, user has Klutz, or Embargo.
+  // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Fling_(move)
+  // Source: Showdown sim/battle-actions.ts Gen 4 — Fling power lookup
+  if (context.move.id === "fling") {
+    const { attacker } = context;
+    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+    const heldItem = attacker.pokemon.heldItem;
+    if (!heldItem || attacker.ability === "klutz" || attacker.volatileStatuses.has("embargo")) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    const flingPower = getFlingPower(heldItem);
+    if (flingPower === 0) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    result.customDamage = {
+      target: "defender",
+      amount: 0, // Placeholder — actual damage uses Fling power in damage calc
+      source: "fling",
+      type: "dark",
+    };
+    result.itemConsumed = true;
+    result.messages.push(`${attackerName} flung its ${heldItem}!`);
+    return result;
+  }
+
+  // Pluck / Bug Bite: after dealing damage, steal and activate target's berry.
+  // These are damaging moves (effect: null in data) that consume the target's berry.
+  // Source: Bulbapedia — Pluck: "steals the target's held Berry if it is holding one"
+  // Source: Bulbapedia — Bug Bite: same mechanic as Pluck
+  // Source: Showdown sim/battle-actions.ts Gen 4 — Pluck/Bug Bite berry steal
+  if (context.move.id === "pluck" || context.move.id === "bug-bite") {
+    const { attacker, defender } = context;
+    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+    const defenderName = defender.pokemon.nickname ?? "The foe";
+    const defenderItem = defender.pokemon.heldItem;
+    // Check if defender holds a berry (berry IDs end with "-berry")
+    if (defenderItem && defenderItem.endsWith("-berry")) {
+      // Steal and consume the berry
+      const stolenBerry = defenderItem;
+      defender.pokemon.heldItem = null;
+      // Apply the berry's effect to the attacker (simulate eating it)
+      // For healing berries, we heal the attacker; for status berries, we cure attacker's status
+      applyBerryEffectToAttacker(stolenBerry, attacker, result);
+      result.messages.push(`${attackerName} stole and ate ${defenderName}'s ${stolenBerry}!`);
+      // Unburden: if the defender had Unburden, set the volatile
+      if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
+        defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      }
+    }
+    // Even if no berry was stolen, the move's damage already happened (effect: null)
+    return result;
+  }
+
   // Handle null-effect moves (stealth-rock, toxic-spikes, trick-room, etc.)
   if (!context.move.effect) {
     handleNullEffectMoves(context.move.id, result, context);
@@ -1754,5 +1843,266 @@ function applyHealBlockGate(result: MutableResult, context: MoveEffectContext): 
     result.healAmount = 0;
     const attackerName = context.attacker.pokemon.nickname ?? "The Pokemon";
     result.messages.push(`${attackerName} is blocked from healing!`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Natural Gift Berry Table (Gen 4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Natural Gift type and power for each berry in Gen 4.
+ *
+ * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Natural_Gift_(move)
+ *   (Generation IV column)
+ * Source: Showdown sim/items.ts — naturalGift field per berry item
+ */
+export const NATURAL_GIFT_TABLE: Readonly<Record<string, { type: PokemonType; power: number }>> = {
+  "cheri-berry": { type: "fire", power: 60 },
+  "chesto-berry": { type: "water", power: 60 },
+  "pecha-berry": { type: "electric", power: 60 },
+  "rawst-berry": { type: "grass", power: 60 },
+  "aspear-berry": { type: "ice", power: 60 },
+  "leppa-berry": { type: "fighting", power: 60 },
+  "oran-berry": { type: "poison", power: 60 },
+  "persim-berry": { type: "ground", power: 60 },
+  "lum-berry": { type: "flying", power: 60 },
+  "sitrus-berry": { type: "psychic", power: 60 },
+  "figy-berry": { type: "bug", power: 60 },
+  "wiki-berry": { type: "rock", power: 60 },
+  "mago-berry": { type: "ghost", power: 60 },
+  "aguav-berry": { type: "dragon", power: 60 },
+  "iapapa-berry": { type: "dark", power: 60 },
+  "razz-berry": { type: "steel", power: 60 },
+  "bluk-berry": { type: "fire", power: 70 },
+  "nanab-berry": { type: "water", power: 70 },
+  "wepear-berry": { type: "electric", power: 70 },
+  "pinap-berry": { type: "grass", power: 70 },
+  "pomeg-berry": { type: "ice", power: 70 },
+  "kelpsy-berry": { type: "fighting", power: 70 },
+  "qualot-berry": { type: "poison", power: 70 },
+  "hondew-berry": { type: "ground", power: 70 },
+  "grepa-berry": { type: "flying", power: 70 },
+  "tamato-berry": { type: "psychic", power: 70 },
+  "cornn-berry": { type: "bug", power: 70 },
+  "magost-berry": { type: "rock", power: 70 },
+  "rabuta-berry": { type: "ghost", power: 70 },
+  "nomel-berry": { type: "dragon", power: 70 },
+  "spelon-berry": { type: "dark", power: 70 },
+  "pamtre-berry": { type: "steel", power: 70 },
+  "watmel-berry": { type: "fire", power: 80 },
+  "durin-berry": { type: "water", power: 80 },
+  "belue-berry": { type: "electric", power: 80 },
+  "occa-berry": { type: "fire", power: 60 },
+  "passho-berry": { type: "water", power: 60 },
+  "wacan-berry": { type: "electric", power: 60 },
+  "rindo-berry": { type: "grass", power: 60 },
+  "yache-berry": { type: "ice", power: 60 },
+  "chople-berry": { type: "fighting", power: 60 },
+  "kebia-berry": { type: "poison", power: 60 },
+  "shuca-berry": { type: "ground", power: 60 },
+  "coba-berry": { type: "flying", power: 60 },
+  "payapa-berry": { type: "psychic", power: 60 },
+  "tanga-berry": { type: "bug", power: 60 },
+  "charti-berry": { type: "rock", power: 60 },
+  "kasib-berry": { type: "ghost", power: 60 },
+  "haban-berry": { type: "dragon", power: 60 },
+  "colbur-berry": { type: "dark", power: 60 },
+  "babiri-berry": { type: "steel", power: 60 },
+  "liechi-berry": { type: "grass", power: 80 },
+  "ganlon-berry": { type: "ice", power: 80 },
+  "salac-berry": { type: "fighting", power: 80 },
+  "petaya-berry": { type: "electric", power: 80 },
+  "apicot-berry": { type: "ground", power: 80 },
+  "lansat-berry": { type: "flying", power: 80 },
+  "starf-berry": { type: "psychic", power: 80 },
+  "enigma-berry": { type: "bug", power: 80 },
+  "micle-berry": { type: "rock", power: 80 },
+  "custap-berry": { type: "ghost", power: 80 },
+  "jaboca-berry": { type: "dragon", power: 80 },
+  "rowap-berry": { type: "dark", power: 80 },
+};
+
+// ---------------------------------------------------------------------------
+// Fling Power Table (Gen 4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fling power for commonly flung items in Gen 4.
+ * Items not in this table with "-berry" suffix default to 10.
+ * Items not in this table without "-berry" suffix have fling power 0 (fail).
+ *
+ * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Fling_(move)
+ *   (Generation IV column)
+ * Source: Showdown sim/items.ts — fling field per item
+ */
+const FLING_POWER_TABLE: Readonly<Record<string, number>> = {
+  "iron-ball": 130,
+  "hard-stone": 100,
+  "rare-bone": 100,
+  "poison-barb": 70,
+  "power-bracer": 70,
+  "power-belt": 70,
+  "power-lens": 70,
+  "power-band": 70,
+  "power-anklet": 70,
+  "power-weight": 70,
+  "macho-brace": 60,
+  "adamant-orb": 60,
+  "lustrous-orb": 60,
+  "griseous-orb": 60,
+  "damp-rock": 60,
+  "heat-rock": 60,
+  "icy-rock": 60,
+  "smooth-rock": 60,
+  "thick-club": 90,
+  "lucky-punch": 40,
+  stick: 60,
+  "metal-coat": 30,
+  "kings-rock": 30,
+  "razor-fang": 30,
+  "deep-sea-tooth": 90,
+  "deep-sea-scale": 30,
+  "light-ball": 30,
+  "flame-orb": 30,
+  "toxic-orb": 30,
+  "black-belt": 30,
+  "black-glasses": 30,
+  charcoal: 30,
+  "dragon-fang": 30,
+  magnet: 30,
+  "miracle-seed": 30,
+  "mystic-water": 30,
+  "never-melt-ice": 30,
+  "sharp-beak": 30,
+  "silk-scarf": 30,
+  "silver-powder": 30,
+  "soft-sand": 30,
+  "spell-tag": 30,
+  "twisted-spoon": 30,
+  "choice-band": 10,
+  "choice-scarf": 10,
+  "choice-specs": 10,
+  leftovers: 10,
+  "life-orb": 30,
+  "scope-lens": 30,
+  "wide-lens": 10,
+  "zoom-lens": 10,
+  "expert-belt": 10,
+  "focus-sash": 10,
+  "focus-band": 10,
+  "muscle-band": 10,
+  "wise-glasses": 10,
+  "razor-claw": 80,
+  "shell-bell": 30,
+  "soul-dew": 30,
+  "white-herb": 10,
+  "mental-herb": 10,
+  "power-herb": 10,
+};
+
+/**
+ * Get the Fling power for a given item.
+ * Berries not in the explicit table default to 10.
+ * Other items not in the table return 0 (Fling fails).
+ *
+ * Source: Showdown sim/items.ts — fling basePower default for berries
+ */
+export function getFlingPower(item: string): number {
+  const explicit = FLING_POWER_TABLE[item];
+  if (explicit !== undefined) return explicit;
+  // All berries default to 10 power
+  if (item.endsWith("-berry")) return 10;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Pluck / Bug Bite — Berry Effect Application
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply a stolen berry's effect to the attacker via Pluck/Bug Bite.
+ * This simulates the attacker immediately eating the berry.
+ * Only the most common berry effects are implemented.
+ *
+ * Source: Showdown sim/battle-actions.ts — Pluck/Bug Bite activate berry for user
+ * Source: Bulbapedia — Pluck/Bug Bite: "eats it immediately, gaining its effects"
+ */
+function applyBerryEffectToAttacker(
+  berry: string,
+  attacker: ActivePokemon,
+  result: MutableResult,
+): void {
+  const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+
+  switch (berry) {
+    case "oran-berry":
+      result.healAmount = Math.min(10, maxHp - attacker.pokemon.currentHp);
+      break;
+    case "sitrus-berry":
+      result.healAmount = Math.max(1, Math.floor(maxHp / 4));
+      break;
+    case "lum-berry": {
+      if (attacker.pokemon.status) {
+        result.statusCuredOnly = { target: "attacker" };
+      }
+      break;
+    }
+    case "cheri-berry":
+      if (attacker.pokemon.status === "paralysis") {
+        result.statusCuredOnly = { target: "attacker" };
+      }
+      break;
+    case "chesto-berry":
+      if (attacker.pokemon.status === "sleep") {
+        result.statusCuredOnly = { target: "attacker" };
+      }
+      break;
+    case "pecha-berry":
+      if (attacker.pokemon.status === "poison" || attacker.pokemon.status === "badly-poisoned") {
+        result.statusCuredOnly = { target: "attacker" };
+      }
+      break;
+    case "rawst-berry":
+      if (attacker.pokemon.status === "burn") {
+        result.statusCuredOnly = { target: "attacker" };
+      }
+      break;
+    case "aspear-berry":
+      if (attacker.pokemon.status === "freeze") {
+        result.statusCuredOnly = { target: "attacker" };
+      }
+      break;
+    case "persim-berry":
+      if (attacker.volatileStatuses.has("confusion")) {
+        result.volatilesToClear = [
+          ...(result.volatilesToClear ?? []),
+          { target: "attacker", volatile: "confusion" as VolatileStatus },
+        ];
+      }
+      break;
+    case "leppa-berry":
+      // Restore 10 PP to the first depleted move
+      // Source: Showdown — Leppa Berry restores 10 PP
+      break;
+    // Stat pinch berries — boost stat immediately when eaten via Pluck/Bug Bite
+    case "liechi-berry":
+      result.statChanges.push({ target: "attacker", stat: "attack", stages: 1 });
+      break;
+    case "ganlon-berry":
+      result.statChanges.push({ target: "attacker", stat: "defense", stages: 1 });
+      break;
+    case "salac-berry":
+      result.statChanges.push({ target: "attacker", stat: "speed", stages: 1 });
+      break;
+    case "petaya-berry":
+      result.statChanges.push({ target: "attacker", stat: "spAttack", stages: 1 });
+      break;
+    case "apicot-berry":
+      result.statChanges.push({ target: "attacker", stat: "spDefense", stages: 1 });
+      break;
+    default:
+      // Many berries have no in-battle effect when consumed this way
+      break;
   }
 }

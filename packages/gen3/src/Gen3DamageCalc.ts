@@ -333,7 +333,15 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Get effective stats (with ability mods, items, and stat stages applied)
   // Burn is NOT applied here — it's applied AFTER the base formula per pokeemerald
   let attack = getAttackStat(attacker, move.type, isCrit, typeBoostItemType);
-  const defense = getDefenseStat(defender, move.type, isCrit);
+  let defense = getDefenseStat(defender, move.type, isCrit);
+
+  // Explosion / Self-Destruct: halve the defender's Defense stat
+  // Source: pret/pokeemerald src/pokemon.c — EFFECT_EXPLOSION halves defense
+  // Source: Bulbapedia — "In Generations I-IV, Explosion and Self-Destruct halve the
+  //   target's Defense stat"
+  if (move.id === "explosion" || move.id === "self-destruct") {
+    defense = Math.max(1, Math.floor(defense / 2));
+  }
 
   // Track multipliers for breakdown
   let abilityMultiplier = 1;

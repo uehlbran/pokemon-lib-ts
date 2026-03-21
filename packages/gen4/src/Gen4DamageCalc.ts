@@ -86,6 +86,34 @@ const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
   swarm: "bug",
 };
 
+// ─── Type-Resist Berries ─────────────────────────────────────────────────────
+
+/**
+ * Type-resist berries: halve super-effective damage of the matching type, then consumed.
+ * All 16 type-resist berries were introduced in Gen 4.
+ *
+ * Source: Bulbapedia — type-resist berries (Occa, Passho, etc.)
+ * Source: Showdown sim/items.ts — type-resist berries onSourceModifyDamage
+ */
+export const TYPE_RESIST_BERRIES: Readonly<Record<string, string>> = {
+  "occa-berry": "fire",
+  "passho-berry": "water",
+  "wacan-berry": "electric",
+  "rindo-berry": "grass",
+  "yache-berry": "ice",
+  "chople-berry": "fighting",
+  "kebia-berry": "poison",
+  "shuca-berry": "ground",
+  "coba-berry": "flying",
+  "payapa-berry": "psychic",
+  "tanga-berry": "bug",
+  "charti-berry": "rock",
+  "kasib-berry": "ghost",
+  "haban-berry": "dragon",
+  "colbur-berry": "dark",
+  "babiri-berry": "steel",
+};
+
 // ─── Ability Immunity Map ───────────────────────────────────────────────────
 
 /**
@@ -907,6 +935,23 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     abilityMultiplier *= 0.75;
   }
 
+  // 19b. Type-resist berries: halve SE damage of the matching type (consumed).
+  // Klutz or Embargo suppresses the berry.
+  // Source: Bulbapedia — type-resist berries (Occa, Passho, etc.):
+  //   "Weakens a supereffective [type]-type attack against the holder."
+  // Source: Showdown sim/items.ts — type-resist berries onSourceModifyDamage
+  let typeResistBerryConsumed: string | null = null;
+  const defenderItem = defender.pokemon.heldItem;
+  const defenderHasKlutz = defenderAbility === "klutz";
+  const defenderHasEmbargo = defender.volatileStatuses.has("embargo");
+  if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo && effectiveness > 1) {
+    const resistType = TYPE_RESIST_BERRIES[defenderItem];
+    if (resistType && resistType === effectiveMoveType) {
+      baseDamage = Math.floor(baseDamage * 0.5);
+      typeResistBerryConsumed = defenderItem;
+    }
+  }
+
   // 20. Item damage modifiers (NEW in Gen 4)
   // Source: Showdown sim/items.ts — Life Orb, Expert Belt, Muscle Band, Wise Glasses
   // Klutz: suppresses all held item effects (including damage modifiers)
@@ -983,6 +1028,22 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // 21. Minimum 1 damage (unless type immune, which returns 0 above)
   // Source: Showdown sim/battle.ts — minimum 1 damage
   const finalDamage = Math.max(1, baseDamage);
+
+  // Consume the type-resist berry if it activated.
+  // Direct mutation is consistent with other item consumption patterns in this codebase
+  // (e.g., Knock Off removes items via direct mutation in Gen4MoveEffects.ts).
+  // Unburden: if defender has Unburden ability and loses its item, activate the volatile.
+  if (typeResistBerryConsumed) {
+    defender.pokemon.heldItem = null;
+    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
+      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    }
+  }
+
+  // Track type-resist berry in itemMultiplier for breakdown
+  if (typeResistBerryConsumed) {
+    itemMultiplier = itemMultiplier === 1 ? 0.5 : itemMultiplier * 0.5;
+  }
 
   const breakdown: DamageBreakdown = {
     baseDamage: rawBaseDamage,
