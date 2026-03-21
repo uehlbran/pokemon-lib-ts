@@ -339,7 +339,23 @@ export class MockRuleset implements GenerationRuleset {
     return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
   }
 
+  private nextExpGain: number | null = null;
+
+  /**
+   * Configure a one-shot fixed EXP gain return value for the next calculateExpGain call.
+   * Useful for testing multi-level-up scenarios without relying on the formula.
+   * After one call, resets to the default formula.
+   */
+  setNextExpGain(amount: number): void {
+    this.nextExpGain = amount;
+  }
+
   calculateExpGain(context: ExpContext): number {
+    if (this.nextExpGain !== null) {
+      const amount = this.nextExpGain;
+      this.nextExpGain = null;
+      return amount;
+    }
     return Math.floor(
       (context.defeatedSpecies.baseExp * context.defeatedLevel) / (5 * context.participantCount),
     );

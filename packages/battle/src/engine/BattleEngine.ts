@@ -1,5 +1,5 @@
 import type { DataManager, ItemData, MoveData, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
+import { getExpForLevel, getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
   BattleAction,
@@ -48,6 +48,11 @@ export class BattleEngine implements BattleEventEmitter {
   // the current turn resolution. The replacement Pokemon should not execute the
   // phased-out Pokemon's queued action.
   private phasedSides: Set<0 | 1> = new Set();
+  // Maps fainted pokemon UID → Set of participant UIDs who were active against it.
+  // Used to award EXP after a faint. Both sides are tracked symmetrically but only
+  // the winning side's participants receive EXP.
+  // Source: Game mechanic — EXP is split among all pokemon that participated in a battle.
+  private readonly participantTracker: Map<string, Set<string>> = new Map();
 
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     this.ruleset = ruleset;
@@ -209,6 +214,10 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Record initial participation — the lead pokemon on each side are facing each other
+    // at battle start so they are considered participants immediately.
+    this.recordParticipation();
+
     this.transitionTo("action-select");
   }
 
@@ -273,6 +282,9 @@ export class BattleEngine implements BattleEventEmitter {
       }
       this.pendingSwitches.clear();
       this.sidesNeedingSwitch.clear();
+
+      // Record the newly sent-out pokemon as participants against the current opponent
+      this.recordParticipation();
 
       // Check again for battle end after switches
       if (this.checkBattleEnd()) {
@@ -549,6 +561,12 @@ export class BattleEngine implements BattleEventEmitter {
         enumerable: false,
         configurable: false,
       },
+      participantTracker: {
+        value: new Map(),
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      },
     });
 
     return engine;
@@ -694,6 +712,10 @@ export class BattleEngine implements BattleEventEmitter {
     this.faintedPokemonThisTurn.clear();
     // Reset per-turn phazing tracking.
     this.phasedSides.clear();
+
+    // Record which pokemon are facing each other at the start of this turn
+    // before any switches happen. This captures lead-vs-lead participation.
+    this.recordParticipation();
 
     // Record the event log position before any events are emitted this turn
     // so that turn history captures only current-turn events (fixes #84).
@@ -1438,6 +1460,9 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Send in new pokemon
     this.sendOut(side, action.switchTo);
+
+    // Record participation for the newly sent-out pokemon against the current opponent
+    this.recordParticipation();
   }
 
   /**
@@ -3364,6 +3389,9 @@ export class BattleEngine implements BattleEventEmitter {
         });
         side.faintCount++;
 
+        // Award EXP to the winning side's participants for this faint
+        this.awardExpForFaint(side.index as 0 | 1, active.pokemon.uid);
+
         // Destiny Bond: if the fainted Pokemon has destiny-bond volatile and was
         // KO'd by an opponent's move, the opponent also faints.
         // Source: Bulbapedia — "If the user faints after using this move, the
@@ -3392,6 +3420,131 @@ export class BattleEngine implements BattleEventEmitter {
             }
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Records the current active pokemon on each side as participants against each other.
+   * Called at battle start, at the start of each turn, and after each switch-in.
+   *
+   * Stores: faintedUid → Set<participantUid> (symmetric — both sides tracked, but
+   * only the winning side's participants receive EXP in awardExpForFaint).
+   *
+   * Source: Game mechanic — all Pokemon that were active against a foe share EXP on faint.
+   */
+  private recordParticipation(): void {
+    const side0Active = this.state.sides[0].active[0]?.pokemon.uid;
+    const side1Active = this.state.sides[1].active[0]?.pokemon.uid;
+    if (!side0Active || !side1Active) return;
+
+    // Record that side0's active pokemon faced side1's active pokemon
+    if (!this.participantTracker.has(side0Active)) {
+      this.participantTracker.set(side0Active, new Set());
+    }
+    this.participantTracker.get(side0Active)?.add(side1Active);
+
+    // Record that side1's active pokemon faced side0's active pokemon
+    if (!this.participantTracker.has(side1Active)) {
+      this.participantTracker.set(side1Active, new Set());
+    }
+    this.participantTracker.get(side1Active)?.add(side0Active);
+  }
+
+  /**
+   * Awards EXP to all living participants on the winning side after a pokemon faints.
+   * Emits ExpGainEvent and, if enough EXP to level up, LevelUpEvent (possibly multiple).
+   * Stats are recalculated on level-up and currentHp is increased by the HP stat delta.
+   *
+   * Source: Game mechanic — EXP is awarded to participating Pokemon after a foe faints.
+   * Source: Showdown sim/battle-actions.ts — EXP gain and level-up logic
+   */
+  private awardExpForFaint(faintedSide: 0 | 1, faintedUid: string): void {
+    const winnerSide = (faintedSide === 0 ? 1 : 0) as 0 | 1;
+
+    // Look up the fainted pokemon instance from the fainted side's team
+    const faintedPokemon = this.state.sides[faintedSide].team.find((p) => p.uid === faintedUid);
+    if (!faintedPokemon) return;
+
+    const faintedSpecies = this.dataManager.getSpecies(faintedPokemon.speciesId);
+    if (!faintedSpecies) return;
+
+    const participants = this.participantTracker.get(faintedUid);
+    if (!participants || participants.size === 0) return;
+
+    // Count only living participants on the winner's side (dead pokemon don't get EXP)
+    const winnerTeam = this.state.sides[winnerSide].team;
+    // All pokemon on the winner's side that participated (alive or fainted)
+    // Source: Game mechanic — EXP is divided by all participants, but only living ones receive it
+    const winnerParticipants = [...participants].filter((uid) =>
+      winnerTeam.some((t) => t.uid === uid),
+    );
+
+    // Total count for EXP formula — includes fainted participants (they dilute EXP but don't receive it)
+    // Source: Showdown sim/battle-actions.ts — participantCount used in EXP divisor
+    const participantCount = winnerParticipants.length;
+    if (participantCount === 0) return;
+
+    // Only living participants actually receive EXP
+    const livingParticipants = winnerParticipants.filter((uid) => {
+      const p = winnerTeam.find((t) => t.uid === uid);
+      return p !== undefined && p.currentHp > 0;
+    });
+
+    for (const participantUid of livingParticipants) {
+      const participant = winnerTeam.find((p) => p.uid === participantUid);
+      if (!participant || participant.currentHp <= 0) continue;
+      if (participant.level >= 100) continue; // max level — no EXP
+
+      const participantSpecies = this.dataManager.getSpecies(participant.speciesId);
+      if (!participantSpecies) continue;
+
+      const context = {
+        defeatedSpecies: faintedSpecies,
+        defeatedLevel: faintedPokemon.level,
+        participantLevel: participant.level,
+        isTrainerBattle: !this.state.isWildBattle,
+        participantCount, // full count (includes fainted) for EXP split calculation
+        hasLuckyEgg: false, // TODO: check held item in a future pass
+        hasExpShare: false, // TODO: Gen 2+ Exp. Share in a future pass
+        affectionBonus: false,
+      };
+
+      const expGained = this.ruleset.calculateExpGain(context);
+      if (expGained <= 0) continue;
+
+      participant.experience += expGained;
+
+      this.emit({
+        type: "exp-gain",
+        side: winnerSide,
+        pokemon: participant.uid,
+        amount: expGained,
+      });
+
+      // Level-up loop: a single EXP gain may trigger multiple consecutive level-ups
+      while (participant.level < 100) {
+        const expForNextLevel = getExpForLevel(participantSpecies.expGroup, participant.level + 1);
+        if (participant.experience < expForNextLevel) break;
+
+        const oldHpStat = participant.calculatedStats?.hp ?? participant.currentHp;
+        participant.level += 1;
+
+        // Recalculate all stats at the new level
+        const newStats = this.ruleset.calculateStats(participant, participantSpecies);
+        participant.calculatedStats = newStats;
+
+        // Increase currentHp by the HP stat increase (so the bar doesn't appear to shrink)
+        // Source: Game mechanic — HP increase on level-up
+        const hpIncrease = newStats.hp - oldHpStat;
+        participant.currentHp = Math.min(participant.currentHp + hpIncrease, newStats.hp);
+
+        this.emit({
+          type: "level-up",
+          side: winnerSide,
+          pokemon: participant.uid,
+          newLevel: participant.level,
+        });
       }
     }
   }
