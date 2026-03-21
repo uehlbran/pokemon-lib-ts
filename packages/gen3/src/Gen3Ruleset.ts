@@ -154,23 +154,59 @@ export class Gen3Ruleset extends BaseRuleset {
   }
 
   /**
-   * Gen 3 critical hit roll with Battle Armor / Shell Armor immunity.
+   * Gen 3 critical hit roll.
    *
-   * If the defender has Battle Armor or Shell Armor, critical hits are
-   * completely prevented — return false immediately without rolling.
-   * Otherwise, defer to BaseRuleset.rollCritical for normal crit logic.
+   * Fully overrides BaseRuleset.rollCritical because Gen 3 uses +1 for Focus Energy
+   * (not +2 as in Gen 6+ BaseRuleset default).
    *
-   * Source: pret/pokeemerald src/battle_util.c — CalcCritChanceStage
-   *   "if (IsAbilityOnSide(gBattlerTarget, ABILITY_BATTLE_ARMOR)
-   *    || IsAbilityOnSide(gBattlerTarget, ABILITY_SHELL_ARMOR))
-   *       return 0;"
+   * Battle Armor / Shell Armor: completely prevents critical hits.
+   * Focus Energy: +1 crit stage (Gen 3-5; Gen 6+ uses +2).
+   * Super Luck: +1 crit stage (Gen 3 ability).
+   * Scope Lens / Razor Claw: +1 crit stage.
+   * Leek/Stick (Farfetch'd) / Lucky Punch (Chansey): +2 crit stages.
+   *
+   * Source: pret/pokeemerald src/battle_util.c CalcCritChanceStage
+   *   "if (gBattleMons[gBattlerAttacker].status2 & STATUS2_FOCUS_ENERGY) critChance += 1;"
+   * Source: Bulbapedia — "In Generations III-V, Focus Energy adds 1 to the critical hit stage"
    */
   override rollCritical(context: CritContext): boolean {
     const defenderAbility = context.defender?.ability;
     if (defenderAbility === "battle-armor" || defenderAbility === "shell-armor") {
       return false;
     }
-    return super.rollCritical(context);
+
+    const { attacker, move, rng } = context;
+    const table = this.getCritRateTable();
+    let stage = 0;
+
+    // Focus Energy: +1 stage in Gen 3 (NOT +2 like Gen 6+)
+    // Source: pret/pokeemerald src/battle_util.c — STATUS2_FOCUS_ENERGY: critChance += 1
+    if (attacker.volatileStatuses.has("focus-energy")) stage += 1;
+
+    // High crit-ratio move: from move data (e.g., Slash, Crabhammer = critRatio 1)
+    // Source: pret/pokeemerald src/battle_util.c — move critRatio adds to crit stage
+    if (move.critRatio && move.critRatio > 0) stage += move.critRatio;
+
+    // Held item bonuses
+    // Source: pret/pokeemerald src/battle_util.c — item crit stage modifiers
+    const item = attacker.pokemon.heldItem;
+    if (item === "scope-lens" || item === "razor-claw") stage += 1;
+    if (
+      (item === "leek" || item === "stick") &&
+      (attacker.pokemon.speciesId === 83 || attacker.pokemon.speciesId === 865)
+    ) {
+      stage += 2;
+    }
+    if (item === "lucky-punch" && attacker.pokemon.speciesId === 113) stage += 2;
+
+    // Ability: Super Luck (+1 stage)
+    // Source: pret/pokeemerald src/battle_util.c — Super Luck ability crit bonus
+    if (attacker.ability === "super-luck") stage += 1;
+
+    stage = Math.min(stage, table.length - 1);
+    const rate = table[stage];
+    if (rate === undefined) return false;
+    return rate <= 1 || rng.int(1, rate) === 1;
   }
 
   // --- Hazard System ---
@@ -376,6 +412,9 @@ export class Gen3Ruleset extends BaseRuleset {
    * Source: pret/pokeemerald src/battle_main.c — end-of-turn phase ordering
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    // "uproar" added between perish-song and speed-boost per pokeemerald end-of-turn order.
+    // Source: pret/pokeemerald src/battle_main.c — Uproar processing occurs in end-of-turn loop
+    // Source: Spec 04-gen3.md line 1038 — "13. Uproar wake-up check"
     return [
       "weather-damage",
       "future-attack",
@@ -391,10 +430,11 @@ export class Gen3Ruleset extends BaseRuleset {
       "disable-countdown",
       "taunt-countdown",
       "perish-song",
+      "uproar" as EndOfTurnEffect,
       "speed-boost",
       "shed-skin",
       "weather-countdown",
-    ] as const;
+    ];
   }
 
   // --- Turn Order (Quick Claw) ---
@@ -530,6 +570,17 @@ export class Gen3Ruleset extends BaseRuleset {
       }
     }
 
+    // BrightPowder / Lax Incense: reduce accuracy by 10% when held by defender
+    // Source: pret/pokeemerald src/battle_script_commands.c:1154-1160
+    //   "if (IsHoldEffectActive(gBattlerTarget, HOLD_EFFECT_EVASION_UP))
+    //      calc = calc * (100 - holdEffectParam) / 100;"
+    //   where holdEffectParam = 10 for both BrightPowder and Lax Incense.
+    // Source: Bulbapedia — "BrightPowder lowers the opponent's accuracy by 10%"
+    const defenderItem = context.defender.pokemon.heldItem;
+    if (defenderItem === "bright-powder" || defenderItem === "lax-incense") {
+      calc = Math.floor((calc * 90) / 100);
+    }
+
     // Final accuracy check: (Random() % 100 + 1) > calc means miss
     // Source: pret/pokeemerald src/battle_script_commands.c:1176
     // "if ((Random() % 100 + 1) > calc)" → miss
@@ -661,18 +712,22 @@ export class Gen3Ruleset extends BaseRuleset {
    * Gen 3 sleep turn processing with Early Bird support.
    *
    * Early Bird: sleep counter decrements by 2 instead of 1 each turn.
-   * Gen 3 behavior: Pokemon CANNOT act on the turn they wake up (same as Gen 1-4).
+   * Gen 3 behavior: Pokemon CAN act on the turn they wake up.
+   * This was a key change from Gen 1-2 (where Pokemon could NOT act on wake turn).
    *
-   * Source: pret/pokeemerald src/battle_util.c — ABILITY_EARLY_BIRD doubles sleep decrement
-   * Source: Bulbapedia — "Early Bird causes sleep to last half as long"
+   * Source: pret/pokeemerald src/battle_script_commands.c — sleep counter is decremented
+   *   before move execution; if counter reaches 0, Pokemon wakes and can act.
+   * Source: Bulbapedia — "Starting in Generation III, a Pokemon can attack on the
+   *   turn it wakes up."
    */
   override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     const sleepState = pokemon.volatileStatuses.get("sleep-counter");
     if (!sleepState || sleepState.turnsLeft <= 0) {
-      // No counter found or already at 0 — wake up, but cannot act (Gen 3)
+      // No counter found or already at 0 — wake up, CAN act (Gen 3+)
+      // Source: pret/pokeemerald — Pokemon acts on wake turn
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false;
+      return true;
     }
 
     // Early Bird: decrement by 2 instead of 1
@@ -681,10 +736,11 @@ export class Gen3Ruleset extends BaseRuleset {
     sleepState.turnsLeft = Math.max(0, sleepState.turnsLeft - decrement);
 
     if (sleepState.turnsLeft <= 0) {
-      // Counter just reached 0 — wake up, but cannot act (Gen 3)
+      // Counter just reached 0 — wake up, CAN act (Gen 3+)
+      // Source: pret/pokeemerald src/battle_script_commands.c — wake and act same turn
       pokemon.pokemon.status = null;
       pokemon.volatileStatuses.delete("sleep-counter");
-      return false;
+      return true;
     }
 
     return false; // Still sleeping — cannot act
@@ -764,24 +820,28 @@ const GEN3_ACCURACY_STAGE_RATIOS: ReadonlyArray<{ dividend: number; divisor: num
 /**
  * Gen 3 type immunities to status conditions.
  *
- * Differences from Gen 2:
- * - Electric types ARE immune to paralysis in Gen 3 (added in Gen 3).
+ * In Gen 3, there is NO type-based paralysis immunity for Electric types.
+ * Electric-type paralysis immunity was introduced in Gen 6 (blanket).
+ * Gen 4-5 had partial immunity (Electric-type moves only), but Gen 3 has none.
+ *
  * - Fire: immune to burn
  * - Ice: immune to freeze
  * - Poison/Steel: immune to poison and badly-poisoned
- * - Electric: immune to paralysis (NEW in Gen 3)
  *
  * Note: Limber ability also prevents paralysis, but that's handled by the
  * ability system, not here. This function only checks type-based immunity.
  *
- * Source: pret/pokeemerald src/battle_util.c — CanBeStatusd checks
+ * Source: pret/pokeemerald src/battle_util.c — CanBeStatusd has no Electric-type
+ *   paralysis check. Confirmed by Bulbapedia: "In Generation VI onward,
+ *   Electric-type Pokemon are immune to paralysis."
  */
 const GEN3_STATUS_IMMUNITIES: Record<string, readonly PokemonType[]> = {
   burn: ["fire"],
   poison: ["poison", "steel"],
   "badly-poisoned": ["poison", "steel"],
   freeze: ["ice"],
-  paralysis: ["electric"],
+  // No paralysis immunity for Electric types in Gen 3
+  // Source: pret/pokeemerald src/battle_util.c — no such check exists
 };
 
 /**
