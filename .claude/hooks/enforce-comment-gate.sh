@@ -18,8 +18,16 @@ if ! printf '%s\n' "$FIRST_LINE" | grep -qE '^gh[[:space:]]+pr[[:space:]]+merge(
   exit 0
 fi
 
-# Extract PR number: first integer argument after "gh pr merge"
-PR_NUMBER=$(printf '%s\n' "$COMMAND" | grep -oE 'gh\s+pr\s+merge\s+[0-9]+' | grep -oE '[0-9]+$')
+# Extract PR number: scan ALL tokens in the command for a pure integer
+# (handles flags like --auto, --squash, --merge appearing before or after the number)
+PR_NUMBER=""
+TOKENS=$(printf '%s\n' "$FIRST_LINE" | sed 's/^gh[[:space:]]\+pr[[:space:]]\+merge[[:space:]]*//')
+for token in $TOKENS; do
+  if [[ "$token" =~ ^[0-9]+$ ]]; then
+    PR_NUMBER="$token"
+    break
+  fi
+done
 
 # Fallback: if no explicit number in command, infer from current branch
 if [ -z "$PR_NUMBER" ]; then
@@ -27,8 +35,9 @@ if [ -z "$PR_NUMBER" ]; then
 fi
 
 if [ -z "$PR_NUMBER" ]; then
-  # Cannot determine PR — fail open
-  exit 0
+  echo "ERROR: Could not determine PR number from command. Use: /babysit-pr <number>" >&2
+  echo "  The comment gate requires a PR number to check review threads." >&2
+  exit 1
 fi
 
 # Get owner/repo
