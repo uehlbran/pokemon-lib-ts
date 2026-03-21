@@ -399,6 +399,40 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
     expect(againstNormal.damage).toBe(18);
   });
 
+  it("given Flower Gift defender in sun attacked by Mold Breaker attacker, when damage is calculated, then SpDef boost is ignored", () => {
+    // Source: Showdown data/abilities.ts — Mold Breaker ignores Flower Gift SpDef boost
+    // Triangulation: second case for the Mold Breaker bypass path added in Gen4DamageCalc
+    const moldBreakerAttacker = createActivePokemon({ ability: "mold-breaker", spAttack: 100 });
+    const flowerGiftDefender = createActivePokemon({
+      ability: "flower-gift",
+      spDefense: 100,
+    });
+    const move = createMove({ type: "water", power: 80, category: "special" });
+
+    const rng = createMockRng(100);
+    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+
+    const result = calculateGen4Damage(
+      {
+        attacker: moldBreakerAttacker,
+        defender: flowerGiftDefender,
+        move,
+        isCrit: false,
+        state,
+        rng,
+      } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    // Mold Breaker ignores Flower Gift: SpDef stays at 100 (no 1.5x boost)
+    // Derivation (Mold Breaker bypasses Flower Gift, max roll):
+    //   atk=100; def=100 (Flower Gift bypassed by Mold Breaker)
+    //   baseDamage = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
+    //   +2 = 37; weather(sun, water) = floor(37*0.5) = 18; random = 18
+    //   no STAB; eff=1 → 18 (same as no-ability case in previous test)
+    expect(result.damage).toBe(18);
+  });
+
   it("given Flower Gift attacker without sun, when using a physical move, then no Attack boost is applied", () => {
     // Source: Bulbapedia — Flower Gift: only activates in harsh sunlight
     const attacker = createActivePokemon({ ability: "flower-gift", attack: 100 });
