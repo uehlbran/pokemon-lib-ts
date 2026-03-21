@@ -33,6 +33,13 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
     return NO_ACTIVATION;
   }
 
+  // Klutz: holder cannot use its held item — suppress all item triggers
+  // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
+  // Source: Showdown data/abilities.ts — Klutz gates all item battle effects
+  if (context.pokemon.ability === "klutz") {
+    return NO_ACTIVATION;
+  }
+
   switch (trigger) {
     case "before-move":
       return handleBeforeMove(item, context);
