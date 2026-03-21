@@ -122,7 +122,9 @@ export function applyMoveEffect(
 
     case "status-guaranteed": {
       if (!defender.pokemon.status) {
-        if (canInflictGen2Status(effect.status, defender)) {
+        // Source: pret/pokecrystal engine/battle/core.asm CheckSafeguard
+        // Safeguard blocks ALL primary status infliction, including guaranteed-status moves
+        if (canInflictGen2Status(effect.status, defender, context.state)) {
           result.statusInflicted = effect.status;
         }
       }

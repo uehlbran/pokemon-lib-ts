@@ -47,7 +47,7 @@ import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";
 import { calculateGen2Damage } from "./Gen2DamageCalc";
 import { applyGen2HeldItem } from "./Gen2Items";
-import { applyMoveEffect, type MutableResult } from "./Gen2MoveEffects";
+import { applyMoveEffect, handleCustomEffect, type MutableResult } from "./Gen2MoveEffects";
 import { calculateGen2Stats } from "./Gen2StatCalc";
 import { calculateGen2StatusDamage } from "./Gen2Status";
 import { GEN2_TYPE_CHART, GEN2_TYPES } from "./Gen2TypeChart";
@@ -304,11 +304,20 @@ export class Gen2Ruleset implements GenerationRuleset {
       messages: [],
     };
 
-    // Explosion and Self-Destruct have effect: null in move data but must still set selfFaint
-    if (context.move.id === "explosion" || context.move.id === "self-destruct") {
-      result.selfFaint = true;
-      const pokemonName = context.attacker.pokemon.nickname ?? "The Pokemon";
-      result.messages.push(`${pokemonName} exploded!`);
+    // Some moves have effect: null in move data but still require custom handling.
+    // Dispatch them to handleCustomEffect before the null-effect guard so their
+    // cases in handleCustomEffect are reachable.
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm
+    const id = context.move.id;
+    if (
+      id === "explosion" ||
+      id === "self-destruct" ||
+      id === "safeguard" ||
+      id === "mean-look" ||
+      id === "spider-web"
+    ) {
+      handleCustomEffect(context.move, result, context);
+      return result;
     }
 
     if (!context.move.effect) return result;
@@ -745,7 +754,10 @@ export class Gen2Ruleset implements GenerationRuleset {
       "leftovers",
       "mystery-berry",
       "defrost",
-      "safeguard-countdown",
+      // Note: safeguard-countdown removed — Safeguard is stored as a ScreenType screen
+      // and is now decremented by screen-countdown below. Two separate handlers would
+      // double-decrement turnsLeft, halving the effective duration.
+      // Source: pret/pokecrystal engine/battle/core.asm — single per-turn countdown
       "screen-countdown",
       "stat-boosting-items",
       "healing-items",

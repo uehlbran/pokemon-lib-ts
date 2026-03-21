@@ -98,8 +98,9 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
     expect(order).toContain("leftovers"); // HandleLeftovers
     expect(order).toContain("mystery-berry"); // HandleMysteryberry
     expect(order).toContain("defrost"); // HandleDefrost
-    expect(order).toContain("safeguard-countdown"); // HandleSafeguard
-    expect(order).toContain("screen-countdown"); // HandleScreens
+    // Note: safeguard-countdown is intentionally absent — Safeguard is now stored as a
+    // ScreenType screen and decremented by screen-countdown to avoid double-decrement.
+    expect(order).toContain("screen-countdown"); // HandleScreens + Safeguard
     expect(order).toContain("stat-boosting-items"); // HandleStatBoostingHeldItems
     expect(order).toContain("healing-items"); // HandleHealingItems
     expect(order).toContain("encore-countdown"); // HandleEncore
@@ -137,19 +138,17 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
     expect(berryIdx).toBeLessThan(defrostIdx);
   });
 
-  it("given Gen 2 ruleset, when checking end-of-turn order, then safeguard-countdown fires before screen-countdown", () => {
-    // Source: pret/pokecrystal engine/battle/core.asm:290-291
-    // HandleSafeguard (line 290) fires before HandleScreens (line 291)
-    // Arrange
+  it("given Gen 2 ruleset, when checking end-of-turn order, then screen-countdown handles both screens and Safeguard", () => {
+    // Safeguard is stored as a ScreenType screen (added in PR #234 fix) and
+    // decremented by screen-countdown. A separate safeguard-countdown would
+    // double-decrement turnsLeft and halve the effective 5-turn duration.
+    // Source: pret/pokecrystal engine/battle/core.asm:290-291 — single per-turn countdown
     const ruleset = new Gen2Ruleset();
 
-    // Act
     const order = ruleset.getEndOfTurnOrder();
-    const sgIdx = order.indexOf("safeguard-countdown");
-    const scIdx = order.indexOf("screen-countdown");
 
-    // Assert
-    expect(sgIdx).toBeLessThan(scIdx);
+    expect(order).toContain("screen-countdown");
+    expect(order).not.toContain("safeguard-countdown");
   });
 
   it("given Gen 2 ruleset, when checking end-of-turn order, then encore-countdown is the last effect", () => {
