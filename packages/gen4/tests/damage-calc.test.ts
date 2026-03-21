@@ -3805,16 +3805,16 @@ describe("Gen 4 damage calc — no Teravolt/Turboblaze (#377)", () => {
 
 describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
   it("given Metronome item at count=3 with crit rng=85, when calculating damage, then Metronome applies after crit before random", () => {
-    // Source: Showdown data/mods/gen4/items.ts line 326 — Metronome onModifyDamagePhase2
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=85, crit=true, count=3 (1.4x)
+    // Source: Showdown data/mods/gen4/items.ts — Metronome onModifyDamagePhase2
+    //   Gen 4 uses 0.1x per consecutive step (not 0.2x as in Gen 5+)
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=85, crit=true, count=3 (1.2x — 2 boost steps)
     //   baseDmg = floor(floor(22*80*100/100)/50) = 35; +2 = 37
-    //   crit: 37*2 = 74; Metronome(Phase2): floor(74*1.4) = 103
-    //   random: floor(103*85/100) = floor(87.55) = 87; STAB(normal/normal)=floor(87*1.5)=130; eff=1 → 130
-    // OLD BUG: crit=74, random=floor(74*0.85)=62, STAB=floor(62*1.5)=93, eff=1,
-    //   then Metronome: floor(93*1.4) = 130 (same here — use non-STAB to differ)
-    // Without STAB (attacker types=["fighting"]):
-    //   Phase 2: crit=74, Metro=103, random=floor(103*0.85)=87 → 87
-    //   OLD: crit=74, random=62, then Metro: floor(62*1.4)=86 → 86 (DIFFERENT!)
+    //   crit: 37*2 = 74; Metronome(Phase2, 1.2x): floor(74*1.2) = floor(88.8) = 88
+    //   random: floor(88*85/100) = floor(74.8) = 74; no STAB (fighting attacker, normal move) → 74
+    // Phase 2 ordering check (old bug applied Metronome after random):
+    //   OLD ORDER: crit=74, random=floor(74*0.85)=62, Metro: floor(62*1.2)=74 (same here by coincidence)
+    // Without STAB vs old bug shows divergence with 0.2x (old) vs 0.1x (new):
+    //   count=3: new=1.2x, old=1.4x → values differ
     const attacker = createActivePokemon({
       attack: 100,
       types: ["fighting"],
@@ -3833,29 +3833,18 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
       chart,
     );
 
-    expect(result.damage).toBe(87);
+    expect(result.damage).toBe(74);
   });
 
-  it("given Metronome item at count=2 without crit, when calculating damage, then 1.2x applies in Phase 2", () => {
+  it("given Metronome item at count=2 without crit, when calculating damage, then 1.1x applies in Phase 2", () => {
     // Source: Showdown data/mods/gen4/items.ts — Metronome onModifyDamagePhase2
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, no crit, count=2 (1.2x)
-    //   baseDmg = 35; +2 = 37; Metronome(Phase2): floor(37*1.2) = 44
-    //   random: floor(44*100/100) = 44; no STAB; eff=1 → 44
-    // OLD BUG: baseDmg=35, +2=37, random=37, then Metro: floor(37*1.2)=44 (same at max roll)
-    // At rng=85: Phase2: 37*1.2=44, random=floor(44*0.85)=37
-    //   OLD: random=floor(37*0.85)=31, then Metro=floor(31*1.2)=37 (same!)
-    // With STAB at rng=85: Phase2: 37*1.2=44, random=floor(44*0.85)=37, STAB=floor(37*1.5)=55
-    //   OLD: random=31, STAB=floor(31*1.5)=46, Metro=floor(46*1.2)=55 (same!)
-    // The difference only shows when intermediate floors diverge. Let me use count=6 (2.0x) with min roll:
-    //   Phase2: 37*2=74, random=floor(74*0.85)=62
-    //   OLD: random=floor(37*0.85)=31, Metro=floor(31*2)=62 (same again!)
-    // The key differentiator is when the Metronome multiplier creates a fractional that floors differently.
-    // count=3 (1.4x): Phase2: floor(37*1.4)=51, random=floor(51*0.85)=43
-    //   OLD: random=floor(37*0.85)=31, Metro=floor(31*1.4)=43 (same!)
-    // Seems hard to differentiate at these values. Let me use power=90:
+    //   Gen 4: each consecutive use adds 0.1x (10%), capping at 1.5x (5 boost steps)
+    // Derivation: L50, power=90, Atk=100, Def=100, rng=85, no crit, count=2 (1.1x — 1 boost step)
     //   baseDmg = floor(floor(22*90*100/100)/50) = floor(1980/50)=39; +2=41
-    //   Phase2: floor(41*1.2)=49, random=floor(49*0.85)=41
-    //   OLD: random=floor(41*0.85)=34, Metro=floor(34*1.2)=40 (DIFFERENT! 41 vs 40)
+    //   Metronome(Phase2, 1.1x): floor(41*1.1) = floor(45.1) = 45
+    //   random: floor(45*85/100) = floor(38.25) = 38; no STAB (fighting attacker) → 38
+    // OLD BUG (0.2x/1.2x at count=2):
+    //   Phase2: floor(41*1.2)=49, random=floor(49*0.85)=41 → 41 (DIFFERENT! 38 vs 41)
     const attacker = createActivePokemon({
       attack: 100,
       types: ["fighting"],
@@ -3874,7 +3863,7 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
       chart,
     );
 
-    expect(result.damage).toBe(41);
+    expect(result.damage).toBe(38);
   });
 });
 
