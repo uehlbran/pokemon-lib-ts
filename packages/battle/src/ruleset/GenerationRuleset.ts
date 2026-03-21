@@ -265,6 +265,28 @@ export interface SwitchSystem {
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void;
 }
 
+/** Flee attempt mechanics (wild battles only). */
+export interface FleeSystem {
+  /**
+   * Roll whether a flee attempt succeeds.
+   * @param playerSpeed - Speed of the fleeing pokemon (with stat stages applied)
+   * @param wildSpeed - Speed of the wild pokemon (with stat stages applied)
+   * @param attempts - Number of flee attempts so far (1-based, already incremented)
+   * @param rng - Battle PRNG
+   * @returns `true` if the flee attempt succeeds
+   *
+   * Source: Bulbapedia — Escape (Generation III+ formula)
+   * F = floor(playerSpeed * 128 / wildSpeed) + 30 * attempts
+   * Flee succeeds if playerSpeed >= wildSpeed OR F >= 256 OR rng(0,255) < F
+   */
+  rollFleeSuccess(
+    playerSpeed: number,
+    wildSpeed: number,
+    attempts: number,
+    rng: SeededRandom,
+  ): boolean;
+}
+
 /**
  * End-of-turn damage sources and multi-turn mechanics.
  *
@@ -428,6 +450,7 @@ export interface GenerationRuleset
     TerrainSystem,
     HazardSystem,
     SwitchSystem,
+    FleeSystem,
     EndOfTurnSystem,
     ValidationSystem {
   /** The generation number this ruleset implements (1–9). */

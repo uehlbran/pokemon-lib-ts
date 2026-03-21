@@ -1,5 +1,5 @@
 import type { DataManager, MoveData, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
   BattleAction,
@@ -8,6 +8,7 @@ import type {
   BattleEventListener,
   ItemAction,
   MoveAction,
+  RunAction,
 } from "../events";
 import type { GenerationRuleset } from "../ruleset";
 import { generations } from "../ruleset";
@@ -65,6 +66,8 @@ export class BattleEngine implements BattleEventEmitter {
       gravity: { active: false, turnsLeft: 0 },
       turnHistory: [],
       rng: new SeededRandom(config.seed),
+      isWildBattle: config.isWildBattle ?? false,
+      fleeAttempts: 0,
       ended: false,
       winner: null,
     };
@@ -733,10 +736,7 @@ export class BattleEngine implements BattleEventEmitter {
           this.executeItem(action);
           break;
         case "run":
-          this.emit({
-            type: "message",
-            text: `Side ${action.side} tried to run!`,
-          });
+          this.executeRun(action);
           break;
         case "recharge":
           this.emit({
@@ -1376,6 +1376,58 @@ export class BattleEngine implements BattleEventEmitter {
 
     actor.lastMoveUsed = "struggle";
     actor.movedThisTurn = true;
+  }
+
+  /**
+   * Execute a flee attempt (RunAction). Only valid in wild battles for side 0.
+   *
+   * Source: Bulbapedia -- Escape (Generation III+ formula, delegated to ruleset)
+   */
+  private executeRun(action: RunAction): void {
+    // Only valid in wild battles
+    if (!this.state.isWildBattle) {
+      this.emit({ type: "message", text: "Can't run from a trainer battle!" });
+      return;
+    }
+
+    // Only side 0 (player) can flee
+    if (action.side !== 0) {
+      return;
+    }
+
+    // Increment flee attempts
+    this.state.fleeAttempts++;
+    const attempts = this.state.fleeAttempts;
+
+    const playerActive = this.state.sides[0].active[0];
+    const wildActive = this.state.sides[1].active[0];
+    if (!playerActive || !wildActive) return;
+
+    // Compute effective speeds (base stat * stat stage multiplier)
+    const playerBaseSpeed = playerActive.pokemon.calculatedStats?.speed ?? 1;
+    const playerSpeed = Math.max(
+      1,
+      Math.floor(playerBaseSpeed * getStatStageMultiplier(playerActive.statStages.speed)),
+    );
+
+    const wildBaseSpeed = wildActive.pokemon.calculatedStats?.speed ?? 1;
+    const wildSpeed = Math.max(
+      1,
+      Math.floor(wildBaseSpeed * getStatStageMultiplier(wildActive.statStages.speed)),
+    );
+
+    const success = this.ruleset.rollFleeSuccess(playerSpeed, wildSpeed, attempts, this.state.rng);
+
+    this.emit({ type: "flee-attempt", side: 0, success });
+
+    if (success) {
+      this.emit({ type: "message", text: "Got away safely!" });
+      this.state.ended = true;
+      // winner is null = no winner (fled)
+      this.emit({ type: "battle-end", winner: null });
+    } else {
+      this.emit({ type: "message", text: "Can't escape!" });
+    }
   }
 
   private canExecuteMove(actor: ActivePokemon, move: MoveData): boolean {

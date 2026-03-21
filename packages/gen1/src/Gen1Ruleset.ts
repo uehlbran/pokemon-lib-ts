@@ -1146,6 +1146,25 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // --- Switching ---
 
+  // Source: pret/pokered engine/battle/core.asm TryRunningFromBattle
+  // Gen 1 flee formula:
+  //   A = floor((playerSpeed * 32) / floor(wildSpeed / 4)) mod 256
+  //   If wildSpeed / 4 == 0 (i.e. wildSpeed < 4), flee always succeeds.
+  //   Compare rng(0, 255) < A + 30 * attempts.
+  //   After 4th attempt, always succeeds (same as Gen 3+ formula naturally).
+  rollFleeSuccess(
+    playerSpeed: number,
+    wildSpeed: number,
+    attempts: number,
+    rng: SeededRandom,
+  ): boolean {
+    if (playerSpeed >= wildSpeed) return true;
+    const wildSpeedDiv = Math.floor(wildSpeed / 4);
+    if (wildSpeedDiv === 0) return true;
+    const a = (Math.floor((playerSpeed * 32) / wildSpeedDiv) + 30 * attempts) % 256;
+    return rng.int(0, 255) < a;
+  }
+
   shouldExecutePursuitPreSwitch(): boolean {
     return false;
   }

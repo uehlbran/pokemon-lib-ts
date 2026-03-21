@@ -6,6 +6,7 @@ export type {
   CriticalHitSystem,
   DamageSystem,
   EndOfTurnSystem,
+  FleeSystem,
   GenerationRuleset,
   HazardSystem,
   ItemSystem,

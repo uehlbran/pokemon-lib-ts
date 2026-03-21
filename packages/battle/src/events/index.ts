@@ -23,6 +23,7 @@ export type {
   EngineWarningEvent,
   ExpGainEvent,
   FaintEvent,
+  FleeAttemptEvent,
   HazardClearEvent,
   HazardSetEvent,
   HealEvent,

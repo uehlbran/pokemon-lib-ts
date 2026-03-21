@@ -54,6 +54,7 @@ import type { BattleFormat } from "../state";
  * - `catch-attempt` — a Poké Ball is thrown in a wild battle
  * - `exp-gain` — a Pokémon gains experience points
  * - `level-up` — a Pokémon's level increases
+ * - `flee-attempt` — a flee attempt was made in a wild battle
  * - `message` — a freeform text message (fallback for unstructured events)
  * - `battle-end` — the battle has concluded
  */
@@ -94,6 +95,7 @@ export type BattleEvent =
   | CatchAttemptEvent
   | ExpGainEvent
   | LevelUpEvent
+  | FleeAttemptEvent
   | MessageEvent
   | EngineWarningEvent
   | BattleEndEvent;
@@ -626,6 +628,22 @@ export interface LevelUpEvent {
   readonly pokemon: string;
   /** The new level reached (2–100) */
   readonly newLevel: number;
+}
+
+/**
+ * Emitted when a side attempts to flee from a wild battle.
+ * Success depends on the Speed ratio between the two active Pokemon
+ * and the number of prior flee attempts.
+ *
+ * Source: Bulbapedia -- Escape (Generation III+ formula)
+ */
+export interface FleeAttemptEvent {
+  /** Discriminant: always `"flee-attempt"` */
+  readonly type: "flee-attempt";
+  /** Which side attempted to flee (only side 0 in wild battles) */
+  readonly side: 0 | 1;
+  /** Whether the flee attempt succeeded */
+  readonly success: boolean;
 }
 
 /**
