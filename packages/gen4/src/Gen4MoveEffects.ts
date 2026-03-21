@@ -976,12 +976,12 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     return result;
   }
 
-  // Taunt: data has volatile-status "taunt" but we need to set turnsLeft = 3 for Gen 4
-  // Source: Bulbapedia — "Taunt lasts for 3 turns in Generation IV"
-  // Source: Showdown Gen 4 — Taunt prevents status moves for 3 turns
+  // Taunt: data has volatile-status "taunt" but we need to set turnsLeft randomly for Gen 4
+  // Source: Showdown Gen 4 mod — `this.random(3, 6)` (exclusive max) = 3, 4, or 5 turns
+  // Source: Bulbapedia — "Taunt lasts for 3–5 turns in Generation IV" (fixed to 3 in Gen 5+)
   if (context.move.id === "taunt") {
     result.volatileInflicted = "taunt";
-    result.volatileData = { turnsLeft: 3 };
+    result.volatileData = { turnsLeft: context.rng.int(3, 5) };
     return result;
   }
 

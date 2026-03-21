@@ -399,34 +399,34 @@ describe("Gen 4 executeMoveEffect — Destiny Bond", () => {
 // ─── Taunt ────────────────────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Taunt", () => {
-  it("given Pokemon uses Taunt, then volatileInflicted is taunt with turnsLeft = 3", () => {
-    // Source: Bulbapedia — "Taunt lasts for 3 turns in Generation IV"
-    // Source: Showdown Gen 4 — Taunt duration is 3 turns
+  it("given Pokemon uses Taunt when rng returns 3, then volatileData.turnsLeft is 3", () => {
+    // Source: Showdown Gen 4 mod — Taunt duration is random(3, 6) exclusive = 3–5 turns
+    // Source: Bulbapedia — "Taunt lasts for 3–5 turns in Generation IV"
     const attacker = createActivePokemon({ types: ["dark"] });
     const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove("taunt");
-    const rng = createMockRng(0);
+    const rng = createMockRng(3); // rng.int(3,5) returns 3
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.volatileInflicted).toBe("taunt");
-    expect(result.volatileData).toEqual({ turnsLeft: 3 });
+    expect(result.volatileData?.turnsLeft).toBe(3);
   });
 
-  it("given Pokemon uses Taunt against different target, then volatileData.turnsLeft is still 3", () => {
-    // Source: Bulbapedia — Taunt duration is always 3 turns in Gen 4 regardless of target
-    // Triangulation: same mechanic with different types to ensure it's not type-dependent
-    const attacker = createActivePokemon({ types: ["fire"] });
-    const defender = createActivePokemon({ types: ["water"] });
+  it("given Pokemon uses Taunt when rng returns 5, then volatileData.turnsLeft is 5", () => {
+    // Source: Showdown Gen 4 mod — Taunt duration is random(3, 6) exclusive = 3–5 turns
+    // Triangulation: different rng value proves the duration is not hardcoded to 3
+    const attacker = createActivePokemon({ types: ["dark"] });
+    const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove("taunt");
-    const rng = createMockRng(0);
+    const rng = createMockRng(5); // rng.int(3,5) returns 5
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.volatileInflicted).toBe("taunt");
-    expect(result.volatileData!.turnsLeft).toBe(3);
+    expect(result.volatileData?.turnsLeft).toBe(5);
   });
 });
 
