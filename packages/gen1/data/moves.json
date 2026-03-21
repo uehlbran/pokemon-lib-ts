@@ -2876,7 +2876,10 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": null,
+    "effect": {
+      "type": "custom",
+      "handler": "thrash"
+    },
     "description": "Attacks for 2-3 turns, then confuses the user.",
     "generation": 1
   },
@@ -3576,7 +3579,10 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": null,
+    "effect": {
+      "type": "custom",
+      "handler": "rage"
+    },
     "description": "Raises Attack each time the user is hit while raging.",
     "generation": 1
   },

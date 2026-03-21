@@ -26,6 +26,7 @@ import type {
 import type {
   AbilityTrigger,
   EntryHazardType,
+  MoveData,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
@@ -291,6 +292,15 @@ export class Gen2Ruleset implements GenerationRuleset {
   // Gen 2 has no semi-invulnerable two-turn moves in the Gen 3+ sense.
   canHitSemiInvulnerable(_moveId: string, _volatile: VolatileStatus): boolean {
     return false;
+  }
+
+  onDamageReceived(
+    _defender: ActivePokemon,
+    _damage: number,
+    _move: MoveData,
+    _state: BattleState,
+  ): void {
+    // No-op — Gen 2 does not have reactive damage triggers (Rage/Bide are Gen 1 only)
   }
 
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {

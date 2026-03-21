@@ -139,6 +139,12 @@ export interface MoveEffectContext {
   readonly state: BattleState;
   /** PRNG instance for secondary effect rolls */
   readonly rng: SeededRandom;
+  /**
+   * Set to `true` by the engine when this hit destroyed the defender's substitute.
+   * Used by Gen 1 Hyper Beam to skip recharge when a substitute is broken.
+   * Source: gen1-ground-truth.md — Hyper Beam skips recharge if it breaks a Substitute.
+   */
+  readonly brokeSubstitute?: boolean;
 }
 
 /**
@@ -212,6 +218,24 @@ export interface MoveEffectResult {
   readonly selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   /** Change the types of the attacker or defender */
   readonly typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+  /**
+   * Move ID to execute immediately after this move resolves (for Mirror Move, Metronome).
+   * No PP is deducted for the recursive move.
+   * Source: pret/pokered MirrorMoveEffect, MetronomeEffect
+   */
+  readonly recursiveMove?: string | null;
+  /**
+   * Replace a move slot in the attacker's moveset temporarily (for Mimic).
+   * The engine replaces the slot, stores the original in a `mimic-slot` volatile,
+   * and Gen1Ruleset restores it in `onSwitchOut`.
+   * Source: pret/pokered MimicEffect
+   */
+  readonly moveSlotChange?: {
+    slot: number;
+    newMoveId: string;
+    newPP: number;
+    originalMoveId: string;
+  } | null;
   /** Set Tailwind on a side (Gen 4+) */
   readonly tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
   /** Set Trick Room on the field (Gen 4+) */

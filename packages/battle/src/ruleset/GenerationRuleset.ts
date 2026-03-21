@@ -2,6 +2,7 @@ import type {
   AbilityTrigger,
   EntryHazardType,
   Generation,
+  MoveData,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
@@ -117,6 +118,21 @@ export interface MoveSystem {
    * Source: Showdown sim/battle-actions.ts — semi-invulnerable immunity checks
    */
   canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean;
+
+  /**
+   * Called after the defender takes direct damage (not absorbed by a substitute).
+   * Allows gen-specific reactive effects triggered by taking a hit:
+   * - Gen 1 Rage: boosts defender Attack by +1 stage
+   * - Gen 1 Bide: accumulates received damage into `bide` volatile data
+   *
+   * Source: pret/pokered RageEffect, BideEffect
+   */
+  onDamageReceived(
+    defender: ActivePokemon,
+    damage: number,
+    move: MoveData,
+    state: BattleState,
+  ): void;
 }
 
 /**

@@ -1002,6 +1002,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Damage calculation (for damaging moves)
     let damage = 0;
+    let brokeSubstitute = false;
     if (effectiveMoveData.category !== "status" && effectiveMoveData.power !== null) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
@@ -1060,6 +1061,7 @@ export class BattleEngine implements BattleEventEmitter {
           text: "The substitute took damage!",
         });
         if (defender.substituteHp === 0) {
+          brokeSubstitute = true;
           defender.volatileStatuses.delete("substitute");
           this.emit({
             type: "volatile-end",
@@ -1082,6 +1084,11 @@ export class BattleEngine implements BattleEventEmitter {
           maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
           source: effectiveMoveData.id,
         });
+        // Reactive damage hook (Gen 1 Rage boost, Bide accumulation)
+        // Source: pret/pokered RageEffect, BideEffect
+        if (damage > 0) {
+          this.ruleset.onDamageReceived(defender, damage, effectiveMoveData, this.state);
+        }
       }
 
       // Held item: on-damage-taken trigger for defender
@@ -1130,9 +1137,22 @@ export class BattleEngine implements BattleEventEmitter {
       damage,
       state: this.state,
       rng: this.state.rng,
+      brokeSubstitute,
     });
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
+
+    // Recursive move execution (Mirror Move, Metronome)
+    // Source: pret/pokered MirrorMoveEffect, MetronomeEffect
+    if (effectResult.recursiveMove) {
+      this.executeMoveById(
+        effectResult.recursiveMove,
+        actor,
+        action.side,
+        defender,
+        defenderSide as 0 | 1,
+      );
+    }
 
     // Increment consecutiveProtects if protect was successfully used
     if (effectiveMoveData.effect?.type === "protect") {
@@ -1176,6 +1196,147 @@ export class BattleEngine implements BattleEventEmitter {
         turnsLeft: -1,
         data: { moveId: moveData.id },
       });
+    }
+  }
+
+  /**
+   * Execute a move identified by its move ID rather than a move slot index.
+   * Used for recursive moves (Mirror Move, Metronome) that call a move not in
+   * the actor's moveset. No PP is deducted; no Choice lock is applied.
+   * Source: pret/pokered MirrorMoveEffect, MetronomeEffect
+   */
+  private executeMoveById(
+    moveId: string,
+    actor: ActivePokemon,
+    actorSide: 0 | 1,
+    defender: ActivePokemon,
+    defenderSide: 0 | 1,
+  ): void {
+    let moveData: MoveData;
+    try {
+      moveData = this.dataManager.getMove(moveId);
+    } catch {
+      this.emit({
+        type: "engine-warning",
+        message: `Recursive move "${moveId}" data missing.`,
+      });
+      return;
+    }
+
+    this.emit({
+      type: "move-start",
+      side: actorSide,
+      pokemon: getPokemonName(actor),
+      move: moveId,
+    });
+
+    // Accuracy check
+    if (moveData.accuracy !== null) {
+      const hits = this.ruleset.doesMoveHit({
+        attacker: actor,
+        defender,
+        move: moveData,
+        state: this.state,
+        rng: this.state.rng,
+      });
+      if (!hits) {
+        this.emit({
+          type: "move-miss",
+          side: actorSide,
+          pokemon: getPokemonName(actor),
+          move: moveId,
+        });
+        return;
+      }
+    }
+
+    // Damage calculation (for damaging moves)
+    let damage = 0;
+    let brokeSubstitute = false;
+    if (moveData.category !== "status" && moveData.power !== null) {
+      const isCrit = this.ruleset.rollCritical({
+        attacker: actor,
+        move: moveData,
+        state: this.state,
+        rng: this.state.rng,
+        defender,
+      });
+      const result = this.ruleset.calculateDamage({
+        attacker: actor,
+        defender,
+        move: moveData,
+        state: this.state,
+        rng: this.state.rng,
+        isCrit,
+      });
+      damage = result.damage;
+
+      if (result.effectiveness !== 1) {
+        this.emit({ type: "effectiveness", multiplier: result.effectiveness });
+      }
+      if (result.isCrit) {
+        this.emit({ type: "critical-hit" });
+      }
+
+      // Apply damage to substitute or pokemon
+      if (defender.substituteHp > 0 && !moveData.flags.bypassSubstitute) {
+        defender.substituteHp = Math.max(0, defender.substituteHp - damage);
+        this.emit({ type: "message", text: "The substitute took damage!" });
+        if (defender.substituteHp === 0) {
+          brokeSubstitute = true;
+          defender.volatileStatuses.delete("substitute");
+          this.emit({
+            type: "volatile-end",
+            side: defenderSide,
+            pokemon: getPokemonName(defender),
+            volatile: "substitute",
+          });
+        }
+      } else {
+        defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
+        defender.lastDamageTaken = damage;
+        defender.lastDamageType = moveData.type;
+        defender.lastDamageCategory = moveData.category;
+        this.emit({
+          type: "damage",
+          side: defenderSide,
+          pokemon: getPokemonName(defender),
+          amount: damage,
+          currentHp: defender.pokemon.currentHp,
+          maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
+          source: moveId,
+        });
+        if (damage > 0) {
+          this.ruleset.onDamageReceived(defender, damage, moveData, this.state);
+        }
+      }
+    }
+
+    // Apply move effects
+    const effectResult = this.ruleset.executeMoveEffect({
+      attacker: actor,
+      defender,
+      move: moveData,
+      damage,
+      state: this.state,
+      rng: this.state.rng,
+      brokeSubstitute,
+    });
+
+    this.processEffectResult(effectResult, actor, defender, actorSide, defenderSide);
+
+    // Chain nested recursiveMove (e.g., Metronome -> Mirror Move)
+    // Source: pret/pokered — MetronomeEffect can call MirrorMoveEffect which then copies the foe's last move
+    // Depth guard: only recurse once to prevent infinite chains (Metronome -> Metronome is excluded from the pool but defensive check)
+    if (effectResult.recursiveMove) {
+      this.executeMoveById(effectResult.recursiveMove, actor, actorSide, defender, defenderSide);
+    }
+
+    actor.lastMoveUsed = moveId;
+
+    // Recharge: if the recursively-called move requires recharge and noRecharge was not set
+    if (moveData.flags.recharge && !effectResult.noRecharge) {
+      actor.volatileStatuses.set("recharge", { turnsLeft: 1 });
     }
   }
 
@@ -1964,15 +2125,20 @@ export class BattleEngine implements BattleEventEmitter {
         moveIndex: result.forcedMoveSet.moveIndex,
         moveId: result.forcedMoveSet.moveId,
       };
-      attacker.volatileStatuses.set(result.forcedMoveSet.volatileStatus, {
-        turnsLeft: 1,
-      });
-      this.emit({
-        type: "volatile-start",
-        side: attackerSide,
-        pokemon: getPokemonName(attacker),
-        volatile: result.forcedMoveSet.volatileStatus,
-      });
+      // Only manage the volatile here if selfVolatileInflicted isn't targeting the same volatile.
+      // When they match (e.g., Bide, Thrash, Rage), selfVolatileInflicted handles the volatile
+      // with correct turnsLeft and data — forcedMoveSet must not overwrite it.
+      if (result.selfVolatileInflicted !== result.forcedMoveSet.volatileStatus) {
+        attacker.volatileStatuses.set(result.forcedMoveSet.volatileStatus, {
+          turnsLeft: 1,
+        });
+        this.emit({
+          type: "volatile-start",
+          side: attackerSide,
+          pokemon: getPokemonName(attacker),
+          volatile: result.forcedMoveSet.volatileStatus,
+        });
+      }
     }
 
     // Gravity set (Gen 4+)
@@ -2148,6 +2314,21 @@ export class BattleEngine implements BattleEventEmitter {
         type: "message",
         text: `${getPokemonName(typeTarget)}'s type changed!`,
       });
+    }
+
+    // moveSlotChange — temporarily replace a move slot (Mimic)
+    // Source: pret/pokered MimicEffect
+    if (result.moveSlotChange) {
+      const { slot, newMoveId, newPP } = result.moveSlotChange;
+      const moveSlots = attacker.pokemon.moves;
+      if (slot >= 0 && slot < moveSlots.length) {
+        moveSlots[slot] = { moveId: newMoveId, currentPP: newPP, maxPP: newPP, ppUps: 0 };
+        // Volatile storage and event emission handled by selfVolatileInflicted in the result
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(attacker)} learned ${newMoveId}!`,
+        });
+      }
     }
   }
 

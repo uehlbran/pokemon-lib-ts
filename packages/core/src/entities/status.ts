@@ -57,4 +57,9 @@ export type VolatileStatus =
   | "charging" // Generic charge turn (SolarBeam, Skull Bash, Razor Wind, Sky Attack) — NOT semi-invulnerable
   | "metronome-count" // Metronome item — tracks consecutive same-move uses (Gen 4+)
   | "slow-start" // Slow Start — halves Attack and Speed for 5 turns (Gen 4+ Regigigas)
-  | "unburden"; // Unburden — Speed doubles when held item is consumed/lost (Gen 4+)
+  | "unburden" // Unburden — Speed doubles when held item is consumed/lost (Gen 4+)
+  | "rage" // Gen 1 Rage lock-in; data: { moveIndex: number }
+  | "bide" // Gen 1 Bide charging; data: { accumulatedDamage: number }
+  | "thrash-lock" // Gen 1 Thrash / Petal Dance forced move; data: { moveId: string }
+  | "mimic-slot" // Gen 1 Mimic — tracks which slot was replaced; data: { slot: number, originalMoveId: string }
+  | "transform-data"; // Stores original moves/types/stats for Transform restoration on switch-out
