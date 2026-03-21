@@ -319,7 +319,7 @@ function calcDamage(params: {
 describe("Gen 1 Damage Calculation", () => {
   // --- Basic Damage Calculation ---
 
-  it("given known attacker/defender stats and a physical move, when calculating damage at max roll, then falls in expected range", () => {
+  it("given known attacker/defender stats and a physical move, when calculating damage at max roll, then returns exact expected value", () => {
     // Arrange: Level 50 attacker with Attack 100, Defender with Defense 100, Power 80 move
     const params = {
       level: 50,
@@ -329,21 +329,23 @@ describe("Gen 1 Damage Calculation", () => {
       stab: false,
       typeEffectiveness: 1.0,
       isCritical: false,
-      randomFactor: 1.0, // Max roll
+      randomFactor: 1.0, // Max roll (255/255)
     };
     // Act
     const damage = calcDamage(params);
-    // Assert
-    // Step 1: floor((2*50/5 + 2)) = floor(22) = 22
-    // Step 2: floor(22 * 80 * 100) / 100 / 50 + 2 = floor(1760*100/100)/50 + 2
-    //       = 1760/50 + 2 = 35.2 + 2 = 37 (with floors)
-    // Exact result depends on order of operations with floor divisions
-    expect(damage).toBeGreaterThan(0);
-    expect(damage).toBeLessThan(200);
+    // Assert — exact value derived from pret/pokered damage formula:
+    // Source: pret/pokered src/engine/battle/core.asm — damage calculation routine
+    // L50, BP=80, Atk=100, Def=100, no STAB, neutral type, max roll (255/255=1.0):
+    //   levelFactor = floor(2*50/5)+2 = floor(20)+2 = 22
+    //   inner = floor(22*80*100) / 100 = floor(176000)/100 = 1760
+    //   baseDamage = floor(1760/50)+2 = 35+2 = 37
+    //   No STAB, neutral type → 37
+    //   Random: floor(37 * 255/255) = 37
+    expect(damage).toBe(37);
     expect(Number.isInteger(damage)).toBe(true);
   });
 
-  it("given known attacker/defender stats, when calculating damage at min roll (0.85), then is lower than max roll", () => {
+  it("given known attacker/defender stats, when calculating damage at min roll (0.85), then returns exact expected value lower than max roll", () => {
     // Arrange
     const params = {
       level: 50,
@@ -357,9 +359,15 @@ describe("Gen 1 Damage Calculation", () => {
     // Act
     const maxDamage = calcDamage({ ...params, randomFactor: 1.0 });
     const minDamage = calcDamage({ ...params, randomFactor: 0.85 });
-    // Assert
-    expect(minDamage).toBeLessThanOrEqual(maxDamage);
-    expect(minDamage).toBeGreaterThan(0);
+    // Assert — exact values derived from pret/pokered damage formula:
+    // Source: pret/pokered src/engine/battle/core.asm — damage calculation routine
+    // L50, BP=80, Atk=100, Def=100, no STAB, neutral type:
+    //   baseDamage = 37 (same as max roll test above)
+    //   Max roll (255/255): floor(37 * 255/255) = 37
+    //   Min roll (217/255): floor(37 * 217/255) = floor(31.44) = 31
+    expect(maxDamage).toBe(37);
+    expect(minDamage).toBe(31);
+    expect(minDamage).toBeLessThan(maxDamage);
   });
 
   it("given damage calculation, when random factor varies 0.85 to 1.0, then damage range spans about 15%", () => {
@@ -690,7 +698,7 @@ describe("Gen 1 Damage Calculation", () => {
 
   // --- Integer Division Consistency ---
 
-  it("given damage calculation, when result is computed, then all intermediate values use floor division", () => {
+  it("given damage calculation, when result is computed, then all intermediate values use floor division yielding exact integer result", () => {
     // Arrange: Use values that would produce fractional intermediates
     const params = {
       level: 37,
@@ -700,13 +708,21 @@ describe("Gen 1 Damage Calculation", () => {
       stab: true,
       typeEffectiveness: 2.0,
       isCritical: false,
-      randomFactor: 0.93,
+      randomFactor: 0.93, // roll = round(0.93*255) = round(237.15) = 237
     };
     // Act
     const damage = calcDamage(params);
-    // Assert
+    // Assert — exact value verifies floor-first integer math (not float intermediates):
+    // Source: pret/pokered src/engine/battle/core.asm — damage calculation routine
+    // L37, BP=65, Atk=87, Def=73, STAB (normal×normal), type 2x, roll=237:
+    //   levelFactor = floor(2*37/5)+2 = floor(14.8)+2 = 14+2 = 16
+    //   inner = floor(16*65*87) / 73 = floor(90480)/73 = floor(1239.45) = 1239
+    //   baseDamage = floor(1239/50)+2 = 24+2 = 26
+    //   STAB (floor(26*1.5)) = floor(39) = 39
+    //   2x type (floor(39*20/10)) = floor(78) = 78
+    //   Random: floor(78 * 237 / 255) = floor(18486/255) = floor(72.49) = 72
+    expect(damage).toBe(72);
     expect(Number.isInteger(damage)).toBe(true);
-    expect(damage).toBeGreaterThan(0);
   });
 
   // --- STAB + Super Effective Stacking ---
@@ -781,7 +797,7 @@ describe("Gen 1 Damage Calculation", () => {
     expect(ratio).not.toBeCloseTo(2.0, 5);
   });
 
-  it("given critical hit against super effective target, when calculating damage, then type effectiveness (2x) still applies normally", () => {
+  it("given critical hit against super effective target, when calculating damage, then type effectiveness (2x) still applies normally with exact values", () => {
     // Arrange
     const params = {
       level: 50,
@@ -800,9 +816,17 @@ describe("Gen 1 Damage Calculation", () => {
       isCritical: false,
       typeEffectiveness: 2.0,
     });
-    // Assert: both crit and non-crit benefit from 2x type effectiveness
-    expect(critSuperEffective).toBeGreaterThan(critNeutral);
-    expect(nonCritSuperEffective).toBeGreaterThan(0);
+    // Assert — exact values derived from pret/pokered damage formula:
+    // Source: pret/pokered src/engine/battle/core.asm — damage calculation routine
+    // Crit (effectiveLevel=100): levelFactor=floor(200/5)+2=42
+    //   baseDamage = floor(floor(42*80*100)/100/50)+2 = floor(3360/50)+2 = 67+2 = 69
+    //   Crit neutral (1x): floor(69*255/255) = 69
+    //   Crit 2x SE: floor(69*20/10) = 138; floor(138*255/255) = 138
+    // Non-crit (level=50): levelFactor=22, baseDamage=37
+    //   Non-crit 2x SE: floor(37*20/10) = 74; floor(74*255/255) = 74
+    expect(critNeutral).toBe(69);
+    expect(critSuperEffective).toBe(138);
+    expect(nonCritSuperEffective).toBe(74);
     // Super-effective crit should also beat super-effective non-crit
     expect(critSuperEffective).toBeGreaterThan(nonCritSuperEffective);
   });
@@ -845,8 +869,13 @@ describe("Gen 1 Damage Calculation", () => {
     // Act
     const result = calculateGen1Damage(context, chart, species);
 
-    // Assert: result is a positive integer (minimum roll still produces valid damage)
-    expect(result.damage).toBeGreaterThanOrEqual(1);
+    // Assert — exact value derived from pret/pokered damage formula:
+    // Source: pret/pokered src/engine/battle/core.asm — damage calculation routine
+    // L50, BP=80, Atk=100, Def=100, no STAB (fire vs normal move), neutral type, roll=217:
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDamage = floor(floor(22*80*100)/100/50)+2 = 37
+    //   Random: floor(37 * 217/255) = floor(31.44) = 31
+    expect(result.damage).toBe(31);
     expect(Number.isInteger(result.damage)).toBe(true);
     // Verify randomFactor in return value is 217/255
     expect(result.randomFactor).toBeCloseTo(217 / 255, 10);

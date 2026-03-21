@@ -697,6 +697,7 @@ describe("calculateGen1Stats — HP vs non-HP offset", () => {
 describe("calculateGen1Stats — output validity", () => {
   it("given any valid Gen 1 inputs, when calculating stats, then all six stats are positive integers", () => {
     // Arrange
+    // Species: Bulbasaur (base HP=45, Atk=49, Def=49, Spc=65, Spe=45), L50, DV=0, StatExp=0
     const species = makeSpecies({
       hp: 45,
       attack: 49,
@@ -708,9 +709,20 @@ describe("calculateGen1Stats — output validity", () => {
     const pokemon = makeInstance({ level: 50, ivs: zeroDvs(), evs: zeroStatExp() });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
-    // Assert
+    // Assert — exact values derived from pret/pokered stat formula:
+    // HP:     floor(((45+0)*2+0)*50/100)+50+10 = floor(4500/100)+60 = 45+60 = 105
+    // Atk:    floor(((49+0)*2+0)*50/100)+5     = floor(4900/100)+5  = 49+5  = 54
+    // Def:    floor(((49+0)*2+0)*50/100)+5     = 54 (same base as Atk)
+    // Spc:    floor(((65+0)*2+0)*50/100)+5     = floor(6500/100)+5  = 65+5  = 70
+    // Spe:    floor(((45+0)*2+0)*50/100)+5     = floor(4500/100)+5  = 45+5  = 50
+    // Source: pret/pokered engine/battle/core.asm — stat calculation routine
+    expect(stats.hp).toBe(105);
+    expect(stats.attack).toBe(54);
+    expect(stats.defense).toBe(54);
+    expect(stats.spAttack).toBe(70);
+    expect(stats.spDefense).toBe(70); // Gen 1: unified Special — mirrors spAttack
+    expect(stats.speed).toBe(50);
     for (const key of ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const) {
-      expect(stats[key]).toBeGreaterThan(0);
       expect(Number.isInteger(stats[key])).toBe(true);
     }
   });
@@ -728,9 +740,17 @@ describe("calculateGen1Stats — output validity", () => {
     const pokemon = makeInstance({ level: 1, ivs: zeroDvs(), evs: zeroStatExp() });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
-    // Assert
+    // Assert — exact values derived from pret/pokered stat formula:
+    // HP:    floor(((5+0)*2+0)*1/100)+1+10 = floor(10/100)+11 = 0+11 = 11
+    // Other: floor(((5+0)*2+0)*1/100)+5   = floor(10/100)+5  = 0+5  = 5
+    // Source: pret/pokered engine/battle/core.asm — stat calculation routine
+    expect(stats.hp).toBe(11);
+    expect(stats.attack).toBe(5);
+    expect(stats.defense).toBe(5);
+    expect(stats.spAttack).toBe(5);
+    expect(stats.spDefense).toBe(5); // Gen 1: unified Special — mirrors spAttack
+    expect(stats.speed).toBe(5);
     for (const key of ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const) {
-      expect(stats[key]).toBeGreaterThan(0);
       expect(Number.isInteger(stats[key])).toBe(true);
     }
   });
