@@ -8,6 +8,29 @@ const NO_ACTIVATION: ItemResult = {
 };
 
 /**
+ * Get the HP threshold fraction for pinch berry activation.
+ * Gluttony changes the activation threshold from 25% to 50%.
+ * Normal berries (Sitrus, Oran) already use 50% and are unaffected.
+ *
+ * Source: Bulbapedia — Gluttony: "Makes the Pokemon eat a held Berry when its HP
+ *   drops to 50% or less instead of the usual 25%."
+ * Source: Showdown data/abilities.ts — Gluttony modifies pinch berry threshold
+ *
+ * @param pokemon - The Pokemon holding the berry
+ * @param normalFraction - The normal activation fraction (0.25 for pinch berries)
+ * @returns The effective threshold fraction
+ */
+export function getPinchBerryThreshold(
+  pokemon: { ability: string },
+  normalFraction: number,
+): number {
+  if (pokemon.ability === "gluttony" && normalFraction <= 0.25) {
+    return 0.5;
+  }
+  return normalFraction;
+}
+
+/**
  * Apply a Gen 4 held item effect at the given trigger point.
  *
  * Gen 4 held items follow the DPPt item system. Key differences from Gen 3:
@@ -47,18 +70,40 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
     return NO_ACTIVATION;
   }
 
+  let result: ItemResult;
   switch (trigger) {
     case "before-move":
-      return handleBeforeMove(item, context);
+      result = handleBeforeMove(item, context);
+      break;
     case "end-of-turn":
-      return handleEndOfTurn(item, context);
+      result = handleEndOfTurn(item, context);
+      break;
     case "on-damage-taken":
-      return handleOnDamageTaken(item, context);
+      result = handleOnDamageTaken(item, context);
+      break;
     case "on-hit":
-      return handleOnHit(item, context);
+      result = handleOnHit(item, context);
+      break;
     default:
-      return NO_ACTIVATION;
+      result = NO_ACTIVATION;
+      break;
   }
+
+  // Unburden: when a held item is consumed and the holder has Unburden,
+  // set the "unburden" volatile to double Speed.
+  // Source: Bulbapedia — Unburden: "Doubles the Pokemon's Speed stat when its held
+  //   item is used or lost."
+  // Source: Showdown data/abilities.ts — Unburden onAfterUseItem
+  if (
+    result.activated &&
+    context.pokemon.ability === "unburden" &&
+    result.effects.some((e) => e.type === "consume") &&
+    !context.pokemon.volatileStatuses.has("unburden")
+  ) {
+    context.pokemon.volatileStatuses.set("unburden", { turnsLeft: -1 });
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -347,6 +392,37 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
             { type: "consume", target: "self", value: "mental-herb" },
           ],
           messages: [`${pokemonName}'s Mental Herb cured its infatuation!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    // Sticky Barb: 1/8 max HP damage to holder each turn (NOT consumed)
+    // Source: Bulbapedia — Sticky Barb: "At the end of every turn, the holder takes
+    //   damage equal to 1/8 of its maximum HP."
+    // Source: Showdown Gen 4 mod — Sticky Barb end-of-turn chip
+    case "sticky-barb": {
+      const chipDamage = Math.max(1, Math.floor(maxHp / 8));
+      return {
+        activated: true,
+        effects: [{ type: "none", target: "self", value: -chipDamage }],
+        messages: [`${pokemonName} was hurt by its Sticky Barb!`],
+      };
+    }
+
+    // Berry Juice: Heal 20 HP when holder drops to ≤50% HP (consumed)
+    // Source: Bulbapedia — Berry Juice: "Restores 20 HP when the holder's HP drops
+    //   to 50% or below."
+    // Source: Showdown Gen 4 mod — Berry Juice EoT trigger at 50%
+    case "berry-juice": {
+      if (currentHp <= Math.floor(maxHp / 2)) {
+        return {
+          activated: true,
+          effects: [
+            { type: "heal", target: "self", value: 20 },
+            { type: "consume", target: "self", value: "berry-juice" },
+          ],
+          messages: [`${pokemonName}'s Berry Juice restored 20 HP!`],
         };
       }
       return NO_ACTIVATION;
