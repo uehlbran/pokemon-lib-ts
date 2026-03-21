@@ -349,6 +349,33 @@ describe("Bug #254 -- Gastro Acid suppressedAbility", () => {
     expect(defender.ability).toBe("multitype");
     expect(defender.suppressedAbility).toBeNull();
   });
+
+  it("given defender's ability is already suppressed, when Gastro Acid is used again, then it fails and does not overwrite the saved ability", () => {
+    // Source: Showdown Gen 4 mod -- Gastro Acid is idempotent; second use fails
+    // When suppressedAbility is set, the defender's original ability is already stored.
+    // A second Gastro Acid would overwrite suppressedAbility with "" (the suppressed value),
+    // permanently losing the original ability. The idempotency guard prevents this.
+    const attacker = createActivePokemon({ types: ["poison"] });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      ability: "",
+      suppressedAbility: "intimidate",
+    });
+    const move = createMove("gastro-acid", {
+      type: "poison",
+      category: "status",
+      power: 0,
+    });
+    const rng = createMockRng(0);
+    const ctx = createContext(attacker, defender, move, rng);
+
+    const result = executeGen4MoveEffect(ctx);
+
+    expect(result.messages).toContain("But it failed!");
+    // Original ability must not be overwritten
+    expect(defender.suppressedAbility).toBe("intimidate");
+    expect(defender.ability).toBe("");
+  });
 });
 
 // ===========================================================================
