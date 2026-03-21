@@ -377,12 +377,16 @@ export class BattleEngine implements BattleEventEmitter {
         disabled = true;
         disabledReason = "Blocked by Gravity";
       } else if (active.volatileStatuses.has("encore")) {
-        // Encore locks the target into its last used move
+        // Encore forces the Pokemon to use its encored move.
+        // Gen 2 stores moveIndex; Gen 4 stores moveId — support both.
+        // Source: pret/pokecrystal engine/battle/core.asm HandleEncore
         // Source: Showdown Gen 4 mod — Encore restricts to the encored move only
-        // Source: Bulbapedia — "Encore forces the target to repeat its last used move"
         const encoreData = active.volatileStatuses.get("encore")?.data;
         const encoreMoveId = encoreData?.moveId as string | undefined;
-        if (encoreMoveId && slot.moveId !== encoreMoveId) {
+        const encoreMoveIndex = encoreData?.moveIndex as number | undefined;
+        const lockedById = encoreMoveId !== undefined && slot.moveId !== encoreMoveId;
+        const lockedByIndex = encoreMoveIndex !== undefined && index !== encoreMoveIndex;
+        if (lockedById || lockedByIndex) {
           disabled = true;
           disabledReason = "Locked by Encore";
         }

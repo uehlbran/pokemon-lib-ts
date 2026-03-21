@@ -201,8 +201,21 @@ export function calculateGen2Damage(
 ): DamageResult {
   const { attacker, defender, move, state, rng, isCrit } = context;
 
+  // Return/Frustration: base power determined by friendship
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm ReturnEffect/FrustrationEffect
+  // Return: floor(friendship / 2.5), minimum 1
+  // Frustration: floor((255 - friendship) / 2.5), minimum 1
+  let dynamicPower: number | null = move.power;
+  if (move.id === "return") {
+    const friendship = attacker.pokemon.friendship ?? 70;
+    dynamicPower = Math.max(1, Math.floor(friendship / 2.5));
+  } else if (move.id === "frustration") {
+    const friendship = attacker.pokemon.friendship ?? 70;
+    dynamicPower = Math.max(1, Math.floor((255 - friendship) / 2.5));
+  }
+
   // Status moves do no damage
-  if (move.category === "status" || move.power === null || move.power === 0) {
+  if (move.category === "status" || dynamicPower === null || dynamicPower === 0) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -212,7 +225,7 @@ export function calculateGen2Damage(
   }
 
   const level = attacker.pokemon.level;
-  const power = move.power;
+  const power = dynamicPower;
 
   // Determine crit boost interaction (Showdown scripts.ts:589-600)
   const physical = isGen2PhysicalType(move.type);

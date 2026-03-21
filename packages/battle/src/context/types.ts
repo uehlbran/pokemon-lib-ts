@@ -164,6 +164,12 @@ export interface MoveEffectResult {
   readonly healAmount: number;
   /** `true` if the attacker should be forced to switch out after this move */
   readonly switchOut: boolean;
+  /**
+   * `true` if the switch-out is a Baton Pass — stat stages and volatile statuses
+   * should be preserved and transferred to the incoming Pokemon.
+   * Only meaningful when `switchOut` is also `true`.
+   */
+  readonly batonPass?: boolean;
   /** Freeform messages to emit as `MessageEvent`s after the move resolves */
   readonly messages: readonly string[];
   /** Wave 1: Set a screen (Reflect/Light Screen) on the attacker's side */

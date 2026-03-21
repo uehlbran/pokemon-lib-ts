@@ -562,12 +562,28 @@ export class Gen2Ruleset implements GenerationRuleset {
     if (pokemon.pokemon.status === "badly-poisoned") {
       pokemon.pokemon.status = "poison";
     }
+
+    // Baton Pass: preserve stat stages and certain volatiles for the incoming Pokemon
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
+    // Baton-passable volatiles in Gen 2: confusion, focus-energy, leech-seed, perish-song,
+    // substitute, curse, encore, mean-look/spider-web trapping
+    // Note: The engine resets stat stages after onSwitchOut (executeSwitch line ~1181).
+    // Full Baton Pass stat-stage preservation requires engine-level integration (future work).
+    const isBatonPass = pokemon.lastMoveUsed === "baton-pass";
+
+    if (!isBatonPass) {
+      pokemon.volatileStatuses.delete("confusion");
+      pokemon.volatileStatuses.delete("focus-energy");
+      pokemon.volatileStatuses.delete("leech-seed");
+    }
+
+    // These volatiles are ALWAYS cleared on switch (even with Baton Pass)
+    // Source: pret/pokecrystal — encore/disable/bound/flinch are tied to the user, not baton-passable
     pokemon.volatileStatuses.delete("bound");
-    pokemon.volatileStatuses.delete("confusion");
     pokemon.volatileStatuses.delete("flinch");
-    pokemon.volatileStatuses.delete("focus-energy");
-    pokemon.volatileStatuses.delete("leech-seed");
     pokemon.volatileStatuses.delete("toxic-counter");
+    pokemon.volatileStatuses.delete("encore");
+    pokemon.volatileStatuses.delete("disable");
 
     // If the switching Pokemon had applied trapping (Mean Look / Spider Web),
     // clear the "trapped" volatile from the opposing active Pokemon.
@@ -718,6 +734,8 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Order matches pokecrystal: FutureSight → weather-damage → weather-countdown → bind →
     // perish-song → leftovers → mystery-berry → defrost → safeguard → screens →
     // stat-boosting-items → healing-items → encore
+    // Source: pret/pokecrystal engine/battle/core.asm:250-296 HandleBetweenTurnEffects
+    // Disable countdown fires before Encore (jp HandleEncore is the final call)
     return [
       "future-attack",
       "weather-damage",
@@ -731,6 +749,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       "screen-countdown",
       "stat-boosting-items",
       "healing-items",
+      "disable-countdown",
       "encore-countdown",
     ] as const;
   }

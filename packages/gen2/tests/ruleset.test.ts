@@ -241,6 +241,7 @@ describe("Gen2Ruleset", () => {
         "screen-countdown",
         "stat-boosting-items",
         "healing-items",
+        "disable-countdown",
         "encore-countdown",
       ]);
     });
