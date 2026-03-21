@@ -1341,12 +1341,12 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       result.messages.push("But it failed!");
       return result;
     }
-    // Disable fails if the target's last move has 0 PP
-    // Source: Showdown Gen 4 — Disable fails if target's last move has 0 PP
+    // Disable fails if the target's last move is not a current move slot or has 0 PP
+    // Source: Showdown Gen 4 — Disable fails if target's last move has 0 PP or is not in moveset
     const moveSlot = defender.pokemon.moves.find(
       (slot) => slot && slot.moveId === defender.lastMoveUsed,
     );
-    if (moveSlot && moveSlot.currentPP <= 0) {
+    if (!moveSlot || moveSlot.currentPP <= 0) {
       result.messages.push("But it failed!");
       return result;
     }

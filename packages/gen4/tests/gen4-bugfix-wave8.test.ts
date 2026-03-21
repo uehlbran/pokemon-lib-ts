@@ -984,13 +984,17 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     };
     const resultWithout = calculateGen4Damage(contextWithout, GEN4_TYPE_CHART);
 
-    // With Adamant Orb should do more damage than without
-    expect(resultWith.damage).toBeGreaterThan(resultWithout.damage);
-    // The boost should be approximately 1.2x
-    // We allow some rounding tolerance
-    const ratio = resultWith.damage / resultWithout.damage;
-    expect(ratio).toBeGreaterThanOrEqual(1.15);
-    expect(ratio).toBeLessThanOrEqual(1.25);
+    // Source: Bulbapedia — Adamant Orb boosts Dialga's Dragon/Steel moves by 20% (4915/4096)
+    // Formula derivation (all stats = 100, level = 50, no weather/crit, max random roll = 100):
+    //   WITH orb: power = floor(90 * 4915 / 4096) = 107
+    //     levelFactor = floor(2*50/5) + 2 = 22
+    //     baseDamage = floor(floor(22 * 107 * 100 / 100) / 50) + 2 = 49
+    //     after random (100/100 = 1.0): 49; after STAB 1.5x: floor(49 * 1.5) = 73
+    //   WITHOUT orb: power = 90
+    //     baseDamage = floor(floor(22 * 90 * 100 / 100) / 50) + 2 = 41
+    //     after random: 41; after STAB: floor(41 * 1.5) = 61
+    expect(resultWith.damage).toBe(73);
+    expect(resultWithout.damage).toBe(61);
   });
 
   it("given Palkia holding Lustrous Orb using Surf, when damage is calculated, then base power is boosted", () => {
@@ -1037,7 +1041,16 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     };
     const resultWithout = calculateGen4Damage(contextWithout, GEN4_TYPE_CHART);
 
-    expect(resultWith.damage).toBeGreaterThan(resultWithout.damage);
+    // Source: Bulbapedia — Lustrous Orb boosts Palkia's Water/Dragon moves by 20% (4915/4096)
+    // Formula derivation (all stats = 100, level = 50, no weather/crit, max random roll = 100):
+    //   WITH orb: power = floor(95 * 4915 / 4096) = 113
+    //     baseDamage = floor(floor(22 * 113 * 100 / 100) / 50) + 2 = 51
+    //     after random (1.0): 51; after STAB 1.5x: floor(51 * 1.5) = 76
+    //   WITHOUT orb: power = 95
+    //     baseDamage = floor(floor(22 * 95 * 100 / 100) / 50) + 2 = 43
+    //     after random: 43; after STAB: floor(43 * 1.5) = 64
+    expect(resultWith.damage).toBe(76);
+    expect(resultWithout.damage).toBe(64);
   });
 
   it("given Dialga holding Adamant Orb using Flamethrower (Fire), when damage is calculated, then no boost", () => {

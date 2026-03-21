@@ -212,10 +212,12 @@ describe("tailwindSet move effect", () => {
 describe("trickRoomSet move effect", () => {
   it("given a move that returns trickRoomSet, when the move effect is processed, then state.trickRoom is active with correct turnsLeft", () => {
     // Source: Pokemon Showdown Gen 4 mod — Trick Room sets trickRoom.active=true, turnsLeft=5
+    // The engine relies on result.messages for Trick Room messaging (no hardcoded message).
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [];
     ruleset.setMoveEffectResult({
       trickRoomSet: { turnsLeft: 5 },
+      messages: ["The dimensions were twisted!"],
     });
 
     const { engine, events } = createEngine({ ruleset });

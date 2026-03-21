@@ -441,6 +441,8 @@ describe("Gen 4 executeMoveEffect — Disable", () => {
       types: ["normal"],
       lastMoveUsed: "tackle",
     });
+    // Defender must have the last-used move in its moveset for Disable to succeed
+    defender.pokemon.moves = [{ moveId: "tackle", currentPP: 35, maxPP: 35 }];
     const move = dataManager.getMove("disable");
     const rng = createMockRng(5); // rng.int(4,7) returns 5
     const context = createContext(attacker, defender, move, 0, rng);
@@ -462,6 +464,8 @@ describe("Gen 4 executeMoveEffect — Disable", () => {
       types: ["fire"],
       lastMoveUsed: "flamethrower",
     });
+    // Defender must have the last-used move in its moveset for Disable to succeed
+    defender.pokemon.moves = [{ moveId: "flamethrower", currentPP: 15, maxPP: 15 }];
     const move = dataManager.getMove("disable");
     const rng = createMockRng(6); // rng.int(4,7) returns 6
     const context = createContext(attacker, defender, move, 0, rng);
