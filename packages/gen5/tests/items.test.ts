@@ -262,7 +262,7 @@ describe("Gen 5 Items -- Black Sludge", () => {
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -20 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 20 }]);
   });
 });
 
@@ -281,7 +281,9 @@ describe("Gen 5 Items -- Toxic Orb", () => {
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: "badly-poisoned" }]);
+    expect(result.effects).toEqual([
+      { type: "inflict-status", target: "self", status: "badly-poisoned" },
+    ]);
   });
 
   it("given a Pokemon already burned holding Toxic Orb, when end-of-turn triggers, then it does not activate", () => {
@@ -334,7 +336,7 @@ describe("Gen 5 Items -- Flame Orb", () => {
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: "burn" }]);
+    expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: "burn" }]);
   });
 
   it("given a Fire-type holding Flame Orb, when end-of-turn triggers, then it does not activate (type immune)", () => {
@@ -402,7 +404,7 @@ describe("Gen 5 Items -- Lum Berry", () => {
     const result = applyGen5HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { type: "status-cure", target: "self", value: "paralysis" },
+      { type: "status-cure", target: "self" },
       { type: "consume", target: "self", value: "lum-berry" },
     ]);
   });
@@ -444,7 +446,6 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     expect(result.effects[0]).toEqual({
       type: "status-cure",
       target: "self",
-      value: "paralysis",
     });
   });
 
@@ -456,7 +457,6 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     expect(result.effects[0]).toEqual({
       type: "status-cure",
       target: "self",
-      value: "sleep",
     });
   });
 
@@ -468,7 +468,6 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     expect(result.effects[0]).toEqual({
       type: "status-cure",
       target: "self",
-      value: "poison",
     });
   });
 
@@ -480,7 +479,6 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     expect(result.effects[0]).toEqual({
       type: "status-cure",
       target: "self",
-      value: "badly-poisoned",
     });
   });
 
@@ -492,7 +490,6 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     expect(result.effects[0]).toEqual({
       type: "status-cure",
       target: "self",
-      value: "burn",
     });
   });
 
@@ -504,7 +501,6 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     expect(result.effects[0]).toEqual({
       type: "status-cure",
       target: "self",
-      value: "freeze",
     });
   });
 
@@ -615,7 +611,7 @@ describe("Gen 5 Items -- Sticky Barb", () => {
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -25 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 25 }]);
   });
 
   it("given a Pokemon with 7 max HP holding Sticky Barb, when end-of-turn triggers, then it takes 1 HP damage (minimum 1)", () => {
@@ -624,7 +620,7 @@ describe("Gen 5 Items -- Sticky Barb", () => {
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -1 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 1 }]);
   });
 });
 
@@ -825,7 +821,7 @@ describe("Gen 5 Items -- Rocky Helmet", () => {
     const result = applyGen5HeldItem("on-contact", ctx);
     expect(result.activated).toBe(true);
     // 1/6 of attacker's 300 HP = 50
-    expect(result.effects).toEqual([{ type: "self-damage", target: "opponent", value: 50 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "opponent", value: 50 }]);
   });
 
   it("given a defender with Rocky Helmet hit by a non-contact move, when on-contact triggers, then it does not activate", () => {
@@ -1052,7 +1048,7 @@ describe("Gen 5 Items -- Life Orb", () => {
     const ctx = makeItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem("on-hit", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -20 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 20 }]);
   });
 
   it("given a Pokemon with 15 max HP and Life Orb dealing damage, when on-hit triggers, then it takes 1 HP recoil (minimum 1)", () => {
@@ -1061,7 +1057,7 @@ describe("Gen 5 Items -- Life Orb", () => {
     const ctx = makeItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem("on-hit", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -1 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 1 }]);
   });
 
   it("given a Pokemon with Life Orb dealing 0 damage, when on-hit triggers, then it does not take recoil", () => {
@@ -1115,7 +1111,7 @@ describe("Gen 5 Items -- Life Orb + Sheer Force interaction", () => {
     const result = applyGen5HeldItem("on-hit", ctx);
     // SHOULD activate because Sheer Force did not trigger
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -20 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 20 }]);
   });
 });
 
@@ -1212,7 +1208,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
     expect(result.activated).toBe(true);
     // 1/8 of attacker's 400 HP = 50
     expect(result.effects[0]).toEqual({
-      type: "self-damage",
+      type: "chip-damage",
       target: "opponent",
       value: 50,
     });
@@ -1238,7 +1234,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
     expect(result.activated).toBe(true);
     // 1/8 of attacker's 240 HP = 30
     expect(result.effects[0]).toEqual({
-      type: "self-damage",
+      type: "chip-damage",
       target: "opponent",
       value: 30,
     });

@@ -267,7 +267,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ type: "none", target: "self", value: -chipDamage }],
+        effects: [{ type: "chip-damage", target: "self", value: chipDamage }],
         messages: [`${pokemonName} was hurt by its Black Sludge!`],
       };
     }
@@ -283,7 +283,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       return {
         activated: true,
-        effects: [{ type: "none", target: "self", value: "badly-poisoned" }],
+        effects: [{ type: "inflict-status", target: "self", status: "badly-poisoned" }],
         messages: [`${pokemonName} was badly poisoned by its Toxic Orb!`],
       };
     }
@@ -299,7 +299,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       return {
         activated: true,
-        effects: [{ type: "none", target: "self", value: "burn" }],
+        effects: [{ type: "inflict-status", target: "self", status: "burn" }],
         messages: [`${pokemonName} was burned by its Flame Orb!`],
       };
     }
@@ -347,7 +347,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       const effects: ItemEffect[] = [];
       if (hasPrimaryStatus) {
-        effects.push({ type: "status-cure", target: "self", value: status as string });
+        effects.push({ type: "status-cure", target: "self" });
       }
       if (hasConfusion) {
         effects.push({ type: "volatile-cure", target: "self", value: "confusion" });
@@ -367,7 +367,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "paralysis" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "cheri-berry" },
           ],
           messages: [`${pokemonName}'s Cheri Berry cured its paralysis!`],
@@ -383,7 +383,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "sleep" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "chesto-berry" },
           ],
           messages: [`${pokemonName}'s Chesto Berry woke it up!`],
@@ -399,7 +399,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: status },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "pecha-berry" },
           ],
           messages: [`${pokemonName}'s Pecha Berry cured its poisoning!`],
@@ -415,7 +415,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "burn" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "rawst-berry" },
           ],
           messages: [`${pokemonName}'s Rawst Berry cured its burn!`],
@@ -431,7 +431,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "freeze" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "aspear-berry" },
           ],
           messages: [`${pokemonName}'s Aspear Berry thawed it out!`],
@@ -493,7 +493,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ type: "none", target: "self", value: -chipDamage }],
+        effects: [{ type: "chip-damage", target: "self", value: chipDamage }],
         messages: [`${pokemonName} was hurt by its Sticky Barb!`],
       };
     }
@@ -695,7 +695,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "self-damage", target: "opponent", value: retaliationDamage },
+            { type: "chip-damage", target: "opponent", value: retaliationDamage },
             { type: "consume", target: "self", value: "jaboca-berry" },
           ],
           messages: [`${pokemonName}'s Jaboca Berry hurt the attacker!`],
@@ -715,7 +715,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "self-damage", target: "opponent", value: retaliationDamage },
+            { type: "chip-damage", target: "opponent", value: retaliationDamage },
             { type: "consume", target: "self", value: "rowap-berry" },
           ],
           messages: [`${pokemonName}'s Rowap Berry hurt the attacker!`],
@@ -868,7 +868,7 @@ function handleOnContact(item: string, context: ItemContext): ItemResult {
       const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 6));
       return {
         activated: true,
-        effects: [{ type: "self-damage", target: "opponent", value: chipDamage }],
+        effects: [{ type: "chip-damage", target: "opponent", value: chipDamage }],
         messages: [`${pokemonName}'s Rocky Helmet hurt the attacker!`],
       };
     }
@@ -963,7 +963,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         const recoil = Math.max(1, Math.floor(maxHp / 10));
         return {
           activated: true,
-          effects: [{ type: "none", target: "self", value: -recoil }],
+          effects: [{ type: "chip-damage", target: "self", value: recoil }],
           messages: [`${pokemonName} is hurt by its Life Orb!`],
         };
       }
