@@ -909,19 +909,8 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Showdown Gen 4 — Unaware in accuracy calculation
     const accStage =
       context.defender.ability === "unaware" ? 0 : context.attacker.statStages.accuracy;
-    let evaStage = context.attacker.ability === "unaware" ? 0 : context.defender.statStages.evasion;
-
-    // Tangled Feet (NEW in Gen 4): doubles evasion when confused.
-    // Implemented as +2 to evasion stage (capped at +6).
-    // Source: Bulbapedia — Tangled Feet: "Raises evasion by one stage (effectively
-    //   doubles the evasion modifier) when the Pokemon is confused."
-    // Source: Showdown data/abilities.ts — Tangled Feet onModifyAccuracy
-    if (
-      context.defender.ability === "tangled-feet" &&
-      context.defender.volatileStatuses.has("confusion")
-    ) {
-      evaStage = Math.min(6, evaStage + 2);
-    }
+    const evaStage =
+      context.attacker.ability === "unaware" ? 0 : context.defender.statStages.evasion;
 
     // Net stage calculation: acc - eva, clamped to [-6, +6]
     // Source: pret/pokeplatinum — same as pokeemerald
@@ -933,6 +922,16 @@ export class Gen4Ruleset extends BaseRuleset {
       divisor: number;
     };
     let calc = Math.floor((ratio.dividend * moveAcc) / ratio.divisor);
+
+    // Tangled Feet (NEW in Gen 4): halves accuracy when confused.
+    // Applied as a 0.5x multiplier AFTER the stage ratio calc, not as stage manipulation.
+    // Source: Showdown data/abilities.ts — Tangled Feet onModifyAccuracy: return accuracy * 0.5
+    if (
+      context.defender.ability === "tangled-feet" &&
+      context.defender.volatileStatuses.has("confusion")
+    ) {
+      calc = Math.floor(calc * 0.5);
+    }
 
     // Compound Eyes: 1.3x accuracy
     // Source: pret/pokeplatinum — same as pokeemerald
@@ -1152,11 +1151,11 @@ export class Gen4Ruleset extends BaseRuleset {
       "wish", // Wish recovery
       "weather-healing", // Rain Dish, Dry Skin rain, Ice Body
       "shed-skin", // Shed Skin 33% cure
+      "leech-seed", // Leech Seed drain (before item recovery)
       "leftovers", // Leftovers recovery
       "black-sludge", // Black Sludge
       "aqua-ring", // Aqua Ring recovery
       "ingrain", // Ingrain recovery
-      "leech-seed", // Leech Seed drain
       "poison-heal", // Poison Heal (before status damage)
       "status-damage", // Poison/Toxic/Burn
       "nightmare", // Nightmare damage
