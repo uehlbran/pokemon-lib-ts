@@ -459,14 +459,21 @@ describe("applyGen4Ability on-switch-in — Frisk", () => {
 });
 
 describe("applyGen4Ability on-switch-in — Slow Start", () => {
-  it("given Slow Start, when Pokemon switches in, then activates with none effect and a message", () => {
-    // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns (informational on switch-in)
+  it("given Slow Start, when Pokemon switches in, then sets slow-start volatile with 5 turns and a message", () => {
+    // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns after switch-in
+    // Source: Showdown Gen 4 mod — Slow Start counter initialized on switch-in
     const ctx = makeContext({ ability: "slow-start" });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("none");
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toMatchObject({
+      effectType: "volatile-inflict",
+      target: "self",
+      volatile: "slow-start",
+    });
     expect(result.messages).toHaveLength(1);
+    expect(result.messages[0]).toContain("Slow Start");
   });
 });
 

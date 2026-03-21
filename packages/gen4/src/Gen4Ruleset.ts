@@ -581,6 +581,14 @@ export class Gen4Ruleset extends BaseRuleset {
       effective = effective * 2;
     }
 
+    // Slow Start: halve Speed for the first 5 turns after entering battle.
+    // Tracked via the "slow-start" volatile status.
+    // Source: Bulbapedia — Slow Start: "Halves Attack and Speed for 5 turns upon entering battle."
+    // Source: Showdown data/abilities.ts — Slow Start onModifySpe
+    if (active.ability === "slow-start" && active.volatileStatuses.has("slow-start")) {
+      effective = Math.floor(effective / 2);
+    }
+
     // Quick Feet: 1.5x Speed when statused, overrides paralysis penalty
     // Source: Bulbapedia — Quick Feet: "Boosts Speed by 50% when the Pokemon
     //   has a status condition. The Speed drop from paralysis is also ignored."
