@@ -514,6 +514,71 @@ describe("applyGen4WeatherEffects — no weather", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Issue #436 — calculatedStats null-fallback branch (Gen4Weather.ts:96)
+// ---------------------------------------------------------------------------
+
+describe("applyGen4WeatherEffects — calculatedStats null-fallback (issue #436)", () => {
+  it("given sandstorm and a Pokemon with null calculatedStats, when weather effects applied, then falls back to currentHp for damage calculation", () => {
+    // Exercises Gen4Weather.ts:96 null-fallback branch:
+    //   const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+    // When calculatedStats is null/undefined (e.g., stats not yet calculated at battle start),
+    // the code falls back to currentHp.
+    //
+    // Source: Showdown Gen 4 mod — weather chip uses max HP; fallback to currentHp is defensive
+    // Derivation: currentHp=160, floor(160/16)=10 damage expected
+    const normalMon = makeActivePokemon({ types: ["normal"], maxHp: 160 });
+    // Override the pokemon to have no calculatedStats (null-fallback path)
+    const pokemonWithNullStats = {
+      ...normalMon,
+      pokemon: {
+        ...normalMon.pokemon,
+        calculatedStats: null as never,
+        currentHp: 160,
+      },
+    } as ActivePokemon;
+
+    const state = makeBattleState(
+      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+      [pokemonWithNullStats],
+      [],
+    );
+
+    const results = applyGen4WeatherEffects(state);
+
+    // Falls back to currentHp=160; floor(160/16) = 10 damage
+    expect(results).toHaveLength(1);
+    expect(results[0]?.damage).toBe(10);
+  });
+
+  it("given hail and a Pokemon with null calculatedStats, when weather effects applied, then falls back to currentHp for damage calculation", () => {
+    // Exercises Gen4Weather.ts:96 null-fallback branch for hail
+    // Source: Showdown Gen 4 mod — hail chip uses max HP; fallback to currentHp
+    // Derivation: currentHp=320, floor(320/16)=20 damage expected
+    const waterMon = makeActivePokemon({ types: ["water"], maxHp: 320 });
+    const pokemonWithNullStats = {
+      ...waterMon,
+      pokemon: {
+        ...waterMon.pokemon,
+        calculatedStats: null as never,
+        currentHp: 320,
+      },
+    } as ActivePokemon;
+
+    const state = makeBattleState(
+      { type: "hail", turnsLeft: 5, source: "hail" },
+      [pokemonWithNullStats],
+      [],
+    );
+
+    const results = applyGen4WeatherEffects(state);
+
+    // Falls back to currentHp=320; floor(320/16) = 20 damage
+    expect(results).toHaveLength(1);
+    expect(results[0]?.damage).toBe(20);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Gen4Ruleset.applyWeatherEffects integration
 // ---------------------------------------------------------------------------
 
