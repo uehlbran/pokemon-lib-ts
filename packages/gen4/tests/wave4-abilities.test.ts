@@ -356,9 +356,16 @@ describe("Storm Drain — Gen 4: redirect-only in doubles, no singles immunity",
       GEN4_TYPE_CHART,
     );
 
-    // In Gen 4 singles, Storm Drain does NOT grant Water immunity
-    expect(damageResult.damage).toBeGreaterThan(0);
-    expect(damageResult.effectiveness).toBeGreaterThan(0);
+    // In Gen 4 singles, Storm Drain does NOT grant Water immunity — Water deals normal damage.
+    // Derivation: level=50, spAtk=100, spDef=100, power=90, Water vs Ground = 2x (super effective)
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDamage = floor(floor((22*90*100)/100)/50) = floor(1980/50) = 39
+    //   +2 = 41; random=100 → floor(41*1.0)=41; STAB (water/water) 1.5x → floor(61.5)=61
+    //   effectiveness 2.0 → floor(61*2) = 122; no items → 122
+    // Source: Bulbapedia — Storm Drain (Gen 4): "Has no effect in single battles."
+    // Source: Gen 4 type chart — Water is super effective against Ground (2x)
+    expect(damageResult.damage).toBe(122);
+    expect(damageResult.effectiveness).toBe(2);
   });
 
   it("given Storm Drain, when passive-immunity is checked for Water move in singles, then ability does not activate", () => {
