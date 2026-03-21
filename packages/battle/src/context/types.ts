@@ -288,7 +288,11 @@ export type AbilityEffect =
       readonly weatherTurns: number;
     }
   | { readonly effectType: "damage-reduction"; readonly target: "self" | "opponent" }
-  | { readonly effectType: "type-change"; readonly target: "self" | "opponent" }
+  | {
+      readonly effectType: "type-change";
+      readonly target: "self" | "opponent";
+      readonly types: readonly import("@pokemon-lib-ts/core").PokemonType[];
+    }
   | { readonly effectType: "weather-immunity"; readonly target: "self" | "opponent" }
   | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" }
   | {

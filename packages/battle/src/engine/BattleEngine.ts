@@ -370,6 +370,22 @@ export class BattleEngine implements BattleEventEmitter {
           disabled = true;
           disabledReason = "Locked by Choice item";
         }
+      } else if (this.state.gravity.active && moveData?.flags.gravity) {
+        // Gravity blocks gravity-flagged moves (Fly, Bounce, Hi Jump Kick, etc.)
+        // Source: Showdown Gen 4 mod — Gravity disables gravity-flagged moves
+        // Source: Bulbapedia — "Gravity prevents the use of moves that involve the user going airborne"
+        disabled = true;
+        disabledReason = "Blocked by Gravity";
+      } else if (active.volatileStatuses.has("encore")) {
+        // Encore locks the target into its last used move
+        // Source: Showdown Gen 4 mod — Encore restricts to the encored move only
+        // Source: Bulbapedia — "Encore forces the target to repeat its last used move"
+        const encoreData = active.volatileStatuses.get("encore")?.data;
+        const encoreMoveId = encoreData?.moveId as string | undefined;
+        if (encoreMoveId && slot.moveId !== encoreMoveId) {
+          disabled = true;
+          disabledReason = "Locked by Encore";
+        }
       }
 
       return [
@@ -1960,6 +1976,30 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.gravitySet) {
       this.state.gravity = { active: true, turnsLeft: 5 };
       this.emit({ type: "message", text: "Gravity intensified!" });
+
+      // Gravity grounds all in-flight Pokemon — cancel Fly/Bounce mid-air
+      // Both Fly and Bounce use the "flying" volatile status.
+      // Source: Showdown Gen 4 mod — "Gravity cancels the charge turn of Fly, Bounce, etc."
+      // Source: Bulbapedia — "If Gravity is activated while a Pokemon is in the
+      //   semi-invulnerable turn of Fly or Bounce, that Pokemon is brought back down."
+      for (const side of this.state.sides) {
+        const sideActive = side.active[0];
+        if (!sideActive) continue;
+        if (sideActive.volatileStatuses.has("flying")) {
+          sideActive.volatileStatuses.delete("flying");
+          sideActive.forcedMove = null;
+          this.emit({
+            type: "volatile-end",
+            side: side.index,
+            pokemon: getPokemonName(sideActive),
+            volatile: "flying",
+          });
+          this.emit({
+            type: "message",
+            text: `${getPokemonName(sideActive)} was brought back down by gravity!`,
+          });
+        }
+      }
     }
 
     // Self-faint (Explosion / Self-Destruct)
@@ -3239,8 +3279,23 @@ export class BattleEngine implements BattleEventEmitter {
           });
           break;
         }
+        case "type-change": {
+          // Active type change (Multitype, Forecast, Color Change, etc.)
+          // Source: Showdown — Multitype changes Arceus's type on switch-in based on Plate
+          // Source: Bulbapedia — Multitype: "Changes Arceus's type and form to match its held Plate"
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          target.types = [...effect.types];
+          this.emit({
+            type: "message",
+            text: `${getPokemonName(target)}'s type changed!`,
+          });
+          // Suppress unused variable warning — targetSide is available for future event emission
+          void targetSide;
+          break;
+        }
         default:
-          // damage-reduction, type-change, weather-immunity are intentionally NOT processed
+          // damage-reduction, weather-immunity are intentionally NOT processed
           // here. They are passive checks handled inline by the ruleset's calculateDamage()
           // and ability trigger systems — not post-hoc engine effects. This is by design
           // per the cardinal rule: the engine delegates ALL gen-specific behavior to rulesets.

@@ -4,11 +4,36 @@ import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffe
 import { GEN4_TYPE_CHART } from "./Gen4TypeChart";
 
 /**
+ * Maps Plate held items to their corresponding PokemonType for Multitype.
+ * Source: Showdown Gen 4 mod — Multitype plate-to-type mapping
+ * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Plate_(item)
+ */
+export const PLATE_TO_TYPE: Record<string, PokemonType> = {
+  "flame-plate": "fire",
+  "splash-plate": "water",
+  "zap-plate": "electric",
+  "meadow-plate": "grass",
+  "icicle-plate": "ice",
+  "fist-plate": "fighting",
+  "toxic-plate": "poison",
+  "earth-plate": "ground",
+  "sky-plate": "flying",
+  "mind-plate": "psychic",
+  "insect-plate": "bug",
+  "stone-plate": "rock",
+  "spooky-plate": "ghost",
+  "draco-plate": "dragon",
+  "dread-plate": "dark",
+  "iron-plate": "steel",
+};
+
+/**
  * Gen 4 Abilities — applyAbility dispatch.
  *
  * Handles triggers that the battle engine currently calls:
  *   - "on-switch-in": Intimidate, Drizzle, Drought, Sand Stream, Snow Warning,
- *                     Download, Anticipation, Forewarn, Frisk, Slow Start, Trace
+ *                     Download, Anticipation, Forewarn, Frisk, Slow Start, Trace,
+ *                     Mold Breaker, Multitype
  *   - "on-turn-end": Speed Boost, Rain Dish, Ice Body, Dry Skin, Solar Power,
  *                    Hydration, Shed Skin, Bad Dreams, Poison Heal
  *   - "on-contact": Static, Flame Body, Poison Point, Rough Skin, Effect Spore,
@@ -352,6 +377,27 @@ function handleSwitchIn(
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
         messages: [`${name} breaks the mold!`],
+      };
+    }
+
+    case "multitype": {
+      // Multitype: Arceus changes type based on held Plate item on switch-in.
+      // Source: Showdown Gen 4 mod — Multitype type change on switch-in
+      // Source: Bulbapedia — Multitype: "Changes Arceus's type and form to match
+      //   its held Plate. If Arceus is not holding a Plate, it is Normal-type."
+      const heldItem = context.pokemon.pokemon.heldItem;
+      const plateType = heldItem ? PLATE_TO_TYPE[heldItem] : undefined;
+      const newType: PokemonType = plateType ?? "normal";
+      const typeName = newType.charAt(0).toUpperCase() + newType.slice(1);
+      const effect: AbilityEffect = {
+        effectType: "type-change",
+        target: "self",
+        types: [newType],
+      };
+      return {
+        activated: true,
+        effects: [effect],
+        messages: [`${name} transformed into the ${typeName} type!`],
       };
     }
 

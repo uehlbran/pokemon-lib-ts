@@ -1,7 +1,7 @@
 // @pokemon-lib-ts/gen4 -- Gen4Ruleset + complete Gen 4 data
 
 export { createGen4DataManager } from "./data";
-export { applyGen4Ability } from "./Gen4Abilities";
+export { applyGen4Ability, PLATE_TO_TYPE } from "./Gen4Abilities";
 export {
   CRIT_MULTIPLIER_CLASSIC,
   CRIT_RATES_GEN3_5,
