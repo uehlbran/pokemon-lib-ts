@@ -339,7 +339,13 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: "surf", type: "water", category: "special", power: 90 } as MoveData,
+        move: {
+          id: "surf",
+          type: "water",
+          category: "special",
+          power: 90,
+          effect: { type: "damage" },
+        } as MoveData,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -362,7 +368,13 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: "surf", type: "water", category: "special", power: 90 } as MoveData,
+        move: {
+          id: "surf",
+          type: "water",
+          category: "special",
+          power: 90,
+          effect: { type: "damage" },
+        } as MoveData,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -507,7 +519,19 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: "hyper-voice", type: "normal", category: "special", power: 90 } as MoveData,
+        move: {
+          id: "hyper-voice",
+          type: "normal",
+          category: "special",
+          power: 90,
+          flags: {
+            sound: true,
+            contact: false,
+            protect: true,
+            mirror: true,
+            bypassSubstitute: false,
+          },
+        } as MoveData,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -526,7 +550,19 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: "tackle", type: "normal", category: "physical", power: 40 } as MoveData,
+        move: {
+          id: "tackle",
+          type: "normal",
+          category: "physical",
+          power: 40,
+          flags: {
+            sound: false,
+            contact: true,
+            protect: true,
+            mirror: true,
+            bypassSubstitute: false,
+          },
+        } as MoveData,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -550,7 +586,13 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: "fissure", type: "ground", category: "physical", power: 0 } as MoveData,
+        move: {
+          id: "fissure",
+          type: "ground",
+          category: "physical",
+          power: 0,
+          effect: { type: "ohko" },
+        } as MoveData,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -569,7 +611,13 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: "surf", type: "water", category: "special", power: 90 } as MoveData,
+        move: {
+          id: "surf",
+          type: "water",
+          category: "special",
+          power: 90,
+          effect: { type: "damage" },
+        } as MoveData,
       };
 
       const result = applyGen3Ability("passive-immunity", context);

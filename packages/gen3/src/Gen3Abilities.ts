@@ -539,26 +539,9 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
     case "soundproof": {
       // Source: pret/pokeemerald — Soundproof: blocks sound-based moves
       // Source: Bulbapedia — Soundproof makes the Pokemon immune to sound-based moves
-      // Gen 3 sound moves: Roar, Growl, Sing, Supersonic, Screech, Snore, Uproar,
-      //   Metal Sound, GrassWhistle, Hyper Voice, Bug Buzz (Gen 4), Chatter (Gen 4)
-      // We check via the move's flags rather than a hardcoded list, but the move data
-      // should have a "sound" flag. For now, check the move ID against the Gen 3 list.
-      const soundMoves = new Set([
-        "roar",
-        "growl",
-        "sing",
-        "supersonic",
-        "screech",
-        "snore",
-        "uproar",
-        "metal-sound",
-        "grass-whistle",
-        "hyper-voice",
-        "perish-song",
-        "heal-bell",
-      ]);
-      const moveId = context.move?.id;
-      if (!moveId || !soundMoves.has(moveId)) {
+      // Use the move's flags.sound metadata for detection rather than a hardcoded list,
+      // so future moves with the sound flag are automatically handled.
+      if (!context.move?.flags?.sound) {
         return { activated: false, effects: [], messages: [] };
       }
       return {
@@ -573,9 +556,8 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       // In Gen 3-4, Sturdy ONLY blocks OHKO moves. The Focus Sash effect (surviving
       // any hit at full HP) was added in Gen 5.
       // Source: Bulbapedia — "In Generation III-IV, Sturdy only blocks one-hit knockout moves."
-      const ohkoMoves = new Set(["fissure", "horn-drill", "guillotine", "sheer-cold"]);
-      const moveId = context.move?.id;
-      if (!moveId || !ohkoMoves.has(moveId)) {
+      // Use move effect metadata for detection rather than a hardcoded move-ID list.
+      if (context.move?.effect?.type !== "ohko") {
         return { activated: false, effects: [], messages: [] };
       }
       return {

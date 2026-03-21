@@ -1236,7 +1236,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       const ctx = createAbilityContext({
         pokemonAbility: "static",
       });
-      const result = applyGen3Ability("on-flinch" as "on-switch-in", ctx);
+      const result = applyGen3Ability("on-flinch", ctx);
       expect(result.activated).toBe(false);
     });
   });
