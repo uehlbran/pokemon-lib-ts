@@ -12,7 +12,7 @@
  *   - Encore: 2-5 turns (not 4-8 like Gen 4)
  *   - Disable: 2-5 turns (not fixed 4 like Gen 4)
  *   - Explosion/Self-Destruct: defense halved in damage calc
- *   - Electric types ARE immune to paralysis (unlike Gen 4)
+ *   - Electric types are NOT immune to paralysis in Gen 3 (immunity added in Gen 6)
  *   - 0-99 scale for effect chance (Random() % 100 < percentChance)
  *
  * Source: pret/pokeemerald src/battle_script_commands.c

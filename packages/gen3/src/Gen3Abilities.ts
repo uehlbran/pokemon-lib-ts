@@ -110,7 +110,6 @@ function canInflictContactStatus(status: PrimaryStatus, target: ActivePokemon): 
 
   // Type immunities
   // Source: pret/pokeemerald src/battle_util.c — type-based status immunities
-  // Source: pret/pokeemerald src/battle_util.c — type-based status immunities
   // NOTE: No Electric-type paralysis immunity in Gen 3. That was added in Gen 6.
   // Source: Bulbapedia — "In Generation VI onward, Electric-type Pokemon are immune to paralysis."
   const typeImmunities: Record<string, readonly string[]> = {
