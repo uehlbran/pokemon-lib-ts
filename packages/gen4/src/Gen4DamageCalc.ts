@@ -915,6 +915,9 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // --- Post-formula modifiers ---
 
+  // Track item multiplier for breakdown (used across Phase 2 and final modifier sections)
+  let itemMultiplier = 1;
+
   // 12. Critical hit multiplier
   // Gen 4: 2.0x normally, 3.0x with Sniper (NEW ability in Gen 4)
   // Source: Bulbapedia — Sniper: "Powers up moves if they become critical hits.
@@ -1146,41 +1149,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Muscle Band and Wise Glasses: now applied to base power (moved to early base power section).
   // See step 1c in the base power modifiers above.
 
-  // Wise Glasses: 1.1x damage for special moves
-  // Source: Bulbapedia — Wise Glasses: "Boosts the power of special moves by 10%."
-  // Source: Showdown sim/items.ts — Wise Glasses
-  if (!attackerHasKlutz && attackerItem === "wise-glasses" && !isPhysical) {
-    baseDamage = Math.floor(baseDamage * 1.1);
-    itemMultiplier = 1.1;
-  }
-
-  // Metronome item: consecutive use of the same move boosts baseDamage (Gen 4).
-  // Each consecutive use adds 0.1x: 1.0x (first use), 1.1x, 1.2x, ..., caps at 1.5x (5 boosts).
-  // Applied to baseDamage (alongside Life Orb, Expert Belt, etc.), NOT to power.
-  // The consecutive count is tracked via the "metronome-count" volatile's data.count field.
-  // First use: data.count = 1 (1.0x = no boost); second consecutive use: data.count = 2 (1.1x), etc.
-  //
-  // Source: Showdown Gen 4 mod — Metronome item onModifyMove: 10% step, 1.5x cap
-  // Source: Bulbapedia — Metronome (item) Gen 4: "+10% per consecutive use, max 50% (1.5x)"
-  //
-  // Bug #358: Previous implementation used Gen 5+ values (0.2x step / 2.0x cap).
-  // Gen 4 uses 0.1x step and caps at 1.5x (after 5 consecutive uses).
-  if (!attackerHasKlutz && attackerItem === "metronome") {
-    const metronomeState = attacker.volatileStatuses.get("metronome-count");
-    if (metronomeState?.data?.count) {
-      // count tracks consecutive uses including the first:
-      //   count=1 -> first use (1.0x, no boost)
-      //   count=2 -> second consecutive (1.1x)
-      //   count=3 -> third consecutive (1.2x)
-      //   count=6+ -> capped at 5 boost steps (1.5x)
-      const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
-      if (boostSteps > 0) {
-        const multiplier = 1 + boostSteps * 0.1;
-        baseDamage = Math.floor(baseDamage * multiplier);
-        itemMultiplier = multiplier;
-      }
-    }
-  }
+  // Metronome item: moved to Phase 2 (after crit, before random/STAB/types).
+  // See step 12b above.
 
   // Type-boost items and Plates now modify base power (not attack stat),
   // so they're already baked into baseDamage. No separate itemMultiplier needed for them.

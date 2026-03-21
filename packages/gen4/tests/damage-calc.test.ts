@@ -3548,18 +3548,20 @@ describe("Gen 4 damage calc — Thick Fat halves base power (#353)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// #355 — Heatproof halves attack stat (not base power)
+// #355 — Heatproof applies 0.5x post-type-effectiveness (onSourceModifyDamage)
 // ---------------------------------------------------------------------------
 
-describe("Gen 4 damage calc — Heatproof halves attack stat (#355)", () => {
-  it("given Heatproof defender hit by fire move power=73 Atk=100, when calculating damage, then attack is halved (not power)", () => {
-    // Source: Showdown data/abilities.ts lines 1776-1790 — Heatproof onSourceModifyAtk
-    // This test case specifically differentiates attack-halving from power-halving.
-    // Derivation: L50, power=73, Atk=100, Def=100, rng=100
-    //   Attack halved: floor(100/2) = 50
-    //   baseDmg = floor(floor(22*73*50/100)/50) = floor(floor(80300/100)/50) = floor(803/50) = 16; +2 = 18
-    // OLD BUG (power halved): floor(73/2)=36
-    //   baseDmg = floor(floor(22*36*100/100)/50) = floor(792/50) = 15; +2 = 17 (WRONG)
+describe("Gen 4 damage calc — Heatproof post-formula 0.5x modifier (#355)", () => {
+  it("given Heatproof defender hit by fire move power=73 Atk=100, when calculating damage, then final damage is halved post-formula", () => {
+    // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage 0.5x for Fire moves
+    // In Gen 4, Heatproof halves the final damage (post-formula, post-crit, post-STAB, post-type).
+    // Bug #355: prior implementation halved power or attack-stat; Gen 4 halves final damage.
+    //
+    // Derivation: L50, power=73, Atk=100 (not halved), Def=100, rng=100, neutral effectiveness
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   baseDmg = floor(floor(22*73*100/100)/50)+2 = floor(1606/50)+2 = 32+2 = 34
+    //   crit=1x, random=100/100=1x, STAB=none, effectiveness=1x → 34
+    //   Heatproof (post-formula): floor(34 * 0.5) = 17
     const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
     const defender = createActivePokemon({
       defense: 100,
@@ -3574,21 +3576,16 @@ describe("Gen 4 damage calc — Heatproof halves attack stat (#355)", () => {
       chart,
     );
 
-    expect(result.damage).toBe(18);
+    expect(result.damage).toBe(17);
   });
 
-  it("given Heatproof defender hit by fire special move power=95 SpAtk=110, when calculating damage, then SpAtk is halved", () => {
-    // Source: Showdown data/abilities.ts — Heatproof onSourceModifySpA
-    // Derivation: L50, power=95, SpAtk=110, SpDef=100, rng=100
-    //   SpAtk halved: floor(110/2) = 55
-    //   baseDmg = floor(floor(22*95*55/100)/50) = floor(floor(114950/100)/50) = floor(1149/50) = 22; +2 = 24
-    // OLD BUG (power halved): floor(95/2) = 47
-    //   baseDmg = floor(floor(22*47*110/100)/50) = floor(floor(113740/100)/50) = floor(1137/50) = 22; +2 = 24
-    // Same with these values — pick different ones.
-    // power=91, SpAtk=110:
-    //   SpAtk halved: 55 → floor(22*91*55/100)=floor(110110/100)=1101, floor(1101/50)=22, +2=24
-    //   Power halved: 45 → floor(22*45*110/100)=floor(108900/100)=1089, floor(1089/50)=21, +2=23
-    // Different! Attack-halved=24, power-halved=23.
+  it("given Heatproof defender hit by fire special move power=91 SpAtk=110, when calculating damage, then final damage is halved post-formula", () => {
+    // Source: Showdown Gen 4 mod — Heatproof onSourceModifyDamage 0.5x for Fire moves
+    // Derivation: L50, power=91, SpAtk=110 (not halved), SpDef=100, rng=100, neutral effectiveness
+    //   levelFactor = 22
+    //   22*91=2002, 2002*110=220220, floor(220220/100)=2202, floor(2202/50)=44; +2=46
+    //   crit=1x, random=100/100=1x, STAB=none, effectiveness=1x → 46
+    //   Heatproof (post-formula): floor(46 * 0.5) = 23
     const attacker = createActivePokemon({ spAttack: 110, types: ["normal"] });
     const defender = createActivePokemon({
       spDefense: 100,
@@ -3603,7 +3600,7 @@ describe("Gen 4 damage calc — Heatproof halves attack stat (#355)", () => {
       chart,
     );
 
-    expect(result.damage).toBe(24);
+    expect(result.damage).toBe(23);
   });
 });
 
