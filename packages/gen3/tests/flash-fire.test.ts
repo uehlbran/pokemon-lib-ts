@@ -8,6 +8,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen3Damage } from "../src/Gen3DamageCalc";
+import { GEN3_TYPE_CHART } from "../src/Gen3TypeChart";
 
 /**
  * Gen 3 Flash Fire Damage Boost Tests
@@ -157,36 +158,6 @@ function createMove(type: PokemonType, power: number, id = "test-move"): MoveDat
   } as MoveData;
 }
 
-function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
-  const chart: Record<string, Record<string, number>> = {};
-  for (const atk of types) {
-    chart[atk] = {};
-    for (const def of types) {
-      chart[atk]![def] = 1;
-    }
-  }
-  return chart;
-}
-
 function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
   return {
     weather: weather ?? null,
@@ -215,7 +186,7 @@ function createDamageContext(opts: {
 // Tests
 // ---------------------------------------------------------------------------
 
-const chart = createNeutralTypeChart();
+const chart = GEN3_TYPE_CHART;
 
 describe("Gen 3 Flash Fire damage boost", () => {
   it("given attacker with flash-fire volatile, when using a fire move, then damage is boosted by 1.5x", () => {

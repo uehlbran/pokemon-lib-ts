@@ -15,6 +15,7 @@ import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../src/data";
 import { calculateGen3Damage } from "../src/Gen3DamageCalc";
 import { Gen3Ruleset } from "../src/Gen3Ruleset";
+import { GEN3_TYPE_CHART } from "../src/Gen3TypeChart";
 
 /**
  * Gen 3 Weather Move Tests
@@ -122,36 +123,6 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
-  const chart: Record<string, Record<string, number>> = {};
-  for (const atk of types) {
-    chart[atk] = {};
-    for (const def of types) {
-      chart[atk]![def] = 1;
-    }
-  }
-  return chart;
-}
-
 function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
   return {
     weather: weather ?? null,
@@ -221,7 +192,7 @@ function createMove(opts: {
 // Tests — SolarBeam
 // ---------------------------------------------------------------------------
 
-const chart = createNeutralTypeChart();
+const chart = GEN3_TYPE_CHART;
 
 describe("Gen 3 SolarBeam power halving in non-sun weather", () => {
   // SolarBeam: grass special, 120 power

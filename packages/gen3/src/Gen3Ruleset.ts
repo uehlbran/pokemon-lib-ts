@@ -471,13 +471,6 @@ export class Gen3Ruleset extends BaseRuleset {
       }
     }
 
-    // Blizzard: 100% accuracy in Hail
-    // Source: pret/pokeemerald — Blizzard bypasses accuracy in hail
-    // Source: Showdown data/moves.ts — Blizzard: move.accuracy = true in hail
-    if (context.move.id === "blizzard") {
-      if (weather === "hail") return true;
-    }
-
     const moveAcc = context.move.accuracy;
     const accStage = context.attacker.statStages.accuracy;
     const evaStage = context.defender.statStages.evasion;

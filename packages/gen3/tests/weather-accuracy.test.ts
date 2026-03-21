@@ -248,19 +248,22 @@ describe("Gen 3 Weather Accuracy — Blizzard", () => {
     power: 110,
   });
 
-  it("given hail weather, when Blizzard's accuracy is checked, then it always hits regardless of RNG", () => {
-    // Source: pret/pokeemerald — Blizzard bypasses accuracy in hail
-    // Source: Showdown data/moves.ts — Blizzard: move.accuracy = true in hail
+  it("given hail weather, when Blizzard's accuracy is checked with roll <= 70, then it hits (Gen 3: hail does NOT make Blizzard always hit)", () => {
+    // Gen 3 behavior: Blizzard has normal 70% accuracy in hail.
+    // Auto-hit in hail was added in Gen 4.
+    // Source: pret/pokeemerald — Blizzard has no special hail interaction
+    // Source: Bulbapedia — "In Generation IV, [Blizzard] never misses in hail."
     const weather = { type: "hail", turnsLeft: 3, source: "hail" };
-    const ctx = createAccuracyContext({ move: blizzard, weather, rng: createMockRng(100) });
+    const ctx = createAccuracyContext({ move: blizzard, weather, rng: createMockRng(70) });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
-  it("given hail weather, when Blizzard's accuracy is checked with minimum roll, then it still always hits", () => {
-    // Source: pret/pokeemerald — Blizzard in hail bypasses accuracy entirely
+  it("given hail weather, when Blizzard's accuracy is checked with roll > 70, then it misses (Gen 3: normal accuracy in hail)", () => {
+    // Gen 3 behavior: Blizzard does not bypass accuracy checks in hail.
+    // Source: pret/pokeemerald — no special hail handling for Blizzard
     const weather = { type: "hail", turnsLeft: 3, source: "hail" };
-    const ctx = createAccuracyContext({ move: blizzard, weather, rng: createMockRng(1) });
-    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+    const ctx = createAccuracyContext({ move: blizzard, weather, rng: createMockRng(71) });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
   });
 
   it("given rain weather, when Blizzard's accuracy is checked, then normal 70% accuracy applies", () => {
