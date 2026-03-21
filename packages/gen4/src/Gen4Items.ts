@@ -40,6 +40,13 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
     return NO_ACTIVATION;
   }
 
+  // Embargo: prevents item use for 5 turns
+  // Source: Bulbapedia — Embargo: "prevents the target from using its held item"
+  // Source: Showdown Gen 4 mod — Embargo blocks item effects
+  if (context.pokemon.volatileStatuses.has("embargo")) {
+    return NO_ACTIVATION;
+  }
+
   switch (trigger) {
     case "before-move":
       return handleBeforeMove(item, context);

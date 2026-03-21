@@ -516,7 +516,10 @@ export type EndOfTurnEffect =
   | "slow-start-countdown"
   | "taunt-countdown"
   | "disable-countdown"
-  | "gravity-countdown";
+  | "gravity-countdown"
+  | "yawn-countdown"
+  | "heal-block-countdown"
+  | "embargo-countdown";
 
 /**
  * Configuration object passed to the `BattleEngine` constructor.

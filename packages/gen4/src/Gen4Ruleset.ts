@@ -1147,9 +1147,12 @@ export class Gen4Ruleset extends BaseRuleset {
       "curse", // Ghost Curse damage
       "bad-dreams", // Bad Dreams
       "bind", // Trap damage
+      "yawn-countdown", // Yawn drowsy → sleep
       "encore-countdown", // Encore timer
       "taunt-countdown", // Taunt timer (3 turns in Gen 4)
       "disable-countdown", // Disable timer (4 turns in Gen 4)
+      "heal-block-countdown", // Heal Block (5 turns)
+      "embargo-countdown", // Embargo (5 turns)
       "perish-song", // Perish Song countdown
       "screen-countdown", // Reflect / Light Screen
       "safeguard-countdown", // Safeguard

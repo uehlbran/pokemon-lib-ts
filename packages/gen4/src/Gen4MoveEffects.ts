@@ -1157,6 +1157,13 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Bulbapedia — Roost: the user temporarily loses its Flying type
   if (context.move.id === "roost") {
     const { attacker } = context;
+    // Heal Block: prevent HP recovery
+    // Source: Showdown Gen 4 mod — heal-block volatile gates all healing
+    if (attacker.volatileStatuses.has("heal-block")) {
+      const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+      result.messages.push(`${attackerName} is blocked from healing!`);
+      return result;
+    }
     const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
     // Use the data's fraction if present (0.5), otherwise default to 0.5
     const healEffect = context.move.effect as { type: string; amount: number } | null;
@@ -1211,13 +1218,153 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     return result;
   }
 
+  // Yawn: inflict "yawn" volatile on target — sleep comes at end of next turn
+  // Source: Bulbapedia — Yawn: "causes drowsiness; the target falls asleep at the end
+  //   of the next turn"
+  // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
+  if (context.move.id === "yawn") {
+    const { defender } = context;
+    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    // Yawn fails if target already has a primary status
+    if (defender.pokemon.status !== null) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    // Yawn fails if target already has the yawn volatile
+    if (defender.volatileStatuses.has("yawn")) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    // Yawn fails if target has Insomnia or Vital Spirit
+    // Source: Showdown Gen 4 mod — Yawn blocked by sleep-preventing abilities
+    if (defender.ability === "insomnia" || defender.ability === "vital-spirit") {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    result.volatileInflicted = "yawn";
+    result.volatileData = { turnsLeft: 1 };
+    result.messages.push(`${defenderName} grew drowsy!`);
+    return result;
+  }
+
+  // Encore: lock target into its last used move for 4-8 turns (Gen 4)
+  // Source: Showdown Gen 4 mod — Encore duration: this.random(4, 9) (exclusive max) = 4..8 turns
+  // Source: Bulbapedia — "Encore forces the target to repeat its last used move for 2-6 turns"
+  // Note: Showdown Gen 4 uses 4-8 turns. Bulbapedia states 4-8 for Gen 4.
+  if (context.move.id === "encore") {
+    const { defender } = context;
+    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    // Fail if target has no last move or is already Encored
+    if (!defender.lastMoveUsed || defender.volatileStatuses.has("encore")) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    // Source: Showdown Gen 4 mod — Encore lasts 4-8 turns
+    const turnsLeft = context.rng.int(4, 8);
+    result.volatileInflicted = "encore";
+    result.volatileData = { turnsLeft, data: { moveId: defender.lastMoveUsed } };
+    result.messages.push(`${defenderName} got an encore!`);
+    return result;
+  }
+
+  // Heal Block: prevent HP recovery for 5 turns
+  // Source: Bulbapedia — Heal Block prevents HP recovery for 5 turns
+  // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
+  if (context.move.id === "heal-block") {
+    const { defender } = context;
+    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    if (defender.volatileStatuses.has("heal-block")) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    result.volatileInflicted = "heal-block";
+    result.volatileData = { turnsLeft: 5 };
+    result.messages.push(`${defenderName} was prevented from healing!`);
+    return result;
+  }
+
+  // Embargo: prevent item use for 5 turns
+  // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
+  // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
+  if (context.move.id === "embargo") {
+    const { defender } = context;
+    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    if (defender.volatileStatuses.has("embargo")) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    result.volatileInflicted = "embargo";
+    result.volatileData = { turnsLeft: 5 };
+    result.messages.push(`${defenderName} can't use items!`);
+    return result;
+  }
+
+  // Worry Seed: change target's ability to Insomnia
+  // Source: Bulbapedia — Worry Seed: "Changes the target's Ability to Insomnia"
+  // Source: Showdown Gen 4 mod — Worry Seed fails vs Insomnia, Truant, Multitype
+  if (context.move.id === "worry-seed") {
+    const { defender } = context;
+    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    const failAbilities = ["insomnia", "truant", "multitype"];
+    if (failAbilities.includes(defender.ability ?? "")) {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    defender.ability = "insomnia";
+    // If target is asleep, Insomnia immediately wakes it
+    // Source: Showdown Gen 4 mod — Worry Seed cures sleep if the new ability blocks it
+    if (defender.pokemon.status === "sleep") {
+      defender.pokemon.status = null;
+      defender.volatileStatuses.delete("sleep-counter");
+      result.messages.push(`${defenderName}'s ability changed to Insomnia and it woke up!`);
+    } else {
+      result.messages.push(`${defenderName}'s ability changed to Insomnia!`);
+    }
+    return result;
+  }
+
+  // Gastro Acid: suppress target's ability (set to empty string)
+  // Source: Bulbapedia — Gastro Acid: "suppresses the target's ability"
+  // Source: Showdown Gen 4 mod — Gastro Acid fails vs Multitype
+  if (context.move.id === "gastro-acid") {
+    const { defender } = context;
+    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    if (defender.ability === "multitype") {
+      result.messages.push("But it failed!");
+      return result;
+    }
+    // Suppress ability by clearing it (persists until switch-out)
+    // Source: Showdown Gen 4 mod — Gastro Acid sets suppressedAbility
+    defender.ability = "";
+    result.messages.push(`${defenderName}'s ability was suppressed!`);
+    return result;
+  }
+
   // Handle null-effect moves (stealth-rock, toxic-spikes, trick-room, etc.)
   if (!context.move.effect) {
     handleNullEffectMoves(context.move.id, result, context);
+    applyHealBlockGate(result, context);
     return result;
   }
 
   applyMoveEffect(context.move.effect, context.move, result, context);
 
+  applyHealBlockGate(result, context);
+
   return result;
+}
+
+/**
+ * Heal Block gate: if the attacker has heal-block, prevent HP recovery.
+ * Called after both null-effect and data-driven effect handling.
+ *
+ * Source: Showdown Gen 4 mod — heal-block volatile gates all healing
+ * Source: Bulbapedia — Heal Block: "prevents the target from recovering HP"
+ */
+function applyHealBlockGate(result: MutableResult, context: MoveEffectContext): void {
+  if (result.healAmount > 0 && context.attacker.volatileStatuses.has("heal-block")) {
+    result.healAmount = 0;
+    const attackerName = context.attacker.pokemon.nickname ?? "The Pokemon";
+    result.messages.push(`${attackerName} is blocked from healing!`);
+  }
 }
