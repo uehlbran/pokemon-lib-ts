@@ -333,9 +333,8 @@ describe("Gen3Ruleset rollProtectSuccess", () => {
     }
 
     const rate = successes / trials;
-    // Expected: 50% ± 2% tolerance for statistical variation
-    expect(rate).toBeGreaterThan(0.48);
-    expect(rate).toBeLessThan(0.52);
+    // Expected: 50% — toBeCloseTo with precision=1 checks within 0.05 (appropriate for 10000 trials)
+    expect(rate).toBeCloseTo(0.5, 1);
   });
 
   it("given consecutiveProtects=2, when rollProtectSuccess with 10000 trials, then success rate is ~25%", () => {
@@ -353,9 +352,8 @@ describe("Gen3Ruleset rollProtectSuccess", () => {
     }
 
     const rate = successes / trials;
-    // Expected: 25% ± 2% tolerance for statistical variation
-    expect(rate).toBeGreaterThan(0.23);
-    expect(rate).toBeLessThan(0.27);
+    // Expected: 25% — toBeCloseTo with precision=1 checks within 0.05 (appropriate for 10000 trials)
+    expect(rate).toBeCloseTo(0.25, 1);
   });
 
   it("given consecutiveProtects=3, when rollProtectSuccess with 10000 trials, then success rate is ~12.5%", () => {
@@ -373,9 +371,8 @@ describe("Gen3Ruleset rollProtectSuccess", () => {
     }
 
     const rate = successes / trials;
-    // Expected: 12.5% ± 2% tolerance for statistical variation
-    expect(rate).toBeGreaterThan(0.105);
-    expect(rate).toBeLessThan(0.145);
+    // Expected: 12.5% — toBeCloseTo with precision=1 checks within 0.05 (appropriate for 10000 trials)
+    expect(rate).toBeCloseTo(0.125, 1);
   });
 
   it("given consecutiveProtects=4 (beyond cap), when rollProtectSuccess, then capped same as 3 consecutive", () => {
