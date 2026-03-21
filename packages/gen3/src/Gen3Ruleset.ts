@@ -27,7 +27,6 @@ import type {
   SeededRandom,
   TypeChart,
   VolatileStatus,
-  WeatherType,
 } from "@pokemon-lib-ts/core";
 import {
   calculateExpGainClassic,
@@ -38,7 +37,6 @@ import {
 import {
   applyGen3Ability,
   isGen3AbilityStatusImmune,
-  isGen3VolatileBlockedByAbility,
   isWeatherSuppressedGen3,
   WEATHER_SUPPRESSING_ABILITIES,
 } from "./Gen3Abilities";
@@ -590,17 +588,6 @@ export class Gen3Ruleset extends BaseRuleset {
       if (physicalTypes.has(context.move.type)) {
         calc = Math.floor((calc * 80) / 100);
       }
-    }
-
-    // BrightPowder / Lax Incense: reduce accuracy by 10% when held by defender
-    // Source: pret/pokeemerald src/battle_script_commands.c:1154-1160
-    //   "if (IsHoldEffectActive(gBattlerTarget, HOLD_EFFECT_EVASION_UP))
-    //      calc = calc * (100 - holdEffectParam) / 100;"
-    //   where holdEffectParam = 10 for both BrightPowder and Lax Incense.
-    // Source: Bulbapedia — "BrightPowder lowers the opponent's accuracy by 10%"
-    const defenderItem = context.defender.pokemon.heldItem;
-    if (defenderItem === "bright-powder" || defenderItem === "lax-incense") {
-      calc = Math.floor((calc * 90) / 100);
     }
 
     // Final accuracy check: (Random() % 100 + 1) > calc means miss

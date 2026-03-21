@@ -415,8 +415,8 @@ describe("Gen 3 getEndOfTurnOrder", () => {
     // Verify weather-countdown comes last
     expect(order[order.length - 1]).toBe("weather-countdown");
 
-    // Verify total count matches expected (18 with uproar and ingrain added)
-    expect(order).toHaveLength(18);
+    // Verify total count matches expected (19 items: original 16 + wish + ingrain + uproar)
+    expect(order).toHaveLength(19);
 
     // Verify key effects are present
     expect(order).toContain("future-attack");
