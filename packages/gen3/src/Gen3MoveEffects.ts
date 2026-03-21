@@ -63,6 +63,8 @@ type MutableResult = {
   selfVolatileInflicted?: VolatileStatus | null;
   selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
+  screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  forcedMoveSet?: { moveIndex: number; moveId: string; volatileStatus: VolatileStatus } | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -273,12 +275,111 @@ function applyMoveEffect(
       break;
 
     case "terrain":
-    case "screen":
     case "multi-hit":
-    case "two-turn":
-      // Handled by the engine or N/A in Gen 3
+      // Not applicable in Gen 3
       break;
+
+    case "screen": {
+      // Reflect / Light Screen — set screen on attacker's side
+      // Duration in Gen 3: 5 turns normally (no Light Clay in Gen 3)
+      // Source: pret/pokeemerald src/battle_script_commands.c — Reflect/Light Screen effect
+      const screenEffect = effect as { screen: string; turns: number };
+      result.screenSet = {
+        screen: screenEffect.screen,
+        turnsLeft: screenEffect.turns,
+        side: "attacker",
+      };
+      break;
+    }
+
+    case "two-turn": {
+      // Two-turn moves: charge on turn 1, attack on turn 2.
+      // Source: pret/pokeemerald src/battle_script_commands.c — two-turn move handling
+      handleTwoTurnEffect(move, result, context);
+      break;
+    }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Two-Turn Move Effect Handler
+// ---------------------------------------------------------------------------
+
+/**
+ * Volatile status map for two-turn semi-invulnerable moves in Gen 3.
+ * Maps move ID to the volatile status applied during the charge turn.
+ *
+ * Gen 3 differences from Gen 4:
+ *   - NO Bounce (Gen 4+ move)
+ *   - NO Shadow Force (Gen 4 move)
+ *   - NO Power Herb (Gen 4 item)
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c — two-turn move handling
+ * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Two-turn_move
+ */
+const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
+  fly: "flying",
+  dig: "underground",
+  dive: "underwater",
+  "solar-beam": "charging",
+  "skull-bash": "charging",
+  "razor-wind": "charging",
+  "sky-attack": "charging",
+};
+
+/**
+ * Charge-turn messages for two-turn moves.
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c — charge turn messages
+ */
+const TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
+  fly: "{pokemon} flew up high!",
+  dig: "{pokemon} dug underground!",
+  dive: "{pokemon} dived underwater!",
+  "solar-beam": "{pokemon} is absorbing sunlight!",
+  "skull-bash": "{pokemon} lowered its head!",
+};
+
+/**
+ * Handle the charge turn of a two-turn move in Gen 3.
+ *
+ * On the charge turn:
+ *   1. Determine the volatile status from the move ID
+ *   2. Check skip-charge conditions (SolarBeam in sun — no Power Herb in Gen 3)
+ *   3. If charging, set forcedMoveSet and emit a charge message
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c — two-turn move charge handling
+ * Source: Bulbapedia — "In harsh sunlight, Solar Beam can be used without a charging turn."
+ */
+function handleTwoTurnEffect(
+  move: MoveData,
+  result: MutableResult,
+  context: MoveEffectContext,
+): void {
+  const { attacker } = context;
+  const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+
+  const volatile = TWO_TURN_VOLATILE_MAP[move.id] ?? "charging";
+
+  // SolarBeam in harsh sunlight: skip charge, attack immediately
+  // Source: pret/pokeemerald — SolarBeam not charging in sunny weather
+  // Source: Bulbapedia — "In harsh sunlight, Solar Beam can be used without a charging turn."
+  if (move.id === "solar-beam" && context.state.weather?.type === "sun") {
+    return; // No forcedMoveSet — engine proceeds with the attack immediately
+  }
+
+  // Find move index in attacker's moveset
+  const moveIndex = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
+
+  // Set up forced move for next turn
+  result.forcedMoveSet = {
+    moveIndex: moveIndex >= 0 ? moveIndex : 0,
+    moveId: move.id,
+    volatileStatus: volatile,
+  };
+
+  const messageTemplate = TWO_TURN_MESSAGES[move.id] ?? "{pokemon} is charging up!";
+  result.messages.push(messageTemplate.replace("{pokemon}", attackerName));
 }
 
 // ---------------------------------------------------------------------------
@@ -617,6 +718,22 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       }
       result.healAmount = Math.max(1, Math.floor(maxHp * healFraction));
       return true;
+    }
+
+    // --- Focus Punch ---
+    case "focus-punch": {
+      // Focus Punch: fails if the attacker took damage this turn before acting.
+      // Focus Punch has -3 priority, so it always executes last. If the user was hit
+      // by any damaging move before Focus Punch resolves, it fails.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — Focus Punch/Bide check
+      // Source: Bulbapedia — "Focus Punch fails if the user is hit before it attacks"
+      if (attacker.lastDamageTaken > 0) {
+        result.messages.push(`${attackerName} lost its focus and couldn't move!`);
+        return true; // Move fails — intercepted, no damage
+      }
+      // Focus Punch succeeds — damage applied by engine
+      return false; // Fall through to data-driven (no effect for focus-punch, so engine applies damage)
     }
 
     default:
