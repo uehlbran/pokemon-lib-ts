@@ -606,6 +606,25 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.volatileData = { turnsLeft: turns, data: { bindTurns: turns } };
             result.messages.push(`${defender.pokemon.nickname ?? "The target"} was trapped!`);
           }
+        } else if (effect.status === "focus-energy") {
+          // Source: pret/pokered — Focus Energy sets SUBSTATUS_FOCUS_ENERGY
+          // Self-targeting volatile: permanent until switch-out or Haze.
+          // Fails silently if already active (no duplicate volatile).
+          if (!attacker.volatileStatuses.has("focus-energy")) {
+            result.selfVolatileInflicted = "focus-energy";
+            result.selfVolatileData = { turnsLeft: -1 };
+          }
+        } else if (effect.status === "leech-seed") {
+          // Source: pret/pokered — Grass types are immune to Leech Seed
+          // Defender-targeting volatile: permanent until switch-out or Haze.
+          if (defender.types.includes("grass")) {
+            result.messages.push(`It doesn't affect ${defender.pokemon.nickname ?? "the target"}!`);
+          } else if (defender.volatileStatuses.has("leech-seed")) {
+            result.messages.push("But it failed!");
+          } else {
+            result.volatileInflicted = "leech-seed";
+            result.volatileData = { turnsLeft: -1 };
+          }
         }
         break;
       }
@@ -712,6 +731,45 @@ export class Gen1Ruleset implements GenerationRuleset {
           } else {
             result.messages.push("Counter failed!");
           }
+        } else if (effect.handler === "disable") {
+          // Source: pret/pokered DisableEffect — disables the last move used by the target.
+          // Duration: random 1-8 turns (pokered `and 7; inc a` = 0-7 + 1 = 1-8).
+          // Fails if target already disabled or has not used a move yet.
+          if (defender.volatileStatuses.has("disable")) {
+            result.messages.push("But it failed!");
+          } else if (!defender.lastMoveUsed) {
+            result.messages.push("But it failed!");
+          } else {
+            const duration = rng.int(1, 8);
+            result.volatileInflicted = "disable";
+            result.volatileData = {
+              turnsLeft: duration,
+              data: { moveId: defender.lastMoveUsed },
+            };
+          }
+        } else if (effect.handler === "substitute") {
+          // Source: pret/pokered SubstituteEffect + gen1-ground-truth.md
+          // Creates a substitute that absorbs damage. Costs 1/4 max HP.
+          // Gen 1 uses strict < check: at exactly 25% HP it succeeds (user goes to 0).
+          const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+          const subHp = Math.floor(maxHp / 4);
+          if (attacker.substituteHp > 0) {
+            result.messages.push("But it failed!");
+          } else if (attacker.pokemon.currentHp < subHp) {
+            result.messages.push("But it does not have enough HP!");
+          } else {
+            // Set substituteHp directly; HP cost is handled by customDamage so the
+            // engine emits a proper damage event for the hp-delta tracker.
+            attacker.substituteHp = subHp;
+            result.customDamage = {
+              target: "attacker",
+              amount: subHp,
+              source: "substitute",
+            };
+            result.selfVolatileInflicted = "substitute";
+            result.selfVolatileData = { turnsLeft: -1 };
+            result.messages.push(`${attacker.pokemon.nickname ?? "The user"} put in a substitute!`);
+          }
         }
         break;
       }
@@ -763,13 +821,41 @@ export class Gen1Ruleset implements GenerationRuleset {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
 
     switch (status) {
-      case "burn":
-        // Burn deals 1/16 max HP per turn in Gen 1 (same as poison)
+      case "burn": {
+        // Source: gen1-ground-truth.md §8 — burn shares the N/16 counter with poison and Leech Seed.
+        // When the toxic-counter volatile exists (set by Toxic), burn uses and increments that
+        // shared counter. Without it, burn deals the standard 1/16 max HP per turn.
+        const burnState = pokemon.volatileStatuses.get("toxic-counter");
+        if (burnState) {
+          const counter = (burnState.data?.counter as number) ?? 1;
+          const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
+          if (!burnState.data) {
+            burnState.data = { counter: counter + 1 };
+          } else {
+            (burnState.data as Record<string, unknown>).counter = counter + 1;
+          }
+          return damage;
+        }
         return Math.max(1, Math.floor(maxHp / 16));
+      }
 
-      case "poison":
-        // Regular poison deals 1/16 max HP per turn in Gen 1
+      case "poison": {
+        // Source: gen1-ground-truth.md §8 — poison shares the N/16 counter with burn and Leech Seed.
+        // When the toxic-counter volatile exists (set by Toxic), poison uses and increments that
+        // shared counter. Without it, poison deals the standard 1/16 max HP per turn.
+        const poisonState = pokemon.volatileStatuses.get("toxic-counter");
+        if (poisonState) {
+          const counter = (poisonState.data?.counter as number) ?? 1;
+          const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
+          if (!poisonState.data) {
+            poisonState.data = { counter: counter + 1 };
+          } else {
+            (poisonState.data as Record<string, unknown>).counter = counter + 1;
+          }
+          return damage;
+        }
         return Math.max(1, Math.floor(maxHp / 16));
+      }
 
       case "badly-poisoned": {
         // Badly poisoned (Toxic): damage escalates each turn
@@ -1061,8 +1147,21 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- End-of-Turn Formulas ---
 
   calculateLeechSeedDrain(pokemon: ActivePokemon): number {
-    // Gen 1: Leech Seed drains 1/16 max HP (not 1/8 like Gen 2+)
+    // Source: gen1-ground-truth.md §8 — Leech Seed shares the N/16 counter with burn/poison.
+    // When the toxic-counter volatile exists (set by Toxic), Leech Seed uses and increments
+    // that shared counter. Without it, Leech Seed drains the standard 1/16 max HP.
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    const seedState = pokemon.volatileStatuses.get("toxic-counter");
+    if (seedState) {
+      const counter = (seedState.data?.counter as number) ?? 1;
+      const drain = Math.max(1, Math.floor((maxHp * counter) / 16));
+      if (!seedState.data) {
+        seedState.data = { counter: counter + 1 };
+      } else {
+        (seedState.data as Record<string, unknown>).counter = counter + 1;
+      }
+      return drain;
+    }
     return Math.max(1, Math.floor(maxHp / 16));
   }
 
@@ -1165,9 +1264,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Source: gen1-ground-truth.md §8 — End-of-Turn Order
     // 1. Burn/poison damage (status-damage)
     // 2. Leech Seed drain (leech-seed)
-    // 3. Faint check (handled by engine after this array)
+    // 3. Disable countdown (disable-countdown)
+    // 4. Faint check (handled by engine after this array)
     // Leech Seed triggers after poison/burn and before the faint check.
-    return ["status-damage", "leech-seed"];
+    // Disable countdown is processed by the engine at BattleEngine.ts:2325-2346.
+    return ["status-damage", "leech-seed", "disable-countdown"];
   }
 
   getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
