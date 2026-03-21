@@ -400,7 +400,9 @@ export interface EndOfTurnSystem {
   rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number;
   /**
    * Roll whether a Protect-type move succeeds.
-   * Returns false if the consecutive use check fails (Gen 2+: 1/3^N chance for N>0).
+   * Gen 2: halving bit-shift variant (255 >> N approach from pokecrystal).
+   * Gen 3-4: 1/(2^N) halving table, capped at index 3 (12.5% minimum).
+   * Gen 5+: 1/(3^N), capped at 1/729.
    * Gen 1 has no Protect — implement to always return true.
    */
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean;
