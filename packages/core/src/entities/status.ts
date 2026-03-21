@@ -63,4 +63,7 @@ export type VolatileStatus =
   | "thrash-lock" // Gen 1 Thrash / Petal Dance forced move; data: { moveId: string }
   | "mimic-slot" // Gen 1 Mimic — tracks which slot was replaced; data: { slot: number, originalMoveId: string }
   | "transform-data" // Stores original moves/types/stats for Transform restoration on switch-out
-  | "truant-turn"; // Truant — alternates between acting and loafing each turn (Gen 3+)
+  | "truant-turn" // Truant — alternates between acting and loafing each turn (Gen 3+)
+  | "quick-guard" // Quick Guard — protects the user's side from priority moves (Gen 5+)
+  | "wide-guard" // Wide Guard — protects the user's side from multi-target moves (Gen 5+)
+  | "illusion"; // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)
