@@ -4319,6 +4319,65 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Issue #430 addendum — Mold Breaker bypasses Heatproof
+// ---------------------------------------------------------------------------
+
+describe("Gen 4 damage calc — Mold Breaker bypasses Heatproof (issue #430 addendum)", () => {
+  it("given attacker has Mold Breaker and defender has Heatproof, when hit by a Fire-type physical move, then damage equals the no-Heatproof baseline (Heatproof ignored)", () => {
+    // Source: Showdown data/abilities.ts — Mold Breaker onModifyAtk/onSourceModifyAtk null-out
+    //   defender ability callbacks, so Heatproof's 0.5x modifier is not applied.
+    // Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this Ability ignore
+    //   Abilities of other Pokemon that hinder or prevent those moves."
+    // Source: pret/pokeplatinum — ABILITY_MOLD_BREAKER check before ABILITY_HEATPROOF in
+    //   BattleScript_AttackAnimationHitFromAtkDefend
+    //
+    // Derivation (L50, power=80 Fire physical, Atk=100, Def=100, no STAB [Pinsir attacker], rng=100):
+    //   Attacker has Mold Breaker and is Bug-type (no STAB on Fire move).
+    //   With Heatproof + no Mold Breaker: damage = 19 (attack halved to 50)
+    //   With Heatproof + Mold Breaker:   damage = 37 (Heatproof bypassed, Atk stays at 100)
+    //   baseDmg (Mold Breaker): floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    const attackerMoldBreaker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["bug"],
+      ability: "mold-breaker",
+    });
+    const defenderHeatproof = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+      ability: "heatproof",
+    });
+    const firePhysicalMove = createMove({
+      type: "fire",
+      power: 80,
+      category: "physical",
+      id: "fire-punch",
+    });
+    const chart = createNeutralTypeChart();
+
+    const moldBreakerResult = calculateGen4Damage(
+      createDamageContext({
+        attacker: attackerMoldBreaker,
+        defender: defenderHeatproof,
+        move: firePhysicalMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Mold Breaker bypasses Heatproof → damage is 37, NOT the halved 19
+    expect(moldBreakerResult.damage).toBe(37);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Issue #440 — Sandstorm Rock-type SpDef boost (dedicated test)
 // ---------------------------------------------------------------------------
 
@@ -4573,6 +4632,71 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
     expect(normalResult.damage).toBe(90);
     expect(selfDestructResult.damage).toBe(178);
     expect(selfDestructResult.damage).toBeGreaterThan(normalResult.damage);
+  });
+
+  it("given same attacker and defender, when comparing Explosion (250 BP) to Self-Destruct (200 BP), then Explosion deals more damage than Self-Destruct (both halve defense)", () => {
+    // Source: Showdown data/moves.json Gen 4 — Explosion basePower=250, Self-Destruct basePower=200
+    // Source: Bulbapedia — Explosion BP 250, Self-Destruct BP 200 in all gens; both halve defense in Gen I-IV
+    //
+    // Derivation (L50, Atk=100, Def=100, Fighting-type attacker, rng=100):
+    //   Explosion (power=250, Def halved to 50):
+    //     baseDmg = floor(floor(22*250*100/50)/50)+2 = floor(11000/50)+2 = 220+2 = 222
+    //   Self-Destruct (power=200, Def halved to 50):
+    //     baseDmg = floor(floor(22*200*100/50)/50)+2 = floor(8800/50)+2 = 176+2 = 178
+    //   Explosion (222) > Self-Destruct (178) confirms the lower BP of Self-Destruct results in less damage.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const explosionMove = createMove({
+      type: "normal",
+      power: 250,
+      category: "physical",
+      id: "explosion",
+    });
+    const selfDestructMove = createMove({
+      type: "normal",
+      power: 200,
+      category: "physical",
+      id: "self-destruct",
+    });
+    const chart = createNeutralTypeChart();
+
+    const explosionResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: explosionMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+    const selfDestructResult = calculateGen4Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: selfDestructMove,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
+
+    // Explosion (250 BP) deals more than Self-Destruct (200 BP) — both halve defense
+    expect(explosionResult.damage).toBe(222);
+    expect(selfDestructResult.damage).toBe(178);
+    expect(explosionResult.damage).toBeGreaterThan(selfDestructResult.damage);
   });
 });
 
