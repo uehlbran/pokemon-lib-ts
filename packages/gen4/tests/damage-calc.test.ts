@@ -3127,25 +3127,28 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
 // Tests: Metronome item consecutive-use power boost
 // ---------------------------------------------------------------------------
 
-describe("Gen 4 damage calc — Metronome item power boost", () => {
-  it("given Metronome item with 1 consecutive use, when calculating damage, then power is boosted by 1.2x", () => {
-    // Source: Showdown sim/items.ts — Metronome item consecutive use boost
-    // Source: Bulbapedia — Metronome (item): "Each consecutive use adds 20% to power"
-    // Source: specs/battle/05-gen4.md line 599 — "1.0x, 1.2x, 1.4x, 1.6x, 1.8x, 2.0x"
-    //
-    // Derivation (L50, power=80*1.2=96, Atk=100, Def=100, rng=100):
+describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
+  // Metronome item applies to baseDamage (alongside Life Orb, Expert Belt), NOT to power.
+  // Source: Showdown sim/items.ts — Metronome item onModifyDamage
+  // Source: Bulbapedia — Metronome (item): "Each consecutive use adds 20% to damage"
+  // data.count tracks consecutive uses (including first): count=1 -> 1.0x, count=2 -> 1.2x, ...
+
+  it("given Metronome item with count=2 (2nd consecutive use), when calculating damage, then baseDamage boosted by 1.2x", () => {
+    // Derivation (L50, Atk=100, Def=100, power=80, rng=100):
     //   levelFactor = 22
-    //   baseDmg = floor(floor(22*96*100/100)/50)+2 = floor(2112/50)+2 = 42+2 = 44
-    // Without Metronome boost (power=80):
-    //   baseDmg = floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    //   baseDmg = floor(floor(22*80*100/100)/50) + 2 = 35 + 2 = 37
+    //   STAB: Normal attacker, Normal move -> 1.5x: floor(37*1.5) = 55
+    //   Metronome 1.2x (boostSteps=1): floor(55*1.2) = 66
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
       types: ["normal"],
       heldItem: "metronome",
     });
-    // Set up metronome-count volatile: 1 consecutive use
-    attacker.volatileStatuses.set("metronome-count", { turnsLeft: 1 });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 2, moveId: "test" },
+    });
 
     const defender = createActivePokemon({
       level: 50,
@@ -3160,26 +3163,24 @@ describe("Gen 4 damage calc — Metronome item power boost", () => {
       chart,
     );
 
-    // Power 80 * 1.2 = 96 (floor)
-    // floor(floor(22*96*100/100)/50)+2 = floor(2112/50)+2 = 42+2 = 44
-    // STAB: attacker is Normal, move is Normal -> 1.5x
-    // 44 * 1.5 = 66
     expect(result.damage).toBe(66);
   });
 
-  it("given Metronome item with 5 consecutive uses (max), when calculating damage, then power is boosted by 2.0x", () => {
-    // Source: Showdown sim/items.ts — Metronome item caps at 2.0x
-    // Source: specs/battle/05-gen4.md line 599 — "1.0x, 1.2x, 1.4x, 1.6x, 1.8x, 2.0x"
-    //
-    // Derivation (L50, power=80*2.0=160, Atk=100, Def=100, rng=100):
-    //   baseDmg = floor(floor(22*160*100/100)/50)+2 = floor(3520/50)+2 = 70+2 = 72
+  it("given Metronome item with count=6 (6th consecutive use, max), when calculating damage, then baseDamage boosted by 2.0x", () => {
+    // Derivation (L50, Atk=100, Def=100, power=80, rng=100, no STAB):
+    //   baseDmg = 35 + 2 = 37
+    //   No STAB (fighting attacker, normal move): 37
+    //   Metronome 2.0x (boostSteps=5): floor(37*2.0) = 74
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
       types: ["fighting"], // no STAB on normal move
       heldItem: "metronome",
     });
-    attacker.volatileStatuses.set("metronome-count", { turnsLeft: 5 });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 6, moveId: "test" },
+    });
 
     const defender = createActivePokemon({
       level: 50,
@@ -3194,22 +3195,22 @@ describe("Gen 4 damage calc — Metronome item power boost", () => {
       chart,
     );
 
-    // Power 80 * 2.0 = 160 (no STAB: fighting attacker, normal move)
-    // floor(floor(22*160*100/100)/50)+2 = floor(3520/50)+2 = 70+2 = 72
-    expect(result.damage).toBe(72);
+    expect(result.damage).toBe(74);
   });
 
-  it("given Metronome item with 0 consecutive uses, when calculating damage, then no boost is applied (1.0x)", () => {
+  it("given Metronome item with count=1 (first use), when calculating damage, then no boost applied (1.0x)", () => {
     // Source: Showdown sim/items.ts — Metronome first use = 1.0x (no boost)
-    // Source: specs/battle/05-gen4.md line 599 — "1.0x" for first use
+    // boostSteps = min(1-1, 5) = 0 -> no multiplier applied
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
       types: ["fighting"], // no STAB on normal move
       heldItem: "metronome",
     });
-    // metronome-count turnsLeft = 0 means no consecutive uses yet
-    attacker.volatileStatuses.set("metronome-count", { turnsLeft: 0 });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 1, moveId: "test" },
+    });
 
     const defender = createActivePokemon({
       level: 50,
@@ -3224,21 +3225,23 @@ describe("Gen 4 damage calc — Metronome item power boost", () => {
       chart,
     );
 
-    // No boost: power=80
-    // floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    // No boost: baseDmg = 37
     expect(result.damage).toBe(37);
   });
 
-  it("given Metronome item with 10 consecutive uses (exceeds cap), when calculating damage, then capped at 2.0x", () => {
-    // Source: Showdown sim/items.ts — Metronome caps at 2.0x (5 consecutive uses)
-    // Even with more consecutive uses, the multiplier cannot exceed 2.0x.
+  it("given Metronome item with count=11 (exceeds cap), when calculating damage, then capped at 2.0x", () => {
+    // Source: Showdown sim/items.ts — Metronome caps at 2.0x (boostSteps capped at 5)
+    // boostSteps = min(11-1, 5) = 5 -> 2.0x
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
       types: ["fighting"],
       heldItem: "metronome",
     });
-    attacker.volatileStatuses.set("metronome-count", { turnsLeft: 10 });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 11, moveId: "test" },
+    });
 
     const defender = createActivePokemon({
       level: 50,
@@ -3253,11 +3256,11 @@ describe("Gen 4 damage calc — Metronome item power boost", () => {
       chart,
     );
 
-    // Capped at 2.0x: same as 5 consecutive uses → 72
-    expect(result.damage).toBe(72);
+    // Capped at 2.0x: floor(37*2.0) = 74
+    expect(result.damage).toBe(74);
   });
 
-  it("given no Metronome item even with metronome-count volatile, when calculating damage, then no boost is applied", () => {
+  it("given no Metronome item even with metronome-count volatile, when calculating damage, then no boost applied", () => {
     // Source: Showdown sim/items.ts — Metronome boost only applies when holding the item
     const attacker = createActivePokemon({
       level: 50,
@@ -3265,7 +3268,10 @@ describe("Gen 4 damage calc — Metronome item power boost", () => {
       types: ["fighting"],
       heldItem: null, // NOT holding metronome
     });
-    attacker.volatileStatuses.set("metronome-count", { turnsLeft: 5 });
+    attacker.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 6, moveId: "test" },
+    });
 
     const defender = createActivePokemon({
       level: 50,
@@ -3280,7 +3286,7 @@ describe("Gen 4 damage calc — Metronome item power boost", () => {
       chart,
     );
 
-    // No item = no boost: power=80 → 37
+    // No item = no boost: baseDmg = 37
     expect(result.damage).toBe(37);
   });
 });

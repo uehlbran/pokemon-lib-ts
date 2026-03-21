@@ -448,31 +448,19 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const attackerAbility = attacker.ability;
   const weather = context.state.weather?.type ?? null;
 
-  // SolarBeam half power in rain/sand/hail (NOT sun)
-  // In sun, SolarBeam skips the charge turn and fires at full 120 base power.
+  // SolarBeam half power in rain/sand/hail (NOT sun or harsh-sun)
+  // In sun/harsh-sun, SolarBeam skips the charge turn and fires at full 120 base power.
   // In rain, sand, or hail, SolarBeam's base power is halved (120 -> 60).
   // Source: Showdown sim/battle-actions.ts — SolarBeam power halved in non-sun weather
   // Source: Bulbapedia — Solar Beam: "Has its base power halved in all weather
   //   conditions aside from harsh sunlight."
-  if (move.id === "solar-beam" && weather !== null && weather !== "sun") {
+  if (
+    move.id === "solar-beam" &&
+    weather !== null &&
+    weather !== "sun" &&
+    weather !== "harsh-sun"
+  ) {
     power = Math.floor(power / 2);
-  }
-
-  // Metronome item: consecutive use of the same move boosts power.
-  // Each consecutive use adds 0.2x: 1.0x, 1.2x, 1.4x, 1.6x, 1.8x, 2.0x (caps at 2.0x)
-  // The consecutive count is tracked via the "metronome-count" volatile on the attacker.
-  // Source: Showdown sim/items.ts — Metronome item onModifyDamage
-  // Source: Bulbapedia — Metronome (item): "Boosts the power of moves used
-  //   consecutively. +20% per consecutive use, up to 100% (2.0x)."
-  // Source: specs/battle/05-gen4.md line 599 — "1.0x, 1.2x, 1.4x, 1.6x, 1.8x, 2.0x"
-  if (attacker.pokemon.heldItem === "metronome") {
-    const metronomeState = attacker.volatileStatuses.get("metronome-count");
-    if (metronomeState && metronomeState.turnsLeft > 0) {
-      // turnsLeft stores the consecutive count (1-5, capped at 5 for 2.0x)
-      const consecutiveCount = Math.min(metronomeState.turnsLeft, 5);
-      const multiplier = 1 + consecutiveCount * 0.2;
-      power = Math.floor(power * multiplier);
-    }
   }
 
   // Mold Breaker: attacker's ability bypasses defender's defensive abilities
@@ -825,6 +813,31 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (attackerItem === "wise-glasses" && !isPhysical) {
     baseDamage = Math.floor(baseDamage * 1.1);
     itemMultiplier = 1.1;
+  }
+
+  // Metronome item: consecutive use of the same move boosts baseDamage.
+  // Each consecutive use adds 0.2x: 1.0x (first use), 1.2x, 1.4x, 1.6x, 1.8x, 2.0x (caps at 2.0x)
+  // Applied to baseDamage (alongside Life Orb, Expert Belt, etc.), NOT to power.
+  // The consecutive count is tracked via the "metronome-count" volatile's data.count field.
+  // First use: data.count = 1 (1.0x = no boost); second consecutive use: data.count = 2 (1.2x), etc.
+  // Source: Showdown sim/items.ts — Metronome item onModifyDamage
+  // Source: Bulbapedia — Metronome (item): "Boosts the power of moves used
+  //   consecutively. +20% per consecutive use, up to 100% (2.0x)."
+  if (attackerItem === "metronome") {
+    const metronomeState = attacker.volatileStatuses.get("metronome-count");
+    if (metronomeState?.data?.count) {
+      // count tracks consecutive uses including the first:
+      //   count=1 -> first use (1.0x, no boost)
+      //   count=2 -> second consecutive (1.2x)
+      //   count=3 -> third consecutive (1.4x)
+      //   count=6+ -> capped at 5 boost steps (2.0x)
+      const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
+      if (boostSteps > 0) {
+        const multiplier = 1 + boostSteps * 0.2;
+        baseDamage = Math.floor(baseDamage * multiplier);
+        itemMultiplier = multiplier;
+      }
+    }
   }
 
   // Account for type-boost items and plates in itemMultiplier for breakdown

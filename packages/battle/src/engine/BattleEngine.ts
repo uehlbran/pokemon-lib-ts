@@ -943,6 +943,20 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Held item: before-move trigger (e.g., Metronome consecutive-use tracking)
+    // Called before accuracy check so item-dependent state is available for damage calc.
+    if (this.ruleset.hasHeldItems()) {
+      const beforeMoveResult = this.ruleset.applyHeldItem("before-move", {
+        pokemon: actor,
+        state: this.state,
+        rng: this.state.rng,
+        move: moveData,
+      });
+      if (beforeMoveResult.activated) {
+        this.processItemResult(beforeMoveResult, actor, action.side);
+      }
+    }
+
     // Accuracy check
     if (
       !this.ruleset.doesMoveHit({

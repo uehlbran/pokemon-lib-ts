@@ -34,6 +34,8 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
   }
 
   switch (trigger) {
+    case "before-move":
+      return handleBeforeMove(item, context);
     case "end-of-turn":
       return handleEndOfTurn(item, context);
     case "on-damage-taken":
@@ -43,6 +45,51 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
     default:
       return NO_ACTIVATION;
   }
+}
+
+// ---------------------------------------------------------------------------
+// before-move
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle before-move item effects.
+ *
+ * Currently only handles the Metronome item's consecutive-use counter.
+ * The Metronome item tracks how many times the holder uses the same move
+ * in a row, boosting damage for consecutive uses.
+ *
+ * Source: Showdown sim/items.ts — Metronome item onModifyDamage
+ * Source: Bulbapedia — Metronome (item): "Boosts the power of moves used
+ *   consecutively. +20% per consecutive use, up to 100% (2.0x)."
+ */
+function handleBeforeMove(item: string, context: ItemContext): ItemResult {
+  if (item !== "metronome") return NO_ACTIVATION;
+
+  const pokemon = context.pokemon;
+  const moveId = context.move?.id;
+  if (!moveId) return NO_ACTIVATION;
+
+  const existing = pokemon.volatileStatuses.get("metronome-count");
+  const previousMoveId = existing?.data?.moveId as string | undefined;
+  const previousCount = (existing?.data?.count as number) ?? 0;
+
+  if (previousMoveId === moveId) {
+    // Same move used consecutively — increment count
+    const newCount = previousCount + 1;
+    pokemon.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: newCount, moveId },
+    });
+  } else {
+    // Different move (or first use) — reset to count 1
+    pokemon.volatileStatuses.set("metronome-count", {
+      turnsLeft: -1,
+      data: { count: 1, moveId },
+    });
+  }
+
+  // Metronome counter update is silent — no battle message needed.
+  return NO_ACTIVATION;
 }
 
 // ---------------------------------------------------------------------------

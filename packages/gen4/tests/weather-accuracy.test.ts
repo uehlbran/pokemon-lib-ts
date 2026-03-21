@@ -1,9 +1,30 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type {
+  PokemonInstance,
+  PokemonType,
+  SeededRandom as SeededRandomType,
+} from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen4DataManager } from "../src/data";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
+
+/**
+ * A mock RNG whose int() always returns a fixed value.
+ * Used for deterministic accuracy boundary testing.
+ * doesMoveHit calls rng.int(1, 100) and compares <= calc.
+ */
+function createMockRng(intReturnValue: number): SeededRandomType {
+  return {
+    next: () => 0,
+    int: (_min: number, _max: number) => intReturnValue,
+    chance: () => false,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
+    shuffle: <T>(arr: readonly T[]) => [...arr],
+    getState: () => 0,
+    setState: () => {},
+  } as SeededRandomType;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -110,6 +131,7 @@ function makeCtx(overrides: {
   defenderItem?: string | null;
   moveCategory?: "physical" | "special" | "status";
   seed?: number;
+  rng?: SeededRandomType;
   defenderMovedThisTurn?: boolean;
 }): AccuracyContext {
   const attacker = makeActivePokemon({
@@ -136,7 +158,7 @@ function makeCtx(overrides: {
     state: {
       weather: overrides.weather ? { type: overrides.weather } : null,
     } as AccuracyContext["state"],
-    rng: new SeededRandom(overrides.seed ?? 1),
+    rng: overrides.rng ?? new SeededRandom(overrides.seed ?? 1),
   };
 }
 
@@ -145,47 +167,43 @@ function makeCtx(overrides: {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset doesMoveHit — Thunder 100% accuracy in rain", () => {
-  it("given Thunder move and rain weather, when checking accuracy, then always hits (100%)", () => {
-    // Source: Showdown sim/battle-actions.ts — Thunder always hits in rain
-    // Source: Bulbapedia — Thunder: "Has 100% accuracy during rain."
-    // Thunder base accuracy is 70, but in rain it bypasses the accuracy check entirely.
+  // Source: Showdown sim/battle-actions.ts — Thunder always hits in rain
+  // Source: Bulbapedia — Thunder: "Has 100% accuracy during rain."
+  // Thunder base accuracy is 70, but in rain it bypasses the accuracy check entirely (returns true).
+
+  it("given Thunder in rain and rng roll of 100, when checking accuracy, then always hits (rain bypasses roll)", () => {
     const ruleset = makeRuleset();
-    const trials = 100;
-    let hits = 0;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "thunder",
-        moveAccuracy: 70,
-        weather: "rain",
-        seed,
-      });
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
-
-    // Thunder should always hit in rain — all 100 trials should be hits
-    expect(hits).toBe(trials);
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "rain",
+      rng: createMockRng(100),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
-  it("given Thunder move and rain weather with -6 accuracy stage, when checking accuracy, then still always hits", () => {
-    // Source: Showdown sim/battle-actions.ts — weather override bypasses stat stages
-    // Even with terrible accuracy stages, Thunder still always hits in rain
+  it("given Thunder in rain and rng roll of 1, when checking accuracy, then always hits (rain bypasses roll)", () => {
     const ruleset = makeRuleset();
-    const trials = 50;
-    let hits = 0;
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "rain",
+      rng: createMockRng(1),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+  });
 
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "thunder",
-        moveAccuracy: 70,
-        weather: "rain",
-        accStage: -6,
-        seed,
-      });
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
-
-    expect(hits).toBe(trials);
+  it("given Thunder in rain with -6 accuracy stage, when checking accuracy, then still always hits (weather override bypasses stages)", () => {
+    // Source: Showdown sim/battle-actions.ts — weather override bypasses stat stages
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "rain",
+      accStage: -6,
+      rng: createMockRng(100),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 });
 
@@ -194,53 +212,55 @@ describe("Gen4Ruleset doesMoveHit — Thunder 100% accuracy in rain", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset doesMoveHit — Thunder 50% accuracy in sun", () => {
-  it("given Thunder move and sun weather, when checking accuracy, then uses 50% accuracy (not base 70%)", () => {
-    // Source: Showdown sim/battle-actions.ts — Thunder has 50% accuracy in sun
-    // Source: Bulbapedia — Thunder: "Has 50% accuracy during harsh sunlight."
-    // Over many trials, ~50% should hit. The hit rate should NOT match 70% (base accuracy).
+  // Source: Showdown sim/battle-actions.ts — Thunder has 50% accuracy in sun
+  // Source: Bulbapedia — Thunder: "Has 50% accuracy during harsh sunlight."
+  // doesMoveHit uses rng.int(1, 100) <= 50 for Thunder in sun.
+
+  it("given Thunder in sun and rng roll of 50, when checking accuracy, then hits (boundary: 50 <= 50)", () => {
     const ruleset = makeRuleset();
-    const trials = 1000;
-    let hits = 0;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "thunder",
-        moveAccuracy: 70,
-        weather: "sun",
-        seed,
-      });
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
-
-    // With 50% accuracy, expect ~500 hits out of 1000 (allow tolerance for PRNG variance)
-    // Hit rate should be around 50%, NOT 70%
-    const hitRate = hits / trials;
-    expect(hitRate).toBeGreaterThan(0.35); // Lower bound: 35%
-    expect(hitRate).toBeLessThan(0.65); // Upper bound: 65%
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "sun",
+      rng: createMockRng(50),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
-  it("given Thunder in sun with +6 accuracy stage, when checking accuracy, then accuracy is still capped at 50%", () => {
-    // Source: Showdown sim/battle-actions.ts — sun Thunder override is 50% flat
-    // The weather override applies before the stage calculation, so stages do not help.
+  it("given Thunder in sun and rng roll of 51, when checking accuracy, then misses (boundary: 51 > 50)", () => {
     const ruleset = makeRuleset();
-    const trials = 500;
-    let hits = 0;
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "sun",
+      rng: createMockRng(51),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
 
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "thunder",
-        moveAccuracy: 70,
-        weather: "sun",
-        accStage: 6,
-        seed,
-      });
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
+  it("given Thunder in sun and rng roll of 1, when checking accuracy, then hits (minimum roll)", () => {
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "sun",
+      rng: createMockRng(1),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+  });
 
-    // Even with +6 accuracy, Thunder should still be ~50% in sun
-    const hitRate = hits / trials;
-    expect(hitRate).toBeGreaterThan(0.35);
-    expect(hitRate).toBeLessThan(0.65);
+  it("given Thunder in sun with +6 accuracy stage and rng roll of 51, when checking accuracy, then still misses (sun override is flat 50%)", () => {
+    // Source: Showdown sim/battle-actions.ts — sun Thunder override is 50% flat,
+    // bypasses normal accuracy/evasion stage formula entirely.
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "sun",
+      accStage: 6,
+      rng: createMockRng(51),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
   });
 });
 
@@ -249,46 +269,43 @@ describe("Gen4Ruleset doesMoveHit — Thunder 50% accuracy in sun", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset doesMoveHit — Blizzard 100% accuracy in hail", () => {
-  it("given Blizzard move and hail weather, when checking accuracy, then always hits (100%)", () => {
-    // Source: Showdown sim/battle-actions.ts — Blizzard always hits in hail
-    // Source: Bulbapedia — Blizzard: "100% accuracy in hail" (NEW in Gen 4)
-    // Blizzard base accuracy is 70, but in hail it bypasses the accuracy check entirely.
+  // Source: Showdown sim/battle-actions.ts — Blizzard always hits in hail
+  // Source: Bulbapedia — Blizzard: "100% accuracy in hail" (NEW in Gen 4)
+  // Blizzard base accuracy is 70, but in hail it bypasses the accuracy check entirely (returns true).
+
+  it("given Blizzard in hail and rng roll of 100, when checking accuracy, then always hits (hail bypasses roll)", () => {
     const ruleset = makeRuleset();
-    const trials = 100;
-    let hits = 0;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "blizzard",
-        moveAccuracy: 70,
-        weather: "hail",
-        seed,
-      });
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
-
-    // Blizzard should always hit in hail — all trials should be hits
-    expect(hits).toBe(trials);
+    const ctx = makeCtx({
+      moveId: "blizzard",
+      moveAccuracy: 70,
+      weather: "hail",
+      rng: createMockRng(100),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
-  it("given Blizzard move and hail weather with -6 accuracy stage, when checking accuracy, then still always hits", () => {
+  it("given Blizzard in hail and rng roll of 1, when checking accuracy, then always hits (hail bypasses roll)", () => {
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveId: "blizzard",
+      moveAccuracy: 70,
+      weather: "hail",
+      rng: createMockRng(1),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+  });
+
+  it("given Blizzard in hail with -6 accuracy stage, when checking accuracy, then still always hits (weather override bypasses stages)", () => {
     // Source: Showdown sim/battle-actions.ts — weather override bypasses stat stages
     const ruleset = makeRuleset();
-    const trials = 50;
-    let hits = 0;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "blizzard",
-        moveAccuracy: 70,
-        weather: "hail",
-        accStage: -6,
-        seed,
-      });
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
-
-    expect(hits).toBe(trials);
+    const ctx = makeCtx({
+      moveId: "blizzard",
+      moveAccuracy: 70,
+      weather: "hail",
+      accStage: -6,
+      rng: createMockRng(100),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 });
 
@@ -297,65 +314,55 @@ describe("Gen4Ruleset doesMoveHit — Blizzard 100% accuracy in hail", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset doesMoveHit — weather accuracy overrides only apply to matching weather", () => {
-  it("given Thunder move and no weather, when checking accuracy, then uses base 70% accuracy", () => {
-    // Source: Showdown sim/battle-actions.ts — no weather = normal accuracy
-    // Thunder base accuracy 70; without weather override, standard formula applies.
+  // Source: Showdown sim/battle-actions.ts — weather overrides are move+weather specific.
+  // Without a matching override, the normal accuracy formula applies.
+  // Thunder/Blizzard base accuracy = 70. At stage 0/0, calc = floor(70 * 3/3) = 70.
+  // doesMoveHit uses rng.int(1, 100) <= 70.
+
+  it("given Thunder and no weather, when rng roll is 70, then hits (base 70% accuracy, boundary: 70 <= 70)", () => {
     const ruleset = makeRuleset();
-    const trials = 200;
-    let misses = 0;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "thunder",
-        moveAccuracy: 70,
-        weather: null,
-        seed,
-      });
-      if (!ruleset.doesMoveHit(ctx)) misses++;
-    }
-
-    // With 70% accuracy, there should be some misses (30% miss rate)
-    expect(misses).toBeGreaterThan(0);
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: null,
+      rng: createMockRng(70),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
-  it("given Thunder move and hail weather, when checking accuracy, then uses base 70% accuracy (hail only boosts Blizzard)", () => {
+  it("given Thunder and no weather, when rng roll is 71, then misses (base 70% accuracy, boundary: 71 > 70)", () => {
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: null,
+      rng: createMockRng(71),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
+
+  it("given Thunder and hail weather, when rng roll is 71, then misses (hail does NOT boost Thunder, boundary: 71 > 70)", () => {
     // Source: Showdown sim/battle-actions.ts — hail does NOT boost Thunder accuracy
     const ruleset = makeRuleset();
-    const trials = 200;
-    let misses = 0;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "thunder",
-        moveAccuracy: 70,
-        weather: "hail",
-        seed,
-      });
-      if (!ruleset.doesMoveHit(ctx)) misses++;
-    }
-
-    // Thunder in hail should miss sometimes (~30% of the time)
-    expect(misses).toBeGreaterThan(0);
+    const ctx = makeCtx({
+      moveId: "thunder",
+      moveAccuracy: 70,
+      weather: "hail",
+      rng: createMockRng(71),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
   });
 
-  it("given Blizzard move and rain weather, when checking accuracy, then uses base 70% accuracy (rain only boosts Thunder)", () => {
+  it("given Blizzard and rain weather, when rng roll is 71, then misses (rain does NOT boost Blizzard, boundary: 71 > 70)", () => {
     // Source: Showdown sim/battle-actions.ts — rain does NOT boost Blizzard accuracy
     const ruleset = makeRuleset();
-    const trials = 200;
-    let misses = 0;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveId: "blizzard",
-        moveAccuracy: 70,
-        weather: "rain",
-        seed,
-      });
-      if (!ruleset.doesMoveHit(ctx)) misses++;
-    }
-
-    // Blizzard in rain should miss sometimes (~30% of the time)
-    expect(misses).toBeGreaterThan(0);
+    const ctx = makeCtx({
+      moveId: "blizzard",
+      moveAccuracy: 70,
+      weather: "rain",
+      rng: createMockRng(71),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
   });
 });
 
@@ -364,68 +371,54 @@ describe("Gen4Ruleset doesMoveHit — weather accuracy overrides only apply to m
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset doesMoveHit — Zoom Lens accuracy bonus", () => {
-  it("given attacker with Zoom Lens and defender already moved, when checking accuracy with 70% move, then calc boosted to 84", () => {
-    // Source: Bulbapedia — Zoom Lens: "Boosts accuracy by 20% if the holder moves after target."
-    // Source: Showdown sim/items.ts — Zoom Lens onSourceModifyAccuracy
-    // Derivation: base calc = 70; Zoom Lens: floor(70 * 120 / 100) = floor(84) = 84
-    // Compared to no-item baseline of 70, Zoom Lens should produce fewer misses.
+  // Source: Bulbapedia — Zoom Lens: "Boosts accuracy by 20% if the holder moves after target."
+  // Source: Showdown sim/items.ts — Zoom Lens onSourceModifyAccuracy
+  // Derivation: base calc = 70 (stage 0/0); Zoom Lens: floor(70 * 120 / 100) = 84
+
+  it("given Zoom Lens with defender moved and rng roll of 84, when checking accuracy, then hits (boundary: 84 <= 84)", () => {
     const ruleset = makeRuleset();
-
-    let zoomLensMisses = 0;
-    let noItemMisses = 0;
-    const trials = 500;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxZoomLens = makeCtx({
-        moveAccuracy: 70,
-        attackerItem: "zoom-lens",
-        defenderMovedThisTurn: true,
-        seed,
-      });
-      const ctxNoItem = makeCtx({
-        moveAccuracy: 70,
-        defenderMovedThisTurn: true,
-        seed,
-      });
-
-      if (!ruleset.doesMoveHit(ctxZoomLens)) zoomLensMisses++;
-      if (!ruleset.doesMoveHit(ctxNoItem)) noItemMisses++;
-    }
-
-    // Zoom Lens (84% hit rate) should produce fewer misses than no item (70% hit rate)
-    expect(zoomLensMisses).toBeLessThan(noItemMisses);
+    const ctx = makeCtx({
+      moveAccuracy: 70,
+      attackerItem: "zoom-lens",
+      defenderMovedThisTurn: true,
+      rng: createMockRng(84),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
-  it("given attacker with Zoom Lens but defender has NOT moved yet, when checking accuracy, then Zoom Lens does NOT activate", () => {
-    // Source: Bulbapedia — Zoom Lens only activates if holder moves after target
-    // Source: Showdown sim/items.ts — checks if target has already moved
-    // If the defender hasn't moved this turn, Zoom Lens doesn't apply.
+  it("given Zoom Lens with defender moved and rng roll of 85, when checking accuracy, then misses (boundary: 85 > 84)", () => {
     const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveAccuracy: 70,
+      attackerItem: "zoom-lens",
+      defenderMovedThisTurn: true,
+      rng: createMockRng(85),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
 
-    let zoomLensMisses = 0;
-    let noItemMisses = 0;
-    const trials = 200;
+  it("given Zoom Lens with defender NOT moved and rng roll of 71, when checking accuracy, then misses (Zoom Lens inactive, base 70: 71 > 70)", () => {
+    // Source: Bulbapedia — Zoom Lens only activates if holder moves after target
+    // Without activation, calc stays at 70 (no boost).
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveAccuracy: 70,
+      attackerItem: "zoom-lens",
+      defenderMovedThisTurn: false,
+      rng: createMockRng(71),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
 
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxZoomLens = makeCtx({
-        moveAccuracy: 70,
-        attackerItem: "zoom-lens",
-        defenderMovedThisTurn: false, // defender hasn't moved yet
-        seed,
-      });
-      const ctxNoItem = makeCtx({
-        moveAccuracy: 70,
-        defenderMovedThisTurn: false,
-        seed,
-      });
-
-      if (!ruleset.doesMoveHit(ctxZoomLens)) zoomLensMisses++;
-      if (!ruleset.doesMoveHit(ctxNoItem)) noItemMisses++;
-    }
-
-    // With the defender not having moved, Zoom Lens doesn't activate,
-    // so both should have the same miss rate
-    expect(zoomLensMisses).toBe(noItemMisses);
+  it("given Zoom Lens with defender NOT moved and rng roll of 70, when checking accuracy, then hits (Zoom Lens inactive, base 70: 70 <= 70)", () => {
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveAccuracy: 70,
+      attackerItem: "zoom-lens",
+      defenderMovedThisTurn: false,
+      rng: createMockRng(70),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 });
 
@@ -434,92 +427,70 @@ describe("Gen4Ruleset doesMoveHit — Zoom Lens accuracy bonus", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset doesMoveHit — BrightPowder / Lax Incense evasion", () => {
-  it("given defender with BrightPowder and a 100% accuracy move, when checking accuracy, then accuracy is reduced to 90", () => {
-    // Source: Bulbapedia — BrightPowder: "Lowers opposing accuracy by 10%."
-    // Source: Showdown sim/items.ts — BrightPowder onModifyAccuracy
-    // Derivation: base calc = 100; BrightPowder: floor(100 * 90 / 100) = 90
+  // Source: Bulbapedia — BrightPowder: "Lowers opposing accuracy by 10%."
+  // Source: Showdown sim/items.ts — BrightPowder/Lax Incense onModifyAccuracy
+  // Derivation (100% move): floor(100 * 90 / 100) = 90
+  // Derivation (70% move): floor(70 * 90 / 100) = 63
+
+  it("given BrightPowder defender and 100% move, when rng roll is 90, then hits (boundary: 90 <= 90)", () => {
     const ruleset = makeRuleset();
-
-    let brightPowderMisses = 0;
-    let noItemMisses = 0;
-    const trials = 500;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxBrightPowder = makeCtx({
-        moveAccuracy: 100,
-        defenderItem: "bright-powder",
-        seed,
-      });
-      const ctxNoItem = makeCtx({
-        moveAccuracy: 100,
-        seed,
-      });
-
-      if (!ruleset.doesMoveHit(ctxBrightPowder)) brightPowderMisses++;
-      if (!ruleset.doesMoveHit(ctxNoItem)) noItemMisses++;
-    }
-
-    // 100% accuracy move never misses without item; BrightPowder makes it miss sometimes
-    expect(noItemMisses).toBe(0);
-    expect(brightPowderMisses).toBeGreaterThan(0);
+    const ctx = makeCtx({
+      moveAccuracy: 100,
+      defenderItem: "bright-powder",
+      rng: createMockRng(90),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
-  it("given defender with Lax Incense and a 100% accuracy move, when checking accuracy, then accuracy is reduced to 90", () => {
-    // Source: Bulbapedia — Lax Incense: "Lowers opposing accuracy by 10%."
-    // Source: Showdown sim/items.ts — Lax Incense onModifyAccuracy (same as BrightPowder)
-    // Derivation: base calc = 100; Lax Incense: floor(100 * 90 / 100) = 90
+  it("given BrightPowder defender and 100% move, when rng roll is 91, then misses (boundary: 91 > 90)", () => {
     const ruleset = makeRuleset();
-
-    let laxIncenseMisses = 0;
-    let noItemMisses = 0;
-    const trials = 500;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxLaxIncense = makeCtx({
-        moveAccuracy: 100,
-        defenderItem: "lax-incense",
-        seed,
-      });
-      const ctxNoItem = makeCtx({
-        moveAccuracy: 100,
-        seed,
-      });
-
-      if (!ruleset.doesMoveHit(ctxLaxIncense)) laxIncenseMisses++;
-      if (!ruleset.doesMoveHit(ctxNoItem)) noItemMisses++;
-    }
-
-    // Same behavior as BrightPowder
-    expect(noItemMisses).toBe(0);
-    expect(laxIncenseMisses).toBeGreaterThan(0);
+    const ctx = makeCtx({
+      moveAccuracy: 100,
+      defenderItem: "bright-powder",
+      rng: createMockRng(91),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
   });
 
-  it("given defender with BrightPowder and a 70% accuracy move, when checking accuracy, then accuracy is reduced from 70 to 63", () => {
-    // Source: Bulbapedia — BrightPowder: "Lowers opposing accuracy by 10%."
-    // Derivation: base calc = 70; BrightPowder: floor(70 * 90 / 100) = floor(63) = 63
-    // With 63% hit rate vs 70%, BrightPowder should produce more misses.
+  it("given no defender item and 100% move, when rng roll is 100, then hits (100 <= 100, no item penalty)", () => {
+    // Baseline: without BrightPowder, a 100% move at stage 0/0 has calc = 100.
     const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveAccuracy: 100,
+      rng: createMockRng(100),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+  });
 
-    let brightPowderMisses = 0;
-    let noItemMisses = 0;
-    const trials = 500;
+  it("given Lax Incense defender and 100% move, when rng roll is 91, then misses (same as BrightPowder: 91 > 90)", () => {
+    // Source: Bulbapedia — Lax Incense: "Lowers opposing accuracy by 10%." (same as BrightPowder)
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveAccuracy: 100,
+      defenderItem: "lax-incense",
+      rng: createMockRng(91),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
+  });
 
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxBrightPowder = makeCtx({
-        moveAccuracy: 70,
-        defenderItem: "bright-powder",
-        seed,
-      });
-      const ctxNoItem = makeCtx({
-        moveAccuracy: 70,
-        seed,
-      });
+  it("given BrightPowder defender and 70% move, when rng roll is 63, then hits (boundary: 63 <= 63)", () => {
+    // Derivation: floor(70 * 90 / 100) = 63
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveAccuracy: 70,
+      defenderItem: "bright-powder",
+      rng: createMockRng(63),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
+  });
 
-      if (!ruleset.doesMoveHit(ctxBrightPowder)) brightPowderMisses++;
-      if (!ruleset.doesMoveHit(ctxNoItem)) noItemMisses++;
-    }
-
-    // BrightPowder should cause more misses than no item
-    expect(brightPowderMisses).toBeGreaterThan(noItemMisses);
+  it("given BrightPowder defender and 70% move, when rng roll is 64, then misses (boundary: 64 > 63)", () => {
+    const ruleset = makeRuleset();
+    const ctx = makeCtx({
+      moveAccuracy: 70,
+      defenderItem: "bright-powder",
+      rng: createMockRng(64),
+    });
+    expect(ruleset.doesMoveHit(ctx)).toBe(false);
   });
 });
