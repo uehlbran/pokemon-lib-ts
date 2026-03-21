@@ -444,7 +444,7 @@ export interface EndOfTurnSystem {
  *
  * Bag items are items used from the trainer's bag during battle, not held items.
  * Effects are generation-invariant (a Super Potion always heals 50 HP).
- * Poke Ball catch mechanics are out of scope — deferred to per-gen ruleset.
+ * Poke Ball catch mechanics are handled separately by `CatchSystem`.
  */
 export interface BagItemSystem {
   /**

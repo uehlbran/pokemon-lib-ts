@@ -1619,7 +1619,10 @@ export class BattleEngine implements BattleEventEmitter {
     const ballModifier = useEffect && useEffect.type === "catch" ? useEffect.catchRateModifier : 1;
 
     // Get wild Pokemon's species catch rate
-    let baseCatchRate = 45; // Default catch rate
+    // 45 is the most common wild Pokemon catch rate (Rattata, Pidgey, etc.) — used as a
+    // data-missing guard only. Real battles should always have species data present.
+    // Source: Bulbapedia — Catch rate (most common wild Pokemon base value)
+    let baseCatchRate = 45;
     try {
       const species = this.dataManager.getSpecies(wildActive.pokemon.speciesId);
       baseCatchRate = species.catchRate;
