@@ -12,6 +12,7 @@ import {
   getTypeMultiplier,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
+import { isWeatherSuppressedGen3 } from "./Gen3Abilities";
 import { TYPE_BOOST_ITEMS } from "./Gen3Items";
 
 /**
@@ -287,7 +288,10 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Weather (moved before Weather Ball/SolarBeam checks)
   // Source: pret/pokeemerald src/pokemon.c:3330-3363
-  const weather = context.state.weather?.type ?? null;
+  // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
+  // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+  const rawWeather = context.state.weather?.type ?? null;
+  const weather = isWeatherSuppressedGen3(attacker, defender) ? null : rawWeather;
 
   // Track the effective move type — Weather Ball changes type based on weather
   let effectiveMoveType: PokemonType = move.type;

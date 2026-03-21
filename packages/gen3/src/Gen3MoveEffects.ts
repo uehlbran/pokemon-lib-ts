@@ -47,6 +47,7 @@ type MutableResult = {
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
+  batonPass?: boolean;
   messages: string[];
   selfFaint?: boolean;
   customDamage?: {
@@ -241,9 +242,16 @@ function applyMoveEffect(
 
     case "switch-out": {
       if (effect.target === "self") {
-        // Baton Pass — switch out preserving stat changes and volatile statuses
-        // Source: pret/pokeemerald — Baton Pass transfers volatiles
         result.switchOut = true;
+        // Baton Pass: additionally pass stat stages and volatile statuses.
+        // Other switch-out moves (U-turn in Gen 4+) just switch without passing.
+        // Source: pret/pokeemerald src/battle_script_commands.c — Baton Pass
+        //   "gBattleScripting.savedBattler" + stat/volatile transfer logic
+        // Source: Bulbapedia — "Baton Pass passes stat stage changes and certain
+        //   volatile status conditions to the replacement Pokemon"
+        if (context.move.id === "baton-pass") {
+          result.batonPass = true;
+        }
       }
       break;
     }
@@ -463,9 +471,16 @@ function handleCustomEffect(
     }
 
     case "baton-pass": {
-      // Switch out preserving stat changes and volatile statuses
-      // Source: pret/pokeemerald — Baton Pass
+      // Switch out preserving stat changes and volatile statuses.
+      // The batonPass flag tells the engine to transfer stat stages and
+      // volatile statuses to the incoming Pokemon.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — Baton Pass
+      //   "gBattleScripting.savedBattler" + stat/volatile transfer logic
+      // Source: Bulbapedia — "Baton Pass passes stat stage changes and certain
+      //   volatile status conditions to the replacement Pokémon"
       result.switchOut = true;
+      result.batonPass = true;
       break;
     }
 

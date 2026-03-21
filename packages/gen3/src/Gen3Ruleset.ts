@@ -39,6 +39,8 @@ import {
   applyGen3Ability,
   isGen3AbilityStatusImmune,
   isGen3VolatileBlockedByAbility,
+  isWeatherSuppressedGen3,
+  WEATHER_SUPPRESSING_ABILITIES,
 } from "./Gen3Abilities";
 import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
 import { calculateGen3Damage } from "./Gen3DamageCalc";
@@ -502,7 +504,10 @@ export class Gen3Ruleset extends BaseRuleset {
     // --- Weather-based accuracy overrides ---
     // Source: pret/pokeemerald src/battle_script_commands.c Cmd_accuracycheck
     // Source: Showdown data/moves.ts — Thunder/Blizzard onModifyMove
-    const weather = context.state.weather?.type ?? null;
+    // Cloud Nine / Air Lock suppress weather for accuracy purposes.
+    // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+    const rawWeather = context.state.weather?.type ?? null;
+    const weather = isWeatherSuppressedGen3(context.attacker, context.defender) ? null : rawWeather;
 
     // Thunder: 100% accuracy in Rain, 50% accuracy in Sun
     // Source: pret/pokeemerald — Thunder bypasses accuracy in rain
@@ -549,8 +554,8 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Sand Veil: 0.8x accuracy in sandstorm (WeatherType uses "sand" for sandstorm)
     // Source: pret/pokeemerald src/battle_script_commands.c:1154-1155
-    const sandVeilWeather = context.state.weather?.type ?? null;
-    if (context.defender.ability === "sand-veil" && sandVeilWeather === "sand") {
+    // Uses `weather` (already suppressed by Cloud Nine / Air Lock above)
+    if (context.defender.ability === "sand-veil" && weather === "sand") {
       calc = Math.floor((calc * 80) / 100);
     }
 
@@ -781,7 +786,22 @@ export class Gen3Ruleset extends BaseRuleset {
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
-    this._currentWeather = state.weather?.type ?? null;
+    // Cloud Nine / Air Lock suppress weather for speed-doubling abilities too.
+    // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+    const rawWeather = state.weather?.type ?? null;
+    let weatherSuppressed = false;
+    if (rawWeather) {
+      for (const side of state.sides) {
+        for (const active of side.active) {
+          if (active && WEATHER_SUPPRESSING_ABILITIES.has(active.ability)) {
+            weatherSuppressed = true;
+            break;
+          }
+        }
+        if (weatherSuppressed) break;
+      }
+    }
+    this._currentWeather = weatherSuppressed ? null : rawWeather;
     const result = super.resolveTurnOrder(actions, state, rng);
     this._currentWeather = null;
     return result;

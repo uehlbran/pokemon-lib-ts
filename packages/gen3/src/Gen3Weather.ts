@@ -1,5 +1,6 @@
 import type { BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import { WEATHER_SUPPRESSING_ABILITIES } from "./Gen3Abilities";
 
 /**
  * Types immune to sandstorm chip damage in Gen 3.
@@ -66,6 +67,17 @@ export function applyGen3WeatherEffects(state: BattleState): WeatherEffectResult
   if (!state.weather) return results;
   const weatherType = state.weather.type;
   if (weatherType !== "sand" && weatherType !== "hail") return results;
+
+  // Cloud Nine / Air Lock: suppress weather damage while holder is on the field
+  // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+  //   checks IsAbilityOnField(ABILITY_CLOUD_NINE) || IsAbilityOnField(ABILITY_AIR_LOCK)
+  for (const side of state.sides) {
+    for (const active of side.active) {
+      if (active && WEATHER_SUPPRESSING_ABILITIES.has(active.ability)) {
+        return results; // Weather suppressed — no chip damage
+      }
+    }
+  }
 
   // Process each side
   for (const side of state.sides) {
