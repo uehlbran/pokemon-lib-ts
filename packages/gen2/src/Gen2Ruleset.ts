@@ -45,6 +45,7 @@ import {
   gen16ConfusionSelfHitRoll,
   getAccuracyStageRatio,
   getGen12StatStageRatio,
+  STATUS_CATCH_MODIFIERS,
 } from "@pokemon-lib-ts/core";
 import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";
@@ -245,10 +246,10 @@ export class Gen2Ruleset implements GenerationRuleset {
     const stats = active.pokemon.calculatedStats;
     const baseSpeed = stats ? stats.speed : 100;
 
-    // Apply stat stages using integer ratio table
-    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
-    const ratio = getGen12StatStageRatio(active.statStages.speed);
-    let effective = Math.floor((baseSpeed * ratio.num) / ratio.den);
+    // Apply stat stages
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer table (num/den), not float
+    const speedRatio = getGen12StatStageRatio(active.statStages.speed);
+    let effective = Math.floor((baseSpeed * speedRatio.num) / speedRatio.den);
 
     // Paralysis reduces speed to 25%
     if (active.pokemon.status === "paralysis") {
@@ -609,12 +610,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     const attack = stats?.attack ?? 100;
     const defense = stats?.defense ?? 100;
 
-    // Apply stat stages using integer ratio table
-    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
-    const atkRatio = getGen12StatStageRatio(pokemon.statStages.attack);
-    const effectiveAttack = Math.max(1, Math.floor((attack * atkRatio.num) / atkRatio.den));
-    const defRatio = getGen12StatStageRatio(pokemon.statStages.defense);
-    const effectiveDefense = Math.max(1, Math.floor((defense * defRatio.num) / defRatio.den));
+    // Apply stat stages using integer arithmetic from pokecrystal stat_multipliers.asm
+    const { num: atkNum, den: atkDen } = getGen12StatStageRatio(pokemon.statStages.attack);
+    const effectiveAttack = Math.max(1, Math.floor((attack * atkNum) / atkDen));
+    const { num: defNum, den: defDen } = getGen12StatStageRatio(pokemon.statStages.defense);
+    const effectiveDefense = Math.max(1, Math.floor((defense * defNum) / defDen));
 
     // 40 base power typeless physical hit
     const levelFactor = Math.floor((2 * level) / 5) + 2;
@@ -844,11 +844,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     const level = attacker.pokemon.level;
     const attack = attacker.pokemon.calculatedStats?.attack ?? 100;
     const defense = defender.pokemon.calculatedStats?.defense ?? 100;
-    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer num/den pairs
-    const atkRatio = getGen12StatStageRatio(attacker.statStages.attack);
-    const effectiveAttack = Math.max(1, Math.floor((attack * atkRatio.num) / atkRatio.den));
-    const defRatio = getGen12StatStageRatio(defender.statStages.defense);
-    const effectiveDefense = Math.max(1, Math.floor((defense * defRatio.num) / defRatio.den));
+    // Source: pret/pokecrystal data/battle/stat_multipliers.asm — integer table (num/den), not float
+    const { num: sAtkNum, den: sAtkDen } = getGen12StatStageRatio(attacker.statStages.attack);
+    const effectiveAttack = Math.max(1, Math.floor((attack * sAtkNum) / sAtkDen));
+    const { num: sDefNum, den: sDefDen } = getGen12StatStageRatio(defender.statStages.defense);
+    const effectiveDefense = Math.max(1, Math.floor((defense * sDefNum) / sDefDen));
     // Gen 2 damage formula: floor(floor(floor((2*L/5)+2) * P * A) / D) / 50) + 2
     const levelFactor = Math.floor((2 * level) / 5) + 2;
     let baseDamage = Math.floor(Math.floor(levelFactor * 50 * effectiveAttack) / effectiveDefense);
