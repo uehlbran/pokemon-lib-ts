@@ -10,6 +10,7 @@ import type {
   SeededRandom,
   StatBlock,
   TypeChart,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { ALL_NATURES, DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import type {
@@ -267,6 +268,15 @@ export abstract class BaseRuleset implements GenerationRuleset {
       messages: [],
     };
     return result;
+  }
+
+  /**
+   * Default: no moves can hit a semi-invulnerable target.
+   * Gen 3+ rulesets override to allow specific moves (e.g., Thunder hits flying).
+   * Source: Showdown sim/battle-actions.ts — semi-invulnerable immunity checks
+   */
+  canHitSemiInvulnerable(_moveId: string, _volatile: VolatileStatus): boolean {
+    return false;
   }
 
   // Burn: Gen 7+ default (1/16 max HP); Gen 3-6 must override (1/8 max HP)

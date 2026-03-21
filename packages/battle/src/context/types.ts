@@ -212,6 +212,18 @@ export interface MoveEffectResult {
   readonly trickRoomSet?: { turnsLeft: number } | null;
   /** Schedule a Future Sight / Doom Desire attack on the target side (Gen 2+) */
   readonly futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;
+  /** Activate Gravity field effect (Gen 4+) */
+  readonly gravitySet?: boolean;
+  /**
+   * Set a forced move for the next turn (two-turn moves like Fly, Dig, SolarBeam).
+   * The volatile status is applied to the attacker during the charge turn; it is
+   * removed before the forced move executes on the second turn.
+   */
+  readonly forcedMoveSet?: {
+    moveIndex: number;
+    moveId: string;
+    volatileStatus: VolatileStatus;
+  } | null;
 }
 
 /**
@@ -503,7 +515,8 @@ export type EndOfTurnEffect =
   | "flame-orb-activation"
   | "slow-start-countdown"
   | "taunt-countdown"
-  | "disable-countdown";
+  | "disable-countdown"
+  | "gravity-countdown";
 
 /**
  * Configuration object passed to the `BattleEngine` constructor.

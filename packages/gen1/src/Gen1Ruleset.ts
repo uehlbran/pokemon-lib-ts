@@ -297,6 +297,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     return roll < threshold;
   }
 
+  // Gen 1 has no semi-invulnerable two-turn moves in the Gen 3+ sense.
+  canHitSemiInvulnerable(_moveId: string, _volatile: VolatileStatus): boolean {
+    return false;
+  }
+
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
     const { move, damage, defender } = context;
 
