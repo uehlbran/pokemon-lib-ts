@@ -191,6 +191,16 @@ export class MockRuleset implements GenerationRuleset {
     return this.semiInvulnerableOverrides.get(moveId)?.has(volatile) ?? false;
   }
 
+  private ppCostOverride: number | null = null;
+
+  setPPCost(cost: number): void {
+    this.ppCostOverride = cost;
+  }
+
+  getPPCost(_actor: ActivePokemon, _defender: ActivePokemon | null, _state: BattleState): number {
+    return this.ppCostOverride ?? 1;
+  }
+
   onDamageReceived(
     _defender: ActivePokemon,
     _damage: number,

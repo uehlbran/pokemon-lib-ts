@@ -303,6 +303,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     return false;
   }
 
+  // Gen 1 has no Pressure ability — PP cost is always 1.
+  getPPCost(_actor: ActivePokemon, _defender: ActivePokemon | null, _state: BattleState): number {
+    return 1;
+  }
+
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
     const { move, damage, defender, brokeSubstitute } = context;
 

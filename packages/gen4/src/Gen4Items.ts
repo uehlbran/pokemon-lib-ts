@@ -644,6 +644,45 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
+    // Sticky Barb: transfer to attacker on contact move if attacker has no held item.
+    // The end-of-turn chip damage is handled separately in handleEndOfTurn.
+    // Source: Bulbapedia — Sticky Barb: "If the holder is hit with a contact move,
+    //   the Sticky Barb transfers to the attacker (unless the attacker already holds an item)"
+    // Source: Showdown data/items.ts — Sticky Barb onHit: item transfer on contact
+    case "sticky-barb": {
+      const moveUsed = context.move;
+      // Only transfer on contact moves
+      if (!moveUsed?.flags?.contact) {
+        return NO_ACTIVATION;
+      }
+      // Find the opponent (attacker) from the battle state.
+      // The holder (defender) is context.pokemon; find which side they're on.
+      const sides = context.state?.sides;
+      if (!sides) return NO_ACTIVATION;
+      const holderSide = sides.findIndex((s) =>
+        s.active.some((a) => a && a.pokemon === pokemon.pokemon),
+      );
+      if (holderSide === -1) return NO_ACTIVATION;
+      const opponentSide = holderSide === 0 ? 1 : 0;
+      const opponent = sides[opponentSide]?.active?.[0];
+      if (!opponent) return NO_ACTIVATION;
+      // Only transfer if the attacker has no held item
+      if (opponent.pokemon.heldItem !== null) {
+        return NO_ACTIVATION;
+      }
+      // Transfer: remove from holder, give to attacker
+      // Direct mutation is consistent with other item transfer patterns (e.g., Thief, Trick)
+      pokemon.pokemon.heldItem = null;
+      opponent.pokemon.heldItem = "sticky-barb";
+      return {
+        activated: true,
+        effects: [],
+        messages: [
+          `${pokemonName}'s Sticky Barb latched onto ${opponent.pokemon.nickname ?? "the attacker"}!`,
+        ],
+      };
+    }
+
     default:
       return NO_ACTIVATION;
   }

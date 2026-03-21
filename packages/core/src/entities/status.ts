@@ -62,4 +62,5 @@ export type VolatileStatus =
   | "bide" // Gen 1 Bide charging; data: { accumulatedDamage: number }
   | "thrash-lock" // Gen 1 Thrash / Petal Dance forced move; data: { moveId: string }
   | "mimic-slot" // Gen 1 Mimic — tracks which slot was replaced; data: { slot: number, originalMoveId: string }
-  | "transform-data"; // Stores original moves/types/stats for Transform restoration on switch-out
+  | "transform-data" // Stores original moves/types/stats for Transform restoration on switch-out
+  | "truant-turn"; // Truant — alternates between acting and loafing each turn (Gen 3+)

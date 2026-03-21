@@ -1244,6 +1244,17 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     messages: [],
   };
 
+  // Clear Destiny Bond volatile if the attacker is using any move other than Destiny Bond.
+  // Destiny Bond persists only until the user's next action; if they choose a different move,
+  // the volatile is removed.
+  // Source: Showdown Gen 4 — destiny-bond volatile is cleared in onBeforeMove
+  if (context.move.id !== "destiny-bond" && context.attacker.volatileStatuses.has("destiny-bond")) {
+    result.volatilesToClear = [
+      ...(result.volatilesToClear ?? []),
+      { target: "attacker", volatile: "destiny-bond" },
+    ];
+  }
+
   // Roost: heal + temporarily remove Flying type for this turn.
   // Roost has effect: { type: "heal", amount: 0.5 } in the Gen 4 data, so it routes
   // through applyMoveEffect's "heal" case which only heals — it cannot set typeChange.
@@ -1748,12 +1759,10 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       return result;
     }
     const berryData = NATURAL_GIFT_TABLE[heldItem];
-    result.customDamage = {
-      target: "defender",
-      amount: 0, // Placeholder — actual damage uses overridden type/power in damage calc
-      source: "natural-gift",
-      type: berryData.type,
-    };
+    // Do NOT set customDamage — damage should go through the normal damage calc path.
+    // The engine calls calculateDamage() before executeMoveEffect(), so the move's
+    // base power and type in the data determine the damage output.
+    // Source: Showdown Gen 4 — Natural Gift uses onModifyMove to set base power/type
     result.itemConsumed = true;
     result.messages.push(
       `${attackerName} used Natural Gift! (${berryData.type} / ${berryData.power} BP)`,
@@ -1778,12 +1787,10 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       result.messages.push("But it failed!");
       return result;
     }
-    result.customDamage = {
-      target: "defender",
-      amount: 0, // Placeholder — actual damage uses Fling power in damage calc
-      source: "fling",
-      type: "dark",
-    };
+    // Do NOT set customDamage — damage should go through the normal damage calc path.
+    // The engine calls calculateDamage() before executeMoveEffect(), so the move's
+    // base power in the data determines the damage output.
+    // Source: Showdown Gen 4 — Fling uses onModifyMove to set base power
     result.itemConsumed = true;
     result.messages.push(`${attackerName} flung its ${heldItem}!`);
     return result;

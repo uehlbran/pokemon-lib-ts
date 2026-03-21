@@ -332,9 +332,10 @@ function createDamageContext(opts: {
 // ===========================================================================
 
 describe("Natural Gift", () => {
-  it("given attacker holds cheri-berry, when using Natural Gift, then produces fire-type customDamage with 60 BP and consumes the berry", () => {
-    // Source: Bulbapedia -- Natural Gift: Cheri Berry -> Fire type, 60 BP (Gen IV)
-    // Source: Showdown sim/items.ts -- cheri-berry naturalGift: {basePower: 60, type: 'Fire'}
+  it("given attacker holds cheri-berry, when using Natural Gift, then consumes berry and uses normal damage calc (no customDamage)", () => {
+    // Source: Showdown Gen 4 -- Natural Gift uses onModifyMove to set base power/type,
+    // then goes through the normal damage calc path (not customDamage).
+    // Bug fix #257: Natural Gift should NOT set customDamage.
     const attacker = createActivePokemon({
       types: ["normal"],
       heldItem: "cheri-berry",
@@ -347,15 +348,15 @@ describe("Natural Gift", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.customDamage).toBeDefined();
-    expect(result.customDamage!.source).toBe("natural-gift");
-    expect(result.customDamage!.type).toBe("fire");
+    expect(result.customDamage).toBeUndefined();
+    expect(result.itemConsumed).toBe(true);
     expect(result.messages).toContain("Ambipom used Natural Gift! (fire / 60 BP)");
   });
 
-  it("given attacker holds yache-berry, when using Natural Gift, then produces ice-type customDamage with 60 BP", () => {
-    // Source: Bulbapedia -- Natural Gift: Yache Berry -> Ice type, 60 BP (Gen IV)
-    // Source: Showdown sim/items.ts -- yache-berry naturalGift: {basePower: 60, type: 'Ice'}
+  it("given attacker holds yache-berry, when using Natural Gift, then consumes berry and uses normal damage calc (no customDamage)", () => {
+    // Source: Showdown Gen 4 -- Natural Gift uses onModifyMove to set base power/type,
+    // then goes through the normal damage calc path (not customDamage).
+    // Bug fix #257: Natural Gift should NOT set customDamage.
     const attacker = createActivePokemon({
       types: ["dragon"],
       heldItem: "yache-berry",
@@ -368,9 +369,9 @@ describe("Natural Gift", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.customDamage).toBeDefined();
-    expect(result.customDamage!.type).toBe("ice");
-    expect(result.customDamage!.source).toBe("natural-gift");
+    expect(result.customDamage).toBeUndefined();
+    expect(result.itemConsumed).toBe(true);
+    expect(result.messages).toContain("Garchomp used Natural Gift! (ice / 60 BP)");
   });
 
   it("given attacker holds no item, when using Natural Gift, then fails", () => {
@@ -467,9 +468,10 @@ describe("Natural Gift table completeness", () => {
 // ===========================================================================
 
 describe("Fling", () => {
-  it("given attacker holds iron-ball, when using Fling, then produces dark-type customDamage and consumes item", () => {
-    // Source: Bulbapedia -- Fling: Iron Ball has 130 Fling power
-    // Source: Showdown sim/items.ts -- iron-ball fling: {basePower: 130}
+  it("given attacker holds iron-ball, when using Fling, then consumes item and uses normal damage calc (no customDamage)", () => {
+    // Source: Showdown Gen 4 -- Fling uses onModifyMove to set base power,
+    // then goes through the normal damage calc path (not customDamage).
+    // Bug fix #257: Fling should NOT set customDamage.
     const attacker = createActivePokemon({
       types: ["dark"],
       heldItem: "iron-ball",
@@ -482,15 +484,15 @@ describe("Fling", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.customDamage).toBeDefined();
-    expect(result.customDamage!.source).toBe("fling");
-    expect(result.customDamage!.type).toBe("dark");
+    expect(result.customDamage).toBeUndefined();
+    expect(result.itemConsumed).toBe(true);
     expect(result.messages).toContain("Weavile flung its iron-ball!");
   });
 
-  it("given attacker holds a berry, when using Fling, then produces dark-type customDamage with 10 BP", () => {
-    // Source: Bulbapedia -- Fling: all berries have base power 10
-    // Source: Showdown sim/items.ts -- berry default fling power is 10
+  it("given attacker holds a berry, when using Fling, then consumes item and uses normal damage calc (no customDamage)", () => {
+    // Source: Showdown Gen 4 -- Fling uses onModifyMove to set base power,
+    // then goes through the normal damage calc path (not customDamage).
+    // Bug fix #257: Fling should NOT set customDamage.
     const attacker = createActivePokemon({
       types: ["normal"],
       heldItem: "sitrus-berry",
@@ -503,9 +505,8 @@ describe("Fling", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.customDamage).toBeDefined();
-    expect(result.customDamage!.source).toBe("fling");
-    expect(result.customDamage!.type).toBe("dark");
+    expect(result.customDamage).toBeUndefined();
+    expect(result.itemConsumed).toBe(true);
     expect(result.messages).toContain("Ambipom flung its sitrus-berry!");
   });
 

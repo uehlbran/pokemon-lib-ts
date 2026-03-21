@@ -300,6 +300,7 @@ export type AbilityEffectType =
   | "heal"
   | "chip-damage"
   | "volatile-inflict"
+  | "move-prevented"
   | "none";
 
 /** A single effect produced by an ability trigger — proper discriminated union on effectType. */
@@ -353,6 +354,7 @@ export type AbilityEffect =
       readonly volatile: VolatileStatus;
       readonly data?: Record<string, unknown>;
     }
+  | { readonly effectType: "move-prevented"; readonly target: "self" }
   | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
 
 export interface AbilityResult {
@@ -362,6 +364,8 @@ export interface AbilityResult {
   readonly effects: readonly AbilityEffect[];
   /** Freeform messages to emit as `MessageEvent`s */
   readonly messages: readonly string[];
+  /** Set to `true` when an ability blocks the move entirely (e.g., Truant skips a turn) */
+  readonly movePrevented?: boolean;
 }
 
 /**

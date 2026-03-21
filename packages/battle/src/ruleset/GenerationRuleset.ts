@@ -120,6 +120,14 @@ export interface MoveSystem {
   canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean;
 
   /**
+   * Returns the PP cost for using a move against a specific defender.
+   * Default is 1; returns 2 if the defender has Pressure (Gen 3+).
+   *
+   * Source: pret/pokeemerald — ABILITY_PRESSURE deducts 2 PP per move use
+   */
+  getPPCost(actor: ActivePokemon, defender: ActivePokemon | null, state: BattleState): number;
+
+  /**
    * Called after the defender takes direct damage (not absorbed by a substitute).
    * Allows gen-specific reactive effects triggered by taking a hit:
    * - Gen 1 Rage: boosts defender Attack by +1 stage
