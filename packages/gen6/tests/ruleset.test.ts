@@ -1,4 +1,4 @@
-import type { ActivePokemon, BattleAction, BattleState, CritContext } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleState, CritContext } from "@pokemon-lib-ts/battle";
 import type { SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";

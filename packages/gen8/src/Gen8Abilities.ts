@@ -29,7 +29,7 @@ const NO_ACTIVATION: AbilityResult = { activated: false, effects: [], messages: 
  * Neutralizing Gas, Intrepid Sword, Dauntless Shield, etc.
  */
 export function handleGen8SwitchInAbility(
-  abilityId: string,
+  _abilityId: string,
   trigger: AbilityTrigger,
   context: AbilityContext,
 ): AbilityResult {
@@ -48,7 +48,7 @@ export function handleGen8SwitchInAbility(
  * Wandering Spirit, Perish Body, Gulp Missile, Ice Face, etc.
  */
 export function handleGen8ContactAbility(
-  abilityId: string,
+  _abilityId: string,
   trigger: AbilityTrigger,
   context: AbilityContext,
 ): AbilityResult {

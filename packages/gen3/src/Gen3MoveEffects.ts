@@ -24,7 +24,6 @@ import type {
   EntryHazardType,
   MoveData,
   MoveEffect,
-  PokemonType,
   PrimaryStatus,
   SeededRandom,
   VolatileStatus,

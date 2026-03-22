@@ -32,6 +32,7 @@ import { handleGen9Ability } from "./Gen9Abilities.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
 import { calculateGen9Damage } from "./Gen9DamageCalc.js";
 import { applyGen9EntryHazards } from "./Gen9EntryHazards.js";
+import { applyGen9HeldItem } from "./Gen9Items.js";
 import { Gen9Terastallization } from "./Gen9Terastallization.js";
 import { applyGen9TerrainEffects, checkGen9TerrainStatusImmunity } from "./Gen9Terrain.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";

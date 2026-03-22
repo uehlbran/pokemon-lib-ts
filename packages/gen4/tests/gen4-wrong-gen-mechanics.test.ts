@@ -11,7 +11,6 @@ import { createGen4DataManager } from "../src/data";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
-import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 
 /**
  * Gen 4 Wrong-Gen Mechanics Bug Fix Tests
@@ -39,7 +38,7 @@ function makeRuleset(): Gen4Ruleset {
   return new Gen4Ruleset(createGen4DataManager());
 }
 
-function makePokemonInstance(overrides: {
+function _makePokemonInstance(overrides: {
   maxHp?: number;
   ability?: string;
   heldItem?: string | null;

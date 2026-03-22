@@ -250,8 +250,8 @@ describe("#283 — rollCatchAttempt uses Gen 1 BallThrowCalc algorithm", () => {
     // Pidgey catchRate=255, status=sleep (25). We use a seed where rand1 < 25.
     // Arrange
     // Need a seed where rng.int(0, 255) < 25. Try seed 100.
-    const rng = new SeededRandom(100);
-    const firstRoll = new SeededRandom(100).int(0, 255);
+    const _rng = new SeededRandom(100);
+    const _firstRoll = new SeededRandom(100).int(0, 255);
     // Find a seed where first roll < 25
     let testSeed = 0;
     for (let s = 0; s < 1000; s++) {
@@ -961,7 +961,7 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
     speciesId: number,
     level: number,
     moveIds: string[],
-    speedOverride?: number,
+    _speedOverride?: number,
   ): PokemonInstance {
     const moves = moveIds.map((id) => {
       const mv = dataManager.getMove(id);

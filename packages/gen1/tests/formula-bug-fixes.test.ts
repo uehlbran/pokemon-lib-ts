@@ -244,7 +244,7 @@ describe("#287 — Integer stat stage ratios replace float multipliers", () => {
   it("given effective speed uses integer ratio, when Pokemon has +1 speed stage and base speed 100, then effective speed is 150", () => {
     // Source: pret/pokered data/battle/stat_modifiers.asm — stage +1 ratio is 15/10
     // floor(100 * 15 / 10) = floor(150) = 150
-    const active = makeActivePokemon({
+    const _active = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
         calculatedStats: {

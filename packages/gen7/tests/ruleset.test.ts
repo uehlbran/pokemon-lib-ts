@@ -600,7 +600,7 @@ describe("Gen7Ruleset — confusion self-hit (33%)", () => {
     const iterations = 3000;
     for (let i = 0; i < iterations; i++) {
       // Create a deterministic but varying RNG by using a counter
-      const threshold = 1 / 3;
+      const _threshold = 1 / 3;
       const value = (i % 100) / 100; // 0.00 to 0.99
       const rng = makeRng({ chance: (p: number) => value < p });
       if (ruleset.rollConfusionSelfHit(rng)) hits++;

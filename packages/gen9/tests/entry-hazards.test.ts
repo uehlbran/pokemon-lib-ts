@@ -17,7 +17,7 @@
  */
 
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { BattleStat, EntryHazardType, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type { EntryHazardType, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   applyGen9EntryHazards,

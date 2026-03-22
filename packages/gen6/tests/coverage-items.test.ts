@@ -8,10 +8,10 @@
  */
 
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { applyGen6HeldItem, getPinchBerryThreshold } from "../src/Gen6Items";
+import { applyGen6HeldItem } from "../src/Gen6Items";
 
 // ---------------------------------------------------------------------------
 // Helper factories

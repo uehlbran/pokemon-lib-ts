@@ -1,4 +1,4 @@
-import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen7ZMove, getZMovePower } from "../src/Gen7ZMove";

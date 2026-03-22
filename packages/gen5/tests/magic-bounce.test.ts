@@ -1,9 +1,4 @@
-import type {
-  AbilityContext,
-  ActivePokemon,
-  BattleSide,
-  BattleState,
-} from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {

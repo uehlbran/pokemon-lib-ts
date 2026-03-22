@@ -13,7 +13,7 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen2Damage, isGen2PhysicalType } from "../src/Gen2DamageCalc";
+import { calculateGen2Damage } from "../src/Gen2DamageCalc";
 import { applyMoveEffect, handleCustomEffect, type MutableResult } from "../src/Gen2MoveEffects";
 import { Gen2Ruleset } from "../src/Gen2Ruleset";
 import { canInflictGen2Status } from "../src/Gen2Status";

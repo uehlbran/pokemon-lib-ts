@@ -181,12 +181,12 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
 
     // Override rollCatchAttempt to capture the ballModifier argument
     ruleset.rollCatchAttempt = (
-      catchRate: number,
-      maxHp: number,
-      currentHp: number,
-      status: import("@pokemon-lib-ts/core").PrimaryStatus | null,
+      _catchRate: number,
+      _maxHp: number,
+      _currentHp: number,
+      _status: import("@pokemon-lib-ts/core").PrimaryStatus | null,
       ballModifier: number,
-      rng: import("@pokemon-lib-ts/core").SeededRandom,
+      _rng: import("@pokemon-lib-ts/core").SeededRandom,
     ): CatchResult => {
       capturedBallModifier = ballModifier;
       return { shakes: 3, caught: true };

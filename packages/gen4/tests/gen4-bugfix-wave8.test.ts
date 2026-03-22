@@ -8,14 +8,7 @@ import type {
   ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  MoveFlags,
-  PokemonInstance,
-  PokemonType,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import type { MoveData, MoveFlags, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen4DataManager } from "../src/data";
 import { applyGen4Ability } from "../src/Gen4Abilities";
@@ -70,7 +63,7 @@ function createMockRng(intReturnValue = 0, chanceResult = false) {
 }
 
 /** RNG that returns different values for successive int() calls */
-function createSequentialRng(intValues: number[]) {
+function _createSequentialRng(intValues: number[]) {
   let callIndex = 0;
   return {
     next: () => 0,
@@ -956,7 +949,7 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
       accuracy: 100,
     });
     const state = makeBattleState();
-    const rng = createMockRng(100); // max random roll for predictability
+    const _rng = createMockRng(100); // max random roll for predictability
 
     // Calculate WITH Adamant Orb
     const contextWith: DamageContext = {

@@ -4,12 +4,11 @@ import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   getSheerForceMultiplier,
-  hasSheerForceEligibleEffect,
   isSheerForceEligibleMove,
   isSheerForceWhitelistedMove,
   sheerForceSuppressesLifeOrb,
 } from "../src/Gen5AbilitiesDamage";
-import { calculateGen5Damage, pokeRound } from "../src/Gen5DamageCalc";
+import { calculateGen5Damage } from "../src/Gen5DamageCalc";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 
 // ---------------------------------------------------------------------------

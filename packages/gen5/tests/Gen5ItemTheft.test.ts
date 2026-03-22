@@ -416,7 +416,7 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
   // Source: Bulbapedia -- Pickpocket: "Steals an item from an attacker that made contact."
   it("given Pickpocket holder has no item and attacker has one, when contact move is used, then steals the item via direct mutation", () => {
     const attacker = makeActive({ heldItem: "life-orb", nickname: "Attacker" });
-    const defender = makeActive({
+    const _defender = makeActive({
       ability: "pickpocket",
       heldItem: null,
       nickname: "Pickpocket Mon",

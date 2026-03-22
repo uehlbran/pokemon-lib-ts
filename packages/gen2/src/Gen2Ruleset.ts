@@ -46,7 +46,6 @@ import {
   gen16ConfusionSelfHitRoll,
   getAccuracyStageRatio,
   getGen12StatStageRatio,
-  STATUS_CATCH_MODIFIERS,
 } from "@pokemon-lib-ts/core";
 import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";

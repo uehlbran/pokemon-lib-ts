@@ -27,13 +27,7 @@ import type {
   BattleState,
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
-import type {
-  BattleStat,
-  EntryHazardType,
-  PrimaryStatus,
-  TypeChart,
-  VolatileStatus,
-} from "@pokemon-lib-ts/core";
+import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
 import { isGen8Grounded } from "./Gen8DamageCalc.js";
 
 // ---------------------------------------------------------------------------

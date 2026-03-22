@@ -30,7 +30,7 @@
  */
 
 import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
-import type { MoveData, SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Default empty result

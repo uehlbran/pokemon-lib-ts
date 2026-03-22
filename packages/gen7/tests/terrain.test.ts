@@ -1,10 +1,5 @@
-import type {
-  AbilityContext,
-  ActivePokemon,
-  BattleState,
-  TerrainEffectResult,
-} from "@pokemon-lib-ts/battle";
-import type { PokemonType, PrimaryStatus, TerrainType } from "@pokemon-lib-ts/core";
+import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { PokemonType, TerrainType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { isGen7Grounded } from "../src/Gen7DamageCalc";

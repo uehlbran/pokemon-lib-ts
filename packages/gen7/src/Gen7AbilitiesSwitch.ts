@@ -1,5 +1,5 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 7 switch-in, switch-out, contact, and passive ability handlers.

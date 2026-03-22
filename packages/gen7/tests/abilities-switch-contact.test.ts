@@ -189,7 +189,7 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(
+function _makeMove(
   type: PokemonType,
   opts: {
     id?: string;

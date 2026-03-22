@@ -207,7 +207,7 @@ function simulateConsumeEffect(pokemon: ActivePokemon, itemResult: ItemResult): 
     if (effect.type === "consume") {
       const consumedItemId = effect.value as string;
       // This mirrors the engine's logic in processItemResult
-      if (consumedItemId && consumedItemId.endsWith("-berry")) {
+      if (consumedItemId?.endsWith("-berry")) {
         pokemon.volatileStatuses.set("harvest-berry", {
           turnsLeft: -1,
           data: { berryId: consumedItemId },

@@ -4,17 +4,9 @@ import type {
   BattleSide,
   BattleState,
   MoveEffectContext,
-  MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  MoveFlags,
-  PokemonInstance,
-  PokemonType,
-  StatBlock,
-} from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import type { MoveData, MoveFlags, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen4Ruleset } from "../src";
 import { createGen4DataManager } from "../src/data";

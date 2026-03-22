@@ -16,21 +16,8 @@ import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
-  getAteAbilityOverride,
-  getFurCoatMultiplier,
-  getMegaLauncherMultiplier,
-  getMultiscaleMultiplier,
-  getSheerForceMultiplier,
-  getStrongJawMultiplier,
-  getSturdyDamageCap,
-  getToughClawsMultiplier,
   handleGen7DamageCalcAbility,
   handleGen7DamageImmunityAbility,
-  hasSheerForceEligibleEffect,
-  isParentalBondEligible,
-  isSheerForceEligibleMove,
-  sheerForceSuppressesLifeOrb,
-  sturdyBlocksOHKO,
 } from "../src/Gen7AbilitiesDamage";
 import { handleGen7StatAbility, isPranksterEligible } from "../src/Gen7AbilitiesStat";
 import { handleGen7SwitchAbility } from "../src/Gen7AbilitiesSwitch";

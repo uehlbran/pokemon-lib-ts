@@ -1,6 +1,6 @@
 import type { ActivePokemon, BattleAction, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
-import { DataManager, SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../src/data";
 import { Gen3Ruleset } from "../src/Gen3Ruleset";

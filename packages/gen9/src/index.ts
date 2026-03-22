@@ -111,6 +111,7 @@ export {
   TERRAIN_EXTENDER_ITEM_ID,
 } from "./Gen9Items.js";
 export { Gen9Ruleset } from "./Gen9Ruleset.js";
+export { calculateTeraStab, Gen9Terastallization } from "./Gen9Terastallization.js";
 export {
   applyGen9TerrainEffects,
   checkGen9TerrainStatusImmunity,
@@ -121,7 +122,6 @@ export {
   TERRAIN_DEFAULT_TURNS,
   TERRAIN_EXTENDED_TURNS,
 } from "./Gen9Terrain.js";
-export { calculateTeraStab, Gen9Terastallization } from "./Gen9Terastallization.js";
 export { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 export {
   ABILITY_WEATHER_TURNS,

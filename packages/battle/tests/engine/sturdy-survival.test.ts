@@ -1,6 +1,6 @@
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { ActivePokemon, BattleConfig, BattleState, EndOfTurnEffect } from "../../src/context";
+import type { ActivePokemon, BattleConfig, BattleState } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";

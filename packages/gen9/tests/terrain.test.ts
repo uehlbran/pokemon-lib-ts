@@ -15,8 +15,8 @@
  * Source: Bulbapedia -- Terrain mechanics
  */
 
-import type { ActivePokemon, BattleState, TerrainEffectResult } from "@pokemon-lib-ts/battle";
-import type { PokemonType, PrimaryStatus, TerrainType } from "@pokemon-lib-ts/core";
+import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { PokemonType, TerrainType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   applyGen9TerrainEffects,

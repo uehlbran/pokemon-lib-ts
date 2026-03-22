@@ -1,13 +1,7 @@
-import type {
-  AbilityContext,
-  ActivePokemon,
-  BattleState,
-  TerrainEffectResult,
-} from "@pokemon-lib-ts/battle";
+import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType, PrimaryStatus, TerrainType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { isGen8Grounded } from "../src/Gen8DamageCalc";
 import { Gen8Ruleset } from "../src/Gen8Ruleset";
 import {
   applyGen8TerrainEffects,
@@ -522,7 +516,7 @@ describe("Grassy Terrain", () => {
       // Source: Showdown data/conditions.ts -- Math.max(1, floor(maxhp/16))
       // For maxHp=1: floor(1/16) = 0, clamped to 1
       // This tests the min-1 clamp for Shedinja-like edge cases
-      const pokemon = makeActive({ hp: 1, currentHp: 0, types: ["bug", "ghost"] });
+      const _pokemon = makeActive({ hp: 1, currentHp: 0, types: ["bug", "ghost"] });
       // Shedinja can't be at 0 HP and receive heal... use a 15 HP mon where floor(15/16)=0
       const pokemon2 = makeActive({ hp: 15, currentHp: 10, types: ["normal"] });
       const state = makeState({

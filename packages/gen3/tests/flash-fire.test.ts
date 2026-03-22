@@ -1,11 +1,5 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonType,
-  StatBlock,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen3Damage } from "../src/Gen3DamageCalc";
 import { GEN3_TYPE_CHART } from "../src/Gen3TypeChart";

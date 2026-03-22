@@ -2,7 +2,7 @@ import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/
 import type { MoveData, PokemonType, TerrainType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
+import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
 import {
   applyGen6TerrainEffects,

@@ -6,10 +6,9 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { canInflictGen3Status, Gen3Ruleset } from "../src";
+import { Gen3Ruleset } from "../src";
 import { createGen3DataManager } from "../src/data";
 import { applyGen3HeldItem } from "../src/Gen3Items";
-import { executeGen3MoveEffect } from "../src/Gen3MoveEffects";
 
 /**
  * Tests for Gen 3 move effect and item bug fixes.

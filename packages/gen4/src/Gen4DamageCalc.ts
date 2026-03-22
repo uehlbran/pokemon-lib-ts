@@ -232,7 +232,7 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  */
 function getAttackStat(
   attacker: ActivePokemon,
-  moveType: PokemonType,
+  _moveType: PokemonType,
   isPhysical: boolean,
   isCrit: boolean,
   defender?: ActivePokemon,
