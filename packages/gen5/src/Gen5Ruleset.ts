@@ -4,11 +4,13 @@ import type {
   AccuracyContext,
   ActivePokemon,
   BattleAction,
+  BattleSide,
   BattleState,
   CritContext,
   DamageContext,
   DamageResult,
   EndOfTurnEffect,
+  EntryHazardResult,
   ExpContext,
   ItemContext,
   ItemResult,
@@ -31,6 +33,7 @@ import { applyGen5Ability } from "./Gen5Abilities";
 import { getSturdyDamageCap } from "./Gen5AbilitiesDamage";
 import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_DENOMINATORS } from "./Gen5CritCalc";
 import { calculateGen5Damage } from "./Gen5DamageCalc";
+import { applyGen5EntryHazards } from "./Gen5EntryHazards";
 import { applyGen5HeldItem } from "./Gen5Items";
 import { executeGen5MoveEffect } from "./Gen5MoveEffects";
 import { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
@@ -151,6 +154,28 @@ export class Gen5Ruleset extends BaseRuleset {
       return { damage: capped, survived: true, messages: [`${name} held on thanks to Sturdy!`] };
     }
     return { damage, survived: false, messages: [] };
+  }
+
+  // --- Entry Hazards ---
+
+  /**
+   * Gen 5 entry hazard application.
+   *
+   * Delegates to applyGen5EntryHazards for Spikes, Stealth Rock, and Toxic Spikes.
+   * Mechanically identical to Gen 4 (no changes between Gen 4 and Gen 5).
+   *
+   * Source: Showdown data/moves.ts -- spikes, stealthrock, toxicspikes conditions
+   * Source: Showdown data/mods/gen5/ -- no overrides to hazard behavior (inherits base)
+   */
+  applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    state?: BattleState,
+  ): EntryHazardResult {
+    if (!state) {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+    return applyGen5EntryHazards(pokemon, side, state, this.getTypeChart());
   }
 
   // --- Move Effects ---

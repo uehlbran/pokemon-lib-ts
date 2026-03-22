@@ -102,6 +102,8 @@ export function handleGen5BehaviorMove(ctx: MoveEffectContext): MoveEffectResult
       return handleGrowth(ctx);
     case "knock-off":
       return handleKnockOff(ctx);
+    case "rapid-spin":
+      return handleRapidSpin(ctx);
     default:
       return null;
   }
@@ -230,6 +232,50 @@ function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
   }
 
   return makeResult({ messages: [] });
+}
+
+/**
+ * Gen 5 Rapid Spin: removes hazards, Leech Seed, and binding moves from the user's side.
+ *
+ * Rapid Spin is a 20 BP Normal-type physical contact move. After dealing damage,
+ * it clears all hazards from the USER's side (not the target's side), removes
+ * Leech Seed, and frees the user from binding/trapping moves.
+ *
+ * In Gen 5, Rapid Spin does NOT grant +1 Speed (that was added in Gen 8).
+ *
+ * Source: Showdown data/moves.ts -- rapidspin.onAfterHit
+ *   removes: leechseed, spikes, toxicspikes, stealthrock, stickyweb, partiallytrapped
+ *   Note: stickyweb did not exist in Gen 5 (introduced Gen 6)
+ */
+function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
+  const messages: string[] = [];
+
+  // Clear Leech Seed from the user
+  // Source: Showdown data/moves.ts -- rapidspin: pokemon.removeVolatile('leechseed')
+  const volatilesToClear: Array<{
+    target: "attacker" | "defender";
+    volatile: import("@pokemon-lib-ts/core").VolatileStatus;
+  }> = [];
+
+  if (ctx.attacker.volatileStatuses.has("leech-seed")) {
+    volatilesToClear.push({ target: "attacker", volatile: "leech-seed" });
+    messages.push("The Leech Seed was removed!");
+  }
+
+  // Clear binding/trapping from the user
+  // Source: Showdown data/moves.ts -- rapidspin: pokemon.removeVolatile('partiallytrapped')
+  if (ctx.attacker.volatileStatuses.has("bound")) {
+    volatilesToClear.push({ target: "attacker", volatile: "bound" });
+    messages.push("The binding was removed!");
+  }
+
+  return makeResult({
+    // Clear all hazards from the USER's side
+    // Source: Showdown data/moves.ts -- rapidspin: removes spikes/toxicspikes/stealthrock
+    clearSideHazards: "attacker",
+    volatilesToClear: volatilesToClear.length > 0 ? volatilesToClear : undefined,
+    messages,
+  });
 }
 
 // ---------------------------------------------------------------------------
