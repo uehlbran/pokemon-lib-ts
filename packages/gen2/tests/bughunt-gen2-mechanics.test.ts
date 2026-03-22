@@ -527,11 +527,8 @@ describe("Gen 2 catch rate — status bonus bug (BRN/PSN/PAR give no bonus)", ()
     // Source: pret/pokecrystal engine/items/item_effects.asm:340-352 — PAR case missing in decomp
     // This is a verified cartridge bug: BRN/PSN/PAR give no status bonus despite Bulbapedia
     // older articles claiming they did. The decomp confirms only FRZ/SLP add +10.
-    const rng = { int: () => 1 } as unknown as SeededRandom;
-    const catchWithPar = ruleset.rollCatchAttempt(45, 100, 100, "paralysis", 1, rng);
     // hpFactor=1 (full HP, min), statusBonus=0, finalRate=1; roll=1 <= 1 → caught
-    // Wait: roll <= finalRate is the catch condition. With roll=1 and finalRate=1, caught=true.
-    // Let's use roll=2 to clearly test PAR gives no bonus (vs SLP at +10 which would still catch).
+    // Use roll=2 to clearly test PAR gives no bonus (vs SLP at +10 which would still catch).
     const rng2 = { int: () => 2 } as unknown as SeededRandom;
     const catchWithParRoll2 = ruleset.rollCatchAttempt(45, 100, 100, "paralysis", 1, rng2);
     expect(catchWithParRoll2.caught).toBe(false); // roll=2 > finalRate=1 (no bonus) → not caught

@@ -638,7 +638,7 @@ describe("Gen 1 Hyper Beam recharge skip on KO", () => {
     };
 
     const result = ruleset.executeMoveEffect(context);
-    expect(result.noRecharge).toBeFalsy();
+    expect(result.noRecharge).toBeUndefined(); // noRecharge is absent (not set) when defender survives — field is undefined, not false
   });
 
   it("given Hyper Beam breaks defender's Substitute, when executeMoveEffect is called, then noRecharge is true (Gen 1 only)", () => {
