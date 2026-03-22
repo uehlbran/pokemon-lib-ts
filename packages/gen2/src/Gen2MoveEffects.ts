@@ -17,15 +17,10 @@
 import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
-  EntryHazardType,
   MoveData,
-  MoveEffect,
-  PokemonType,
-  PrimaryStatus,
   ScreenType,
   SeededRandom,
   VolatileStatus,
-  WeatherType,
 } from "@pokemon-lib-ts/core";
 import { canInflictGen2Status } from "./Gen2Status";
 
@@ -540,7 +535,7 @@ export function handleCustomEffect(
         result.messages.push("But it failed!");
         break;
       }
-      const chosenIndex = Math.floor(context.rng.next() * usableMoves.length);
+      const chosenIndex = context.rng.int(0, usableMoves.length - 1);
       const chosen = usableMoves[chosenIndex];
       if (!chosen) {
         result.messages.push("But it failed!");
@@ -648,11 +643,18 @@ export function handleCustomEffect(
             moveId: "rollout",
             volatileStatus: "rollout",
           };
-          result.selfVolatileInflicted = "rollout";
-          result.selfVolatileData = {
-            turnsLeft: 1,
-            data: { count: nextCount },
-          };
+          if (rolloutState) {
+            // Volatile already exists — update the count directly, since the engine only
+            // applies selfVolatileInflicted when the volatile is NOT already present.
+            rolloutState.data = { count: nextCount };
+          } else {
+            // First use — let the engine create the volatile via selfVolatileInflicted
+            result.selfVolatileInflicted = "rollout";
+            result.selfVolatileData = {
+              turnsLeft: 1,
+              data: { count: nextCount },
+            };
+          }
         }
       }
       // Power escalation is handled in Gen2DamageCalc.ts via the rollout volatile state.
@@ -679,12 +681,20 @@ export function handleCustomEffect(
       // nextCount is what damage calc should read on the NEXT use (capped at 4 for power 160)
       const fcNextCount = Math.min(fcCurrentCount + 1, 4);
 
-      // Update the volatile with the next count
-      result.selfVolatileInflicted = "fury-cutter";
-      result.selfVolatileData = {
-        turnsLeft: -1, // No expiry — resets on miss or different move
-        data: { count: fcNextCount },
-      };
+      // Update the volatile with the next count.
+      // The engine only applies selfVolatileInflicted when the volatile is NOT already present,
+      // so on subsequent uses we must update the counter directly.
+      if (furyCutterState) {
+        // Volatile already exists — update count directly
+        furyCutterState.data = { count: fcNextCount };
+      } else {
+        // First use — let the engine create the volatile via selfVolatileInflicted
+        result.selfVolatileInflicted = "fury-cutter";
+        result.selfVolatileData = {
+          turnsLeft: -1, // No expiry — resets on miss or different move
+          data: { count: fcNextCount },
+        };
+      }
       // Power escalation is handled in Gen2DamageCalc.ts via the fury-cutter volatile.
       break;
     }

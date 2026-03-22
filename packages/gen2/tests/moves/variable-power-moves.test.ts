@@ -554,12 +554,15 @@ describe("Gen 2 Fury Cutter Effect", () => {
     expect(result.selfVolatileData?.data).toEqual({ count: 1 });
   });
 
-  it("given third consecutive use (volatile count=2), when executeMoveEffect is called, then sets volatile with count=3", () => {
+  it("given third consecutive use (volatile count=2), when executeMoveEffect is called, then updates volatile count to 3 directly on attacker", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
     // Third use: existing volatile has count=2, new count becomes 3.
+    // The engine only applies selfVolatileInflicted when the volatile is NOT already present;
+    // on subsequent uses the handler updates the counter directly on the attacker's volatile.
     const volatiles = new Map();
-    volatiles.set("fury-cutter", { turnsLeft: -1, data: { count: 2 } });
+    const existingVolatile = { turnsLeft: -1, data: { count: 2 } };
+    volatiles.set("fury-cutter", existingVolatile);
     const attacker = createMockActive({ volatiles });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -574,17 +577,20 @@ describe("Gen 2 Fury Cutter Effect", () => {
       rng: new SeededRandom(42),
     });
 
-    // Assert
-    expect(result.selfVolatileInflicted).toBe("fury-cutter");
-    expect(result.selfVolatileData?.data).toEqual({ count: 3 });
+    // Assert: volatile count is updated directly (not via selfVolatileInflicted)
+    expect(result.selfVolatileInflicted).toBeUndefined();
+    expect(attacker.volatileStatuses.get("fury-cutter")?.data).toEqual({ count: 3 });
   });
 
-  it("given fifth+ consecutive use (volatile count=4), when executeMoveEffect is called, then count is capped at 4", () => {
+  it("given fifth+ consecutive use (volatile count=4), when executeMoveEffect is called, then count stays capped at 4 on attacker", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
     // Count is capped at 4 for max power 160: min(4+1, 4) = 4
+    // The engine only applies selfVolatileInflicted when the volatile is NOT already present;
+    // on subsequent uses the handler updates the counter directly on the attacker's volatile.
     const volatiles = new Map();
-    volatiles.set("fury-cutter", { turnsLeft: -1, data: { count: 4 } });
+    const existingVolatile = { turnsLeft: -1, data: { count: 4 } };
+    volatiles.set("fury-cutter", existingVolatile);
     const attacker = createMockActive({ volatiles });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -599,8 +605,8 @@ describe("Gen 2 Fury Cutter Effect", () => {
       rng: new SeededRandom(42),
     });
 
-    // Assert
-    expect(result.selfVolatileInflicted).toBe("fury-cutter");
-    expect(result.selfVolatileData?.data).toEqual({ count: 4 });
+    // Assert: volatile count is updated directly (not via selfVolatileInflicted), capped at 4
+    expect(result.selfVolatileInflicted).toBeUndefined();
+    expect(attacker.volatileStatuses.get("fury-cutter")?.data).toEqual({ count: 4 });
   });
 });
