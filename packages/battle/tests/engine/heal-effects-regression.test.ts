@@ -223,7 +223,7 @@ describe("processEffectResult -- wishSet (issue #540)", () => {
           healAmount: 0,
           switchOut: false,
           messages: ["Charizard made a wish!"],
-          wishSet: { healAmount: 100 }, // floor(200 / 2)
+          wishSet: { healAmount: 100, turnsLeft: 2 }, // floor(200 / 2); turnsLeft=2 per Showdown wish condition duration
         };
       }
       return originalExecute(context);
@@ -282,7 +282,7 @@ describe("processEffectResult -- wishSet (issue #540)", () => {
           healAmount: 0,
           switchOut: false,
           messages: ["Charizard made a wish!"],
-          wishSet: { healAmount: 100 },
+          wishSet: { healAmount: 100, turnsLeft: 2 },
         };
       }
       return {

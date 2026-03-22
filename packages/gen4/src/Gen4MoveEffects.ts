@@ -87,7 +87,7 @@ type MutableResult = {
     volatileStatus: VolatileStatus;
   } | null;
   itemConsumed?: boolean;
-  wishSet?: { healAmount: number } | null;
+  wishSet?: { healAmount: number; turnsLeft: number } | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -797,7 +797,7 @@ function handleCustomEffect(
       //   will be restored by half the maximum HP of the Pokemon that used Wish"
       const wisherMaxHp =
         context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
-      result.wishSet = { healAmount: Math.floor(wisherMaxHp / 2) };
+      result.wishSet = { healAmount: Math.floor(wisherMaxHp / 2), turnsLeft: 2 };
       result.messages.push(`${attackerName} made a wish!`);
       break;
     }
@@ -1035,7 +1035,7 @@ function handleNullEffectMoves(
       //   will be restored by half the maximum HP of the Pokemon that used Wish"
       const wisherMaxHp2 =
         context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
-      result.wishSet = { healAmount: Math.floor(wisherMaxHp2 / 2) };
+      result.wishSet = { healAmount: Math.floor(wisherMaxHp2 / 2), turnsLeft: 2 };
       result.messages.push(`${attackerName} made a wish!`);
       break;
     }

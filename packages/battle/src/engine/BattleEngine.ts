@@ -2885,7 +2885,7 @@ export class BattleEngine implements BattleEventEmitter {
       const wisherSide = this.state.sides[attackerSide];
       wisherSide.wish = {
         active: true,
-        turnsLeft: 2, // Wish always counts down over 2 EOT phases
+        turnsLeft: result.wishSet.turnsLeft, // Caller (gen ruleset) sets the countdown duration
         healAmount: result.wishSet.healAmount,
       };
     }
