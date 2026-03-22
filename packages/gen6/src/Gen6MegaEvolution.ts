@@ -5,7 +5,15 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
-import type { MegaEvolutionData, MutableStatBlock, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  calculateStat,
+  getNatureModifier,
+  type MegaEvolutionData,
+  type MutableStatBlock,
+  type NatureData,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
 
 import { isMegaStone } from "./Gen6Items.js";
 
@@ -391,6 +399,33 @@ export const MEGA_STONE_DATA: Record<string, MegaEvolutionData> = {
 
   // #143 Snorlax (no mega)
   // #245 Suicune (no mega)
+
+  // #079/#080 Slowbro-Mega (ORAS)
+  slowbronite: {
+    form: "mega-slowbro",
+    item: "slowbronite",
+    types: ["water", "psychic"],
+    baseStats: { hp: 95, attack: 75, defense: 180, spAttack: 130, spDefense: 80, speed: 30 },
+    ability: "shell-armor",
+  },
+
+  // #208 Steelix-Mega (ORAS)
+  steelixite: {
+    form: "mega-steelix",
+    item: "steelixite",
+    types: ["steel", "ground"],
+    baseStats: { hp: 75, attack: 125, defense: 230, spAttack: 55, spDefense: 95, speed: 30 },
+    ability: "sand-force",
+  },
+
+  // #308 Medicham-Mega (XY)
+  medichamite: {
+    form: "mega-medicham",
+    item: "medichamite",
+    types: ["fighting", "psychic"],
+    baseStats: { hp: 60, attack: 100, defense: 85, spAttack: 80, spDefense: 85, speed: 100 },
+    ability: "pure-power",
+  },
 };
 
 /**
@@ -484,20 +519,71 @@ export class Gen6MegaEvolution implements BattleGimmick {
     // Update ability
     pokemon.ability = megaData.ability;
 
-    // Update calculated stats to mega form stats.
-    // Source: Showdown sim/battle.ts — mega evolution recalcs stats to mega base stats
-    // The engine uses calculatedStats for all damage calculations, so we update it directly.
+    // Update calculated stats to mega form stats using the full Gen 3+ stat formula.
+    // Source: Showdown sim/battle.ts (setSpecies) — mega evolution calls spreadModify with the
+    //   mega form's base stats, which applies level/IV/EV/nature scaling. The BattleGimmick
+    //   interface does not receive the ruleset, so we inline the Gen 3+ formula here.
+    // Source: pret/pokeemerald src/pokemon.c:2814 CALC_STAT macro
+    //   Stat = floor((floor((2*Base + IV + floor(EV/4)) * Level / 100) + 5) * NatureMod)
+    //
     // StatBlock is readonly in the interface, but calculatedStats is the live runtime stat block
     // that the engine mutates; cast through unknown to MutableStatBlock for mutation.
     if (pokemon.pokemon.calculatedStats) {
       const cs = pokemon.pokemon.calculatedStats as unknown as MutableStatBlock;
+      const { level, ivs, evs, nature: natureId } = pokemon.pokemon;
+
+      // Look up the nature data to get boost/hinder modifiers.
+      // ALL_NATURES contains all 25 natures with their stat effects.
+      // Hardy (neutral, 1.0/1.0 modifier on all stats) is the safe fallback.
+      // Source: packages/core/src/constants/natures.ts
+      const foundNature = ALL_NATURES.find((n) => n.id === natureId);
+      // Hardy is neutral (increased/decreased both null) — safe fallback that produces 1.0 modifier on all stats.
+      const natureData: NatureData = foundNature ?? {
+        id: "hardy",
+        displayName: "Hardy",
+        increased: null,
+        decreased: null,
+        likedFlavor: null,
+        dislikedFlavor: null,
+      };
+
       // HP does NOT change on mega evolution (only attack, defense, spAtk, spDef, speed)
-      // Source: Bulbapedia "Mega Evolution" — "HP does not change"
-      cs.attack = megaData.baseStats.attack;
-      cs.defense = megaData.baseStats.defense;
-      cs.spAttack = megaData.baseStats.spAttack;
-      cs.spDefense = megaData.baseStats.spDefense;
-      cs.speed = megaData.baseStats.speed;
+      // Source: Bulbapedia "Mega Evolution" — "HP does not change when Mega Evolving"
+      cs.attack = calculateStat(
+        megaData.baseStats.attack,
+        ivs.attack,
+        evs.attack,
+        level,
+        getNatureModifier(natureData, "attack"),
+      );
+      cs.defense = calculateStat(
+        megaData.baseStats.defense,
+        ivs.defense,
+        evs.defense,
+        level,
+        getNatureModifier(natureData, "defense"),
+      );
+      cs.spAttack = calculateStat(
+        megaData.baseStats.spAttack,
+        ivs.spAttack,
+        evs.spAttack,
+        level,
+        getNatureModifier(natureData, "spAttack"),
+      );
+      cs.spDefense = calculateStat(
+        megaData.baseStats.spDefense,
+        ivs.spDefense,
+        evs.spDefense,
+        level,
+        getNatureModifier(natureData, "spDefense"),
+      );
+      cs.speed = calculateStat(
+        megaData.baseStats.speed,
+        ivs.speed,
+        evs.speed,
+        level,
+        getNatureModifier(natureData, "speed"),
+      );
     }
 
     // Mark the Pokemon as mega evolved and the side as having used its gimmick

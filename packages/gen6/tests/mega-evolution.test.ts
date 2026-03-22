@@ -128,10 +128,12 @@ function makeState(): BattleState {
 // ---------------------------------------------------------------------------
 
 describe("MEGA_STONE_DATA -- mega stone lookup table", () => {
-  it("given MEGA_STONE_DATA, when checking entry count, then at least 40 mega stones are registered", () => {
-    // Source: Bulbapedia "Mega Evolution" -- 46 species can Mega Evolve in Gen 6 ORAS
-    // (excluding Rayquaza which needs Dragon Ascent, and Primal Kyogre/Groudon)
-    expect(Object.keys(MEGA_STONE_DATA).length).toBeGreaterThanOrEqual(40);
+  it("given MEGA_STONE_DATA, when checking entry count, then exactly 47 mega stones are registered", () => {
+    // Source: packages/gen6/data/items.json — lists all 47 canonical Gen 6 mega stone items
+    // (44 single-suffix ending in 'ite' + charizardite-x/y + mewtwonite-x/y = 47 total)
+    // This covers all XY and ORAS mega stones. Excludes: Rayquaza (Dragon Ascent, not a stone),
+    // Blue Orb (Primal Kyogre), Red Orb (Primal Groudon).
+    expect(Object.keys(MEGA_STONE_DATA).length).toBe(47);
   });
 
   it("given charizardite-x, when looking up in MEGA_STONE_DATA, then returns Charizard Mega X data", () => {
@@ -352,8 +354,17 @@ describe("Gen6MegaEvolution -- activate()", () => {
     expect(pokemon.ability).toBe("tough-claws");
   });
 
-  it("given Charizard holding charizardite-x, when activate is called, then calculatedStats are updated to mega form stats", () => {
-    // Source: Bulbapedia "Charizardite X" — Mega Charizard X: 130 Atk, 111 Def, 130 SpA, 85 SpD, 100 Spe
+  it("given Charizard holding charizardite-x, when activate is called, then calculatedStats are updated to level-scaled mega form stats", () => {
+    // Source: Bulbapedia "Charizardite X" — Mega Charizard X base stats: 130 Atk, 111 Def, 130 SpA, 85 SpD, 100 Spe
+    // Source: pret/pokeemerald src/pokemon.c:2814 CALC_STAT — Gen 3+ stat formula
+    //   Stat = floor((floor((2*Base + IV + floor(EV/4)) * Level / 100) + 5) * NatureMod)
+    //
+    // For factory defaults (L50, 31 IVs, 0 EVs, Hardy nature → natureMod = 1.0):
+    //   atk:   floor((floor((260+31+0)*50/100)+5)*1.0) = floor((floor(14550/100)+5)) = floor(145+5) = 150
+    //   def:   floor((floor((222+31+0)*50/100)+5)*1.0) = floor((floor(12650/100)+5)) = floor(126+5) = 131
+    //   spatk: floor((floor((260+31+0)*50/100)+5)*1.0) = 150
+    //   spdef: floor((floor((170+31+0)*50/100)+5)*1.0) = floor((floor(10050/100)+5)) = floor(100+5) = 105
+    //   spe:   floor((floor((200+31+0)*50/100)+5)*1.0) = floor((floor(11550/100)+5)) = floor(115+5) = 120
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
       heldItem: "charizardite-x",
@@ -371,14 +382,14 @@ describe("Gen6MegaEvolution -- activate()", () => {
 
     gimmick.activate(pokemon, side, state);
 
-    // Attack/Defense/SpAtk/SpDef/Speed update to mega base stats
-    expect(pokemon.pokemon.calculatedStats!.attack).toBe(130);
-    expect(pokemon.pokemon.calculatedStats!.defense).toBe(111);
-    expect(pokemon.pokemon.calculatedStats!.spAttack).toBe(130);
-    expect(pokemon.pokemon.calculatedStats!.spDefense).toBe(85);
-    expect(pokemon.pokemon.calculatedStats!.speed).toBe(100);
+    // Attack/Defense/SpAtk/SpDef/Speed update to properly scaled mega form stats
+    expect(pokemon.pokemon.calculatedStats!.attack).toBe(150);
+    expect(pokemon.pokemon.calculatedStats!.defense).toBe(131);
+    expect(pokemon.pokemon.calculatedStats!.spAttack).toBe(150);
+    expect(pokemon.pokemon.calculatedStats!.spDefense).toBe(105);
+    expect(pokemon.pokemon.calculatedStats!.speed).toBe(120);
     // HP does NOT change on mega evolution
-    // Source: Bulbapedia "Mega Evolution" — "HP does not change"
+    // Source: Bulbapedia "Mega Evolution" — "HP does not change when Mega Evolving"
     expect(pokemon.pokemon.calculatedStats!.hp).toBe(200);
   });
 
@@ -461,7 +472,9 @@ describe("Gen6MegaEvolution -- activate()", () => {
   });
 
   it("given Charizard-Y mega evolution, when activate is called, then types change to Fire/Flying and ability to Drought", () => {
-    // Source: Bulbapedia "Charizardite Y" — Mega Charizard Y: Fire/Flying, Drought, 159 SpAtk
+    // Source: Bulbapedia "Charizardite Y" — Mega Charizard Y: Fire/Flying, Drought, base SpAtk=159
+    // Source: pret/pokeemerald CALC_STAT — L50, 31 IVs, 0 EVs, Hardy (1.0):
+    //   spatk: floor((floor((318+31+0)*50/100)+5)*1.0) = floor((floor(17450/100)+5)) = floor(174+5) = 179
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
       heldItem: "charizardite-y",
@@ -479,7 +492,8 @@ describe("Gen6MegaEvolution -- activate()", () => {
     }
     expect(pokemon.types).toEqual(["fire", "flying"]);
     expect(pokemon.ability).toBe("drought");
-    expect(pokemon.pokemon.calculatedStats!.spAttack).toBe(159);
+    // Properly scaled: calculateStat(159, 31, 0, 50, 1.0) = 179
+    expect(pokemon.pokemon.calculatedStats!.spAttack).toBe(179);
   });
 });
 
