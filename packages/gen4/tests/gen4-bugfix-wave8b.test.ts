@@ -672,6 +672,94 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Bug #518: Sticky Barb transfer skips Unburden volatile
+// ---------------------------------------------------------------------------
+
+describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
+  it("given holder has Sticky Barb and Unburden ability, when Sticky Barb transfers on contact, then holder gains Unburden volatile", () => {
+    // Source: Showdown Gen 4 mod — Unburden activates on any item loss,
+    //   including Sticky Barb transfer to attacker on contact
+    // Source: Bulbapedia — Unburden: "doubles the Pokémon's Speed stat when
+    //   its held item is lost"
+    const attacker = createActivePokemon({ types: ["normal"], heldItem: null });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "sticky-barb",
+      ability: "unburden",
+    });
+    const state = createMinimalBattleState(attacker, defender);
+
+    const ctx: ItemContext = {
+      pokemon: defender,
+      state,
+      rng: createMockRng(100),
+      move: createMove({ type: "normal", power: 80, contact: true }),
+      damage: 50,
+    };
+
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(defender.volatileStatuses.has("unburden")).toBe(true);
+    expect(defender.volatileStatuses.get("unburden")?.turnsLeft).toBe(-1);
+  });
+
+  it("given holder has Sticky Barb but not Unburden ability, when Sticky Barb transfers on contact, then no Unburden volatile is set", () => {
+    // Source: Showdown Gen 4 mod — Unburden only triggers for Pokemon with the Unburden ability
+    const attacker = createActivePokemon({ types: ["normal"], heldItem: null });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "sticky-barb",
+      ability: "blaze",
+    });
+    const state = createMinimalBattleState(attacker, defender);
+
+    const ctx: ItemContext = {
+      pokemon: defender,
+      state,
+      rng: createMockRng(100),
+      move: createMove({ type: "normal", power: 80, contact: true }),
+      damage: 50,
+    };
+
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(defender.volatileStatuses.has("unburden")).toBe(false);
+  });
+
+  it("given holder has Sticky Barb, Unburden ability, and already has Unburden volatile, when Sticky Barb transfers, then Unburden volatile is not duplicated", () => {
+    // Source: Showdown Gen 4 mod — Unburden volatile is only set if not already present;
+    //   Map.set semantics naturally prevent duplication but the guard check prevents
+    //   resetting an existing entry
+    const attacker = createActivePokemon({ types: ["normal"], heldItem: null });
+    const defender = createActivePokemon({
+      types: ["normal"],
+      heldItem: "sticky-barb",
+      ability: "unburden",
+    });
+    // Pre-set Unburden volatile
+    defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    const state = createMinimalBattleState(attacker, defender);
+
+    const ctx: ItemContext = {
+      pokemon: defender,
+      state,
+      rng: createMockRng(100),
+      move: createMove({ type: "normal", power: 80, contact: true }),
+      damage: 50,
+    };
+
+    const result = applyGen4HeldItem("on-damage-taken", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(defender.volatileStatuses.has("unburden")).toBe(true);
+    // Map only has one entry for "unburden"
+    expect(defender.volatileStatuses.size).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Bug #275: Fire Fang bypasses Wonder Guard in Gen 4
 // ---------------------------------------------------------------------------
 
