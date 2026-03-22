@@ -372,11 +372,10 @@ describe("Gen8DamageCalc coverage gaps", () => {
       const noBerry = calculateGen8Damage(noBerryCtx, typeChart);
       const withBerry = calculateGen8Damage(berryCtx, typeChart);
 
-      // Berry should halve SE damage: ratio should be approximately 0.5x
-      expect(withBerry.damage).toBeLessThan(noBerry.damage);
-      const ratio = withBerry.damage / noBerry.damage;
-      expect(ratio).toBeGreaterThanOrEqual(0.4);
-      expect(ratio).toBeLessThanOrEqual(0.6);
+      // Berry should halve SE damage: exactly 0.5x reduction
+      // Exact seeded values (seed=42): withBerry=34, noBerry=68 (ratio = 0.5 exactly)
+      expect(withBerry.damage).toBe(34);
+      expect(noBerry.damage).toBe(68);
     });
 
     it("given Chilan Berry holder takes a Normal-type hit that is not super-effective, when calculating damage, then berry reduces damage by ~0.5x", () => {
@@ -399,10 +398,9 @@ describe("Gen8DamageCalc coverage gaps", () => {
       const withBerry = calculateGen8Damage(berryCtx, typeChart);
 
       // Chilan Berry should still halve damage even at 1x effectiveness
-      expect(withBerry.damage).toBeLessThan(noBerry.damage);
-      const ratio = withBerry.damage / noBerry.damage;
-      expect(ratio).toBeGreaterThanOrEqual(0.4);
-      expect(ratio).toBeLessThanOrEqual(0.6);
+      // Exact seeded values (seed=42): withBerry=25, noBerry=51 (ratio ≈ 0.49 due to integer rounding)
+      expect(withBerry.damage).toBe(25);
+      expect(noBerry.damage).toBe(51);
     });
 
     it("given Chilan Berry holder takes a Water-type hit, when calculating damage, then berry does not activate", () => {
@@ -535,7 +533,8 @@ describe("Gen8DamageCalc coverage gaps", () => {
       // gem-used volatile should be set
       expect(attacker.volatileStatuses.has("gem-used")).toBe(true);
       // Damage should be higher than without gem (gem provides 1.3x power boost)
-      expect(result.damage).toBeGreaterThan(0);
+      // Exact seeded value (seed=42): with Normal Gem=66
+      expect(result.damage).toBe(66);
     });
 
     it("given attacker with Unburden holds Normal Gem using a Fire-type move (type mismatch), when damage calculated, then gem is NOT consumed", () => {

@@ -926,13 +926,10 @@ describe("Gen8DamageCalc -- Metronome consecutive boost", () => {
       typeChart,
     );
 
-    // The metronome user should deal noticeably more damage than without
     // With count=3: boostSteps=2, multiplier=1.4 -> ~40% more damage
-    expect(resultWith.damage).toBeGreaterThan(resultWithout.damage);
-    // Verify the ratio is approximately 1.4 (allow some rounding tolerance)
-    const ratio = resultWith.damage / resultWithout.damage;
-    expect(ratio).toBeGreaterThan(1.35);
-    expect(ratio).toBeLessThan(1.45);
+    // Exact seeded values (seed=100): with=67, without=48 (ratio ≈ 1.396 due to integer rounding)
+    expect(resultWith.damage).toBe(67);
+    expect(resultWithout.damage).toBe(48);
   });
 
   it("given metronome holder with count=1, when dealing damage, then no boost applies (boostSteps=0)", () => {
@@ -997,9 +994,9 @@ describe("Gen8DamageCalc -- Metronome consecutive boost", () => {
     );
 
     // count=7: boostSteps=min(6,5)=5, multiplier=1+5*0.2=2.0 -> double damage
-    const ratio = resultWith.damage / resultWithout.damage;
-    expect(ratio).toBeGreaterThan(1.95);
-    expect(ratio).toBeLessThan(2.05);
+    // Exact seeded values (seed=100): with=96, without=48 (ratio = 2.0 exactly)
+    expect(resultWith.damage).toBe(96);
+    expect(resultWithout.damage).toBe(48);
   });
 });
 
@@ -1069,9 +1066,8 @@ describe("Gen8DamageCalc -- Wise Glasses physical move no-op", () => {
     );
 
     // Special move with Wise Glasses should deal more damage (~1.1x)
-    expect(resultWith.damage).toBeGreaterThan(resultWithout.damage);
-    const ratio = resultWith.damage / resultWithout.damage;
-    expect(ratio).toBeGreaterThan(1.05);
-    expect(ratio).toBeLessThan(1.15);
+    // Exact seeded values (seed=42): with=56, without=51 (ratio ≈ 1.098 due to integer rounding)
+    expect(resultWith.damage).toBe(56);
+    expect(resultWithout.damage).toBe(51);
   });
 });

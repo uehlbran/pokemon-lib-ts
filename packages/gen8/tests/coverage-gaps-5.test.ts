@@ -756,62 +756,91 @@ describe("handleOnContact — NO_ACTIVATION paths", () => {
 describe("handleEndOfTurn — activation (true branches)", () => {
   it(
     "given toxic-orb and normal type with no status, " +
-      "when end-of-turn, then activated (badly-poisoned applied)",
+      "when end-of-turn, then activates and inflicts badly-poisoned",
     () => {
       // Source: Showdown data/items.ts — Toxic Orb inflicts badly-poisoned at end of turn
+      // Source: Gen8Items.ts line ~851 — effects: [{ type: "inflict-status", status: "badly-poisoned" }]
       const ctx = itemCtx({ heldItem: "toxic-orb", types: ["normal"] });
       const result = applyGen8HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "inflict-status", target: "self", status: "badly-poisoned" },
+      ]);
     },
   );
 
   it(
     "given flame-orb and normal type with no status, " +
-      "when end-of-turn, then activated (burn applied)",
+      "when end-of-turn, then activates and inflicts burn",
     () => {
       // Source: Showdown data/items.ts — Flame Orb inflicts burn at end of turn
+      // Source: Gen8Items.ts line ~866 — effects: [{ type: "inflict-status", status: "burn" }]
       const ctx = itemCtx({ heldItem: "flame-orb", types: ["normal"] });
       const result = applyGen8HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: "burn" }]);
     },
   );
 
-  it("given sitrus-berry holder at 40% HP, " + "when end-of-turn, then activated", () => {
-    // Source: Showdown data/items.ts — Sitrus Berry heals 1/4 HP when at <= 50% HP
-    // 80/200 = 40% HP, below 50% threshold
-    const ctx = itemCtx({ heldItem: "sitrus-berry", hp: 200, currentHp: 80 });
-    const result = applyGen8HeldItem("end-of-turn", ctx);
-    expect(result.activated).toBe(true);
-  });
+  it(
+    "given sitrus-berry holder at 40% HP (80/200), " +
+      "when end-of-turn, then activates and heals floor(200/4)=50 HP",
+    () => {
+      // Source: Showdown data/items.ts — Sitrus Berry heals 1/4 HP when at <= 50% HP
+      // 80/200 = 40% HP, below 50% threshold. healAmount = floor(200/4) = 50
+      // Source: Gen8Items.ts line ~877 — effects: [{ type: "heal", value: 50 }, { type: "consume" }]
+      const ctx = itemCtx({ heldItem: "sitrus-berry", hp: 200, currentHp: 80 });
+      const result = applyGen8HeldItem("end-of-turn", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "heal", target: "self", value: 50 },
+        { type: "consume", target: "self", value: "sitrus-berry" },
+      ]);
+    },
+  );
 
-  it("given cheri-berry holder with paralysis, " + "when end-of-turn, then activated", () => {
-    // Source: Showdown data/items.ts — Cheri Berry cures paralysis at end of turn
-    const ctx = itemCtx({ heldItem: "cheri-berry", status: "paralysis" });
-    const result = applyGen8HeldItem("end-of-turn", ctx);
-    expect(result.activated).toBe(true);
-  });
+  it(
+    "given cheri-berry holder with paralysis, " +
+      "when end-of-turn, then activates and cures paralysis",
+    () => {
+      // Source: Showdown data/items.ts — Cheri Berry cures paralysis at end of turn
+      // Source: Gen8Items.ts line ~932 — effects: [{ type: "status-cure" }, { type: "consume" }]
+      const ctx = itemCtx({ heldItem: "cheri-berry", status: "paralysis" });
+      const result = applyGen8HeldItem("end-of-turn", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "status-cure", target: "self" },
+        { type: "consume", target: "self", value: "cheri-berry" },
+      ]);
+    },
+  );
 });
 
 describe("handleOnHit — activation (true branches)", () => {
   it(
     "given kings-rock attacker with damage > 0 and RNG returns true, " +
-      "when on-hit, then activated (flinch)",
+      "when on-hit, then activates with flinch effect on opponent",
     () => {
       // Source: Showdown data/items.ts — King's Rock: 10% flinch chance on damaging hits
+      // Source: Gen8Items.ts line ~1518 — effects: [{ type: "flinch", target: "opponent" }]
       const ctx = itemCtx({ heldItem: "kings-rock", damage: 50, rng: makeRng(true) });
       const result = applyGen8HeldItem("on-hit", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([{ type: "flinch", target: "opponent" }]);
     },
   );
 
   it(
-    "given shell-bell attacker with damage = 80, " + "when on-hit, then activated (heals 10 HP)",
+    "given shell-bell attacker with damage = 80, " +
+      "when on-hit, then activates and heals floor(80/8)=10 HP",
     () => {
       // Source: Showdown data/items.ts — Shell Bell heals floor(damageDealt/8)
       // floor(80/8) = 10 HP heal
+      // Source: Gen8Items.ts line ~1552 — effects: [{ type: "heal", target: "self", value: 10 }]
       const ctx = itemCtx({ heldItem: "shell-bell", damage: 80 });
       const result = applyGen8HeldItem("on-hit", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([{ type: "heal", target: "self", value: 10 }]);
     },
   );
 });
@@ -819,9 +848,10 @@ describe("handleOnHit — activation (true branches)", () => {
 describe("handleOnDamageTaken — activation (true branches)", () => {
   it(
     "given kee-berry and a physical move with damage > 0, " +
-      "when on-damage-taken, then activated (+1 Def)",
+      "when on-damage-taken, then activates with +1 Defense stat-boost and consume",
     () => {
       // Source: Showdown data/items.ts — Kee Berry raises Defense when hit by physical move
+      // Source: Gen8Items.ts line ~1394 — effects: [{ type: "stat-boost", value: "defense" }, consume]
       const ctx = itemCtx({
         heldItem: "kee-berry",
         damage: 50,
@@ -829,14 +859,19 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "stat-boost", target: "self", value: "defense" },
+        { type: "consume", target: "self", value: "kee-berry" },
+      ]);
     },
   );
 
   it(
     "given maranga-berry and a special move with damage > 0, " +
-      "when on-damage-taken, then activated (+1 SpDef)",
+      "when on-damage-taken, then activates with +1 SpDef stat-boost and consume",
     () => {
       // Source: Showdown data/items.ts — Maranga Berry raises SpDef when hit by special move
+      // Source: Gen8Items.ts line ~1410 — effects: [{ type: "stat-boost", value: "spDefense" }, consume]
       const ctx = itemCtx({
         heldItem: "maranga-berry",
         damage: 50,
@@ -844,14 +879,19 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "stat-boost", target: "self", value: "spDefense" },
+        { type: "consume", target: "self", value: "maranga-berry" },
+      ]);
     },
   );
 
   it(
     "given absorb-bulb and a water move with damage > 0, " +
-      "when on-damage-taken, then activated (+1 SpAtk)",
+      "when on-damage-taken, then activates with +1 SpAtk stat-boost and consume",
     () => {
       // Source: Showdown data/items.ts — Absorb Bulb raises SpAtk when hit by Water move
+      // Source: Gen8Items.ts line ~1338 — effects: [{ type: "stat-boost", value: "spAttack" }, consume]
       const ctx = itemCtx({
         heldItem: "absorb-bulb",
         damage: 50,
@@ -859,14 +899,19 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "stat-boost", target: "self", value: "spAttack" },
+        { type: "consume", target: "self", value: "absorb-bulb" },
+      ]);
     },
   );
 
   it(
     "given snowball and an ice move with damage > 0, " +
-      "when on-damage-taken, then activated (+1 Atk)",
+      "when on-damage-taken, then activates with +1 Attack stat-boost and consume",
     () => {
       // Source: Showdown data/items.ts — Snowball raises Attack when hit by Ice move
+      // Source: Gen8Items.ts line ~1441 — effects: [{ type: "stat-boost", value: "attack" }, consume]
       const ctx = itemCtx({
         heldItem: "snowball",
         damage: 50,
@@ -874,15 +919,20 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "stat-boost", target: "self", value: "attack" },
+        { type: "consume", target: "self", value: "snowball" },
+      ]);
     },
   );
 
   it(
     "given weakness-policy and water-type holder hit by electric move (2x SE), " +
-      "when on-damage-taken, then activated (+2 Atk and +2 SpAtk)",
+      "when on-damage-taken, then activates with +2 Atk and +2 SpAtk and consume",
     () => {
       // Source: Showdown data/items.ts — Weakness Policy triggers on >= 2x effectiveness
       // Electric vs Water = 2x super-effective
+      // Source: Gen8Items.ts line ~1376 — effects: [{ stat-boost Atk +2 }, { stat-boost SpAtk +2 }, consume]
       const ctx = itemCtx({
         heldItem: "weakness-policy",
         types: ["water"],
@@ -891,6 +941,11 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([
+        { type: "stat-boost", target: "self", value: "attack", stages: 2 },
+        { type: "stat-boost", target: "self", value: "spAttack", stages: 2 },
+        { type: "consume", target: "self", value: "weakness-policy" },
+      ]);
     },
   );
 });

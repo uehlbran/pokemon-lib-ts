@@ -184,6 +184,8 @@ function makeContext(opts: {
   opponent?: ReturnType<typeof makeActivePokemon>;
   nickname?: string | null;
   speciesId?: number;
+  currentHp?: number;
+  maxHp?: number;
   statChange?: { stat: string; stages: number; source: "self" | "opponent" };
 }): AbilityContext {
   const state = makeBattleState();
@@ -192,6 +194,8 @@ function makeContext(opts: {
     types: opts.types,
     nickname: opts.nickname,
     speciesId: opts.speciesId,
+    currentHp: opts.currentHp,
+    maxHp: opts.maxHp,
   });
 
   return {
@@ -308,16 +312,22 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8ContactAbility", () => {
 
 describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
   // Source: Gen8Abilities.ts -- routes non-mirror-armor/non-stat-change triggers through the switch handler
-  it("given handleGen8FieldAbility with on-switch-out trigger and regenerator, when called, then delegates to switch handler", () => {
+  it("given handleGen8FieldAbility with on-switch-out trigger and regenerator at 100/300 HP, when called, then heals 1/3 max HP and activates", () => {
     // Source: Showdown data/abilities.ts -- Regenerator heals 1/3 max HP on switch-out
+    // With currentHp=100 and maxHp=300, heal = floor(300/3)=100, new HP = min(200, 300)=200
     const ctx = makeContext({
       ability: "regenerator",
       trigger: "on-switch-out",
       currentHp: 100,
       maxHp: 300,
-    } as any);
+    });
     const result = handleGen8FieldAbility("regenerator", "on-switch-out", ctx);
     expect(result.activated).toBe(true);
+    // Heal effect should provide 100 HP (floor(300/3) = 100)
+    // Source: Gen8AbilitiesSwitch.ts -- effectType:"heal", target:"self", value: healAmount
+    const healEffect = result.effects.find((e: any) => e.effectType === "heal");
+    expect(healEffect).toBeDefined();
+    expect((healEffect as any).value).toBe(100);
   });
 
   it("given handleGen8FieldAbility with on-before-move trigger and libero, when called, then delegates to switch handler", () => {
@@ -418,19 +428,20 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given handleGen8FieldAbility with on-stat-change and non-mirror-armor ability, when called, then routes to switch handler", () => {
+  it("given handleGen8FieldAbility with on-stat-change and non-mirror-armor ability (defiant), when called, then routes to switch handler and returns a valid AbilityResult", () => {
     // Source: Gen8Abilities.ts -- non-mirror-armor on-stat-change goes through the switch handler
+    // Defiant is not implemented in the switch handler but the dispatcher must still return
+    // a well-formed AbilityResult (not throw). This tests the routing path itself.
     const ctx = makeContext({
       ability: "defiant",
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: -1, source: "opponent" },
     });
-    // defiant is not handled by the switch handler, but the dispatcher routes it there
     const result = handleGen8FieldAbility("defiant", "on-stat-change", ctx);
-    // The switch handler may or may not activate for defiant; the point is routing worked
-    expect(result).toHaveProperty("activated");
-    expect(result).toHaveProperty("effects");
-    expect(result).toHaveProperty("messages");
+    // The routing must produce a valid AbilityResult regardless of whether defiant activates
+    expect(typeof result.activated).toBe("boolean");
+    expect(Array.isArray(result.effects)).toBe(true);
+    expect(Array.isArray(result.messages)).toBe(true);
   });
 });
 
