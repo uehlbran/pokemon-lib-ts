@@ -140,6 +140,20 @@ export interface PokemonInstance {
    * Source: Showdown sim/battle-actions.ts:1770-1785 — stellarBoostedTypes tracking
    */
   stellarBoostedTypes?: PokemonType[];
+
+  /**
+   * Whether Intrepid Sword has already activated once this battle.
+   * Persisted on PokemonInstance so it survives switches (once-per-battle, not once-per-switchin).
+   * Source: Showdown data/abilities.ts -- intrepidsword: onStart: if (pokemon.swordBoost) return; pokemon.swordBoost = true;
+   */
+  swordBoost?: boolean;
+
+  /**
+   * Whether Dauntless Shield has already activated once this battle.
+   * Persisted on PokemonInstance so it survives switches (once-per-battle, not once-per-switchin).
+   * Source: Showdown data/abilities.ts -- dauntlessshield: onStart: if (pokemon.shieldBoost) return; pokemon.shieldBoost = true;
+   */
+  shieldBoost?: boolean;
 }
 
 /** Options for creating a new PokemonInstance */

@@ -3,6 +3,32 @@
 export { createGen9DataManager } from "./data/index.js";
 export { handleGen9Ability } from "./Gen9Abilities.js";
 export {
+  getAteAbilityOverride,
+  getFluffyModifier,
+  getFurCoatMultiplier,
+  getHadronEngineSpAModifier,
+  getIceScalesModifier,
+  getMegaLauncherMultiplier,
+  getMultiscaleMultiplier,
+  getOrichalcumPulseAtkModifier,
+  getSheerForceMultiplier,
+  getStrongJawMultiplier,
+  getSturdyDamageCap,
+  getSupremeOverlordModifier,
+  getToughClawsMultiplier,
+  handleGen9DamageCalcAbility,
+  handleGen9DamageImmunityAbility,
+  handleGen9DauntlessShield,
+  handleGen9IntrepidSword,
+  handleGen9ProteanTypeChange,
+  hasSheerForceEligibleEffect,
+  isParentalBondEligible,
+  isSheerForceEligibleMove,
+  PARENTAL_BOND_SECOND_HIT_MULTIPLIER,
+  sheerForceSuppressesLifeOrb,
+  sturdyBlocksOHKO,
+} from "./Gen9AbilitiesDamage.js";
+export {
   canToxicChainApply,
   EMBODY_ASPECT_BOOSTS,
   getSupremeOverlordMultiplier,
