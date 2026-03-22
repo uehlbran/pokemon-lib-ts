@@ -255,8 +255,10 @@ export interface ItemSystem {
    * Apply held item effects for the given trigger.
    * @param trigger Known trigger points:
    *   - `"end-of-turn"` -- standard end-of-turn item effects (Leftovers, Black Sludge, etc.)
-   *   - `"on-damage-taken"` -- triggered when the holder takes damage
-   *   - `"on-hit"` -- triggered when the holder lands a hit
+   *   - `"on-damage-taken"` -- triggered when the holder takes damage (context.opponent = attacker)
+   *   - `"on-hit"` -- triggered when the holder lands a hit (context.opponent = defender)
+   *   - `"on-contact"` -- triggered when a contact move hits the holder (context.opponent = attacker)
+   *   - `"before-move"` -- triggered before the holder's move executes
    *   - `"stat-boost-between-turns"` -- Gen 2+ stat-boosting items (e.g., Macho Brace) between turns
    *   - `"heal-between-turns"` -- Gen 2+ healing items (e.g., Lum Berry) between turns
    * @param context The item trigger context (holder, state, RNG, etc.)

@@ -1298,6 +1298,7 @@ export class BattleEngine implements BattleEventEmitter {
           rng: this.state.rng,
           damage,
           move: effectiveMoveData,
+          opponent: actor, // attacker is the opponent from the defender's perspective
         });
         if (defItemResult.activated) {
           this.processItemResult(defItemResult, defender, actor, defenderSide as 0 | 1);
@@ -1496,6 +1497,7 @@ export class BattleEngine implements BattleEventEmitter {
         state: this.state,
         rng: this.state.rng,
         move: effectiveMoveData,
+        opponent: defender, // defender is the opponent from the attacker's perspective
       });
       if (atkItemResult.activated) {
         this.processItemResult(atkItemResult, actor, action.side);
