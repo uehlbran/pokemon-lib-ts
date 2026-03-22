@@ -112,8 +112,7 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Source: Bulbapedia -- Air Balloon: "makes the holder immune to Ground-type moves"
   // Source: Bulbapedia -- Klutz: "The held item has no effect" (suppresses items)
   // Source: Bulbapedia -- Embargo: "The target cannot use its held item" (suppresses items)
-  const itemsSuppressed =
-    pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo" as VolatileStatus);
+  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
   if (pokemon.pokemon.heldItem === "air-balloon" && !itemsSuppressed) return false;
 
   return true;

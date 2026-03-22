@@ -24,7 +24,7 @@ import type {
   MoveEffectContext,
   MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import type { BattleStat, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type { BattleStat, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -264,7 +264,7 @@ function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
   // Source: Showdown data/moves.ts -- rapidspin: pokemon.removeVolatile('leechseed')
   const volatilesToClear: Array<{
     target: "attacker" | "defender";
-    volatile: import("@pokemon-lib-ts/core").VolatileStatus;
+    volatile: VolatileStatus;
   }> = [];
 
   if (ctx.attacker.volatileStatuses.has("leech-seed")) {
