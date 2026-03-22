@@ -564,3 +564,82 @@ describe("Gen6Ruleset -- getBattleGimmick wiring", () => {
     expect(g1).not.toBe(g2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mega ability entry effects
+// ---------------------------------------------------------------------------
+
+describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
+  it("given Charizard-Y mega-evolving, when activate is called, then isMega is true enabling engine ability hook", () => {
+    // Source: Bulbapedia "Mega Evolution" — "If the Mega Evolved Pokémon's Ability has
+    //   an on-entry effect, it activates after Mega Evolution."
+    // Source: Showdown sim/battle-actions.ts — runMegaEvo calls pokemon.setAbility() which
+    //   triggers ability on-start effects for entry abilities like Drought.
+    // After mega evolution, actor.isMega === true. The BattleEngine checks `actor.isMega`
+    // after gimmick activation to decide whether to invoke applyAbility("on-switch-in").
+    // This test verifies the isMega flag is correctly set, which is the engine's gate condition.
+    const gimmick = new Gen6MegaEvolution();
+    const pokemon = makeActivePokemon({
+      heldItem: "charizardite-y",
+      types: ["fire", "flying"],
+      ability: "blaze",
+      isMega: false,
+    });
+    const side = makeSide({ gimmickUsed: false });
+    const state = makeState();
+
+    expect(pokemon.isMega).toBe(false);
+    gimmick.activate(pokemon, side, state);
+
+    // isMega is set — the engine will invoke applyAbility("on-switch-in") after gimmick
+    // activation, which triggers Drought to set 5-turn sun weather.
+    expect(pokemon.isMega).toBe(true);
+    // Ability updated to drought — on-switch-in will set 5-turn sun (Gen 6 weather duration)
+    expect(pokemon.ability).toBe("drought");
+  });
+
+  it("given Charizard-Y mega-evolving, when ruleset applyAbility is called with on-switch-in, then sun weather is set", () => {
+    // Source: Bulbapedia "Drought" Gen VI — "Summons sunlight for 5 turns on entry."
+    // Source: Showdown data/mods/gen6/abilities.ts — drought weatherTurns: 5
+    // This test verifies the full chain: mega evolve → ability changes to Drought →
+    // engine calls applyAbility("on-switch-in") → sun is set for 5 turns.
+    const ruleset = new Gen6Ruleset();
+    const gimmick = new Gen6MegaEvolution();
+    const pokemon = makeActivePokemon({
+      heldItem: "charizardite-y",
+      types: ["fire", "flying"],
+      ability: "blaze",
+      isMega: false,
+    });
+    const opponent = makeActivePokemon({ heldItem: null });
+    const side = makeSide({ gimmickUsed: false });
+    const state = makeState();
+
+    // Step 1: Mega evolve — ability changes to Drought, isMega set to true
+    gimmick.activate(pokemon, side, state);
+    expect(pokemon.ability).toBe("drought");
+
+    // Step 2: Engine's ability hook fires on-switch-in with the new mega ability
+    const abilityResult = ruleset.applyAbility("on-switch-in", {
+      pokemon,
+      opponent,
+      state,
+      rng: {
+        next: () => 0,
+        int: () => 0,
+        chance: () => false,
+        pick: <T>(arr: readonly T[]) => arr[0] as T,
+        shuffle: <T>(arr: T[]) => arr,
+        getState: () => 0,
+        setState: () => {},
+      } as unknown as import("@pokemon-lib-ts/core").SeededRandom,
+      trigger: "on-switch-in",
+    });
+
+    // Drought ability fires → activated = true, weather-set effect in effects array
+    expect(abilityResult.activated).toBe(true);
+    const weatherEffect = abilityResult.effects.find((e) => e.effectType === "weather-set");
+    expect(weatherEffect?.weather).toBe("sun");
+    expect(weatherEffect?.weatherTurns).toBe(5);
+  });
+});
