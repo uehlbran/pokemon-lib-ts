@@ -107,7 +107,7 @@ describe("calculateHp", () => {
     expect(calculateHp(78, 0, 0, 1)).toBe(12);
   });
 
-  it("should calculate L50 Blissey HP correctly (base 255, 31 IV, 0 EV)", () => {
+  it("given Blissey (base HP 255) with 31 IV and 0 EV at level 50, when calculating HP, then returns 330", () => {
     // Source: pret/pokeemerald src/pokemon.c — HP formula:
     // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
     // Blissey (base HP=255), 31 IV, 0 EV, L50:
@@ -115,7 +115,7 @@ describe("calculateHp", () => {
     expect(calculateHp(255, 31, 0, 50)).toBe(330);
   });
 
-  it("should calculate L100 Blissey HP correctly (base 255, 31 IV, 0 EV)", () => {
+  it("given Blissey (base HP 255) with 31 IV and 0 EV at level 100, when calculating HP, then returns 651", () => {
     // Source: pret/pokeemerald src/pokemon.c — HP formula:
     // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
     // Blissey (base HP=255), 31 IV, 0 EV, L100:
