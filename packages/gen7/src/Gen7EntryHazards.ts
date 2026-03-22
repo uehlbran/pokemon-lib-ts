@@ -59,8 +59,16 @@ export interface ToxicSpikesResult {
 export interface StickyWebResult {
   /** Whether the Speed drop was applied */
   readonly applied: boolean;
-  /** Stat change to emit (speed: -1), or null if immune */
+  /**
+   * Primary stat change (speed: -1), or null if immune.
+   * @deprecated Use statChanges array instead; this remains for backwards compatibility.
+   */
   readonly statChange: { stat: BattleStat; stages: number } | null;
+  /**
+   * All stat changes resulting from Sticky Web, including secondary ability-triggered changes
+   * (e.g., Defiant +2 Attack, Competitive +2 Sp. Atk).
+   */
+  readonly statChanges: ReadonlyArray<{ stat: BattleStat; stages: number }>;
   /** Messages to emit */
   readonly messages: string[];
 }
@@ -250,7 +258,7 @@ export function applyGen7StickyWeb(
 
   // Not grounded -> immune
   if (!isGen7Grounded(switchingIn, gravityActive)) {
-    return { applied: false, statChange: null, messages: [] };
+    return { applied: false, statChange: null, statChanges: [], messages: [] };
   }
 
   // Clear Body / White Smoke / Full Metal Body: prevents stat drops
@@ -270,23 +278,31 @@ export function applyGen7StickyWeb(
     return {
       applied: false,
       statChange: null,
+      statChanges: [],
       messages: [`${pokemonName}'s ${abilityName} prevents stat loss!`],
     };
   }
 
   // Apply -1 Speed stage
   const messages: string[] = [`${pokemonName} was caught in a sticky web!`];
+  const speedChange: { stat: BattleStat; stages: number } = { stat: "speed", stages: -1 };
+  const allStatChanges: Array<{ stat: BattleStat; stages: number }> = [speedChange];
 
-  // Defiant / Competitive trigger
+  // Defiant / Competitive: triggered by opponent-caused stat drop, raise Attack or Sp. Atk by +2
+  // Source: Showdown data/abilities.ts -- Defiant/Competitive onAfterEachBoost
+  // Source: Bulbapedia "Defiant" -- "raises Attack by 2 when its stats are lowered by an opponent"
   if (switchingIn.ability === "defiant") {
     messages.push(`${pokemonName}'s Defiant sharply raised its Attack!`);
+    allStatChanges.push({ stat: "attack", stages: 2 });
   } else if (switchingIn.ability === "competitive") {
     messages.push(`${pokemonName}'s Competitive sharply raised its Sp. Atk!`);
+    allStatChanges.push({ stat: "spAttack", stages: 2 });
   }
 
   return {
     applied: true,
-    statChange: { stat: "speed", stages: -1 },
+    statChange: speedChange,
+    statChanges: allStatChanges,
     messages,
   };
 }
@@ -373,8 +389,8 @@ export function applyGen7EntryHazards(
   const stickyWeb = side.hazards.find((h) => h.type === "sticky-web");
   if (stickyWeb && stickyWeb.layers > 0) {
     const result = applyGen7StickyWeb(switchingIn, gravityActive);
-    if (result.applied && result.statChange) {
-      statChanges.push(result.statChange);
+    if (result.applied && result.statChanges.length > 0) {
+      statChanges.push(...result.statChanges);
     }
     messages.push(...result.messages);
   }

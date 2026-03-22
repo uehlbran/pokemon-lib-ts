@@ -331,17 +331,24 @@ describe("Gen7 Sticky Web", () => {
     expect(result.messages[0]).toContain("Full Metal Body");
   });
 
-  it("given a Defiant Pokemon switching into Sticky Web, when applied, then triggers Defiant (+2 Atk)", () => {
-    // Source: Bulbapedia -- Defiant: raises Attack by 2 stages when a stat is lowered
+  it("given a Defiant Pokemon switching into Sticky Web, when applied, then triggers Defiant (+2 Atk) and stat stage is actually set", () => {
+    // Source: Bulbapedia -- Defiant: raises Attack by 2 stages when a stat is lowered by an opponent
+    // Source: Showdown data/abilities.ts -- Defiant: onAfterEachBoost triggers on Speed drop
     const mon = makeActivePokemon({ types: ["normal"], ability: "defiant", nickname: "Braviary" });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(true);
     expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
+    // statChanges must include both the Speed drop and the +2 Attack boost
+    expect(result.statChanges).toEqual([
+      { stat: "speed", stages: -1 },
+      { stat: "attack", stages: 2 },
+    ]);
     expect(result.messages).toContain("Braviary's Defiant sharply raised its Attack!");
   });
 
-  it("given a Competitive Pokemon switching into Sticky Web, when applied, then triggers Competitive (+2 SpAtk)", () => {
-    // Source: Bulbapedia -- Competitive: raises SpAtk by 2 stages when a stat is lowered
+  it("given a Competitive Pokemon switching into Sticky Web, when applied, then triggers Competitive (+2 SpAtk) and stat stage is actually set", () => {
+    // Source: Bulbapedia -- Competitive: raises Sp. Atk by 2 stages when a stat is lowered
+    // Source: Showdown data/abilities.ts -- Competitive: onAfterEachBoost triggers on Speed drop
     const mon = makeActivePokemon({
       types: ["normal"],
       ability: "competitive",
@@ -349,6 +356,11 @@ describe("Gen7 Sticky Web", () => {
     });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(true);
+    // statChanges must include both the Speed drop and the +2 Sp. Atk boost
+    expect(result.statChanges).toEqual([
+      { stat: "speed", stages: -1 },
+      { stat: "spAttack", stages: 2 },
+    ]);
     expect(result.messages).toContain("Milotic's Competitive sharply raised its Sp. Atk!");
   });
 });
