@@ -11,6 +11,7 @@ export {
   applyGen4Ability,
   GEN4_WEATHER_SUPPRESSING_ABILITIES,
   isWeatherSuppressedGen4,
+  isWeatherSuppressedOnField,
   PLATE_TO_TYPE,
 } from "./Gen4Abilities";
 export {
