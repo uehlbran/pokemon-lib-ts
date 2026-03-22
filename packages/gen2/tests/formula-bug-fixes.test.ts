@@ -858,13 +858,16 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     expect(result.damage).toBe(27);
   });
 
-  it("#324 — high-crit moves add +1 per bug #324 fix", () => {
-    // Source: bug #324 fix — high-crit moves add +1, not +2
+  it("#324 correction — high-crit moves add +2 per pokecrystal assembly, not +1", () => {
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm L1183-1184 —
+    //   BattleCommand_Critical .CheckCritical: "inc c; inc c" = +2 for CriticalHitMoves.
+    // NOTE: The earlier bug #324 "fix" incorrectly changed +2 → +1. The cartridge uses two
+    // increments of register c. The correct value is +2.
     const attacker = createActivePokemon({});
     const slashMove = createMove({ id: "slash", type: "normal" });
-    expect(getGen2CritStage(attacker, slashMove)).toBe(1);
+    expect(getGen2CritStage(attacker, slashMove)).toBe(2);
 
     const crossChopMove = createMove({ id: "cross-chop", type: "fighting" });
-    expect(getGen2CritStage(attacker, crossChopMove)).toBe(1);
+    expect(getGen2CritStage(attacker, crossChopMove)).toBe(2);
   });
 });

@@ -185,7 +185,7 @@ Crit occurs if `random(0..255) < threshold`.
 
 | Source | Stage Bonus |
 |--------|------------|
-| High-crit moves (Slash, Razor Leaf, Crabhammer, Cross Chop, Karate Chop, Aeroblast) | +1 |
+| High-crit moves (Slash, Razor Leaf, Crabhammer, Cross Chop, Karate Chop, Aeroblast) | +2 |
 | Focus Energy / Dire Hit | +1 |
 | Scope Lens (held item) | +1 |
 | Stick (Farfetch'd held item) | +2 |
