@@ -114,6 +114,16 @@ export class Gen5Ruleset extends BaseRuleset {
     );
   }
 
+  /**
+   * Gen 5+ recalculates future attack damage at hit time, not at use time.
+   * Source: Bulbapedia -- "From Generation V onwards, damage is calculated when
+   *   Future Sight or Doom Desire hits, not when it is used."
+   * Source: Showdown sim/battle-actions.ts -- Gen 5+ recalculates future attack damage
+   */
+  override recalculatesFutureAttackDamage(): boolean {
+    return true;
+  }
+
   // --- Move Effects ---
 
   /**

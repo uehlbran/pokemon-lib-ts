@@ -66,6 +66,16 @@ export interface DamageSystem {
    * in modifier order, rounding, and which factors apply.
    */
   calculateDamage(context: DamageContext): DamageResult;
+
+  /**
+   * Whether future attacks (Future Sight, Doom Desire) recalculate damage at hit time.
+   * Gen 2-4: false -- damage is calculated at use time and stored.
+   * Gen 5+: true -- damage is recalculated when the attack lands.
+   * Source: Bulbapedia -- "From Generation V onwards, damage is calculated when
+   *   Future Sight or Doom Desire hits, not when it is used."
+   * Source: Showdown sim/battle-actions.ts -- Gen 5+ recalculates future attack damage
+   */
+  recalculatesFutureAttackDamage?(): boolean;
 }
 
 /** Critical hit rate table, multiplier, and roll. */

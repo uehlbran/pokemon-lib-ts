@@ -3318,10 +3318,13 @@ export class BattleEngine implements BattleEventEmitter {
               if (active && active.pokemon.currentHp > 0) {
                 let futureDamage = side.futureAttack.damage;
 
-                // Gen 4+: damage is calculated at hit time, not on use
-                // Source: Bulbapedia — "In Generations II-IV, damage is calculated
-                // when Future Sight or Doom Desire hits."
-                if (futureDamage === 0) {
+                // Protocol: Gen 2-4 rulesets store pre-calculated damage at use time (non-zero).
+                // Gen 5+ rulesets signal hit-time recalculation by returning true from
+                // recalculatesFutureAttackDamage(), OR by storing 0 as a sentinel.
+                // Source: Bulbapedia — "From Generation V onwards, damage is calculated when
+                //   Future Sight or Doom Desire hits, not when it is used."
+                // Source: Showdown sim/battle-actions.ts — Gen 5+ recalculates future attack damage
+                if (futureDamage === 0 || this.ruleset.recalculatesFutureAttackDamage?.()) {
                   const sourceSideState = this.state.sides[side.futureAttack.sourceSide];
                   const sourceActive = sourceSideState.active[0];
                   if (sourceActive && sourceActive.pokemon.currentHp > 0) {
