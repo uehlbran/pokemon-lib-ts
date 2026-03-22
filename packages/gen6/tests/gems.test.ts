@@ -263,8 +263,16 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    // Gem damage should be higher due to 1.3x boost
-    expect(resultWithGem.damage).toBeGreaterThan(resultNoGem.damage);
+    // Gem damage should be higher due to 1.3x boost.
+    // Derivation (seed=42, Showdown Gen 6 formula, Rock resists Normal 0.5x):
+    //   Boosted power = pokeRound(50, 5325) = floor((50*5325+2047)/4096) = 65
+    //   Base damage without gem: floor((2*50/5+2)*50*100/100/50)+2 = 24; with 0.5x resist = 12
+    //   Base damage with gem:    floor((2*50/5+2)*65*100/100/50)+2 = 30; with 0.5x resist = 15
+    //   After seed=42 random roll (~85-100%): withGem=21, noGem=16
+    //   If gem were 1.5x (Gen 5 rate), boosted power would be 75, damage would be > 21
+    // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096]) in Gen 6+
+    expect(resultNoGem.damage).toBe(16);
+    expect(resultWithGem.damage).toBe(21);
 
     // Verify the gem was consumed (attacker's heldItem set to null by damage calc)
     expect(ctxWithGem.attacker.pokemon.heldItem).toBeNull();
@@ -326,8 +334,16 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    // Gem damage should be higher
-    expect(resultWithGem.damage).toBeGreaterThan(resultNoGem.damage);
+    // Derivation (seed=42, Showdown Gen 6 formula, Normal takes 1x from Fire, special move):
+    //   Boosted power = pokeRound(40, 5325) = floor((40*5325+2047)/4096) = 52
+    //   Base damage without gem: floor((2*50/5+2)*40*100/100/50)+2 = 19; 1x = 19
+    //   Base damage with gem:    floor((2*50/5+2)*52*100/100/50)+2 = 24; 1x = 24
+    //   After seed=42 random roll: withGem=33, noGem=25
+    //   (Fire is STAB for attacker, boosting by 1.5x)
+    //   If gem were 1.5x (Gen 5 rate), boosted power would be 60, damage would be > 33
+    // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096]) in Gen 6+
+    expect(resultNoGem.damage).toBe(25);
+    expect(resultWithGem.damage).toBe(33);
     // Gem should be consumed
     expect(ctxWithGem.attacker.pokemon.heldItem).toBeNull();
   });

@@ -378,9 +378,13 @@ export class Gen6Ruleset extends BaseRuleset {
     // Apply stat stages
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(speedStage));
 
-    // Choice Scarf: 1.5x Speed (suppressed by Klutz)
+    // Embargo: prevents held item effects (Gen 5+)
+    // Source: Bulbapedia -- Embargo: "prevents the target from using its held item"
+    const isEmbargoed = active.volatileStatuses.has("embargo");
+
+    // Choice Scarf: 1.5x Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Choice Scarf boosts Speed 1.5x
-    if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz") {
+    if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz" && !isEmbargoed) {
       effective = Math.floor(effective * 1.5);
     }
 
@@ -428,9 +432,9 @@ export class Gen6Ruleset extends BaseRuleset {
       effective = Math.floor(effective * 0.25);
     }
 
-    // Iron Ball: halve Speed (suppressed by Klutz)
+    // Iron Ball: halve Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Iron Ball halves Speed
-    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz") {
+    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz" && !isEmbargoed) {
       effective = Math.floor(effective * 0.5);
     }
 

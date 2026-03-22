@@ -880,11 +880,17 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       if (opponent.pokemon.heldItem !== null) {
         return NO_ACTIVATION;
       }
-      pokemon.pokemon.heldItem = null;
+      // Transfer sticky-barb to attacker via an item-transfer effect.
+      // Using a consume effect so the engine's processItemResult handles:
+      //   1. Setting holder's heldItem = null (triggers Unburden if applicable)
+      //   2. Emitting item-consumed event
+      // The opponent's item gain is handled as a side-effect via direct mutation here
+      // since there is no standard "item-gain" ItemEffect type.
+      // Source: Showdown data/items.ts -- stickybarb: onDamagingHit
       opponent.pokemon.heldItem = "sticky-barb";
       return {
         activated: true,
-        effects: [],
+        effects: [{ type: "consume", target: "self", value: "sticky-barb" }],
         messages: [
           `${pokemonName}'s Sticky Barb latched onto ${opponent.pokemon.nickname ?? "the attacker"}!`,
         ],
