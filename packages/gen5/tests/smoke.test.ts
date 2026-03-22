@@ -57,6 +57,9 @@ describe("Gen5Ruleset smoke tests", () => {
     const ruleset = new Gen5Ruleset();
     const order = ruleset.getEndOfTurnOrder();
     expect(order[0]).toBe("weather-damage");
+    // Source: BaseRuleset.getEndOfTurnOrder() returns at least 11 slots:
+    // weather-damage, hail-damage, sandstorm-damage, burn, poison, bad-poison,
+    // leech-seed, binding, nightmare, curse, future-attack (11 entries minimum)
     expect(order.length).toBeGreaterThan(10);
   });
 

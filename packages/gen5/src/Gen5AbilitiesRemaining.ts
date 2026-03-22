@@ -120,13 +120,12 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
   }
 
   if (currentHp > Math.floor(maxHp / 2) && isZenForm) {
-    // Revert from Zen Mode -- signal removal via a "none" effect.
-    // The engine should interpret the message and remove the volatile.
-    return {
-      activated: true,
-      effects: [{ effectType: "none", target: "self" }],
-      messages: [`${name} reverted to its Standard Mode!`],
-    };
+    // Revert from Zen Mode. The AbilityEffect model does not yet have a
+    // volatile-remove type, so we cannot safely signal this to the engine.
+    // Returning NO_EFFECT prevents a phantom "activated:true, effectType:none"
+    // message that would claim success with no state change.
+    // TODO: implement volatile-remove AbilityEffect type and wire engine support.
+    return NO_EFFECT;
   }
 
   return NO_EFFECT;
@@ -172,11 +171,14 @@ function handleHarvest(ctx: AbilityContext): AbilityResult {
     if (roll >= HARVEST_BASE_PROBABILITY) return NO_EFFECT;
   }
 
-  return {
-    activated: true,
-    effects: [{ effectType: "none", target: "self" }],
-    messages: [`${name}'s Harvest restored its ${berryId}!`],
-  };
+  // Harvest needs to set ctx.pokemon.pokemon.heldItem = berryId, but
+  // AbilityResult has no effect type for item restoration yet. Returning
+  // activated:true with effectType:"none" would emit a success message with
+  // no actual state change (the berry would not be restored). Return NO_EFFECT
+  // as a safe stopgap until item-restore is added to the AbilityEffect model.
+  // TODO: add "item-restore" AbilityEffect type and implement in engine.
+  void berryId;
+  return NO_EFFECT;
 }
 
 /**
@@ -216,12 +218,14 @@ function handleHealer(ctx: AbilityContext): AbilityResult {
   const ally = allies[0];
   if (!ally) return NO_EFFECT;
 
-  const allyName = ally.pokemon.nickname ?? String(ally.pokemon.speciesId);
-  return {
-    activated: true,
-    effects: [{ effectType: "status-cure", target: "opponent" }],
-    messages: [`${name}'s Healer cured ${allyName}'s status!`],
-  };
+  // Healer cures an *ally*, but AbilityEffect only supports target "self" |
+  // "opponent". Using target:"opponent" would apply the cure to the opposing
+  // battler (the foe) instead of the ally. Returning NO_EFFECT is a safe
+  // stopgap until ally-targeting support is added to AbilityEffect/engine.
+  // TODO: add target:"ally" (or targetUid) to AbilityEffect and wire engine.
+  void ally;
+  void name;
+  return NO_EFFECT;
 }
 
 // ---------------------------------------------------------------------------
@@ -297,8 +301,25 @@ function handleTelepathy(ctx: AbilityContext): AbilityResult {
   // In singles, Telepathy never activates -- there are no ally moves
   if (ctx.state.format === "singles") return NO_EFFECT;
 
-  // The engine should check this ability when an ally targets this Pokemon.
-  // We return a move-prevented result to signal immunity.
+  // Telepathy only blocks ally moves -- if there is no attacker (ctx.opponent)
+  // or the attacker is on the opposing side, do not activate.
+  // Source: Showdown data/abilities.ts -- telepathy onTryHit:
+  //   `if (target !== source && target.isAlly(source) && move.category !== 'Status')`
+  if (!ctx.opponent) return NO_EFFECT;
+
+  // Check that ctx.opponent is on the SAME side as ctx.pokemon (i.e., is an ally)
+  const myUid = ctx.pokemon.pokemon.uid;
+  const attackerUid = ctx.opponent.pokemon.uid;
+  const mySide = ctx.state.sides.find((s) => s.active.some((a) => a && a.pokemon.uid === myUid));
+  const attackerSide = ctx.state.sides.find((s) =>
+    s.active.some((a) => a && a.pokemon.uid === attackerUid),
+  );
+  // If the attacker is not on the same side, it's a foe -- Telepathy doesn't apply
+  if (!mySide || !attackerSide || mySide !== attackerSide) return NO_EFFECT;
+
+  // Status moves are not blocked by Telepathy
+  if (ctx.move?.category === "status") return NO_EFFECT;
+
   const name = getName(ctx);
   return {
     activated: true,
