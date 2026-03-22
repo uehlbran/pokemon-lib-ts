@@ -2980,7 +2980,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown data/moves.ts -- entrainment: target.setAbility(source.ability)
     if (result.abilityChange) {
       const abilityTarget = result.abilityChange.target === "attacker" ? attacker : defender;
-      const abilityTargetSide =
+      const _abilityTargetSide =
         result.abilityChange.target === "attacker" ? attackerSide : defenderSide;
       const oldAbility = abilityTarget.ability;
       abilityTarget.ability = result.abilityChange.ability;
