@@ -536,8 +536,13 @@ export interface EndOfTurnSystem {
    * Roll whether a Protect-type move succeeds.
    * Gen 2: halving bit-shift variant (255 >> N approach from pokecrystal).
    * Gen 3-4: 1/(2^N) halving table, capped at index 3 (12.5% minimum).
-   * Gen 5+: 1/(3^N), capped at 1/729.
+   * Gen 5: 1/(2^N), doubling counter capped at 256 (effectively impossible past 8 uses).
+   * Gen 6+: 1/(3^N), capped at 1/729 (BaseRuleset default).
    * Gen 1 has no Protect — implement to always return true.
+   *
+   * Source: Showdown data/mods/gen5/conditions.ts — stall counter doubles (2^N), capped at 256
+   * Source: Showdown data/conditions.ts (Gen 6+) — stall counter triples (3^N), capped at 729
+   * Source: Bulbapedia — Protect: Gen 3-5 halves success rate (x1/2); Gen 6+ uses x1/3
    */
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean;
   /**

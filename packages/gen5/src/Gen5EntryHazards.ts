@@ -301,16 +301,38 @@ export function applyGen5EntryHazards(
   state: BattleState,
   typeChart: TypeChart,
 ): EntryHazardResult {
-  // Magic Guard: immune to all indirect damage, including entry hazards
-  // Note: Toxic Spikes status infliction is ALSO prevented by Magic Guard
-  // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
-  // Source: Showdown -- Magic Guard prevents hazard damage and status
+  // Magic Guard: immune to all indirect damage, including entry hazards.
+  // However, Poison-type Pokemon STILL absorb (remove) Toxic Spikes even with Magic Guard.
+  // Magic Guard prevents damage and status infliction, but absorption is a field-clearing
+  // mechanic, not a damage/status mechanic.
+  //
+  // Source: Showdown data/conditions.ts — Toxic Spikes: Poison-type always absorbs them
+  //   regardless of abilities; absorption check precedes damage/status check.
+  // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage" (damage/status only)
   if (switchingIn.ability === "magic-guard") {
+    const hazardsToRemove: EntryHazardType[] = [];
+    const messages: string[] = [];
+    const gravityActive = state.gravity?.active ?? false;
+
+    // Poison-type with Magic Guard still absorbs Toxic Spikes
+    const toxicSpikes = side.hazards.find((h) => h.type === "toxic-spikes");
+    if (
+      toxicSpikes &&
+      toxicSpikes.layers > 0 &&
+      switchingIn.types.includes("poison") &&
+      isGen5Grounded(switchingIn, gravityActive)
+    ) {
+      hazardsToRemove.push("toxic-spikes");
+      const pokemonName = switchingIn.pokemon.nickname ?? String(switchingIn.pokemon.speciesId);
+      messages.push(`${pokemonName} absorbed the poison spikes!`);
+    }
+
     return {
       damage: 0,
       statusInflicted: null,
       statChanges: [],
-      messages: [],
+      messages,
+      hazardsToRemove: hazardsToRemove.length > 0 ? hazardsToRemove : undefined,
     };
   }
 
@@ -350,6 +372,14 @@ export function applyGen5EntryHazards(
     }
     if (result.status) {
       statusInflicted = result.status;
+      // Mark that this status came from an entry hazard, not from an opponent's move.
+      // Synchronize should NOT trigger when the status source is Toxic Spikes.
+      // Source: Showdown data/abilities.ts — Synchronize: if (effect.id === 'toxicspikes') return;
+      // Note: "hazard-status-source" is not in the VolatileStatus union (Gen 5-specific marker),
+      // so we cast. The Synchronize handler checks for and removes this volatile.
+      switchingIn.volatileStatuses.set("hazard-status-source" as VolatileStatus, {
+        turnsLeft: 1,
+      });
     }
     if (result.message) {
       messages.push(result.message);
