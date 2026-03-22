@@ -9,18 +9,23 @@ import type {
   CritContext,
   DamageContext,
   DamageResult,
+  EndOfTurnEffect,
   EntryHazardResult,
   ExpContext,
   ItemContext,
   ItemResult,
+  MoveEffectContext,
+  MoveEffectResult,
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
+
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   DataManager,
   EntryHazardType,
+  MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
@@ -33,6 +38,7 @@ import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
 import { calculateGen9Damage } from "./Gen9DamageCalc.js";
 import { applyGen9EntryHazards } from "./Gen9EntryHazards.js";
 import { applyGen9HeldItem } from "./Gen9Items.js";
+import { calculateSaltCureDamage, executeGen9MoveEffect } from "./Gen9MoveEffects.js";
 import { Gen9Terastallization } from "./Gen9Terastallization.js";
 import { applyGen9TerrainEffects, checkGen9TerrainStatusImmunity } from "./Gen9Terrain.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
@@ -408,6 +414,95 @@ export class Gen9Ruleset extends BaseRuleset {
     return handleGen9Ability(trigger, context);
   }
 
+  // --- Move Effects ---
+
+  /**
+   * Gen 9 move effect dispatcher.
+   *
+   * Delegates to executeGen9MoveEffect for Gen 9-specific moves.
+   * Falls back to BaseRuleset for standard move effects.
+   *
+   * Source: references/pokemon-showdown/data/moves.ts
+   */
+  override executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    const result = executeGen9MoveEffect(context);
+    if (result !== null) return result;
+
+    // Delegate to BaseRuleset for any remaining moves
+    return super.executeMoveEffect(context);
+  }
+
+  // --- Damage Received ---
+
+  /**
+   * Tracks the number of times a Pokemon has been hit, for Rage Fist.
+   *
+   * Incremented each time a Pokemon takes damage from a move.
+   * The counter persists through switches (stored on PokemonInstance.timesAttacked).
+   * Multi-hit moves count as one increment per move (not per hit).
+   *
+   * Source: Showdown data/moves.ts:15126-15128
+   *   basePowerCallback(pokemon) { return Math.min(350, 50 + 50 * pokemon.timesAttacked); }
+   * Source: Showdown sim/pokemon.ts -- timesAttacked incremented in hitBy() once per move
+   */
+  override onDamageReceived(
+    defender: ActivePokemon,
+    _damage: number,
+    move: MoveData,
+    state: BattleState,
+  ): void {
+    // Deduplicate multi-hit moves: only count once per turn per move.
+    // Showdown increments timesAttacked once per move use (not per hit).
+    // Source: Showdown sim/pokemon.ts -- timesAttacked incremented in hitBy(),
+    //   which is called once per move resolution (not per multi-hit hit).
+    // We track the last (turn number, move id) pair. If the current call has the
+    // same pair as the last increment, it's a subsequent hit of a multi-hit move — skip.
+    // If turnNumber is undefined (e.g., in tests that don't set it), always increment.
+    const pokemon = defender.pokemon;
+    const turnNumber: number | undefined = state.turnNumber;
+    const lastTurnKey = `_rageFistLastTurn_${move.id}`;
+    const lastTurn = (pokemon as unknown as Record<string, unknown>)[lastTurnKey] as
+      | number
+      | undefined;
+
+    if (turnNumber !== undefined && lastTurn === turnNumber) {
+      return; // already incremented this turn for this move (multi-hit dedup)
+    }
+
+    // Record this turn so subsequent hits of the same multi-hit move are skipped
+    if (turnNumber !== undefined) {
+      (pokemon as unknown as Record<string, unknown>)[lastTurnKey] = turnNumber;
+    }
+
+    pokemon.timesAttacked = (pokemon.timesAttacked ?? 0) + 1;
+  }
+
+  // --- End of Turn ---
+
+  /**
+   * Gen 9 end-of-turn effect order, adding Salt Cure at residualOrder 13
+   * (same position as bind/partial trapping damage).
+   *
+   * Source: Showdown data/moves.ts:16224 -- onResidualOrder: 13
+   * Source: specs/battle/10-gen9.md -- Salt Cure at order 13
+   */
+  override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    // Get the base order and insert salt-cure after bind (both at residualOrder 13)
+    const baseOrder = super.getEndOfTurnOrder();
+    const result: EndOfTurnEffect[] = [];
+
+    for (const effect of baseOrder) {
+      result.push(effect);
+      // Insert salt-cure right after bind (both at residualOrder 13)
+      if (effect === "bind") {
+        // "salt-cure" is defined in battle's EndOfTurnEffect union (added in this wave).
+        result.push("salt-cure" as EndOfTurnEffect);
+      }
+    }
+
+    return result;
+  }
+
   // --- Damage Calculation ---
 
   /**
@@ -429,5 +524,34 @@ export class Gen9Ruleset extends BaseRuleset {
       context,
       this.getTypeChart() as Record<string, Record<string, number>>,
     );
+  }
+
+  // --- Salt Cure End-of-Turn ---
+
+  /**
+   * Process Salt Cure residual damage at end of turn.
+   *
+   * Deals 1/8 max HP per turn, or 1/4 max HP for Water/Steel types.
+   * Called by the engine when processing the "salt-cure" end-of-turn effect.
+   *
+   * This is a helper method available for the engine to call. The actual
+   * Salt Cure processing in the engine's processEndOfTurn should check for
+   * the "salt-cure" volatile on each active Pokemon and apply damage.
+   *
+   * Source: Showdown data/moves.ts:16225-16227
+   *   onResidual(pokemon) {
+   *     this.damage(pokemon.baseMaxhp / (pokemon.hasType(['Water', 'Steel']) ? 4 : 8));
+   *   }
+   */
+  processSaltCureDamage(active: ActivePokemon): number {
+    // "salt-cure" is defined in core's VolatileStatus union (added in this wave).
+    if (!active.volatileStatuses.has("salt-cure" as VolatileStatus)) return 0;
+    if (active.pokemon.currentHp <= 0) return 0;
+
+    const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+    const damage = calculateSaltCureDamage(maxHp, active.types);
+
+    active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
+    return damage;
   }
 }

@@ -566,6 +566,15 @@ export interface EndOfTurnSystem {
    * @returns `true` if the Pokemon thawed this turn.
    */
   processEndOfTurnDefrost(pokemon: ActivePokemon, rng: SeededRandom): boolean;
+  /**
+   * Process Salt Cure end-of-turn residual damage for a Pokemon.
+   * Deals 1/8 max HP per turn (1/4 for Water/Steel types).
+   * Returns the damage dealt (0 if the Pokemon does not have the salt-cure volatile).
+   * Gen 9 only — all other gens should omit this method (optional).
+   *
+   * Source: Showdown data/moves.ts -- Salt Cure onResidualOrder: 13
+   */
+  processSaltCureDamage?(pokemon: ActivePokemon): number;
 }
 
 /**

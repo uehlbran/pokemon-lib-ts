@@ -110,6 +110,27 @@ export {
   isGen9PowderBlocked,
   TERRAIN_EXTENDER_ITEM_ID,
 } from "./Gen9Items.js";
+export {
+  calculateRevivalHp,
+  calculateSaltCureDamage,
+  calculateShedTailCost,
+  canUseRevivalBlessing,
+  canUseShedTail,
+  executeGen9MoveEffect,
+  findRevivalTarget,
+  getLastRespectsPower,
+  getRageFistPower,
+  handleLastRespects,
+  handleMakeItRain,
+  handlePopulationBomb,
+  handleRageFist,
+  handleRevivalBlessing,
+  handleSaltCure,
+  handleShedTail,
+  handleTeraBlast,
+  handleTidyUp,
+  shouldApplyStellarDebuff,
+} from "./Gen9MoveEffects.js";
 export { Gen9Ruleset } from "./Gen9Ruleset.js";
 export { calculateTeraStab, Gen9Terastallization } from "./Gen9Terastallization.js";
 export {

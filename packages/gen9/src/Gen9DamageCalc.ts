@@ -49,6 +49,7 @@ import {
   getOrichalcumPulseAtkModifier,
   getSupremeOverlordModifier,
 } from "./Gen9AbilitiesDamage.js";
+import { getLastRespectsPower, getRageFistPower } from "./Gen9MoveEffects.js";
 import { calculateTeraStab } from "./Gen9Terastallization.js";
 
 // ---- pokeRound: the 4096-based rounding function ----
@@ -581,12 +582,17 @@ function getDefenseStat(
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
-  const defenderHasKlutz = defender.ability === "klutz";
+  // Items are suppressed by: Klutz ability, or Embargo volatile status.
+  // Note: Magic Room also suppresses items but requires field state — it is
+  // checked separately in calculateGen9Damage where state is available.
+  // Source: Showdown sim/pokemon.ts -- ignoringItem() checks klutz + embargo + magicRoom
+  const defenderItemsSuppressed =
+    defender.ability === "klutz" || defender.volatileStatuses.has("embargo");
 
   // Deep Sea Scale: 2x SpDef for Clamperl (366)
   // Source: Showdown data/items.ts -- Deep Sea Scale
   if (
-    !defenderHasKlutz &&
+    !defenderItemsSuppressed &&
     !isPhysical &&
     defenderItem === "deep-sea-scale" &&
     defenderSpecies === 366
@@ -596,13 +602,13 @@ function getDefenseStat(
 
   // Eviolite: 1.5x Def and SpDef for not-fully-evolved Pokemon
   // Source: Showdown data/items.ts -- Eviolite onModifyDef / onModifySpD
-  if (!defenderHasKlutz && defenderItem === "eviolite") {
+  if (!defenderItemsSuppressed && defenderItem === "eviolite") {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
   // Assault Vest: 1.5x SpDef
   // Source: Showdown data/items.ts -- Assault Vest onModifySpD
-  if (!defenderHasKlutz && !isPhysical && defenderItem === "assault-vest") {
+  if (!defenderItemsSuppressed && !isPhysical && defenderItem === "assault-vest") {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
@@ -688,11 +694,14 @@ function isRemovableItem(item: string): boolean {
 
   // Rusted Sword / Rusted Shield: not removable (needed for Crowned forms)
   // Source: Showdown data/items.ts -- Rusted Sword/Shield have forcedForme property
-  if (item === "rusted-sword" || item === "rusted-shield") return true;
+  if (item === "rusted-sword" || item === "rusted-shield") return false;
 
   // Booster Energy: removable in Gen 9
   // Source: Showdown data/items.ts -- Booster Energy has no forcedForme property
+  if (item === "booster-energy") return true;
 
+  // Default: most regular items are removable by Knock Off
+  // Source: Showdown sim/battle-actions.ts -- canRemoveItem fallback
   return true;
 }
 
@@ -779,27 +788,17 @@ function getOriginalTypes(pokemon: ActivePokemon): PokemonType[] {
     return [...pokemon.types];
   }
 
-  // For non-Stellar Tera'd Pokemon, we need the original types.
-  // The engine should store these somewhere accessible.
-  // As a practical solution: the PokemonInstance may have its species
-  // types available through calculatedStats or another field.
-  // For now, return an empty array if we truly can't determine them,
-  // and let the test infrastructure provide the data.
-
-  // Check if pokemon has volatileStatus tracking original types
-  // Cast needed because "original-types" is not in the VolatileStatus union
-  // but may be set by the engine/test infrastructure for Tera tracking.
-  const originalTypesVolatile = (
-    pokemon.volatileStatuses as Map<string, { turnsLeft: number; data?: Record<string, unknown> }>
-  ).get("original-types");
-  if (originalTypesVolatile?.data?.types) {
-    return originalTypesVolatile.data.types as PokemonType[];
+  // For non-Stellar Tera'd Pokemon, use the pre-Tera types stored on PokemonInstance.
+  // Gen9Terastallization.activate() sets pokemon.pokemon.teraTypes to the original
+  // defensive types before changing pokemon.types to [teraType].
+  // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraTypes stores pre-Tera typing
+  if (pokemon.pokemon.teraTypes && pokemon.pokemon.teraTypes.length > 0) {
+    return [...pokemon.pokemon.teraTypes];
   }
 
-  // Fallback: return current types (which for Tera'd Pokemon would be [teraType])
-  // This means STAB for original types won't work in this fallback.
-  // The calculateTeraStab function takes originalTypes as a parameter,
-  // so the caller (calculateGen9Damage) should provide them.
+  // Fallback: return current types (which for Tera'd Pokemon would be [teraType]).
+  // This path is hit only if teraTypes was never populated (e.g., test scaffolding
+  // that terastallizes without calling activate()).
   return [...pokemon.types];
 }
 
@@ -833,6 +832,24 @@ export function calculateGen9Damage(
 
   const level = attacker.pokemon.level;
   let power = move.power;
+
+  // Rage Fist: base power scales with times the user has been attacked (min 50, max 350)
+  // Source: Showdown data/moves.ts -- rage-fist basePowerCallback: 50 + 50 * timesAttacked, cap 350
+  if (move.id === "rage-fist") {
+    power = getRageFistPower(attacker.pokemon.timesAttacked ?? 0);
+  }
+
+  // Last Respects: base power scales with number of fainted allies (50 + 50 per fainted, no cap)
+  // Source: Showdown data/moves.ts -- last-respects basePowerCallback: 50 + 50 * faintCount
+  if (move.id === "last-respects") {
+    const attackerSideIndex = context.state.sides.findIndex((s) =>
+      s.active.some((a) => a === attacker),
+    );
+    const faintCount =
+      attackerSideIndex !== -1 ? (context.state.sides[attackerSideIndex]?.faintCount ?? 0) : 0;
+    power = getLastRespectsPower(faintCount);
+  }
+
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
   const weather = context.state.weather?.type ?? null;
