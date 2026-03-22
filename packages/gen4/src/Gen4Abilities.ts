@@ -1,7 +1,44 @@
-import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  AbilityEffect,
+  AbilityResult,
+  ActivePokemon,
+} from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
 import { GEN4_TYPE_CHART } from "./Gen4TypeChart";
+
+// ─── Weather Suppression ────────────────────────────────────────────────────
+
+/**
+ * Abilities that suppress weather effects while the holder is on the field.
+ *
+ * Source: pret/pokeplatinum src/battle/battle_lib.c — Cloud Nine / Air Lock check
+ * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
+ */
+export const GEN4_WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set([
+  "cloud-nine",
+  "air-lock",
+]);
+
+/**
+ * Check if weather effects are suppressed by an active Pokemon's ability.
+ *
+ * Returns true if either the pokemon or opponent has Cloud Nine / Air Lock,
+ * meaning weather should be treated as absent for damage, accuracy, speed,
+ * and end-of-turn weather effects.
+ *
+ * Source: pret/pokeplatinum — WEATHER_HAS_EFFECT-equivalent checks
+ * Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+ */
+export function isWeatherSuppressedGen4(
+  pokemon: ActivePokemon | undefined,
+  opponent: ActivePokemon | undefined,
+): boolean {
+  if (pokemon && GEN4_WEATHER_SUPPRESSING_ABILITIES.has(pokemon.ability)) return true;
+  if (opponent && GEN4_WEATHER_SUPPRESSING_ABILITIES.has(opponent.ability)) return true;
+  return false;
+}
 
 /**
  * Maps Plate held items to their corresponding PokemonType for Multitype.
@@ -454,9 +491,15 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
 
   switch (abilityId) {
     case "speed-boost": {
-      // Raises Speed by 1 stage each turn.
+      // Source: pret/pokeplatinum src/battle/battle_lib.c:3555-3558 — Speed Boost:
+      //   fakeOutTurnNumber != totalTurns + 1 — does NOT activate on the first turn
+      //   after switching in.
+      // turnsOnField is 0 on the first end-of-turn after switch-in (incremented after EoT).
       // Source: Bulbapedia — Speed Boost: raises Speed by 1 at end of each turn
-      // Source: Showdown Gen 4 mod — Speed Boost trigger
+      //   (but confirmed by decomp: not on the very first turn)
+      if (context.pokemon.turnsOnField === 0) {
+        return { activated: false, effects: [], messages: [] };
+      }
       const effect: AbilityEffect = {
         effectType: "stat-change",
         target: "self",
@@ -473,8 +516,12 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
     case "rain-dish": {
       // Heal 1/16 max HP in rain.
       // Source: Bulbapedia — Rain Dish: restores 1/16 HP in rain each turn
-      // Source: Showdown Gen 4 mod — Rain Dish trigger
-      if (weather !== "rain") return { activated: false, effects: [], messages: [] };
+      // Source: pret/pokeplatinum — weather abilities check WEATHER_HAS_EFFECT
+      // Cloud Nine / Air Lock suppress weather, so Rain Dish does not activate.
+      const effectiveWeatherRD = isWeatherSuppressedGen4(context.pokemon, context.opponent)
+        ? null
+        : weather;
+      if (effectiveWeatherRD !== "rain") return { activated: false, effects: [], messages: [] };
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
@@ -486,8 +533,12 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
     case "ice-body": {
       // Heal 1/16 max HP in hail.
       // Source: Bulbapedia — Ice Body: restores 1/16 HP in hail each turn (introduced Gen 4)
-      // Source: Showdown Gen 4 mod — Ice Body trigger
-      if (weather !== "hail") return { activated: false, effects: [], messages: [] };
+      // Source: pret/pokeplatinum — weather abilities check WEATHER_HAS_EFFECT
+      // Cloud Nine / Air Lock suppress weather, so Ice Body does not activate.
+      const effectiveWeatherIB = isWeatherSuppressedGen4(context.pokemon, context.opponent)
+        ? null
+        : weather;
+      if (effectiveWeatherIB !== "hail") return { activated: false, effects: [], messages: [] };
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
@@ -499,8 +550,12 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
     case "dry-skin": {
       // Heal 1/8 max HP in rain; take 1/8 max HP in sun (Sun damage handled here as chip).
       // Source: Bulbapedia — Dry Skin: heals 1/8 HP in rain, takes 1/8 HP in sun
-      // Source: Showdown Gen 4 mod — Dry Skin weather interaction
-      if (weather === "rain") {
+      // Source: pret/pokeplatinum — weather abilities check WEATHER_HAS_EFFECT
+      // Cloud Nine / Air Lock suppress weather, so Dry Skin does not activate.
+      const effectiveWeatherDS = isWeatherSuppressedGen4(context.pokemon, context.opponent)
+        ? null
+        : weather;
+      if (effectiveWeatherDS === "rain") {
         const healAmount = Math.max(1, Math.floor(maxHp / 8));
         return {
           activated: true,
@@ -508,7 +563,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
           messages: [`${name}'s Dry Skin restored its HP!`],
         };
       }
-      if (weather === "sun") {
+      if (effectiveWeatherDS === "sun") {
         const chipDamage = Math.max(1, Math.floor(maxHp / 8));
         return {
           activated: true,
@@ -522,8 +577,12 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
     case "solar-power": {
       // Take 1/8 max HP in sun (SpAtk boost handled in damage calc).
       // Source: Bulbapedia — Solar Power: takes 1/8 HP in sun, SpAtk boosted 1.5x
-      // Source: Showdown Gen 4 mod — Solar Power end-of-turn chip
-      if (weather !== "sun") return { activated: false, effects: [], messages: [] };
+      // Source: pret/pokeplatinum — weather abilities check WEATHER_HAS_EFFECT
+      // Cloud Nine / Air Lock suppress weather, so Solar Power does not activate.
+      const effectiveWeatherSP = isWeatherSuppressedGen4(context.pokemon, context.opponent)
+        ? null
+        : weather;
+      if (effectiveWeatherSP !== "sun") return { activated: false, effects: [], messages: [] };
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
@@ -535,8 +594,12 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
     case "hydration": {
       // Cures primary status in rain.
       // Source: Bulbapedia — Hydration: cures status conditions at end of each turn in rain
-      // Source: Showdown Gen 4 mod — Hydration trigger
-      if (weather !== "rain") return { activated: false, effects: [], messages: [] };
+      // Source: pret/pokeplatinum — weather abilities check WEATHER_HAS_EFFECT
+      // Cloud Nine / Air Lock suppress weather, so Hydration does not activate.
+      const effectiveWeatherHY = isWeatherSuppressedGen4(context.pokemon, context.opponent)
+        ? null
+        : weather;
+      if (effectiveWeatherHY !== "rain") return { activated: false, effects: [], messages: [] };
       if (!status) return { activated: false, effects: [], messages: [] };
       const effect: AbilityEffect = { effectType: "status-cure", target: "self" };
       return {

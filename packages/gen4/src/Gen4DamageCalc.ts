@@ -12,6 +12,7 @@ import {
   getTypeMultiplier,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
+import { isWeatherSuppressedGen4 } from "./Gen4Abilities";
 
 // ─── Type-Boosting Items ────────────────────────────────────────────────────
 
@@ -558,7 +559,10 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   let power = move.power;
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
-  const weather = context.state.weather?.type ?? null;
+  // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
+  // Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check gates all weather-based damage modifiers
+  const rawWeather = context.state.weather?.type ?? null;
+  const weather = isWeatherSuppressedGen4(attacker, defender) ? null : rawWeather;
   // Track base-power-phase item multiplier for breakdown.itemMultiplier (#306 fix).
   // Updated wherever a held item modifies base power (Muscle Band, Wise Glasses, Orbs, Light Ball).
   let basePowerItemMultiplier = 1;

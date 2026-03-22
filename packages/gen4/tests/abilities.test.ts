@@ -79,6 +79,7 @@ function makeActivePokemon(overrides: {
   defense?: number;
   spDefense?: number;
   gender?: Gender;
+  turnsOnField?: number;
 }) {
   return {
     pokemon: makePokemonInstance({
@@ -109,7 +110,7 @@ function makeActivePokemon(overrides: {
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
-    turnsOnField: 0,
+    turnsOnField: overrides.turnsOnField ?? 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
     substituteHp: 0,
@@ -205,6 +206,7 @@ function makeContext(opts: {
   rngNextValues?: number[];
   move?: MoveData;
   gender?: Gender;
+  turnsOnField?: number;
 }): AbilityContext {
   const state = makeBattleState(opts.weather);
   const pokemon = makeActivePokemon({
@@ -216,6 +218,7 @@ function makeContext(opts: {
     defense: opts.defense,
     spDefense: opts.spDefense,
     gender: opts.gender,
+    turnsOnField: opts.turnsOnField,
   });
 
   // If rngNextValues is provided, return them in sequence; otherwise always return 0
@@ -479,9 +482,21 @@ describe("applyGen4Ability on-switch-in — Slow Start", () => {
 // ---------------------------------------------------------------------------
 
 describe("applyGen4Ability on-turn-end — Speed Boost", () => {
-  it("given Speed Boost, when turn ends, then raises Speed by 1 stage", () => {
+  it("given Speed Boost on first turn (turnsOnField=0), when turn ends, then does NOT activate (first-turn skip)", () => {
+    // Source: pret/pokeplatinum src/battle/battle_lib.c:3555-3558 — Speed Boost:
+    //   fakeOutTurnNumber != totalTurns + 1 — does NOT activate on the first turn
+    const ctx = makeContext({ ability: "speed-boost", turnsOnField: 0 });
+    const result = applyGen4Ability("on-turn-end", ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
+  });
+
+  it("given Speed Boost on second turn (turnsOnField=1), when turn ends, then raises Speed by 1 stage", () => {
+    // Source: pret/pokeplatinum src/battle/battle_lib.c:3555-3558 — Speed Boost
+    //   activates from turn 2 onward
     // Source: Bulbapedia — Speed Boost: raises Speed by 1 at end of each turn
-    const ctx = makeContext({ ability: "speed-boost" });
+    const ctx = makeContext({ ability: "speed-boost", turnsOnField: 1 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
@@ -492,8 +507,8 @@ describe("applyGen4Ability on-turn-end — Speed Boost", () => {
     });
   });
 
-  it("given Speed Boost, when turn ends, then message mentions Speed Boost", () => {
-    const ctx = makeContext({ ability: "speed-boost" });
+  it("given Speed Boost on second turn, when turn ends, then message mentions Speed Boost", () => {
+    const ctx = makeContext({ ability: "speed-boost", turnsOnField: 1 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.messages[0]).toContain("Speed Boost");

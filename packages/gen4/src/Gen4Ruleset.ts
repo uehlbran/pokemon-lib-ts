@@ -35,7 +35,7 @@ import {
   gen14MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
-import { applyGen4Ability } from "./Gen4Abilities";
+import { applyGen4Ability, isWeatherSuppressedGen4 } from "./Gen4Abilities";
 import { GEN4_CRIT_MULTIPLIER, GEN4_CRIT_RATE_DENOMINATORS } from "./Gen4CritCalc";
 import { calculateGen4Damage } from "./Gen4DamageCalc";
 import { applyGen4HeldItem } from "./Gen4Items";
@@ -788,8 +788,26 @@ export class Gen4Ruleset extends BaseRuleset {
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
-    // Set weather context so getEffectiveSpeed can read it for Chlorophyll/Swift Swim
-    this._currentWeather = state.weather?.type ?? null;
+    // Set weather context so getEffectiveSpeed can read it for Chlorophyll/Swift Swim.
+    // Cloud Nine / Air Lock suppress weather for speed-doubling abilities too.
+    // Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check gates weather-dependent speed
+    const rawWeather = state.weather?.type ?? null;
+    let weatherSuppressed = false;
+    if (rawWeather) {
+      for (const side of state.sides) {
+        for (const active of side.active) {
+          if (
+            active &&
+            (active.ability === "cloud-nine" || active.ability === "air-lock")
+          ) {
+            weatherSuppressed = true;
+            break;
+          }
+        }
+        if (weatherSuppressed) break;
+      }
+    }
+    this._currentWeather = weatherSuppressed ? null : rawWeather;
 
     // Pre-roll Quick Claw before tiebreak keys (preserves PRNG consumption order)
     const quickClawActivated = this.getQuickClawActivated(actions, state, rng);
@@ -1024,10 +1042,14 @@ export class Gen4Ruleset extends BaseRuleset {
     }
 
     // Weather-based accuracy overrides (checked before the normal accuracy formula)
-    // Source: Showdown sim/battle-actions.ts — weather accuracy overrides
+    // Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check gates all weather-based accuracy
     // Source: Bulbapedia — Thunder: "100% accuracy in rain, 50% accuracy in sun"
     // Source: Bulbapedia — Blizzard: "100% accuracy in hail" (NEW in Gen 4)
-    const weather = context.state.weather?.type ?? null;
+    // Cloud Nine / Air Lock suppress weather for accuracy purposes.
+    const rawWeather = context.state.weather?.type ?? null;
+    const weather = isWeatherSuppressedGen4(context.attacker, context.defender)
+      ? null
+      : rawWeather;
     if (context.move.id === "thunder") {
       if (weather === "rain") return true; // Thunder always hits in rain
       if (weather === "sun") {
