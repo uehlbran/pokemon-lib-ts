@@ -33,6 +33,13 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
+import {
+  handleGen7DamageCalcAbility,
+  handleGen7DamageImmunityAbility,
+} from "./Gen7AbilitiesDamage.js";
+import { handleGen7NewAbility } from "./Gen7AbilitiesNew.js";
+import { handleGen7StatAbility, isPranksterBlockedByDarkType } from "./Gen7AbilitiesStat.js";
+import { handleGen7SwitchAbility } from "./Gen7AbilitiesSwitch.js";
 import { calculateGen7Damage } from "./Gen7DamageCalc.js";
 import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
 import { applyGen7HeldItem } from "./Gen7Items.js";
@@ -215,22 +222,82 @@ export class Gen7Ruleset extends BaseRuleset {
   /**
    * Gen 7 ability dispatch.
    *
-   * Currently handles:
-   *   - Surge abilities (on-switch-in): Electric/Grassy/Psychic/Misty Surge
-   *
-   * Full ability support will be implemented in Wave 7.
+   * Routes to sub-modules by trigger type:
+   *   - on-switch-in: Surge abilities (Electric/Grassy/Psychic/Misty Surge)
+   *   - on-damage-calc: damage modifiers (Tough Claws, Sheer Force, etc.)
+   *   - on-damage-taken: damage immunity (Sturdy), stat triggers (Justified,
+   *     Weak Armor Gen 7, Stamina, Rattled)
+   *   - on-priority-check: Prankster (fails vs Dark), Gale Wings (full HP only), Triage
+   *   - on-after-move-used: Moxie, Beast Boost
+   *   - on-stat-change: Defiant, Competitive, Contrary, Simple
+   *   - on-turn-end: Speed Boost, Moody
+   *   - on-flinch: Steadfast
+   *   - on-before-move: Protean
    *
    * Source: Showdown data/abilities.ts -- Gen 7 ability handlers
    */
   override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
-    // Surge abilities trigger on switch-in
-    // Source: Showdown data/abilities.ts -- electricsurge/grassysurge/psychicsurge/mistysurge:
-    //   onStart: this.field.setTerrain('...')
-    if (trigger === "on-switch-in" && isSurgeAbility(context.pokemon.ability)) {
-      return handleSurgeAbility(context);
-    }
+    const noActivation: AbilityResult = { activated: false, effects: [], messages: [] };
 
-    return { activated: false, effects: [], messages: [] };
+    // Try new Gen 7 abilities first (Disguise, Schooling, Battle Bond, etc.)
+    // These have their own trigger routing
+    const newAbilityResult = handleGen7NewAbility(context);
+    if (newAbilityResult.activated) return newAbilityResult;
+
+    switch (trigger) {
+      case "on-switch-in": {
+        // Surge abilities trigger on switch-in
+        // Source: Showdown data/abilities.ts -- electricsurge/grassysurge/psychicsurge/mistysurge
+        if (isSurgeAbility(context.pokemon.ability)) {
+          return handleSurgeAbility(context);
+        }
+        // Switch-in abilities: Intimidate, weather, Download, Trace, Mold Breaker, etc.
+        const switchResult = handleGen7SwitchAbility(trigger, context);
+        if (switchResult.activated) return switchResult;
+        return noActivation;
+      }
+
+      case "on-switch-out": {
+        // Switch-out abilities: Regenerator, Natural Cure
+        return handleGen7SwitchAbility(trigger, context);
+      }
+
+      case "on-contact": {
+        // Contact abilities: Rough Skin, Flame Body, Static, Mummy, Gooey, etc.
+        return handleGen7SwitchAbility(trigger, context);
+      }
+
+      case "on-status-inflicted": {
+        // Status-inflicted abilities: Synchronize
+        return handleGen7SwitchAbility(trigger, context);
+      }
+
+      case "on-damage-calc": {
+        // Damage-calc abilities (attacker/defender modifiers)
+        return handleGen7DamageCalcAbility(context);
+      }
+
+      case "on-damage-taken": {
+        // Damage immunity (Sturdy OHKO block) first, then stat triggers
+        const immunityResult = handleGen7DamageImmunityAbility(context);
+        if (immunityResult.activated) return immunityResult;
+        return handleGen7StatAbility(context);
+      }
+
+      case "on-priority-check":
+      case "on-after-move-used":
+      case "on-stat-change":
+      case "on-turn-end":
+      case "on-flinch":
+      case "on-item-use":
+      case "on-before-move":
+      case "passive-immunity": {
+        return handleGen7StatAbility(context);
+      }
+
+      default:
+        return noActivation;
+    }
   }
 
   // --- Damage Calculation ---
@@ -265,25 +332,44 @@ export class Gen7Ruleset extends BaseRuleset {
   }
 
   /**
-   * Cap lethal damage for Sturdy (Gen 5+): survive any hit from full HP at 1 HP.
-   * Stub -- will be enhanced with Disguise handling in Wave 7.
+   * Cap lethal damage for Sturdy (Gen 5+) and Disguise (Gen 7).
+   *
+   * Sturdy: survive any hit from full HP at 1 HP.
+   * Disguise: block first hit entirely (Gen 7: no chip damage on break).
    *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
-   * Source: Bulbapedia -- Sturdy (Ability)
+   * Source: Showdown data/abilities.ts -- disguise: onDamage (priority 1)
+   * Source: Bulbapedia -- Sturdy (Ability), Disguise (Ability)
    */
   capLethalDamage(
     damage: number,
     defender: ActivePokemon,
     _attacker: ActivePokemon,
-    _move: MoveData,
+    move: MoveData,
     _state: BattleState,
   ): { damage: number; survived: boolean; messages: string[] } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
+    const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+    // Disguise: block damage entirely if Disguise hasn't broken
+    // Disguise checks BEFORE Sturdy (higher priority in Showdown: priority 1 vs -30)
+    // Gen 7: NO chip damage on Disguise break
+    // Source: Showdown data/abilities.ts -- disguise onDamage priority 1
+    if (
+      defender.ability === "disguise" &&
+      !defender.volatileStatuses.has("disguise-broken") &&
+      move.category !== "status"
+    ) {
+      return {
+        damage: 0,
+        survived: true,
+        messages: [`${name}'s Disguise was busted!`],
+      };
+    }
 
     // Sturdy: if at full HP and damage would KO, cap at maxHp - 1
     if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
-      const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
       return {
         damage: maxHp - 1,
         survived: true,
@@ -464,6 +550,57 @@ export class Gen7Ruleset extends BaseRuleset {
     return Math.max(1, effective);
   }
 
+  // --- Priority Helpers ---
+
+  /**
+   * Calculate the ability-based priority bonus for a Pokemon's move.
+   *
+   * - Prankster: +1 for status moves
+   * - Gale Wings (Gen 7): +1 for Flying moves at full HP
+   * - Triage (Gen 7 NEW): +3 for healing moves
+   *
+   * Source: Showdown data/abilities.ts -- priority modifiers
+   */
+  private getAbilityPriorityBonus(
+    active: ActivePokemon,
+    moveData: MoveData,
+    state: BattleState,
+  ): number {
+    const result = this.applyAbility("on-priority-check", {
+      pokemon: active,
+      state,
+      rng: state.rng,
+      trigger: "on-priority-check",
+      move: moveData,
+    });
+
+    if (!result.activated) return 0;
+
+    // Triage: +3 priority for healing moves
+    // Source: Showdown data/abilities.ts -- triage: onModifyPriority +3
+    if (active.ability === "triage") return 3;
+
+    // Prankster / Gale Wings: +1
+    return 1;
+  }
+
+  /**
+   * Check if a Prankster-boosted move fails against a Dark-type target.
+   *
+   * Gen 7 nerf: status moves boosted by Prankster have no effect on Dark-type Pokemon.
+   * Called by the engine before executing a move.
+   *
+   * Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
+   * Source: Bulbapedia "Prankster" Gen 7 -- "Status moves fail against Dark-type targets"
+   */
+  checkPranksterDarkImmunity(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    move: MoveData,
+  ): boolean {
+    return isPranksterBlockedByDarkType(attacker.ability, move.category, defender.types);
+  }
+
   // --- Turn Order ---
 
   /**
@@ -533,31 +670,15 @@ export class Gen7Ruleset extends BaseRuleset {
           /* default 0 */
         }
 
-        // Ability-based priority boosts (Prankster, Gale Wings)
+        // Ability-based priority boosts (Prankster, Gale Wings, Triage)
         // Source: Showdown data/abilities.ts -- Gen 7 ability priority
+        // Triage gives +3 priority for healing moves (new in Gen 7)
+        // Prankster/Gale Wings give +1 priority
         if (activeA.ability && moveDataA) {
-          const resultA = this.applyAbility("on-priority-check", {
-            pokemon: activeA,
-            state,
-            rng: state.rng,
-            trigger: "on-priority-check",
-            move: moveDataA,
-          });
-          if (resultA.activated) {
-            priorityA += 1;
-          }
+          priorityA += this.getAbilityPriorityBonus(activeA, moveDataA, state);
         }
         if (activeB.ability && moveDataB) {
-          const resultB = this.applyAbility("on-priority-check", {
-            pokemon: activeB,
-            state,
-            rng: state.rng,
-            trigger: "on-priority-check",
-            move: moveDataB,
-          });
-          if (resultB.activated) {
-            priorityB += 1;
-          }
+          priorityB += this.getAbilityPriorityBonus(activeB, moveDataB, state);
         }
 
         if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
