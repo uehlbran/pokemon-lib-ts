@@ -1269,6 +1269,21 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
       } else {
+        // Pre-damage survival check: allows abilities (Sturdy) to cap lethal damage before HP subtraction.
+        // Source: Showdown sim/battle-actions.ts — onDamage handlers run before HP reduction
+        if (damage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+          const survivalResult = this.ruleset.capLethalDamage(
+            damage,
+            defender,
+            actor,
+            effectiveMoveData,
+            this.state,
+          );
+          damage = survivalResult.damage;
+          for (const msg of survivalResult.messages) {
+            this.emit({ type: "message", text: msg });
+          }
+        }
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
         defender.lastDamageType = result.effectiveType ?? effectiveMoveData.type;

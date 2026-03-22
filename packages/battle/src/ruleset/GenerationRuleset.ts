@@ -76,6 +76,23 @@ export interface DamageSystem {
    * Source: Showdown sim/battle-actions.ts -- Gen 5+ recalculates future attack damage
    */
   recalculatesFutureAttackDamage?(): boolean;
+
+  /**
+   * Cap lethal damage for survival abilities (Sturdy in Gen 5+, etc.).
+   * Called BEFORE HP is subtracted when damage >= defender's currentHp.
+   * Returns the (possibly reduced) damage and messages to emit.
+   * Default: no capping (returns damage unchanged).
+   *
+   * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
+   * "If this Pokemon is at full HP, it survives attacks that would KO it with 1 HP."
+   */
+  capLethalDamage?(
+    damage: number,
+    defender: ActivePokemon,
+    attacker: ActivePokemon,
+    move: MoveData,
+    state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[] };
 }
 
 /** Critical hit rate table, multiplier, and roll. */
