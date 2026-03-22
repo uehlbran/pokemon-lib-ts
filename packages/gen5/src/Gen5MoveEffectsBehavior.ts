@@ -14,6 +14,9 @@
  *   - Knock Off: 20 BP flat, no damage bonus (Gen 6+ adds 1.5x bonus for item removal)
  *   - String Shot: -1 Speed (Gen 7+ is -2)
  *   - Sweet Scent: -1 Evasion (Gen 6+ is -2)
+ *   - Encore: exactly 3 turns (Gen 4 was random 4-8)
+ *   - Taunt: exactly 3 turns (Gen 4 was random 3-5)
+ *   - Disable: exactly 4 turns (Gen 4 was random 4-7)
  *
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
  */
@@ -104,6 +107,12 @@ export function handleGen5BehaviorMove(ctx: MoveEffectContext): MoveEffectResult
       return handleKnockOff(ctx);
     case "rapid-spin":
       return handleRapidSpin(ctx);
+    case "encore":
+      return handleEncore(ctx);
+    case "taunt":
+      return handleTaunt(ctx);
+    case "disable":
+      return handleDisable(ctx);
     default:
       return null;
   }
@@ -297,6 +306,90 @@ function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
   });
 }
 
+/**
+ * Gen 5 Encore: locks the target into its last used move for exactly 3 turns.
+ *
+ * Gen 4 used random 4-8 turns. Gen 5 simplified to a fixed 3-turn duration.
+ * Fails if the target has no last move or is already Encored.
+ *
+ * Source: Showdown data/mods/gen5/moves.ts -- encore: `condition.duration = 3`
+ * Source: Bulbapedia -- "Encore lasts for 3 turns in Generation V onwards"
+ */
+function handleEncore(ctx: MoveEffectContext): MoveEffectResult {
+  const { defender } = ctx;
+  const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+  // Fail if target has no last move or is already Encored
+  // Source: Showdown data/moves.ts -- encore: onTry checks target.lastMove and volatile
+  if (!defender.lastMoveUsed || defender.volatileStatuses.has("encore")) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Gen 5: exactly 3 turns (changed from Gen 4's random 4-8)
+  // Source: Showdown data/mods/gen5/moves.ts -- encore: condition.duration = 3
+  return makeResult({
+    volatileInflicted: "encore",
+    volatileData: { turnsLeft: 3, data: { moveId: defender.lastMoveUsed } },
+    messages: [`${defenderName} got an encore!`],
+  });
+}
+
+/**
+ * Gen 5 Taunt: prevents the target from using status moves for exactly 3 turns.
+ *
+ * Gen 4 used random 3-5 turns. Gen 5 simplified to a fixed 3-turn duration.
+ * Fails if the target is already Taunted.
+ *
+ * Source: Showdown data/mods/gen5/moves.ts -- taunt: `condition.duration = 3`
+ * Source: Bulbapedia -- "Taunt lasts for 3 turns in Generation V onwards"
+ */
+function handleTaunt(ctx: MoveEffectContext): MoveEffectResult {
+  const { defender } = ctx;
+  const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+  // Fail if target is already Taunted
+  // Source: Showdown data/moves.ts -- taunt: volatileStatus check
+  if (defender.volatileStatuses.has("taunt")) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Gen 5: exactly 3 turns (changed from Gen 4's random 3-5)
+  // Source: Showdown data/mods/gen5/moves.ts -- taunt: condition.duration = 3
+  return makeResult({
+    volatileInflicted: "taunt",
+    volatileData: { turnsLeft: 3 },
+    messages: [`${defenderName} fell for the taunt!`],
+  });
+}
+
+/**
+ * Gen 5 Disable: disables the target's last used move for exactly 4 turns.
+ *
+ * Gen 4 used random 4-7 turns. Gen 5 simplified to a fixed 4-turn duration.
+ * Fails if the target has no last move or is already Disabled.
+ *
+ * Source: Showdown data/mods/gen5/moves.ts -- disable: `condition.duration = 4`
+ * Source: Bulbapedia -- "Disable lasts for 4 turns in Generation V onwards"
+ */
+function handleDisable(ctx: MoveEffectContext): MoveEffectResult {
+  const { defender } = ctx;
+  const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+  // Fail if target has no last move or is already Disabled
+  // Source: Showdown data/moves.ts -- disable: onTry checks target.lastMove and volatile
+  if (!defender.lastMoveUsed || defender.volatileStatuses.has("disable")) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Gen 5: exactly 4 turns (changed from Gen 4's random 4-7)
+  // Source: Showdown data/mods/gen5/moves.ts -- disable: condition.duration = 4
+  return makeResult({
+    volatileInflicted: "disable",
+    volatileData: { turnsLeft: 4, data: { moveId: defender.lastMoveUsed } },
+    messages: [`${defenderName}'s ${defender.lastMoveUsed} was disabled!`],
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Toxic Accuracy Check
 // ---------------------------------------------------------------------------
@@ -312,7 +405,7 @@ function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
  * @returns `false` always in Gen 5 (no type-based accuracy guarantee for Toxic)
  *
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts --
- *   toxic: `onPrepareHit() {}` — empty override removes the Gen 6+
+ *   toxic: `onPrepareHit() {}` -- empty override removes the Gen 6+
  *   `if (source.hasType('Poison')) return true` accuracy bypass.
  */
 export function isToxicGuaranteedAccuracy(attackerTypes: readonly string[]): boolean {
