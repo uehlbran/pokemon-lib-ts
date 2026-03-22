@@ -908,9 +908,12 @@ describe("Gen 5+ EoT handler stubs", () => {
     expect(eotAbilityCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("given harvest and pickup in the EoT order with inactive ability results, when processEndOfTurn runs, then the engine does not throw", () => {
+  it("given harvest and pickup in the EoT order with inactive ability results, when processEndOfTurn runs, then the engine does not throw and deduplicates ability calls", () => {
     // Source: Showdown sim/abilities.ts — Harvest and Pickup trigger at residual phase
+    // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ENDTURN fires once per Pokemon
     // Verifies these stubs don't crash the engine when no gen implements them yet.
+    // Bug #484 fix: each Pokemon's on-turn-end ability fires at most once per turn,
+    // so harvest fires for both sides (2 calls) and pickup is skipped (already fired).
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["harvest", "pickup"];
     ruleset.setAbilityResult({ activated: false, effects: [], messages: [] });
@@ -923,9 +926,10 @@ describe("Gen 5+ EoT handler stubs", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Should have called applyAbility for each side for each effect (2 effects x 2 sides = 4)
+    // With dedup fix: applyAbility fires once per active Pokemon (2 sides = 2 calls),
+    // not once per EoT case per side (which was the old buggy behavior of 4 calls).
     const eotAbilityCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
-    expect(eotAbilityCalls.length).toBeGreaterThanOrEqual(4);
+    expect(eotAbilityCalls.length).toBe(2);
   });
 
   it("given grassy-terrain-heal in the EoT order with no active grassy terrain, when processEndOfTurn runs, then the engine does not throw and skips terrain processing", () => {

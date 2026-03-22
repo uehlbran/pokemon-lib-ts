@@ -497,12 +497,10 @@ describe("Gen 3 Ability Integration", () => {
     expect(engine.isEnded()).toBe(true);
   });
 
-  // Bug #484: BattleEngine.processEndOfTurn() fires applyAbility("on-turn-end") from 3 separate
-  // EoT cases (weather-healing, shed-skin, speed-boost), each iterating ALL active Pokemon.
-  // Gen3Abilities.handleTurnEnd("speed-boost") doesn't filter by which EoT step triggered it,
-  // so Speed Boost fires 3 times per turn. Expected: 1. Actual: 3.
-  // Mark as it.fails so CI stays green until bug #484 is fixed — when fixed, remove `.fails`.
-  it.fails("given a Ninjask with Speed Boost, when multiple turns pass, then Speed is boosted each turn", () => {
+  // Bug #484 FIXED: BattleEngine.processEndOfTurn() now deduplicates applyAbility("on-turn-end")
+  // calls per Pokemon per turn via a Set, so Speed Boost fires exactly once regardless of how
+  // many EoT ability-dispatching cases (weather-healing, shed-skin, speed-boost, etc.) exist.
+  it("given a Ninjask with Speed Boost, when multiple turns pass, then Speed is boosted each turn", () => {
     // Source: pret/pokeemerald — Speed Boost raises Speed by 1 at end of each turn
     // Source: Bulbapedia — "Speed Boost raises Speed by 1 stage at the end of each turn"
     // Arrange
@@ -524,19 +522,11 @@ describe("Gen 3 Ability Integration", () => {
     // Source: pret/pokeemerald — ABILITY_SPEED_BOOST raises Speed +1 at end of each turn
     // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ENDTURN fires once per Pokemon
     // Ninjask (side 0) should get exactly one +1 Speed boost per turn.
-    //
-    // NOTE: This test currently FAILS with count=3 due to bug #484.
-    // BattleEngine.processEndOfTurn() calls applyAbility("on-turn-end") in multiple EoT cases
-    // (weather-healing, shed-skin, speed-boost), each iterating all active Pokemon. Since
-    // Gen3Abilities.handleTurnEnd("speed-boost") doesn't filter by which EoT step called it,
-    // Speed Boost fires 3 times per turn instead of once.
-    // See: https://github.com/uehlbran/pokemon-lib-ts/issues/484
     const events = engine.getEventLog();
     const speedBoostEvents = events.filter(
       (e) => e.type === "stat-change" && e.stat === "speed" && e.stages === 1,
     );
-    // Correct behavior per spec: exactly 1 Speed Boost per turn
-    // Currently fails (actual = 3) — see bug #484
+    // Correct behavior: exactly 1 Speed Boost per turn (bug #484 fixed)
     expect(speedBoostEvents.length).toBe(1);
 
     // Verify it targeted Ninjask's side (side 0)
