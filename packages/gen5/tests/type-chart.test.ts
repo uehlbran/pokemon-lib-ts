@@ -172,7 +172,7 @@ describe("Gen 5 type chart -- property tests", () => {
         count++;
       }
     }
-    // 17 * 17 = 289 matchups
+    // Source: references/pokemon-showdown/data/mods/gen5/typechart.ts -- 17 types (no Fairy in Gen 5) = 17 * 17 = 289 matchups
     expect(count).toBe(289);
   });
 });

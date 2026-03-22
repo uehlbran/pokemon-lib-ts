@@ -71,6 +71,7 @@ describe("Gen5 EXP formula", () => {
       participantLevel: 50,
     });
     const result = ruleset.calculateExpGain(context);
+    // Source: Bulbapedia Gen 5 EXP formula (verified above: manualGen5Exp(240,50,50) = 241)
     expect(result).toBe(expected);
   });
 
@@ -83,6 +84,7 @@ describe("Gen5 EXP formula", () => {
       participantLevel: 50,
     });
     const result = ruleset.calculateExpGain(context);
+    // Source: Bulbapedia Gen 5 EXP formula -- lower fainted level yields less EXP (manualGen5Exp(64,5,50))
     expect(result).toBe(expected);
     // Should be much less than equal-level
     const equalLevel = manualGen5Exp(64, 50, 50);
@@ -98,6 +100,7 @@ describe("Gen5 EXP formula", () => {
       participantLevel: 1,
     });
     const result = ruleset.calculateExpGain(context);
+    // Source: Bulbapedia Gen 5 EXP formula -- large level gap in fainted's favor yields bonus EXP (manualGen5Exp(100,100,1))
     expect(result).toBe(expected);
     // Should be much more than equal-level (100 base exp)
     expect(result).toBeGreaterThan(100);
@@ -122,6 +125,7 @@ describe("Gen5 EXP formula", () => {
     const trainerExp = ruleset.calculateExpGain(trainerContext);
 
     // Trainer exp should be floor(baseExp * 1.5)
+    // Source: Bulbapedia -- Trainer battle modifier 1.5x applied as floor(baseExp * 1.5)
     expect(trainerExp).toBe(Math.floor(baseExp * 1.5));
   });
 
@@ -144,6 +148,7 @@ describe("Gen5 EXP formula", () => {
     const luckyExp = ruleset.calculateExpGain(luckyContext);
 
     // Lucky Egg exp should be floor(baseExp * 1.5)
+    // Source: Bulbapedia -- Lucky Egg modifier 1.5x applied as floor(baseExp * 1.5)
     expect(luckyExp).toBe(Math.floor(baseExp * 1.5));
   });
 
@@ -158,6 +163,7 @@ describe("Gen5 EXP formula", () => {
       participantLevel: 5,
     });
     const result = ruleset.calculateExpGain(context);
+    // Source: specs/battle/06-gen5.md section 16 -- spec example: L5 Rattata vs L5 Pidgey (base 58) = 59 EXP
     expect(result).toBe(59);
   });
 
