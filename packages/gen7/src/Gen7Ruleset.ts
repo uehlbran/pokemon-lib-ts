@@ -34,6 +34,12 @@ import type {
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
 import { calculateGen7Damage } from "./Gen7DamageCalc.js";
+import {
+  applyGen7TerrainEffects,
+  checkGen7TerrainStatusImmunity,
+  handleSurgeAbility,
+  isSurgeAbility,
+} from "./Gen7Terrain.js";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
 
 /**
@@ -81,6 +87,15 @@ export class Gen7Ruleset extends BaseRuleset {
    */
   private _currentWeather: string | null = null;
 
+  /**
+   * Temporary terrain state set during resolveTurnOrder so that getEffectiveSpeed
+   * can read it for Surge Surfer (doubles Speed on Electric Terrain).
+   * Set to null outside of turn order resolution.
+   *
+   * Source: Showdown data/abilities.ts -- surgesurfer: onModifySpe
+   */
+  private _currentTerrain: string | null = null;
+
   constructor(dataManager?: DataManager) {
     super(dataManager ?? createGen7DataManager());
   }
@@ -109,16 +124,15 @@ export class Gen7Ruleset extends BaseRuleset {
   }
 
   /**
-   * Gen 7 terrain effects stub.
-   * Will be fully implemented in Wave 3 (Terrain System).
+   * Gen 7 terrain end-of-turn effects.
+   *
+   * Currently handles Grassy Terrain healing (1/16 max HP for grounded Pokemon).
    *
    * Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal at EoT for grounded Pokemon
    * Source: Showdown data/conditions.ts -- grassyterrain.onResidual
    */
   override applyTerrainEffects(state: BattleState): TerrainEffectResult[] {
-    // Stub -- will be implemented in Wave 3
-    void state;
-    return [];
+    return applyGen7TerrainEffects(state);
   }
 
   /**
@@ -139,11 +153,7 @@ export class Gen7Ruleset extends BaseRuleset {
     target: ActivePokemon,
     state: BattleState,
   ): { immune: boolean; message?: string } {
-    // Stub -- will be fully implemented in Wave 3
-    void status;
-    void target;
-    void state;
-    return { immune: false };
+    return checkGen7TerrainStatusImmunity(status, target, state);
   }
 
   // --- Move Effects ---
@@ -162,12 +172,23 @@ export class Gen7Ruleset extends BaseRuleset {
   // --- Ability System ---
 
   /**
-   * Gen 7 ability dispatch stub.
-   * Will be fully implemented in Wave 7 (Abilities).
+   * Gen 7 ability dispatch.
+   *
+   * Currently handles:
+   *   - Surge abilities (on-switch-in): Electric/Grassy/Psychic/Misty Surge
+   *
+   * Full ability support will be implemented in Wave 7.
    *
    * Source: Showdown data/abilities.ts -- Gen 7 ability handlers
    */
-  override applyAbility(_trigger: AbilityTrigger, _context: AbilityContext): AbilityResult {
+  override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+    // Surge abilities trigger on switch-in
+    // Source: Showdown data/abilities.ts -- electricsurge/grassysurge/psychicsurge/mistysurge:
+    //   onStart: this.field.setTerrain('...')
+    if (trigger === "on-switch-in" && isSurgeAbility(context.pokemon.ability)) {
+      return handleSurgeAbility(context);
+    }
+
     return { activated: false, effects: [], messages: [] };
   }
 
@@ -362,9 +383,9 @@ export class Gen7Ruleset extends BaseRuleset {
 
     // Surge Surfer: 2x Speed on Electric Terrain (new in Gen 7)
     // Source: Bulbapedia -- Surge Surfer doubles Speed on Electric Terrain
-    // Note: Terrain check will be enhanced in Wave 3
-    if (active.ability === "surge-surfer") {
-      // Will need terrain state check -- stub for now
+    // Source: Showdown data/abilities.ts -- surgesurfer: onModifySpe: 2x if electricterrain
+    if (active.ability === "surge-surfer" && this._currentTerrain === "electric") {
+      effective = effective * 2;
     }
 
     // Slow Start: halve Speed for the first 5 turns after entering battle.
@@ -416,8 +437,9 @@ export class Gen7Ruleset extends BaseRuleset {
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
-    // Set weather context for getEffectiveSpeed to read
+    // Set weather and terrain context for getEffectiveSpeed to read
     this._currentWeather = state.weather?.type ?? null;
+    this._currentTerrain = state.terrain?.type ?? null;
 
     // Pre-roll Quick Claw activations
     const quickClawActivated = this.getQuickClawActivated(actions, state, rng);
@@ -530,8 +552,9 @@ export class Gen7Ruleset extends BaseRuleset {
       return a.tiebreak < b.tiebreak ? -1 : 1;
     });
 
-    // Clear weather context
+    // Clear weather and terrain context
     this._currentWeather = null;
+    this._currentTerrain = null;
     return tagged.map((t) => t.action);
   }
 

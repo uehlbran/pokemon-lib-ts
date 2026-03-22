@@ -9,4 +9,14 @@ export {
   TYPE_RESIST_BERRIES,
 } from "./Gen7DamageCalc.js";
 export { Gen7Ruleset } from "./Gen7Ruleset.js";
+export {
+  applyGen7TerrainEffects,
+  checkGen7TerrainStatusImmunity,
+  checkMistyTerrainConfusionImmunity,
+  checkPsychicTerrainPriorityBlock,
+  handleSurgeAbility,
+  isSurgeAbility,
+  TERRAIN_DEFAULT_TURNS,
+  TERRAIN_EXTENDED_TURNS,
+} from "./Gen7Terrain.js";
 export { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
