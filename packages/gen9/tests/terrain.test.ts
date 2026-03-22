@@ -474,20 +474,20 @@ describe("Grassy Terrain", () => {
       expect(results).toHaveLength(0);
     });
 
-    it("given Grassy Terrain and Pokemon with 1 max HP at 0/1, when applying terrain effects, then heals at least 1", () => {
-      // Min 1 heal via Math.max(1, floor(1/16)) = Math.max(1, 0) = 1
-      // But currentHp is 0 => fainted, skip
-      // Let's test with currentHp = 0 (fainted) => no heal
-      const shedinja = makeActive({ hp: 1, currentHp: 0 });
+    it("given Grassy Terrain and low-max-HP Pokemon at 14/15, when applying terrain effects, then heals at least 1", () => {
+      // Min 1 heal: Math.max(1, floor(15/16)) = Math.max(1, 0) = 1
+      // Source: Showdown data/conditions.ts -- grassyterrain.onResidual: heal(baseMaxhp / 16), min 1
+      const mon = makeActive({ hp: 15, currentHp: 14 });
       const state = makeState({
         terrain: { type: "grassy", turnsLeft: 5, source: "test" },
         sides: [
-          { index: 0, active: [shedinja] },
+          { index: 0, active: [mon] },
           { index: 1, active: [] },
         ],
       });
       const results = applyGen9TerrainEffects(state);
-      expect(results).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].healAmount).toBe(1);
     });
 
     it("given Grassy Terrain, when heal result is returned, then message says 'healed by Grassy Terrain'", () => {

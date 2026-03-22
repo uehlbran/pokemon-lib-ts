@@ -645,6 +645,29 @@ describe("applyGen9EntryHazards", () => {
 
   // --- No G-Max Steelsurge in Gen 9 ---
 
+  it("given Heavy-Duty Boots and Klutz ability, when applying Stealth Rock, then hazard damage still applies", () => {
+    // Klutz suppresses held item effects, so Heavy-Duty Boots does not block hazards.
+    // Source: Showdown data/abilities.ts -- klutz: suppresses held item (ignoreItem = true)
+    // Source: Bulbapedia -- Klutz page; Heavy-Duty Boots page
+    const klutzyMon = makeActive({ hp: 400, heldItem: "heavy-duty-boots", ability: "klutz" });
+    const side = makeSide([{ type: "stealth-rock", layers: 1 }]);
+    const state = makeState();
+    const result = applyGen9EntryHazards(klutzyMon, side, state, TEST_TYPE_CHART);
+    expect(result.damage).toBeGreaterThan(0);
+  });
+
+  it("given Sticky Web and a Contrary Pokemon, when applying hazards, then Speed is raised by 1 instead of lowered", () => {
+    // Contrary reverses stat stage changes, so Sticky Web grants +1 Speed instead of -1.
+    // Source: Showdown data/abilities.ts -- contrary: onBoost reverses stages
+    // Source: Bulbapedia -- Contrary page
+    const contraryMon = makeActive({ ability: "contrary" });
+    const side = makeSide([{ type: "sticky-web", layers: 1 }]);
+    const state = makeState();
+    const result = applyGen9EntryHazards(contraryMon, side, state, TEST_TYPE_CHART);
+    expect(result.statChanges).toHaveLength(1);
+    expect(result.statChanges[0]).toEqual({ stat: "speed", stages: 1 });
+  });
+
   it("given Gen9Ruleset, when getAvailableHazards(), then does not include gmax-steelsurge", () => {
     // Source: Bulbapedia -- Dynamax removed in Gen 9, G-Max Steelsurge no longer available
     // This is tested here indirectly -- the hazard list for Gen 9 excludes it

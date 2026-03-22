@@ -27,13 +27,7 @@ import type {
   BattleState,
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
-import type {
-  BattleStat,
-  EntryHazardType,
-  PrimaryStatus,
-  TypeChart,
-  VolatileStatus,
-} from "@pokemon-lib-ts/core";
+import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
 import { isGen9Grounded } from "./Gen9Terrain.js";
 
 // ---------------------------------------------------------------------------
@@ -152,7 +146,7 @@ export function applyGen9SpikesHazard(
 export function applyGen9StealthRock(
   switchingIn: ActivePokemon,
   typeChart: TypeChart,
-): HazardDamageResult | null {
+): HazardDamageResult {
   const maxHp = switchingIn.pokemon.calculatedStats?.hp ?? switchingIn.pokemon.currentHp;
   const pokemonName = switchingIn.pokemon.nickname ?? String(switchingIn.pokemon.speciesId);
 
@@ -303,18 +297,26 @@ export function applyGen9StickyWeb(
     };
   }
 
-  // Apply -1 Speed stage
+  // Contrary: reverses stat stage changes, so Sticky Web becomes +1 Speed instead of -1.
+  // Defiant/Competitive do NOT trigger when Contrary converts the drop to a boost.
+  // Source: Showdown data/abilities.ts -- contrary: onBoost reverses all stages
+  // Source: Bulbapedia -- Contrary page; Sticky Web page
+  const hasContrary = switchingIn.ability === "contrary";
+  const speedStages = hasContrary ? 1 : -1;
+
+  // Apply Speed stage change (negative unless Contrary)
   const messages: string[] = [`${pokemonName} was caught in a sticky web!`];
-  const speedChange: { stat: BattleStat; stages: number } = { stat: "speed", stages: -1 };
+  const speedChange: { stat: BattleStat; stages: number } = { stat: "speed", stages: speedStages };
   const allStatChanges: Array<{ stat: BattleStat; stages: number }> = [speedChange];
 
-  // Defiant / Competitive: triggered by opponent-caused stat drop, raise Attack or Sp. Atk by +2
+  // Defiant / Competitive: triggered by opponent-caused stat DROP, raise Attack or Sp. Atk by +2.
+  // These do NOT trigger when Contrary converts the speed drop to a boost.
   // Source: Showdown data/abilities.ts -- Defiant/Competitive onAfterEachBoost
   // Source: Bulbapedia "Defiant" -- "raises Attack by 2 when its stats are lowered by an opponent"
-  if (switchingIn.ability === "defiant") {
+  if (!hasContrary && switchingIn.ability === "defiant") {
     messages.push(`${pokemonName}'s Defiant sharply raised its Attack!`);
     allStatChanges.push({ stat: "attack", stages: 2 });
-  } else if (switchingIn.ability === "competitive") {
+  } else if (!hasContrary && switchingIn.ability === "competitive") {
     messages.push(`${pokemonName}'s Competitive sharply raised its Sp. Atk!`);
     allStatChanges.push({ stat: "spAttack", stages: 2 });
   }
@@ -359,10 +361,14 @@ export function applyGen9EntryHazards(
   const statChanges: Array<{ stat: BattleStat; stages: number }> = [];
   const gravityActive = state.gravity?.active ?? false;
 
-  // Heavy-Duty Boots: blocks ALL hazard effects on switch-in
+  // Heavy-Duty Boots: blocks ALL hazard effects on switch-in, unless item is suppressed.
+  // Klutz ability and Embargo volatile status suppress held item effects.
   // Source: Showdown data/items.ts -- heavydutyboots: onDamagePriority = -30, all hazards nullified
-  // Source: Bulbapedia -- Heavy-Duty Boots page
-  if (hasHeavyDutyBoots(switchingIn)) {
+  // Source: Showdown data/abilities.ts -- klutz: ignoreItem = true (item has no effect)
+  // Source: Bulbapedia -- Heavy-Duty Boots page; Klutz page
+  const itemSuppressed =
+    switchingIn.ability === "klutz" || switchingIn.volatileStatuses?.has("embargo") === true;
+  if (hasHeavyDutyBoots(switchingIn) && !itemSuppressed) {
     return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
   }
 
@@ -376,10 +382,8 @@ export function applyGen9EntryHazards(
     const stealthRock = side.hazards.find((h) => h.type === "stealth-rock");
     if (stealthRock && stealthRock.layers > 0) {
       const result = applyGen9StealthRock(switchingIn, typeChart);
-      if (result) {
-        totalDamage += result.damage;
-        messages.push(result.message);
-      }
+      totalDamage += result.damage;
+      messages.push(result.message);
     }
 
     // --- Spikes ---
