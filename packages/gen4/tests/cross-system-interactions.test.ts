@@ -306,12 +306,11 @@ describe("Magic Guard + Life Orb interaction", () => {
   it("given Magic Guard holder with Life Orb, when damage calc runs, then 1.3x boost IS still applied", () => {
     // Source: Showdown Gen 4 mod — Life Orb 1.3x boost is in calculateGen4Damage (Phase 2),
     // not gated by ability. Magic Guard only prevents the on-hit recoil chip.
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, Normal-type STAB
+    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, no STAB (Water attacker, Normal move)
     //   baseDmg = floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
     //   Life Orb Phase 2: floor(37*1.3) = 48
     //   rng=100: floor(48*100/100) = 48
-    //   STAB (Normal move, Normal-type attacker): floor(48*1.5) = 72
-    // Without Life Orb: floor(37*1.5) = 55
+    // Without Life Orb: 37
     const attacker = createActivePokemon({
       ability: "magic-guard",
       heldItem: "life-orb",
