@@ -254,6 +254,175 @@ describe("Gen5 speed resolution", () => {
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
     expect(speed).toBe(150);
   });
+
+  // --- Simple ability ---
+
+  it("given pokemon with Simple ability and +2 speed stage, when getEffectiveSpeed called, then speed multiplier is as if stage is +4", () => {
+    // Source: Bulbapedia -- Simple doubles stat stage effects
+    // +2 doubled = +4, multiplier = (2+4)/2 = 3.0, floor(100 * 3.0) = 300
+    const pokemon = makeActivePokemon({
+      speed: 100,
+      ability: "simple",
+      statStages: { speed: 2 },
+    });
+    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    expect(speed).toBe(300);
+  });
+
+  it("given pokemon with Simple ability and +4 speed stage, when getEffectiveSpeed called, then stage is clamped to +6 (not +8)", () => {
+    // Source: Bulbapedia -- Simple doubles stat stage effects, clamped to [-6, +6]
+    // +4 doubled = +8, clamped to +6, multiplier = (2+6)/2 = 4.0, floor(100 * 4.0) = 400
+    const pokemon = makeActivePokemon({
+      speed: 100,
+      ability: "simple",
+      statStages: { speed: 4 },
+    });
+    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    expect(speed).toBe(400);
+  });
+
+  it("given pokemon with Simple ability and -2 speed stage, when getEffectiveSpeed called, then speed multiplier is as if stage is -4", () => {
+    // Source: Bulbapedia -- Simple doubles stat stage effects
+    // -2 doubled = -4, multiplier = 2/(2+4) = 2/6 = 0.333..., floor(100 * 0.333...) = 33
+    const pokemon = makeActivePokemon({
+      speed: 100,
+      ability: "simple",
+      statStages: { speed: -2 },
+    });
+    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    expect(speed).toBe(33);
+  });
+
+  // --- Klutz ability ---
+
+  it("given pokemon with Klutz ability holding Choice Scarf, when getEffectiveSpeed called, then Choice Scarf does NOT apply", () => {
+    // Source: Bulbapedia -- Klutz prevents holder's items from taking effect
+    // Speed should remain at base 100, not 150
+    const pokemon = makeActivePokemon({
+      speed: 100,
+      ability: "klutz",
+      heldItem: "choice-scarf",
+    });
+    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    expect(speed).toBe(100);
+  });
+
+  it("given pokemon with Klutz ability holding Iron Ball, when getEffectiveSpeed called, then Iron Ball does NOT apply", () => {
+    // Source: Bulbapedia -- Klutz prevents holder's items from taking effect
+    // Speed should remain at base 100, not 50
+    const pokemon = makeActivePokemon({
+      speed: 100,
+      ability: "klutz",
+      heldItem: "iron-ball",
+    });
+    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    expect(speed).toBe(100);
+  });
+
+  it("given pokemon with Klutz ability holding Choice Scarf and base 80 speed, when getEffectiveSpeed called, then returns 80 (item suppressed)", () => {
+    // Source: Bulbapedia -- Klutz prevents holder's items from taking effect
+    // Triangulation: different base speed to confirm Klutz suppresses the item
+    const pokemon = makeActivePokemon({
+      speed: 80,
+      ability: "klutz",
+      heldItem: "choice-scarf",
+    });
+    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    expect(speed).toBe(80);
+  });
+});
+
+// --- Status Damage ---
+
+describe("Gen5 status damage abilities", () => {
+  const ruleset = new Gen5Ruleset();
+
+  it("given pokemon with Magic Guard and burn status, when applyStatusDamage called, then returns 0", () => {
+    // Source: Bulbapedia -- Magic Guard prevents all indirect damage including burn
+    const pokemon = makeActivePokemon({
+      maxHp: 200,
+      ability: "magic-guard",
+      status: "burn",
+    });
+    const state = {} as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    expect(damage).toBe(0);
+  });
+
+  it("given pokemon with Magic Guard and badly-poisoned status, when applyStatusDamage called, then returns 0", () => {
+    // Source: Bulbapedia -- Magic Guard prevents all indirect damage including toxic
+    const pokemon = makeActivePokemon({
+      maxHp: 200,
+      ability: "magic-guard",
+      status: "badly-poisoned",
+      volatileStatuses: new Map([["toxic-counter", { turnsLeft: 99, data: { counter: 3 } }]]),
+    });
+    const state = {} as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    expect(damage).toBe(0);
+  });
+
+  it("given pokemon with Magic Guard and poison status, when applyStatusDamage called, then returns 0", () => {
+    // Source: Bulbapedia -- Magic Guard prevents all indirect damage including poison
+    const pokemon = makeActivePokemon({
+      maxHp: 160,
+      ability: "magic-guard",
+      status: "poison",
+    });
+    const state = {} as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "poison", state);
+    expect(damage).toBe(0);
+  });
+
+  it("given pokemon with Heatproof and burn status with 200 max HP, when applyStatusDamage called, then returns 12 (floor(200/16))", () => {
+    // Source: Bulbapedia -- Heatproof halves damage from burn: 1/8 -> 1/16
+    // floor(200/16) = 12
+    const pokemon = makeActivePokemon({
+      maxHp: 200,
+      ability: "heatproof",
+      status: "burn",
+    });
+    const state = {} as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    expect(damage).toBe(12);
+  });
+
+  it("given pokemon with Heatproof and burn status with 160 max HP, when applyStatusDamage called, then returns 10 (floor(160/16))", () => {
+    // Source: Bulbapedia -- Heatproof halves burn damage: 1/8 -> 1/16
+    // Triangulation: floor(160/16) = 10
+    const pokemon = makeActivePokemon({
+      maxHp: 160,
+      ability: "heatproof",
+      status: "burn",
+    });
+    const state = {} as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    expect(damage).toBe(10);
+  });
+
+  it("given pokemon with no relevant ability and burn status with 200 max HP, when applyStatusDamage called, then returns 25 (floor(200/8))", () => {
+    // Source: Showdown sim/battle-actions.ts -- Gen < 7 burn damage = maxhp/8
+    // floor(200/8) = 25
+    const pokemon = makeActivePokemon({
+      maxHp: 200,
+      status: "burn",
+    });
+    const state = {} as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    expect(damage).toBe(25);
+  });
+
+  it("given pokemon with no relevant ability and burn status with 160 max HP, when applyStatusDamage called, then returns 20 (floor(160/8))", () => {
+    // Source: Showdown sim/battle-actions.ts -- Gen < 7 burn damage = maxhp/8
+    // Triangulation: floor(160/8) = 20
+    const pokemon = makeActivePokemon({
+      maxHp: 160,
+      status: "burn",
+    });
+    const state = {} as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    expect(damage).toBe(20);
+  });
 });
 
 // --- Multi-hit ---

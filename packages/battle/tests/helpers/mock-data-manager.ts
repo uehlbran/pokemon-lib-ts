@@ -353,6 +353,48 @@ export function createMockDataManager(): DataManager {
     generation: 2,
   };
 
+  // Self-targeting status move for Pressure PP cost tests
+  // Source: Bulbapedia — "Swords Dance sharply raises the user's Attack stat"
+  const swordsDanceMoveData: MoveData = {
+    id: "swords-dance",
+    displayName: "Swords Dance",
+    type: "normal",
+    category: "status",
+    power: null,
+    accuracy: null,
+    pp: 20,
+    priority: 0,
+    target: "self",
+    flags: {
+      contact: false,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: false,
+      mirror: false,
+      snatch: true,
+      gravity: false,
+      defrost: false,
+      recharge: false,
+      charge: false,
+      bypassSubstitute: false,
+    },
+    effect: {
+      type: "stat-change",
+      changes: [{ stat: "attack", stages: 2 }],
+      target: "self",
+      chance: 100,
+    },
+    description:
+      "A frenetic dance to uplift the fighting spirit. This sharply raises the user's Attack stat.",
+    generation: 1,
+  };
+
   // Poke Ball items for catch attempt testing
   // Source: Bulbapedia -- Poke Ball catch rate modifier = 1x
   const pokeBallItem: ItemData = {
@@ -393,6 +435,7 @@ export function createMockDataManager(): DataManager {
       quickAttackMoveData,
       flyMoveData,
       flameWheelMoveData,
+      swordsDanceMoveData,
     ],
     items: [pokeBallItem, ultraBallItem],
     typeChart: typeChart as unknown as TypeChart,
