@@ -1042,7 +1042,9 @@ export function calculateGen5Damage(
     // held an item that was consumed this move. Showdown uses source.volatiles['gem']
     // for exactly this guard. turnsLeft: 1 ensures the engine clears it at end-of-turn.
     // Source: Showdown data/moves.ts -- thief/covet: if (source.item || source.volatiles['gem']) return;
-    attacker.volatileStatuses.set("gem-used", { turnsLeft: 1 });
+    attacker.volatileStatuses.set("gem-used" as import("@pokemon-lib-ts/core").VolatileStatus, {
+      turnsLeft: 1,
+    });
   }
 
   const breakdown: DamageBreakdown = {

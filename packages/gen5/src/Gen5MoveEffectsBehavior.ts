@@ -298,7 +298,9 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
   if (userItem != null && userItem !== "") {
     return makeResult({ messages: [] });
   }
-  if (ctx.attacker.volatileStatuses.has("gem-used")) {
+  if (
+    ctx.attacker.volatileStatuses.has("gem-used" as import("@pokemon-lib-ts/core").VolatileStatus)
+  ) {
     return makeResult({ messages: [] });
   }
 
