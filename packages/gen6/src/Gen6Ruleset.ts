@@ -7,6 +7,7 @@ import type {
   DamageResult,
   EndOfTurnEffect,
   ExpContext,
+  WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
@@ -21,6 +22,7 @@ import type {
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
+import { applyGen6WeatherEffects } from "./Gen6Weather.js";
 
 /**
  * Gen 6 (X/Y/Omega Ruby/Alpha Sapphire) ruleset.
@@ -542,6 +544,22 @@ export class Gen6Ruleset extends BaseRuleset {
     // Clear weather context
     this._currentWeather = null;
     return tagged.map((t) => t.action);
+  }
+
+  // --- Weather ---
+
+  /**
+   * Gen 6 end-of-turn weather chip damage.
+   *
+   * Chip damage mechanics are identical to Gen 5 (1/16 max HP for sand/hail).
+   * The Gen 6 weather nerf only changed DURATION (5 turns instead of permanent),
+   * not the chip damage formula.
+   *
+   * Source: Showdown data/conditions.ts -- weather end-of-turn damage (same Gen 5-6)
+   * Source: Bulbapedia -- Weather conditions page
+   */
+  override applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
+    return applyGen6WeatherEffects(state);
   }
 
   // --- Entry Hazards ---
