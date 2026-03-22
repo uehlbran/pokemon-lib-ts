@@ -71,9 +71,13 @@ function makeSide(
   } as unknown as BattleSide;
 }
 
-function makeState(gravityActive = false): BattleState {
+function makeState(
+  gravityActive = false,
+  terrain?: { type: string; turnsLeft: number; source: string } | null,
+): BattleState {
   return {
     weather: null,
+    terrain: terrain ?? null,
     sides: [makeSide([]), makeSide([], 1)],
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: gravityActive, turnsLeft: gravityActive ? 5 : 0 },
@@ -759,5 +763,123 @@ describe("Gen6 applyGen6EntryHazards (combined)", () => {
     expect(result.statChanges).toEqual([{ stat: "speed", stages: -1 }]);
     // Messages: SR + sticky web + Defiant trigger
     expect(result.messages.some((m) => m.includes("Defiant"))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Terrain + Toxic Spikes Interaction Tests (fix for #617)
+// ---------------------------------------------------------------------------
+
+describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () => {
+  it("given Misty Terrain active and Toxic Spikes on the field, when a grounded Normal-type switches in, then no poison status and no poison message", () => {
+    // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus: blocks all status
+    //   for grounded Pokemon. Toxic Spikes' trySetStatus would fail under Misty Terrain.
+    // Source: Bulbapedia "Misty Terrain" Gen 6 -- "Grounded Pokemon are protected from
+    //   status conditions."
+    const pokemon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
+    const side = makeSide([{ type: "toxic-spikes", layers: 1 }]);
+    const state = makeState(false, {
+      type: "misty",
+      turnsLeft: 5,
+      source: "misty-surge",
+    });
+    const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
+    expect(result.statusInflicted).toBeNull();
+    // No "was poisoned" message should appear
+    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+  });
+
+  it("given Misty Terrain active and 2 layers of Toxic Spikes, when a grounded Normal-type switches in, then no badly-poisoned status and no poison message", () => {
+    // Source: Showdown data/conditions.ts -- mistyterrain blocks ALL primary status,
+    //   including badly-poisoned from 2-layer Toxic Spikes
+    const pokemon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
+    const side = makeSide([{ type: "toxic-spikes", layers: 2 }]);
+    const state = makeState(false, {
+      type: "misty",
+      turnsLeft: 3,
+      source: "misty-terrain",
+    });
+    const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
+    expect(result.statusInflicted).toBeNull();
+    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+  });
+
+  it("given no terrain active and Toxic Spikes on the field, when a grounded Normal-type switches in, then poison IS applied normally", () => {
+    // Source: Showdown data/moves.ts -- toxicspikes: when no terrain blocks,
+    //   grounded non-Poison/non-Steel gets poisoned
+    const pokemon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
+    const side = makeSide([{ type: "toxic-spikes", layers: 1 }]);
+    const state = makeState();
+    const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
+    expect(result.statusInflicted).toBe("poison");
+    expect(result.messages.some((m) => m.includes("poisoned"))).toBe(true);
+  });
+
+  it("given Electric Terrain active and Toxic Spikes, when a grounded Normal-type switches in, then poison IS applied (Electric Terrain only blocks sleep)", () => {
+    // Source: Showdown data/conditions.ts -- electricterrain.onSetStatus:
+    //   only blocks sleep ('slp'), not poison. Toxic Spikes should still apply.
+    const pokemon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
+    const side = makeSide([{ type: "toxic-spikes", layers: 1 }]);
+    const state = makeState(false, {
+      type: "electric",
+      turnsLeft: 5,
+      source: "electric-surge",
+    });
+    const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
+    expect(result.statusInflicted).toBe("poison");
+    expect(result.messages.some((m) => m.includes("poisoned"))).toBe(true);
+  });
+
+  it("given Misty Terrain active and Toxic Spikes, when a Flying-type switches in, then no status (not grounded, immune to spikes anyway)", () => {
+    // Source: Showdown -- Flying-type is not grounded, so immune to Toxic Spikes
+    //   regardless of terrain. Both grounding and terrain check should pass.
+    const pokemon = makeActivePokemon({ maxHp: 200, types: ["flying"] });
+    const side = makeSide([{ type: "toxic-spikes", layers: 1 }]);
+    const state = makeState(false, {
+      type: "misty",
+      turnsLeft: 5,
+      source: "misty-surge",
+    });
+    const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
+    expect(result.statusInflicted).toBeNull();
+    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+  });
+
+  it("given Misty Terrain + Toxic Spikes + Stealth Rock, when grounded Normal-type switches in, then takes SR damage but no poison", () => {
+    // Source: Showdown -- hazards apply independently; terrain only blocks the status
+    //   from Toxic Spikes, not damage from Stealth Rock.
+    // SR damage: floor(200 * 1 / 8) = 25 HP
+    const pokemon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
+    const side = makeSide([
+      { type: "stealth-rock", layers: 1 },
+      { type: "toxic-spikes", layers: 1 },
+    ]);
+    const state = makeState(false, {
+      type: "misty",
+      turnsLeft: 5,
+      source: "misty-surge",
+    });
+    const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
+    expect(result.damage).toBe(25);
+    expect(result.statusInflicted).toBeNull();
+    // Should have SR message but no poison message
+    expect(result.messages.some((m) => m.includes("Pointed stones"))).toBe(true);
+    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+  });
+
+  it("given Misty Terrain + Toxic Spikes, when a Poison-type switches in, then absorbs Toxic Spikes normally", () => {
+    // Source: Showdown data/moves.ts -- Poison-type absorbs Toxic Spikes regardless of terrain
+    //   (absorption happens before status would be applied)
+    const pokemon = makeActivePokemon({ maxHp: 200, types: ["poison"] });
+    const side = makeSide([{ type: "toxic-spikes", layers: 2 }]);
+    const state = makeState(false, {
+      type: "misty",
+      turnsLeft: 5,
+      source: "misty-surge",
+    });
+    const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
+    expect(result.statusInflicted).toBeNull();
+    expect(result.hazardsToRemove).toEqual(["toxic-spikes"]);
+    expect(result.messages.some((m) => m.includes("absorbed"))).toBe(true);
   });
 });

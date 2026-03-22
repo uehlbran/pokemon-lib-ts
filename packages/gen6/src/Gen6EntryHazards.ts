@@ -474,10 +474,20 @@ export function applyGen6EntryHazards(
       if (result.absorbed) {
         hazardsToRemove.push("toxic-spikes");
       }
-      if (result.status) {
+      // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus blocks all status
+      //   for grounded Pokemon. Toxic Spikes calls trySetStatus which checks terrain.
+      //   If Misty Terrain is active and the Pokemon is grounded, the status is blocked
+      //   and no poison message should be emitted.
+      // Note: Electric Terrain only blocks sleep, not poison, so it does not affect
+      //   Toxic Spikes. We inline the check to avoid circular imports with Gen6Terrain.ts.
+      const terrainBlocksStatus =
+        state.terrain?.type === "misty" && isGen6Grounded(switchingIn, gravityActive);
+      if (result.status && !terrainBlocksStatus) {
         statusInflicted = result.status;
       }
-      if (result.message) {
+      // Only suppress the poison message when terrain blocks the status.
+      // Absorption messages (Poison-type absorbing spikes) should still be emitted.
+      if (result.message && !(result.status && terrainBlocksStatus)) {
         messages.push(result.message);
       }
     }
