@@ -11,6 +11,8 @@ import type {
   DamageResult,
   EntryHazardResult,
   ExpContext,
+  ItemContext,
+  ItemResult,
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
@@ -30,6 +32,7 @@ import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 import { calculateGen8Damage } from "./Gen8DamageCalc.js";
 import { Gen8Dynamax } from "./Gen8Dynamax.js";
 import { applyGen8EntryHazards } from "./Gen8EntryHazards.js";
+import { applyGen8HeldItem } from "./Gen8Items.js";
 import { applyGen8TerrainEffects, checkGen8TerrainStatusImmunity } from "./Gen8Terrain.js";
 import { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
 import { applyGen8WeatherEffects } from "./Gen8Weather.js";
@@ -430,5 +433,19 @@ export class Gen8Ruleset extends BaseRuleset {
       default:
         return false;
     }
+  }
+
+  /**
+   * Apply Gen 8 held item effects at the given trigger point.
+   *
+   * Delegates to applyGen8HeldItem which handles all Gen 8 items including
+   * the new Gen 8 consumables (Heavy-Duty Boots, Eject Pack, Blunder Policy,
+   * Throat Spray, Utility Umbrella, Room Service) and all Gen 7 items carried
+   * forward, with Dynamax suppressing Choice item lock.
+   *
+   * Source: Showdown data/items.ts -- Gen 8 item handlers
+   */
+  override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
+    return applyGen8HeldItem(trigger, context);
   }
 }
