@@ -154,6 +154,14 @@ export interface PokemonInstance {
    * Source: Showdown data/abilities.ts -- dauntlessshield: onStart: if (pokemon.shieldBoost) return; pokemon.shieldBoost = true;
    */
   shieldBoost?: boolean;
+
+  /**
+   * Number of times this Pokemon has been hit by a move (used by Rage Fist, Gen 9).
+   * Persists through switches — stored on PokemonInstance, not volatile status.
+   * Incremented each time the Pokemon takes damage from a move (multi-hit counts once).
+   * Source: Showdown data/moves.ts:15127 — Math.min(350, 50 + 50 * pokemon.timesAttacked)
+   */
+  timesAttacked?: number;
 }
 
 /** Options for creating a new PokemonInstance */

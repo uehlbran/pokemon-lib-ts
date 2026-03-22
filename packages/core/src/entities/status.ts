@@ -89,4 +89,5 @@ export type VolatileStatus =
   | "dauntless-shield-used" // Dauntless Shield — once-per-battle flag (Gen 9 nerf)
   | "protean-used" // Protean/Libero — once-per-switchin flag (Gen 9 nerf)
   | "silk-trap" // Silk Trap — protect variant, blocks moves with protect flag; -1 Speed on contact (Gen 9)
-  | "salt-cure"; // Salt Cure — residual 1/8 (1/4 for Water/Steel) damage per turn (Gen 9)
+  | "salt-cure" // Salt Cure — residual 1/8 (1/4 for Water/Steel) damage per turn (Gen 9)
+  | "shed-tail-sub"; // Shed Tail — marks the substitute was created by Shed Tail for the switch-in Pokemon (Gen 9)
