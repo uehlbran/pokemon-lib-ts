@@ -110,7 +110,7 @@ function createEngine(overrides?: {
  */
 class RecursiveMoveSturdyRuleset extends MockRuleset {
   capLethalDamageCalls = 0;
-  private effectCallCount = 0;
+  effectCallCount = 0;
 
   override executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {
     this.effectCallCount++;
@@ -724,7 +724,10 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       const subEndEvent = events.find(
         (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "substitute",
       );
-      expect(subEndEvent).toBeDefined();
+      expect(subEndEvent).toMatchObject({
+        type: "volatile-end",
+        volatile: "substitute",
+      });
     });
 
     it("when a non-contact move hits the Substitute, then on-contact item does NOT trigger (regardless of sub)", () => {
