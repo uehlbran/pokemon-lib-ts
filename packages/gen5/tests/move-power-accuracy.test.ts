@@ -14,6 +14,7 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import movesData from "../data/moves.json";
 import {
   handleGen5BehaviorMove,
   isGen5PowderMoveBlocked,
@@ -170,7 +171,7 @@ describe("Gen 5 move data verification (snapshot)", () => {
   // Load moves.json at module level for all data tests
   // Source: packages/gen5/data/moves.json — generated from Showdown gen5 data
   // biome-ignore lint/suspicious/noExplicitAny: test helper — loading raw JSON
-  const moves: any[] = require("../data/moves.json");
+  const moves: any[] = movesData as any[];
 
   function findMove(id: string) {
     return moves.find((m: { id: string }) => m.id === id);
@@ -511,6 +512,7 @@ describe("Gen 5 Knock Off behavioral override", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts -- knockoff:
     //   `basePower: 20, onBasePower() {}` — empty onBasePower removes the
     //   Gen 6+ 1.5x damage bonus for hitting an item-holding target.
+    //   Knock Off directly removes the item via ctx mutation (same pattern as Gen 4).
     const ctx = makeCtx({
       moveId: "knock-off",
       defender: { heldItem: "leftovers", nickname: "Ferrothorn" },
@@ -518,11 +520,14 @@ describe("Gen 5 Knock Off behavioral override", () => {
     const result = handleGen5BehaviorMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.itemTransfer).toBeDefined();
+    // Item removal is done by direct mutation of ctx.defender, not via itemTransfer.
+    // Source: handleKnockOff direct mutation pattern, consistent with Gen4MoveEffects.ts.
+    expect(ctx.defender.pokemon.heldItem).toBe(null);
+    expect(ctx.defender.itemKnockedOff).toBe(true);
     expect(result!.messages[0]).toContain("lost its leftovers");
   });
 
-  it("given Knock Off against a target with no held item in Gen 5, when executed, then produces no item transfer", () => {
+  it("given Knock Off against a target with no held item in Gen 5, when executed, then produces empty message list", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts --
     //   Nothing to knock off if the target has no item.
     const ctx = makeCtx({
@@ -532,10 +537,11 @@ describe("Gen 5 Knock Off behavioral override", () => {
     const result = handleGen5BehaviorMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.itemTransfer).toBeUndefined();
+    expect(ctx.defender.pokemon.heldItem).toBe(null);
+    expect(result!.messages).toEqual([]);
   });
 
-  it("given Knock Off against a target whose item was already knocked off in Gen 5, when executed, then produces no item transfer", () => {
+  it("given Knock Off against a target whose item was already knocked off in Gen 5, when executed, then does not remove the item again", () => {
     // Source: Bulbapedia -- Knock Off cannot remove an item that was already knocked off.
     const ctx = makeCtx({
       moveId: "knock-off",
@@ -544,7 +550,9 @@ describe("Gen 5 Knock Off behavioral override", () => {
     const result = handleGen5BehaviorMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.itemTransfer).toBeUndefined();
+    // Item remains; flag was already set before call
+    expect(ctx.defender.pokemon.heldItem).toBe("leftovers");
+    expect(result!.messages).toEqual([]);
   });
 });
 

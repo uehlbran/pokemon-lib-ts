@@ -213,14 +213,19 @@ function handleGrowth(ctx: MoveEffectContext): MoveEffectResult {
  *   The empty `onBasePower() {}` explicitly removes any base power bonus.
  */
 function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
-  // Remove the target's held item (if any)
+  // Remove the target's held item (if any).
+  // Direct mutation is required here because the engine's itemTransfer path only transfers
+  // items between two different Pokemon — there is no engine-level "discard" path.
+  // Gen 4 uses the same direct-mutation pattern (see Gen4MoveEffects.ts).
+  // Source: references/pokemon-showdown/data/mods/gen5/moves.ts -- knockoff:
+  //   item is removed via `target.takeItem()` which sets item to null.
   const hasItem = ctx.defender.pokemon.heldItem != null && ctx.defender.pokemon.heldItem !== "";
   if (hasItem && !ctx.defender.itemKnockedOff) {
+    const item = ctx.defender.pokemon.heldItem as string;
+    ctx.defender.pokemon.heldItem = null;
+    ctx.defender.itemKnockedOff = true;
     return makeResult({
-      itemTransfer: { from: "defender", to: "defender" }, // engine interprets as removal
-      messages: [
-        `${ctx.defender.pokemon.nickname ?? "The defender"} lost its ${ctx.defender.pokemon.heldItem}!`,
-      ],
+      messages: [`${ctx.defender.pokemon.nickname ?? "The defender"} lost its ${item}!`],
     });
   }
 
