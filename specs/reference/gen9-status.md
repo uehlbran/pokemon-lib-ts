@@ -1,7 +1,7 @@
 # Gen 9 Implementation Status
 
 **Last updated:** 2026-03-22
-**Overall estimate:** ~5% complete (Wave 0 scaffold only)
+**Overall estimate:** ~15% complete (Waves 0-2)
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/10-gen9.md`
 **Primary source:** Pokemon Showdown (no Gen 9 disassembly)
@@ -12,9 +12,9 @@
 
 | Wave | Name | Status |
 |------|------|--------|
-| 0 | Package Scaffold + Data + Battle Changes | In Progress |
+| 0 | Package Scaffold + Data + Battle Changes | Merged (PR #715) |
 | 1 | Core Mechanic Overrides | Not Started |
-| 2 | Terastallization BattleGimmick | Not Started |
+| 2 | Terastallization BattleGimmick | In Progress |
 | 3 | Damage Calculation | Not Started |
 | 4 | Weather System (Snow) | Not Started |
 | 5 | Terrain + Entry Hazards | Not Started |
@@ -28,7 +28,9 @@
 
 ## DONE
 
-_(Nothing merged yet -- Wave 0 in progress)_
+| Wave | PR | Description |
+|------|-----|-------------|
+| 0 | #715 | Package scaffold, data files, type chart, crit calc, smoke tests |
 
 ---
 
@@ -36,7 +38,7 @@ _(Nothing merged yet -- Wave 0 in progress)_
 
 | Item | Branch | Notes |
 |------|--------|-------|
-| Wave 0 scaffold | feat/gen9-wave0-scaffold | Package structure, data, battle pkg changes |
+| Wave 2 Terastallization | feat/gen9-wave2-terastallization | Gen9Terastallization gimmick + calculateTeraStab + 44 tests |
 
 ---
 
@@ -54,5 +56,7 @@ _(Nothing merged yet -- Wave 0 in progress)_
 
 ## Test Coverage
 
-Wave 0: 57 tests (smoke, data-loading, type-chart)
+Wave 0: 56 tests (smoke, data-loading, type-chart)
+Wave 2: 44 tests (canUse, activate, modifyMove, calculateTeraStab, persistence)
+Current total: 100 tests
 Target: ~985 tests at 100% complete
