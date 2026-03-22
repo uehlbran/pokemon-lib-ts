@@ -1,12 +1,12 @@
 # Gen 8 Implementation Progress
 
-## Status: Wave 0 Complete
+## Status: Wave 1 Complete
 
 | Wave | Description | Status | PR |
 |------|-------------|--------|----|
 | Pre-impl | Spec open items + ground-truth doc | Pending | -- |
 | 0 | Package scaffold + data generation | Complete | #TBD |
-| 1 | Core ruleset overrides | Pending | -- |
+| 1 | Core ruleset overrides | Complete | #TBD |
 | 2 | Damage calculation | Pending | -- |
 | 3 | Terrain system | Pending | -- |
 | 4 | Weather + entry hazards | Pending | -- |
