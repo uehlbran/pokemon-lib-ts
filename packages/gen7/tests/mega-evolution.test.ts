@@ -594,3 +594,69 @@ describe("Gen7Ruleset -- getBattleGimmick('mega') wiring", () => {
     expect(ruleset.getBattleGimmick("dynamax")).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// activate() defensive guards
+// ---------------------------------------------------------------------------
+
+describe("Gen7MegaEvolution.activate() -- defensive guards", () => {
+  it("given a Pokemon already mega-evolved, when calling activate() directly, then returns empty events and does not double-mutate", () => {
+    // Source: CodeRabbit review PR #699 -- activate() should guard against callers that skip canUse()
+    const mega = new Gen7MegaEvolution();
+    const side = makeSide();
+    const state = makeState();
+    const charizard = makeActivePokemon({
+      speciesId: 6,
+      heldItem: "charizardite-x",
+      isMega: true, // already mega evolved
+    });
+
+    const events = mega.activate(charizard, side, state);
+    expect(events).toHaveLength(0);
+    // usedBySide should NOT be updated since the guard short-circuited
+    expect(mega.hasUsedMega(0)).toBe(false);
+  });
+
+  it("given mega already used on a side, when calling activate() directly for another Pokemon, then returns empty events", () => {
+    // Source: CodeRabbit review PR #699 -- activate() guards prevent reuse on same side
+    const mega = new Gen7MegaEvolution();
+    const side = makeSide();
+    const state = makeState();
+
+    const charizard = makeActivePokemon({ speciesId: 6, heldItem: "charizardite-x" });
+    const lucario = makeActivePokemon({
+      speciesId: 448,
+      heldItem: "lucarionite",
+      types: ["fighting", "steel"],
+      ability: "steadfast",
+    });
+
+    // First activation succeeds
+    const events1 = mega.activate(charizard, side, state);
+    expect(events1).toHaveLength(1);
+
+    // Second activation blocked by guard
+    const events2 = mega.activate(lucario, side, state);
+    expect(events2).toHaveLength(0);
+  });
+
+  it("given wrong species for held Mega Stone, when calling activate() directly, then returns empty events", () => {
+    // Source: CodeRabbit review PR #699 -- wrong-species guard prevents form change
+    const mega = new Gen7MegaEvolution();
+    const side = makeSide();
+    const state = makeState();
+
+    // Venusaur holds Charizardite X (wrong stone for species)
+    const venusaur = makeActivePokemon({
+      speciesId: 3, // Venusaur
+      heldItem: "charizardite-x", // Charizard's stone
+      types: ["grass", "poison"],
+      ability: "overgrow",
+    });
+
+    const events = mega.activate(venusaur, side, state);
+    expect(events).toHaveLength(0);
+    expect(venusaur.isMega).toBe(false);
+    expect(mega.hasUsedMega(0)).toBe(false);
+  });
+});

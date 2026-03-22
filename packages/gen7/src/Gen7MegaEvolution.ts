@@ -629,7 +629,17 @@ export class Gen7MegaEvolution implements BattleGimmick {
    */
   activate(pokemon: ActivePokemon, side: BattleSide, _state: BattleState): BattleEvent[] {
     const megaData = getMegaEvolutionData(pokemon.pokemon.heldItem);
-    if (!megaData) return [];
+    // Guard against invalid states: re-run the same eligibility checks as canUse()
+    // so callers that skip canUse() cannot create impossible mega states.
+    // Source: CodeRabbit review PR #699 — defensive guard mirrors canUse() preconditions
+    if (
+      !megaData ||
+      this.usedBySide.has(side.index) ||
+      pokemon.isMega ||
+      megaData.baseSpeciesId !== pokemon.pokemon.speciesId
+    ) {
+      return [];
+    }
 
     // Update type(s)
     pokemon.types = [...megaData.types] as PokemonType[];
