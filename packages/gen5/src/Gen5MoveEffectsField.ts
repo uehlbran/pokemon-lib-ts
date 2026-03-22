@@ -7,6 +7,7 @@
  *   - Trick Room: reverses speed order for 5 turns (priority -7, Gen 4 carry-over)
  *   - Quick Guard: blocks priority > 0 moves targeting the side (+3 priority)
  *   - Wide Guard: blocks spread moves targeting the side (+3 priority)
+ *   - Tailwind: doubles speed for 4 turns (Gen 5 changed from Gen 4's 3 turns)
  *   - Priority overrides: ExtremeSpeed +1 -> +2, Follow Me +2 -> +3, Rage Powder +2 -> +3
  *
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
@@ -209,6 +210,28 @@ function handleWideGuard(
   };
 }
 
+/**
+ * Handle Tailwind move effect.
+ *
+ * Sets Tailwind on the user's side for 4 turns. Tailwind doubles the Speed
+ * of all Pokemon on the user's side while active.
+ *
+ * Gen 5 changed Tailwind from 3 turns (Gen 4) to 4 turns.
+ *
+ * Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- tailwind duration: 4
+ * Source: Bulbapedia -- "In Generation V onwards, Tailwind lasts for four turns"
+ * Source: references/pokemon-showdown/data/mods/gen4/conditions.ts -- tailwind duration: 3 (Gen 4)
+ */
+function handleTailwind(_ctx: MoveEffectContext): MoveEffectResult {
+  const base = createBaseResult();
+  // Source: Showdown Gen 5 -- Tailwind duration is 4 turns (changed from Gen 4's 3)
+  return {
+    ...base,
+    tailwindSet: { turnsLeft: 4, side: "attacker" },
+    messages: ["The tailwind blew from behind the team!"],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -237,6 +260,8 @@ export function handleGen5FieldMove(
       return handleQuickGuard(ctx, rng, rollProtectSuccess);
     case "wide-guard":
       return handleWideGuard(ctx, rng, rollProtectSuccess);
+    case "tailwind":
+      return handleTailwind(ctx);
     default:
       return null;
   }

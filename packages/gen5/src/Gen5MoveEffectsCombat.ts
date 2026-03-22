@@ -417,6 +417,73 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     }
 
     // -----------------------------------------------------------------
+    // Clear Smog: 50 BP Poison special, resets target's stat stages to 0
+    // Source: Showdown data/moves.ts -- clearsmog:
+    //   onHit(target) { target.clearBoosts(); this.add('-clearallboost', target); }
+    // Source: Bulbapedia -- "Clear Smog resets all of the target's stat stage
+    //   changes to 0 upon dealing damage."
+    // -----------------------------------------------------------------
+    case "clear-smog": {
+      const result = emptyResult();
+      result.statChanges.push(
+        { target: "defender", stat: "attack", stages: 0 },
+        { target: "defender", stat: "defense", stages: 0 },
+        { target: "defender", stat: "spAttack", stages: 0 },
+        { target: "defender", stat: "spDefense", stages: 0 },
+        { target: "defender", stat: "speed", stages: 0 },
+        { target: "defender", stat: "accuracy", stages: 0 },
+        { target: "defender", stat: "evasion", stages: 0 },
+      );
+      // Use statStagesReset to signal the engine to zero all stages
+      result.messages.push(
+        `${ctx.defender.pokemon.nickname ?? "The target"}'s stat changes were removed!`,
+      );
+      return { ...result, statStagesReset: { target: "defender" } };
+    }
+
+    // -----------------------------------------------------------------
+    // Synchronoise: hits only targets sharing a type with the user
+    // Source: Showdown data/moves.ts -- synchronoise:
+    //   onTryHit(target, source) {
+    //     if (target.hasType(source.getTypes())) return; return false;
+    //   }
+    // Source: Bulbapedia -- "Synchronoise inflicts damage, but only if the
+    //   target shares at least one type with the user."
+    // -----------------------------------------------------------------
+    case "synchronoise": {
+      // Check if attacker and defender share at least one type
+      const sharedType = ctx.attacker.types.some((t: PokemonType) =>
+        ctx.defender.types.includes(t),
+      );
+      if (!sharedType) {
+        const result = emptyResult();
+        result.messages.push("But it failed!");
+        // Return a result that signals the move failed (0 damage, no effects)
+        return {
+          ...result,
+          customDamage: { target: "defender", amount: 0, source: "synchronoise-fail" },
+        };
+      }
+      // Shared type found -- let normal damage calc handle it
+      return null;
+    }
+
+    // -----------------------------------------------------------------
+    // Nature Power: in Gen 5 (no terrain), calls Tri Attack
+    // Source: Showdown data/mods/gen5/moves.ts -- naturepower:
+    //   onTryHit(target, pokemon) {
+    //     this.actions.useMove('triattack', pokemon, target);
+    //   }
+    // Source: Bulbapedia -- "In Generation V, Nature Power becomes
+    //   Tri Attack in a standard battle."
+    // -----------------------------------------------------------------
+    case "nature-power": {
+      const result = emptyResult();
+      result.messages.push("Nature Power turned into Tri Attack!");
+      return { ...result, recursiveMove: "tri-attack" };
+    }
+
+    // -----------------------------------------------------------------
     // Storm Throw / Frost Breath: always crit (willCrit in move data)
     // No special effect handler needed -- the crit logic is in the damage calc.
     // These are included to ensure they don't accidentally fall through to a
