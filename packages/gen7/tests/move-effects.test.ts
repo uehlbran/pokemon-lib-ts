@@ -483,6 +483,24 @@ describe("Gen7 isBlockedByCraftyShield", () => {
     // Source: Showdown -- if (... move.category !== 'Status') return;
     expect(isBlockedByCraftyShield("physical", "normal")).toBe(false);
   });
+
+  it("given stealth-rock (target foe-field), when checking, then NOT blocked", () => {
+    // Source: Bulbapedia -- Crafty Shield does not protect against entry hazards
+    // Source: Showdown data/moves.ts -- stealth-rock target: foeSide (maps to foe-field)
+    expect(isBlockedByCraftyShield("status", "foe-field")).toBe(false);
+  });
+
+  it("given spikes (target foe-field), when checking, then NOT blocked", () => {
+    // Source: Bulbapedia -- entry hazard moves pass through Crafty Shield
+    // Source: Showdown data/moves.ts -- spikes target: foeSide
+    expect(isBlockedByCraftyShield("status", "foe-field")).toBe(false);
+  });
+
+  it("given user-field targeting status move, when checking, then NOT blocked", () => {
+    // Source: Showdown -- user-field hazards (e.g. Sticky Web vs opponent side) are side-condition setters
+    // that should pass through Crafty Shield per Bulbapedia ruling
+    expect(isBlockedByCraftyShield("status", "user-field")).toBe(false);
+  });
 });
 
 // ===========================================================================

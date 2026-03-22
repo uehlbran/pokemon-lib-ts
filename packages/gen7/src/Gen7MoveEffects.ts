@@ -418,7 +418,17 @@ export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string
   if (moveCategory !== "status") return false;
   // Does not block self-targeting or field-wide moves
   // Source: Showdown -- if (['self', 'all'].includes(move.target)) return;
-  if (moveTarget === "self" || moveTarget === "all" || moveTarget === "entire-field") return false;
+  // Entry hazards target "foe-field" or "user-field" and pass through Crafty Shield.
+  // Source: Bulbapedia -- Crafty Shield does not protect against entry hazard moves
+  // Source: Showdown data/moves.ts -- hazards (stealth-rock, spikes, toxic-spikes, sticky-web) use target: foeSide
+  if (
+    moveTarget === "self" ||
+    moveTarget === "all" ||
+    moveTarget === "entire-field" ||
+    moveTarget === "foe-field" ||
+    moveTarget === "user-field"
+  )
+    return false;
   return true;
 }
 
