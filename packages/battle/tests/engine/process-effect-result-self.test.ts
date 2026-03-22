@@ -104,6 +104,10 @@ describe("processEffectResult — self-targeted effects", () => {
         const sleepCounter = attackerActive?.volatileStatuses.get("sleep-counter");
         expect(sleepCounter).toBeDefined();
         expect(sleepCounter?.turnsLeft).toBe(2);
+        // Verify startTime is stored for Gen 5 sleep counter reset
+        // Source: Showdown data/mods/gen5/conditions.ts -- slp.onSwitchIn reads effectState.startTime
+        const startTime = (sleepCounter?.data as Record<string, unknown>)?.startTime;
+        expect(startTime).toBe(2);
       },
     );
 

@@ -2401,10 +2401,12 @@ export class BattleEngine implements BattleEventEmitter {
       });
     } else if (status === "sleep") {
       // Source: Showdown sim/battle-actions.ts — sleep turns rolled on infliction, tracked by sleep-counter
+      // startTime is stored so Gen 5's onSwitchIn can reset turnsLeft to the original value.
+      // Source: Showdown data/mods/gen5/conditions.ts — slp.onSwitchIn: effectState.time = effectState.startTime
       const turns = sleepTurnsOverride ?? this.ruleset.rollSleepTurns(this.state.rng);
       target.volatileStatuses.set("sleep-counter", {
         turnsLeft: turns,
-        data: {},
+        data: { startTime: turns },
       });
     } else if (status === "freeze") {
       // Source: pret/pokecrystal engine/battle/core.asm:1538-1540 — wPlayerJustGotFrozen

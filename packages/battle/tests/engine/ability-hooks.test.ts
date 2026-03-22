@@ -553,6 +553,11 @@ describe("processAbilityResult: companion volatile initialization after status i
     // MockRuleset.rollSleepTurns returns rng.int(1, 3), so turnsLeft is 1-3
     expect(sleepCounter!.turnsLeft).toBeGreaterThanOrEqual(1);
     expect(sleepCounter!.turnsLeft).toBeLessThanOrEqual(3);
+    // Verify startTime is stored (needed for Gen 5 sleep counter reset on switch-in)
+    // Source: Showdown data/mods/gen5/conditions.ts -- slp.onSwitchIn reads effectState.startTime
+    const startTime = (sleepCounter!.data as Record<string, unknown>)?.startTime;
+    expect(typeof startTime).toBe("number");
+    expect(startTime).toBe(sleepCounter!.turnsLeft);
   });
 
   it("given ability inflicts freeze on opponent, when processAbilityResult runs, then target has just-frozen volatile with turnsLeft=1", () => {
