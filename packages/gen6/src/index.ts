@@ -1,6 +1,27 @@
 // @pokemon-lib-ts/gen6 -- Gen6Ruleset + complete Gen 6 data
 
 export { createGen6DataManager } from "./data/index.js";
+export {
+  applyGen6Ability,
+  getAteAbilityOverride,
+  getFurCoatMultiplier,
+  getMegaLauncherMultiplier,
+  getMultiscaleMultiplier,
+  getSheerForceMultiplier,
+  getStrongJawMultiplier,
+  getSturdyDamageCap,
+  getToughClawsMultiplier,
+  handleGen6DamageCalcAbility,
+  handleGen6DamageImmunityAbility,
+  handleGen6StatAbility,
+  hasSheerForceEligibleEffect,
+  isParentalBondEligible,
+  isPranksterEligible,
+  isSheerForceEligibleMove,
+  PARENTAL_BOND_SECOND_HIT_MULTIPLIER,
+  sheerForceSuppressesLifeOrb,
+  sturdyBlocksOHKO,
+} from "./Gen6Abilities.js";
 export { GEN6_CRIT_MULTIPLIER, GEN6_CRIT_RATE_TABLE } from "./Gen6CritCalc.js";
 export { calculateGen6Damage, pokeRound } from "./Gen6DamageCalc.js";
 export {
