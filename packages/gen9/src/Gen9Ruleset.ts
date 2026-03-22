@@ -17,6 +17,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { createGen9DataManager } from "./data/index.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
+import { calculateGen9Damage } from "./Gen9DamageCalc.js";
 import { Gen9Terastallization } from "./Gen9Terastallization.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 
@@ -285,19 +286,23 @@ export class Gen9Ruleset extends BaseRuleset {
   // --- Damage Calculation ---
 
   /**
-   * Gen 9 damage formula (stub).
+   * Gen 9 damage formula.
    *
-   * Will be implemented in Wave 3 with full Gen 9 mechanics including:
-   *   - Tera STAB (Stellar one-time 2x per type, normal Tera 2x for matching type)
-   *   - Snow defense boost for Ice-types (replaces Hail chip damage)
+   * Delegates to the standalone calculateGen9Damage() function, passing the
+   * Gen 9 type chart. The function implements the full Showdown Gen 9 damage
+   * formula including:
+   *   - Tera STAB via calculateTeraStab() (Stellar one-time 2x, normal Tera 2x)
+   *   - Snow Ice-type Defense boost (1.5x, applied to defense stat)
    *   - Terrain boost: 1.3x (same as Gen 8)
-   *   - All Gen 8 mechanics carried forward
+   *   - 4096-based modifier chain with pokeRound
    *
    * Source: Showdown sim/battle-actions.ts -- Gen 9 damage formula
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
    */
-  calculateDamage(_context: DamageContext): DamageResult {
-    // Stub -- Wave 3 will implement the full damage calc
-    return { damage: 0, effectiveness: 1, isCrit: false, randomFactor: 1 };
+  calculateDamage(context: DamageContext): DamageResult {
+    return calculateGen9Damage(
+      context,
+      this.getTypeChart() as Record<string, Record<string, number>>,
+    );
   }
 }
