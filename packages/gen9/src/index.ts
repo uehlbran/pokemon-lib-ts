@@ -59,8 +59,10 @@ export {
   shouldQuarkDriveActivate,
 } from "./Gen9AbilitiesStat.js";
 export {
+  getWeatherDuration,
   handleGen9SwitchAbility,
   isMoldBreakerAbility,
+  isSurgeAbility,
   MOLD_BREAKER_ALIASES,
   SCREEN_CLEANER_SCREENS,
   TRACE_UNCOPYABLE_ABILITIES,
