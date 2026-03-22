@@ -421,7 +421,7 @@ function getDefenseStat(
   const defStatKey = isPhysical ? "defense" : "spDefense";
   const stage = getEffectiveStatStage(defender, defStatKey, attacker);
 
-  // Chip Away / Sacred Sword / Darkrai's Dark Void: ignore all defense stat stages
+  // Chip Away / Sacred Sword: ignore all defense stat stages
   // Source: Showdown data/moves.ts -- chipaway: { ignoreDefensive: true }
   // Source: Showdown data/moves.ts -- sacredsword: { ignoreDefensive: true, ignoreEvasion: true }
   // Source: Bulbapedia -- "Chip Away ignores the target's Defense and Special Defense

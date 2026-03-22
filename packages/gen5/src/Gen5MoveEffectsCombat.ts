@@ -425,16 +425,8 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     // -----------------------------------------------------------------
     case "clear-smog": {
       const result = emptyResult();
-      result.statChanges.push(
-        { target: "defender", stat: "attack", stages: 0 },
-        { target: "defender", stat: "defense", stages: 0 },
-        { target: "defender", stat: "spAttack", stages: 0 },
-        { target: "defender", stat: "spDefense", stages: 0 },
-        { target: "defender", stat: "speed", stages: 0 },
-        { target: "defender", stat: "accuracy", stages: 0 },
-        { target: "defender", stat: "evasion", stages: 0 },
-      );
-      // Use statStagesReset to signal the engine to zero all stages
+      // statStagesReset is the canonical engine signal to zero all stat stages;
+      // no individual statChanges entries needed — the engine handles the reset.
       result.messages.push(
         `${ctx.defender.pokemon.nickname ?? "The target"}'s stat changes were removed!`,
       );
