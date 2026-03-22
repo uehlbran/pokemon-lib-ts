@@ -9,6 +9,11 @@
  *   - Incinerate: destroys target's Berry only (not Gems; Gen 6+ adds Gems)
  *   - Bestow: gives user's item to target (fails if user has no item or target has one)
  *   - Entrainment: replaces target's ability with user's ability
+ *   - Simple Beam: sets target's ability to Simple
+ *   - Worry Seed: sets target's ability to Insomnia (cures sleep)
+ *   - Gastro Acid: suppresses target's ability
+ *   - Role Play: user copies target's ability
+ *   - Skill Swap: user and target exchange abilities
  *   - Round: base power doubles if an ally used Round earlier this turn
  *
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
@@ -58,6 +63,48 @@ export const ENTRAINMENT_SOURCE_BLOCKED: ReadonlySet<string> = new Set([
   "zen-mode",
 ]);
 
+/**
+ * Abilities that cannot be suppressed (cantsuppress flag) in Gen 5.
+ *
+ * Used by Simple Beam, Worry Seed, Gastro Acid, and Role Play (source check).
+ *
+ * Source: Showdown data/abilities.ts -- abilities with flags.cantsuppress
+ * In Gen 5, only Multitype and Zen Mode have this flag.
+ */
+export const GEN5_CANTSUPPRESS: ReadonlySet<string> = new Set(["multitype", "zen-mode"]);
+
+/**
+ * Target abilities that block Role Play (failroleplay flag) in Gen 5.
+ *
+ * Source: Showdown data/abilities.ts -- abilities with flags.failroleplay
+ * Source: Showdown data/moves.ts roleplay.onTryHit -- target.getAbility().flags['failroleplay']
+ */
+export const GEN5_FAIL_ROLE_PLAY: ReadonlySet<string> = new Set([
+  "flower-gift",
+  "forecast",
+  "illusion",
+  "imposter",
+  "multitype",
+  "trace",
+  "zen-mode",
+]);
+
+/**
+ * Abilities that block Skill Swap (failskillswap flag) in Gen 5.
+ *
+ * Applies to BOTH source and target.
+ *
+ * Source: Showdown data/abilities.ts -- abilities with flags.failskillswap
+ * Source: Showdown sim/battle.ts skillSwap -- sourceAbility.flags['failskillswap'] || targetAbility.flags['failskillswap']
+ */
+export const GEN5_FAIL_SKILL_SWAP: ReadonlySet<string> = new Set([
+  "illusion",
+  "imposter",
+  "multitype",
+  "wonder-guard",
+  "zen-mode",
+]);
+
 // ---------------------------------------------------------------------------
 // Berry check helper
 // ---------------------------------------------------------------------------
@@ -68,7 +115,7 @@ export const ENTRAINMENT_SOURCE_BLOCKED: ReadonlySet<string> = new Set([
  * Uses a simple naming convention check (all Berry item IDs end with "-berry").
  * This matches Showdown's isBerry property on item objects.
  *
- * Source: Showdown data/items.ts -- Berry items all have `isBerry: true`
+ * Source: Showdown data/items.ts -- Berry items all have isBerry: true
  */
 export function isBerry(itemId: string | null | undefined): boolean {
   if (!itemId) return false;
@@ -117,9 +164,6 @@ function makeResult(
 function handleHealPulse(ctx: MoveEffectContext): MoveEffectResult {
   const targetMaxHp = ctx.defender.pokemon.calculatedStats?.hp ?? ctx.defender.pokemon.currentHp;
   // Source: Showdown gen5/moves.ts healpulse -- Math.ceil(target.baseMaxhp * 0.5)
-  // Source: Bulbapedia -- "Heal Pulse restores up to half of the target's maximum HP"
-  // Uses defenderHealAmount (not healAmount) because Heal Pulse heals the TARGET, not the user.
-  // Source: Showdown data/moves.ts -- healPulse: { target: 'normal', heal: [1, 2] }
   const healAmount = Math.ceil(targetMaxHp * 0.5);
 
   return makeResult({
@@ -134,21 +178,9 @@ function handleHealPulse(ctx: MoveEffectContext): MoveEffectResult {
  * In Gen 5, Aromatherapy cures ALL team members regardless of Soundproof.
  * (Gen 6+ respects Soundproof for allies with that ability.)
  *
- * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 18-25:
- *   aromatherapy: { onHit(target, source) {
- *     this.add('-activate', source, 'move: Aromatherapy');
- *     const allies = [...target.side.pokemon, ...target.side.allySide?.pokemon || []];
- *     for (const ally of allies) { ally.cureStatus(); }
- *   }}
- *
- * Note: No Soundproof check -- cures all allies unconditionally.
+ * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 18-25
  */
 function handleAromatherapy(_ctx: MoveEffectContext): MoveEffectResult {
-  // Aromatherapy cures status for the ENTIRE TEAM (all benched allies too),
-  // not just the active Pokemon. Uses teamStatusCure (not statusCuredOnly).
-  // Source: Showdown gen5/moves.ts -- cures ALL allies, no ability check
-  // Source: Bulbapedia -- "Aromatherapy cures the status conditions of all Pokemon on the user's team"
-  // Source: Showdown data/moves.ts -- aromatherapy: { target: 'allyTeam' }
   return makeResult({
     teamStatusCure: { side: "attacker" },
     messages: ["A soothing aroma wafted through the area!"],
@@ -161,21 +193,9 @@ function handleAromatherapy(_ctx: MoveEffectContext): MoveEffectResult {
  * In Gen 5, Heal Bell cures ALL team members regardless of Soundproof.
  * (Gen 6+ respects Soundproof for allies with that ability.)
  *
- * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 345-354:
- *   healbell: { onHit(target, source) {
- *     this.add('-activate', source, 'move: Heal Bell');
- *     const allies = [...target.side.pokemon, ...target.side.allySide?.pokemon || []];
- *     for (const ally of allies) { ally.cureStatus(); }
- *   }}
- *
- * Note: No Soundproof check -- cures all allies unconditionally.
+ * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 345-354
  */
 function handleHealBell(_ctx: MoveEffectContext): MoveEffectResult {
-  // Heal Bell cures status for the ENTIRE TEAM (all benched allies too),
-  // not just the active Pokemon. Uses teamStatusCure (not statusCuredOnly).
-  // Source: Showdown gen5/moves.ts -- cures ALL allies, no ability check
-  // Source: Bulbapedia -- "Heal Bell cures the status conditions of all Pokemon in the user's party"
-  // Source: Showdown data/moves.ts -- healbell: { target: 'allyTeam' }
   return makeResult({
     teamStatusCure: { side: "attacker" },
     messages: ["A bell chimed!"],
@@ -186,24 +206,10 @@ function handleHealBell(_ctx: MoveEffectContext): MoveEffectResult {
  * Gen 5 Soak: changes the target's type to pure Water.
  *
  * In Gen 5, Soak does NOT fail if the target is already a pure Water type.
- * This is different from Gen 6+, which checks `target.getTypes().join() === 'Water'`
- * before calling `setType`.
  *
- * Soak fails only if the target has a form-locking ability (Multitype, RKS System, etc.)
- * or if `setType` fails for some other reason.
- *
- * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 847-856:
- *   soak: { onHit(target) {
- *     if (!target.setType('Water')) { this.add('-fail', target); return null; }
- *     this.add('-start', target, 'typechange', 'Water');
- *   }}
- *
- * Note: No `target.getTypes().join() === 'Water'` check (Gen 6+ only).
+ * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 847-856
  */
 function handleSoak(ctx: MoveEffectContext): MoveEffectResult {
-  // In Gen 5, Soak only fails if setType fails (form-locking abilities).
-  // We check for Multitype which is the main blocker in Gen 5.
-  // Source: Showdown gen5/moves.ts soak -- no Water-type pre-check
   if (ctx.defender.ability === "multitype") {
     return makeResult({
       messages: ["But it failed!"],
@@ -222,29 +228,16 @@ function handleSoak(ctx: MoveEffectContext): MoveEffectResult {
  * In Gen 5, Incinerate ONLY destroys Berries.
  * Gen 6+ expanded this to also destroy Gems.
  *
- * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 467-475:
- *   incinerate: { basePower: 30, onHit(pokemon, source) {
- *     const item = pokemon.getItem();
- *     if (item.isBerry && pokemon.takeItem(source)) {
- *       this.add('-enditem', pokemon, item.name, '[from] move: Incinerate');
- *     }
- *   }}
- *
- * Note: Only checks `item.isBerry`, NOT `item.isGem`. BP is 30 in Gen 5.
+ * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 467-475
  */
 function handleIncinerate(ctx: MoveEffectContext): MoveEffectResult {
   const targetItem = ctx.defender.pokemon.heldItem;
-  // Source: Showdown gen5/moves.ts incinerate -- only destroys Berries
   if (isBerry(targetItem)) {
-    // Destroy the Berry by setting heldItem to null via direct mutation.
-    // This follows the same pattern as Knock Off in Gen5MoveEffectsBehavior.ts.
     const item = targetItem as string;
     ctx.defender.pokemon.heldItem = null;
 
     // Unburden: if the target has Unburden, set the volatile to double Speed.
-    // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem + onUpdate:
-    //   activates when the Pokemon loses its item by any means (consumed, stolen, knocked off, incinerated).
-    // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
+    // Source: Showdown data/abilities.ts -- Unburden activates when item is lost
     if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
       ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
     }
@@ -254,7 +247,6 @@ function handleIncinerate(ctx: MoveEffectContext): MoveEffectResult {
     });
   }
 
-  // Item is not a Berry (or target has no item) -- no destruction occurs
   return makeResult({
     messages: [],
   });
@@ -265,37 +257,24 @@ function handleIncinerate(ctx: MoveEffectContext): MoveEffectResult {
  *
  * Fails if the user has no item, or the target already has an item.
  *
- * Source: references/pokemon-showdown/data/moves.ts lines 1281-1301:
- *   bestow: { onHit(target, source, move) {
- *     if (target.item) return false;
- *     const myItem = source.takeItem();
- *     if (!myItem) return false;
- *     ...target.setItem(myItem)
- *   }}
- * Source: references/pokemon-showdown/data/mods/gen5/moves.ts line 69-71:
- *   bestow: { flags: { protect: 1, mirror: 1, noassist: 1, failcopycat: 1 } }
- *   (only flag changes; inherits base behavior)
+ * Source: references/pokemon-showdown/data/moves.ts lines 1281-1301
  */
 function handleBestow(ctx: MoveEffectContext): MoveEffectResult {
   const userItem = ctx.attacker.pokemon.heldItem;
   const targetItem = ctx.defender.pokemon.heldItem;
 
-  // Source: Showdown data/moves.ts bestow -- fails if target has item
   if (targetItem != null && targetItem !== "") {
     return makeResult({
       messages: ["But it failed!"],
     });
   }
 
-  // Source: Showdown data/moves.ts bestow -- fails if user has no item
   if (userItem == null || userItem === "") {
     return makeResult({
       messages: ["But it failed!"],
     });
   }
 
-  // Transfer item: user loses item, target gains it
-  // Use itemTransfer to signal the engine
   return makeResult({
     itemTransfer: { from: "attacker", to: "defender" },
     messages: [
@@ -313,44 +292,30 @@ function handleBestow(ctx: MoveEffectContext): MoveEffectResult {
  *   - User has a blocked source ability (Flower Gift, Forecast, Illusion,
  *     Imposter, Trace, Zen Mode)
  *
- * Source: references/pokemon-showdown/data/moves.ts lines 5033-5062:
- *   entrainment: { onTryHit(target, source) {
- *     if (target === source || target.volatiles['dynamax']) return false;
- *     if (target.ability === source.ability ||
- *       target.getAbility().flags['cantsuppress'] || target.ability === 'truant' ||
- *       source.getAbility().flags['noentrain']) return false;
- *   }}
- *
- * Note: No Dynamax check needed for Gen 5.
+ * Source: references/pokemon-showdown/data/moves.ts lines 5033-5062
  */
 function handleEntrainment(ctx: MoveEffectContext): MoveEffectResult {
   const sourceAbility = ctx.attacker.ability;
   const targetAbility = ctx.defender.ability;
 
-  // Source: Showdown data/moves.ts entrainment -- fails if same ability
   if (targetAbility === sourceAbility) {
     return makeResult({
       messages: ["But it failed!"],
     });
   }
 
-  // Source: Showdown data/moves.ts entrainment -- fails if target ability is blocked
   if (ENTRAINMENT_TARGET_BLOCKED.has(targetAbility)) {
     return makeResult({
       messages: ["But it failed!"],
     });
   }
 
-  // Source: Showdown data/moves.ts entrainment -- fails if source ability is blocked
   if (ENTRAINMENT_SOURCE_BLOCKED.has(sourceAbility)) {
     return makeResult({
       messages: ["But it failed!"],
     });
   }
 
-  // Success: replace target's ability with source's ability.
-  // Source: Showdown data/moves.ts entrainment -- target.setAbility(source.ability)
-  // Source: Bulbapedia -- "Entrainment changes the target's Ability to match the user's"
   return makeResult({
     abilityChange: { target: "defender", ability: sourceAbility },
     messages: [`${ctx.defender.pokemon.nickname ?? "The target"} acquired ${sourceAbility}!`],
@@ -358,30 +323,242 @@ function handleEntrainment(ctx: MoveEffectContext): MoveEffectResult {
 }
 
 /**
- * Gen 5 Round: doubles base power if an ally used Round earlier this turn.
+ * Gen 5 Simple Beam: sets the target's ability to Simple.
  *
- * Round is a sound-based special move that, in doubles, causes the ally's
- * Round to happen immediately after and at doubled power. In singles, the
- * doubling still applies if somehow the ally used Round first (rare).
+ * Fails if:
+ *   - Target already has Simple
+ *   - Target has Truant
+ *   - Target has a cantsuppress ability (Multitype, Zen Mode)
  *
- * Source: references/pokemon-showdown/data/moves.ts lines 16072-16093:
- *   round: { basePowerCallback(target, source, move) {
- *     if (move.sourceEffect === 'round') return move.basePower * 2;
- *     return move.basePower;
+ * Source: references/pokemon-showdown/data/moves.ts lines 17091-17114:
+ *   simplebeam: { onTryHit(target) {
+ *     if (target.getAbility().flags['cantsuppress'] || target.ability === 'truant' ||
+ *       target.ability === 'simple') return false;
+ *   }, onHit(target) { target.setAbility('simple'); }}
+ *
+ * Source: Bulbapedia -- "Simple Beam changes the target's Ability to Simple"
+ */
+function handleSimpleBeam(ctx: MoveEffectContext): MoveEffectResult {
+  const targetAbility = ctx.defender.ability;
+
+  // Source: Showdown data/moves.ts simplebeam.onTryHit -- target.ability === 'simple'
+  if (targetAbility === "simple") {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts simplebeam.onTryHit -- target.ability === 'truant'
+  if (targetAbility === "truant") {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts simplebeam.onTryHit -- cantsuppress flag
+  if (GEN5_CANTSUPPRESS.has(targetAbility)) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts simplebeam.onHit -- target.setAbility('simple')
+  return makeResult({
+    abilityChange: { target: "defender", ability: "simple" },
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"} acquired Simple!`],
+  });
+}
+
+/**
+ * Gen 5 Worry Seed: sets the target's ability to Insomnia.
+ * If the target is asleep, it wakes up.
+ *
+ * Fails if:
+ *   - Target already has Insomnia
+ *   - Target has Truant
+ *   - Target has a cantsuppress ability (Multitype, Zen Mode)
+ *
+ * Source: references/pokemon-showdown/data/moves.ts lines 21837-21867:
+ *   worryseed: { onTryHit(target) {
+ *     if (target.getAbility().flags['cantsuppress'] || target.ability === 'truant' ||
+ *       target.ability === 'insomnia') return false;
+ *   }, onHit(target) {
+ *     target.setAbility('insomnia');
+ *     if (target.status === 'slp') target.cureStatus();
  *   }}
  *
- * Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 764-767:
- *   round: { flags: { protect: 1, mirror: 1, sound: 1, metronome: 1 } }
- *   (only flag changes; inherits base behavior)
+ * Source: Bulbapedia -- "Worry Seed changes the target's Ability to Insomnia.
+ *   If the target is sleeping, it will wake up."
+ */
+function handleWorrySeed(ctx: MoveEffectContext): MoveEffectResult {
+  const targetAbility = ctx.defender.ability;
+
+  // Source: Showdown data/moves.ts worryseed -- target.ability === 'insomnia'
+  if (targetAbility === "insomnia") {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts worryseed -- target.ability === 'truant'
+  if (targetAbility === "truant") {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts worryseed -- cantsuppress flag
+  if (GEN5_CANTSUPPRESS.has(targetAbility)) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts worryseed.onHit -- cure sleep if asleep
+  // Direct mutation: if the target is asleep, cure it before setting the ability.
+  const messages: string[] = [];
+  if (ctx.defender.pokemon.status === "sleep") {
+    ctx.defender.pokemon.status = null as never;
+    ctx.defender.volatileStatuses.delete("sleep-counter");
+    messages.push(`${ctx.defender.pokemon.nickname ?? "The target"} woke up!`);
+  }
+
+  messages.push(`${ctx.defender.pokemon.nickname ?? "The target"} acquired Insomnia!`);
+
+  return makeResult({
+    abilityChange: { target: "defender", ability: "insomnia" },
+    messages,
+  });
+}
+
+/**
+ * Gen 5 Gastro Acid: suppresses the target's ability.
  *
- * Since our architecture processes moves one at a time in the effect handler,
- * we check turn history for a prior Round usage by an ally.
+ * The target's original ability is stored in suppressedAbility and its active
+ * ability is set to "" (empty string). The suppression is lifted on switch-out.
+ *
+ * Fails if:
+ *   - Target has a cantsuppress ability (Multitype, Zen Mode)
+ *   - Target's ability is already suppressed (suppressedAbility is non-null)
+ *
+ * Source: references/pokemon-showdown/data/moves.ts lines 6653-6688:
+ *   gastroacid: { volatileStatus: 'gastroacid',
+ *     onTryHit(target) { if (target.getAbility().flags['cantsuppress']) return false; }}
+ * Source: Gen4MoveEffects.ts lines 1517-1518 -- same suppressedAbility pattern
+ */
+function handleGastroAcid(ctx: MoveEffectContext): MoveEffectResult {
+  const targetAbility = ctx.defender.ability;
+
+  // Source: Showdown data/moves.ts gastroacid.onTryHit -- cantsuppress flag
+  if (GEN5_CANTSUPPRESS.has(targetAbility)) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Gen4MoveEffects.ts -- if already suppressed, fail (idempotent)
+  if (ctx.defender.suppressedAbility != null) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Direct mutation: store original ability and clear active ability.
+  // Source: Gen4MoveEffects.ts lines 1517-1518 -- same pattern
+  ctx.defender.suppressedAbility = ctx.defender.ability;
+  ctx.defender.ability = "";
+
+  return makeResult({
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"}'s ability was suppressed!`],
+  });
+}
+
+/**
+ * Gen 5 Role Play: user copies the target's ability.
+ *
+ * Fails if:
+ *   - User and target have the same ability
+ *   - Target has a failroleplay ability (Flower Gift, Forecast, Illusion,
+ *     Imposter, Multitype, Trace, Zen Mode)
+ *   - Source has a cantsuppress ability (cannot replace its own Multitype/Zen Mode)
+ *
+ * Source: references/pokemon-showdown/data/moves.ts lines 15893-15915:
+ *   roleplay: { onTryHit(target, source) {
+ *     if (target.ability === source.ability) return false;
+ *     if (target.getAbility().flags['failroleplay'] ||
+ *       source.getAbility().flags['cantsuppress']) return false;
+ *   }, onHit(target, source) { source.setAbility(target.ability); }}
+ *
+ * Source: Bulbapedia -- "Role Play copies the target's Ability, replacing the user's"
+ */
+function handleRolePlay(ctx: MoveEffectContext): MoveEffectResult {
+  const sourceAbility = ctx.attacker.ability;
+  const targetAbility = ctx.defender.ability;
+
+  // Source: Showdown data/moves.ts roleplay.onTryHit -- same ability check
+  if (sourceAbility === targetAbility) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts roleplay.onTryHit -- failroleplay flag on target
+  if (GEN5_FAIL_ROLE_PLAY.has(targetAbility)) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts roleplay.onTryHit -- cantsuppress flag on source
+  if (GEN5_CANTSUPPRESS.has(sourceAbility)) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown data/moves.ts roleplay.onHit -- source.setAbility(target.ability)
+  // Uses abilityChange with target: "attacker" since only the user's ability changes.
+  return makeResult({
+    abilityChange: { target: "attacker", ability: targetAbility },
+    messages: [`${ctx.attacker.pokemon.nickname ?? "The user"} copied ${targetAbility}!`],
+  });
+}
+
+/**
+ * Gen 5 Skill Swap: exchanges the abilities of the user and the target.
+ *
+ * Fails if:
+ *   - Either side has a failskillswap ability (Illusion, Imposter, Multitype,
+ *     Wonder Guard, Zen Mode)
+ *   - In Gen 5, fails if both have the same ability (Gen 6+ allows it)
+ *
+ * Source: references/pokemon-showdown/sim/battle.ts lines 1300-1324:
+ *   skillSwap(source, target, sourceAbility, targetAbility) {
+ *     if (sourceAbility.flags['failskillswap'] || targetAbility.flags['failskillswap']) return false;
+ *     if (this.gen <= 5 && sourceAbility.id === targetAbility.id) return false;
+ *     source.ability = targetAbility.id; target.ability = sourceAbility.id;
+ *   }
+ *
+ * Uses direct mutation because abilityChange only supports a single target,
+ * but Skill Swap changes both simultaneously.
+ */
+function handleSkillSwap(ctx: MoveEffectContext): MoveEffectResult {
+  const sourceAbility = ctx.attacker.ability;
+  const targetAbility = ctx.defender.ability;
+
+  // Source: Showdown sim/battle.ts skillSwap -- failskillswap flag on source
+  if (GEN5_FAIL_SKILL_SWAP.has(sourceAbility)) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown sim/battle.ts skillSwap -- failskillswap flag on target
+  if (GEN5_FAIL_SKILL_SWAP.has(targetAbility)) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Source: Showdown sim/battle.ts skillSwap -- gen <= 5 same-ability check
+  if (sourceAbility === targetAbility) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Direct mutation: swap abilities simultaneously.
+  // Source: Showdown sim/battle.ts skillSwap -- source.ability = targetAbility; target.ability = sourceAbility
+  ctx.attacker.ability = targetAbility;
+  ctx.defender.ability = sourceAbility;
+
+  return makeResult({
+    messages: [
+      `${ctx.attacker.pokemon.nickname ?? "The user"} swapped abilities with ${ctx.defender.pokemon.nickname ?? "the target"}!`,
+    ],
+  });
+}
+
+/**
+ * Gen 5 Round: doubles base power if an ally used Round earlier this turn.
+ *
+ * Source: references/pokemon-showdown/data/moves.ts lines 16072-16093
  */
 function handleRound(_ctx: MoveEffectContext): MoveEffectResult {
   // Round's base power doubling is handled in Gen5DamageCalc.calculateGen5Damage(),
-  // not in the effect handler. The damage calc checks if an ally used Round this turn
-  // and doubles the base power accordingly.
-  // Source: Showdown data/moves.ts -- round.basePowerCallback
+  // not in the effect handler.
   return makeResult({
     messages: [],
   });
@@ -419,6 +596,16 @@ export function handleGen5StatusMove(ctx: MoveEffectContext): MoveEffectResult |
       return handleBestow(ctx);
     case "entrainment":
       return handleEntrainment(ctx);
+    case "simple-beam":
+      return handleSimpleBeam(ctx);
+    case "worry-seed":
+      return handleWorrySeed(ctx);
+    case "gastro-acid":
+      return handleGastroAcid(ctx);
+    case "role-play":
+      return handleRolePlay(ctx);
+    case "skill-swap":
+      return handleSkillSwap(ctx);
     case "round":
       return handleRound(ctx);
     default:
