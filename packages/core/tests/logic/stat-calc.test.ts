@@ -106,6 +106,22 @@ describe("calculateHp", () => {
     // floor((156 + 0 + 0) * 1 / 100) + 1 + 10 = floor(1.56) + 11 = 1 + 11 = 12
     expect(calculateHp(78, 0, 0, 1)).toBe(12);
   });
+
+  it("should calculate L50 Blissey HP correctly (base 255, 31 IV, 0 EV)", () => {
+    // Source: pret/pokeemerald src/pokemon.c — HP formula:
+    // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
+    // Blissey (base HP=255), 31 IV, 0 EV, L50:
+    // floor((510 + 31 + 0) * 50 / 100) + 50 + 10 = floor(27050/100) + 60 = 270 + 60 = 330
+    expect(calculateHp(255, 31, 0, 50)).toBe(330);
+  });
+
+  it("should calculate L100 Blissey HP correctly (base 255, 31 IV, 0 EV)", () => {
+    // Source: pret/pokeemerald src/pokemon.c — HP formula:
+    // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
+    // Blissey (base HP=255), 31 IV, 0 EV, L100:
+    // floor((510 + 31 + 0) * 100 / 100) + 100 + 10 = floor(54100/100) + 110 = 541 + 110 = 651
+    expect(calculateHp(255, 31, 0, 100)).toBe(651);
+  });
 });
 
 describe("calculateStat", () => {
