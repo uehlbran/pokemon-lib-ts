@@ -231,28 +231,29 @@ describe("Gen 9 DataManager -- data loading", () => {
     const dm = createGen9DataManager();
     const moves = dm.getAllMoves();
     for (const move of moves) {
-      expect(move.id).toBeTruthy();
-      expect(move.type).toBeTruthy();
+      expect(move.id.length).toBeGreaterThanOrEqual(1);
+      expect(move.type.length).toBeGreaterThanOrEqual(1);
       expect(["physical", "special", "status"]).toContain(move.category);
-      expect(move.pp).toBeGreaterThan(0);
+      expect(move.pp).toBeGreaterThanOrEqual(1);
       expect(typeof move.priority).toBe("number");
     }
   });
 
   it("given gen9 pokemon, when inspecting any species, then required fields are present", () => {
     // All species must have id, types, and baseStats with all 6 stats
+    // species.id is the numeric Pokedex number (e.g. 1 = Bulbasaur)
     const dm = createGen9DataManager();
     const allSpecies = dm.getAllSpecies();
     for (const species of allSpecies) {
-      expect(species.id).toBeTruthy();
+      expect(species.id).toBeGreaterThanOrEqual(1);
       expect(species.types.length).toBeGreaterThanOrEqual(1);
       expect(species.types.length).toBeLessThanOrEqual(2);
-      expect(species.baseStats.hp).toBeGreaterThan(0);
-      expect(species.baseStats.attack).toBeGreaterThan(0);
-      expect(species.baseStats.defense).toBeGreaterThan(0);
-      expect(species.baseStats.spAttack).toBeGreaterThan(0);
-      expect(species.baseStats.spDefense).toBeGreaterThan(0);
-      expect(species.baseStats.speed).toBeGreaterThan(0);
+      expect(species.baseStats.hp).toBeGreaterThanOrEqual(1);
+      expect(species.baseStats.attack).toBeGreaterThanOrEqual(1);
+      expect(species.baseStats.defense).toBeGreaterThanOrEqual(1);
+      expect(species.baseStats.spAttack).toBeGreaterThanOrEqual(1);
+      expect(species.baseStats.spDefense).toBeGreaterThanOrEqual(1);
+      expect(species.baseStats.speed).toBeGreaterThanOrEqual(1);
     }
   });
 });
