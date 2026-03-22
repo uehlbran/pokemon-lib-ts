@@ -713,6 +713,24 @@ export class BattleEngine implements BattleEventEmitter {
       if (hazardResult.statusInflicted && !active.pokemon.status) {
         this.applyPrimaryStatus(active, hazardResult.statusInflicted, side.index);
       }
+      // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon)
+      // Apply stat changes from hazards (e.g. Sticky Web −1 Speed)
+      if (hazardResult.statChanges && hazardResult.statChanges.length > 0) {
+        for (const change of hazardResult.statChanges) {
+          const currentStage = active.statStages[change.stat] ?? 0;
+          // Source: All generations — stat stages clamped to [-6, +6] (Bulbapedia: "Stat stages")
+          const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
+          active.statStages[change.stat] = newStage;
+          this.emit({
+            type: "stat-change",
+            side: side.index,
+            pokemon: getPokemonName(active),
+            stat: change.stat,
+            stages: change.stages,
+            currentStage: newStage,
+          });
+        }
+      }
       // Source: Bulbapedia — Poison-type absorbs Toxic Spikes on switch-in
       if (hazardResult.hazardsToRemove && hazardResult.hazardsToRemove.length > 0) {
         for (const hazardType of hazardResult.hazardsToRemove) {
