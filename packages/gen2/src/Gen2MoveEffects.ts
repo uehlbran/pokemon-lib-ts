@@ -75,7 +75,37 @@ export type MutableResult = {
   screensCleared?: "attacker" | "defender" | "both" | null;
   statusCured?: { target: "attacker" | "defender" | "both" } | null;
   typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+  /**
+   * Number of additional hits beyond the first for multi-hit moves.
+   * E.g., multiHitCount=2 means 2 more hits after the initial one, for 3 total.
+   */
+  multiHitCount?: number | null;
+  /**
+   * Move ID to execute immediately after this move resolves (Sleep Talk, Metronome).
+   * No PP is deducted for the recursive move.
+   */
+  recursiveMove?: string | null;
 };
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Moves that cannot be called by Sleep Talk in Gen 2.
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm SleepTalkEffect
+ * Includes Sleep Talk itself, two-turn charge moves, and Bide.
+ */
+const SLEEP_TALK_BANNED_MOVES: ReadonlySet<string> = new Set([
+  "sleep-talk",
+  "bide",
+  "skull-bash",
+  "razor-wind",
+  "sky-attack",
+  "solar-beam",
+  "fly",
+  "dig",
+]);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -492,6 +522,290 @@ export function handleCustomEffect(
       }
       result.healAmount = Math.max(1, Math.floor(maxHp * healFraction));
       result.messages.push(`${pokemonName} recovered HP!`);
+      break;
+    }
+
+    // =========================================================================
+    // Future Sight (#213)
+    // =========================================================================
+    case "future-sight": {
+      // Future Sight: schedules a delayed Psychic-type attack landing in 2 turns.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm FutureSightEffect
+      // In Gen 2: damage is calculated at hit time (NOT use time), typeless
+      // (type immunities don't apply at resolution — the engine handles this).
+      const actorSide = context.state.sides.findIndex((s) =>
+        s.active?.some((a) => a?.pokemon === attacker.pokemon),
+      ) as 0 | 1;
+
+      // Fail if a future attack is already pending on the target's side
+      const defenderSideIndex = actorSide === 0 ? 1 : 0;
+      const defenderSide = context.state.sides[defenderSideIndex];
+      if (defenderSide?.futureAttack) {
+        result.messages.push("But it failed!");
+        break;
+      }
+
+      result.futureAttack = {
+        moveId: "future-sight",
+        turnsLeft: 2,
+        sourceSide: actorSide,
+      };
+      result.messages.push(`${pokemonName} foresaw an attack!`);
+      break;
+    }
+
+    // =========================================================================
+    // Sleep Talk (#211)
+    // =========================================================================
+    case "sleep-talk": {
+      // Sleep Talk: randomly uses one of the user's other moves while asleep.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm SleepTalkEffect
+      // NOTE: The engine currently blocks sleeping Pokemon in canExecuteMove before
+      // executeMoveEffect runs. For Sleep Talk to function in full engine integration,
+      // the engine needs a sleep-bypass mechanism (see issue filed for this).
+      // This handler implements the correct selection logic.
+      if (attacker.pokemon.status !== "sleep") {
+        result.messages.push("But it failed!");
+        break;
+      }
+      // Build list of usable moves (exclude banned moves and moves with 0 PP)
+      const usableMoves = attacker.pokemon.moves.filter(
+        (m) => !SLEEP_TALK_BANNED_MOVES.has(m.moveId) && m.currentPP > 0,
+      );
+      if (usableMoves.length === 0) {
+        result.messages.push("But it failed!");
+        break;
+      }
+      const chosenIndex = Math.floor(context.rng.next() * usableMoves.length);
+      const chosen = usableMoves[chosenIndex];
+      if (!chosen) {
+        result.messages.push("But it failed!");
+        break;
+      }
+      result.recursiveMove = chosen.moveId;
+      result.messages.push(`${pokemonName} used Sleep Talk!`);
+      break;
+    }
+
+    // =========================================================================
+    // Snore (#211)
+    // =========================================================================
+    case "snore": {
+      // Snore: can only be used while asleep. Deals damage with 30% flinch chance.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm SnoreEffect
+      // The sleep precondition is checked here. Since this move is pre-dispatched
+      // (bypassing the data-driven volatile-status handler for flinch), we also
+      // roll the 30% flinch chance manually.
+      // NOTE: Same engine sleep-bypass limitation as Sleep Talk.
+      if (attacker.pokemon.status !== "sleep") {
+        result.messages.push("But it failed!");
+        break;
+      }
+      // Roll 30% flinch chance (on 0-255 scale, 1/256 failure rate)
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm SnoreEffect
+      if (rollEffectChance(30, context.rng)) {
+        result.volatileInflicted = "flinch";
+      }
+      break;
+    }
+
+    // =========================================================================
+    // Present (#219)
+    // =========================================================================
+    case "present": {
+      // Present: randomly deals 40/80/120 damage or heals the target for 1/4 max HP.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm PresentEffect
+      // Roll 0-255: 0-101 (40%) -> power 40; 102-177 (30%) -> power 80;
+      //             178-203 (10%) -> power 120; 204-255 (20%) -> heal 1/4 HP
+      // Note: using 0-255 scale matches the cartridge RNG.
+      // Since Present has power: null in move data, the engine skips normal damage calc.
+      // We use customDamage to signal the power outcome to the engine.
+      const presentRoll = context.rng.int(0, 255);
+      if (presentRoll < 102) {
+        // 40 power damage — 102/256 = ~39.8%
+        result.customDamage = {
+          target: "defender",
+          amount: 40,
+          source: "present-power",
+        };
+      } else if (presentRoll < 178) {
+        // 80 power damage — 76/256 = ~29.7%
+        result.customDamage = {
+          target: "defender",
+          amount: 80,
+          source: "present-power",
+        };
+      } else if (presentRoll < 204) {
+        // 120 power damage — 26/256 = ~10.2%
+        result.customDamage = {
+          target: "defender",
+          amount: 120,
+          source: "present-power",
+        };
+      } else {
+        // Heal the target for 1/4 max HP — 52/256 = ~20.3%
+        // Source: pret/pokecrystal — Present heal applies to the TARGET, not the user
+        // TODO: Proper Present heal requires engine support for "heal defender" field
+        // on MoveEffectResult. For now, we store amount=0 and the heal message.
+        const defMaxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+        const healAmt = Math.max(1, Math.floor(defMaxHp / 4));
+        result.customDamage = {
+          target: "defender",
+          amount: 0,
+          source: "present-heal",
+        };
+        result.messages.push(
+          `${defender.pokemon.nickname ?? "The foe"} regained ${healAmt} HP from Present!`,
+        );
+      }
+      break;
+    }
+
+    // =========================================================================
+    // Magnitude (#219)
+    // =========================================================================
+    case "magnitude": {
+      // Magnitude: random power based on magnitude level 4-10.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm MagnitudeEffect
+      // Magnitudes 4-10, probabilities on 0-255 scale:
+      //   4: 13/256 (~5%), 5: 25/256 (~10%), 6: 51/256 (~20%),
+      //   7: 77/256 (~30%), 8: 51/256 (~20%), 9: 25/256 (~10%), 10: 14/256 (~5%)
+      // Since Magnitude has power: null in move data, the engine skips normal damage calc.
+      // We signal the effective power via customDamage.
+      const magRoll = context.rng.int(0, 255);
+      let magnitudeLevel: number;
+      let magnitudePower: number;
+      if (magRoll < 13) {
+        magnitudeLevel = 4;
+        magnitudePower = 10;
+      } else if (magRoll < 38) {
+        magnitudeLevel = 5;
+        magnitudePower = 30;
+      } else if (magRoll < 89) {
+        magnitudeLevel = 6;
+        magnitudePower = 50;
+      } else if (magRoll < 166) {
+        magnitudeLevel = 7;
+        magnitudePower = 70;
+      } else if (magRoll < 217) {
+        magnitudeLevel = 8;
+        magnitudePower = 90;
+      } else if (magRoll < 242) {
+        magnitudeLevel = 9;
+        magnitudePower = 110;
+      } else {
+        magnitudeLevel = 10;
+        magnitudePower = 150;
+      }
+      result.customDamage = {
+        target: "defender",
+        amount: magnitudePower,
+        source: "magnitude",
+      };
+      result.messages.push(`Magnitude ${magnitudeLevel}!`);
+      break;
+    }
+
+    // =========================================================================
+    // Triple Kick (#219)
+    // =========================================================================
+    case "triple-kick": {
+      // Triple Kick: hits 1-3 times with escalating power (10, 20, 30).
+      // Each hit has an independent accuracy check.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm TripleKickEffect
+      // The first hit is already dealt by the engine's normal damage flow (power 10).
+      // We signal additional hits via multiHitCount.
+      // NOTE: The escalating power (20, 30) for subsequent hits is not supported by
+      // the engine's multi-hit loop (which reuses the first hit's damage).
+      // This is a known limitation — subsequent hits will use power 10 instead of 20/30.
+      // TODO: Engine support for per-hit variable power in multi-hit moves.
+      result.multiHitCount = 2; // 2 additional hits beyond the first (3 total)
+      break;
+    }
+
+    // =========================================================================
+    // Rollout (#219)
+    // =========================================================================
+    case "rollout": {
+      // Rollout: locks the user for 5 turns with escalating power.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm RolloutEffect
+      // Power: 30 * 2^(turn-1), doubled again if Defense Curl was used
+      // On miss or after 5 turns, the move ends.
+      // The engine uses forcedMoveSet to lock the user into the move.
+      const rolloutState = attacker.volatileStatuses.get("rollout");
+      const rolloutCount = rolloutState ? ((rolloutState.data?.count as number) ?? 0) + 1 : 0;
+
+      if (rolloutCount < 4) {
+        // Lock into Rollout for the next turn
+        const moveIdx = attacker.pokemon.moves.findIndex((m) => m.moveId === "rollout");
+        if (moveIdx >= 0) {
+          result.forcedMoveSet = {
+            moveIndex: moveIdx,
+            moveId: "rollout",
+            volatileStatus: "rollout",
+          };
+          result.selfVolatileInflicted = "rollout";
+          result.selfVolatileData = {
+            turnsLeft: 1,
+            data: { count: rolloutCount },
+          };
+        }
+      }
+      // Power escalation is handled in Gen2DamageCalc.ts via the rollout volatile state.
+      break;
+    }
+
+    // =========================================================================
+    // Fury Cutter (#219)
+    // =========================================================================
+    case "fury-cutter": {
+      // Fury Cutter: power doubles on each consecutive successful use, up to 160.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
+      // Power: 10 * 2^min(consecutiveUses, 4) -> 10, 20, 40, 80, 160
+      // Resets on miss or when a different move is used.
+      // The consecutive counter is tracked via a volatile status.
+      const furyCutterState = attacker.volatileStatuses.get("fury-cutter");
+      const currentCount = furyCutterState ? ((furyCutterState.data?.count as number) ?? 0) + 1 : 0;
+
+      // Update the volatile with the new count (capped at 4 for power 160)
+      result.selfVolatileInflicted = "fury-cutter";
+      result.selfVolatileData = {
+        turnsLeft: -1, // No expiry — resets on miss or different move
+        data: { count: Math.min(currentCount, 4) },
+      };
+      // Power escalation is handled in Gen2DamageCalc.ts via the fury-cutter volatile.
+      break;
+    }
+
+    // =========================================================================
+    // Beat Up (#219)
+    // =========================================================================
+    case "beat-up": {
+      // Beat Up: hits once for each non-fainted, non-statused party member.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
+      // Each hit uses that party member's base Attack stat in the damage formula.
+      // In Gen 2, Beat Up is typeless (no type effectiveness, no STAB).
+      // NOTE: The engine's multi-hit loop reuses the first hit's damage, which doesn't
+      // account for per-member Attack differences. This is a known simplification.
+      // We set multiHitCount to the number of eligible party members minus 1
+      // (since the first hit is already dealt).
+      const actorSideIdx = context.state.sides.findIndex((s) =>
+        s.active?.some((a) => a?.pokemon === attacker.pokemon),
+      );
+      const actorSide = context.state.sides[actorSideIdx];
+      if (!actorSide) break;
+
+      // Count eligible party members: alive and no primary status condition
+      const eligibleCount = actorSide.team.filter((p) => p.currentHp > 0 && !p.status).length;
+
+      if (eligibleCount === 0) {
+        result.messages.push("But it failed!");
+        break;
+      }
+
+      // multiHitCount = additional hits beyond the first
+      result.multiHitCount = Math.max(0, eligibleCount - 1);
+      result.messages.push(`${pokemonName} used Beat Up!`);
       break;
     }
 

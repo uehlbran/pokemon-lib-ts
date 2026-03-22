@@ -250,6 +250,33 @@ function getItemModifier(attacker: ActivePokemon, moveType: PokemonType): number
 }
 
 /**
+ * Get Rollout dynamic power based on the current turn counter.
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm RolloutEffect
+ * Power = 30 * 2^turnCount. Defense Curl doubles the base (not implemented yet).
+ * turnCount: 0-4 (turn 1 through turn 5).
+ */
+export function getRolloutPower(attacker: ActivePokemon): number {
+  const rolloutState = attacker.volatileStatuses.get("rollout");
+  const turnCount = rolloutState ? ((rolloutState.data?.count as number) ?? 0) : 0;
+  // Source: pret/pokecrystal — Rollout power doubles each turn: 30, 60, 120, 240, 480
+  // Defense Curl doubles the base power (not tracked yet — TODO)
+  const basePower = 30;
+  return basePower * 2 ** turnCount;
+}
+
+/**
+ * Get Fury Cutter dynamic power based on consecutive use counter.
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
+ * Power = 10 * 2^min(consecutiveUses, 4) -> 10, 20, 40, 80, 160
+ */
+export function getFuryCutterPower(attacker: ActivePokemon): number {
+  const furyCutterState = attacker.volatileStatuses.get("fury-cutter");
+  const count = furyCutterState ? ((furyCutterState.data?.count as number) ?? 0) : 0;
+  // Source: pret/pokecrystal — Fury Cutter power: 10 * 2^count, max 160
+  return 10 * 2 ** Math.min(count, 4);
+}
+
+/**
  * Calculate damage for a move in Gen 2.
  *
  * Formula per pret/pokecrystal BattleCommand_DamageCalc (effect_commands.asm:2900-3129):
@@ -311,6 +338,18 @@ export function calculateGen2Damage(
     if (currentWeather === "rain" || currentWeather === "sand") {
       dynamicPower = dynamicPower !== null ? Math.max(1, Math.floor(dynamicPower / 2)) : null;
     }
+  }
+
+  // Rollout: escalating power based on consecutive turn count
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm RolloutEffect
+  if (move.id === "rollout") {
+    dynamicPower = getRolloutPower(attacker);
+  }
+
+  // Fury Cutter: escalating power based on consecutive use count
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
+  if (move.id === "fury-cutter") {
+    dynamicPower = getFuryCutterPower(attacker);
   }
 
   // Status moves do no damage
