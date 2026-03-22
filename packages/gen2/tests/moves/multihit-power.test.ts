@@ -304,11 +304,14 @@ describe("Gen 2 Triple Kick perHitDamageFn", () => {
     expect(allSame).toBe(false);
   });
 
-  it("given Triple Kick where target faints on hit 1, when only perHitDamageFn(0) is skipped (never called), then RNG state is not consumed for hit 2 or 3", () => {
+  it("given Triple Kick where target faints on hit 1, when perHitDamageFn is never called, then no additional RNG is consumed vs calling it once", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm TripleKickEffect
     // Fix for #620: damage computed inside the hit loop, not before it.
-    // If the target faints after hit 1, no RNG should be consumed for hits 2 and 3.
+    // If the target faints after hit 1, no per-hit RNG should be consumed.
+    // We verify this by comparing two identical RNG streams: one where perHitDamageFn
+    // is never called (simulating early KO) and one where it is called once.
+    // If the implementation is lazy, these two should diverge.
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -316,7 +319,7 @@ describe("Gen 2 Triple Kick perHitDamageFn", () => {
     const rngA = new SeededRandom(42);
     const rngB = new SeededRandom(42);
 
-    // Act -- Scenario A: get result but never call perHitDamageFn (simulating early KO)
+    // Act -- Scenario A: call executeMoveEffect but never call perHitDamageFn (early KO)
     ruleset.executeMoveEffect({
       attacker,
       defender,
@@ -327,8 +330,8 @@ describe("Gen 2 Triple Kick perHitDamageFn", () => {
     });
     // Do NOT call perHitDamageFn -- simulating target fainted after hit 1
 
-    // Scenario B: fresh RNG with same seed, also no perHitDamageFn calls
-    ruleset.executeMoveEffect({
+    // Scenario B: call executeMoveEffect AND invoke perHitDamageFn(0) (one additional hit)
+    const resultB = ruleset.executeMoveEffect({
       attacker,
       defender,
       move: tripleKickMove,
@@ -336,13 +339,14 @@ describe("Gen 2 Triple Kick perHitDamageFn", () => {
       state,
       rng: rngB,
     });
+    resultB.perHitDamageFn!(0); // This consumes RNG for hit 2's crit roll + random factor
 
-    // Assert -- both RNGs should be in the same state since no per-hit RNG was consumed
-    // Generate a few values from each and verify they match
+    // Assert -- rngA and rngB should now be in DIFFERENT states because rngB consumed
+    // additional RNG for the perHitDamageFn call while rngA did not.
     // Source: Fix for #620 -- lazy evaluation means uncalled perHitDamageFn doesn't consume RNG
     const nextA = rngA.int(0, 1000);
     const nextB = rngB.int(0, 1000);
-    expect(nextA).toBe(nextB);
+    expect(nextA).not.toBe(nextB);
   });
 
   it("given Triple Kick where only hit 2 executes (hit 3 skipped), when perHitDamageFn(0) is called once, then exactly 1 hit's worth of RNG is consumed", () => {
