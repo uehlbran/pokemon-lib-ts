@@ -369,7 +369,13 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
 // #251: Counter type restriction
 // =========================================================================
 
-describe("#251 — Counter should only reflect Normal and Fighting type physical moves", () => {
+describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
+  // Source: pret/pokecrystal engine/battle/move_effects/counter.asm:33-35
+  //   ld a, [wStringBuffer1 + MOVE_TYPE]
+  //   cp SPECIAL        ; SPECIAL = 20 (Fire is first special type)
+  //   ret nc            ; fail if type >= SPECIAL
+  // Counter works on ALL physical types (type < SPECIAL), not just Normal/Fighting
+  // like Gen 1. Physical types: Normal, Fighting, Flying, Poison, Ground, Rock, Bug, Ghost, Steel.
   const counterMove = createMove("counter", {
     type: "fighting",
     category: "physical",
@@ -379,8 +385,7 @@ describe("#251 — Counter should only reflect Normal and Fighting type physical
   });
 
   it("given attacker took physical Normal-type damage, when Counter is used, then reflects 2x damage", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5113-5142 BattleCommand_Counter
-    // Counter accepts Normal and Fighting type moves.
+    // Source: pret/pokecrystal counter.asm — Normal (type 0) < SPECIAL → Counter succeeds.
     const attacker = createMockActive({
       lastDamageTaken: 50,
       lastDamageCategory: "physical",
@@ -406,7 +411,7 @@ describe("#251 — Counter should only reflect Normal and Fighting type physical
   });
 
   it("given attacker took physical Fighting-type damage, when Counter is used, then reflects 2x damage", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5113-5142 BattleCommand_Counter
+    // Source: pret/pokecrystal counter.asm — Fighting (type 1) < SPECIAL → Counter succeeds.
     const attacker = createMockActive({
       lastDamageTaken: 60,
       lastDamageCategory: "physical",
@@ -431,9 +436,9 @@ describe("#251 — Counter should only reflect Normal and Fighting type physical
     });
   });
 
-  it("given attacker took physical Rock-type damage, when Counter is used, then fails", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5113-5142
-    // Counter only works on Normal/Fighting — Rock-type physical moves should NOT be reflected.
+  it("given attacker took physical Rock-type damage, when Counter is used, then reflects 2x damage", () => {
+    // Source: pret/pokecrystal counter.asm — Rock (type 5) < SPECIAL → Counter succeeds.
+    // In Gen 2, Counter works on ALL physical types, not just Normal/Fighting.
     const attacker = createMockActive({
       lastDamageTaken: 80,
       lastDamageCategory: "physical",
@@ -451,17 +456,45 @@ describe("#251 — Counter should only reflect Normal and Fighting type physical
       rng: new SeededRandom(42),
     });
 
-    expect(result.customDamage).toBeUndefined();
-    expect(result.messages).toContain("But it failed!");
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 160,
+      source: "counter",
+    });
   });
 
-  it("given attacker took physical Ground-type damage, when Counter is used, then fails", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5113-5142
-    // Counter rejects Ground-type physical damage.
+  it("given attacker took physical Ground-type damage, when Counter is used, then reflects 2x damage", () => {
+    // Source: pret/pokecrystal counter.asm — Ground (type 4) < SPECIAL → Counter succeeds.
     const attacker = createMockActive({
       lastDamageTaken: 90,
       lastDamageCategory: "physical",
       lastDamageType: "ground",
+    });
+    const defender = createMockActive();
+    const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+    const result = ruleset.executeMoveEffect({
+      attacker,
+      defender,
+      move: counterMove,
+      damage: 0,
+      state,
+      rng: new SeededRandom(42),
+    });
+
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 180,
+      source: "counter",
+    });
+  });
+
+  it("given attacker took special Water-type damage, when Counter is used, then fails", () => {
+    // Source: pret/pokecrystal counter.asm — Water (type 21) >= SPECIAL → Counter fails.
+    const attacker = createMockActive({
+      lastDamageTaken: 70,
+      lastDamageCategory: "special",
+      lastDamageType: "water",
     });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));

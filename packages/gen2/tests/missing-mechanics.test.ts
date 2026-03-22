@@ -1079,14 +1079,14 @@ describe("Issue #368 — Bright Powder accuracy reduction", () => {
 
 describe("Issue #373 — Hidden Power physical-type category path", () => {
   it("given attacker with DVs that produce a physical HP type (Fighting), when calculating Hidden Power damage, then uses physical damage formula (Attack vs Defense)", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
-    // Hidden Power type index = (atkDv%2)*8 + (defDv%2)*4 + (speDv%2)*2 + (spcDv%2)
+    // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
+    // Hidden Power type index = (atkDv & 3) * 4 + (defDv & 3)
     // HP_TYPES[0] = "fighting" (physical type in Gen 2)
-    // To get index 0: all low bits = 0 → atkDv=0, defDv=0, speDv=0, spcDv=0 (even DVs)
+    // To get index 0: (atkDv & 3)=0 and (defDv & 3)=0 → e.g., atkDv=0, defDv=0
     //
     // For fighting-type HP: uses Attack and Defense stats (physical)
     // Arrange
-    // DVs: attack=0 (even), defense=0 (even), speed=0 (even), spAttack=0 (even) → typeIndex=0 → "fighting"
+    // DVs: attack=0, defense=0 → typeIndex = (0&3)*4 + (0&3) = 0 → "fighting"
     const physAttacker = createMockActive({
       level: 50,
       attack: 200, // High attack — should boost physical HP damage
@@ -1161,17 +1161,18 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
   });
 
   it("given attacker with DVs that produce a special HP type (Fire), when calculating Hidden Power, then effectiveCategory is 'special'", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+    // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
     // HP_TYPES[8] = "fire" (special type in Gen 2)
-    // typeIndex 8 = (atkDv%2)*8 + ... → requires atkDv to be odd, others even
-    // atkDv=1 (odd), defDv=0, speDv=0, spcDv=0 → typeIndex = 1*8 = 8 → "fire" (special)
+    // typeIndex = (atkDv & 3) * 4 + (defDv & 3)
+    // To get index 8: (atkDv & 3)=2, (defDv & 3)=0 → 2*4+0=8 → "fire"
+    // atkDv=2, defDv=0 → typeIndex = 8 → "fire" (special)
     // Arrange
     const specAttacker = createMockActive({
       level: 50,
       attack: 50,
       spAttack: 200, // High special attack — used for special HP
       types: ["fire"],
-      ivs: { attack: 1, defense: 0, speed: 0, spAttack: 0, spDefense: 0, hp: 0 },
+      ivs: { attack: 2, defense: 0, speed: 0, spAttack: 0, spDefense: 0, hp: 0 },
     });
     const defender = createMockActive({ spDefense: 100 });
     const rng = createMockRng(255);
@@ -1204,30 +1205,31 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
   });
 
   it("given all Gen 2 physical HP types, when checking effectiveCategory, then all return 'physical'", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+    // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
     // Gen 2 physical types: normal, fighting, flying, ground, rock, bug, ghost, poison, steel
     // From HP_TYPES list (indices 0-7): fighting, flying, poison, ground, rock, bug, ghost, steel — ALL physical
     // This exercises the physical branch path for all 8 physical-type HP types.
     //
-    // DV combinations for each index 0-7:
-    //   index 0 = 0b0000 → atk=even, def=even, spe=even, spc=even
-    //   index 1 = 0b0001 → atk=even, def=even, spe=even, spc=odd
-    //   index 2 = 0b0010 → atk=even, def=even, spe=odd, spc=even
-    //   index 3 = 0b0011 → atk=even, def=even, spe=odd, spc=odd
-    //   index 4 = 0b0100 → atk=even, def=odd, spe=even, spc=even
-    //   index 5 = 0b0101 → atk=even, def=odd, spe=even, spc=odd
-    //   index 6 = 0b0110 → atk=even, def=odd, spe=odd, spc=even
-    //   index 7 = 0b0111 → atk=even, def=odd, spe=odd, spc=odd
+    // New decomp formula: typeIndex = (atkDv & 3) * 4 + (defDv & 3)
+    // DV combinations for each index 0-7 (only atkDv and defDv matter for type):
+    //   index 0: (atk&3)=0, (def&3)=0 → e.g., atk=0, def=0
+    //   index 1: (atk&3)=0, (def&3)=1 → e.g., atk=0, def=1
+    //   index 2: (atk&3)=0, (def&3)=2 → e.g., atk=0, def=2
+    //   index 3: (atk&3)=0, (def&3)=3 → e.g., atk=0, def=3
+    //   index 4: (atk&3)=1, (def&3)=0 → e.g., atk=1, def=0
+    //   index 5: (atk&3)=1, (def&3)=1 → e.g., atk=1, def=1
+    //   index 6: (atk&3)=1, (def&3)=2 → e.g., atk=1, def=2
+    //   index 7: (atk&3)=1, (def&3)=3 → e.g., atk=1, def=3
 
     const dvCombos: [number, number, number, number][] = [
       [0, 0, 0, 0], // index 0 → fighting
-      [0, 0, 0, 1], // index 1 → flying
-      [0, 0, 1, 0], // index 2 → poison
-      [0, 0, 1, 1], // index 3 → ground
-      [0, 1, 0, 0], // index 4 → rock
-      [0, 1, 0, 1], // index 5 → bug
-      [0, 1, 1, 0], // index 6 → ghost
-      [0, 1, 1, 1], // index 7 → steel
+      [0, 1, 0, 0], // index 1 → flying
+      [0, 2, 0, 0], // index 2 → poison
+      [0, 3, 0, 0], // index 3 → ground
+      [1, 0, 0, 0], // index 4 → rock
+      [1, 1, 0, 0], // index 5 → bug
+      [1, 2, 0, 0], // index 6 → ghost
+      [1, 3, 0, 0], // index 7 → steel
     ];
 
     for (const [atkDv, defDv, speDv, spcDv] of dvCombos) {

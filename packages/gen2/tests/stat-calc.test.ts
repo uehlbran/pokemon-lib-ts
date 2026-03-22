@@ -769,6 +769,93 @@ describe("Gen2StatCalc", () => {
       expect(stats100.hp).toBeGreaterThan(stats50.hp);
     });
 
+    it("given max DVs (all 15), when calculating HP, then derives HP DV as 15 from lower bits of other DVs", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/pokemon/move_mon.asm:1483
+      // HP_DV = ((Atk & 1) << 3) | ((Def & 1) << 2) | ((Spd & 1) << 1) | (Spc & 1)
+      // All DVs=15 (odd) → HP_DV = (1<<3)|(1<<2)|(1<<1)|1 = 8+4+2+1 = 15
+      const pokemon = createTestPokemon({
+        level: 50,
+        ivs: { hp: 0, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+        evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      });
+      // Use a base HP of 45 (Pikachu-like)
+      const species = createTestSpecies({
+        hp: 45,
+        attack: 55,
+        defense: 30,
+        spAttack: 50,
+        spDefense: 40,
+        speed: 90,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      // Derived HP DV = 15 (not the passed-in ivs.hp=0)
+      // HP = floor(((45+15)*2+0)*50/100)+50+10 = floor(120*50/100)+60 = 60+60 = 120
+      // Source: formula derivation — base=45, DV=15 (derived), StatExp=0, L=50
+      expect(stats.hp).toBe(120);
+    });
+
+    it("given all even DVs (14), when calculating HP, then derives HP DV as 0 from lower bits", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/pokemon/move_mon.asm:1483
+      // All DVs=14 (even) → HP_DV = (0<<3)|(0<<2)|(0<<1)|0 = 0
+      const pokemon = createTestPokemon({
+        level: 50,
+        ivs: { hp: 15, attack: 14, defense: 14, spAttack: 14, spDefense: 14, speed: 14 },
+        evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      });
+      const species = createTestSpecies({
+        hp: 45,
+        attack: 55,
+        defense: 30,
+        spAttack: 50,
+        spDefense: 40,
+        speed: 90,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      // Derived HP DV = 0 (not the passed-in ivs.hp=15)
+      // HP = floor(((45+0)*2+0)*50/100)+50+10 = floor(90*50/100)+60 = 45+60 = 105
+      // Source: formula derivation — base=45, DV=0 (derived), StatExp=0, L=50
+      expect(stats.hp).toBe(105);
+    });
+
+    it("given mixed DVs (atk=13, def=12, spd=9, spc=6), when calculating HP, then derives HP DV correctly", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/pokemon/move_mon.asm:1483
+      // atkDv=13 (odd)→bit=1, defDv=12 (even)→bit=0, spdDv=9 (odd)→bit=1, spcDv=6 (even)→bit=0
+      // HP_DV = (1<<3)|(0<<2)|(1<<1)|0 = 8+0+2+0 = 10
+      const pokemon = createTestPokemon({
+        level: 100,
+        ivs: { hp: 0, attack: 13, defense: 12, spAttack: 6, spDefense: 6, speed: 9 },
+        evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      });
+      const species = createTestSpecies({
+        hp: 100,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 100,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      // Derived HP DV = 10
+      // HP = floor(((100+10)*2+0)*100/100)+100+10 = 220+110 = 330
+      // Source: formula derivation — base=100, DV=10 (derived), StatExp=0, L=100
+      expect(stats.hp).toBe(330);
+    });
+
     it("should produce floored integer results for non-clean divisions", () => {
       // Arrange
       const pokemon = createTestPokemon({

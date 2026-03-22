@@ -626,13 +626,16 @@ describe("Gen 2 Pursuit: pre-switch execution flag", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Counter (Gen 2): Normal/Fighting only restriction
+// Counter (Gen 2): reflects ALL physical-type damage
 // ---------------------------------------------------------------------------
 
-describe("Gen 2 Counter: Normal/Fighting type restriction", () => {
-  // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
-  // Counter only reflects Normal-type and Fighting-type moves (same as Gen 1).
-  // The check is: lastDamageType must be "normal" or "fighting".
+describe("Gen 2 Counter: reflects all physical-type damage", () => {
+  // Source: pret/pokecrystal engine/battle/move_effects/counter.asm:33-35
+  //   ld a, [wStringBuffer1 + MOVE_TYPE]
+  //   cp SPECIAL        ; SPECIAL = 20 (Fire is first special type)
+  //   ret nc            ; fail if type >= SPECIAL (i.e., special type)
+  // Counter works on ALL physical types (Normal, Fighting, Flying, Poison, Ground,
+  // Rock, Bug, Ghost, Steel) — NOT just Normal/Fighting like Gen 1.
 
   const counterMove = makeMove({
     id: "counter",
@@ -642,7 +645,7 @@ describe("Gen 2 Counter: Normal/Fighting type restriction", () => {
   });
 
   it("given a Normal-type move dealt 40 damage last turn, when Counter is used, then deals 80 damage", () => {
-    // Source: pret/pokecrystal BattleCommand_Counter — 2x last physical Normal damage.
+    // Source: pret/pokecrystal counter.asm — Normal (type 0) < SPECIAL → Counter succeeds.
     const attacker = makeActivePokemon({
       lastDamageTaken: 40,
       lastDamageType: "normal" as PokemonType,
@@ -654,7 +657,7 @@ describe("Gen 2 Counter: Normal/Fighting type restriction", () => {
   });
 
   it("given a Fighting-type move dealt 50 damage last turn, when Counter is used, then deals 100 damage", () => {
-    // Source: pret/pokecrystal BattleCommand_Counter — 2x last physical Fighting damage.
+    // Source: pret/pokecrystal counter.asm — Fighting (type 1) < SPECIAL → Counter succeeds.
     const attacker = makeActivePokemon({
       lastDamageTaken: 50,
       lastDamageType: "fighting" as PokemonType,
@@ -665,12 +668,13 @@ describe("Gen 2 Counter: Normal/Fighting type restriction", () => {
     expect(result.customDamage?.amount).toBe(100);
   });
 
-  it("given a Fire-type move dealt 60 damage last turn, when Counter is used, then Counter fails", () => {
-    // Source: pret/pokecrystal — Counter only counters Normal/Fighting, not other types.
+  it("given a Fire-type move dealt 60 special damage last turn, when Counter is used, then Counter fails", () => {
+    // Source: pret/pokecrystal counter.asm — Fire (type 20) >= SPECIAL → Counter fails.
+    // In Gen 2, Fire is a special type so lastDamageCategory is always "special".
     const attacker = makeActivePokemon({
       lastDamageTaken: 60,
       lastDamageType: "fire" as PokemonType,
-      lastDamageCategory: "physical" as const,
+      lastDamageCategory: "special" as const,
     });
     const context = makeMoveEffectContext({ attacker, move: counterMove });
     const result = ruleset.executeMoveEffect(context);
@@ -678,19 +682,16 @@ describe("Gen 2 Counter: Normal/Fighting type restriction", () => {
     expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
   });
 
-  it("given a special Normal-type move last turn (impossible in Gen 2 since Normal is physical, but checking category guard), when Counter is used with lastDamageCategory=special, then Counter fails", () => {
-    // Source: pret/pokecrystal — Counter checks both type (Normal/Fighting) AND that
-    // the damage came from a physical move. We verify the physical category guard works.
-    // In Gen 2, Mirror Coat handles special moves. Counter requires physical.
+  it("given special-category damage last turn, when Counter is used, then Counter fails", () => {
+    // Source: pret/pokecrystal counter.asm — Counter only works against physical-type moves.
+    // Mirror Coat handles special moves.
     const attacker = makeActivePokemon({
       lastDamageTaken: 50,
-      lastDamageType: "normal" as PokemonType,
-      lastDamageCategory: "special" as const, // Gen 2 Counter checks physical category
+      lastDamageType: "water" as PokemonType,
+      lastDamageCategory: "special" as const,
     });
     const context = makeMoveEffectContext({ attacker, move: counterMove });
     const result = ruleset.executeMoveEffect(context);
-    // Gen 2 Counter specifically requires lastDamageCategory === "physical"
-    // based on the pokecrystal source which checks the category flag.
     expect(result.customDamage).toBeUndefined();
   });
 });

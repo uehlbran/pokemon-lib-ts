@@ -255,6 +255,71 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.messages).toContain("But it failed!");
     });
 
+    it("given attacker took physical damage from a Rock-type move, when Counter is used, then deals 2x damage", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/battle/move_effects/counter.asm:33-35
+      //   ld a, [wStringBuffer1 + MOVE_TYPE]
+      //   cp SPECIAL  ; SPECIAL = 20 (Fire is first special type)
+      //   ret nc      ; fail if type >= SPECIAL (i.e., special type)
+      // Counter works on ALL physical types (type < SPECIAL), not just Normal/Fighting.
+      // Rock is type 5 (physical), so Counter should reflect Rock-type damage.
+      const attacker = createMockActive({
+        lastDamageTaken: 60,
+        lastDamageCategory: "physical",
+        lastDamageType: "rock",
+      });
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move: counterMove,
+        damage: 0,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.customDamage).toEqual({
+        target: "defender",
+        amount: 120,
+        source: "counter",
+      });
+    });
+
+    it("given attacker took physical damage from a Ghost-type move, when Counter is used, then deals 2x damage", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/battle/move_effects/counter.asm:33-35
+      // Ghost is type 8 (physical in Gen 2, < SPECIAL=20), so Counter should reflect Ghost damage.
+      // This is a notable edge case because Ghost was special in some fan understanding.
+      const attacker = createMockActive({
+        lastDamageTaken: 50,
+        lastDamageCategory: "physical",
+        lastDamageType: "ghost",
+      });
+      const defender = createMockActive();
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move: counterMove,
+        damage: 0,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.customDamage).toEqual({
+        target: "defender",
+        amount: 100,
+        source: "counter",
+      });
+    });
+
     it("given attacker took special damage, when Counter is used, then fails", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
@@ -416,11 +481,21 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Hidden Power", () => {
-    it("given DVs Atk=15 Def=15 Spe=15 Spc=15 (all odd), when calculating HP type, then returns Dark (index 15)", () => {
+    // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
+    //
+    // TYPE formula (decomp):
+    //   typeIndex = (atkDv & 3) * 4 + (defDv & 3)
+    //   Maps through HP_TYPES[0..15] → Fighting..Dark (skipping Normal/Bird/unused)
+    //
+    // POWER formula (decomp):
+    //   topBits = ((atkDv>>3)&1)*8 + ((defDv>>3)&1)*4 + ((spdDv>>3)&1)*2 + ((spcDv>>3)&1)
+    //   power = floor((topBits * 5 + (spcDv & 3)) / 2) + 31
+    //   Range: 31-70
+
+    it("given DVs Atk=15 Def=15 Spe=15 Spc=15, when calculating HP type, then returns Dark (index 15)", () => {
       // Arrange
-      // Source: Bulbapedia -- "Hidden Power (move)/Generation II"
-      // typeIndex = (15%2)*8 + (15%2)*4 + (15%2)*2 + (15%2) = 1*8 + 1*4 + 1*2 + 1 = 15
-      // HP_TYPES[15] = "dark"
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // typeIndex = (15 & 3) * 4 + (15 & 3) = 3*4+3 = 15 → HP_TYPES[15] = "dark"
       const attacker = createMockActive({
         ivs: { attack: 15, defense: 15, speed: 15, spAttack: 15 },
       });
@@ -432,14 +507,11 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.type).toBe("dark");
     });
 
-    it("given DVs Atk=15 Def=15 Spe=15 Spc=15, when calculating HP power, then returns 70 (max power, capped)", () => {
+    it("given DVs Atk=15 Def=15 Spe=15 Spc=15, when calculating HP power, then returns 70 (max)", () => {
       // Arrange
-      // Source: Bulbapedia — "The base power can range between 31 and 70"
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
-      // All bits 3 and 2 are 1 for DV=15 (binary 1111):
-      //   bit3Atk=1, bit3Def=1, bit3Spe=1, bit3Spc=1, bit2Atk=1, bit2Def=1
-      //   powerBits = 1*32 + 1*16 + 1*8 + 1*4 + 1*2 + 1 = 63
-      //   raw = floor((63 * 40) / 63) + 31 = 40 + 31 = 71, capped to 70
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // topBits = 1*8+1*4+1*2+1 = 15, spc&3 = 3
+      // power = floor((15*5+3)/2)+31 = floor(78/2)+31 = 39+31 = 70
       const attacker = createMockActive({
         ivs: { attack: 15, defense: 15, speed: 15, spAttack: 15 },
       });
@@ -451,11 +523,10 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.power).toBe(70);
     });
 
-    it("given DVs Atk=0 Def=0 Spe=0 Spc=0 (all even), when calculating HP type, then returns Fighting (index 0)", () => {
+    it("given DVs Atk=0 Def=0 Spe=0 Spc=0, when calculating HP type, then returns Fighting (index 0)", () => {
       // Arrange
-      // Source: Bulbapedia -- "Hidden Power (move)/Generation II"
-      // typeIndex = (0%2)*8 + (0%2)*4 + (0%2)*2 + (0%2) = 0
-      // HP_TYPES[0] = "fighting"
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // typeIndex = (0 & 3) * 4 + (0 & 3) = 0 → HP_TYPES[0] = "fighting"
       const attacker = createMockActive({
         ivs: { attack: 0, defense: 0, speed: 0, spAttack: 0 },
       });
@@ -469,9 +540,8 @@ describe("Gen 2 Combat Moves", () => {
 
     it("given DVs Atk=0 Def=0 Spe=0 Spc=0, when calculating HP power, then returns 31 (minimum)", () => {
       // Arrange
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
-      // All bits are 0 => powerBits = 0
-      // power = floor((0 * 40) / 63) + 31 = 0 + 31 = 31
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // topBits = 0, spc&3 = 0, power = floor(0/2)+31 = 31
       const attacker = createMockActive({
         ivs: { attack: 0, defense: 0, speed: 0, spAttack: 0 },
       });
@@ -483,12 +553,12 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.power).toBe(31);
     });
 
-    it("given DVs Atk=13 Def=13 Spe=13 Spc=13, when calculating HP type and power, then returns Dark/70", () => {
+    it("given DVs Atk=13 Def=13 Spe=13 Spc=13, when calculating HP, then returns Bug/69", () => {
       // Arrange
-      // Source: Bulbapedia -- "Hidden Power (move)/Generation II"
-      // 13 = 0b1101: 13%2=1 (odd), bit3=(13>>3)&1=1, bit2=(13>>2)&1=1
-      // typeIndex = 1*8 + 1*4 + 1*2 + 1 = 15 => "dark"
-      // powerBits = 1*32+1*16+1*8+1*4+1*2+1 = 63 => raw=71, capped to 70
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // typeIndex = (13 & 3) * 4 + (13 & 3) = 1*4+1 = 5 → HP_TYPES[5] = "bug"
+      // topBits = 1*8+1*4+1*2+1 = 15, spc&3 = 13&3 = 1
+      // power = floor((15*5+1)/2)+31 = floor(76/2)+31 = 38+31 = 69
       const attacker = createMockActive({
         ivs: { attack: 13, defense: 13, speed: 13, spAttack: 13 },
       });
@@ -497,15 +567,14 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("dark");
-      expect(result.power).toBe(70);
+      expect(result.type).toBe("bug");
+      expect(result.power).toBe(69);
     });
 
-    it("given DVs that produce Grass type (Atk=15 Def=14 Spe=13 Spc=12), when calculating HP type, then returns Grass", () => {
+    it("given DVs Atk=15 Def=14 Spe=13 Spc=12, when calculating HP type, then returns Dragon (index 14)", () => {
       // Arrange
-      // Source: Bulbapedia -- "Hidden Power (move)/Generation II"
-      // Low bits: 15%2=1, 14%2=0, 13%2=1, 12%2=0
-      // typeIndex = 1*8 + 0*4 + 1*2 + 0 = 10 => HP_TYPES[10] = "grass"
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // typeIndex = (15 & 3) * 4 + (14 & 3) = 3*4+2 = 14 → HP_TYPES[14] = "dragon"
       const attacker = createMockActive({
         ivs: { attack: 15, defense: 14, speed: 13, spAttack: 12 },
       });
@@ -514,18 +583,16 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("grass");
+      expect(result.type).toBe("dragon");
     });
 
-    it("given DVs Atk=2 Def=3 Spe=6 Spc=7, when calculating HP type and power, then returns Bug/31", () => {
+    it("given DVs Atk=2 Def=3 Spe=6 Spc=7, when calculating HP, then returns Electric/32", () => {
       // Arrange
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
-      // Low bits: 2%2=0, 3%2=1, 6%2=0, 7%2=1
-      // typeIndex = 0*8 + 1*4 + 0*2 + 1 = 5 => HP_TYPES[5] = "bug"
-      //
-      // bit3: (2>>3)&1=0, (3>>3)&1=0, (6>>3)&1=0, (7>>3)&1=0
-      // bit2: (2>>2)&1=0, (3>>2)&1=0
-      // powerBits = 0 => power = floor(0*40/63)+31 = 31
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // typeIndex = (2 & 3) * 4 + (3 & 3) = 2*4+3 = 11 → HP_TYPES[11] = "electric"
+      // topBits: (2>>3)&1=0, (3>>3)&1=0, (6>>3)&1=0, (7>>3)&1=0 → 0
+      // spc&3 = 7&3 = 3
+      // power = floor((0*5+3)/2)+31 = floor(3/2)+31 = 1+31 = 32
       const attacker = createMockActive({
         ivs: { attack: 2, defense: 3, speed: 6, spAttack: 7 },
       });
@@ -534,7 +601,25 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("bug");
+      expect(result.type).toBe("electric");
+      expect(result.power).toBe(32);
+    });
+
+    it("given DVs Atk=4 Def=0 Spe=0 Spc=0, when calculating HP, then returns Fighting type with power 31", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm
+      // typeIndex = (4 & 3) * 4 + (0 & 3) = 0*4+0 = 0 → HP_TYPES[0] = "fighting"
+      // topBits: (4>>3)&1=0, (0>>3)&1=0, (0>>3)&1=0, (0>>3)&1=0 → 0
+      // spc&3 = 0, power = floor(0/2)+31 = 31
+      const attacker = createMockActive({
+        ivs: { attack: 4, defense: 0, speed: 0, spAttack: 0 },
+      });
+
+      // Act
+      const result = calculateGen2HiddenPower(attacker);
+
+      // Assert
+      expect(result.type).toBe("fighting");
       expect(result.power).toBe(31);
     });
   });
@@ -808,15 +893,16 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.effectiveType).toBe("dark");
     });
 
-    it("given attacker with DVs producing Grass type, when calculateDamage is called with hidden-power, then effectiveType is grass", () => {
+    it("given attacker with DVs producing Dragon type, when calculateDamage is called with hidden-power, then effectiveType is dragon", () => {
       // Arrange
-      // Source: Bulbapedia — "Hidden Power (move)/Generation II"
-      // DVs: Atk=15 Def=14 Spe=13 Spc=12 → typeIndex = 1*8+0*4+1*2+0 = 10 → "grass"
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
+      // typeIndex = (atkDv & 3) * 4 + (defDv & 3)
+      // DVs: Atk=15, Def=14 → (15 & 3)*4 + (14 & 3) = 3*4+2 = 14 → HP_TYPES[14] = "dragon"
       const attacker = createMockActive({
         level: 50,
         spAttack: 120,
         ivs: { attack: 15, defense: 14, speed: 13, spAttack: 12 },
-        types: ["grass"],
+        types: ["dragon"],
       });
       const defender = createMockActive({
         level: 50,
@@ -850,8 +936,8 @@ describe("Gen 2 Combat Moves", () => {
 
       // Assert
       expect(result.damage).toBeGreaterThan(0);
-      expect(result.effectiveType).toBe("grass");
-      // Grass is a special type in Gen 2, so effectiveCategory should be "special"
+      expect(result.effectiveType).toBe("dragon");
+      // Dragon is a special type in Gen 2, so effectiveCategory should be "special"
       expect(result.effectiveCategory).toBe("special");
     });
   });
