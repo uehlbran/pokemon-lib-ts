@@ -240,8 +240,8 @@ describe("Venoshock base power doubling", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    // Poisoned damage should be approximately 2x normal damage
-    expect(poisoned.damage).toBeGreaterThan(normal.damage);
+    // Poisoned damage should be exactly 2x normal damage (base power doubles 65 -> 130)
+    // Source: Showdown -- chainModify(2) is exact 2x multiplier in 4096-based system
     expect(poisoned.damage / normal.damage).toBeCloseTo(2, 0);
   });
 
@@ -263,7 +263,6 @@ describe("Venoshock base power doubling", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    expect(badlyPoisoned.damage).toBeGreaterThan(normal.damage);
     expect(badlyPoisoned.damage / normal.damage).toBeCloseTo(2, 0);
   });
 
@@ -316,7 +315,6 @@ describe("Hex base power doubling", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    expect(statusd.damage).toBeGreaterThan(normal.damage);
     expect(statusd.damage / normal.damage).toBeCloseTo(2, 0);
   });
 
@@ -338,7 +336,6 @@ describe("Hex base power doubling", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    expect(paralyzed.damage).toBeGreaterThan(normal.damage);
     expect(paralyzed.damage / normal.damage).toBeCloseTo(2, 0);
   });
 
@@ -556,7 +553,7 @@ describe("Clear Smog stat reset", () => {
     expect(result).not.toBeNull();
     // The result should signal stat stages reset on the defender
     expect(result!.statStagesReset).toEqual({ target: "defender" });
-    expect(result!.messages.length).toBeGreaterThan(0);
+    expect(result!.messages).toEqual(["The target's stat changes were removed!"]);
   });
 
   it("given defender has no stat changes, when Clear Smog hits, then still signals reset (no-op but valid)", () => {
