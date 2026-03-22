@@ -1262,7 +1262,37 @@ export function calculateGen7Damage(
     abilityMultiplier *= 0.75;
   }
 
-  // Minimum 1 damage after burn and abilities
+  // Screens: Reflect (physical), Light Screen (special), Aurora Veil (both): 0.5x in singles
+  // Aurora Veil is a new Gen 7 screen that halves both physical and special damage.
+  // Screens do NOT apply on crits.
+  // Brick Break and Psychic Fangs bypass/break screens.
+  // Source: Showdown sim/battle-actions.ts -- screens in modifyDamage
+  // Source: Bulbapedia "Aurora Veil" -- halves damage from physical and special moves
+  let screenMultiplier = 1;
+  const screenBypassMoves = new Set(["brick-break", "psychic-fangs"]);
+  if (!isCrit && !screenBypassMoves.has(move.id)) {
+    const sides = context.state?.sides;
+    if (sides) {
+      const defenderSideIndex = sides[0]?.active?.includes(defender) ? 0 : 1;
+      const defenderSide = sides[defenderSideIndex];
+      if (defenderSide?.screens) {
+        const hasReflect =
+          isPhysical && defenderSide.screens.some((s: { type: string }) => s.type === "reflect");
+        const hasLightScreen =
+          !isPhysical &&
+          defenderSide.screens.some((s: { type: string }) => s.type === "light-screen");
+        const hasAuroraVeil = defenderSide.screens.some(
+          (s: { type: string }) => s.type === "aurora-veil",
+        );
+        if (hasReflect || hasLightScreen || hasAuroraVeil) {
+          baseDamage = Math.floor(baseDamage / 2);
+          screenMultiplier = 0.5;
+        }
+      }
+    }
+  }
+
+  // Minimum 1 damage after burn, abilities, and screens
   if (!baseDamage) baseDamage = 1;
 
   // 9. Final modifier (Life Orb, Expert Belt, etc.)
@@ -1373,7 +1403,7 @@ export function calculateGen7Damage(
     burnMultiplier,
     abilityMultiplier,
     itemMultiplier,
-    otherMultiplier: 1,
+    otherMultiplier: screenMultiplier,
     finalDamage,
   };
 

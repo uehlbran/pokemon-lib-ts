@@ -306,8 +306,11 @@ describe("Gen 7 STAB", () => {
     const noStabResult = calculateGen7Damage(noStabCtx, typeChart);
     const stabResult = calculateGen7Damage(stabCtx, typeChart);
 
-    // STAB should produce higher damage on the same roll
-    expect(stabResult.damage).toBeGreaterThan(noStabResult.damage);
+    // STAB should produce exactly 1.5x more damage on the same roll
+    // Derivation: base=24, pokeRound(24,6144)=36 with STAB; no-STAB=24 at seed 12345
+    // Source: Showdown sim/battle-actions.ts -- STAB = pokeRound(base, 6144) = 1.5x
+    expect(stabResult.damage).toBe(36);
+    expect(noStabResult.damage).toBe(24);
     // Breakdown should report 1.5 STAB
     expect(stabResult.breakdown?.stabMultiplier).toBe(1.5);
     expect(noStabResult.breakdown?.stabMultiplier).toBe(1);
@@ -331,7 +334,10 @@ describe("Gen 7 STAB", () => {
     const normalResult = calculateGen7Damage(normalCtx, typeChart);
     const adaptResult = calculateGen7Damage(adaptCtx, typeChart);
 
-    expect(adaptResult.damage).toBeGreaterThan(normalResult.damage);
+    // Derivation: seed 42, same roll applied; normal(1.5x STAB)=33, adaptability(2.0x STAB)=44
+    // Source: Showdown data/abilities.ts -- Adaptability: STAB = 2.0x via pokeRound(base, 8192)
+    expect(adaptResult.damage).toBe(44);
+    expect(normalResult.damage).toBe(33);
     expect(adaptResult.breakdown?.stabMultiplier).toBe(2);
     expect(normalResult.breakdown?.stabMultiplier).toBe(1.5);
   });
@@ -362,7 +368,10 @@ describe("Gen 7 weather modifiers", () => {
     const noWeather = calculateGen7Damage(noWeatherCtx, typeChart);
     const withSun = calculateGen7Damage(sunCtx, typeChart);
 
-    expect(withSun.damage).toBeGreaterThan(noWeather.damage);
+    // Derivation: seed 42; noWeather=22; withSun = pokeRound(22, 6144) = 33
+    // Source: Showdown sim/battle-actions.ts -- sun + Fire = pokeRound(base, 6144) = 1.5x
+    expect(withSun.damage).toBe(33);
+    expect(noWeather.damage).toBe(22);
     expect(withSun.breakdown?.weatherMultiplier).toBe(1.5);
     expect(noWeather.breakdown?.weatherMultiplier).toBe(1);
   });
@@ -1229,7 +1238,10 @@ describe("Gen 7 ability type immunities", () => {
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    // Derivation: Levitate suppressed by Mold Breaker; Ground vs Psychic = 1x effectiveness
+    // seed=42: base=22, no immunity -> damage=22
+    // Source: Showdown data/abilities.ts -- Mold Breaker: onAllyTryHitSide bypasses Levitate
+    expect(result.damage).toBe(22);
     // Ground vs Psychic is neutral (not immune through type chart)
     expect(result.effectiveness).toBe(1);
   });
@@ -3406,5 +3418,139 @@ describe("Gen 7 Klutz suppresses Iron Ball grounding", () => {
     // With Klutz, Iron Ball doesn't ground, so terrain grounding for defender depends on type
     const result = calculateGen7Damage(ctx, typeChart);
     expect(result.damage).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Aurora Veil damage reduction tests
+// ---------------------------------------------------------------------------
+
+describe("Gen 7 Aurora Veil screen damage reduction", () => {
+  function makeStateWithDefenderScreen(
+    screen: string | null,
+    attacker: ReturnType<typeof makeActive>,
+    defender: ReturnType<typeof makeActive>,
+  ): BattleState {
+    return {
+      weather: null,
+      terrain: null,
+      trickRoom: { active: false, turnsLeft: 0 },
+      magicRoom: { active: false, turnsLeft: 0 },
+      wonderRoom: { active: false, turnsLeft: 0 },
+      gravity: { active: false, turnsLeft: 0 },
+      format: "singles",
+      generation: 7,
+      turnNumber: 1,
+      sides: [
+        { active: [attacker], screens: [], hazards: [], sideConditions: [] },
+        {
+          active: [defender],
+          screens: screen ? [{ type: screen, turnsLeft: 5 }] : [],
+          hazards: [],
+          sideConditions: [],
+        },
+      ],
+    } as unknown as BattleState;
+  }
+
+  it("given Aurora Veil on defender side and a physical move, when calculating damage, then damage is halved", () => {
+    // Source: Showdown sim/battle-actions.ts -- screens reduce damage by 0.5x in singles
+    // Source: Bulbapedia "Aurora Veil" -- halves damage from physical and special moves
+    // Derivation: power=80, attack=100, defense=100, level=50, seed=42
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   baseDamage = floor(floor(22*80*100/100)/50) + 2 = floor(1760/50) + 2 = 37
+    //   after random roll (seed 42): 34; with Aurora Veil: floor(34/2) = 17
+    const attacker = makeActive({ attack: 100 });
+    const defender = makeActive({ defense: 100 });
+    const stateNoScreen = makeStateWithDefenderScreen(null, attacker, defender);
+    const stateWithVeil = makeStateWithDefenderScreen("aurora-veil", attacker, defender);
+    const ctxNoScreen = makeDamageContext({
+      attacker,
+      defender,
+      move: makeMove({ power: 80, type: "normal", category: "physical" }),
+      state: stateNoScreen,
+      seed: 42,
+    });
+    const ctxWithVeil = makeDamageContext({
+      attacker,
+      defender,
+      move: makeMove({ power: 80, type: "normal", category: "physical" }),
+      state: stateWithVeil,
+      seed: 42,
+    });
+
+    const resultNoScreen = calculateGen7Damage(ctxNoScreen, typeChart);
+    const resultWithVeil = calculateGen7Damage(ctxWithVeil, typeChart);
+
+    expect(resultNoScreen.damage).toBe(34);
+    expect(resultWithVeil.damage).toBe(17);
+    expect(resultWithVeil.breakdown?.otherMultiplier).toBe(0.5);
+  });
+
+  it("given Aurora Veil on defender side and a special move, when calculating damage, then damage is halved", () => {
+    // Source: Showdown sim/battle-actions.ts -- Aurora Veil halves both physical and special
+    // Source: Bulbapedia "Aurora Veil" -- halves damage from both categories
+    // Derivation: power=80, spAttack=100, spDefense=100, level=50, seed=42
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   baseDamage = floor(floor(22*80*100/100)/50) + 2 = floor(1760/50) + 2 = 37
+    //   after random roll (seed 42): 34; with Aurora Veil: floor(34/2) = 17
+    const attacker = makeActive({ spAttack: 100 });
+    const defender = makeActive({ spDefense: 100 });
+    const stateNoScreen = makeStateWithDefenderScreen(null, attacker, defender);
+    const stateWithVeil = makeStateWithDefenderScreen("aurora-veil", attacker, defender);
+    const ctxNoScreen = makeDamageContext({
+      attacker,
+      defender,
+      move: makeMove({ power: 80, type: "water", category: "special" }),
+      state: stateNoScreen,
+      seed: 42,
+    });
+    const ctxWithVeil = makeDamageContext({
+      attacker,
+      defender,
+      move: makeMove({ power: 80, type: "water", category: "special" }),
+      state: stateWithVeil,
+      seed: 42,
+    });
+
+    const resultNoScreen = calculateGen7Damage(ctxNoScreen, typeChart);
+    const resultWithVeil = calculateGen7Damage(ctxWithVeil, typeChart);
+
+    expect(resultNoScreen.damage).toBe(34);
+    expect(resultWithVeil.damage).toBe(17);
+    expect(resultWithVeil.breakdown?.otherMultiplier).toBe(0.5);
+  });
+
+  it("given Aurora Veil on defender side and a critical hit physical move, when calculating damage, then damage is NOT halved", () => {
+    // Source: Showdown sim/battle-actions.ts -- critical hits bypass screens
+    // Source: Bulbapedia "Critical hit" -- always ignores enemy's Reflect/Light Screen/Aurora Veil
+    const attacker = makeActive({ attack: 100 });
+    const defender = makeActive({ defense: 100 });
+    const stateWithVeil = makeStateWithDefenderScreen("aurora-veil", attacker, defender);
+    const ctxNoCrit = makeDamageContext({
+      attacker,
+      defender,
+      move: makeMove({ power: 80, type: "normal", category: "physical" }),
+      state: stateWithVeil,
+      seed: 42,
+    });
+    const ctxWithCrit = makeDamageContext({
+      attacker,
+      defender,
+      move: makeMove({ power: 80, type: "normal", category: "physical" }),
+      state: stateWithVeil,
+      seed: 42,
+      isCrit: true,
+    });
+
+    const resultNoCrit = calculateGen7Damage(ctxNoCrit, typeChart);
+    const resultWithCrit = calculateGen7Damage(ctxWithCrit, typeChart);
+
+    // Non-crit with Aurora Veil: halved
+    expect(resultNoCrit.damage).toBe(17);
+    // Crit with Aurora Veil: NOT halved (crit bypasses screens); also gets 1.5x crit boost
+    // Derivation: base=34 (no screen) * 1.5x crit = pokeRound(34, 6144) = 51
+    expect(resultWithCrit.damage).toBe(51);
+    expect(resultWithCrit.breakdown?.otherMultiplier).toBe(1);
   });
 });
