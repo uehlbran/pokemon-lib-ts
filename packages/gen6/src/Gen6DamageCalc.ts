@@ -13,6 +13,40 @@ import {
 import { isGen6Grounded } from "./Gen6EntryHazards.js";
 import { getTerrainDamageModifier } from "./Gen6Terrain.js";
 
+// ---- Type-Resist Berries ----
+
+/**
+ * Type-resist berries: halve super-effective damage of the matching type, then consumed.
+ * Gen 6 adds Roseli Berry (Fairy) to the list from Gen 4-5.
+ * Chilan Berry activates on any Normal-type hit (no super-effective requirement).
+ *
+ * Source: Showdown data/items.ts -- type-resist berries onSourceModifyDamage
+ * Source: Bulbapedia -- "Roseli Berry" halves damage from Fairy-type moves
+ */
+export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
+  "occa-berry": "fire",
+  "passho-berry": "water",
+  "wacan-berry": "electric",
+  "rindo-berry": "grass",
+  "yache-berry": "ice",
+  "chople-berry": "fighting",
+  "kebia-berry": "poison",
+  "shuca-berry": "ground",
+  "coba-berry": "flying",
+  "payapa-berry": "psychic",
+  "tanga-berry": "bug",
+  "charti-berry": "rock",
+  "kasib-berry": "ghost",
+  "haban-berry": "dragon",
+  "colbur-berry": "dark",
+  "babiri-berry": "steel",
+  "chilan-berry": "normal",
+  // NEW in Gen 6:
+  // Source: Bulbapedia "Roseli Berry" -- halves damage from Fairy-type moves
+  // Source: Showdown data/items.ts -- roseliberry: type Fairy, onSourceModifyDamage
+  "roseli-berry": "fairy",
+};
+
 // ---- pokeRound: the 4096-based rounding function ----
 
 /**
@@ -1209,13 +1243,47 @@ export function calculateGen6Damage(
     }
   }
 
-  // Type-resist berries: halve SE damage
-  // Source: Showdown data/items.ts -- type-resist berries
-  // (Will be fully implemented in items wave)
+  // Type-resist berries: halve SE damage of the matching type (consumed).
+  // Chilan Berry (Normal) activates on any Normal-type hit (no SE requirement).
+  // Klutz or Embargo suppresses the berry.
+  // Source: Showdown data/items.ts -- type-resist berries onSourceModifyDamage
+  // Source: Bulbapedia -- type-resist berries: "Weakens a supereffective [type]-type move"
+  let typeResistBerryConsumed: string | null = null;
+  const defenderItemForBerry = defender.pokemon.heldItem;
+  const defenderHasKlutzForBerry = defender.ability === "klutz";
+  const defenderHasEmbargoForBerry = defender.volatileStatuses.has("embargo");
+  if (defenderItemForBerry && !defenderHasKlutzForBerry && !defenderHasEmbargoForBerry) {
+    const resistType = TYPE_RESIST_BERRIES[defenderItemForBerry];
+    if (resistType && resistType === effectiveMoveType) {
+      // Chilan Berry activates on any Normal-type hit; others require SE
+      // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
+      if (resistType === "normal" || effectiveness > 1) {
+        baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound in Gen 5+
+        typeResistBerryConsumed = defenderItemForBerry;
+      }
+    }
+  }
 
   // 10. Minimum 1 damage (unless type immune, which returns 0 above)
   // Source: Showdown sim/battle-actions.ts -- minimum 1 damage
   const finalDamage = Math.max(1, baseDamage);
+
+  // Consume the type-resist berry if it activated.
+  // Direct mutation is consistent with gem consumption and Gen 4 resist berry pattern.
+  // Unburden: if defender has Unburden ability and loses its item, activate the volatile.
+  // Source: Showdown data/items.ts -- type-resist berries: consumed after activation
+  // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is consumed"
+  if (typeResistBerryConsumed) {
+    defender.pokemon.heldItem = null;
+    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
+      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    }
+  }
+
+  // Track type-resist berry in itemMultiplier for breakdown
+  if (typeResistBerryConsumed) {
+    itemMultiplier = itemMultiplier === 1 ? 0.5 : itemMultiplier * 0.5;
+  }
 
   // Consume gem if activated; trigger Unburden if attacker has the ability
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
