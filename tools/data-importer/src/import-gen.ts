@@ -590,6 +590,7 @@ function buildMoveEffect(move: Move): object | null {
           changes,
           target: "self",
           chance: sec.chance ?? 100,
+          fromSecondary: true, // marks as coming from secondary.self -- Sheer Force eligible
         });
       }
     }

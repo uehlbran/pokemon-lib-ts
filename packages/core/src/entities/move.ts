@@ -173,6 +173,14 @@ export interface StatChangeEffect {
   readonly changes: readonly StatChange[];
   readonly target: "self" | "foe";
   readonly chance: number; // 0-100 (100 = guaranteed)
+  /**
+   * True when this effect originates from Showdown's `secondary.self.boosts` field.
+   * Sheer Force uses this to distinguish eligible self-stat-changes (Flame Charge Speed boost)
+   * from primary self-effects (Close Combat, Draco Meteor) that Sheer Force ignores.
+   * Source: Showdown data/abilities.ts -- sheerforce deletes move.secondaries AND move.self
+   *   only when secondaries exist (i.e., only secondary.self effects are "eligible")
+   */
+  readonly fromSecondary?: boolean;
 }
 
 export interface VolatileStatusEffect {
