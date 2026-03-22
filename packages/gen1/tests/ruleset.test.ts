@@ -100,7 +100,7 @@ describe("Gen1Ruleset", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     // Act
-    const gimmick = ruleset.getBattleGimmick();
+    const gimmick = ruleset.getBattleGimmick("mega");
     // Assert: Gen 1 has no gimmick (Mega Evolution is Gen 6, Z-Moves Gen 7, etc.)
     expect(gimmick).toBeNull();
   });

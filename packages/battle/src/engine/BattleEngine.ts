@@ -1030,8 +1030,17 @@ export class BattleEngine implements BattleEventEmitter {
     // Handle battle gimmick activation (Mega Evolution, Z-Move, Dynamax, Tera).
     // Gimmick fires before immobilization checks — even a paralyzed Pokemon mega evolves.
     // Source: Showdown sim/battle-actions.ts — gimmick activates at start of runMove
+    // The type is passed so multi-gimmick gens (Gen 7: Mega + Z-Move) can distinguish
+    // which gimmick was requested. See issue #586.
     if (action.mega || action.zMove || action.dynamax || action.terastallize) {
-      const gimmick = this.ruleset.getBattleGimmick();
+      const gimmickType = action.mega
+        ? "mega"
+        : action.zMove
+          ? "zmove"
+          : action.dynamax
+            ? "dynamax"
+            : "tera";
+      const gimmick = this.ruleset.getBattleGimmick(gimmickType);
       const side = this.state.sides[action.side];
       if (gimmick && side && gimmick.canUse(actor, side, this.state)) {
         const gimmickEvents = gimmick.activate(actor, side, this.state);

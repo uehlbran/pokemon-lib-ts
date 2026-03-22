@@ -201,7 +201,7 @@ describe("GenerationRuleset interface verification", () => {
       const ruleset = new MockRuleset();
 
       // Act
-      const gimmick = ruleset.getBattleGimmick();
+      const gimmick = ruleset.getBattleGimmick("mega");
 
       // Assert — Gen 1 has no gimmick
       expect(gimmick).toBeNull();

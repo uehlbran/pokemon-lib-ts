@@ -217,7 +217,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       // Act / Assert
-      expect(ruleset.getBattleGimmick()).toBeNull();
+      expect(ruleset.getBattleGimmick("mega")).toBeNull();
     });
 
     it("should return correct end-of-turn order matching pokecrystal HandleBetweenTurnEffects", () => {
