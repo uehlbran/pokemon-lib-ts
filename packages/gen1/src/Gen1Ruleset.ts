@@ -1262,6 +1262,14 @@ export class Gen1Ruleset implements GenerationRuleset {
     };
   }
 
+  /**
+   * Gen 1 has no abilities, so no Pokemon is sound-immune.
+   * Source: Gen 1 mechanics — abilities don't exist.
+   */
+  isSoundImmune(_pokemon: ActivePokemon): boolean {
+    return false;
+  }
+
   // --- Items (not in Gen 1) ---
 
   hasHeldItems(): boolean {

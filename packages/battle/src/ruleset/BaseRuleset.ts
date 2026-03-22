@@ -419,6 +419,18 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return { activated: false, effects: [], messages: [] };
   }
 
+  /**
+   * Whether a Pokemon is immune to sound-based effects.
+   * Default Gen 3+: checks for Soundproof ability.
+   * Gen 1-2 override this to return false (no abilities).
+   *
+   * Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
+   * Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
+   */
+  isSoundImmune(pokemon: ActivePokemon): boolean {
+    return this.hasAbilities() && pokemon.ability === "soundproof";
+  }
+
   hasHeldItems(): boolean {
     return true;
   }

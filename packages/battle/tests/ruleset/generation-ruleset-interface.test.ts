@@ -39,6 +39,7 @@ describe("GenerationRuleset interface verification", () => {
     // Abilities
     "hasAbilities",
     "applyAbility",
+    "isSoundImmune",
     // Items
     "hasHeldItems",
     "applyHeldItem",

@@ -259,6 +259,15 @@ export interface AbilitySystem {
    * No-ops for Gen 1-2.
    */
   applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult;
+  /**
+   * Whether a Pokemon is immune to sound-based effects (e.g., Uproar wake-up).
+   * Gen 3+: true if the Pokemon has the Soundproof ability.
+   * Gen 1-2: always false (no abilities).
+   *
+   * Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar and other sound moves
+   * Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
+   */
+  isSoundImmune(pokemon: ActivePokemon): boolean;
 }
 
 /** Whether this generation has held items, and how to apply them. */

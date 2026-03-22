@@ -1637,6 +1637,22 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
       } else {
+        // Pre-damage survival check: allows abilities (Sturdy) to cap lethal damage before HP subtraction.
+        // Source: Showdown sim/battle-actions.ts — onDamage handlers run before HP reduction
+        // Note: also applied in executeMoveById for Mirror Move/Metronome recursion.
+        if (damage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+          const survivalResult = this.ruleset.capLethalDamage(
+            damage,
+            defender,
+            actor,
+            moveData,
+            this.state,
+          );
+          damage = survivalResult.damage;
+          for (const msg of survivalResult.messages) {
+            this.emit({ type: "message", text: msg });
+          }
+        }
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
         defender.lastDamageType = moveData.type;
@@ -3693,10 +3709,11 @@ export class BattleEngine implements BattleEventEmitter {
               const active = side.active[0];
               if (!active || active.pokemon.currentHp <= 0) continue;
               if (active.pokemon.status === "sleep") {
-                // Soundproof blocks Uproar wake-up (Uproar is a sound-based move/effect)
+                // Soundproof blocks Uproar wake-up (Uproar is a sound-based move/effect).
+                // Delegated to ruleset to avoid hardcoding ability names in the engine.
                 // Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
                 // Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
-                if (this.ruleset.hasAbilities() && active.ability === "soundproof") {
+                if (this.ruleset.isSoundImmune(active)) {
                   continue;
                 }
                 active.pokemon.status = null;

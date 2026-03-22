@@ -287,6 +287,10 @@ export class MockRuleset implements GenerationRuleset {
     return { activated: false, effects: [], messages: [] };
   }
 
+  isSoundImmune(_pokemon: ActivePokemon): boolean {
+    return false;
+  }
+
   hasHeldItems(): boolean {
     return false;
   }

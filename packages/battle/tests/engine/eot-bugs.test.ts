@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { AbilityContext, BattleConfig, EndOfTurnEffect } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
+import type { ActivePokemon } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -395,6 +396,12 @@ describe("Bug #514 — Uproar + Soundproof", () => {
 
     override hasAbilities(): boolean {
       return this.abilityEnabled;
+    }
+
+    override isSoundImmune(pokemon: ActivePokemon): boolean {
+      // Delegate to ability check — only applies if abilities exist in this gen.
+      // Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
+      return this.abilityEnabled && pokemon.ability === "soundproof";
     }
 
     override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {

@@ -491,6 +491,14 @@ export class Gen2Ruleset implements GenerationRuleset {
     };
   }
 
+  /**
+   * Gen 2 has no abilities, so no Pokemon is sound-immune.
+   * Source: Gen 2 mechanics — abilities don't exist.
+   */
+  isSoundImmune(_pokemon: ActivePokemon): boolean {
+    return false;
+  }
+
   // --- Items (YES in Gen 2) ---
 
   hasHeldItems(): boolean {
