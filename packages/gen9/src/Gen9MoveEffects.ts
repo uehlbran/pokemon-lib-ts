@@ -389,6 +389,7 @@ export function handleShedTail(ctx: MoveEffectContext): MoveEffectResult {
   return {
     ...base,
     switchOut: true,
+    shedTail: true,
     messages: [`${attackerName} shed its tail to create a decoy!`],
   };
 }

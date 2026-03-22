@@ -3301,12 +3301,12 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // Voluntary self-switch (Shed Tail, Baton Pass without batonPass flag).
-    // switchOut=true with forcedSwitch NOT set means the ATTACKER wants to switch itself out.
-    // We add the attacker's side to sidesNeedingSwitch so the engine prompts a switch at
-    // the start of the next turn (same mechanism used for fainted-Pokemon switch prompts).
-    // Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' triggers attacker switch
-    if (result.switchOut && !result.forcedSwitch) {
+    // Voluntary self-switch: Shed Tail only.
+    // Shed Tail sets result.shedTail=true. Only this flag triggers the switch prompt — NOT
+    // the generic `switchOut && !forcedSwitch` check, which would also fire for Baton Pass and
+    // U-turn in gen3-8, causing those tests to hang waiting for a switch-prompt that never resolves.
+    // Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' is distinct from 'copyvolatile'
+    if (result.shedTail) {
       const attackerSideState = this.state.sides[attackerSide];
       const hasAlive = attackerSideState.team.some(
         (p, idx) => p.currentHp > 0 && idx !== (attackerSideState.active[0]?.teamSlot ?? -1),

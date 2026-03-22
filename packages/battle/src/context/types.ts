@@ -366,6 +366,18 @@ export interface MoveEffectResult {
    *   will be restored by half the maximum HP of the Pokemon that used Wish"
    */
   readonly wishSet?: { healAmount: number; turnsLeft: number } | null;
+  /**
+   * `true` if this move is Shed Tail — attacker voluntarily switches out after creating a substitute
+   * for the incoming Pokemon. This is the ONLY voluntary self-switch that triggers a switch prompt
+   * mid-turn (via sidesNeedingSwitch). Baton Pass and U-turn are NOT self-switches in this engine —
+   * they rely on different resolution paths.
+   *
+   * Using a specific flag (rather than `switchOut && !forcedSwitch`) prevents gen3-8 moves
+   * like Baton Pass and U-turn from accidentally triggering the switch prompt.
+   *
+   * Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' is distinct from 'copyvolatile'
+   */
+  readonly shedTail?: boolean;
 }
 
 /**
