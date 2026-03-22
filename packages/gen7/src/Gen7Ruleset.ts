@@ -33,6 +33,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
+import { calculateGen7Damage } from "./Gen7DamageCalc.js";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
 
 /**
@@ -184,8 +185,11 @@ export class Gen7Ruleset extends BaseRuleset {
    * Source: Showdown sim/battle-actions.ts -- Gen 7 damage formula
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
    */
-  calculateDamage(_context: DamageContext): DamageResult {
-    throw new Error("Gen 7 damage calculation not yet implemented (Wave 2)");
+  calculateDamage(context: DamageContext): DamageResult {
+    return calculateGen7Damage(
+      context,
+      this.getTypeChart() as Record<string, Record<string, number>>,
+    );
   }
 
   /**
