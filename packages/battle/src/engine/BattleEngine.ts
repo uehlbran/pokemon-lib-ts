@@ -4581,17 +4581,39 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "status-cure": {
-          const target = effect.target === "self" ? pokemon : opponent;
-          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
-          const status = target.pokemon.status;
-          if (status) {
-            target.pokemon.status = null;
-            this.emit({
-              type: "status-cure",
-              side: targetSide,
-              pokemon: getPokemonName(target),
-              status,
-            });
+          if (effect.target === "ally") {
+            // Ally-targeting status cure (e.g., Healer ability in doubles/triples).
+            // Find an ally on the same side that has a status condition.
+            // Source: Showdown data/abilities.ts -- healer: pokemon.adjacentAllies()
+            const side = this.state.sides[pokemonSide];
+            const ally = side.active.find(
+              (a) => a && a !== pokemon && a.pokemon.currentHp > 0 && a.pokemon.status !== null,
+            );
+            if (ally) {
+              const status = ally.pokemon.status;
+              if (status) {
+                ally.pokemon.status = null;
+                this.emit({
+                  type: "status-cure",
+                  side: pokemonSide,
+                  pokemon: getPokemonName(ally),
+                  status,
+                });
+              }
+            }
+          } else {
+            const target = effect.target === "self" ? pokemon : opponent;
+            const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+            const status = target.pokemon.status;
+            if (status) {
+              target.pokemon.status = null;
+              this.emit({
+                type: "status-cure",
+                side: targetSide,
+                pokemon: getPokemonName(target),
+                status,
+              });
+            }
           }
           break;
         }
