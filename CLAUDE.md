@@ -240,7 +240,7 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 | gen4 | 100% | 1,216 | 0 | All 24 audit bugs + 4 new bugs closed |
 | gen5 | 100% | 1,164 | 0 | Sky Drop/Pledge doubles deferred |
 | gen6 | 100% | 1,069 | 0 | All 10 waves merged, 82.6% branch coverage |
-| gen7 | 2% | 0 | 0 | Wave 0 scaffold in progress |
+| gen7 | 75% | 811 | 0 | Waves 0–7B merged; Z-Move gimmick in progress |
 
 Full per-gen details: `specs/reference/genN-status.md`
 Ground-truth mechanical reference: `specs/reference/genN-ground-truth.md`
