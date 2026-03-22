@@ -543,7 +543,9 @@ describe("shouldReflectMoveGen5", () => {
   });
 
   it("given defender with magic-bounce, reflection message includes defender nickname and move name", () => {
-    // Verify the message format for UI/logging consumers
+    // Source: Showdown data/abilities.ts -- magicbounce.onTryHit emits
+    // "[target]'s Magic Bounce reflected [move] back!" (this.add '-ability', target, 'Magic Bounce')
+    // Format: "{nickname}'s Magic Bounce reflected {displayName} back!"
     const attacker = makeActivePokemon({ ability: "chlorophyll" });
     const defender = makeActivePokemon({ ability: "magic-bounce", nickname: "Espeon" });
     const move = makeStatusMove("toxic", "Toxic");
