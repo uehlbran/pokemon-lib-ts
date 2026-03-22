@@ -16,6 +16,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
 import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
+import { calculateGen8Damage } from "./Gen8DamageCalc.js";
 import { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
 
 /**
@@ -225,20 +226,21 @@ export class Gen8Ruleset extends BaseRuleset {
   // --- Damage Calculation ---
 
   /**
-   * Gen 8 damage formula stub.
-   * Will be fully implemented in Wave 2 (Damage Calc).
+   * Gen 8 damage formula.
+   *
+   * Delegates to calculateGen8Damage which implements the full Gen 8 formula
+   * with all Gen 8-specific mechanics (1.3x terrain, Body Press, anti-Dynamax,
+   * Gorilla Tactics, etc.).
    *
    * Source: Showdown sim/battle-actions.ts -- Gen 8 damage formula
+   * Source: Showdown data/mods/gen8/scripts.ts -- Gen 8 terrain nerf
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
    */
-  calculateDamage(_context: DamageContext): DamageResult {
-    // Stub: returns minimal valid result. Wave 2 will implement the full formula.
-    return {
-      damage: 0,
-      effectiveness: 1,
-      isCrit: false,
-      randomFactor: 1,
-    };
+  calculateDamage(context: DamageContext): DamageResult {
+    return calculateGen8Damage(
+      context,
+      this.getTypeChart() as Record<string, Record<string, number>>,
+    );
   }
 
   /**
