@@ -9,6 +9,8 @@
  *     Acrobatics, Final Gambit, etc.)
  *   - Gen5MoveEffectsStatus: status/utility moves (Heal Pulse, Aromatherapy, Heal Bell,
  *     Soak, Incinerate, Bestow, Entrainment, Round)
+ *   - Gen5MovePledges: Pledge moves (Fire/Grass/Water Pledge, singles mode)
+ *   - Gen5SkyDrop: Sky Drop (stubbed, pending engine support)
  *
  * Also re-exports all public functions from sub-modules for direct consumer access.
  *
@@ -22,6 +24,8 @@ import { handleGen5BehaviorMove } from "./Gen5MoveEffectsBehavior";
 import { handleGen5CombatMove } from "./Gen5MoveEffectsCombat";
 import { handleGen5FieldMove } from "./Gen5MoveEffectsField";
 import { handleGen5StatusMove } from "./Gen5MoveEffectsStatus";
+import { handleGen5PledgeMove } from "./Gen5MovePledges";
+import { handleGen5SkyDrop } from "./Gen5SkyDrop";
 
 // ---------------------------------------------------------------------------
 // Re-exports from sub-modules
@@ -52,6 +56,10 @@ export {
 
 export { handleGen5StatusMove, isBerry } from "./Gen5MoveEffectsStatus";
 
+export { handleGen5PledgeMove, isPledgeMove } from "./Gen5MovePledges";
+
+export { handleGen5SkyDrop, isSkyDrop } from "./Gen5SkyDrop";
+
 // ---------------------------------------------------------------------------
 // Master dispatcher
 // ---------------------------------------------------------------------------
@@ -65,6 +73,8 @@ export { handleGen5StatusMove, isBerry } from "./Gen5MoveEffectsStatus";
  *   3. Combat moves (Shell Smash, Dragon Tail, Acrobatics, Final Gambit, etc.)
  *   4. Status/utility moves (Heal Pulse, Aromatherapy, Heal Bell, Soak, Incinerate,
  *      Bestow, Entrainment, Round)
+ *   5. Pledge moves (Fire/Grass/Water Pledge -- singles mode, pure damage)
+ *   6. Sky Drop (stubbed, pending engine support for target-volatile two-turn moves)
  *
  * Returns the MoveEffectResult from the first sub-module that handles the move,
  * or null if no sub-module recognizes it (the caller should fall through to
@@ -95,6 +105,16 @@ export function executeGen5MoveEffect(
   // 4. Status/utility moves (Heal Pulse, Aromatherapy, Heal Bell, Soak, etc.)
   const statusResult = handleGen5StatusMove(ctx);
   if (statusResult !== null) return statusResult;
+
+  // 5. Pledge moves (Fire/Grass/Water Pledge -- singles mode, no field effects)
+  // Source: Showdown data/mods/gen5/moves.ts -- pledge moves in singles are pure damage
+  const pledgeResult = handleGen5PledgeMove(ctx.move.id);
+  if (pledgeResult !== undefined) return pledgeResult;
+
+  // 6. Sky Drop (stubbed -- deals base damage via damage calc, no special effect)
+  // Source: Showdown data/moves.ts -- skydrop: basePower 60
+  const skyDropResult = handleGen5SkyDrop(ctx.move.id);
+  if (skyDropResult !== undefined) return skyDropResult;
 
   // Not handled by any Gen 5-specific sub-module
   return null;

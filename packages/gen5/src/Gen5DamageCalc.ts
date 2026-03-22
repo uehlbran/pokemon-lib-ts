@@ -341,6 +341,7 @@ function getDefenseStat(
   isCrit: boolean,
   weather: string | null,
   attacker?: ActivePokemon,
+  ignoreDefenseStages?: boolean,
 ): number {
   const statKey = isPhysical ? "defense" : "spDefense";
   const stats = defender.pokemon.calculatedStats;
@@ -420,9 +421,21 @@ function getDefenseStat(
   const defStatKey = isPhysical ? "defense" : "spDefense";
   const stage = getEffectiveStatStage(defender, defStatKey, attacker);
 
+  // Chip Away / Sacred Sword: ignore all defense stat stages
+  // Source: Showdown data/moves.ts -- chipaway: { ignoreDefensive: true }
+  // Source: Showdown data/moves.ts -- sacredsword: { ignoreDefensive: true, ignoreEvasion: true }
+  // Source: Bulbapedia -- "Chip Away ignores the target's Defense and Special Defense
+  //   stat stage changes."
   // On crit: ignore positive defense stages (use 0 instead), keep negative
   // Source: Showdown -- crit ignores positive def stages
-  const effectiveStage = isCrit && stage > 0 ? 0 : stage;
+  let effectiveStage: number;
+  if (ignoreDefenseStages) {
+    effectiveStage = 0;
+  } else if (isCrit && stage > 0) {
+    effectiveStage = 0;
+  } else {
+    effectiveStage = stage;
+  }
 
   const effective = Math.floor(baseStat * getStatStageMultiplier(effectiveStage));
 
@@ -575,6 +588,31 @@ export function calculateGen5Damage(
   // Source: Showdown data/abilities.ts -- Sheer Force
   // Note: Sheer Force interaction is complex; will be fully handled in later waves.
 
+  // Venoshock (NEW in Gen 5): doubles power when target is poisoned or badly poisoned
+  // Source: Showdown data/moves.ts -- venoshock:
+  //   onBasePower(basePower, pokemon, target) {
+  //     if (target.status === 'psn' || target.status === 'tox') return this.chainModify(2);
+  //   }
+  // Source: Bulbapedia -- "If the target is poisoned or badly poisoned, Venoshock's
+  //   base power is doubled to 130."
+  if (
+    move.id === "venoshock" &&
+    (defender.pokemon.status === "poison" || defender.pokemon.status === "badly-poisoned")
+  ) {
+    power = power * 2;
+  }
+
+  // Hex (NEW in Gen 5): doubles power when target has any primary status condition
+  // Source: Showdown data/moves.ts -- hex:
+  //   onBasePower(basePower, pokemon, target) {
+  //     if (target.status || target.volatiles['comatose']) return this.chainModify(2);
+  //   }
+  // Source: Bulbapedia -- "If the target has a major status condition, Hex's base power
+  //   doubles to 130." (Gen 5 base power is 50, so doubles to 100)
+  if (move.id === "hex" && defender.pokemon.status !== null) {
+    power = power * 2;
+  }
+
   // Acrobatics (NEW in Gen 5): doubles power when holder has no item
   // Source: Showdown data/moves.ts -- Acrobatics basePowerCallback
   if (move.id === "acrobatics" && !attackerItem) {
@@ -688,7 +726,11 @@ export function calculateGen5Damage(
 
   // Get effective stats
   let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, defender);
-  const defense = getDefenseStat(defender, isPhysical, isCrit, weather, attacker);
+  // Chip Away / Sacred Sword: ignore target's defense stat stages
+  // Source: Showdown data/moves.ts -- chipaway/sacredsword: { ignoreDefensive: true }
+  const IGNORE_DEFENSE_STAGE_MOVES: ReadonlySet<string> = new Set(["chip-away", "sacred-sword"]);
+  const ignoreDefStages = IGNORE_DEFENSE_STAGE_MOVES.has(move.id);
+  const defense = getDefenseStat(defender, isPhysical, isCrit, weather, attacker, ignoreDefStages);
 
   let abilityMultiplier = 1;
 

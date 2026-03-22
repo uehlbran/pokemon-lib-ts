@@ -55,11 +55,15 @@ export {
   handleGen5BehaviorMove,
   handleGen5CombatMove,
   handleGen5FieldMove,
+  handleGen5PledgeMove,
+  handleGen5SkyDrop,
   handleGen5StatusMove,
   isBerry,
   isBlockedByQuickGuard,
   isBlockedByWideGuard,
   isGen5PowderMoveBlocked,
+  isPledgeMove,
+  isSkyDrop,
   isToxicGuaranteedAccuracy,
 } from "./Gen5MoveEffects";
 export { Gen5Ruleset } from "./Gen5Ruleset";
