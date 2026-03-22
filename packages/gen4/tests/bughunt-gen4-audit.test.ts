@@ -1030,11 +1030,25 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
     const state = createNullState();
 
     const resultNoStatus = calculateGen4Damage(
-      { attacker: attackerBase, defender: defenderNoStatus, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker: attackerBase,
+        defender: defenderNoStatus,
+        move,
+        isCrit: false,
+        rng: rng as any,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
     const resultStatused = calculateGen4Damage(
-      { attacker: attackerBase, defender: defenderStatused, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker: attackerBase,
+        defender: defenderStatused,
+        move,
+        isCrit: false,
+        rng: rng as any,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 
@@ -1058,7 +1072,14 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
     const state = createNullState();
 
     const result = calculateGen4Damage(
-      { attacker, defender: defenderNoAbility, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker,
+        defender: defenderNoAbility,
+        move,
+        isCrit: false,
+        rng: rng as any,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 

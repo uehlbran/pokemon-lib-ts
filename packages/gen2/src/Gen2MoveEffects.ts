@@ -416,10 +416,7 @@ export function handleCustomEffect(
       //   ret nc            ; fail if type >= SPECIAL (i.e., special type)
       // Counter works on ALL physical-type moves (type < SPECIAL): Normal, Fighting,
       // Flying, Poison, Ground, Rock, Bug, Ghost, Steel — not just Normal/Fighting.
-      if (
-        attacker.lastDamageTaken <= 0 ||
-        attacker.lastDamageCategory !== "physical"
-      ) {
+      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
         result.messages.push("But it failed!");
         break;
       }

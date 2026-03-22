@@ -536,9 +536,15 @@ describe("Gen 3 Ability Integration", () => {
     // Arrange
     const team1 = createSpeedBoostTeam();
     const team2 = [
-      createGen3Pokemon(113, 50, ["seismic-toss", "soft-boiled", "thunder-wave", "toxic"], "Chansey", {
-        ability: "natural-cure",
-      }),
+      createGen3Pokemon(
+        113,
+        50,
+        ["seismic-toss", "soft-boiled", "thunder-wave", "toxic"],
+        "Chansey",
+        {
+          ability: "natural-cure",
+        },
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
 

@@ -796,10 +796,7 @@ export class Gen4Ruleset extends BaseRuleset {
     if (rawWeather) {
       for (const side of state.sides) {
         for (const active of side.active) {
-          if (
-            active &&
-            (active.ability === "cloud-nine" || active.ability === "air-lock")
-          ) {
+          if (active && (active.ability === "cloud-nine" || active.ability === "air-lock")) {
             weatherSuppressed = true;
             break;
           }
@@ -1047,9 +1044,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Bulbapedia — Blizzard: "100% accuracy in hail" (NEW in Gen 4)
     // Cloud Nine / Air Lock suppress weather for accuracy purposes.
     const rawWeather = context.state.weather?.type ?? null;
-    const weather = isWeatherSuppressedGen4(context.attacker, context.defender)
-      ? null
-      : rawWeather;
+    const weather = isWeatherSuppressedGen4(context.attacker, context.defender) ? null : rawWeather;
     if (context.move.id === "thunder") {
       if (weather === "rain") return true; // Thunder always hits in rain
       if (weather === "sun") {
