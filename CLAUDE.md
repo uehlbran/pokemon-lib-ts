@@ -316,6 +316,8 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 - **Always use `/babysit-pr <number>` after creating a PR** — mandatory. This is the ONLY sanctioned way to monitor, address comments, and merge. Do NOT run `gh pr merge` directly — the comment gate hook will block it if review threads haven't been acknowledged.
 - **`/babysit-pr` auto-merges by default** and self-polls until complete — no `/loop` wrapper needed. Use `--no-merge` to require confirmation before merging.
 - **Comment gate enforced by hook**: `enforce-comment-gate.sh` blocks `gh pr merge` if any unresolved review thread has zero replies. Every thread (CodeRabbit, Qodo, human) needs at minimum a reply before merge. See `.claude/rules/pr-comment-handling.md`.
+- **HARD RULE — No comment may be ignored**: Every inline review comment must get a reply. Options: (1) fix the code and reply citing the commit, (2) reply explaining why the report is incorrect citing source authority, (3) reply that it's a real bug out of scope and file a GitHub issue with the issue number. There is no fourth option. A comment without a reply is a blocker — you cannot proceed to merge.
+- **Validate bugs before acting**: AI reviewers (CodeRabbit, Qodo) analyze the first commit. If a later fix already addressed the issue, grep/read the current code to confirm, then reply citing the fix commit. Never re-implement a fix that is already in the code, and never file a GitHub issue for a bug that no longer exists.
 - **Act autonomously.** When handling a PR, agents should:
   - Push fixes for reviewer feedback without asking permission
   - Fix CI/lint/test failures independently
