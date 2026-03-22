@@ -1,5 +1,5 @@
 import type { ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
-import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
 import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { GEN6_TYPE_CHART } from "./Gen6TypeChart.js";
 
@@ -155,42 +155,9 @@ function sheerForceSuppressesLifeOrb(
   return hasSheerForceEligibleEffect(effect) || SHEER_FORCE_WHITELIST.has(moveId);
 }
 
-// ---------------------------------------------------------------------------
-// Type resist berries
-// ---------------------------------------------------------------------------
-
-/**
- * Type resist berries: halve damage from a super-effective move of the matching type.
- * Consumed after activation.
- *
- * Roseli Berry (Fairy) is new in Gen 6.
- *
- * Source: Showdown data/items.ts -- type resist berries: onSourceModifyDamage
- * Source: Bulbapedia "Roseli Berry" -- halves damage from Fairy-type moves
- */
-const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
-  "chilan-berry": "normal",
-  // NEW in Gen 6:
-  // Source: Bulbapedia "Roseli Berry" -- halves damage from Fairy-type moves
-  // Source: Showdown data/items.ts -- roseliberry: type Fairy, onSourceModifyDamage
-  "roseli-berry": "fairy",
-};
+// Type resist berries are now handled in Gen6DamageCalc.ts as a pre-damage modifier,
+// matching Showdown's onSourceModifyDamage timing. The TYPE_RESIST_BERRIES map has been
+// moved there. See issue #622 for context.
 
 // ---------------------------------------------------------------------------
 // Main item handler
@@ -657,9 +624,11 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
  *   - Weakness Policy: +2 Atk / +2 SpAtk when hit by super-effective move (consumed)
  *   - Kee Berry: +1 Def on physical hit (consumed)
  *   - Maranga Berry: +1 SpDef on special hit (consumed)
- *   - Roseli Berry: halves Fairy damage (type resist berry, consumed)
  *   - Luminous Moss: +1 SpDef on Water hit (consumed)
  *   - Snowball: +1 Atk on Ice hit (consumed)
+ *
+ * Note: Type resist berries (Occa, Passho, Roseli, etc.) are handled in Gen6DamageCalc.ts
+ * as a pre-damage modifier, matching Showdown's onSourceModifyDamage timing.
  *
  * Source: Showdown data/items.ts -- onDamagingHit and onAfterMoveSecondary triggers
  */
@@ -669,30 +638,6 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
   const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
   const damage = context.damage ?? 0;
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
-
-  // --- Type resist berries ---
-  const resistType = TYPE_RESIST_BERRIES[item];
-  if (resistType && damage > 0 && context.move?.type === resistType) {
-    // Type resist berries activate when hit by a super-effective move of the matching type
-    // Source: Showdown data/items.ts -- type resist berries: onSourceModifyDamage
-    // Note: The damage halving is handled as an effect the engine interprets.
-    // We emit a "damage-boost" with value 0.5 to indicate halved damage.
-    const effectiveness = getTypeEffectiveness(resistType, pokemon.types, GEN6_TYPE_CHART);
-    // Resist berries only activate if the move is super-effective (2x or 4x)
-    // Chilan Berry (Normal) activates on any Normal-type hit since Normal is always 1x
-    // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-    if (resistType === "normal" || effectiveness >= 2) {
-      return {
-        activated: true,
-        effects: [
-          { type: "damage-boost", target: "self", value: 0.5 },
-          { type: "consume", target: "self", value: item },
-        ],
-        messages: [`${pokemonName}'s ${formatItemName(item)} weakened the attack!`],
-      };
-    }
-    return NO_ACTIVATION;
-  }
 
   switch (item) {
     // Focus Sash: Survive with 1 HP if at full HP and damage would KO (consumed, single-use)

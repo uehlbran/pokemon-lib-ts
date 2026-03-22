@@ -505,11 +505,11 @@ describe("Gen 6 Items -- Maranga Berry", () => {
 // Roseli Berry (NEW Gen 6)
 // ---------------------------------------------------------------------------
 
-describe("Gen 6 Items -- Roseli Berry", () => {
-  it("given a Dragon-type Pokemon holding Roseli Berry, when hit by a super-effective Fairy move, then damage is halved and berry is consumed", () => {
-    // Source: Showdown data/items.ts -- roseliberry: Fairy type resist berry
-    // Source: Bulbapedia "Roseli Berry" -- halves damage from super-effective Fairy-type moves
-    // Dragon is weak to Fairy (2x effectiveness)
+describe("Gen 6 Items -- Roseli Berry (moved to damage calc)", () => {
+  it("given a Dragon-type Pokemon holding Roseli Berry, when on-damage-taken fires, then item handler does NOT activate (resist berries handled in damage calc now)", () => {
+    // Type resist berries were moved from on-damage-taken to the damage calc (pre-damage)
+    // to fix #622 -- the damage-boost effect was ignored by processItemResult.
+    // See Gen6DamageCalc.ts for the actual resist berry logic.
     const pokemon = makeActive({
       heldItem: "roseli-berry",
       types: ["dragon"],
@@ -519,28 +519,6 @@ describe("Gen 6 Items -- Roseli Berry", () => {
     const ctx = makeItemContext({
       pokemon,
       damage: 80,
-      move: makeMove({ type: "fairy", category: "special" }),
-    });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([
-      { type: "damage-boost", target: "self", value: 0.5 },
-      { type: "consume", target: "self", value: "roseli-berry" },
-    ]);
-  });
-
-  it("given a Water-type Pokemon holding Roseli Berry, when hit by a neutral Fairy move, then Roseli Berry does NOT activate", () => {
-    // Source: Showdown data/items.ts -- type resist berries only activate on SE hits
-    // Water is neutral to Fairy (1x effectiveness)
-    const pokemon = makeActive({
-      heldItem: "roseli-berry",
-      types: ["water"],
-      hp: 200,
-      currentHp: 150,
-    });
-    const ctx = makeItemContext({
-      pokemon,
-      damage: 50,
       move: makeMove({ type: "fairy", category: "special" }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);

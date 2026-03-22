@@ -36,7 +36,7 @@ export {
   GEN5_CRIT_RATE_DENOMINATORS,
   GEN5_CRIT_RATES,
 } from "./Gen5CritCalc";
-export { calculateGen5Damage, pokeRound } from "./Gen5DamageCalc";
+export { calculateGen5Damage, pokeRound, TYPE_RESIST_BERRIES } from "./Gen5DamageCalc";
 export {
   applyGen5EntryHazards,
   applyGen5SpikesHazard,
