@@ -16,10 +16,31 @@ export {
   applyGen7ToxicSpikes,
 } from "./Gen7EntryHazards.js";
 export {
+  applyGen7HeldItem,
+  getPinchBerryThreshold,
+  getSpeciesZMoves,
+  getTypedZMoves,
+  getZCrystalType,
+  hasTerrainExtender,
+  isGen7PowderBlocked,
+  isMegaStone,
+  isSpeciesZCrystal,
+  isZCrystal,
+  TERRAIN_EXTENDER_ITEM_ID,
+} from "./Gen7Items.js";
+export {
   AURORA_VEIL_DEFAULT_TURNS,
   AURORA_VEIL_LIGHT_CLAY_TURNS,
+  calculateSpikyShieldDamage,
   executeGen7MoveEffect,
   handleAuroraVeil,
+  handleDrainEffect,
+  isBlockedByBanefulBunker,
+  isBlockedByCraftyShield,
+  isBlockedByKingsShield,
+  isBlockedByMatBlock,
+  isBlockedBySpikyShield,
+  isGen7GrassPowderBlocked,
 } from "./Gen7MoveEffects.js";
 export { Gen7Ruleset } from "./Gen7Ruleset.js";
 export {

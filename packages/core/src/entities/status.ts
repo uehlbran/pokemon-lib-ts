@@ -75,4 +75,5 @@ export type VolatileStatus =
   | "kings-shield" // King's Shield — protect variant, blocks non-Status moves with protect flag; -1 Atk on contact (Gen 6+)
   | "spiky-shield" // Spiky Shield — protect variant, blocks all moves with protect flag; 1/8 HP chip on contact (Gen 6+)
   | "mat-block" // Mat Block — team-side protect, blocks damaging moves; first turn only (Gen 6+)
-  | "crafty-shield"; // Crafty Shield — team-side protect, blocks status moves targeting the side (Gen 6+)
+  | "crafty-shield" // Crafty Shield — team-side protect, blocks status moves targeting the side (Gen 6+)
+  | "baneful-bunker"; // Baneful Bunker — protect variant, blocks all moves with protect flag; poisons contact attackers (Gen 7+)

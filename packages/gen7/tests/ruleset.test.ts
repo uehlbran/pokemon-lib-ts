@@ -892,9 +892,19 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     expect(ruleset.getBattleGimmick("mega")).toBeNull();
   });
 
-  it("given Gen7Ruleset, when applying held item, then returns not activated (stub)", () => {
-    // Stub -- will be implemented in Wave 6
-    const result = ruleset.applyHeldItem("on-damage", {} as any);
+  it("given Gen7Ruleset with no held item, when applying held item trigger, then returns not activated", () => {
+    // Source: Showdown data/items.ts -- no item means no activation
+    const mockContext = {
+      pokemon: {
+        pokemon: { heldItem: null },
+        ability: "none",
+        volatileStatuses: new Map(),
+        types: ["normal"],
+      },
+      state: {},
+      rng: {},
+    } as any;
+    const result = ruleset.applyHeldItem("on-damage", mockContext);
     expect(result.activated).toBe(false);
   });
 
