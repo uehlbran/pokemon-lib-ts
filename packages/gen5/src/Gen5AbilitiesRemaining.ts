@@ -120,12 +120,19 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
   }
 
   if (currentHp > Math.floor(maxHp / 2) && isZenForm) {
-    // Revert from Zen Mode. The AbilityEffect model does not yet have a
-    // volatile-remove type, so we cannot safely signal this to the engine.
-    // Returning NO_EFFECT prevents a phantom "activated:true, effectType:none"
-    // message that would claim success with no state change.
-    // TODO: implement volatile-remove AbilityEffect type and wire engine support.
-    return NO_EFFECT;
+    // Revert from Zen Mode: HP is above 50% and currently in Zen form.
+    // Source: Showdown data/abilities.ts -- zenmode onResidual:
+    //   pokemon.hp > pokemon.maxhp / 2 && Zen form => formeChange back to standard
+    const effect: AbilityEffect = {
+      effectType: "volatile-remove",
+      target: "self",
+      volatile: "zen-mode" as never,
+    };
+    return {
+      activated: true,
+      effects: [effect],
+      messages: [`${name} returned to its standard form!`],
+    };
   }
 
   return NO_EFFECT;
@@ -171,14 +178,18 @@ function handleHarvest(ctx: AbilityContext): AbilityResult {
     if (roll >= HARVEST_BASE_PROBABILITY) return NO_EFFECT;
   }
 
-  // Harvest needs to set ctx.pokemon.pokemon.heldItem = berryId, but
-  // AbilityResult has no effect type for item restoration yet. Returning
-  // activated:true with effectType:"none" would emit a success message with
-  // no actual state change (the berry would not be restored). Return NO_EFFECT
-  // as a safe stopgap until item-restore is added to the AbilityEffect model.
-  // TODO: add "item-restore" AbilityEffect type and implement in engine.
-  void berryId;
-  return NO_EFFECT;
+  // Restore the consumed berry via the item-restore AbilityEffect.
+  // Source: Showdown data/abilities.ts -- harvest: pokemon.setItem(pokemon.lastItem)
+  const effect: AbilityEffect = {
+    effectType: "item-restore",
+    target: "self",
+    item: berryId,
+  };
+  return {
+    activated: true,
+    effects: [effect],
+    messages: [`${name}'s Harvest restored its ${berryId}!`],
+  };
 }
 
 /**

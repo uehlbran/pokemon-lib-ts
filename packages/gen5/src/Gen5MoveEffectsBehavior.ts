@@ -226,6 +226,15 @@ function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
     const item = ctx.defender.pokemon.heldItem as string;
     ctx.defender.pokemon.heldItem = null;
     ctx.defender.itemKnockedOff = true;
+
+    // Unburden: if the target has Unburden, set the volatile to double Speed.
+    // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem + onUpdate:
+    //   activates when the Pokemon loses its item by any means (consumed, stolen, knocked off).
+    // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
+    if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
+      ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    }
+
     return makeResult({
       messages: [`${ctx.defender.pokemon.nickname ?? "The defender"} lost its ${item}!`],
     });

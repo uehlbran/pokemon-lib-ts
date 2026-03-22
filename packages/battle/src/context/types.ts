@@ -363,6 +363,8 @@ export type AbilityEffectType =
   | "heal"
   | "chip-damage"
   | "volatile-inflict"
+  | "volatile-remove"
+  | "item-restore"
   | "move-prevented"
   | "none";
 
@@ -416,6 +418,16 @@ export type AbilityEffect =
       readonly target: "self" | "opponent";
       readonly volatile: VolatileStatus;
       readonly data?: Record<string, unknown>;
+    }
+  | {
+      readonly effectType: "volatile-remove";
+      readonly target: "self" | "opponent";
+      readonly volatile: VolatileStatus;
+    }
+  | {
+      readonly effectType: "item-restore";
+      readonly target: "self";
+      readonly item: string;
     }
   | { readonly effectType: "move-prevented"; readonly target: "self" }
   | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };

@@ -4598,6 +4598,35 @@ export class BattleEngine implements BattleEventEmitter {
           void targetSide;
           break;
         }
+        case "volatile-remove": {
+          // Remove a volatile status (e.g., Zen Mode reversion)
+          // Source: Showdown — abilities that remove volatile statuses when conditions change
+          const target = effect.target === "self" ? pokemon : opponent;
+          const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
+          if (target.volatileStatuses.has(effect.volatile)) {
+            target.volatileStatuses.delete(effect.volatile);
+            this.emit({
+              type: "volatile-end",
+              side: targetSide,
+              pokemon: getPokemonName(target),
+              volatile: effect.volatile,
+            });
+          }
+          break;
+        }
+        case "item-restore": {
+          // Restore a previously consumed item (e.g., Harvest restoring a Berry)
+          // Source: Showdown data/abilities.ts — harvest onResidual: restores lastItem
+          const target = effect.target === "self" ? pokemon : opponent;
+          if (!target.pokemon.heldItem) {
+            target.pokemon.heldItem = effect.item;
+            this.emit({
+              type: "message",
+              text: `${getPokemonName(target)} restored its ${effect.item}!`,
+            });
+          }
+          break;
+        }
         default:
           // damage-reduction, weather-immunity are intentionally NOT processed
           // here. They are passive checks handled inline by the ruleset's calculateDamage()

@@ -511,6 +511,38 @@ describe("Incinerate", () => {
     expect(defender.pokemon.heldItem).toBe("leftovers");
     expect(result!.messages).toEqual([]);
   });
+
+  it("given a target with Unburden holding a berry, when Incinerate is used, then sets unburden volatile", () => {
+    // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem:
+    //   activates when item is lost by any means (consumed, stolen, knocked off, incinerated).
+    // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
+    const defender = makeActive({ heldItem: "sitrus-berry", ability: "unburden" });
+    const ctx = makeContext({
+      defender,
+      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+    });
+
+    const result = handleGen5StatusMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(defender.pokemon.heldItem).toBeNull();
+    expect(defender.volatileStatuses.has("unburden")).toBe(true);
+  });
+
+  it("given a target without Unburden holding a berry, when Incinerate is used, then does NOT set unburden volatile", () => {
+    // Source: Showdown data/abilities.ts -- Unburden only activates for holders of the ability
+    const defender = makeActive({ heldItem: "sitrus-berry", ability: "blaze" });
+    const ctx = makeContext({
+      defender,
+      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+    });
+
+    const result = handleGen5StatusMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(defender.pokemon.heldItem).toBeNull();
+    expect(defender.volatileStatuses.has("unburden")).toBe(false);
+  });
 });
 
 // ===========================================================================
