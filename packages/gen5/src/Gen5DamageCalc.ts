@@ -10,6 +10,7 @@ import {
   getStatStageMultiplier,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
+import { hasSheerForceEligibleEffect } from "./Gen5AbilitiesDamage";
 
 // ---- pokeRound: the 4096-based rounding function ----
 
@@ -583,10 +584,13 @@ export function calculateGen5Damage(
     power = Math.floor(power * 1.2);
   }
 
-  // Sheer Force (NEW in Gen 5): 1.3x power for moves with secondary effects,
-  // but removes those secondary effects
-  // Source: Showdown data/abilities.ts -- Sheer Force
-  // Note: Sheer Force interaction is complex; will be fully handled in later waves.
+  // Sheer Force (NEW in Gen 5): 1.3x (5325/4096) power for moves with secondary effects.
+  // Secondary effects are suppressed by the ability handler; only the power boost is applied here.
+  // Source: Showdown data/abilities.ts -- sheerforce: onBasePower chainModify([5325, 4096])
+  // Source: Bulbapedia -- "Sheer Force raises the base power of moves... by 30%"
+  if (attackerAbility === "sheer-force" && hasSheerForceEligibleEffect(move.effect)) {
+    power = pokeRound(power, 5325);
+  }
 
   // Venoshock (NEW in Gen 5): doubles power when target is poisoned or badly poisoned
   // Source: Showdown data/moves.ts -- venoshock:
