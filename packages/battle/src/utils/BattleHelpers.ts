@@ -36,13 +36,23 @@ export function createActivePokemon(
   teamSlot: number,
   types: PokemonType[],
 ): ActivePokemon {
+  // If this Pokemon previously mega-evolved (megaTypes and megaAbility are set on the
+  // PokemonInstance), restore them. Volatile state (stat stages, etc.) is reset as normal
+  // on switch-in, but mega form identity persists because it is stored on the PokemonInstance.
+  // Source: Gen 6 game mechanic — Mega Evolution is permanent for the rest of the battle.
+  // Source: Showdown sim/battle.ts — formeChange is permanent; forme is restored on sendOut.
+  const isMega = !!(pokemon.megaTypes && pokemon.megaAbility);
+  const resolvedTypes =
+    isMega && pokemon.megaTypes ? ([...pokemon.megaTypes] as PokemonType[]) : types;
+  const resolvedAbility = isMega && pokemon.megaAbility ? pokemon.megaAbility : pokemon.ability;
+
   return {
     pokemon,
     teamSlot,
     statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types,
-    ability: pokemon.ability,
+    types: resolvedTypes,
+    ability: resolvedAbility,
     suppressedAbility: null,
     itemKnockedOff: false,
     lastMoveUsed: null,
@@ -55,7 +65,7 @@ export function createActivePokemon(
     substituteHp: 0,
     transformed: false,
     transformedSpecies: null,
-    isMega: false,
+    isMega,
     isDynamaxed: false,
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
