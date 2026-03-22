@@ -138,21 +138,20 @@ describe("Gen7Ruleset -- calculateExpGain modifiers", () => {
     expect(ruleset.calculateExpGain(context)).toBe(2250);
   });
 
-  it("given trainer battle with Lucky Egg and fractional base, when calculating EXP, then sequential flooring differs from single-step", () => {
-    // Source: Bulbapedia -- sequential flooring matters for non-round numbers
-    // This test uses baseExp=77, L=33 to produce a fractional base
-    // base = floor((77 * 33) / 5) = floor(2541 / 5) = floor(508.2) = 508
-    // trainer: floor(508 * 1.5) = floor(762) = 762
-    // Lucky Egg: floor(762 * 1.5) = floor(1143) = 1143
-    // If we did it all at once: floor(508 * 1.5 * 1.5) = floor(508 * 2.25) = floor(1143) = 1143
-    // (This case happens to agree; the next test proves they can differ)
+  it("given trainer battle with Lucky Egg and an odd base step, when calculating EXP, then staged flooring differs from one-shot multiplication", () => {
+    // Source: inline formula derivation -- values chosen so staged flooring diverges from one-shot
+    // base = floor((101 * 5) / 5) = floor(101) = 101
+    // trainer: floor(101 * 1.5) = floor(151.5) = 151
+    // Lucky Egg: floor(151 * 1.5) = floor(226.5) = 226
+    // One-shot would give: floor(101 * 2.25) = floor(227.25) = 227 (DIFFERENT)
+    // Staged flooring = 226; proves the sequential Math.floor() behavior is correct.
     const context = makeExpContext({
-      defeatedLevel: 33,
-      defeatedSpecies: { baseExp: 77 } as any,
+      defeatedLevel: 5,
+      defeatedSpecies: { baseExp: 101 } as any,
       isTrainerBattle: true,
       hasLuckyEgg: true,
     });
-    expect(ruleset.calculateExpGain(context)).toBe(1143);
+    expect(ruleset.calculateExpGain(context)).toBe(226);
   });
 
   it("given 2 participants, when calculating EXP, then splits EXP among participants", () => {
