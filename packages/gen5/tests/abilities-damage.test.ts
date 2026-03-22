@@ -206,6 +206,7 @@ describe("hasSheerForceEligibleEffect", () => {
       target: "foe",
       chance: 10,
     };
+    // Source: Showdown data/abilities.ts -- sheerforce suppresses all secondary effects targeting foe
     expect(hasSheerForceEligibleEffect(effect)).toBe(true);
   });
 
@@ -218,6 +219,7 @@ describe("hasSheerForceEligibleEffect", () => {
       target: "foe",
       chance: 100,
     };
+    // Source: Showdown data/moves.ts -- Acid Spray: secondary: { chance: 100, boosts: { spd: -2 } }; guaranteed foe-stat drops in secondary field are still suppressed
     expect(hasSheerForceEligibleEffect(effect)).toBe(true);
   });
 
@@ -230,6 +232,35 @@ describe("hasSheerForceEligibleEffect", () => {
       target: "self",
       chance: 100,
     };
+    // Source: Showdown data/moves.ts -- closecombat self-boosts are in `self` field, not `secondary`; not suppressed by Sheer Force
+    expect(hasSheerForceEligibleEffect(effect)).toBe(false);
+  });
+
+  it("given a stat-change targeting self with fromSecondary true (e.g., Flame Charge), when checking, then returns true", () => {
+    // Source: Showdown data/moves.ts -- flamecharge: secondary: { chance: 100, self: { boosts: { spe: 1 } } }
+    // Flame Charge's Speed boost comes from secondary.self -- Sheer Force eligible.
+    // Source: Showdown data/abilities.ts -- sheerforce deletes move.self when secondaries exist
+    const effect: MoveEffect = {
+      type: "stat-change",
+      changes: [{ stat: "speed", stages: 1 }],
+      target: "self",
+      chance: 100,
+      fromSecondary: true,
+    };
+    expect(hasSheerForceEligibleEffect(effect)).toBe(true);
+  });
+
+  it("given a stat-change targeting self without fromSecondary (e.g., Draco Meteor), when checking, then returns false", () => {
+    // Source: Showdown data/moves.ts -- dracometeor: self: { boosts: { spa: -2 } }, secondary: null
+    // Draco Meteor's SpAtk drop uses move.self (not secondary.self) -- NOT eligible.
+    // Triangulation: second case for primary self-effects alongside Close Combat above.
+    const effect: MoveEffect = {
+      type: "stat-change",
+      changes: [{ stat: "spAttack", stages: -2 }],
+      target: "self",
+      chance: 100,
+      // fromSecondary: undefined -- primary self-effect
+    };
     expect(hasSheerForceEligibleEffect(effect)).toBe(false);
   });
 
@@ -240,6 +271,7 @@ describe("hasSheerForceEligibleEffect", () => {
       status: "flinch",
       chance: 30,
     };
+    // Source: Showdown data/abilities.ts -- Air Slash 30% flinch secondary is suppressed by Sheer Force
     expect(hasSheerForceEligibleEffect(effect)).toBe(true);
   });
 
@@ -251,6 +283,7 @@ describe("hasSheerForceEligibleEffect", () => {
       status: "flinch",
       chance: 100,
     };
+    // Source: Showdown data/moves.ts -- fakeout: secondary: { chance: 100, volatileStatus: 'flinch' }; guaranteed volatile-status secondaries are suppressed
     expect(hasSheerForceEligibleEffect(effect)).toBe(true);
   });
 
@@ -262,6 +295,7 @@ describe("hasSheerForceEligibleEffect", () => {
       status: "confusion",
       chance: 100,
     };
+    // Source: Showdown data/moves.ts -- dynamicpunch: secondary: { chance: 100, volatileStatus: 'confusion' }; triangulation case for guaranteed volatile-status
     expect(hasSheerForceEligibleEffect(effect)).toBe(true);
   });
 
@@ -501,6 +535,7 @@ describe("Sturdy (Gen 5 rework)", () => {
     const result = handleGen5DamageImmunityAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.movePrevented).toBe(true);
+    // Source: Showdown data/abilities.ts -- sturdy onTryHit OHKO message format: "[pokemon] held on thanks to Sturdy!"
     expect(result.messages[0]).toBe("Golem held on thanks to Sturdy!");
   });
 
@@ -788,6 +823,7 @@ describe("Thick Fat", () => {
     const ctx = makeAbilityContext({ pokemon, move });
     const result = handleGen5DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
+    // Source: Showdown data/abilities.ts -- thickfat returns a damage-reduction effect for Fire/Ice moves
     expect(result.effects[0].effectType).toBe("damage-reduction");
   });
 
