@@ -83,4 +83,15 @@ Coverage (v8):
 
 ## Open Bugs
 
-None.
+8 open bugs as of 2026-03-22:
+
+| Issue | Description | Severity |
+|-------|-------------|----------|
+| #749 | Population Bomb multi-accuracy (each hit independent, not single roll) | MEDIUM |
+| #750 | Shed Tail substitute transfer mechanics (sub HP on switch) | MEDIUM |
+| #751 | timesAttacked counter not resetting on switch-out for Rage Fist | LOW |
+| #723 | Psychic Terrain priority block not fully implemented | MEDIUM |
+| #724 | Misty Terrain confusion immunity not fully implemented | MEDIUM |
+| #725 | Focus Sash capLethalDamage interaction (shared with gen7/gen8) | LOW |
+| #726 | Lansat Berry crit-rate boost not implemented | LOW |
+| #731 | Sturdy capLethalDamage interaction (shared with gen7/gen8) | LOW |

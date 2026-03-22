@@ -8,7 +8,7 @@ Authoritative mechanical values for Gen 9 (Scarlet/Violet). Primary source: Poke
 
 Same as Gen 5-8 with 4096-based modifier chain (pokeRound):
 
-```
+```text
 baseDamage = floor(floor((2*Level/5 + 2) * Power * Atk / Def) / 50) + 2
 ```
 

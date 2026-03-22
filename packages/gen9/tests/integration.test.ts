@@ -456,8 +456,12 @@ describe("Gen 9 integration tests", () => {
       );
 
       // Ghost is neutral vs Fighting
-      // With 200 BP (50 + 50*3) and Ghost STAB, damage should be significant
-      expect(result.damage).toBeGreaterThan(0);
+      // Level 50, Atk=100, Def=100, BP=200, Ghost STAB=1.5x, Ghost vs Fighting=1x, seed=42 (roll=94)
+      // baseDamage = floor(floor(22*200*100/100)/50)+2 = 90
+      // after random: floor(90*94/100) = 84
+      // after STAB 1.5x: pokeRound(84, 6144) = 126
+      // Source: formula derivation from Showdown sim/battle-actions.ts
+      expect(result.damage).toBe(126);
 
       // Compare against 0 fainted to verify the power scaling actually happened
       const side0 = makeSide({
@@ -908,11 +912,14 @@ describe("Gen 9 integration tests", () => {
         typeChart,
       );
 
-      // With both Tera STAB and Supreme Overlord, damage should be significant
-      // Fire vs Grass is 2x SE
-      // Tera STAB: 2.0x (Tera + original match)
-      // Supreme Overlord: pokeRound(120, 5325) = floor((120*5325+2047)/4096) = 156
-      expect(result.damage).toBeGreaterThan(0);
+      // Level 50, Atk=120, Def=100, seed=42 (roll=94)
+      // Supreme Overlord (3 fainted): pokeRound(120, 5325) = 156 (effective BP)
+      // baseDamage = floor(floor(22*156*120/100)/50)+2 = floor(floor(4118.4)/50)+2 = 84
+      // after random: floor(84*94/100) = 78
+      // after Tera STAB 2.0x: pokeRound(78, 8192) = 156
+      // after Fire vs Grass 2x SE: 156*2 = 312
+      // Source: formula derivation from Showdown sim/battle-actions.ts
+      expect(result.damage).toBe(312);
       expect(result.effectiveness).toBe(2);
     });
 
