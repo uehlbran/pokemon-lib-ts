@@ -42,6 +42,13 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChart, VolatileStatus } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import {
+  getFluffyModifier,
+  getHadronEngineSpAModifier,
+  getIceScalesModifier,
+  getOrichalcumPulseAtkModifier,
+  getSupremeOverlordModifier,
+} from "./Gen9AbilitiesDamage.js";
 import { calculateTeraStab } from "./Gen9Terastallization.js";
 
 // ---- pokeRound: the 4096-based rounding function ----
@@ -411,6 +418,8 @@ function getAttackStat(
   isCrit: boolean,
   moveId: string,
   defender?: ActivePokemon,
+  weather?: string | null,
+  terrainType?: string | null,
 ): number {
   // Body Press: uses user's Defense instead of Attack
   // Source: Showdown data/moves.ts -- bodypress: overrideOffensiveStat: 'def'
@@ -511,6 +520,24 @@ function getAttackStat(
     const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
     if (attacker.pokemon.currentHp <= Math.floor(maxHp / 2)) {
       rawStat = Math.floor(rawStat / 2);
+    }
+  }
+
+  // Orichalcum Pulse: 5461/4096 (~1.333x) Attack in Sun/Desolate Land
+  // Source: Showdown data/abilities.ts:3016-3035 -- orichalcumpulse onModifyAtk
+  if (isPhysical && !isBodyPress) {
+    const orichalcumMod = getOrichalcumPulseAtkModifier(ability, weather ?? null);
+    if (orichalcumMod !== 4096) {
+      rawStat = Math.floor((rawStat * orichalcumMod + 2047) / 4096);
+    }
+  }
+
+  // Hadron Engine: 5461/4096 (~1.333x) SpA on Electric Terrain
+  // Source: Showdown data/abilities.ts:1725-1742 -- hadronengine onModifySpA
+  if (!isPhysical) {
+    const hadronMod = getHadronEngineSpAModifier(ability, terrainType ?? null);
+    if (hadronMod !== 4096) {
+      rawStat = Math.floor((rawStat * hadronMod + 2047) / 4096);
     }
   }
 
@@ -967,6 +994,23 @@ export function calculateGen9Damage(
     power = pokeRound(power, 5325);
   }
 
+  // Supreme Overlord: power boost based on fainted allies (4096-based table)
+  // Source: Showdown data/abilities.ts:4634-4658 -- supremeoverlord onBasePower (priority 21)
+  if (attackerAbility === "supreme-overlord") {
+    const attackerSideIndex = context.state.sides.findIndex((s) =>
+      s.active.some((a) => a === attacker),
+    );
+    const attackerSide =
+      attackerSideIndex !== -1 ? context.state.sides[attackerSideIndex] : undefined;
+    if (attackerSide) {
+      const faintCount = attackerSide.faintCount ?? 0;
+      const overlordMod = getSupremeOverlordModifier("supreme-overlord", faintCount);
+      if (overlordMod !== 4096) {
+        power = pokeRound(power, overlordMod);
+      }
+    }
+  }
+
   // Venoshock: doubles power when target is poisoned or badly poisoned
   // Source: Showdown data/moves.ts -- venoshock: onBasePower chainModify(2)
   if (
@@ -1130,7 +1174,17 @@ export function calculateGen9Damage(
   const isPhysical = move.category === "physical";
 
   // Get effective stats
-  const attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, move.id, defender);
+  const terrainType = context.state?.terrain?.type ?? null;
+  const attack = getAttackStat(
+    attacker,
+    effectiveMoveType,
+    isPhysical,
+    isCrit,
+    move.id,
+    defender,
+    weather,
+    terrainType,
+  );
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }
   const IGNORE_DEFENSE_STAGE_MOVES: ReadonlySet<string> = new Set([
@@ -1398,6 +1452,36 @@ export function calculateGen9Damage(
   if (defenderAbility === "prism-armor" && effectiveness > 1) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
     abilityMultiplier *= 0.75;
+  }
+
+  // Fluffy: halves contact damage, doubles Fire damage. Can stack.
+  // Source: Showdown data/abilities.ts -- fluffy: flags { breakable: 1 }
+  if (!moldBreaker && defenderAbility === "fluffy") {
+    const fluffyMod = getFluffyModifier("fluffy", effectiveMoveType, !!move.flags.contact);
+    if (fluffyMod !== 4096) {
+      baseDamage = pokeRound(baseDamage, fluffyMod);
+      abilityMultiplier *= fluffyMod / 4096;
+    }
+  }
+
+  // Ice Scales: halves special damage taken.
+  // Source: Showdown data/abilities.ts -- icescales: flags { breakable: 1 }
+  if (!moldBreaker && defenderAbility === "ice-scales") {
+    const iceScalesMod = getIceScalesModifier("ice-scales", move.category);
+    if (iceScalesMod !== 4096) {
+      baseDamage = pokeRound(baseDamage, iceScalesMod);
+      abilityMultiplier *= iceScalesMod / 4096;
+    }
+  }
+
+  // Multiscale / Shadow Shield: 0.5x damage at full HP
+  // Source: Showdown data/abilities.ts -- multiscale/shadowshield onSourceModifyDamage
+  if (!moldBreaker && (defenderAbility === "multiscale" || defenderAbility === "shadow-shield")) {
+    const defMaxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+    if (defender.pokemon.currentHp >= defMaxHp) {
+      baseDamage = pokeRound(baseDamage, 2048); // 0.5x
+      abilityMultiplier *= 0.5;
+    }
   }
 
   // Screens: Reflect (physical), Light Screen (special), Aurora Veil (both): 0.5x in singles
