@@ -957,7 +957,8 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
       if (damageDealt > 0) {
         // Check Sheer Force suppression -- when SF activates, Life Orb recoil is skipped
         const moveEffect = (context.move?.effect ?? null) as MoveEffect | null;
-        if (sheerForceSuppressesLifeOrb(pokemon.ability, moveEffect)) {
+        const moveId = context.move?.id ?? "";
+        if (sheerForceSuppressesLifeOrb(pokemon.ability, moveEffect, moveId)) {
           return NO_ACTIVATION;
         }
         const recoil = Math.max(1, Math.floor(maxHp / 10));

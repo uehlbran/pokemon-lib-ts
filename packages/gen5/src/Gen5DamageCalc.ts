@@ -10,7 +10,7 @@ import {
   getStatStageMultiplier,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
-import { hasSheerForceEligibleEffect } from "./Gen5AbilitiesDamage";
+import { isSheerForceEligibleMove } from "./Gen5AbilitiesDamage";
 
 // ---- pokeRound: the 4096-based rounding function ----
 
@@ -588,7 +588,7 @@ export function calculateGen5Damage(
   // Secondary effects are suppressed by the ability handler; only the power boost is applied here.
   // Source: Showdown data/abilities.ts -- sheerforce: onBasePower chainModify([5325, 4096])
   // Source: Bulbapedia -- "Sheer Force raises the base power of moves... by 30%"
-  if (attackerAbility === "sheer-force" && hasSheerForceEligibleEffect(move.effect)) {
+  if (attackerAbility === "sheer-force" && isSheerForceEligibleMove(move.effect, move.id)) {
     power = pokeRound(power, 5325);
   }
 

@@ -22,6 +22,8 @@ export {
   handleGen5SwitchAbility,
   hasSheerForceEligibleEffect,
   isPranksterEligible,
+  isSheerForceEligibleMove,
+  isSheerForceWhitelistedMove,
   LIGHT_METAL_WEIGHT_MULTIPLIER,
   SERENE_GRACE_CHANCE_MULTIPLIER,
   sheerForceSuppressesLifeOrb,
