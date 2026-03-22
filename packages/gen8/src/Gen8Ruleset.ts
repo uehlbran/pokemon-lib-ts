@@ -1,4 +1,6 @@
 import type {
+  AbilityContext,
+  AbilityResult,
   ActivePokemon,
   BattleGimmick,
   BattleGimmickType,
@@ -11,6 +13,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
+  AbilityTrigger,
   DataManager,
   EntryHazardType,
   PokemonType,
@@ -19,6 +22,7 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
+import { handleGen8SwitchAbility, shouldMirrorArmorReflect } from "./Gen8AbilitiesSwitch.js";
 import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 import { calculateGen8Damage } from "./Gen8DamageCalc.js";
 import { applyGen8TerrainEffects, checkGen8TerrainStatusImmunity } from "./Gen8Terrain.js";
@@ -210,6 +214,61 @@ export class Gen8Ruleset extends BaseRuleset {
     // Z-Moves removed in Gen 8
     // Dynamax: implemented in Wave 8
     return null;
+  }
+
+  // --- Abilities ---
+
+  /**
+   * Gen 8 ability dispatch.
+   *
+   * Routes triggers to the appropriate Gen 8 ability handler module.
+   * Covers all Gen 7 carryforward abilities plus new Gen 8 abilities:
+   *   - on-switch-in: Intimidate, weather, Screen Cleaner, Neutralizing Gas,
+   *     Intrepid Sword, Dauntless Shield, etc.
+   *   - on-switch-out: Regenerator, Natural Cure
+   *   - on-contact: Static, Flame Body, Wandering Spirit, Perish Body,
+   *     Gulp Missile, Ice Face, Mummy, etc.
+   *   - on-status-inflicted: Synchronize
+   *   - on-before-move: Libero, Protean
+   *   - on-stat-change: Mirror Armor
+   *   - on-turn-end: Hunger Switch
+   *
+   * Source: Showdown data/abilities.ts -- Gen 8 ability handlers
+   */
+  override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+    const noActivation: AbilityResult = { activated: false, effects: [], messages: [] };
+
+    // Mirror Armor: special handling for stat-change trigger
+    if (trigger === "on-stat-change" && context.pokemon.ability === "mirror-armor") {
+      if (context.statChange) {
+        const { stat, stages, source } = context.statChange;
+        // HP cannot be stage-changed; Mirror Armor only reflects non-HP stats
+        if (stat !== "hp" && shouldMirrorArmorReflect("mirror-armor", stages, source)) {
+          const name =
+            context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+          return {
+            activated: true,
+            effects: [{ effectType: "stat-change", target: "opponent", stat, stages }],
+            messages: [`${name}'s Mirror Armor reflected the stat drop!`],
+          };
+        }
+      }
+      return noActivation;
+    }
+
+    // Route all other triggers through the switch handler
+    switch (trigger) {
+      case "on-switch-in":
+      case "on-switch-out":
+      case "on-contact":
+      case "on-status-inflicted":
+      case "on-before-move":
+      case "on-turn-end":
+        return handleGen8SwitchAbility(trigger, context);
+
+      default:
+        return noActivation;
+    }
   }
 
   // --- Experience ---
