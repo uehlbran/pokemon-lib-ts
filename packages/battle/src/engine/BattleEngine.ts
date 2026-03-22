@@ -5156,6 +5156,8 @@ export class BattleEngine implements BattleEventEmitter {
       const damage = this.ruleset.processSaltCureDamage(active);
       if (damage <= 0) continue;
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      // Source: Showdown sim/battle.ts -- residual damage subtracts HP before emitting event
+      active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
       this.emit({
         type: "damage",
         side: side.index,
