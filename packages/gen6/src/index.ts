@@ -56,6 +56,16 @@ export {
   isMegaStone,
 } from "./Gen6Items.js";
 export { Gen6MegaEvolution, getMegaEvolutionData, MEGA_STONE_DATA } from "./Gen6MegaEvolution.js";
+export {
+  calculateSpikyShieldDamage,
+  executeGen6MoveEffect,
+  handleDrainEffect,
+  isBlockedByCraftyShield,
+  isBlockedByKingsShield,
+  isBlockedByMatBlock,
+  isBlockedBySpikyShield,
+  isGen6GrassPowderBlocked,
+} from "./Gen6MoveEffects.js";
 export { Gen6Ruleset } from "./Gen6Ruleset.js";
 export type { TerrainDamageModifier } from "./Gen6Terrain.js";
 export {
