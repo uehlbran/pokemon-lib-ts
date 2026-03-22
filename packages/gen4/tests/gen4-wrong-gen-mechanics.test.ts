@@ -509,7 +509,7 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
 // Bug #358: Metronome item — 0.1x step / 1.5x cap (Gen 4), not 0.2x / 2.0x (Gen 5+)
 // ---------------------------------------------------------------------------
 
-describe("Gen4DamageCalc Metronome item — Bug #358 correct Gen 4 step and cap", () => {
+describe("Gen4DamageCalc Metronome item — Gen 4 step size (0.1x) with no cap", () => {
   it("given a Pokemon holding Metronome item using the same move for 3 consecutive turns (count=3), when calculating damage, then boost is 1.2x (not 1.4x which is Gen 5+)", () => {
     // Source: Showdown Gen 4 mod — Metronome item onModifyMove: +10% per consecutive use, cap 1.5x
     // Source: Bulbapedia — Metronome (item) Gen 4: "Boosts moves used consecutively by 10%,
@@ -556,10 +556,9 @@ describe("Gen4DamageCalc Metronome item — Bug #358 correct Gen 4 step and cap"
     expect(resultWithMetronome.damage).toBe(Math.floor(resultBaseline.damage * 1.2));
   });
 
-  it("given a Pokemon holding Metronome item at count=6 (5 consecutive uses after first), when calculating damage, then boost is capped at 1.5x (not 2.0x which is Gen 5+)", () => {
-    // Source: Showdown Gen 4 mod — Metronome item cap is 1.5x in Gen 4
-    // Gen 4: boost = min(1.0 + (count-1)*0.1, 1.5) → count=6: min(1.5, 1.5) = 1.5x
-    // Gen 5+: cap is 2.0x → count=6 would give min(2.0, 2.0) = 2.0x
+  it("given a Pokemon holding Metronome item at count=6 (5 consecutive uses after first), when calculating damage, then boost is 1.5x", () => {
+    // Source: Showdown data/mods/gen4/items.ts — damage * (1 + numConsecutive/10), no cap
+    // count=6: boostSteps=5 → multiplier = 1 + 5*0.1 = 1.5x
     const attacker = makeActivePokemon({ heldItem: "metronome", attack: 100 });
     attacker.volatileStatuses.set("metronome-count", { turnsLeft: 0, data: { count: 6 } });
     const defender = makeActivePokemon({ defense: 100 });
@@ -587,13 +586,13 @@ describe("Gen4DamageCalc Metronome item — Bug #358 correct Gen 4 step and cap"
       chart,
     );
 
-    // Gen 4 cap is 1.5x: floor(37 * 1.5) = 55
+    // count=6: boostSteps=5, multiplier=1.5x
     expect(resultCapped.damage).toBe(Math.floor(resultBaseline.damage * 1.5));
   });
 
-  it("given a Pokemon holding Metronome item at count=10 (well past cap), when calculating damage, then boost is still capped at 1.5x", () => {
-    // Source: Showdown Gen 4 mod — cap enforcement at 1.5x regardless of count
-    // count=10: without cap would be 1.9x, but cap = 1.5x
+  it("given a Pokemon holding Metronome item at count=10, when calculating damage, then boost is 1.9x (no cap in Gen 4)", () => {
+    // Source: Showdown data/mods/gen4/items.ts — no cap on numConsecutive in Gen 4
+    // count=10: boostSteps=9 → multiplier = 1 + 9*0.1 = 1.9x
     const attacker = makeActivePokemon({ heldItem: "metronome", attack: 100 });
     attacker.volatileStatuses.set("metronome-count", { turnsLeft: 0, data: { count: 10 } });
     const defender = makeActivePokemon({ defense: 100 });
@@ -610,19 +609,9 @@ describe("Gen4DamageCalc Metronome item — Bug #358 correct Gen 4 step and cap"
       chart,
     );
 
-    const attackerNoItem = makeActivePokemon({ heldItem: null, attack: 100 });
-    const resultBaseline = calculateGen4Damage(
-      createDamageContext({
-        attacker: attackerNoItem,
-        defender,
-        move,
-        rng: { ...createMockRng(), int: () => 100 },
-      }),
-      chart,
-    );
-
-    // Gen 4 cap at 1.5x — must equal the count=6 result
-    expect(resultCapped.damage).toBe(Math.floor(resultBaseline.damage * 1.5));
+    // No cap in Gen 4: Metronome is applied to baseDmg before STAB.
+    // baseDmg=37, Metronome 1.9x: floor(37*1.9)=70, STAB 1.5x: floor(70*1.5)=105
+    expect(resultCapped.damage).toBe(105);
   });
 });
 

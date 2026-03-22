@@ -952,17 +952,17 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   }
 
   // 12b. Metronome item: consecutive use of the same move boosts damage (Phase 2).
-  // Gen 4: Each consecutive use adds 0.1x (10%), capping at 1.5x (5 boost steps).
-  // Gen 5+ uses 0.2x per step up to 2.0x — but Gen 4 uses the smaller values.
+  // Gen 4: Each consecutive use adds 0.1x (10%) with NO cap.
+  // Gen 5+ uses chainModify with a lookup table capped at 2.0x -- Gen 4 has no cap.
   // Applied alongside Life Orb, Expert Belt, etc. NOT base power.
   // The consecutive count is tracked via the "metronome-count" volatile's data.count field.
   // First use: data.count = 1 (1.0x = no boost); second consecutive use: data.count = 2 (1.1x), etc.
-  // Source: Showdown data/mods/gen4/items.ts line 326 — Metronome onModifyDamagePhase2:
-  //   return damage * (1 + numConsecutive / 10), numConsecutive capped at 5
+  // Source: Showdown data/mods/gen4/items.ts line 326-328 — Metronome onModifyDamagePhase2:
+  //   return damage * (1 + (this.effectState.numConsecutive / 10));
   if (!attackerHasKlutz && attackerItem === "metronome") {
     const metronomeState = attacker.volatileStatuses.get("metronome-count");
     if (metronomeState?.data?.count) {
-      const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
+      const boostSteps = (metronomeState.data.count as number) - 1;
       if (boostSteps > 0) {
         const multiplier = 1 + boostSteps * 0.1;
         baseDamage = Math.floor(baseDamage * multiplier);
