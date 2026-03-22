@@ -132,7 +132,6 @@ export { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
 export {
   ABILITY_WEATHER_TURNS,
   applyGen8WeatherEffects,
-  getWeatherDuration,
   HAIL_IMMUNE_TYPES,
   isGen8WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,
