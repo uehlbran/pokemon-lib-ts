@@ -133,10 +133,17 @@ describe("Gen7Ruleset", () => {
   });
 
   describe("getBattleGimmick", () => {
-    it("given a Gen7Ruleset, when getting battle gimmick, then returns null (stub)", () => {
-      // Gen 7 has Z-Moves and Mega Evolution -- both will be implemented in later waves
+    it("given a Gen7Ruleset, when getting battle gimmick for zmove, then returns Gen7ZMove instance", () => {
+      // Source: Showdown sim/battle-actions.ts -- Z-Moves are a Gen 7 BattleGimmick
       const ruleset = createTestRuleset();
-      expect(ruleset.getBattleGimmick("zmove")).toBeNull();
+      const gimmick = ruleset.getBattleGimmick("zmove");
+      expect(gimmick).not.toBeNull();
+      expect(gimmick!.name).toBe("Z-Move");
+    });
+
+    it("given a Gen7Ruleset, when getting battle gimmick for mega, then returns null (stub)", () => {
+      // Mega Evolution will be implemented in a later wave
+      const ruleset = createTestRuleset();
       expect(ruleset.getBattleGimmick("mega")).toBeNull();
     });
   });

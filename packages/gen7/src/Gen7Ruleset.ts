@@ -52,6 +52,7 @@ import {
 } from "./Gen7Terrain.js";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
 import { applyGen7WeatherEffects } from "./Gen7Weather.js";
+import { Gen7ZMove } from "./Gen7ZMove.js";
 
 /**
  * Gen 7 (Sun/Moon/Ultra Sun/Ultra Moon) ruleset.
@@ -905,8 +906,16 @@ export class Gen7Ruleset extends BaseRuleset {
    * Source: Bulbapedia "Mega Evolution" -- carried forward from Gen 6
    * Source: Showdown sim/battle.ts -- getBattleGimmick returns appropriate handler
    */
-  override getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {
-    // Stub -- Z-Moves will be implemented in Wave 8, Mega Evolution in Wave 9
+  /**
+   * Z-Move gimmick instance (shared across the battle for per-side tracking).
+   * Source: Showdown sim/side.ts:170 -- zMoveUsed per-side tracking
+   */
+  private readonly _zMove = new Gen7ZMove();
+
+  override getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
+    if (type === "zmove") return this._zMove;
+    // Mega Evolution will be implemented in Wave 9
+    if (type === "mega") return null;
     return null;
   }
 

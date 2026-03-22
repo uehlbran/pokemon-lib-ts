@@ -882,9 +882,11 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     expect(ruleset.applyWeatherEffects(state)).toEqual([]);
   });
 
-  it("given Gen7Ruleset, when getting battle gimmick for zmove, then returns null (stub)", () => {
-    // Stub -- Z-Moves will be implemented in Wave 8
-    expect(ruleset.getBattleGimmick("zmove")).toBeNull();
+  it("given Gen7Ruleset, when getting battle gimmick for zmove, then returns Gen7ZMove instance", () => {
+    // Source: Showdown sim/battle-actions.ts -- Z-Moves are a Gen 7 BattleGimmick
+    const gimmick = ruleset.getBattleGimmick("zmove");
+    expect(gimmick).not.toBeNull();
+    expect(gimmick!.name).toBe("Z-Move");
   });
 
   it("given Gen7Ruleset, when getting battle gimmick for mega, then returns null (stub)", () => {

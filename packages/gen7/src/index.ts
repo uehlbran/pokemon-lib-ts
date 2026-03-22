@@ -117,3 +117,9 @@ export {
   SANDSTORM_IMMUNE_TYPES,
   WEATHER_ROCK_EXTENSION,
 } from "./Gen7Weather.js";
+export {
+  Gen7ZMove,
+  getSpeciesZBaseMove,
+  getZMoveName,
+  getZMovePower,
+} from "./Gen7ZMove.js";
