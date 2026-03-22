@@ -191,6 +191,7 @@ When implementing a gen-specific mechanic, check the ground-truth reference firs
 - If you discover a discrepancy between the spec and an authoritative source, file a GitHub issue (see Bug Reporting) before or alongside fixing it.
 - Do not implement mechanics that are undocumented in both the spec and the source hierarchy — flag them for human review instead.
 - Parallelizable research (checking multiple sources) should be dispatched as concurrent subagents, not done serially.
+- After merging a PR that changes `packages/genN/src/` or `packages/genN/data/`, or closes a tracked bug: update `specs/reference/genN-status.md` (or `core-status.md` / `battle-status.md`) with the PR number, wave name, and any bug closures. Also update the Generation Status table in this file if the completion % or open bug count changes.
 
 ## PR Review
 
@@ -214,6 +215,8 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 4. Read the spec: `specs/battle/` (e.g., `02-gen1.md`, `03-gen2.md`, ... `10-gen9.md`)
 5. Write tests for every gen-specific mechanic
 6. Export from `packages/genN/src/index.ts`
+7. Create `specs/reference/genN-status.md` to track implementation progress (waves, PRs, open bugs, test coverage)
+8. Update the Generation Status table in this file
 
 > Gen 1–2 implement `GenerationRuleset` directly. Do **not** make them extend `BaseRuleset` — they are too mechanically different. Shared Gen 1–2 formulas (`gen12FullParalysisCheck`, `gen16ConfusionSelfHitRoll`, `gen14MultiHitRoll`, `calculateStatExpContribution`) live in `packages/core/src/logic/gen12-shared.ts` — fix them there and both gens benefit automatically.
 
@@ -224,6 +227,23 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 - **Phase 3** (DONE): Gen 3–6 (sequential — each extends BaseRuleset; abilities system, items system, weather, terrain, Mega Evolution).
 - **Phase 4** (IN PROGRESS): Gen 7 (Z-Moves, Alolan Forms, Tapu terrain abilities, Ultra Burst).
 - **Phase 5+**: Gen 8–9, community-driven.
+
+## Generation Status
+
+| Package | Status | Tests | Open Bugs | Key Notes |
+|---------|--------|-------|-----------|-----------|
+| core | 100% | 342 | 0 | All entity interfaces, stat calc, type effectiveness, PRNG |
+| battle | 100% (singles) | 546 | 0 | Doubles/Triples deferred |
+| gen1 | 100% | 800 | 1 (#530 badge glitch — enhancement) | All move handlers done |
+| gen2 | 100% | 757 | 0 | All engine-level bugs closed |
+| gen3 | 98% | 860 | 1 (#141 Plus/Minus — doubles) | Flash Fire fixed PR #591 |
+| gen4 | 100% | 1,216 | 0 | All 24 audit bugs + 4 new bugs closed |
+| gen5 | 100% | 1,164 | 0 | Sky Drop/Pledge doubles deferred |
+| gen6 | 100% | 1,069 | 0 | All 10 waves merged, 82.6% branch coverage |
+| gen7 | 75% | 811 | 0 | Waves 0–7B merged; Z-Move gimmick in progress |
+
+Full per-gen details: `specs/reference/genN-status.md`
+Ground-truth mechanical reference: `specs/reference/genN-ground-truth.md`
 
 ## Package Versioning
 
@@ -318,6 +338,7 @@ Before every `git push`, all agents must run the following validation gate:
 1. **Biome**: `npx @biomejs/biome check --write .` — auto-fixes formatting/lint. If any files are modified, stage them before pushing.
 2. **Typecheck**: `npm run typecheck` — catches TypeScript errors.
 3. **Tests**: `npm run test` — ensures nothing is broken.
+4. **Status docs**: If the PR touches `packages/*/src/` or `packages/*/data/`, or closes a tracked bug, verify the corresponding `specs/reference/*-status.md` has been updated with the PR number and any bug closures.
 
 If typecheck or tests fail, fix the issue and re-run before pushing. Never push failing code.
 
