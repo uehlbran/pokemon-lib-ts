@@ -222,6 +222,7 @@ describe("Gen 5 damage calc -- status moves", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- status moves have power=null, return 0 damage; effectiveness stays 1 (not immune)
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(1);
   });
@@ -235,6 +236,7 @@ describe("Gen 5 damage calc -- status moves", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- power 0 skips all damage calc, returns 0
     expect(result.damage).toBe(0);
   });
 });
@@ -360,6 +362,7 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: Showdown type chart -- Fire vs Grass = 2x (super effective)
     expect(result.effectiveness).toBe(2);
     // With STAB + SE: base 24, random 20-24, STAB -> 30-36, SE -> 60-72
     expect(result.damage).toBeGreaterThanOrEqual(60);
@@ -378,6 +381,7 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: Showdown type chart -- Fire vs Water = 0.5x (not very effective)
     expect(result.effectiveness).toBe(0.5);
     expect(result.damage).toBeGreaterThanOrEqual(15);
     expect(result.damage).toBeLessThanOrEqual(18);
@@ -393,6 +397,7 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: Showdown type chart -- Normal vs Ghost = 0x (immune); damage 0, effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -418,6 +423,7 @@ describe("Gen 5 damage calc -- critical hit", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- isCrit passthrough from ctx.isCrit
     expect(result.isCrit).toBe(true);
     // Crit range: 40-48 (vs non-crit 20-24)
     expect(result.damage).toBeGreaterThanOrEqual(40);
@@ -759,6 +765,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- Levitate grants Ground immunity; effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -773,6 +780,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: Showdown data/abilities.ts -- Water Absorb blocks Water moves; damage 0, effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -788,6 +796,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
     // Ground vs Psychic = 1x (neutral), damage should be > 0
+    // Source: Showdown type chart -- Ground vs Psychic = 1x; Mold Breaker bypasses Levitate so normal calc applies
     expect(result.damage).toBeGreaterThan(0);
     expect(result.effectiveness).toBe(1);
   });
@@ -968,6 +977,7 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
     // Fire vs Rock = 0.5x, but we care about the SpDef boost here
+    // Source: Showdown type chart -- Fire vs Rock = 0.5x (not very effective)
     expect(result.damage).toBeGreaterThan(0);
     expect(result.effectiveness).toBe(0.5);
   });
@@ -1135,6 +1145,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
     // Normal vs Fire = 1x (neutral), not super effective
+    // Source: Showdown type chart -- Normal vs Fire = 1x (neutral); Normalize changed Fire move to Normal type
     expect(result.effectiveness).toBe(1);
   });
 
@@ -1225,6 +1236,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
     // Fire vs Normal = 1x (neutral), Wonder Guard blocks
+    // Source: Showdown data/abilities.ts -- Wonder Guard: blocks all non-SE moves; damage 0
     expect(result.damage).toBe(0);
   });
 
@@ -1239,6 +1251,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
     // Fire vs Water = 0.5x, Tinted Lens doubles it back to ~1x
+    // Source: Showdown type chart -- Fire vs Water = 0.5x; Tinted Lens doubles NVE damage but does not change effectiveness value
     expect(result.effectiveness).toBe(0.5);
     expect(result.damage).toBeGreaterThanOrEqual(20);
   });
@@ -1254,6 +1267,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
     // SE 2x then Filter 0.75x = effective 1.5x
+    // Source: Showdown type chart -- Fire vs Grass = 2x; Filter reduces damage but does not change effectiveness value
     expect(result.effectiveness).toBe(2);
     expect(result.damage).toBeLessThan(48); // Without Filter, max would be 48
   });
@@ -1268,6 +1282,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: Showdown type chart -- Fire vs Grass = 2x; Solid Rock reduces damage but does not change effectiveness value
     expect(result.effectiveness).toBe(2);
     expect(result.damage).toBeLessThan(48);
   });
@@ -1315,6 +1330,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: Showdown type chart -- Fire vs Grass = 2x (super effective); Expert Belt applies after
     expect(result.effectiveness).toBe(2);
     // SE 2x + Expert Belt ~1.2x
     expect(result.damage).toBeGreaterThan(40);
@@ -1372,6 +1388,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- isCrit passthrough from ctx.isCrit; Sniper sets 3x modifier
     expect(result.isCrit).toBe(true);
     expect(result.damage).toBeGreaterThanOrEqual(61);
     expect(result.damage).toBeLessThanOrEqual(72);
@@ -1391,6 +1408,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
+    // Source: Showdown -- Magnet Rise grants Ground immunity; damage 0, effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });

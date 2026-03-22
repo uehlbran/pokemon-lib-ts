@@ -16,6 +16,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
+  MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
@@ -23,9 +24,12 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import { getSturdyDamageCap } from "./Gen5AbilitiesDamage";
 import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_DENOMINATORS } from "./Gen5CritCalc";
 import { calculateGen5Damage } from "./Gen5DamageCalc";
 import { applyGen5HeldItem } from "./Gen5Items";
+import { handleGen5CombatMove } from "./Gen5MoveEffectsCombat";
+import { handleGen5FieldMove } from "./Gen5MoveEffectsField";
 import { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
 import { applyGen5WeatherEffects } from "./Gen5Weather";
 
@@ -112,6 +116,39 @@ export class Gen5Ruleset extends BaseRuleset {
     );
   }
 
+  /**
+   * Gen 5+ recalculates future attack damage at hit time, not at use time.
+   * Source: Bulbapedia -- "From Generation V onwards, damage is calculated when
+   *   Future Sight or Doom Desire hits, not when it is used."
+   * Source: Showdown sim/battle-actions.ts -- Gen 5+ recalculates future attack damage
+   */
+  recalculatesFutureAttackDamage(): boolean {
+    return true;
+  }
+
+  /**
+   * Cap lethal damage for Sturdy (Gen 5+): survive any hit from full HP at 1 HP.
+   *
+   * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
+   *   "If this Pokemon is at full HP, it survives attacks that would KO it with 1 HP."
+   * Source: Bulbapedia -- Sturdy (Ability)
+   */
+  capLethalDamage(
+    damage: number,
+    defender: ActivePokemon,
+    _attacker: ActivePokemon,
+    _move: MoveData,
+    _state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[] } {
+    const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+    const capped = getSturdyDamageCap(defender.ability, damage, defender.pokemon.currentHp, maxHp);
+    if (capped < damage) {
+      const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+      return { damage: capped, survived: true, messages: [`${name} held on thanks to Sturdy!`] };
+    }
+    return { damage, survived: false, messages: [] };
+  }
+
   // --- Move Effects ---
 
   /**
@@ -121,7 +158,21 @@ export class Gen5Ruleset extends BaseRuleset {
    * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    // Stub -- delegates to BaseRuleset default for now
+    // Try field effect moves first (Magic Room, Wonder Room, Trick Room, Quick Guard, Wide Guard)
+    // Source: references/pokemon-showdown/data/mods/gen5/moves.ts
+    const fieldResult = handleGen5FieldMove(
+      context,
+      context.state.rng,
+      this.rollProtectSuccess.bind(this),
+    );
+    if (fieldResult !== null) return fieldResult;
+
+    // Try combat moves (Shell Smash, Quiver Dance, Dragon Tail, etc.)
+    // Source: references/pokemon-showdown/data/mods/gen5/moves.ts
+    const combatResult = handleGen5CombatMove(context);
+    if (combatResult !== null) return combatResult;
+
+    // Delegate to BaseRuleset for any remaining moves
     return super.executeMoveEffect(context);
   }
 
@@ -688,6 +739,8 @@ export class Gen5Ruleset extends BaseRuleset {
       "safeguard-countdown",
       "tailwind-countdown",
       "trick-room-countdown",
+      "magic-room-countdown", // Magic Room duration (5 turns)
+      "wonder-room-countdown", // Wonder Room duration (5 turns)
       "gravity-countdown",
       "weather-countdown",
       "toxic-orb-activation", // Toxic Orb — after weather countdown

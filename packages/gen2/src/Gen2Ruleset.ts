@@ -280,16 +280,11 @@ export class Gen2Ruleset implements GenerationRuleset {
       if (attackerLevel < defenderLevel) {
         return false;
       }
-      // Source: decomp line 5440 — `add a` doubles the level difference
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5440 — `add a` doubles level diff
       const levelBonus = 2 * (attackerLevel - defenderLevel);
       const ohkoAcc = Math.min(255, move.accuracy + levelBonus);
-      // Convert percentage accuracy to 0-255 scale, then apply levelBonus
-      // Actually, the decomp works on the raw move accuracy byte (0-255 scale) directly.
-      // Move accuracy 30 in percentage = floor(30 * 255 / 100) = 76 on 0-255 scale.
-      // But the decomp just uses MOVE_ACC directly which is stored as a percentage (30).
-      // The `add e` instruction adds the doubled level diff to the raw byte.
-      // So: effective = min(255, moveAcc + 2 * levelDiff), then BattleCommand_CheckHit.
-      // BattleCommand_CheckHit: random 0-255, if random < accuracy, hit.
+      // move.accuracy is raw byte 30 (matching pokecrystal MOVE_ACC for OHKO moves).
+      // BattleCommand_CheckHit: random(0,255) < accuracy → base 30/256 ≈ 11.7% at equal levels.
       if (ohkoAcc >= 255) return true;
       return rng.int(0, 255) < ohkoAcc;
     }

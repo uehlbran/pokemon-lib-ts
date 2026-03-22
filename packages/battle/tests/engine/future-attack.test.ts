@@ -322,3 +322,181 @@ describe("Future Sight end-of-turn processing", () => {
     expect(fsEvent.type === "damage" && fsEvent.amount).toBe(80);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bug #505: Future attack damage recalculation for Gen 5+
+// ---------------------------------------------------------------------------
+
+describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
+  /**
+   * MockRuleset subclass that implements recalculatesFutureAttackDamage()
+   * and allows configuring whether recalculation is enabled.
+   */
+  class RecalcFutureAttackMockRuleset extends FutureAttackMockRuleset {
+    private shouldRecalculate = false;
+
+    setRecalculates(value: boolean) {
+      this.shouldRecalculate = value;
+    }
+
+    recalculatesFutureAttackDamage(): boolean {
+      return this.shouldRecalculate;
+    }
+  }
+
+  it("given a Gen 5 battle with non-zero stored future attack damage, when attack triggers, then damage is recalculated using current stats", () => {
+    // Arrange — set up a ruleset that recalculates and returns a different value
+    const ruleset = new RecalcFutureAttackMockRuleset();
+    ruleset.setRecalculates(true);
+    // The calculateDamage for future-sight returns this value on recalculation
+    // Source: Showdown — Gen 5+ always recalculates at hit time
+    ruleset.setFutureSightDamage(120);
+
+    const dataManager = createFutureAttackDataManager();
+    const events: BattleEvent[] = [];
+
+    const team1: PokemonInstance[] = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const team2: PokemonInstance[] = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const config: BattleConfig = {
+      generation: 5,
+      format: "singles",
+      teams: [team1, team2],
+      seed: 42,
+    };
+
+    const engine = new BattleEngine(config, ruleset, dataManager);
+    engine.on((event) => events.push(event));
+    engine.start();
+
+    // Set future attack with NON-ZERO stored damage (50), but recalculation should override it
+    engine.state.sides[1].futureAttack = {
+      moveId: "future-sight",
+      turnsLeft: 1,
+      damage: 50, // Stored at use time — should be IGNORED in Gen 5+
+      sourceSide: 0,
+    };
+
+    // Act
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — damage should be recalculated (120), not the stored value (50)
+    // Source: Bulbapedia — "From Generation V onwards, damage is calculated when
+    //   Future Sight or Doom Desire hits, not when it is used."
+    const futureSightDamage = events.filter(
+      (e) => e.type === "damage" && "source" in e && e.source === "future-sight",
+    );
+    expect(futureSightDamage.length).toBe(1);
+    const fsEvent = futureSightDamage[0]!;
+    expect(fsEvent.type === "damage" && fsEvent.amount).toBe(120);
+  });
+
+  it("given a Gen 4 battle with non-zero stored future attack damage, when attack triggers, then stored damage is used unchanged", () => {
+    // Arrange — Gen 4 does NOT recalculate
+    const ruleset = new RecalcFutureAttackMockRuleset();
+    ruleset.setRecalculates(false);
+    // Set a different value that would be used if recalculation happened
+    ruleset.setFutureSightDamage(120);
+
+    const dataManager = createFutureAttackDataManager();
+    const events: BattleEvent[] = [];
+
+    const team1: PokemonInstance[] = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const team2: PokemonInstance[] = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const config: BattleConfig = {
+      generation: 4,
+      format: "singles",
+      teams: [team1, team2],
+      seed: 42,
+    };
+
+    const engine = new BattleEngine(config, ruleset, dataManager);
+    engine.on((event) => events.push(event));
+    engine.start();
+
+    // Set future attack with stored damage of 50
+    engine.state.sides[1].futureAttack = {
+      moveId: "future-sight",
+      turnsLeft: 1,
+      damage: 50, // Stored at use time — should be USED in Gen 4
+      sourceSide: 0,
+    };
+
+    // Act
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — damage should be the stored value (50), not recalculated (120)
+    // Source: Bulbapedia — "In Generations II-IV, damage is calculated when used"
+    const futureSightDamage = events.filter(
+      (e) => e.type === "damage" && "source" in e && e.source === "future-sight",
+    );
+    expect(futureSightDamage.length).toBe(1);
+    const fsEvent = futureSightDamage[0]!;
+    expect(fsEvent.type === "damage" && fsEvent.amount).toBe(50);
+  });
+});

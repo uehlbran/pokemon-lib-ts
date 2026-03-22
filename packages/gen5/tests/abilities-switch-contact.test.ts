@@ -520,6 +520,7 @@ describe("handleGen5SwitchAbility on-switch-out -- Regenerator", () => {
     const result = handleGen5SwitchAbility("on-switch-out", ctx);
 
     expect(result.activated).toBe(true);
+    // Source: Showdown data/abilities.ts — Regenerator heals floor(maxHp/3) = floor(300/3) = 100
     expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 100 });
   });
 
@@ -535,6 +536,7 @@ describe("handleGen5SwitchAbility on-switch-out -- Regenerator", () => {
     const result = handleGen5SwitchAbility("on-switch-out", ctx);
 
     expect(result.activated).toBe(true);
+    // Source: Showdown data/abilities.ts — Regenerator heals floor(maxHp/3) = floor(200/3) = 66
     expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 66 });
   });
 });
@@ -1202,6 +1204,7 @@ describe("handleGen5SwitchAbility passive-immunity -- Water Absorb", () => {
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
     expect(result.activated).toBe(true);
+    // Source: Showdown data/abilities.ts — Water Absorb heals floor(maxHp/4) = floor(200/4) = 50
     expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 50 });
   });
 
@@ -1234,6 +1237,7 @@ describe("handleGen5SwitchAbility passive-immunity -- Volt Absorb", () => {
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
     expect(result.activated).toBe(true);
+    // Source: Showdown data/abilities.ts — Volt Absorb heals floor(maxHp/4) = floor(160/4) = 40
     expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 40 });
   });
 
@@ -1291,6 +1295,7 @@ describe("handleGen5SwitchAbility passive-immunity -- Dry Skin", () => {
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
     expect(result.activated).toBe(true);
+    // Source: Showdown data/abilities.ts — Dry Skin heals floor(maxHp/4) = floor(200/4) = 50 from Water
     expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 50 });
   });
 
@@ -1537,6 +1542,7 @@ describe("isTrappedByAbility", () => {
       { ability: "blaze", types: ["fire"] },
       true,
     );
+    // Source: Showdown data/abilities.ts — Shadow Tag: traps unless opponent also has Shadow Tag
     expect(result).toBe(true);
   });
 
@@ -1547,6 +1553,7 @@ describe("isTrappedByAbility", () => {
       { ability: "shadow-tag", types: ["psychic"] },
       true,
     );
+    // Source: Showdown data/abilities.ts — Shadow Tag: does not trap another pokemon with Shadow Tag
     expect(result).toBe(false);
   });
 
@@ -1557,6 +1564,7 @@ describe("isTrappedByAbility", () => {
       { ability: "blaze", types: ["fire"] },
       true,
     );
+    // Source: Showdown data/abilities.ts — Arena Trap: traps grounded opponents
     expect(result).toBe(true);
   });
 
@@ -1567,6 +1575,7 @@ describe("isTrappedByAbility", () => {
       { ability: "levitate", types: ["fire"] },
       false,
     );
+    // Source: Showdown data/abilities.ts — Arena Trap: does not trap Flying-type or Levitate pokemon
     expect(result).toBe(false);
   });
 
@@ -1577,6 +1586,7 @@ describe("isTrappedByAbility", () => {
       { ability: "blaze", types: ["steel"] },
       true,
     );
+    // Source: Showdown data/abilities.ts — Magnet Pull: traps Steel-type opponents
     expect(result).toBe(true);
   });
 
@@ -1587,6 +1597,7 @@ describe("isTrappedByAbility", () => {
       { ability: "blaze", types: ["fire"] },
       true,
     );
+    // Source: Showdown data/abilities.ts — Magnet Pull: does not trap non-Steel types
     expect(result).toBe(false);
   });
 });

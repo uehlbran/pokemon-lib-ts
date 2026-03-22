@@ -57,6 +57,7 @@ describe("Gen5Ruleset status conditions", () => {
         results.add(turns);
       }
       // Should see all possible values with enough rolls
+      // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- sleep duration is 1, 2, or 3 turns (3 distinct values)
       expect(results.size).toBe(3);
     });
 
@@ -89,11 +90,13 @@ describe("Gen5Ruleset status conditions", () => {
       const resetCounter = pokemon.volatileStatuses.get("sleep-counter");
       expect(resetCounter).toBeDefined();
       // After reset, turnsLeft should be back to startTime
+      // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- slp.onSwitchIn sets effectState.time = startTime
       expect(resetCounter!.turnsLeft).toBe(initialTurns);
     });
 
     it("given sleeping pokemon in Gen5, when processSleepTurn fires and counter reaches 0, then can act on wake turn", () => {
-      // Source: BaseRuleset.processSleepTurn -- Gen 5+ can act on wake turn (returns true)
+      // Source: references/pokemon-showdown/data/conditions.ts -- slp.onBeforeMove: when time <= 0, calls cureStatus() then returns (no return false)
+      // Gen 5+ can act on the wake turn; Gen 1-4 Showdown returns false (cannot act)
       const pokemon = makeActivePokemon({
         status: "sleep",
         volatileStatuses: new Map([["sleep-counter", { turnsLeft: 1 }]]),
@@ -102,6 +105,7 @@ describe("Gen5Ruleset status conditions", () => {
 
       // Process: should decrement from 1 to 0 and wake up
       const canAct = ruleset.processSleepTurn(pokemon, state);
+      // Source: references/pokemon-showdown/data/conditions.ts -- slp.onBeforeMove returns undefined (not false) when waking; pokemon can act
       expect(canAct).toBe(true);
       expect(pokemon.pokemon.status).toBeNull();
     });
@@ -287,6 +291,7 @@ describe("Gen5Ruleset status conditions", () => {
       const state = makeState();
       ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
       // Counter should have incremented from 2 to 3
+      // Source: references/pokemon-showdown/sim/battle-actions.ts -- toxic counter increments each turn
       expect((toxicState.data as Record<string, unknown>).counter).toBe(3);
     });
   });

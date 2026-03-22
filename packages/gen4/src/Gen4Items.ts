@@ -721,6 +721,12 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       // Direct mutation is consistent with other item transfer patterns (e.g., Thief, Trick)
       pokemon.pokemon.heldItem = null;
       opponent.pokemon.heldItem = "sticky-barb";
+      // Unburden: if holder had Unburden, activate it now that their item is gone
+      // Source: Showdown Gen 4 mod — Unburden activates on any item loss including Sticky Barb transfer
+      // Follows the same pattern as Knock Off (Gen4MoveEffects.ts)
+      if (pokemon.ability === "unburden" && !pokemon.volatileStatuses.has("unburden")) {
+        pokemon.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      }
       return {
         activated: true,
         effects: [],

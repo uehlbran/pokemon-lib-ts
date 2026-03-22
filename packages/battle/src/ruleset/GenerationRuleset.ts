@@ -58,7 +58,7 @@ export interface StatCalculator {
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock;
 }
 
-/** Damage formula and damage breakdown. */
+/** Damage formula, breakdown, and Struggle damage/recoil (mid-turn, not end-of-turn). */
 export interface DamageSystem {
   /**
    * Calculate damage for a move.
@@ -66,6 +66,51 @@ export interface DamageSystem {
    * in modifier order, rounding, and which factors apply.
    */
   calculateDamage(context: DamageContext): DamageResult;
+  /**
+   * Calculate Struggle base damage dealt to the defender.
+   * Gen 1: Normal-type physical damage (50 BP, Ghost immune — type chart applies).
+   * Gen 2+: Typeless damage (50 BP physical, type chart does NOT apply, Ghost takes full damage).
+   * @param state - Required for Gen 1 (passed to calculateDamage for Normal-type chart lookup);
+   *   Gen 2+ compute damage inline without consulting state.
+   * @returns damage amount (non-negative integer)
+   */
+  calculateStruggleDamage(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): number;
+  /**
+   * Calculate Struggle recoil damage.
+   * Gen 1: 1/2 of damage dealt. Gen 2-3: 1/4 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
+   */
+  calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
+
+  /**
+   * Whether future attacks (Future Sight, Doom Desire) recalculate damage at hit time.
+   * Gen 2-4: false -- damage is calculated at use time and stored.
+   * Gen 5+: true -- damage is recalculated when the attack lands.
+   * Source: Bulbapedia -- "From Generation V onwards, damage is calculated when
+   *   Future Sight or Doom Desire hits, not when it is used."
+   * Source: Showdown sim/battle-actions.ts -- Gen 5+ recalculates future attack damage
+   */
+  recalculatesFutureAttackDamage?(): boolean;
+
+  /**
+   * Cap lethal damage for survival abilities (Sturdy in Gen 5+, etc.).
+   * Called BEFORE HP is subtracted when damage >= defender's currentHp.
+   * Returns the (possibly reduced) damage and messages to emit.
+   * Default: no capping (returns damage unchanged).
+   *
+   * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
+   * "If this Pokemon is at full HP, it survives attacks that would KO it with 1 HP."
+   */
+  capLethalDamage?(
+    damage: number,
+    defender: ActivePokemon,
+    attacker: ActivePokemon,
+    move: MoveData,
+    state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[] };
 }
 
 /** Critical hit rate table, multiplier, and roll. */
@@ -245,8 +290,10 @@ export interface ItemSystem {
    * Apply held item effects for the given trigger.
    * @param trigger Known trigger points:
    *   - `"end-of-turn"` -- standard end-of-turn item effects (Leftovers, Black Sludge, etc.)
-   *   - `"on-damage-taken"` -- triggered when the holder takes damage
-   *   - `"on-hit"` -- triggered when the holder lands a hit
+   *   - `"on-damage-taken"` -- triggered when the holder takes damage (context.opponent = attacker)
+   *   - `"on-hit"` -- triggered when the holder lands a hit (context.opponent = defender)
+   *   - `"on-contact"` -- triggered when a contact move hits the holder (context.opponent = attacker)
+   *   - `"before-move"` -- triggered before the holder's move executes
    *   - `"stat-boost-between-turns"` -- Gen 2+ stat-boosting items (e.g., Macho Brace) between turns
    *   - `"heal-between-turns"` -- Gen 2+ healing items (e.g., Lum Berry) between turns
    * @param context The item trigger context (holder, state, RNG, etc.)
@@ -373,7 +420,7 @@ export interface CatchSystem {
 /**
  * End-of-turn damage sources and multi-turn mechanics.
  *
- * Covers: leech seed, curse, nightmare, struggle recoil, bind, perish song, protect, multi-hit.
+ * Covers: leech seed, curse, nightmare, bind, perish song, protect, multi-hit.
  */
 export interface EndOfTurnSystem {
   /**
@@ -391,24 +438,6 @@ export interface EndOfTurnSystem {
    * Gen 2+: 1/4 max HP while asleep. Gen 1: N/A.
    */
   calculateNightmareDamage(pokemon: ActivePokemon): number;
-  /**
-   * Calculate Struggle base damage dealt to the defender.
-   * Gen 1: Normal-type physical damage (50 BP, Ghost immune — type chart applies).
-   * Gen 2+: Typeless damage (50 BP physical, type chart does NOT apply, Ghost takes full damage).
-   * @param state - Required for Gen 1 (passed to calculateDamage for Normal-type chart lookup);
-   *   Gen 2+ compute damage inline without consulting state.
-   * @returns damage amount (non-negative integer)
-   */
-  calculateStruggleDamage(
-    attacker: ActivePokemon,
-    defender: ActivePokemon,
-    state: BattleState,
-  ): number;
-  /**
-   * Calculate Struggle recoil damage.
-   * Gen 1: 1/2 of damage dealt. Gen 2-3: 1/4 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
-   */
-  calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
   /**
    * Roll the number of hits for a multi-hit move.
    * Gen 1-4: [2,2,2,3,3,3,4,5] weighted (roughly 37.5/37.5/12.5/12.5%).
