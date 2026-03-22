@@ -146,6 +146,7 @@ None. All tracked bugs closed as of 2026-03-22.
 | #580 | PR #596 | Harvest berry-tracking volatile never written on berry consumption |
 | #583 | PR #592 | Healer cannot cure allies (AbilityEffect missing target:"ally") |
 | #584 | PR #590 | Tri Attack not boosted by Sheer Force (complex secondary / effect=null) |
+| #732 | PR #752 | Protect sequential-use probability formula wrong for denom ≥ 256; Sheer Force whitelist missing secret-power/relic-song; canBypassProtect not a required method |
 
 ---
 
@@ -183,3 +184,4 @@ None. All tracked bugs closed as of 2026-03-22.
 | #592 | fix/gen5-healer-ally-target-583-v2 | Healer target:ally in AbilityEffect + engine (closes #583) |
 | #595 | fix/gen5-ability-change-moves-579 | Simple Beam/Worry Seed/Gastro Acid/Role Play/Skill Swap (closes #579) |
 | #596 | fix/gen5-harvest-berry-tracking-580 | Harvest berry volatile in engine + VolatileStatus type (closes #580) |
+| #752 | fix/gen5-8-bughunt | Deep bughunt: Protect formula, Sheer Force whitelist, canBypassProtect delegation (closes #732) |
