@@ -203,7 +203,7 @@ describe("Gen 5 Items -- Klutz and Embargo suppression", () => {
   });
 
   it("given a Pokemon with no held item, when any trigger fires, then the item does not activate", () => {
-    // Source: Gen5Items.ts suppression guard -- early return if heldItem is null
+    // Source: Showdown sim/battle.ts -- item handlers are gated on pokemon.item !== ''; null/empty item means no handler fires
     const pokemon = makeActive({ heldItem: null });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
