@@ -1022,7 +1022,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Apply power multiplier (e.g., Pursuit pre-switch doubles power)
-    const effectiveMoveData =
+    let effectiveMoveData =
       powerMultiplier !== 1 && moveData.power !== null
         ? { ...moveData, power: moveData.power * powerMultiplier }
         : moveData;
@@ -1032,6 +1032,11 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown sim/battle-actions.ts — gimmick activates at start of runMove
     // The type is passed so multi-gimmick gens (Gen 7: Mega + Z-Move) can distinguish
     // which gimmick was requested. See issue #586.
+    //
+    // activatedGimmick tracks whether activation actually succeeded (canUse passed and
+    // activate ran). modifyMove is only called on the activated gimmick — if canUse()
+    // returned false the gimmick did not activate and the move must not be transformed.
+    let activatedGimmick: import("../context").BattleGimmick | null = null;
     if (action.mega || action.zMove || action.dynamax || action.terastallize) {
       const gimmickType = action.mega
         ? "mega"
@@ -1047,6 +1052,7 @@ export class BattleEngine implements BattleEventEmitter {
         for (const event of gimmickEvents) {
           this.emit(event);
         }
+        activatedGimmick = gimmick;
         // After mega evolution, trigger on-switch-in ability effects for the new mega ability.
         // Abilities like Drought, Intimidate, and Trace are entry-style abilities that should
         // fire whenever the Pokemon's ability changes to one that has a switch-in trigger.
@@ -1068,6 +1074,15 @@ export class BattleEngine implements BattleEventEmitter {
           }
         }
       }
+    }
+
+    // Allow the activated gimmick to transform the move (e.g., Z-Move power/type override,
+    // Max Move conversion). This runs after gimmick.activate() so the gimmick state is set,
+    // and before damage calc so the modified power/type is used in the damage formula.
+    // modifyMove is only called when activation actually succeeded (activatedGimmick is set).
+    // Source: Showdown sim/battle-actions.ts — Z-Move base power override happens in useMove
+    if (activatedGimmick?.modifyMove) {
+      effectiveMoveData = activatedGimmick.modifyMove(effectiveMoveData, actor);
     }
 
     // Pre-move checks: can the pokemon actually move?
@@ -1236,12 +1251,13 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // Accuracy check
+    // Accuracy check — use effectiveMoveData so gimmick-modified accuracy/flags are applied.
+    // moveData.id is kept for event emission (original move slot identity).
     if (
       !this.ruleset.doesMoveHit({
         attacker: actor,
         defender,
-        move: moveData,
+        move: effectiveMoveData,
         state: this.state,
         rng: this.state.rng,
       })
