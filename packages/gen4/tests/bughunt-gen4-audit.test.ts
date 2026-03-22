@@ -763,7 +763,7 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
     const result = ruleset.executeMoveEffect(context);
 
     // Wonder Room should not set any special field state in Gen 4
-    expect(result.trickRoomSet).toBeFalsy();
+    expect(result.trickRoomSet).toBe(undefined);
     // No special messages about swapping defense/sp defense should appear
     expect(result.messages.every((m) => !m.toLowerCase().includes("wonder room"))).toBe(true);
   });
@@ -820,7 +820,7 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
     const result = ruleset.executeMoveEffect(context);
 
     // Magic Room should not set any special field state in Gen 4
-    expect(result.trickRoomSet).toBeFalsy();
+    expect(result.trickRoomSet).toBe(undefined);
     expect(result.messages.every((m) => !m.toLowerCase().includes("magic room"))).toBe(true);
   });
 });
@@ -872,7 +872,7 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     // Per Showdown: Klutz holders can use Trick to give away or receive items; Klutz only prevents
     // the item's battle effect (stat boost, berry activation, etc.)
     const trickMove = dataManager.getMove("trick");
-    if (!trickMove) return; // skip if move data unavailable
+    expect(trickMove).toBeDefined(); // fail fast if move data is missing — that would be a regression
 
     const attacker = createActivePokemon({ ability: "klutz", types: ["normal"] });
     attacker.pokemon.heldItem = "life-orb"; // Klutz holder with an item to swap
@@ -883,7 +883,8 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     const context = {
       attacker,
       defender,
-      move: trickMove,
+      // biome-ignore lint/style/noNonNullAssertion: asserted above via expect()
+      move: trickMove!,
       damage: 0,
       state,
       rng: createMockRng(),
@@ -894,5 +895,35 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     // Items should be swapped: attacker gets choice-band, defender gets life-orb
     expect(attacker.pokemon.heldItem).toBe("choice-band");
     expect(defender.pokemon.heldItem).toBe("life-orb");
+  });
+
+  it("given a Klutz attacker holding no item using Trick against a defender holding Leftovers, when Trick is executed, then items are swapped (null for item)", () => {
+    // Source: Showdown Gen 4 mod — Klutz does not block Trick/Switcheroo even when attacker has no item
+    // Triangulates: attacker starts with null item, defender starts with an item; after Trick, attacker
+    // has defender's item, defender has null. Tests the swap in the opposite direction.
+    const trickMove = dataManager.getMove("trick");
+    expect(trickMove).toBeDefined();
+
+    const attacker = createActivePokemon({ ability: "klutz", types: ["normal"] });
+    attacker.pokemon.heldItem = null; // No item — Trick still allowed even for Klutz with no item
+    const defender = createActivePokemon({ ability: "blaze", types: ["normal"] });
+    defender.pokemon.heldItem = "leftovers";
+
+    const state = createNullState();
+    const context = {
+      attacker,
+      defender,
+      // biome-ignore lint/style/noNonNullAssertion: asserted above via expect()
+      move: trickMove!,
+      damage: 0,
+      state,
+      rng: createMockRng(),
+    } as MoveEffectContext;
+
+    ruleset.executeMoveEffect(context);
+
+    // Items should be swapped: attacker gets leftovers, defender gets null
+    expect(attacker.pokemon.heldItem).toBe("leftovers");
+    expect(defender.pokemon.heldItem).toBeNull();
   });
 });
