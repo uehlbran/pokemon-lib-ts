@@ -86,7 +86,7 @@ type MutableResult = {
     moveId: string;
     volatileStatus: VolatileStatus;
   } | null;
-  itemConsumed?: boolean;
+  attackerItemConsumed?: boolean;
   wishSet?: { healAmount: number; turnsLeft: number } | null;
 };
 
@@ -574,7 +574,7 @@ function handleTwoTurnEffect(
   // Source: Bulbapedia — "Power Herb allows the holder to skip the charge turn of a
   //   two-turn move. It is consumed after use."
   if (attacker.pokemon.heldItem === "power-herb") {
-    result.itemConsumed = true;
+    result.attackerItemConsumed = true;
     result.messages.push(`${attackerName} became fully charged due to its Power Herb!`);
     return; // No forcedMoveSet — engine proceeds with the attack immediately
   }
@@ -1832,7 +1832,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     // The engine calls calculateDamage() before executeMoveEffect(), so the move's
     // base power and type in the data determine the damage output.
     // Source: Showdown Gen 4 — Natural Gift uses onModifyMove to set base power/type
-    result.itemConsumed = true;
+    result.attackerItemConsumed = true;
     result.messages.push(
       `${attackerName} used Natural Gift! (${berryData.type} / ${berryData.power} BP)`,
     );
@@ -1860,7 +1860,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     // The engine calls calculateDamage() before executeMoveEffect(), so the move's
     // base power in the data determines the damage output.
     // Source: Showdown Gen 4 — Fling uses onModifyMove to set base power
-    result.itemConsumed = true;
+    result.attackerItemConsumed = true;
     result.messages.push(`${attackerName} flung its ${heldItem}!`);
     return result;
   }

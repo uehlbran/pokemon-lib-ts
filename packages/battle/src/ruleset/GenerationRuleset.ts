@@ -96,16 +96,21 @@ export interface DamageSystem {
   recalculatesFutureAttackDamage?(): boolean;
 
   /**
-   * Cap lethal damage for survival abilities/items (Sturdy, Focus Sash, Focus Band).
-   * Called BEFORE HP is subtracted when damage >= defender's currentHp.
-   * Returns the (possibly reduced) damage and messages to emit.
-   * Default: no capping (returns damage unchanged).
+   * Intercept damage before HP is subtracted. Called for EVERY damaging hit
+   * (not just lethal hits), allowing abilities and items to modify or redirect
+   * damage — e.g., Disguise absorbs all non-status damage regardless of lethality,
+   * while Sturdy and Focus Sash only activate on lethal hits.
    *
-   * If `consumedItem` is set, the engine will set heldItem to null and emit
-   * an `item-consumed` event after applying the capped damage.
+   * Implementations should apply their own lethal-hit guard when needed.
+   * Returns the (possibly modified) damage and messages to emit.
+   * Default: no modification (returns damage unchanged).
    *
-   * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
-   * Source: Showdown data/items.ts -- Focus Sash: onDamage
+   * If `consumedItem` is set, the engine will set the defender's heldItem to null
+   * and emit an `item-consumed` event after applying the modified damage.
+   *
+   * Source: Showdown data/abilities.ts -- disguise: onDamage (priority 1, intercepts all hits)
+   * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30, lethal-hit only)
+   * Source: Showdown data/items.ts -- Focus Sash: onDamage (lethal-hit only)
    */
   capLethalDamage?(
     damage: number,
@@ -114,6 +119,42 @@ export interface DamageSystem {
     move: MoveData,
     state: BattleState,
   ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string };
+
+  /**
+   * Returns `true` if the given volatile status should be blocked from being
+   * inflicted on `target`. Called before both move-effect and ability-effect
+   * volatile infliction.
+   *
+   * Used for terrain-based immunity: Misty Terrain blocks confusion on grounded
+   * Pokemon. Gen 9+ rulesets override this; earlier gens return false by default.
+   *
+   * Source: Showdown sim/battle.ts -- terrainHit / onTryAddVolatile checks
+   * Source: Showdown data/conditions.ts -- mistyterrain.onTryAddVolatile: blocks confusion
+   */
+  shouldBlockVolatile?(
+    volatile: VolatileStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): boolean;
+
+  /**
+   * Returns `true` if a move with positive priority should be blocked from
+   * hitting the defender. Called before move execution for priority > 0 moves.
+   *
+   * Used by Psychic Terrain (Gen 7+): blocks priority moves against grounded
+   * targets. Other gens return false by default.
+   *
+   * Source: Showdown data/conditions.ts -- psychicterrain.onTryHit:
+   *   if (target.isGrounded() && move.priority > 0) { return false; }
+   * Source: Bulbapedia "Psychic Terrain" -- "Grounded Pokemon are protected
+   *   from moves with increased priority."
+   */
+  shouldBlockPriorityMove?(
+    actor: ActivePokemon,
+    move: MoveData,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): boolean;
 
   /**
    * Returns `true` if the given move, when used by the given actor, can bypass Protect-type

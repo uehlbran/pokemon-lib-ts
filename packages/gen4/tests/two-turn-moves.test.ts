@@ -526,7 +526,7 @@ describe("Gen 4 Two-Turn Moves — Power Herb", () => {
     // No forcedMoveSet — attack proceeds immediately
     expect(result.forcedMoveSet).toBeUndefined();
     // Item is consumed
-    expect(result.itemConsumed).toBe(true);
+    expect(result.attackerItemConsumed).toBe(true);
     expect(result.messages).toContain("The Pokemon became fully charged due to its Power Herb!");
   });
 });

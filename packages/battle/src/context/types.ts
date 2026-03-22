@@ -387,6 +387,21 @@ export interface MoveEffectResult {
    * Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' is distinct from 'copyvolatile'
    */
   readonly shedTail?: boolean;
+  /**
+   * When `true`, the engine will consume the attacker's held item after processing this
+   * move effect — sets heldItem to null and emits an `item-consumed` event.
+   *
+   * Used for moves that consume the user's item as part of their effect: Power Herb
+   * (skips charge turn), Natural Gift (berry consumed), Fling (item thrown at target).
+   *
+   * The item is read from `attacker.pokemon.heldItem` at the time processEffectResult
+   * runs, so move handlers should NOT set heldItem to null themselves — let the engine
+   * do it via this flag.
+   *
+   * Source: Showdown data/moves.ts — naturalGift, fling, and powerherb all consume
+   *   the user's item as part of the move's onTryMove / onAfterMove lifecycle.
+   */
+  readonly attackerItemConsumed?: boolean;
 }
 
 /**
