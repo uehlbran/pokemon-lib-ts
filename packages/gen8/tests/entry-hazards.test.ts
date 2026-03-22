@@ -167,6 +167,15 @@ describe("Gen 8 Entry Hazards", () => {
       const result = applyGen8SpikesHazard(mon, 1, false);
       expect(result).toBeNull();
     });
+
+    it("given Spikes and a Flying-type with Gravity active, when applying Spikes, then deals 25 damage (Gravity grounds)", () => {
+      // Source: Bulbapedia -- Gravity: "grounds all Flying-types and Pokemon with Levitate"
+      // 1 layer: floor(200 * 3 / 24) = floor(25) = 25
+      const mon = makeActivePokemon({ types: ["flying"], maxHp: 200 });
+      const result = applyGen8SpikesHazard(mon, 1, true);
+      expect(result).not.toBeNull();
+      expect(result!.damage).toBe(25);
+    });
   });
 
   describe("Toxic Spikes", () => {
@@ -246,6 +255,20 @@ describe("Gen 8 Entry Hazards", () => {
         expect.arrayContaining([
           { stat: "speed", stages: -1 },
           { stat: "attack", stages: 2 },
+        ]),
+      );
+    });
+
+    it("given Sticky Web and a Pokemon with Competitive, when applying, then -1 Speed and +2 Sp. Atk", () => {
+      // Source: Showdown data/abilities.ts -- Competitive: onAfterEachBoost
+      // Source: Bulbapedia -- Competitive: "raises Sp. Atk by 2 when its stats are lowered"
+      const mon = makeActivePokemon({ types: ["normal"], maxHp: 200, ability: "competitive" });
+      const result = applyGen8StickyWeb(mon, false);
+      expect(result.applied).toBe(true);
+      expect(result.statChanges).toEqual(
+        expect.arrayContaining([
+          { stat: "speed", stages: -1 },
+          { stat: "spAttack", stages: 2 },
         ]),
       );
     });
