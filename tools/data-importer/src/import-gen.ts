@@ -945,7 +945,7 @@ function buildMovesData() {
       contact: !!move.flags.contact,
       sound: !!move.flags.sound,
       bullet: !!move.flags.bullet,
-      pulse: false, // @pkmn doesn't track pulse in older gens
+      pulse: !!move.flags.pulse, // Source: @pkmn/dex does track pulse flag (Mega Launcher)
       punch: !!move.flags.punch,
       bite: !!move.flags.bite,
       wind: !!move.flags.wind,

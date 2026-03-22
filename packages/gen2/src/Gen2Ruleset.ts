@@ -440,17 +440,23 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   /**
-   * Compute per-hit damage for multi-hit moves with variable power or stats.
+   * Set up lazy per-hit damage for multi-hit moves with variable power or stats.
+   * Uses `perHitDamageFn` so RNG is only consumed for hits that actually execute.
    *
-   * - Triple Kick: power escalates 10 → 20 → 30 per hit.
+   * - Triple Kick: power escalates 10 -> 20 -> 30 per hit.
    *   Source: pret/pokecrystal engine/battle/effect_commands.asm TripleKickEffect
-   *   Source: Bulbapedia — "Power increases by 10 with each successive hit: 10, 20, 30"
+   *   Source: Bulbapedia -- "Power increases by 10 with each successive hit: 10, 20, 30"
    *
    * - Beat Up (Gen 2): each hit uses the party member's level and species base Attack
    *   in a simplified damage formula (no STAB, no weather, no crits, no type effectiveness).
    *   Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
    *   Formula per hit: floor(floor(floor(2*Level/5+2) * 10 * BaseAtk / BaseDef) / 50) + 2
    *   Then apply random factor (217-255)/255.
+   *
+   * Fix for #620: previously this method eagerly precomputed perHitDamage[] for ALL
+   * hits, consuming RNG even for hits skipped by early KO. Now uses perHitDamageFn
+   * which the engine calls lazily per-hit, so RNG is only consumed when the hit
+   * actually executes.
    */
   private computePerHitDamage(
     move: MoveData,
@@ -460,15 +466,14 @@ export class Gen2Ruleset implements GenerationRuleset {
     if (!result.multiHitCount || result.multiHitCount <= 0) return;
 
     if (move.id === "triple-kick") {
-      // Triple Kick: recalculate damage for hits 2 and 3 with power 20 and 30.
+      // Triple Kick: lazily compute damage for hits 2 and 3 with power 20 and 30.
       // Hit 1 (power 10) is already calculated by the engine's normal damage flow.
       // multiHitCount = 2 (2 additional hits).
-      const perHit: number[] = [];
-      for (let hitIdx = 0; hitIdx < result.multiHitCount; hitIdx++) {
+      // Source: pret/pokecrystal -- damage computed inside the hit loop, not before it
+      const attackerSpecies = this.dataManager.getSpecies(context.attacker.pokemon.speciesId);
+      result.perHitDamageFn = (hitIdx: number): number => {
         const hitPower = (hitIdx + 2) * 10; // hit 2 = power 20, hit 3 = power 30
-        // Create a modified move with the escalated power
         const modifiedMove: MoveData = { ...move, power: hitPower };
-        // Roll crit independently for each additional hit
         const isCrit = rollGen2Critical(context.attacker, modifiedMove, context.rng);
         const damageResult = calculateGen2Damage(
           {
@@ -480,14 +485,12 @@ export class Gen2Ruleset implements GenerationRuleset {
             isCrit,
           },
           GEN2_TYPE_CHART,
-          this.dataManager.getSpecies(context.attacker.pokemon.speciesId),
+          attackerSpecies,
         );
-        perHit.push(damageResult.damage);
-      }
-      result.perHitDamage = perHit;
+        return damageResult.damage;
+      };
     } else if (move.id === "beat-up") {
-      // Beat Up (Gen 2): each hit uses a party member's level and species base Attack.
-      // The first hit uses the active Pokemon; additional hits use other eligible members.
+      // Beat Up (Gen 2): lazily compute each hit using party member's base Attack.
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
       // The formula is simplified: no STAB, no weather, no type effectiveness, no crits.
       const actorSideIdx = context.state.sides.findIndex((s) =>
@@ -496,18 +499,18 @@ export class Gen2Ruleset implements GenerationRuleset {
       const actorSide = context.state.sides[actorSideIdx];
       if (!actorSide) return;
 
-      // Get the target's species base Defense
+      // Get the target's species base Defense (snapshot at move time)
       const defenderSpecies = this.dataManager.getSpecies(context.defender.pokemon.speciesId);
       const baseDefense = defenderSpecies.baseStats.defense;
 
-      // Find eligible party members (alive, no status) excluding the active Pokemon
-      // (the active Pokemon's hit was already the first hit)
+      // Snapshot eligible members list at move time (order matters for hit index mapping)
       const eligibleMembers = actorSide.team.filter(
         (p) => p.currentHp > 0 && !p.status && p.uid !== context.attacker.pokemon.uid,
       );
 
-      const perHit: number[] = [];
-      for (const member of eligibleMembers) {
+      result.perHitDamageFn = (hitIdx: number): number => {
+        const member = eligibleMembers[hitIdx];
+        if (!member) return 0;
         const memberSpecies = this.dataManager.getSpecies(member.speciesId);
         const baseAttack = memberSpecies.baseStats.attack;
         const level = member.level;
@@ -520,14 +523,11 @@ export class Gen2Ruleset implements GenerationRuleset {
         dmg = Math.floor(dmg / 50) + 2;
 
         // Apply random factor (217-255)/255
-        // Source: pret/pokecrystal — standard random factor for Gen 2 damage
+        // Source: pret/pokecrystal -- standard random factor for Gen 2 damage
         const roll = context.rng.int(217, 255);
         dmg = Math.floor((dmg * roll) / 255);
-        dmg = Math.max(1, dmg);
-
-        perHit.push(dmg);
-      }
-      result.perHitDamage = perHit;
+        return Math.max(1, dmg);
+      };
     }
   }
 

@@ -43,6 +43,12 @@ export type MutableResult = Omit<
   messages: string[];
   statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
   volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+  /**
+   * Lazy per-hit damage function. Added explicitly because the mapped type may not
+   * pick up new MoveEffectResult fields during cross-package builds in worktrees.
+   * Source: pret/pokecrystal -- damage computed inside the hit loop, not before it.
+   */
+  perHitDamageFn?: ((hitIndex: number) => number) | null;
 };
 
 // ---------------------------------------------------------------------------

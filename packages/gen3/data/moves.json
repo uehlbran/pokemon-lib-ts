@@ -13113,7 +13113,7 @@
       "contact": false,
       "sound": false,
       "bullet": false,
-      "pulse": false,
+      "pulse": true,
       "punch": false,
       "bite": false,
       "wind": false,
