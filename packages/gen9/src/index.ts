@@ -59,10 +59,8 @@ export {
   shouldQuarkDriveActivate,
 } from "./Gen9AbilitiesStat.js";
 export {
-  getWeatherDuration,
   handleGen9SwitchAbility,
   isMoldBreakerAbility,
-  isSurgeAbility,
   MOLD_BREAKER_ALIASES,
   SCREEN_CLEANER_SCREENS,
   TRACE_UNCOPYABLE_ABILITIES,
@@ -118,7 +116,6 @@ export {
   checkMistyTerrainConfusionImmunity,
   checkPsychicTerrainPriorityBlock,
   getSurgeTerrainType,
-  isSurgeAbility,
   TERRAIN_DEFAULT_TURNS,
   TERRAIN_EXTENDED_TURNS,
 } from "./Gen9Terrain.js";
@@ -126,7 +123,6 @@ export { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 export {
   ABILITY_WEATHER_TURNS,
   applyGen9WeatherEffects,
-  getWeatherDuration,
   isGen9WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,
   WEATHER_ROCK_EXTENSION,
