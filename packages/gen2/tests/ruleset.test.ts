@@ -507,14 +507,14 @@ describe("Gen2Ruleset", () => {
 
     it("given toxic-spikes in Gen 2, when querying max layers, then returns 1", () => {
       // Toxic Spikes do not exist in Gen 2 — returning 1 as a safe fallback.
-      // Source: pret/pokecrystal — Toxic Spikes introduced in Gen 4.
+      // Source: Bulbapedia — Toxic Spikes introduced in Generation IV (Diamond/Pearl).
       const ruleset = new Gen2Ruleset();
       expect(ruleset.getMaxHazardLayers("toxic-spikes")).toBe(1);
     });
 
     it("given stealth-rock in Gen 2, when querying max layers, then returns 1", () => {
       // Stealth Rock does not exist in Gen 2 — returning 1 as a safe fallback.
-      // Source: pret/pokecrystal — Stealth Rock introduced in Gen 4.
+      // Source: Bulbapedia — Stealth Rock introduced in Generation IV (Diamond/Pearl).
       const ruleset = new Gen2Ruleset();
       expect(ruleset.getMaxHazardLayers("stealth-rock")).toBe(1);
     });
