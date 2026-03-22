@@ -334,31 +334,34 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
 // Source: bug #324 — high-crit moves add +1 to crit stage
 // ---------------------------------------------------------------------------
 
-describe("Bug #324 regression: high-crit moves add +1 to crit stage", () => {
-  it("given Slash (high-crit move) with no other modifiers, when getting crit stage, then stage is 1", () => {
+describe("Bug #324 regression: high-crit moves add +2 to crit stage (pokecrystal ground truth)", () => {
+  it("given Slash (high-crit move) with no other modifiers, when getting crit stage, then stage is 2", () => {
     // Arrange
-    // Source: bug #324 fix — high-crit moves add +1
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm L1183-1184 —
+    //   BattleCommand_Critical .CheckCritical: "inc c; inc c" = +2 for CriticalHitMoves
+    // NOTE: This corrects the earlier bug #324 "fix" which incorrectly changed +2 to +1.
+    // The cartridge assembly uses two increments; the correct value is +2.
     const attacker = createActivePokemon({});
     const move = createMove({ id: "slash", type: "normal" });
 
     // Act
     const stage = getGen2CritStage(attacker, move);
 
-    // Assert — +1, not +2
-    expect(stage).toBe(1);
+    // Assert — +2, per pokecrystal assembly
+    expect(stage).toBe(2);
   });
 
-  it("given Cross Chop (high-crit move) with no other modifiers, when getting crit stage, then stage is 1", () => {
+  it("given Cross Chop (high-crit move) with no other modifiers, when getting crit stage, then stage is 2", () => {
     // Arrange
-    // Source: bug #324 fix — high-crit moves add +1
+    // Source: pret/pokecrystal effect_commands.asm L1183-1184 — "inc c; inc c" = +2
     const attacker = createActivePokemon({});
     const move = createMove({ id: "cross-chop", type: "fighting" });
 
     // Act
     const stage = getGen2CritStage(attacker, move);
 
-    // Assert
-    expect(stage).toBe(1);
+    // Assert — +2 per pokecrystal
+    expect(stage).toBe(2);
   });
 });
 

@@ -384,17 +384,20 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
       expect(stage).toBe(0);
     });
 
-    it("when Chansey holds Lucky Punch and uses a high-crit move, then stage is 3 (Lucky Punch +2, Slash +1)", () => {
+    it("when Chansey holds Lucky Punch and uses a high-crit move, then stage is 4 (Lucky Punch +2, Slash +2, capped at max)", () => {
       // Arrange
       const chansey = createActivePokemon({ speciesId: 113, heldItem: "lucky-punch" });
       const highCritMove = createMove({ id: "slash", type: "normal" });
 
-      // Act — Lucky Punch(+2) + Slash(+1) = 3
-      // Source: bug #324 fix — high-crit moves add +1 (not +2)
+      // Act — Lucky Punch(+2) + Slash(+2) = 4 (capped at max stage 4 = 128/256 = 50%)
+      // Source: pret/pokecrystal effect_commands.asm L1183-1184 — "inc c; inc c" = +2 for high-crit
+      // Lucky Punch: L1149 "ld c, 2" (sets c=2, jumps to Tally, skips FocusEnergy+CheckCritical)
+      // NOTE: Lucky Punch sets c=2 directly and jumps to Tally — it does NOT pass through CheckCritical,
+      // so Lucky Punch + high-crit DO stack (via separate activation paths in the code).
       const stage = getGen2CritStage(chansey, highCritMove);
 
-      // Assert
-      expect(stage).toBe(3);
+      // Assert — 2 (Lucky Punch) + 2 (Slash) = 4, capped at 4
+      expect(stage).toBe(4);
     });
   });
 
