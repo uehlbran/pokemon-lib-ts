@@ -236,6 +236,34 @@ describe("hasSheerForceEligibleEffect", () => {
     expect(hasSheerForceEligibleEffect(effect)).toBe(false);
   });
 
+  it("given a stat-change targeting self with fromSecondary true (e.g., Flame Charge), when checking, then returns true", () => {
+    // Source: Showdown data/moves.ts -- flamecharge: secondary: { chance: 100, self: { boosts: { spe: 1 } } }
+    // Flame Charge's Speed boost comes from secondary.self -- Sheer Force eligible.
+    // Source: Showdown data/abilities.ts -- sheerforce deletes move.self when secondaries exist
+    const effect: MoveEffect = {
+      type: "stat-change",
+      changes: [{ stat: "speed", stages: 1 }],
+      target: "self",
+      chance: 100,
+      fromSecondary: true,
+    };
+    expect(hasSheerForceEligibleEffect(effect)).toBe(true);
+  });
+
+  it("given a stat-change targeting self without fromSecondary (e.g., Draco Meteor), when checking, then returns false", () => {
+    // Source: Showdown data/moves.ts -- dracometeor: self: { boosts: { spa: -2 } }, secondary: null
+    // Draco Meteor's SpAtk drop uses move.self (not secondary.self) -- NOT eligible.
+    // Triangulation: second case for primary self-effects alongside Close Combat above.
+    const effect: MoveEffect = {
+      type: "stat-change",
+      changes: [{ stat: "spAttack", stages: -2 }],
+      target: "self",
+      chance: 100,
+      // fromSecondary: undefined -- primary self-effect
+    };
+    expect(hasSheerForceEligibleEffect(effect)).toBe(false);
+  });
+
   it("given a volatile-status with chance < 100 (e.g., Air Slash flinch), when checking, then returns true", () => {
     // Source: Showdown -- Air Slash has 30% flinch; counts as secondary
     const effect: MoveEffect = {

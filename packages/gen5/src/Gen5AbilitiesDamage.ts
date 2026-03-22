@@ -73,10 +73,8 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  *   if (move.secondaries) { delete move.secondaries; delete move.self; ... }
  * Source: Showdown data/moves.ts -- secondary vs self field placement
  *
- * Note on data model limitation: our `stat-change` with `target: "self"` cannot
- * distinguish Flame Charge (secondary.self → eligible) from Close Combat (self → not eligible).
- * Self-targeted stat-changes are conservatively excluded — incorrect only for Flame Charge.
- * See GitHub issue for data model fix tracking this.
+ * The `fromSecondary` field on StatChangeEffect distinguishes these: effects from
+ * secondary.self.boosts have `fromSecondary: true`, while primary self-effects do not.
  */
 export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
   if (!effect) return false;
@@ -87,14 +85,15 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
       return true;
 
     case "stat-change":
-      // Foe-targeted stat changes in Showdown's `secondary` field are eligible,
-      // regardless of chance value. This fixes guaranteed 100% foe-drops like:
-      //   - Acid Spray (SpDef -2, chance 100)
-      //   - Bulldoze (Speed -1, chance 100)
-      //   - Electroweb, Icy Wind, Mud Shot, Rock Tomb (Speed -1, chance 100)
-      // Self-targeted stat changes are excluded — see data model limitation above.
-      // Source: Showdown data/moves.ts — acidspray, bulldoze use `secondary` field
-      return effect.target === "foe" && effect.chance > 0;
+      // Foe-targeted stat changes are always eligible (Acid Spray, Bulldoze, etc.)
+      if (effect.target === "foe" && effect.chance > 0) return true;
+      // Self-targeted stat changes are eligible ONLY when they come from secondary.self
+      // (e.g., Flame Charge Speed boost). Primary self-effects (Close Combat Def/SpDef drop,
+      // Draco Meteor SpAtk drop) are NOT eligible.
+      // Source: Showdown data/abilities.ts -- sheerforce: delete move.secondaries; delete move.self
+      //   (move.self is only deleted when move.secondaries exists -- i.e., secondary.self)
+      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      return false;
 
     case "volatile-status":
       // Volatile-status secondaries include guaranteed (chance=100) effects:

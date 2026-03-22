@@ -360,7 +360,8 @@
         }
       ],
       "target": "self",
-      "chance": 10
+      "chance": 10,
+      "fromSecondary": true
     },
     "description": "Has a 10% chance to raise the user's Attack, Defense, Special Attack, Special Defense, and Speed by 1 stage.",
     "generation": 2
@@ -7000,7 +7001,8 @@
         }
       ],
       "target": "self",
-      "chance": 10
+      "chance": 10,
+      "fromSecondary": true
     },
     "description": "Has a 10% chance to raise the user's Attack by 1 stage.",
     "generation": 2
@@ -7086,7 +7088,8 @@
         }
       ],
       "target": "self",
-      "chance": 20
+      "chance": 20,
+      "fromSecondary": true
     },
     "description": "Has a 20% chance to raise the user's Attack by 1 stage.",
     "generation": 3
@@ -10205,7 +10208,8 @@
         }
       ],
       "target": "self",
-      "chance": 10
+      "chance": 10,
+      "fromSecondary": true
     },
     "description": "Has a 10% chance to raise the user's Attack, Defense, Special Attack, Special Defense, and Speed by 1 stage.",
     "generation": 3
@@ -11288,7 +11292,8 @@
         }
       ],
       "target": "self",
-      "chance": 10
+      "chance": 10,
+      "fromSecondary": true
     },
     "description": "Has a 10% chance to raise the user's Defense by 1 stage.",
     "generation": 2
