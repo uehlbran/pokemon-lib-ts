@@ -1,8 +1,8 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
+import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
 // ---------------------------------------------------------------------------
@@ -422,11 +422,12 @@ describe("Mega Launcher", () => {
 //   change Normal to Flying, then onBasePowerPriority 23: chainModify([5325, 4096])
 // ---------------------------------------------------------------------------
 describe("Aerilate", () => {
-  it("given a Normal move with Aerilate, when calculating damage, then type becomes Flying and base power gets 1.3x boost", () => {
-    // Arrange: Aerilate attacker using a Normal-type move
-    // Use Flying-type attacker to get STAB from the converted type
+  it("given a Normal move with Aerilate vs a Fighting defender, when calculating damage, then type becomes Flying (super effective) and power gets 1.3x boost", () => {
+    // Arrange: Aerilate attacker using a Normal-type move against Fighting defender
+    // Flying is super-effective vs Fighting (2x), Normal is neutral (1x)
+    // This proves the type conversion happened
     const attacker = makeActive({ ability: "aerilate", types: ["flying"] });
-    const defender = makeActive({ types: ["normal"] });
+    const defender = makeActive({ types: ["fighting"] });
     const returnMove = makeMove({
       id: "return",
       type: "normal",
@@ -434,19 +435,17 @@ describe("Aerilate", () => {
       flags: { contact: true },
     });
 
-    // Baseline: same attacker without Aerilate, using a Flying-type move with same power
-    // The Aerilate boost is 5325/4096 = ~1.3x applied to base power
-    // boostedPower = pokeRound(102, 5325) = floor((102*5325 + 2047)/4096) = floor(545197/4096) = 133
-    const baselineAttacker = makeActive({ ability: "none", types: ["flying"] });
-
-    // A move that is already Flying type with same power (for baseline comparison)
-    // To isolate the boost, compare against same-type move without ability
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: returnMove, seed: 100 }),
       typeChart,
     );
 
-    // Without Aerilate: Normal-type move, no STAB (attacker is Flying type)
+    // Source: Showdown data/abilities.ts -- aerilate converts Normal -> Flying
+    // Flying vs Fighting = 2x super effective
+    expect(resultWithAbility.effectiveness).toBe(2);
+
+    // Verify the power boost by comparing with a baseline
+    const baselineAttacker = makeActive({ ability: "none", types: ["flying"] });
     const resultWithout = calculateGen6Damage(
       makeDamageContext({
         attacker: baselineAttacker,
@@ -457,11 +456,14 @@ describe("Aerilate", () => {
       typeChart,
     );
 
+    // Without Aerilate: Normal vs Fighting = 1x (neutral)
+    expect(resultWithout.effectiveness).toBe(1);
+
     // Source: Showdown data/abilities.ts -- aerilate: type change + 5325/4096 boost
-    // With Aerilate: Normal -> Flying, STAB applies (attacker is Flying type), +1.3x power
-    // Without: Normal move, no STAB (attacker is Flying not Normal)
-    // So with Aerilate we get: 1.3x (power boost) * 1.5x (STAB) / 1.0x (no STAB without) = ~1.95x
-    expect(resultWithAbility.damage).toBeGreaterThan(resultWithout.damage);
+    // With Aerilate: 1.3x power * 1.5x STAB * 2.0x SE vs 1.0x (no STAB, neutral)
+    // Ratio should be approximately 1.3 * 1.5 * 2.0 = 3.9x
+    const ratio = resultWithAbility.damage / resultWithout.damage;
+    expect(ratio).toBeCloseTo(3.9, 0);
   });
 
   it("given a non-Normal move with Aerilate, when calculating damage, then no type change or boost is applied", () => {
@@ -541,6 +543,38 @@ describe("Pixilate", () => {
     // Without ability: Normal vs Dragon is neutral (1x)
     expect(resultWithout.effectiveness).toBe(1);
   });
+
+  it("given a non-Normal move with Pixilate, when calculating damage, then no type change or boost is applied", () => {
+    // Arrange: Pixilate attacker using a Fire-type move (not Normal)
+    const attacker = makeActive({ ability: "pixilate", types: ["fairy", "fire"] });
+    const defender = makeActive({ types: ["normal"] });
+    const flamethrower = makeMove({
+      id: "flamethrower",
+      type: "fire",
+      category: "special",
+      power: 90,
+      flags: { contact: false },
+    });
+
+    const baselineAttacker = makeActive({ ability: "none", types: ["fairy", "fire"] });
+
+    const resultWithAbility = calculateGen6Damage(
+      makeDamageContext({ attacker, defender, move: flamethrower, seed: 100 }),
+      typeChart,
+    );
+    const resultWithout = calculateGen6Damage(
+      makeDamageContext({
+        attacker: baselineAttacker,
+        defender,
+        move: flamethrower,
+        seed: 100,
+      }),
+      typeChart,
+    );
+
+    // Source: Showdown data/abilities.ts -- pixilate only affects Normal-type moves
+    expect(resultWithAbility.damage).toBe(resultWithout.damage);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -582,6 +616,38 @@ describe("Refrigerate", () => {
     expect(resultWithAbility.damage).toBeGreaterThan(resultWithout.damage);
     expect(resultWithAbility.effectiveness).toBe(2); // Ice vs Dragon = SE
     expect(resultWithout.effectiveness).toBe(1); // Normal vs Dragon = neutral
+  });
+
+  it("given a non-Normal move with Refrigerate, when calculating damage, then no type change or boost is applied", () => {
+    // Arrange: Refrigerate attacker using a Water-type move (not Normal)
+    const attacker = makeActive({ ability: "refrigerate", types: ["ice", "water"] });
+    const defender = makeActive({ types: ["normal"] });
+    const surf = makeMove({
+      id: "surf",
+      type: "water",
+      category: "special",
+      power: 90,
+      flags: { contact: false },
+    });
+
+    const baselineAttacker = makeActive({ ability: "none", types: ["ice", "water"] });
+
+    const resultWithAbility = calculateGen6Damage(
+      makeDamageContext({ attacker, defender, move: surf, seed: 100 }),
+      typeChart,
+    );
+    const resultWithout = calculateGen6Damage(
+      makeDamageContext({
+        attacker: baselineAttacker,
+        defender,
+        move: surf,
+        seed: 100,
+      }),
+      typeChart,
+    );
+
+    // Source: Showdown data/abilities.ts -- refrigerate only affects Normal-type moves
+    expect(resultWithAbility.damage).toBe(resultWithout.damage);
   });
 });
 
