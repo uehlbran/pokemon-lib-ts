@@ -122,7 +122,7 @@ export class Gen5Ruleset extends BaseRuleset {
    *   Future Sight or Doom Desire hits, not when it is used."
    * Source: Showdown sim/battle-actions.ts -- Gen 5+ recalculates future attack damage
    */
-  override recalculatesFutureAttackDamage(): boolean {
+  recalculatesFutureAttackDamage(): boolean {
     return true;
   }
 
@@ -133,7 +133,7 @@ export class Gen5Ruleset extends BaseRuleset {
    *   "If this Pokemon is at full HP, it survives attacks that would KO it with 1 HP."
    * Source: Bulbapedia -- Sturdy (Ability)
    */
-  override capLethalDamage(
+  capLethalDamage(
     damage: number,
     defender: ActivePokemon,
     _attacker: ActivePokemon,
