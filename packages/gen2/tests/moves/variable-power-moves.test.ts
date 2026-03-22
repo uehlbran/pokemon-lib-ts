@@ -156,13 +156,15 @@ describe("Gen 2 Present", () => {
       damages.add(result.damage);
     }
 
-    // Assert — damage > 0 should appear (40/80/120 base power produce non-zero damage)
-    // and damage = 0 should appear (heal case, 20%)
-    const nonZero = [...damages].some((d) => d > 0);
-    const zero = damages.has(0);
-    // Source: pret/pokecrystal — Present has 80% chance of damage and 20% chance of heal
-    expect(nonZero).toBe(true);
-    expect(zero).toBe(true);
+    // Assert — all three damage power tiers (40/80/120) and the heal tier (0) must be reachable.
+    // Source: pret/pokecrystal PresentEffect: 0-101→power 40, 102-177→power 80, 178-203→power 120, 204-255→heal (0 dmg)
+    // Damage ranges for mock attacker/defender (calcStat atk=100, def=100, L50, Normal type giving STAB) are
+    // non-overlapping (derived from Gen 2 formula with STAB 1.5x applied, R=217-255):
+    //   Power 40 → 23-28, Power 80 → 46-55, Power 120 → 68-81
+    expect(damages.has(0)).toBe(true); // heal case reached (20%)
+    expect([...damages].some((d) => d >= 23 && d <= 28)).toBe(true); // power-40 tier reached
+    expect([...damages].some((d) => d >= 46 && d <= 55)).toBe(true); // power-80 tier reached
+    expect([...damages].some((d) => d >= 68 && d <= 81)).toBe(true); // power-120 tier reached
   });
 });
 
@@ -220,11 +222,18 @@ describe("Gen 2 Magnitude", () => {
       damages.add(result.damage);
     }
 
-    // Assert — at least 6 distinct non-zero damage values should appear (all 7 power levels
-    // produce different damages; exact values depend on the formula, but diversity is guaranteed)
-    // Source: pret/pokecrystal — 7 distinct base powers → 7 distinct damage outputs
-    const nonZeroDamages = [...damages].filter((d) => d > 0);
-    expect(nonZeroDamages.length).toBeGreaterThanOrEqual(6);
+    // Assert — all 7 magnitude power tiers must be reachable.
+    // Source: pret/pokecrystal MagnitudeEffect — 7 distinct base powers (10/30/50/70/90/110/150)
+    // Damage ranges for mock attacker/defender (calcStat atk=100, def=100, L50, Ground vs Normal no boost)
+    // are non-overlapping (derived from Gen 2 formula, R=217-255):
+    //   10→5-6, 30→12-15, 50→20-24, 70→27-32, 90→34-41, 110→42-50, 150→57-68
+    expect([...damages].some((d) => d >= 5 && d <= 6)).toBe(true); // Magnitude 4 (power 10)
+    expect([...damages].some((d) => d >= 12 && d <= 15)).toBe(true); // Magnitude 5 (power 30)
+    expect([...damages].some((d) => d >= 20 && d <= 24)).toBe(true); // Magnitude 6 (power 50)
+    expect([...damages].some((d) => d >= 27 && d <= 32)).toBe(true); // Magnitude 7 (power 70)
+    expect([...damages].some((d) => d >= 34 && d <= 41)).toBe(true); // Magnitude 8 (power 90)
+    expect([...damages].some((d) => d >= 42 && d <= 50)).toBe(true); // Magnitude 9 (power 110)
+    expect([...damages].some((d) => d >= 57 && d <= 68)).toBe(true); // Magnitude 10 (power 150)
   });
 
   it("given Magnitude is used, when executeMoveEffect is called, then emits generic tremor message", () => {
