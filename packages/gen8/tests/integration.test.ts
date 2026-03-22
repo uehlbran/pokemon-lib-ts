@@ -1,0 +1,966 @@
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
+import type {
+  EntryHazardType,
+  MoveData,
+  PokemonInstance,
+  PokemonType,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
+import { handleGen8StatAbility } from "../src/Gen8AbilitiesStat";
+import {
+  getGulpMissileResult,
+  handleGen8SwitchAbility,
+  shouldHungerSwitchToggle,
+} from "../src/Gen8AbilitiesSwitch";
+import { DYNAMAX_TURNS, Gen8Dynamax, getUndynamaxedHp } from "../src/Gen8Dynamax";
+import {
+  applyGen8EntryHazards,
+  applyGen8ToxicSpikes,
+  hasHeavyDutyBoots,
+} from "../src/Gen8EntryHazards";
+import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
+
+/**
+ * Gen 8 Wave 9 integration tests.
+ *
+ * Covers:
+ *   1. Dynamax 3-turn lifecycle + G-Max move conversion
+ *   2. Entry hazard edge cases (non-grounded Toxic Spikes, Misty Terrain blocks)
+ *   3. Gen8AbilitiesSwitch: handleTurnEnd/Hunger Switch, handleGulpMissileOnHit via dispatch
+ *   4. Gen8AbilitiesStat: formatStatName coverage via Beast Boost messages
+ *   5. Gen8Dynamax edge case: getUndynamaxedHp(0)
+ *   6. Heavy-Duty Boots blocking all hazards (combined scenario)
+ */
+
+// ---------------------------------------------------------------------------
+// Test Helpers
+// ---------------------------------------------------------------------------
+
+function makePokemonInstance(overrides: {
+  speciesId?: number;
+  nickname?: string | null;
+  ability?: string;
+  heldItem?: string | null;
+  currentHp?: number;
+  maxHp?: number;
+  status?: string | null;
+  dynamaxLevel?: number;
+}): PokemonInstance {
+  const maxHp = overrides.maxHp ?? 200;
+  return {
+    uid: `test-${Math.random()}`,
+    speciesId: overrides.speciesId ?? 1,
+    nickname: overrides.nickname ?? null,
+    level: 50,
+    experience: 0,
+    nature: "hardy",
+    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    currentHp: overrides.currentHp ?? maxHp,
+    moves: [],
+    ability: overrides.ability ?? "",
+    abilitySlot: "normal1" as const,
+    heldItem: overrides.heldItem ?? null,
+    status: (overrides.status as PokemonInstance["status"]) ?? null,
+    friendship: 0,
+    gender: "male",
+    isShiny: false,
+    metLocation: "",
+    metLevel: 1,
+    originalTrainer: "",
+    originalTrainerId: 0,
+    pokeball: "pokeball",
+    calculatedStats: {
+      hp: maxHp,
+      attack: 120,
+      defense: 100,
+      spAttack: 90,
+      spDefense: 100,
+      speed: 110,
+    },
+    dynamaxLevel: overrides.dynamaxLevel ?? 10,
+  } as PokemonInstance;
+}
+
+function makeActive(overrides: {
+  ability?: string;
+  types?: PokemonType[];
+  nickname?: string | null;
+  currentHp?: number;
+  maxHp?: number;
+  speciesId?: number;
+  status?: string | null;
+  heldItem?: string | null;
+  substituteHp?: number;
+  volatiles?: Map<string, { turnsLeft: number }>;
+  dynamaxLevel?: number;
+  isDynamaxed?: boolean;
+  dynamaxTurnsLeft?: number;
+  transformedSpecies?: { name: string; gigantamaxForm?: unknown; canDynamax?: boolean } | null;
+  turnsOnField?: number;
+}): ActivePokemon {
+  return {
+    pokemon: makePokemonInstance({
+      ability: overrides.ability,
+      nickname: overrides.nickname,
+      currentHp: overrides.currentHp,
+      maxHp: overrides.maxHp,
+      speciesId: overrides.speciesId,
+      status: overrides.status,
+      heldItem: overrides.heldItem,
+      dynamaxLevel: overrides.dynamaxLevel,
+    }),
+    teamSlot: 0,
+    statStages: {
+      attack: 0,
+      defense: 0,
+      spAttack: 0,
+      spDefense: 0,
+      speed: 0,
+      accuracy: 0,
+      evasion: 0,
+    },
+    volatileStatuses:
+      (overrides.volatiles as Map<VolatileStatus, { turnsLeft: number }>) ?? new Map(),
+    types: overrides.types ?? ["normal"],
+    ability: overrides.ability ?? "",
+    suppressedAbility: null,
+    lastMoveUsed: null,
+    lastDamageTaken: 0,
+    lastDamageType: null,
+    lastDamageCategory: null,
+    turnsOnField: overrides.turnsOnField ?? 0,
+    movedThisTurn: false,
+    consecutiveProtects: 0,
+    substituteHp: overrides.substituteHp ?? 0,
+    itemKnockedOff: false,
+    transformed: false,
+    transformedSpecies: overrides.transformedSpecies ?? null,
+    isMega: false,
+    isDynamaxed: overrides.isDynamaxed ?? false,
+    dynamaxTurnsLeft: overrides.dynamaxTurnsLeft ?? 0,
+    isTerastallized: false,
+    teraType: null,
+    forcedMove: null,
+  } as ActivePokemon;
+}
+
+function makeSide(
+  hazards: Array<{ type: EntryHazardType; layers: number }> = [],
+  index: 0 | 1 = 0,
+): BattleSide {
+  return {
+    index,
+    trainer: null,
+    team: [],
+    active: [],
+    hazards,
+    screens: [],
+    tailwind: { active: false, turnsLeft: 0 },
+    luckyChant: { active: false, turnsLeft: 0 },
+    wish: null,
+    futureAttack: null,
+    faintCount: 0,
+    gimmickUsed: false,
+  } as unknown as BattleSide;
+}
+
+function makeState(opts?: { gravityActive?: boolean; terrainType?: string | null }): BattleState {
+  return {
+    phase: "turn-end",
+    generation: 8,
+    format: "singles",
+    turnNumber: 1,
+    sides: [makeSide(), makeSide([], 1)],
+    weather: null,
+    terrain: opts?.terrainType ? { type: opts.terrainType, turnsLeft: 5 } : null,
+    trickRoom: { active: false, turnsLeft: 0 },
+    magicRoom: { active: false, turnsLeft: 0 },
+    wonderRoom: { active: false, turnsLeft: 0 },
+    gravity: {
+      active: opts?.gravityActive ?? false,
+      turnsLeft: opts?.gravityActive ? 5 : 0,
+    },
+    turnHistory: [],
+    rng: {
+      next: () => 0,
+      int: () => 1,
+      chance: () => false,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: T[]) => arr,
+      getState: () => 0,
+      setState: () => {},
+    },
+    ended: false,
+    winner: null,
+  } as unknown as BattleState;
+}
+
+function makeMove(
+  type: PokemonType,
+  opts: {
+    id?: string;
+    category?: "physical" | "special" | "status";
+    power?: number | null;
+    flags?: Record<string, boolean>;
+  } = {},
+): MoveData {
+  return {
+    id: opts.id ?? "test-move",
+    displayName: "Test Move",
+    type,
+    category: opts.category ?? "physical",
+    power: opts.power !== undefined ? opts.power : opts.category === "status" ? 0 : 80,
+    accuracy: 100,
+    pp: 10,
+    maxPp: 10,
+    priority: 0,
+    target: "single",
+    generation: 8,
+    flags: opts.flags ?? { contact: true },
+    effectChance: null,
+    secondaryEffects: [],
+  } as unknown as MoveData;
+}
+
+function makeAbilityContext(opts: {
+  ability: string;
+  trigger: string;
+  types?: PokemonType[];
+  opponent?: ActivePokemon;
+  move?: MoveData;
+  nickname?: string;
+  speciesId?: number;
+  status?: string | null;
+  currentHp?: number;
+  maxHp?: number;
+  volatiles?: Map<string, { turnsLeft: number }>;
+  turnsOnField?: number;
+}): AbilityContext {
+  const state = makeState();
+  const pokemon = makeActive({
+    ability: opts.ability,
+    types: opts.types,
+    nickname: opts.nickname,
+    speciesId: opts.speciesId,
+    status: opts.status,
+    currentHp: opts.currentHp,
+    maxHp: opts.maxHp,
+    volatiles: opts.volatiles,
+    turnsOnField: opts.turnsOnField,
+  });
+
+  return {
+    pokemon,
+    opponent: opts.opponent,
+    state,
+    rng: state.rng as any,
+    trigger: opts.trigger as any,
+    move: opts.move,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 1. Dynamax 3-Turn Lifecycle + G-Max Move Conversion
+// ---------------------------------------------------------------------------
+
+describe("Dynamax 3-turn lifecycle integration", () => {
+  it("given a normal Pokemon, when activating Dynamax then simulating 3 turns and reverting, then HP is proportionally restored", () => {
+    // Source: Showdown data/conditions.ts -- Dynamax lasts 3 turns, HP scales on activate/revert
+    // Source: Bulbapedia "Dynamax" -- "Dynamax lasts for three turns"
+    const gimmick = new Gen8Dynamax();
+    const pokemon = makeActive({ maxHp: 300, currentHp: 300, dynamaxLevel: 10 });
+    const side = makeSide();
+    const state = makeState();
+
+    // Step 1: Verify canUse
+    expect(gimmick.canUse(pokemon, side, state)).toBe(true);
+
+    // Step 2: Activate -- HP should double (dynamaxLevel=10 -> 2.0x)
+    // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 10: ratio = 2.0
+    const activateEvents = gimmick.activate(pokemon, side, state);
+    expect(activateEvents).toHaveLength(1);
+    expect(activateEvents[0].type).toBe("dynamax");
+    expect(pokemon.isDynamaxed).toBe(true);
+    expect(pokemon.dynamaxTurnsLeft).toBe(DYNAMAX_TURNS);
+    expect(pokemon.pokemon.calculatedStats!.hp).toBe(600);
+    expect(pokemon.pokemon.currentHp).toBe(600);
+
+    // Step 3: Cannot use again on the same side
+    expect(gimmick.canUse(pokemon, side, state)).toBe(false);
+    expect(side.gimmickUsed).toBe(true);
+
+    // Step 4: Simulate taking 200 damage over 3 turns
+    pokemon.pokemon.currentHp = 400;
+
+    // Step 5: Simulate turn countdown (3 -> 2 -> 1 -> 0)
+    pokemon.dynamaxTurnsLeft = 0; // Expired
+
+    // Step 6: Revert -- HP should be proportionally restored
+    // Source: Showdown data/conditions.ts lines 801-802 -- proportional HP restoration
+    // round(400 * 300 / 600) = round(200) = 200
+    const revertEvents = gimmick.revert(pokemon, state);
+    expect(revertEvents).toHaveLength(1);
+    expect(revertEvents[0].type).toBe("dynamax-end");
+    expect(pokemon.isDynamaxed).toBe(false);
+    expect(pokemon.dynamaxTurnsLeft).toBe(0);
+    expect(pokemon.pokemon.calculatedStats!.hp).toBe(300);
+    expect(pokemon.pokemon.currentHp).toBe(200);
+  });
+
+  it("given a Pokemon with dynamaxLevel=5 and partial HP, when going through full lifecycle, then HP calculations are correct", () => {
+    // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 5: ratio = 1.75
+    const gimmick = new Gen8Dynamax();
+    const pokemon = makeActive({ maxHp: 200, currentHp: 150, dynamaxLevel: 5 });
+    const side = makeSide();
+    const state = makeState();
+
+    gimmick.activate(pokemon, side, state);
+
+    // Inline derivation: maxHp = floor(200 * 1.75) = 350, currentHp = floor(150 * 1.75) = 262
+    expect(pokemon.pokemon.calculatedStats!.hp).toBe(350);
+    expect(pokemon.pokemon.currentHp).toBe(262);
+
+    // Take some damage
+    pokemon.pokemon.currentHp = 175;
+
+    // Revert: baseMaxHp = round(350 / 1.75) = round(200) = 200
+    // restoredHp = round(175 * 200 / 350) = round(100) = 100
+    gimmick.revert(pokemon, state);
+    expect(pokemon.pokemon.calculatedStats!.hp).toBe(200);
+    expect(pokemon.pokemon.currentHp).toBe(100);
+  });
+
+  it("given a Gigantamax Charizard with a fire move, when Dynamaxed and modifyMove called, then returns G-Max Wildfire", () => {
+    // Source: Showdown data/moves.ts -- gmaxwildfire: Charizard, fire type
+    // Source: Bulbapedia "G-Max Wildfire" -- Gigantamax Charizard's exclusive G-Max Move
+    const gimmick = new Gen8Dynamax();
+    const pokemon = makeActive({
+      isDynamaxed: true,
+      speciesId: 6,
+      transformedSpecies: {
+        name: "Charizard",
+        gigantamaxForm: true,
+      },
+    });
+
+    const fireMove = makeMove("fire", { id: "flamethrower", power: 90 });
+    const result = gimmick.modifyMove(fireMove, pokemon);
+
+    // G-Max Wildfire should be selected because Charizard has gigantamaxForm and fire type matches
+    expect(result.id).toBe("gmax-charizard");
+    expect(result.displayName).toBe("Charizard");
+    expect(result.accuracy).toBeNull();
+  });
+
+  it("given a Gigantamax Charizard with a flying move, when Dynamaxed and modifyMove called, then returns standard Max Airstream (type mismatch)", () => {
+    // Source: Showdown sim/battle-actions.ts -- G-Max only if move type matches gmaxMove.moveType
+    // Charizard's G-Max Move is fire-type; flying moves become standard Max Airstream
+    const gimmick = new Gen8Dynamax();
+    const pokemon = makeActive({
+      isDynamaxed: true,
+      speciesId: 6,
+      transformedSpecies: {
+        name: "Charizard",
+        gigantamaxForm: true,
+      },
+    });
+
+    const flyingMove = makeMove("flying", { id: "air-slash", power: 75 });
+    const result = gimmick.modifyMove(flyingMove, pokemon);
+
+    // Should be standard Max Airstream, not G-Max
+    expect(result.id).toBe("max-flying");
+    expect(result.displayName).toBe("Max Airstream");
+    expect(result.accuracy).toBeNull();
+  });
+
+  it("given a Gigantamax Rillaboom with a grass move, when Dynamaxed and modifyMove called, then returns G-Max Drum Solo with basePower 160", () => {
+    // Source: Showdown data/moves.ts -- gmaxdrumsolo: Rillaboom, grass, basePower 160
+    // Source: Bulbapedia "G-Max Drum Solo" -- overridden base power of 160
+    const gimmick = new Gen8Dynamax();
+    const pokemon = makeActive({
+      isDynamaxed: true,
+      speciesId: 812,
+      transformedSpecies: {
+        name: "Rillaboom",
+        gigantamaxForm: true,
+      },
+    });
+
+    const grassMove = makeMove("grass", { id: "grassy-glide", power: 70 });
+    const result = gimmick.modifyMove(grassMove, pokemon);
+
+    expect(result.id).toBe("gmax-rillaboom");
+    // G-Max Drum Solo has basePower override of 160
+    expect(result.power).toBe(160);
+    expect(result.accuracy).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2. Entry Hazard Edge Cases
+// ---------------------------------------------------------------------------
+
+describe("Entry hazard edge cases", () => {
+  describe("Non-grounded Toxic Spikes immunity", () => {
+    it("given Toxic Spikes with 1 layer and a Levitate Pokemon, when applying, then no status and not absorbed", () => {
+      // Source: Showdown data/conditions.ts -- toxicspikes: grounded check
+      // Source: Bulbapedia "Toxic Spikes" -- "does not affect non-grounded Pokemon"
+      const mon = makeActive({
+        types: ["normal"],
+        ability: "levitate",
+        maxHp: 200,
+      });
+      const result = applyGen8ToxicSpikes(mon, 1, false);
+      expect(result.status).toBeNull();
+      expect(result.absorbed).toBe(false);
+      expect(result.message).toBeNull();
+    });
+
+    it("given Toxic Spikes with 2 layers and Air Balloon holder, when applying, then no status and not absorbed", () => {
+      // Source: Showdown data/items.ts -- airballoon: grants non-grounded
+      // Source: Bulbapedia "Air Balloon" -- "makes the holder immune to Ground-type moves"
+      const mon = makeActive({
+        types: ["normal"],
+        heldItem: "air-balloon",
+        maxHp: 200,
+      });
+      const result = applyGen8ToxicSpikes(mon, 2, false);
+      expect(result.status).toBeNull();
+      expect(result.absorbed).toBe(false);
+    });
+
+    it("given Toxic Spikes with Gravity active and a Flying-type, when applying, then status IS inflicted (Gravity grounds)", () => {
+      // Source: Bulbapedia "Gravity" -- grounds all Flying-types
+      // Source: Showdown data/conditions.ts -- toxicspikes: isGrounded check
+      const mon = makeActive({
+        types: ["flying", "normal"],
+        maxHp: 200,
+      });
+      const result = applyGen8ToxicSpikes(mon, 1, true);
+      expect(result.status).toBe("poison");
+      expect(result.absorbed).toBe(false);
+    });
+  });
+
+  describe("Misty Terrain blocks Toxic Spikes status", () => {
+    it("given Misty Terrain active and Toxic Spikes with 1 layer, when grounded non-Poison Pokemon switches in, then status is suppressed", () => {
+      // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus blocks all status on grounded
+      // Source: Bulbapedia "Misty Terrain" -- "prevents grounded Pokemon from being afflicted by status"
+      const mon = makeActive({
+        types: ["normal"],
+        maxHp: 200,
+      });
+      const side = makeSide([{ type: "toxic-spikes", layers: 1 }]);
+      const state = makeState({ terrainType: "misty" });
+
+      const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
+      expect(result.statusInflicted).toBeNull();
+      // The poison message should NOT appear since terrain blocks the status
+      expect(result.messages.some((m) => m.includes("poisoned"))).toBe(false);
+    });
+
+    it("given Misty Terrain active and Toxic Spikes with 2 layers, when grounded non-Poison Pokemon switches in, then badly-poisoned is suppressed", () => {
+      // Source: Showdown data/conditions.ts -- mistyterrain blocks ALL status, including toxic
+      const mon = makeActive({
+        types: ["normal"],
+        maxHp: 200,
+      });
+      const side = makeSide([{ type: "toxic-spikes", layers: 2 }]);
+      const state = makeState({ terrainType: "misty" });
+
+      const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
+      expect(result.statusInflicted).toBeNull();
+    });
+
+    it("given Misty Terrain active and Toxic Spikes, when grounded Poison-type switches in, then hazard is still absorbed (absorption message emitted)", () => {
+      // Source: Showdown data/moves.ts -- toxicspikes: Poison-type absorption happens before status
+      // Poison-type absorption is separate from status infliction; terrain doesn't block absorption
+      const mon = makeActive({
+        types: ["poison"],
+        maxHp: 200,
+      });
+      const side = makeSide([{ type: "toxic-spikes", layers: 1 }]);
+      const state = makeState({ terrainType: "misty" });
+
+      const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
+      // Poison-type absorbs regardless of terrain
+      expect(result.hazardsToRemove).toEqual(["toxic-spikes"]);
+      // Absorption message should still be emitted
+      expect(result.messages.some((m) => m.includes("absorbed"))).toBe(true);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3. Gen8AbilitiesSwitch: handleTurnEnd (Hunger Switch) via dispatch
+// ---------------------------------------------------------------------------
+
+describe("Gen8AbilitiesSwitch handleTurnEnd dispatch", () => {
+  it("given Morpeko (877) with hunger-switch, when on-turn-end triggers via handleGen8SwitchAbility, then activated is true with transform message", () => {
+    // Source: Showdown data/abilities.ts -- Hunger Switch: Morpeko toggles form each turn
+    // Source: Bulbapedia "Hunger Switch" -- Morpeko (species 877)
+    const ctx = makeAbilityContext({
+      ability: "hunger-switch",
+      trigger: "on-turn-end",
+      speciesId: 877,
+      nickname: "Morpeko",
+    });
+
+    const result = handleGen8SwitchAbility("on-turn-end" as any, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.messages).toEqual(["Morpeko transformed!"]);
+  });
+
+  it("given non-Morpeko (25) with hunger-switch, when on-turn-end triggers via handleGen8SwitchAbility, then not activated", () => {
+    // Source: Showdown data/abilities.ts -- Hunger Switch only applies to Morpeko
+    const ctx = makeAbilityContext({
+      ability: "hunger-switch",
+      trigger: "on-turn-end",
+      speciesId: 25,
+      nickname: "Pikachu",
+    });
+
+    const result = handleGen8SwitchAbility("on-turn-end" as any, ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Morpeko with a different ability, when on-turn-end triggers, then not activated", () => {
+    // Source: Showdown data/abilities.ts -- only hunger-switch triggers toggle
+    const ctx = makeAbilityContext({
+      ability: "static",
+      trigger: "on-turn-end",
+      speciesId: 877,
+    });
+
+    const result = handleGen8SwitchAbility("on-turn-end" as any, ctx);
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3b. Gen8AbilitiesSwitch: Gulp Missile on-contact via dispatch
+// ---------------------------------------------------------------------------
+
+describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
+  it("given Cramorant (845) with gulp-missile and gulp-missile-gulping volatile, when hit on contact, then returns chip damage and defense drop", () => {
+    // Source: Showdown data/abilities.ts -- Gulp Missile onDamagingHit: Gulping form
+    // Source: Bulbapedia "Gulp Missile" -- Arrokuda form: 1/4 max HP damage + Defense -1
+    const volatiles = new Map<string, { turnsLeft: number }>();
+    volatiles.set("gulp-missile-gulping", { turnsLeft: -1 });
+
+    const opponent = makeActive({ maxHp: 200, currentHp: 200 });
+    const ctx = makeAbilityContext({
+      ability: "gulp-missile",
+      trigger: "on-contact",
+      speciesId: 845,
+      nickname: "Cramorant",
+      opponent,
+      volatiles,
+      move: makeMove("water", { category: "physical" }),
+    });
+
+    const result = handleGen8SwitchAbility("on-contact" as any, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.messages).toEqual(["Cramorant spat out its catch!"]);
+
+    // Should have chip-damage effect: floor(200 / 4) = 50
+    // Source: Showdown data/abilities.ts -- Gulp Missile: 1/4 max HP
+    const chipEffect = result.effects.find((e) => e.effectType === "chip-damage");
+    expect(chipEffect).toBeDefined();
+    expect((chipEffect as any).value).toBe(50);
+
+    // Should have defense drop
+    const statEffect = result.effects.find(
+      (e) => e.effectType === "stat-change" && (e as any).stat === "defense",
+    );
+    expect(statEffect).toBeDefined();
+    expect((statEffect as any).stages).toBe(-1);
+  });
+
+  it("given Cramorant (845) with gulp-missile and gulp-missile-gorging volatile, when hit on contact and opponent has no status, then returns chip damage and paralysis", () => {
+    // Source: Showdown data/abilities.ts -- Gulp Missile onDamagingHit: Gorging form
+    // Source: Bulbapedia "Gulp Missile" -- Pikachu form: 1/4 max HP damage + paralysis
+    const volatiles = new Map<string, { turnsLeft: number }>();
+    volatiles.set("gulp-missile-gorging", { turnsLeft: -1 });
+
+    const opponent = makeActive({ maxHp: 160, currentHp: 160 });
+    const ctx = makeAbilityContext({
+      ability: "gulp-missile",
+      trigger: "on-contact",
+      speciesId: 845,
+      nickname: "Cramorant",
+      opponent,
+      volatiles,
+      move: makeMove("water", { category: "physical" }),
+    });
+
+    const result = handleGen8SwitchAbility("on-contact" as any, ctx);
+    expect(result.activated).toBe(true);
+
+    // Should have chip-damage effect: floor(160 / 4) = 40
+    const chipEffect = result.effects.find((e) => e.effectType === "chip-damage");
+    expect(chipEffect).toBeDefined();
+    expect((chipEffect as any).value).toBe(40);
+
+    // Should have paralysis
+    const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");
+    expect(statusEffect).toBeDefined();
+    expect((statusEffect as any).status).toBe("paralysis");
+  });
+
+  it("given Cramorant with gulp-missile-gorging volatile but opponent already has a status, when hit, then returns chip damage but no paralysis", () => {
+    // Source: Showdown data/abilities.ts -- Gulp Missile: paralysis only if no existing status
+    const volatiles = new Map<string, { turnsLeft: number }>();
+    volatiles.set("gulp-missile-gorging", { turnsLeft: -1 });
+
+    const opponent = makeActive({ maxHp: 200, currentHp: 200, status: "burn" });
+    const ctx = makeAbilityContext({
+      ability: "gulp-missile",
+      trigger: "on-contact",
+      speciesId: 845,
+      nickname: "Cramorant",
+      opponent,
+      volatiles,
+      move: makeMove("water", { category: "physical" }),
+    });
+
+    const result = handleGen8SwitchAbility("on-contact" as any, ctx);
+    expect(result.activated).toBe(true);
+
+    // Chip damage still applies
+    const chipEffect = result.effects.find((e) => e.effectType === "chip-damage");
+    expect(chipEffect).toBeDefined();
+
+    // No paralysis because opponent already has burn
+    const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");
+    expect(statusEffect).toBeUndefined();
+  });
+
+  it("given non-Cramorant (25) with gulp-missile, when hit on contact, then not activated", () => {
+    // Source: Showdown data/abilities.ts -- Gulp Missile: species check (845 only)
+    const volatiles = new Map<string, { turnsLeft: number }>();
+    volatiles.set("gulp-missile-gulping", { turnsLeft: -1 });
+
+    const opponent = makeActive({ maxHp: 200, currentHp: 200 });
+    const ctx = makeAbilityContext({
+      ability: "gulp-missile",
+      trigger: "on-contact",
+      speciesId: 25,
+      opponent,
+      volatiles,
+      move: makeMove("water", { category: "physical" }),
+    });
+
+    const result = handleGen8SwitchAbility("on-contact" as any, ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Cramorant without gulp missile volatiles, when hit on contact, then not activated", () => {
+    // Source: Showdown data/abilities.ts -- Gulp Missile: requires gulping/gorging form
+    const opponent = makeActive({ maxHp: 200, currentHp: 200 });
+    const ctx = makeAbilityContext({
+      ability: "gulp-missile",
+      trigger: "on-contact",
+      speciesId: 845,
+      opponent,
+      move: makeMove("water", { category: "physical" }),
+    });
+
+    const result = handleGen8SwitchAbility("on-contact" as any, ctx);
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 4. Gen8AbilitiesStat: formatStatName coverage via Beast Boost
+// ---------------------------------------------------------------------------
+
+describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
+  it("given Beast Boost with highest stat being spAttack, when KO triggers, then message contains 'Special Attack'", () => {
+    // Source: Showdown data/abilities.ts -- beastboost: raises highest stat
+    // Source: Bulbapedia "Beast Boost" -- "raises the user's highest stat by one stage"
+    // This test exercises formatStatName("spAttack") -> "Special Attack"
+    const faintedOpponent = makeActive({ currentHp: 0 });
+    const ctx: AbilityContext = {
+      pokemon: {
+        ...makeActive({
+          ability: "beast-boost",
+          maxHp: 200,
+          currentHp: 200,
+        }),
+        pokemon: {
+          ...makePokemonInstance({ ability: "beast-boost", maxHp: 200, currentHp: 200 }),
+          calculatedStats: {
+            hp: 200,
+            attack: 80,
+            defense: 80,
+            spAttack: 150, // highest
+            spDefense: 80,
+            speed: 80,
+          },
+        },
+      } as unknown as ActivePokemon,
+      opponent: faintedOpponent,
+      state: makeState(),
+      rng: makeState().rng as any,
+      trigger: "on-after-move-used" as any,
+    };
+
+    const result = handleGen8StatAbility(ctx);
+    expect(result.activated).toBe(true);
+    // formatStatName("spAttack") -> "Special Attack"
+    expect(result.messages[0]).toContain("Special Attack");
+    expect(result.effects[0]).toEqual({
+      effectType: "stat-change",
+      target: "self",
+      stat: "spAttack",
+      stages: 1,
+    });
+  });
+
+  it("given Beast Boost with highest stat being spDefense, when KO triggers, then message contains 'Special Defense'", () => {
+    // Source: Showdown data/abilities.ts -- beastboost: raises highest stat
+    // This test exercises formatStatName("spDefense") -> "Special Defense"
+    const faintedOpponent = makeActive({ currentHp: 0 });
+    const ctx: AbilityContext = {
+      pokemon: {
+        ...makeActive({
+          ability: "beast-boost",
+          maxHp: 200,
+          currentHp: 200,
+        }),
+        pokemon: {
+          ...makePokemonInstance({ ability: "beast-boost", maxHp: 200, currentHp: 200 }),
+          calculatedStats: {
+            hp: 200,
+            attack: 80,
+            defense: 80,
+            spAttack: 80,
+            spDefense: 150, // highest
+            speed: 80,
+          },
+        },
+      } as unknown as ActivePokemon,
+      opponent: faintedOpponent,
+      state: makeState(),
+      rng: makeState().rng as any,
+      trigger: "on-after-move-used" as any,
+    };
+
+    const result = handleGen8StatAbility(ctx);
+    expect(result.activated).toBe(true);
+    // formatStatName("spDefense") -> "Special Defense"
+    expect(result.messages[0]).toContain("Special Defense");
+    expect(result.effects[0]).toEqual({
+      effectType: "stat-change",
+      target: "self",
+      stat: "spDefense",
+      stages: 1,
+    });
+  });
+
+  it("given Beast Boost with highest stat being speed, when KO triggers, then message contains 'Speed'", () => {
+    // Source: Showdown data/abilities.ts -- beastboost: raises highest stat
+    // This test exercises formatStatName("speed") -> "Speed"
+    const faintedOpponent = makeActive({ currentHp: 0 });
+    const ctx: AbilityContext = {
+      pokemon: {
+        ...makeActive({
+          ability: "beast-boost",
+          maxHp: 200,
+          currentHp: 200,
+        }),
+        pokemon: {
+          ...makePokemonInstance({ ability: "beast-boost", maxHp: 200, currentHp: 200 }),
+          calculatedStats: {
+            hp: 200,
+            attack: 80,
+            defense: 80,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 150, // highest
+          },
+        },
+      } as unknown as ActivePokemon,
+      opponent: faintedOpponent,
+      state: makeState(),
+      rng: makeState().rng as any,
+      trigger: "on-after-move-used" as any,
+    };
+
+    const result = handleGen8StatAbility(ctx);
+    expect(result.activated).toBe(true);
+    expect(result.messages[0]).toContain("Speed");
+    expect(result.effects[0]).toEqual({
+      effectType: "stat-change",
+      target: "self",
+      stat: "speed",
+      stages: 1,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. Gen8Dynamax edge case: getUndynamaxedHp
+// ---------------------------------------------------------------------------
+
+describe("getUndynamaxedHp edge cases", () => {
+  it("given maxHp=0 (degenerate input), when reverting, then returns 0 without division by zero", () => {
+    // Source: Showdown data/conditions.ts line 801 -- getUndynamaxedHp: guard against division by zero
+    // This is a defensive edge case not normally reachable in gameplay
+    const result = getUndynamaxedHp(100, 0, 300);
+    expect(result).toBe(0);
+  });
+
+  it("given all zero inputs, when reverting, then returns 0", () => {
+    // Source: Defensive edge case -- all-zero inputs should not crash
+    const result = getUndynamaxedHp(0, 0, 0);
+    expect(result).toBe(0);
+  });
+
+  it("given currentHp=150, maxHp=300, baseMaxHp=200, when reverting, then returns round(150 * 200 / 300) = 100", () => {
+    // Source: Showdown data/conditions.ts lines 801-802 -- proportional HP restoration
+    // Inline derivation: round(150 * 200 / 300) = round(100) = 100
+    const result = getUndynamaxedHp(150, 300, 200);
+    expect(result).toBe(100);
+  });
+
+  it("given currentHp=1, maxHp=600, baseMaxHp=300, when reverting from near-death, then returns round(1 * 300 / 600) = 1", () => {
+    // Source: Showdown data/conditions.ts -- proportional restoration at minimum HP
+    // Inline derivation: round(1 * 300 / 600) = round(0.5) = 1
+    const result = getUndynamaxedHp(1, 600, 300);
+    expect(result).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. Heavy-Duty Boots blocking all hazards (combined scenario)
+// ---------------------------------------------------------------------------
+
+describe("Heavy-Duty Boots blocking all hazards combined", () => {
+  it("given Heavy-Duty Boots and all hazard types active, when switching in, then all effects are blocked", () => {
+    // Source: Showdown data/items.ts -- heavydutyboots: blocks ALL entry hazard effects
+    // Source: Bulbapedia "Heavy-Duty Boots" -- blocks Stealth Rock, Spikes, Toxic Spikes,
+    //   Sticky Web, and G-Max Steelsurge
+    const mon = makeActive({
+      types: ["fire", "flying"], // Would take 4x Stealth Rock and 2x G-Max Steelsurge normally
+      maxHp: 300,
+      heldItem: "heavy-duty-boots",
+    });
+    const side = makeSide([
+      { type: "stealth-rock", layers: 1 },
+      { type: "spikes", layers: 3 },
+      { type: "toxic-spikes", layers: 2 },
+      { type: "sticky-web", layers: 1 },
+      { type: "gmax-steelsurge", layers: 1 },
+    ]);
+    const state = makeState();
+
+    const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
+
+    // All effects should be blocked
+    expect(result.damage).toBe(0);
+    expect(result.statusInflicted).toBeNull();
+    expect(result.statChanges).toHaveLength(0);
+    expect(result.messages).toHaveLength(0);
+  });
+
+  it("given no Heavy-Duty Boots and same hazards on a Fire/Flying-type, when switching in, then massive damage is dealt", () => {
+    // Source: Showdown data/moves.ts -- each hazard applies independently
+    // This is the control case to prove Heavy-Duty Boots actually prevents damage
+    //
+    // Stealth Rock: Rock vs Fire = 2x, Rock vs Flying = 2x -> 4x
+    //   floor(300 * 4 / 8) = 150
+    // Spikes 3 layers: floor(300 * 6 / 24) = 75
+    //   But Flying-type is NOT grounded -> Spikes doesn't apply!
+    // G-Max Steelsurge: Steel vs Fire = 0.5x, Steel vs Flying = 1x -> 0.5x
+    //   floor(300 * 0.5 / 8) = floor(18.75) = 18
+    // Toxic Spikes: Flying-type not grounded -> no effect
+    // Sticky Web: Flying-type not grounded -> no effect
+    //
+    // Total = 150 + 18 = 168
+    const mon = makeActive({
+      types: ["fire", "flying"],
+      maxHp: 300,
+    });
+    const side = makeSide([
+      { type: "stealth-rock", layers: 1 },
+      { type: "spikes", layers: 3 },
+      { type: "toxic-spikes", layers: 2 },
+      { type: "sticky-web", layers: 1 },
+      { type: "gmax-steelsurge", layers: 1 },
+    ]);
+    const state = makeState();
+
+    const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
+    // Stealth Rock (150) + G-Max Steelsurge (18) = 168
+    // Spikes, Toxic Spikes, Sticky Web don't apply (Flying not grounded)
+    expect(result.damage).toBe(168);
+    expect(result.statusInflicted).toBeNull(); // Not grounded for Toxic Spikes
+  });
+
+  it("given Heavy-Duty Boots holder, when hasHeavyDutyBoots is checked, then returns true", () => {
+    // Source: Showdown data/items.ts -- heavydutyboots: item ID match
+    const mon = makeActive({ heldItem: "heavy-duty-boots" });
+    expect(hasHeavyDutyBoots(mon)).toBe(true);
+  });
+
+  it("given Leftovers holder, when hasHeavyDutyBoots is checked, then returns false", () => {
+    // Source: Showdown data/items.ts -- only heavy-duty-boots has the hazard-blocking effect
+    const mon = makeActive({ heldItem: "leftovers" });
+    expect(hasHeavyDutyBoots(mon)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bonus: shouldHungerSwitchToggle exported function edge cases
+// ---------------------------------------------------------------------------
+
+describe("shouldHungerSwitchToggle edge cases", () => {
+  it("given hunger-switch and speciesId 877, when checked, then returns true", () => {
+    // Source: Showdown data/abilities.ts -- Hunger Switch onResidual, Morpeko = 877
+    expect(shouldHungerSwitchToggle("hunger-switch", 877)).toBe(true);
+  });
+
+  it("given hunger-switch and speciesId 0, when checked, then returns false", () => {
+    // Source: Showdown data/abilities.ts -- only speciesId 877 triggers
+    expect(shouldHungerSwitchToggle("hunger-switch", 0)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bonus: getGulpMissileResult exported function edge cases
+// ---------------------------------------------------------------------------
+
+describe("getGulpMissileResult edge cases", () => {
+  it("given gorging form and attackerMaxHp=100, when calculated, then returns 25 damage and paralysis", () => {
+    // Source: Showdown data/abilities.ts -- Gulp Missile: 1/4 max HP
+    // Inline derivation: floor(100 / 4) = 25
+    const result = getGulpMissileResult("gorging", 100);
+    expect(result.damage).toBe(25);
+    expect(result.secondaryEffect).toBe("paralysis");
+  });
+
+  it("given gulping form and attackerMaxHp=100, when calculated, then returns 25 damage and defense-drop", () => {
+    // Source: Showdown data/abilities.ts -- Gulp Missile: Gulping = defense-drop
+    // Inline derivation: floor(100 / 4) = 25
+    const result = getGulpMissileResult("gulping", 100);
+    expect(result.damage).toBe(25);
+    expect(result.secondaryEffect).toBe("defense-drop");
+  });
+
+  it("given gorging form and attackerMaxHp=1, when calculated, then minimum damage is 1", () => {
+    // Source: Showdown data/abilities.ts -- Math.max(1, ...) ensures minimum 1 damage
+    // Inline derivation: Math.max(1, floor(1/4)) = Math.max(1, 0) = 1
+    const result = getGulpMissileResult("gorging", 1);
+    expect(result.damage).toBe(1);
+  });
+});
