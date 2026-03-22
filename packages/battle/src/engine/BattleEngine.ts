@@ -1350,7 +1350,8 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
       } else {
-        // Pre-damage survival check: allows abilities (Sturdy) to cap lethal damage before HP subtraction.
+        // Pre-damage survival check: allows abilities (Sturdy) and items (Focus Sash,
+        // Focus Band) to cap lethal damage before HP subtraction.
         // Source: Showdown sim/battle-actions.ts — onDamage handlers run before HP reduction
         if (damage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
           const survivalResult = this.ruleset.capLethalDamage(
@@ -1363,6 +1364,18 @@ export class BattleEngine implements BattleEventEmitter {
           damage = survivalResult.damage;
           for (const msg of survivalResult.messages) {
             this.emit({ type: "message", text: msg });
+          }
+          // If the survival was triggered by a consumable item (e.g., Focus Sash),
+          // consume the item and emit an item-consumed event.
+          // Source: Showdown data/items.ts — Focus Sash is consumed after activation
+          if (survivalResult.consumedItem) {
+            defender.pokemon.heldItem = null;
+            this.emit({
+              type: "item-consumed",
+              side: defenderSide as 0 | 1,
+              pokemon: getPokemonName(defender),
+              item: survivalResult.consumedItem,
+            });
           }
         }
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
@@ -3440,9 +3453,16 @@ export class BattleEngine implements BattleEventEmitter {
         }
         case "toxic-orb-activation":
         case "flame-orb-activation": {
+          // Only trigger the specific orb item, NOT all end-of-turn items.
+          // Fix for bug #600: previously called applyHeldItem("end-of-turn") unfiltered,
+          // causing Leftovers/Black Sludge to activate again during the orb phase.
+          // Source: Showdown data/items.ts — Toxic Orb and Flame Orb are independent
+          //   end-of-turn triggers that only affect the holder of that specific orb.
+          const orbItem = effect === "toxic-orb-activation" ? "toxic-orb" : "flame-orb";
           for (const side of this.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
+            if (active.pokemon.heldItem !== orbItem) continue;
             const itemResult = this.ruleset.applyHeldItem("end-of-turn", {
               pokemon: active,
               state: this.state,

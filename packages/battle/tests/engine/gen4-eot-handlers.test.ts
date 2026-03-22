@@ -482,7 +482,25 @@ describe("flame-orb-activation EoT slot", () => {
       messages: [],
     });
 
-    const { engine, events } = createEngine({ ruleset });
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        heldItem: "flame-orb",
+        calculatedStats: {
+          hp: 160,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 160,
+      }),
+    ];
+
+    const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
     events.length = 0;
 
@@ -724,7 +742,25 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
       messages: [],
     });
 
-    const { engine, events } = createEngine({ ruleset });
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        heldItem: "toxic-orb",
+        calculatedStats: {
+          hp: 160,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 160,
+      }),
+    ];
+
+    const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
     events.length = 0;
 

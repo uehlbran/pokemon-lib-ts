@@ -22,6 +22,7 @@ import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   EntryHazardType,
+  MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
@@ -133,6 +134,62 @@ export class Gen4Ruleset extends BaseRuleset {
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
     return executeGen4MoveEffect(context);
+  }
+
+  // --- Pre-Damage Survival (Focus Sash / Focus Band) ---
+
+  /**
+   * Cap lethal damage for survival items:
+   *   - Focus Sash: survive any hit from full HP at 1 HP (consumed, NEW in Gen 4)
+   *   - Focus Band: 10% chance to survive any KO hit at 1 HP (NOT consumed)
+   *
+   * Gen 4 Sturdy only blocks OHKO moves (does NOT act as a Focus Sash).
+   * The Focus Sash effect for Sturdy was added in Gen 5.
+   *
+   * Source: Bulbapedia -- Focus Sash: survive with 1 HP if at full HP; consumed
+   * Source: Showdown Gen 4 mod -- Focus Sash onDamagingHit
+   * Source: Showdown Gen 4 mod -- Focus Band 10% activation
+   */
+  capLethalDamage(
+    damage: number,
+    defender: ActivePokemon,
+    _attacker: ActivePokemon,
+    _move: MoveData,
+    state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
+    const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+    const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    const heldItem = defender.pokemon.heldItem;
+
+    // Focus Sash: survive at 1 HP if at full HP, consumed (NEW in Gen 4)
+    // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
+    // Source: Showdown Gen 4 mod -- Focus Sash onDamagingHit
+    if (
+      heldItem === "focus-sash" &&
+      defender.pokemon.currentHp === maxHp &&
+      damage >= defender.pokemon.currentHp
+    ) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on with its Focus Sash!`],
+        consumedItem: "focus-sash",
+      };
+    }
+
+    // Focus Band: 10% chance to survive at 1 HP, NOT consumed
+    // Source: Showdown Gen 4 mod -- Focus Band 10% activation
+    if (heldItem === "focus-band" && damage >= defender.pokemon.currentHp) {
+      if (state.rng.chance(0.1)) {
+        return {
+          damage: maxHp - 1,
+          survived: true,
+          messages: [`${name} hung on using its Focus Band!`],
+        };
+      }
+    }
+
+    return { damage, survived: false, messages: [] };
   }
 
   // --- Semi-Invulnerable Hit Check ---
