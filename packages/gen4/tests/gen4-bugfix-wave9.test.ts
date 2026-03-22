@@ -484,10 +484,11 @@ describe("Bug #271 + #274 -- Knock Off flag and Trick/Switcheroo guard", () => {
 // ===========================================================================
 
 describe("Bug #255 -- Pain Split heals both sides", () => {
-  it("given attacker at 50 HP and defender at 150 HP, when Pain Split used, then both set to 100", () => {
+  it("given attacker at 50 HP and defender at 150 HP, when Pain Split used, then result signals attacker heal and defender damage", () => {
     // Source: Showdown Gen 4 -- Pain Split sets both to floor((a + b) / 2)
     // Source: Bulbapedia -- "each have their HP set to the average of the two"
     // Average = floor((50 + 150) / 2) = 100
+    // Attacker gains 50 (100 - 50), defender loses 50 (150 - 100)
     const attacker = createActivePokemon({
       types: ["ghost"],
       maxHp: 200,
@@ -509,14 +510,20 @@ describe("Bug #255 -- Pain Split heals both sides", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(attacker.pokemon.currentHp).toBe(100);
-    expect(defender.pokemon.currentHp).toBe(100);
+    // Attacker heals via healAmount (engine applies this)
+    expect(result.healAmount).toBe(50);
+    // Defender loses HP via customDamage (engine applies this)
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 50,
+      source: "pain-split",
+    });
     expect(result.messages).toContain("The battlers shared their pain!");
   });
 
-  it("given attacker at 180 HP and defender at 20 HP, when Pain Split used, then both set to 100 (defender healed)", () => {
+  it("given attacker at 180 HP and defender at 20 HP, when Pain Split used, then attacker takes recoil and defender is healed", () => {
     // Average = floor((180 + 20) / 2) = 100
-    // Before the fix, the defender would not be healed when attacker > average.
+    // Attacker loses 80 (180 - 100), defender gains 80 (100 - 20)
     // Source: Showdown Gen 4 -- Pain Split sets both to floor((a + b) / 2)
     const attacker = createActivePokemon({
       types: ["ghost"],
@@ -539,13 +546,17 @@ describe("Bug #255 -- Pain Split heals both sides", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(attacker.pokemon.currentHp).toBe(100);
+    // Attacker loses HP via recoilDamage (engine applies this)
+    expect(result.recoilDamage).toBe(80);
+    // Defender gains HP -- direct mutation (no defenderHealAmount field in MoveEffectResult)
     expect(defender.pokemon.currentHp).toBe(100);
     expect(result.messages).toContain("The battlers shared their pain!");
   });
 
   it("given average exceeds defender maxHp, when Pain Split used, then defender HP capped at maxHp", () => {
     // Average = floor((300 + 50) / 2) = 175, but defender's maxHp is 150
+    // Attacker new HP = min(175, 400) = 175, loses 125 (300 - 175)
+    // Defender new HP = min(175, 150) = 150, gains 100 (150 - 50)
     // Source: Showdown Gen 4 -- Pain Split caps at maxHp
     const attacker = createActivePokemon({
       types: ["ghost"],
@@ -568,8 +579,9 @@ describe("Bug #255 -- Pain Split heals both sides", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(attacker.pokemon.currentHp).toBe(175);
-    // Defender cannot exceed maxHp
+    // Attacker loses 125 HP via recoilDamage (engine applies this)
+    expect(result.recoilDamage).toBe(125);
+    // Defender heals to maxHp (direct mutation -- capped at maxHp 150)
     expect(defender.pokemon.currentHp).toBe(150);
     expect(result.messages).toContain("The battlers shared their pain!");
   });

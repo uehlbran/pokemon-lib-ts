@@ -622,6 +622,7 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
  * Handle "on-turn-end" abilities for Gen 3.
  *
  * Implemented:
+ *   - Truant: toggle the "truant-turn" volatile (loafing <-> acting)
  *   - Speed Boost: +1 Speed each turn
  *   - Rain Dish: heal 1/16 max HP in rain
  *   - Shed Skin: 1/3 chance to cure primary status
@@ -634,6 +635,21 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
   const maxHp = context.pokemon.pokemon.calculatedStats?.hp ?? context.pokemon.pokemon.currentHp;
 
   switch (abilityId) {
+    case "truant": {
+      // Source: pret/pokeemerald src/battle_util.c — Truant toggle at ABILITYEFFECT_ENDTURN, not at move execution
+      // Toggle the "truant-turn" volatile: if present, remove it (next turn can act);
+      // if absent, set it (next turn will loaf). This fires every turn regardless of
+      // whether the Pokemon successfully moved (e.g., even if paralyzed/frozen/asleep).
+      const hasTruantTurn = context.pokemon.volatileStatuses.has("truant-turn");
+      if (hasTruantTurn) {
+        context.pokemon.volatileStatuses.delete("truant-turn");
+      } else {
+        context.pokemon.volatileStatuses.set("truant-turn", { turnsLeft: -1 });
+      }
+      // The toggle itself is silent — no message is emitted.
+      return { activated: true, effects: [], messages: [] };
+    }
+
     case "speed-boost": {
       // Source: pret/pokeemerald — Speed Boost: raises Speed by 1 stage at end of each turn
       // Source: Bulbapedia — Speed Boost activates at the end of every turn
@@ -826,18 +842,15 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
 function handleBeforeMove(abilityId: string, context: AbilityContext): AbilityResult {
   const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
   if (abilityId === "truant") {
-    // Truant: alternates between acting and loafing.
-    // Toggle logic: "truant-turn" volatile absent -> set it, move proceeds.
-    // "truant-turn" volatile present -> delete it, return movePrevented.
+    // Truant: check if the "truant-turn" volatile is present. If so, block the move.
+    // The toggle itself happens at end of turn (handleTurnEnd), not here.
     //
-    // Source: pret/pokeemerald src/battle_util.c — ABILITY_TRUANT
+    // Source: pret/pokeemerald src/battle_util.c — Truant toggle at ABILITYEFFECT_ENDTURN, not at move execution
     // Source: Bulbapedia — "Truant causes the Pokemon to use a move only every other turn"
     const hasTruantTurn = context.pokemon.volatileStatuses.has("truant-turn");
     if (hasTruantTurn) {
-      // This is the "loaf" turn — remove volatile and block the move.
-      // TODO: Replace direct deletion with a "volatile-remove" AbilityEffect once the engine
-      // supports it (track via GitHub issue). For now, direct mutation is the only option.
-      context.pokemon.volatileStatuses.delete("truant-turn");
+      // This is the "loaf" turn — block the move. Do NOT toggle here;
+      // the toggle fires at end of turn regardless of whether the move executed.
       return {
         activated: true,
         movePrevented: true,
@@ -845,17 +858,7 @@ function handleBeforeMove(abilityId: string, context: AbilityContext): AbilityRe
         messages: [`${name} is loafing around!`],
       };
     }
-    // This is the "act" turn — set volatile (will loaf next turn), move proceeds.
-    // Direct mutation is intentional here: the unit-testable path does not run through the engine,
-    // and both act-turn (set) and loaf-turn (delete) use the same direct-mutation pattern for
-    // symmetry. A future "volatile-remove" effect type would allow the loaf-turn delete to go
-    // through the effect pipeline too.
-    // Source: pret/pokeemerald src/battle_util.c — truantCounter ^= 1 at ABILITYEFFECT_ENDTURN
-    // NOTE: Ideally this toggle would happen at on-turn-end (even when move is blocked by sleep/
-    // freeze) to match pokeemerald's ABILITYEFFECT_ENDTURN. Engine lacks on-turn-end per-pokemon
-    // ability trigger; see issue for tracking. For now, on-before-move gives correct behavior for
-    // the common case.
-    context.pokemon.volatileStatuses.set("truant-turn", { turnsLeft: -1 });
+    // No truant-turn volatile — move proceeds normally.
     return { activated: false, effects: [], messages: [] };
   }
   return { activated: false, effects: [], messages: [] };
