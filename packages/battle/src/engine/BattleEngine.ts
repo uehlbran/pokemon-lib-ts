@@ -2520,6 +2520,18 @@ export class BattleEngine implements BattleEventEmitter {
     side: 0 | 1,
     sleepTurnsOverride?: number,
   ): void {
+    // Terrain-based status immunity check (Gen 6+)
+    // Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
+    if (this.ruleset.canInflictStatus) {
+      const terrainResult = this.ruleset.canInflictStatus(status, target, this.state);
+      if (terrainResult.immune) {
+        if (terrainResult.message) {
+          this.emit({ type: "message", text: terrainResult.message });
+        }
+        return;
+      }
+    }
+
     target.pokemon.status = status;
 
     // Initialize companion volatiles that downstream mechanics depend on.

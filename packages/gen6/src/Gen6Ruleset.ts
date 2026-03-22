@@ -9,6 +9,7 @@ import type {
   EndOfTurnEffect,
   EntryHazardResult,
   ExpContext,
+  TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
@@ -25,6 +26,7 @@ import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
 import { calculateGen6Damage } from "./Gen6DamageCalc.js";
 import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
+import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
 import { applyGen6WeatherEffects } from "./Gen6Weather.js";
 
@@ -113,6 +115,53 @@ export class Gen6Ruleset extends BaseRuleset {
    */
   hasTerrain(): boolean {
     return true;
+  }
+
+  /**
+   * Gen 6 terrain effects: Grassy Terrain heals grounded Pokemon 1/16 max HP at EoT.
+   *
+   * Electric Terrain and Misty Terrain have no EoT healing effect; their effects
+   * are handled via damage modifiers (in Gen6DamageCalc) and status immunity
+   * (via canInflictStatus).
+   *
+   * Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal at EoT for grounded Pokemon
+   * Source: Showdown data/conditions.ts -- grassyterrain.onResidual
+   */
+  override applyTerrainEffects(state: BattleState): TerrainEffectResult[] {
+    return applyGen6TerrainEffects(state);
+  }
+
+  /**
+   * Check if a primary status condition can be inflicted on a target,
+   * considering active terrain effects.
+   *
+   * - Electric Terrain: grounded Pokemon cannot fall asleep
+   * - Misty Terrain: grounded Pokemon cannot gain any primary status condition
+   *
+   * Source: Bulbapedia "Electric Terrain" Gen 6 -- "Grounded Pokemon cannot fall asleep."
+   * Source: Bulbapedia "Misty Terrain" Gen 6 -- "Grounded Pokemon are protected from
+   *   status conditions."
+   * Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
+   */
+  canInflictStatus(
+    status: PrimaryStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): { immune: boolean; message?: string } {
+    if (!canInflictStatusWithTerrain(status, target, state)) {
+      const terrainName =
+        state.terrain?.type === "electric"
+          ? "Electric Terrain"
+          : state.terrain?.type === "misty"
+            ? "Misty Terrain"
+            : "the terrain";
+      const pokemonName = target.pokemon.nickname ?? String(target.pokemon.speciesId);
+      return {
+        immune: true,
+        message: `${pokemonName} is protected by ${terrainName}!`,
+      };
+    }
+    return { immune: false };
   }
 
   // --- Damage Calculation ---

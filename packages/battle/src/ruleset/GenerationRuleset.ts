@@ -354,6 +354,29 @@ export interface TerrainSystem {
   hasTerrain(): boolean;
   /** Apply terrain effects */
   applyTerrainEffects(state: BattleState): TerrainEffectResult[];
+
+  /**
+   * Check if a primary status condition can be inflicted on a target,
+   * considering terrain-based immunities.
+   *
+   * Gen 1-5: not present (no terrain). Gen 6+:
+   *   - Electric Terrain: grounded Pokemon cannot fall asleep
+   *   - Misty Terrain: grounded Pokemon cannot gain any primary status
+   *
+   * Returns `{ immune: false }` if the status CAN be inflicted,
+   * or `{ immune: true, message }` if terrain blocks it.
+   *
+   * Optional: Gen 1-5 rulesets do not implement this method.
+   * The engine checks `if (this.ruleset.canInflictStatus)` before calling.
+   *
+   * Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
+   * Source: Bulbapedia -- Electric Terrain / Misty Terrain status immunity
+   */
+  canInflictStatus?(
+    status: PrimaryStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): { immune: boolean; message?: string };
 }
 
 /** Entry hazard list and application on switch-in. */
