@@ -595,9 +595,35 @@ export function calculateGen6Damage(
   const attackerAbility = attacker.ability;
   const weather = context.state.weather?.type ?? null;
 
-  // Normalize: all moves become Normal type
+  // -ate abilities + Normalize: type-changing abilities
+  // Order: -ate abilities (Normal -> their type), then Normalize (all -> Normal)
+  // Source: Showdown data/abilities.ts -- aerilate/pixilate/refrigerate: onModifyTypePriority -1
+  // Source: Showdown data/abilities.ts -- normalize: onModifyTypePriority -2
+  let effectiveMoveType: PokemonType = move.type;
+  let ateBoostApplied = false;
+
+  // -ate abilities: change Normal-type moves to the ability's type + 1.3x power
+  // Source: Showdown data/abilities.ts -- aerilate/pixilate/refrigerate:
+  //   onModifyType: if move.type === 'Normal', change to ability type
+  //   onBasePower: chainModify([5325, 4096]) = 1.3x
+  const ATE_ABILITY_TYPES: Readonly<Record<string, PokemonType>> = {
+    aerilate: "flying",
+    pixilate: "fairy",
+    refrigerate: "ice",
+  };
+
+  const ateType = ATE_ABILITY_TYPES[attackerAbility];
+  if (move.type === "normal" && ateType) {
+    effectiveMoveType = ateType;
+    ateBoostApplied = true;
+  }
+
+  // Normalize: all moves become Normal type (overrides -ate abilities)
   // Source: Showdown data/abilities.ts -- Normalize
-  const effectiveMoveType: PokemonType = attackerAbility === "normalize" ? "normal" : move.type;
+  if (attackerAbility === "normalize") {
+    effectiveMoveType = "normal";
+    ateBoostApplied = false; // Normalize overrides -ate
+  }
 
   // Klutz check
   const attackerHasKlutz = attackerAbility === "klutz";
@@ -692,6 +718,34 @@ export function calculateGen6Damage(
   // Source: Showdown data/abilities.ts -- Iron Fist
   if (attackerAbility === "iron-fist" && move.flags.punch) {
     power = Math.floor(power * 1.2);
+  }
+
+  // Tough Claws: ~1.3x (5325/4096) power for contact moves
+  // Source: Showdown data/abilities.ts -- toughclaws: onBasePowerPriority 21,
+  //   this.chainModify([5325, 4096])
+  if (attackerAbility === "tough-claws" && move.flags.contact) {
+    power = pokeRound(power, 5325);
+  }
+
+  // Strong Jaw: 1.5x (6144/4096) power for bite moves
+  // Source: Showdown data/abilities.ts -- strongjaw: onBasePowerPriority 19,
+  //   this.chainModify(1.5)
+  if (attackerAbility === "strong-jaw" && move.flags.bite) {
+    power = pokeRound(power, 6144);
+  }
+
+  // Mega Launcher: 1.5x (6144/4096) power for pulse moves
+  // Source: Showdown data/abilities.ts -- megalauncher: onBasePowerPriority 19,
+  //   this.chainModify(1.5)
+  if (attackerAbility === "mega-launcher" && move.flags.pulse) {
+    power = pokeRound(power, 6144);
+  }
+
+  // -ate abilities power boost: 1.3x (5325/4096) when type was changed
+  // Source: Showdown data/abilities.ts -- aerilate/pixilate/refrigerate:
+  //   onBasePowerPriority 23, chainModify([5325, 4096])
+  if (ateBoostApplied) {
+    power = pokeRound(power, 5325);
   }
 
   // Reckless: 1.2x power for moves with recoil
