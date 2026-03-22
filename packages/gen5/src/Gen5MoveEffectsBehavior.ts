@@ -279,12 +279,26 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
     return makeResult({ messages: [] });
   }
 
+  // Cannot steal through a Substitute -- move hit the sub, not the Pokemon.
+  // Source: Showdown sim/battle-actions.ts -- onAfterHit only fires when the target is hit directly.
+  // brokeSubstitute means this hit destroyed the sub (still did not hit the Pokemon directly).
+  if (
+    ctx.brokeSubstitute ||
+    (ctx.defender.volatileStatuses.has("substitute") && !ctx.move.flags.bypassSubstitute)
+  ) {
+    return makeResult({ messages: [] });
+  }
+
   const userItem = ctx.attacker.pokemon.heldItem;
   const targetItem = ctx.defender.pokemon.heldItem;
 
-  // User already has an item -- cannot steal
+  // User already has an item -- cannot steal.
+  // Also blocked if the user consumed a Gem this move (gem-used volatile marks this).
   // Source: Showdown data/moves.ts -- `if (source.item || source.volatiles['gem']) return;`
   if (userItem != null && userItem !== "") {
+    return makeResult({ messages: [] });
+  }
+  if (ctx.attacker.volatileStatuses.has("gem-used")) {
     return makeResult({ messages: [] });
   }
 

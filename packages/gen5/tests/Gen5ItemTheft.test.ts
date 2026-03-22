@@ -207,6 +207,7 @@ function makeContext(overrides: {
   move?: MoveData;
   damage?: number;
   state?: BattleState;
+  brokeSubstitute?: boolean;
 }): MoveEffectContext {
   return {
     attacker: overrides.attacker ?? makeActive({}),
@@ -215,6 +216,7 @@ function makeContext(overrides: {
     damage: overrides.damage ?? 0,
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(42),
+    brokeSubstitute: overrides.brokeSubstitute ?? false,
   };
 }
 
@@ -499,5 +501,83 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
     // Unburden volatile set on victim (the attacker who lost the item)
     expect(attacker.volatileStatuses.has("unburden")).toBe(true);
     expect(attacker.volatileStatuses.get("unburden")!.turnsLeft).toBe(-1);
+  });
+});
+
+// ===========================================================================
+// THIEF/COVET -- SUBSTITUTE GUARD (Qodo Issue #3)
+// ===========================================================================
+
+describe("Gen 5 Thief/Covet -- cannot steal through Substitute", () => {
+  // Source: Showdown sim/battle-actions.ts -- onAfterHit only fires when the target is hit directly.
+  // When the move breaks a Substitute, the Pokemon itself was not hit -- no theft allowed.
+  it("given defender has a Substitute that is broken, when Thief deals damage, then does not steal", () => {
+    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
+    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
+    defender.volatileStatuses.set("substitute", { turnsLeft: -1 });
+    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
+    // brokeSubstitute: true -- the hit destroyed the sub
+    const ctx = makeContext({ attacker, defender, move, damage: 50, brokeSubstitute: true });
+
+    const result = handleGen5BehaviorMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(result!.itemTransfer).toBeUndefined();
+    expect(result!.messages).toEqual([]);
+  });
+
+  // Source: Showdown sim/battle-actions.ts -- onAfterHit only fires on direct hits.
+  // If the Substitute is still up (hit did not break it), theft is also blocked.
+  it("given defender has an active Substitute (hit absorbed, sub survives), when Thief deals damage, then does not steal", () => {
+    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
+    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
+    defender.volatileStatuses.set("substitute", { turnsLeft: -1 });
+    // substituteHp > 0 simulated by the volatile still being present and brokeSubstitute: false
+    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
+    const ctx = makeContext({ attacker, defender, move, damage: 30, brokeSubstitute: false });
+
+    const result = handleGen5BehaviorMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(result!.itemTransfer).toBeUndefined();
+    expect(result!.messages).toEqual([]);
+  });
+});
+
+// ===========================================================================
+// THIEF/COVET -- GEM GUARD (Qodo Issue #2)
+// ===========================================================================
+
+describe("Gen 5 Thief/Covet -- cannot steal when user consumed a Gem this move", () => {
+  // Source: Showdown data/moves.ts -- thief/covet onAfterHit:
+  //   `if (source.item || source.volatiles['gem']) return;`
+  // The gem-used volatile is set by Gen5DamageCalc when a gem item is consumed.
+  it("given user consumed a gem (gem-used volatile present), when Thief deals damage, then does not steal", () => {
+    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
+    // Simulate post-gem-consumption: heldItem is null but gem-used volatile is set
+    attacker.volatileStatuses.set("gem-used", { turnsLeft: 1 });
+    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
+    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
+    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+
+    const result = handleGen5BehaviorMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(result!.itemTransfer).toBeUndefined();
+    expect(result!.messages).toEqual([]);
+  });
+
+  // Triangulation: without the gem-used volatile, theft proceeds normally.
+  it("given user has no item and no gem-used volatile, when Thief deals damage, then steals normally", () => {
+    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
+    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
+    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
+    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+
+    const result = handleGen5BehaviorMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(result!.itemTransfer).toEqual({ from: "defender", to: "attacker" });
+    expect(result!.messages).toContain("Sneasel stole Blissey's leftovers!");
   });
 });
