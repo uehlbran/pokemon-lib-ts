@@ -214,6 +214,9 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Black Sludge: Heals Poison-types 1/16 max HP; damages non-Poison-types 1/8 max HP (NEW Gen 4)
     // Source: Bulbapedia — Black Sludge: Gen 4 item, heals Poison-types, damages others
     // Source: Showdown Gen 4 mod — Black Sludge trigger
+    // Magic Guard: prevents indirect (chip) damage from Black Sludge on non-Poison holders.
+    // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+    // Source: Showdown Gen 4 — Magic Guard blocks Black Sludge chip
     case "black-sludge": {
       if (isPoison) {
         const healAmount = Math.max(1, Math.floor(maxHp / 16));
@@ -223,7 +226,8 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
           messages: [`${pokemonName}'s Black Sludge restored its HP!`],
         };
       }
-      // Non-Poison: take 1/8 max HP damage
+      // Non-Poison: take 1/8 max HP damage — blocked by Magic Guard
+      if (pokemon.ability === "magic-guard") return NO_ACTIVATION;
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
@@ -442,7 +446,11 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Source: Bulbapedia — Sticky Barb: "At the end of every turn, the holder takes
     //   damage equal to 1/8 of its maximum HP."
     // Source: Showdown Gen 4 mod — Sticky Barb end-of-turn chip
+    // Magic Guard: prevents indirect chip damage from Sticky Barb.
+    // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+    // Source: Showdown Gen 4 — Magic Guard blocks Sticky Barb chip
     case "sticky-barb": {
+      if (pokemon.ability === "magic-guard") return NO_ACTIVATION;
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
@@ -1021,7 +1029,14 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
     // NEW in Gen 4. Life Orb gives 1.3x damage but deals recoil each time the holder attacks.
     // Source: Bulbapedia — Life Orb: 1.3x damage, deals floor(maxHP/10) recoil per hit
     // Source: Showdown Gen 4 mod — Life Orb recoil trigger
+    //
+    // Magic Guard: prevents the Life Orb recoil chip-damage (the 1.3x boost still applies
+    // because that is handled in calculateGen4Damage, not here).
+    // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+    // Source: Showdown Gen 4 — Magic Guard prevents Life Orb self-damage
+    // Fix for issue #549: previous code emitted chip-damage even for Magic Guard holders.
     case "life-orb": {
+      if (pokemon.ability === "magic-guard") return NO_ACTIVATION;
       const damageDealt = context.damage ?? 0;
       if (damageDealt > 0) {
         const recoil = Math.max(1, Math.floor(maxHp / 10));
