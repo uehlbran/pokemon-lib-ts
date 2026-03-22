@@ -423,7 +423,7 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown data/moves.ts:10473-10474
       // Last Respects base power scales via the damage calc (not move effect handler)
       const attacker = makeActive({ types: ["ghost"] });
-      const defender = makeActive({ types: ["normal"] });
+      const _defender = makeActive({ types: ["normal"] });
       const move = makeMove({
         id: "last-respects",
         type: "ghost",
@@ -988,4 +988,3 @@ describe("Gen 9 integration tests", () => {
     });
   });
 });
-
