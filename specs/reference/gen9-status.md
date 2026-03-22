@@ -38,7 +38,7 @@
 
 | Item | Branch | Notes |
 |------|--------|-------|
-| Wave 2 Terastallization | feat/gen9-wave2-terastallization | Gen9Terastallization gimmick + calculateTeraStab + 44 tests |
+| Wave 2 Terastallization | feat/gen9-wave2-terastallization | PR #718 — Gen9Terastallization gimmick + calculateTeraStab + 44 tests |
 
 ---
 
