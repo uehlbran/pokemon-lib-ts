@@ -563,7 +563,13 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Supreme Overlord: power boost based on fainted allies.
       // The actual numerical modifier is applied via getSupremeOverlordModifier()
       // in the damage calc. This handler just signals activation.
+      // Do not activate when no allies have fainted (0 fainted = 4096 = 1.0x, no boost).
       // Source: Showdown data/abilities.ts:4634-4658
+      const attackerSide = ctx.state.sides.find((s) =>
+        s.active?.some((a) => a?.pokemon.uid === ctx.pokemon.pokemon.uid),
+      );
+      const faintedCount = attackerSide?.faintCount ?? 0;
+      if (faintedCount === 0) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
