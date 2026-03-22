@@ -28,6 +28,7 @@ import { createGen8DataManager } from "./data/index.js";
 import { handleGen8SwitchAbility, shouldMirrorArmorReflect } from "./Gen8AbilitiesSwitch.js";
 import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 import { calculateGen8Damage } from "./Gen8DamageCalc.js";
+import { Gen8Dynamax } from "./Gen8Dynamax.js";
 import { applyGen8EntryHazards } from "./Gen8EntryHazards.js";
 import { applyGen8TerrainEffects, checkGen8TerrainStatusImmunity } from "./Gen8Terrain.js";
 import { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
@@ -255,10 +256,12 @@ export class Gen8Ruleset extends BaseRuleset {
    * Source: Showdown data/mods/gen8 -- no Mega Evolution or Z-Moves
    * Source: Bulbapedia -- Dynamax is the Gen 8 battle gimmick
    */
-  getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {
+  getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
     // Mega Evolution removed in Gen 8
     // Z-Moves removed in Gen 8
-    // Dynamax: implemented in Wave 8
+    // Source: Showdown data/mods/gen8 -- no Mega Evolution or Z-Moves
+    // Source: Bulbapedia -- Dynamax is the Gen 8 battle gimmick
+    if (type === "dynamax") return new Gen8Dynamax();
     return null;
   }
 
