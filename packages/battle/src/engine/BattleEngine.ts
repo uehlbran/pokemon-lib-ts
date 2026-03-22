@@ -1138,8 +1138,13 @@ export class BattleEngine implements BattleEventEmitter {
     //   which fires before the accuracy roll.
     // Fix for #538: previously applied only at the end of executeMove, after the
     //   accuracy check — misses bypassed the lock entirely.
+    // Dynamax suppresses Choice lock — Dynamaxed Pokemon can use any Max Move
+    // freely without being locked. The lock is deferred until Dynamax ends.
+    // Source: Showdown data/conditions.ts -- dynamax: prevents choice lock during dynamax
+    // Source: Bulbapedia "Dynamax" -- "Choice items do not lock the user into a single move"
     if (
       this.ruleset.hasHeldItems() &&
+      !actor.isDynamaxed &&
       !actor.volatileStatuses.has("choice-locked") &&
       actor.pokemon.heldItem &&
       (actor.pokemon.heldItem === "choice-band" ||

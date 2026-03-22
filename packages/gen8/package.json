@@ -8,10 +8,7 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./data": {
-      "import": "./data/index.js",
-      "require": "./data/index.cjs"
-    }
+    "./data/*.json": "./data/*.json"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -38,7 +38,7 @@ import {
   type PokemonType,
 } from "@pokemon-lib-ts/core";
 
-import { isMegaStone } from "./Gen7Items.js";
+import { isMegaStone, isZCrystal } from "./Gen7Items.js";
 
 /**
  * Hardcoded Mega Evolution data keyed by Mega Stone item ID.
@@ -441,9 +441,8 @@ export const MEGA_STONE_DATA: Readonly<Record<string, MegaEvolutionData>> = {
     ability: "levitate",
     baseSpeciesId: 381,
   },
-  // #384 Rayquaza-Mega (no item needed, has Dragon Ascent)
-  // Rayquaza mega is triggered by knowing Dragon Ascent, not holding a stone.
-  // Excluded from this table — implement as a special case if needed.
+  // #384 Rayquaza-Mega is NOT in this table because it doesn't need a Mega Stone.
+  // Handled as a special case via MEGA_RAYQUAZA_DATA below.
 
   // #428 Lopunny-Mega
   // Source: Bulbapedia "Lopunnite" — belongs to Lopunny (#428)
@@ -539,6 +538,56 @@ export const MEGA_STONE_DATA: Readonly<Record<string, MegaEvolutionData>> = {
  * @param itemId - The item ID to look up
  * @returns MegaEvolutionData if item is a Mega Stone with known mega form data, else null
  */
+/**
+ * Mega Rayquaza data. Rayquaza does not need a Mega Stone — it Mega Evolves by
+ * knowing Dragon Ascent (and must NOT be holding a Z-Crystal).
+ *
+ * Source: Bulbapedia "Mega Rayquaza" -- Mega Evolves if it knows Dragon Ascent
+ * Source: Showdown data/items.ts -- no rayquazite item; Showdown sim/battle-actions.ts
+ *   canMegaEvo special-cases Rayquaza: has Dragon Ascent + no Z-Crystal
+ * Source: Bulbapedia "Mega Evolution" -- base stats for Mega Rayquaza
+ */
+export const MEGA_RAYQUAZA_DATA: Readonly<MegaEvolutionData> = {
+  form: "mega-rayquaza",
+  item: "", // No Mega Stone needed
+  types: ["dragon", "flying"],
+  baseStats: {
+    hp: 105,
+    attack: 180,
+    defense: 100,
+    spAttack: 180,
+    spDefense: 100,
+    speed: 115,
+  },
+  ability: "delta-stream",
+  baseSpeciesId: 384,
+};
+
+/**
+ * Rayquaza's species ID for special-case Mega Evolution checks.
+ * Source: Bulbapedia -- Rayquaza is #384 in the National Pokedex
+ */
+const RAYQUAZA_SPECIES_ID = 384;
+
+/**
+ * Check if a Pokemon is Rayquaza and knows Dragon Ascent (required for Mega Evolution).
+ * Also checks that Rayquaza is NOT holding a Z-Crystal (which blocks Mega Evolution).
+ *
+ * Source: Showdown sim/battle-actions.ts -- canMegaEvo: Rayquaza needs Dragon Ascent, no Z-Crystal
+ * Source: Bulbapedia "Mega Evolution" -- "Rayquaza can Mega Evolve if it knows Dragon Ascent
+ *   and is not holding a Z-Crystal."
+ */
+export function canRayquazaMegaEvolve(pokemon: ActivePokemon): boolean {
+  if (pokemon.pokemon.speciesId !== RAYQUAZA_SPECIES_ID) return false;
+  // Must know Dragon Ascent
+  const knowsDragonAscent = pokemon.pokemon.moves.some((m) => m.moveId === "dragon-ascent");
+  if (!knowsDragonAscent) return false;
+  // Must NOT hold a Z-Crystal (Z-Crystals block Rayquaza's Mega Evolution)
+  const heldItem = pokemon.pokemon.heldItem;
+  if (heldItem && isZCrystal(heldItem)) return false;
+  return true;
+}
+
 export function getMegaEvolutionData(itemId: string | null | undefined): MegaEvolutionData | null {
   if (!itemId) return null;
   if (!isMegaStone(itemId)) return null;
@@ -600,6 +649,13 @@ export class Gen7MegaEvolution implements BattleGimmick {
     if (this.usedBySide.has(side.index)) return false;
     // 2. Pokemon not already mega evolved
     if (pokemon.isMega) return false;
+
+    // Special case: Rayquaza Mega Evolution via Dragon Ascent (no Mega Stone needed).
+    // Source: Showdown sim/battle-actions.ts -- canMegaEvo: Rayquaza special case
+    // Source: Bulbapedia "Mega Evolution" -- "Rayquaza can Mega Evolve if it knows
+    //   Dragon Ascent and is not holding a Z-Crystal."
+    if (canRayquazaMegaEvolve(pokemon)) return true;
+
     // 3-4. Pokemon holds a valid Mega Stone with registered form data
     const megaData = getMegaEvolutionData(pokemon.pokemon.heldItem);
     if (!megaData) return false;
@@ -628,16 +684,19 @@ export class Gen7MegaEvolution implements BattleGimmick {
    * Source: Showdown sim/battle.ts -- mega evolution activation and event emission
    */
   activate(pokemon: ActivePokemon, side: BattleSide, _state: BattleState): BattleEvent[] {
-    const megaData = getMegaEvolutionData(pokemon.pokemon.heldItem);
-    // Guard against invalid states: re-run the same eligibility checks as canUse()
-    // so callers that skip canUse() cannot create impossible mega states.
-    // Source: CodeRabbit review PR #699 — defensive guard mirrors canUse() preconditions
-    if (
-      !megaData ||
-      this.usedBySide.has(side.index) ||
-      pokemon.isMega ||
-      megaData.baseSpeciesId !== pokemon.pokemon.speciesId
-    ) {
+    // Guard against double-use and already-mega
+    if (this.usedBySide.has(side.index) || pokemon.isMega) return [];
+
+    // Determine mega data: Rayquaza special case, or standard Mega Stone lookup
+    // Source: Showdown sim/battle-actions.ts -- Rayquaza mega uses special data, not stone lookup
+    let megaData: MegaEvolutionData | null;
+    if (canRayquazaMegaEvolve(pokemon)) {
+      megaData = MEGA_RAYQUAZA_DATA;
+    } else {
+      megaData = getMegaEvolutionData(pokemon.pokemon.heldItem);
+    }
+    // Guard: no valid mega data, or species mismatch
+    if (!megaData || megaData.baseSpeciesId !== pokemon.pokemon.speciesId) {
       return [];
     }
 
