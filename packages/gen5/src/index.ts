@@ -35,6 +35,13 @@ export {
   GEN5_CRIT_RATES,
 } from "./Gen5CritCalc";
 export { calculateGen5Damage, pokeRound } from "./Gen5DamageCalc";
+export {
+  applyGen5EntryHazards,
+  applyGen5SpikesHazard,
+  applyGen5StealthRock,
+  applyGen5ToxicSpikes,
+  isGen5Grounded,
+} from "./Gen5EntryHazards";
 export { applyGen5HeldItem, GEM_TYPES, getPinchBerryThreshold } from "./Gen5Items";
 export {
   didAllyFaintLastTurn,
