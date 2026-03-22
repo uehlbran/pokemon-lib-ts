@@ -1,6 +1,43 @@
 // @pokemon-lib-ts/gen8 -- Gen8Ruleset + complete Gen 8 data
 
 export { createGen8DataManager } from "./data/index.js";
+export {
+  getAteAbilityOverride,
+  getDragonsMawMultiplier,
+  getFurCoatMultiplier,
+  getGorillaTacticsMultiplier,
+  getIceScalesMultiplier,
+  getMegaLauncherMultiplier,
+  getMultiscaleMultiplier,
+  getPunkRockIncomingMultiplier,
+  getPunkRockMultiplier,
+  getSheerForceMultiplier,
+  getSteelworkerMultiplier,
+  getStrongJawMultiplier,
+  getSturdyDamageCap,
+  getToughClawsMultiplier,
+  getTransistorMultiplier,
+  handleGen8DamageCalcAbility,
+  handleGen8DamageImmunityAbility,
+  hasSheerForceEligibleEffect,
+  isParentalBondEligible,
+  isSheerForceEligibleMove,
+  PARENTAL_BOND_SECOND_HIT_MULTIPLIER,
+  sheerForceSuppressesLifeOrb,
+  sturdyBlocksOHKO,
+} from "./Gen8AbilitiesDamage.js";
+export {
+  getTriagePriorityBonus,
+  handleGen8StatAbility,
+  isCottonDownTrigger,
+  isDauntlessShieldTrigger,
+  isGaleWingsActive,
+  isIntrepidSwordTrigger,
+  isPranksterBlockedByDarkType,
+  isPranksterEligible,
+  isQuickDrawTrigger,
+  isSteamEngineTrigger,
+} from "./Gen8AbilitiesStat.js";
 export { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 export {
   calculateGen8Damage,
