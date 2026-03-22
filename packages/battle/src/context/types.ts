@@ -178,6 +178,14 @@ export interface MoveEffectResult {
   readonly recoilDamage: number;
   /** HP to restore to the attacker (0 = no healing) */
   readonly healAmount: number;
+  /**
+   * HP to restore to the DEFENDER (e.g., Heal Pulse).
+   * Unlike `healAmount` which heals the attacker, this heals the target of the move.
+   * 0 or undefined = no defender healing.
+   *
+   * Source: Showdown data/moves.ts -- healPulse: { target: 'normal', heal: [1, 2] }
+   */
+  readonly defenderHealAmount?: number;
   /** `true` if the attacker should be forced to switch out after this move */
   readonly switchOut: boolean;
   /**
@@ -230,6 +238,25 @@ export interface MoveEffectResult {
   readonly statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
   /** Cure the attacker's status WITHOUT resetting stat stages (unlike statusCured which is Haze-only) */
   readonly statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+  /**
+   * Cure primary status on ALL Pokemon on the specified side's team (including bench).
+   * Used by Aromatherapy and Heal Bell which cure the entire party, not just the active Pokemon.
+   *
+   * Source: Bulbapedia -- "Aromatherapy cures the status conditions of all Pokemon on the user's team"
+   * Source: Showdown data/moves.ts -- aromatherapy: { target: 'allyTeam' }
+   */
+  readonly teamStatusCure?: { side: "attacker" | "defender" } | null;
+  /**
+   * Change the active ability of the attacker or defender.
+   * Used by Entrainment (replaces target's ability with user's ability),
+   * Skill Swap, etc.
+   *
+   * Source: Showdown data/moves.ts -- entrainment: target.setAbility(source.ability)
+   */
+  readonly abilityChange?: {
+    target: "attacker" | "defender";
+    ability: string;
+  } | null;
   /** Primary status to inflict on the ATTACKER (e.g., Rest's self-sleep) */
   readonly selfStatusInflicted?: PrimaryStatus | null;
   /** Volatile status to inflict on the ATTACKER */
