@@ -898,9 +898,16 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given Gen7Ruleset, when applying ability, then returns not activated (stub)", () => {
-    // Stub -- will be implemented in Wave 7
-    const result = ruleset.applyAbility("on-switch-in", {} as any);
+  it("given Gen7Ruleset with non-surge ability, when applying ability on switch-in, then returns not activated (stub)", () => {
+    // Stub -- non-surge abilities will be implemented in Wave 7
+    // Wave 3 added Surge ability handling; non-surge abilities still return inactive
+    const mockContext = {
+      pokemon: { ability: "intimidate", suppressedAbility: null, pokemon: { heldItem: null } },
+      state: {},
+      rng: {},
+      trigger: "on-switch-in",
+    } as any;
+    const result = ruleset.applyAbility("on-switch-in", mockContext);
     expect(result.activated).toBe(false);
   });
 });
