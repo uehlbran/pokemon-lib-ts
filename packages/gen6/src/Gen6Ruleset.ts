@@ -3,6 +3,7 @@ import type {
   AbilityResult,
   ActivePokemon,
   BattleAction,
+  BattleGimmick,
   BattleSide,
   BattleState,
   CritContext,
@@ -33,6 +34,7 @@ import { applyGen6Ability } from "./Gen6Abilities.js";
 import { calculateGen6Damage } from "./Gen6DamageCalc.js";
 import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
 import { applyGen6HeldItem } from "./Gen6Items.js";
+import { Gen6MegaEvolution } from "./Gen6MegaEvolution.js";
 import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
 import { applyGen6WeatherEffects } from "./Gen6Weather.js";
@@ -739,6 +741,21 @@ export class Gen6Ruleset extends BaseRuleset {
    */
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
     return applyGen6HeldItem(trigger, context);
+  }
+
+  // --- Battle Gimmick (Mega Evolution) ---
+
+  /**
+   * Returns the Gen 6 Mega Evolution gimmick handler.
+   *
+   * Mega Evolution is Gen 6's once-per-battle gimmick: one Pokemon per trainer
+   * per battle can Mega Evolve, gaining new base stats, type(s), and ability.
+   *
+   * Source: Bulbapedia "Mega Evolution" — introduced in Gen 6 (X and Y)
+   * Source: Showdown sim/battle.ts — getBattleGimmick returning Gen6MegaEvolution
+   */
+  override getBattleGimmick(): BattleGimmick | null {
+    return new Gen6MegaEvolution();
   }
 
   // --- Catch Rate ---
