@@ -1294,13 +1294,23 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
+    // Max Guard check (Gen 8): blocks ALL moves with no bypass allowed — not even other Max Moves.
+    // Must be checked BEFORE the regular Protect check so canBypassProtect is never consulted.
+    // Source: Showdown sim/battle-actions.ts -- Max Guard blocks all moves including Max Moves
+    if (defender.volatileStatuses.has("max-guard") && moveData.flags.protect) {
+      this.emit({ type: "message", text: `${getPokemonName(defender)} protected itself!` });
+      actor.lastMoveUsed = moveData.id;
+      actor.movedThisTurn = true;
+      return;
+    }
+
     // Protect check
     // Delegate to ruleset: gen-specific logic determines which moves bypass Protect.
-    // Gen 7: Z-Moves; Gen 8: Max Moves; other gens: none.
+    // Gen 7: Z-Moves; Gen 8: Max Moves bypass regular Protect at 0.25x (not Max Guard above).
     // Source: Showdown sim/battle-actions.ts -- Z-Moves/Max Moves bypass Protect at 0.25x
     let hitThroughProtect = false;
     if (defender.volatileStatuses.has("protect") && moveData.flags.protect) {
-      if (this.ruleset.canBypassProtect?.(effectiveMoveData, actor) ?? false) {
+      if (this.ruleset.canBypassProtect(effectiveMoveData, actor)) {
         hitThroughProtect = true;
         this.emit({
           type: "message",

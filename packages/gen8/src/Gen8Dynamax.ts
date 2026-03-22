@@ -225,6 +225,18 @@ export class Gen8Dynamax implements BattleGimmick {
   revert(pokemon: ActivePokemon, state: BattleState): BattleEvent[] {
     if (!pokemon.isDynamaxed) return [];
 
+    // Validate side index BEFORE mutating state — throw on invalid state, not after partial mutation.
+    // Source: sentinel review finding — throw must precede any state mutation
+    const sideIndex = state.sides.findIndex((s) =>
+      s.active.some((a) => a?.pokemon.uid === pokemon.pokemon.uid),
+    );
+
+    if (sideIndex < 0) {
+      throw new Error(
+        `Gen8Dynamax.revert: Pokemon uid=${pokemon.pokemon.uid} not found in any active slot`,
+      );
+    }
+
     // Restore HP proportionally
     // Source: Showdown data/conditions.ts lines 801-802
     if (pokemon.pokemon.calculatedStats) {
@@ -248,18 +260,6 @@ export class Gen8Dynamax implements BattleGimmick {
     pokemon.isDynamaxed = false;
     pokemon.dynamaxTurnsLeft = 0;
     pokemon.preDynamaxMaxHp = undefined;
-
-    // Look up the correct side index from the battle state
-    // Source: BattleState.sides[n].active contains the ActivePokemon references
-    const sideIndex = state.sides.findIndex((s) =>
-      s.active.some((a) => a?.pokemon.uid === pokemon.pokemon.uid),
-    );
-
-    if (sideIndex < 0) {
-      throw new Error(
-        `Gen8Dynamax.revert: Pokemon uid=${pokemon.pokemon.uid} not found in any active slot`,
-      );
-    }
 
     const event: BattleEvent = {
       type: "dynamax-end",
@@ -285,6 +285,9 @@ export class Gen8Dynamax implements BattleGimmick {
 
     // Status moves become Max Guard
     // Source: Showdown sim/battle-actions.ts -- status moves become Max Guard
+    // Max Guard uses the "max-guard" variant so it sets a distinct volatile that
+    // cannot be bypassed by any move — not even other Max Moves.
+    // Source: Showdown sim/battle-actions.ts -- Max Guard blocks all moves including Max Moves
     if (isMaxGuard(move)) {
       return {
         ...move,
@@ -293,7 +296,7 @@ export class Gen8Dynamax implements BattleGimmick {
         power: null,
         accuracy: null,
         priority: 4,
-        effect: { type: "protect", variant: "standard" },
+        effect: { type: "protect", variant: "max-guard" },
       };
     }
 

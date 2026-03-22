@@ -125,7 +125,7 @@ export interface DamageSystem {
    *
    * Source: Showdown sim/battle-actions.ts -- Z-Moves/Max Moves bypass Protect at 0.25x
    */
-  canBypassProtect?(move: MoveData, actor: ActivePokemon): boolean;
+  canBypassProtect(move: MoveData, actor: ActivePokemon): boolean;
 }
 
 /** Critical hit rate table, multiplier, and roll. */

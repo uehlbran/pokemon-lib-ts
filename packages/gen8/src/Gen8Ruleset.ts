@@ -538,13 +538,18 @@ export class Gen8Ruleset extends BaseRuleset {
   }
 
   /**
-   * Gen 8: Max Moves (used by Dynamaxed Pokemon) bypass Protect at 0.25x damage.
+   * Gen 8: Max Moves (used by Dynamaxed Pokemon) bypass regular Protect at 0.25x damage.
+   *
+   * Note: Max Guard sets the "max-guard" volatile (distinct from "protect") so it is
+   * checked separately by the engine as an always-block — this method is never consulted
+   * for Max Guard. This correctly models Showdown's behavior where Max Guard blocks
+   * all moves including other Max Moves.
    *
    * Source: Showdown sim/battle-actions.ts -- Max Moves bypass Protect at 0.25x
    * Source: Bulbapedia "Dynamax" -- Max Moves deal 25% damage through Protect
    */
   override canBypassProtect(_move: MoveData, actor: ActivePokemon): boolean {
-    // Gen 8: Max Moves (used by Dynamaxed Pokemon) bypass Protect at 0.25x
+    // Max Moves (used by Dynamaxed Pokemon) bypass regular Protect at 0.25x
     return actor.isDynamaxed;
   }
 

@@ -560,7 +560,9 @@ describe("Gen6 executeGen6MoveEffect — dispatch", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen6Ruleset.executeMoveEffect — integration", () => {
-  // Lazy import to avoid Gen6Ruleset construction overhead in unit tests above
+  // Lazy import to avoid Gen6Ruleset construction overhead in unit tests above.
+  // 15s timeout: async dynamic import triggers module compilation; under full-suite parallel
+  // load this can take longer than the default 5s.
   it("given Gen6Ruleset, when executing King's Shield, then returns kings-shield volatile", async () => {
     // Source: references/pokemon-showdown/data/moves.ts -- kingsshield
     const { Gen6Ruleset } = await import("../src/Gen6Ruleset");
@@ -570,7 +572,7 @@ describe("Gen6Ruleset.executeMoveEffect — integration", () => {
     const result = ruleset.executeMoveEffect(ctx);
 
     expect(result.selfVolatileInflicted).toBe("kings-shield");
-  });
+  }, 15000);
 
   it("given Gen6Ruleset, when executing unrecognized move, then falls through to BaseRuleset", async () => {
     // Source: Gen6Ruleset.executeMoveEffect falls through to super.executeMoveEffect
