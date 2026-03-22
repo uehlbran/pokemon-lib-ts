@@ -1506,6 +1506,8 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Held item: on-hit trigger for attacker
+    // Pass `damage` so item handlers (Life Orb recoil, Shell Bell heal) can gate on actual damage dealt.
+    // Source: ItemContext.damage?: number in packages/battle/src/context/types.ts
     if (this.ruleset.hasHeldItems() && damage > 0) {
       const atkItemResult = this.ruleset.applyHeldItem("on-hit", {
         pokemon: actor,
@@ -1513,6 +1515,7 @@ export class BattleEngine implements BattleEventEmitter {
         rng: this.state.rng,
         move: effectiveMoveData,
         opponent: defender, // defender is the opponent from the attacker's perspective
+        damage, // damage dealt this hit — required by Life Orb / Shell Bell handlers
       });
       if (atkItemResult.activated) {
         this.processItemResult(atkItemResult, actor, action.side);
