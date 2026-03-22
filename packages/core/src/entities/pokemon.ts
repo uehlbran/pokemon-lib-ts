@@ -77,7 +77,7 @@ export interface PokemonInstance {
    * When true, applies a 1.5x EXP bonus (Gen 3+: 1.7x for international trades).
    * Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
    */
-  isTradedPokemon?: boolean;
+  readonly isTradedPokemon?: boolean;
 
   /**
    * Whether the trade was international (different-language cartridge).
@@ -85,7 +85,7 @@ export interface PokemonInstance {
    * Gen 1-2: always false (no language metadata on cartridge).
    * Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
    */
-  isInternationalTrade?: boolean;
+  readonly isInternationalTrade?: boolean;
 
   // --- Cached computed values (not serialized) ---
 

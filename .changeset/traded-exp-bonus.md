@@ -9,4 +9,6 @@
 "@pokemon-lib-ts/gen6": patch
 ---
 
+# Traded EXP bonus
+
 Add `isTradedPokemon` and `isInternationalTrade` to `ExpContext`; apply 1.5×/1.7× EXP bonus for traded Pokémon per gen mechanics (Gen 1–2: 1.5× only, Gen 3+: 1.5× same-language or 1.7× international).

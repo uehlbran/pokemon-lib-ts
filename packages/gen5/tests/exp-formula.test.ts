@@ -196,7 +196,7 @@ describe("Gen5Ruleset calculateExpGain — traded Pokemon EXP bonus", () => {
   it("given a traded (same-language) Pokemon in Gen 5, when calculateExpGain with isTradedPokemon=true, then returns 1.5x boosted EXP", () => {
     // Source: Showdown sim/battle-actions.ts — traded bonus applied after other multipliers
     // Gen 5 sqrt formula: baseExp=100, L_d=50, L_p=50
-    //   a=110, b=110; floor(sqrt(110)*110^2)=126909; exp = floor(126909*100/126909)+1 = 101
+    //   a=110, b=110; floor(sqrt(110)*110^2)=126905; exp = floor(126905*100/126905)+1 = 101
     //   traded (same): floor(101 * 1.5) = 151
     const baseCtx = makeExpContext({
       defeatedBaseExp: 100,
