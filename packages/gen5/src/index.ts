@@ -44,6 +44,11 @@ export {
 } from "./Gen5EntryHazards";
 export { applyGen5HeldItem, GEM_TYPES, getPinchBerryThreshold } from "./Gen5Items";
 export {
+  GEN5_REFLECTABLE_MOVES,
+  isReflectableMove,
+  shouldReflectMoveGen5,
+} from "./Gen5MagicBounce";
+export {
   didAllyFaintLastTurn,
   executeGen5MoveEffect,
   getAcrobaticsBP,
