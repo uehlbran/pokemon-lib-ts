@@ -4582,12 +4582,14 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "stat-boost": {
-          // +1 stage boost to the specified stat for the holder
-          // Source: Showdown -- stat pinch berries, Absorb Bulb, Cell Battery onEat/onDamagingHit
+          // Stage boost to the specified stat for the holder.
+          // Uses effect.stages if present (e.g., Weakness Policy = +2), defaulting to +1.
+          // Source: Showdown -- stat pinch berries (+1), Weakness Policy (+2) onEat/onDamagingHit
           const stat = effect.value as string;
-          const stages = pokemon.statStages as Record<string, number>;
-          if (stat in stages) {
-            stages[stat] = Math.min(6, (stages[stat] ?? 0) + 1);
+          const boostStages = effect.stages ?? 1;
+          const statStages = pokemon.statStages as Record<string, number>;
+          if (stat in statStages) {
+            statStages[stat] = Math.min(6, (statStages[stat] ?? 0) + boostStages);
           }
           break;
         }

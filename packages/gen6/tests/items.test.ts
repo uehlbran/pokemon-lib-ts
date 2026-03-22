@@ -846,13 +846,15 @@ describe("Gen 6 Items -- Focus Sash", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen 6 Items -- Pinch Berries", () => {
-  it("given a Pokemon holding Liechi Berry at 50 HP after taking damage to 49 HP (below 25% of 200), when on-damage-taken triggers, then gains +1 Attack", () => {
+  it("given a Pokemon holding Liechi Berry at 49 HP (post-damage, below 25% of 200), when on-damage-taken triggers, then gains +1 Attack", () => {
     // Source: Showdown data/items.ts -- Liechi Berry: +1 Atk at <=25% HP
-    // Derivation: 25% of 200 = 50; HP after damage = 200 - 151 = 49 < 50
+    // Derivation: 25% of 200 = 50; post-damage HP = 49 < 50
+    // Note: on-damage-taken fires after BattleEngine subtracts damage from currentHp,
+    // so currentHp is already post-damage here.
     const pokemon = makeActive({
       heldItem: "liechi-berry",
       hp: 200,
-      currentHp: 200,
+      currentHp: 49, // post-damage HP (was 200, took 151 damage)
     });
     const ctx = makeItemContext({
       pokemon,
@@ -867,14 +869,16 @@ describe("Gen 6 Items -- Pinch Berries", () => {
     ]);
   });
 
-  it("given a Pokemon with Gluttony holding Salac Berry, when HP drops below 50%, then Salac activates early", () => {
+  it("given a Pokemon with Gluttony holding Salac Berry at 99 HP (post-damage, below 50% of 200), when on-damage-taken triggers, then Salac activates early", () => {
     // Source: Bulbapedia -- Gluttony: changes pinch berry threshold from 25% to 50%
-    // Derivation: 50% of 200 = 100; HP after damage = 200 - 101 = 99 < 100
+    // Derivation: 50% of 200 = 100; post-damage HP = 99 < 100
+    // Note: on-damage-taken fires after BattleEngine subtracts damage from currentHp,
+    // so currentHp is already post-damage here.
     const pokemon = makeActive({
       heldItem: "salac-berry",
       ability: "gluttony",
       hp: 200,
-      currentHp: 200,
+      currentHp: 99, // post-damage HP (was 200, took 101 damage)
     });
     const ctx = makeItemContext({
       pokemon,
