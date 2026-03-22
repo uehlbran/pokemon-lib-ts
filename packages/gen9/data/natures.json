@@ -1,0 +1,152 @@
+[
+  {
+    "id": "adamant",
+    "displayName": "Adamant",
+    "increased": "attack",
+    "decreased": "spAttack"
+  },
+  {
+    "id": "bashful",
+    "displayName": "Bashful",
+    "increased": null,
+    "decreased": null
+  },
+  {
+    "id": "bold",
+    "displayName": "Bold",
+    "increased": "defense",
+    "decreased": "attack"
+  },
+  {
+    "id": "brave",
+    "displayName": "Brave",
+    "increased": "attack",
+    "decreased": "speed"
+  },
+  {
+    "id": "calm",
+    "displayName": "Calm",
+    "increased": "spDefense",
+    "decreased": "attack"
+  },
+  {
+    "id": "careful",
+    "displayName": "Careful",
+    "increased": "spDefense",
+    "decreased": "spAttack"
+  },
+  {
+    "id": "docile",
+    "displayName": "Docile",
+    "increased": null,
+    "decreased": null
+  },
+  {
+    "id": "gentle",
+    "displayName": "Gentle",
+    "increased": "spDefense",
+    "decreased": "defense"
+  },
+  {
+    "id": "hardy",
+    "displayName": "Hardy",
+    "increased": null,
+    "decreased": null
+  },
+  {
+    "id": "hasty",
+    "displayName": "Hasty",
+    "increased": "speed",
+    "decreased": "defense"
+  },
+  {
+    "id": "impish",
+    "displayName": "Impish",
+    "increased": "defense",
+    "decreased": "spAttack"
+  },
+  {
+    "id": "jolly",
+    "displayName": "Jolly",
+    "increased": "speed",
+    "decreased": "spAttack"
+  },
+  {
+    "id": "lax",
+    "displayName": "Lax",
+    "increased": "defense",
+    "decreased": "spDefense"
+  },
+  {
+    "id": "lonely",
+    "displayName": "Lonely",
+    "increased": "attack",
+    "decreased": "defense"
+  },
+  {
+    "id": "mild",
+    "displayName": "Mild",
+    "increased": "spAttack",
+    "decreased": "defense"
+  },
+  {
+    "id": "modest",
+    "displayName": "Modest",
+    "increased": "spAttack",
+    "decreased": "attack"
+  },
+  {
+    "id": "naive",
+    "displayName": "Naive",
+    "increased": "speed",
+    "decreased": "spDefense"
+  },
+  {
+    "id": "naughty",
+    "displayName": "Naughty",
+    "increased": "attack",
+    "decreased": "spDefense"
+  },
+  {
+    "id": "quiet",
+    "displayName": "Quiet",
+    "increased": "spAttack",
+    "decreased": "speed"
+  },
+  {
+    "id": "quirky",
+    "displayName": "Quirky",
+    "increased": null,
+    "decreased": null
+  },
+  {
+    "id": "rash",
+    "displayName": "Rash",
+    "increased": "spAttack",
+    "decreased": "spDefense"
+  },
+  {
+    "id": "relaxed",
+    "displayName": "Relaxed",
+    "increased": "defense",
+    "decreased": "speed"
+  },
+  {
+    "id": "sassy",
+    "displayName": "Sassy",
+    "increased": "spDefense",
+    "decreased": "speed"
+  },
+  {
+    "id": "serious",
+    "displayName": "Serious",
+    "increased": null,
+    "decreased": null
+  },
+  {
+    "id": "timid",
+    "displayName": "Timid",
+    "increased": "speed",
+    "decreased": "attack"
+  }
+]

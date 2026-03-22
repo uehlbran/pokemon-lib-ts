@@ -110,6 +110,7 @@ function makeActivePokemon(overrides: {
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   };
   if (overrides.hasFlashFire) {
     active.volatileStatuses.set("flash-fire", { turnsLeft: -1 });

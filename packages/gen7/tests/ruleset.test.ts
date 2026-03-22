@@ -77,6 +77,7 @@ function makeActive(
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     forcedMove: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,

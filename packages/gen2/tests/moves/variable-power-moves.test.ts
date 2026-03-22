@@ -68,6 +68,7 @@ function createMockActive(
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     lastDamageTaken: 0,
     lastDamageCategory: null,
     lastDamageType: null,

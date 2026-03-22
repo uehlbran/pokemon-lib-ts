@@ -80,6 +80,7 @@ function createMockActive(
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     forcedMove: null,
     ...activeOverrides,
   } as ActivePokemon;

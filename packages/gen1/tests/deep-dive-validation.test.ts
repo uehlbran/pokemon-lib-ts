@@ -631,6 +631,7 @@ function createActivePokemon(opts: {
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   } as ActivePokemon;
 }
 
@@ -1223,6 +1224,7 @@ describe("3E: Status Damage Amounts", () => {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
     } as ActivePokemon;
   }
 

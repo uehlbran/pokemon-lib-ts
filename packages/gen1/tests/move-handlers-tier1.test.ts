@@ -116,6 +116,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     ...overrides,
   };
 }

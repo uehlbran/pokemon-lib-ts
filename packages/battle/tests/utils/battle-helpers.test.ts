@@ -70,6 +70,7 @@ describe("BattleHelpers", () => {
       expect(active.isMega).toBe(false);
       expect(active.isDynamaxed).toBe(false);
       expect(active.isTerastallized).toBe(false);
+      expect(active.stellarBoostedTypes).toEqual([]);
     });
   });
 

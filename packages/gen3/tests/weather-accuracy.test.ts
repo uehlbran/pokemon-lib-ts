@@ -98,6 +98,7 @@ function createMockPokemon(opts?: { types?: PokemonType[]; ability?: string }): 
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   } as ActivePokemon;
 }
 

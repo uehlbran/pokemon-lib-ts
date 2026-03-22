@@ -116,6 +116,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     ...overrides,
   };
 }
@@ -463,6 +464,7 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
       teamSlot: 0,
     });
     const defender = makeActivePokemon({

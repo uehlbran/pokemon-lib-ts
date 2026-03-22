@@ -2075,6 +2075,7 @@ export class BattleEngine implements BattleEventEmitter {
       dynamaxTurnsLeft: 0,
       teraType: null,
       isTerastallized: false,
+      stellarBoostedTypes: [],
       forcedMove: null,
     };
   }
