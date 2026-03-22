@@ -495,6 +495,31 @@ describe("Gen2Ruleset", () => {
     });
   });
 
+  // --- getMaxHazardLayers ---
+
+  describe("Given getMaxHazardLayers", () => {
+    it("given spikes in Gen 2, when querying max layers, then returns 1", () => {
+      // Source: pret/pokecrystal — Gen 2 introduced Spikes with only a single layer.
+      // Multi-layer Spikes were not introduced until Gen 3.
+      const ruleset = new Gen2Ruleset();
+      expect(ruleset.getMaxHazardLayers("spikes")).toBe(1);
+    });
+
+    it("given toxic-spikes in Gen 2, when querying max layers, then returns 1", () => {
+      // Toxic Spikes do not exist in Gen 2 — returning 1 as a safe fallback.
+      // Source: Bulbapedia — Toxic Spikes introduced in Generation IV (Diamond/Pearl).
+      const ruleset = new Gen2Ruleset();
+      expect(ruleset.getMaxHazardLayers("toxic-spikes")).toBe(1);
+    });
+
+    it("given stealth-rock in Gen 2, when querying max layers, then returns 1", () => {
+      // Stealth Rock does not exist in Gen 2 — returning 1 as a safe fallback.
+      // Source: Bulbapedia — Stealth Rock introduced in Generation IV (Diamond/Pearl).
+      const ruleset = new Gen2Ruleset();
+      expect(ruleset.getMaxHazardLayers("stealth-rock")).toBe(1);
+    });
+  });
+
   // --- Validation ---
 
   describe("Given validation", () => {

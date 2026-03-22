@@ -648,6 +648,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return ["spikes"];
   }
 
+  getMaxHazardLayers(_hazardType: EntryHazardType): number {
+    // Source: pret/pokecrystal — Gen 2 introduced Spikes with only a single layer.
+    // Toxic Spikes and Stealth Rock do not exist in Gen 2.
+    return 1;
+  }
+
   applyEntryHazards(
     pokemon: ActivePokemon,
     side: BattleSide,

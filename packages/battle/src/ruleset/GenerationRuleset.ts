@@ -396,6 +396,16 @@ export interface HazardSystem {
     side: BattleSide,
     state?: BattleState,
   ): EntryHazardResult;
+  /**
+   * The maximum number of layers a given hazard type can stack to.
+   * Gen 2: Spikes = 1 (only 1 layer introduced in Gen 2).
+   * Gen 3+: Spikes = 3, Toxic Spikes = 2, others (Stealth Rock, Sticky Web) = 1.
+   * Gen 1: N/A (no hazards), returns 1 as a safe fallback.
+   *
+   * Source: pret/pokecrystal — Spikes mechanics, single layer only in Gen 2.
+   * Source: Showdown data/moves.ts — spikes max 3 layers, toxic-spikes max 2, others max 1.
+   */
+  getMaxHazardLayers(hazardType: EntryHazardType): number;
 }
 
 /** Switch legality, Pursuit interaction, and switch-out hooks. */

@@ -1330,6 +1330,11 @@ export class Gen1Ruleset implements GenerationRuleset {
     return [];
   }
 
+  getMaxHazardLayers(_hazardType: EntryHazardType): number {
+    // Gen 1 has no entry hazards. Return 1 as a safe fallback in case the engine queries this.
+    return 1;
+  }
+
   applyEntryHazards(
     _pokemon: ActivePokemon,
     _side: BattleSide,

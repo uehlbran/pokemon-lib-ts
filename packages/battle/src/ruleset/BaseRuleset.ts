@@ -609,6 +609,13 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
   }
 
+  getMaxHazardLayers(hazardType: EntryHazardType): number {
+    // Source: Showdown data/moves.ts — spikes max 3 layers, toxic-spikes max 2, others max 1
+    if (hazardType === "spikes") return 3;
+    if (hazardType === "toxic-spikes") return 2;
+    return 1;
+  }
+
   calculateExpGain(context: ExpContext): number {
     // Simplified Gen 5+ scaled formula
     const baseExp = context.defeatedSpecies.baseExp;
