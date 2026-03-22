@@ -265,13 +265,12 @@ class AlwaysHitChoiceRuleset extends MockRuleset {
 
 describe("Bug #538 — Choice lock not applied when move misses", () => {
   describe("given a Pokemon holding Choice Band and using tackle (moveIndex 0) which always misses", () => {
-    it.fails("when the move misses on the first use, then the Pokemon should be choice-locked into tackle (confirms bug #538)", () => {
+    it("when the move misses on the first use, then the Pokemon should be choice-locked into tackle (confirms bug #538 is fixed)", () => {
       // Arrange
       // Source: Showdown Gen 3+ — onModifyMove sets choicelock before accuracy roll.
       // A miss does not prevent the lock from applying.
       //
-      // Bug: Engine applies choice lock at the end of executeMove (after all damage/effects).
-      // A miss causes an early return at line ~1157, skipping the lock entirely.
+      // Fixed: Choice lock now applied before the accuracy check in executeMove.
       const ruleset = new AlwaysMissChoiceRuleset();
 
       const team1 = [
@@ -453,7 +452,7 @@ class MultiHitSturdyRuleset extends MockRuleset {
 
 describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move loop", () => {
   describe("given Charizard (4-hit multi-hit, multiHitCount=3) attacking Blastoise", () => {
-    it.fails("when all 4 hits land, then capLethalDamage is invoked 4 times (once per hit, confirms bug #539)", () => {
+    it("when all 4 hits land, then capLethalDamage is invoked 4 times (once per hit, confirms bug #539 is fixed)", () => {
       // Arrange
       // Source: Showdown data/abilities.ts — Sturdy's onDamage fires for every damage
       // application including each hit of a multi-hit move.
@@ -487,13 +486,16 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — Bug #539: capLethalDamage called only once (hit 1) instead of 4.
-      // Currently FAILS because bug #539 is present.
-      // This assertion documents the EXPECTED behavior post-fix (4 calls).
-      expect(ruleset.capLethalDamageInvocations.length).toBe(4);
+      // Assert — capLethalDamage called for every hit where damage >= currentHp:
+      // Hit 1: 200 >= 154 → called, Sturdy caps to 153, HP = 1.
+      // Hit 2: 200 >= 1 → called, not full HP so no Sturdy cap, HP = 0.
+      // Hits 3-4: loop breaks (defender fainted).
+      // Total: 2 invocations (the guard `damage >= currentHp` correctly limits calls).
+      // Pre-fix (bug #539): only 1 invocation (hit 1 only; loop bypassed the hook).
+      expect(ruleset.capLethalDamageInvocations.length).toBe(2);
     });
 
-    it.fails("when hits 1 and 2 are non-lethal but hit 3 would KO from a reduced HP, then capLethalDamage must be called for hit 3", () => {
+    it("when hits 1 and 2 are non-lethal but hit 3 would KO from a reduced HP, then capLethalDamage must be called for hit 3 (confirms bug #539 is fixed)", () => {
       // Arrange — Blastoise HP: 154 (computed). Fixed damage: 55.
       // Hit 1: 154-55=99 HP. Hit 2: 99-55=44 HP. Hit 3: 44-55=-11 → KO.
       // capLethalDamage must be called for hit 3 (damage=55 >= currentHp=44).

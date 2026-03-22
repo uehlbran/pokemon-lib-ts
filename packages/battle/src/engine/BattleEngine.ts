@@ -1030,6 +1030,26 @@ export class BattleEngine implements BattleEventEmitter {
       move: moveData.id,
     });
 
+    // Choice lock: applied BEFORE the accuracy check so that miss/protect/etc.
+    // early returns still lock the user into the selected move.
+    // Source: Showdown sim/battle-actions.ts — choicelock is set in onModifyMove
+    //   which fires before the accuracy roll.
+    // Fix for #538: previously applied only at the end of executeMove, after the
+    //   accuracy check — misses bypassed the lock entirely.
+    if (
+      this.ruleset.hasHeldItems() &&
+      !actor.volatileStatuses.has("choice-locked") &&
+      actor.pokemon.heldItem &&
+      (actor.pokemon.heldItem === "choice-band" ||
+        actor.pokemon.heldItem === "choice-specs" ||
+        actor.pokemon.heldItem === "choice-scarf")
+    ) {
+      actor.volatileStatuses.set("choice-locked", {
+        turnsLeft: -1,
+        data: { moveId: moveData.id },
+      });
+    }
+
     // Protect consecutive use: delegate the success roll to the ruleset
     if (moveData.effect?.type === "protect") {
       if (!this.ruleset.rollProtectSuccess(actor.consecutiveProtects, this.state.rng)) {
@@ -1474,7 +1494,7 @@ export class BattleEngine implements BattleEventEmitter {
         }
 
         // Reuse first hit damage (Gen 1: multi-hit repeats the same damage each strike)
-        const hitDamage = firstHitDamage;
+        let hitDamage = firstHitDamage;
         if (hitDamage <= 0) break;
 
         // Apply damage to substitute or Pokemon
@@ -1492,6 +1512,23 @@ export class BattleEngine implements BattleEventEmitter {
             });
           }
         } else {
+          // Pre-damage survival check for multi-hit hits 2+.
+          // Source: Showdown sim/battle-actions.ts — onDamage handlers run before
+          //   each hit's HP subtraction, not just the first.
+          // Fix for #539: previously only hit 1 called capLethalDamage.
+          if (hitDamage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+            const survivalResult = this.ruleset.capLethalDamage(
+              hitDamage,
+              defender,
+              actor,
+              effectiveMoveData,
+              this.state,
+            );
+            hitDamage = survivalResult.damage;
+            for (const msg of survivalResult.messages) {
+              this.emit({ type: "message", text: msg });
+            }
+          }
           defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - hitDamage);
           defender.lastDamageTaken = hitDamage;
           this.emit({
@@ -1567,24 +1604,6 @@ export class BattleEngine implements BattleEventEmitter {
 
     actor.lastMoveUsed = moveData.id;
     actor.movedThisTurn = true;
-
-    // Choice lock: if the actor holds a Choice item and isn't already locked,
-    // lock them into the move they just used.
-    // Source: Bulbapedia — "Choice Band boosts the holder's Attack by 50%, but
-    // only allows the use of the first move selected."
-    if (
-      this.ruleset.hasHeldItems() &&
-      !actor.volatileStatuses.has("choice-locked") &&
-      actor.pokemon.heldItem &&
-      (actor.pokemon.heldItem === "choice-band" ||
-        actor.pokemon.heldItem === "choice-specs" ||
-        actor.pokemon.heldItem === "choice-scarf")
-    ) {
-      actor.volatileStatuses.set("choice-locked", {
-        turnsLeft: -1,
-        data: { moveId: moveData.id },
-      });
-    }
   }
 
   /**
@@ -1683,6 +1702,23 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
       } else {
+        // Pre-damage survival check: allows abilities (Sturdy) to cap lethal damage.
+        // Mirrors the same check in the main executeMove path.
+        // Source: Showdown sim/battle-actions.ts — onDamage handlers run before HP reduction
+        // Fix for #531: executeMoveById previously bypassed this check.
+        if (damage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+          const survivalResult = this.ruleset.capLethalDamage(
+            damage,
+            defender,
+            actor,
+            moveData,
+            this.state,
+          );
+          damage = survivalResult.damage;
+          for (const msg of survivalResult.messages) {
+            this.emit({ type: "message", text: msg });
+          }
+        }
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
         defender.lastDamageType = moveData.type;
