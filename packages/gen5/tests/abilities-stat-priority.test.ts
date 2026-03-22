@@ -749,11 +749,15 @@ describe("handleGen5StatAbility -- Moody", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(2);
+    // Source: Showdown data/mods/gen7/abilities.ts -- Moody onResidual: first effect is stat-change type
     // First effect: raise (rng.pick returns first eligible stat = attack)
     expect(result.effects[0].effectType).toBe("stat-change");
+    // Source: Showdown data/mods/gen7/abilities.ts -- Moody raises chosen stat by +2 stages
     expect((result.effects[0] as { stages: number }).stages).toBe(2);
+    // Source: Showdown data/mods/gen7/abilities.ts -- Moody onResidual: second effect is stat-change type
     // Second effect: lower (rng.pick returns first eligible stat != raised = defense)
     expect(result.effects[1].effectType).toBe("stat-change");
+    // Source: Showdown data/mods/gen7/abilities.ts -- Moody lowers different chosen stat by -1 stage
     expect((result.effects[1] as { stages: number }).stages).toBe(-1);
     // The raised and lowered stats must differ
     const raisedStat = (result.effects[0] as { stat: string }).stat;
@@ -783,6 +787,7 @@ describe("handleGen5StatAbility -- Moody", () => {
     expect(result.activated).toBe(true);
     // With last-element picks, evasion should be the raised stat
     const raisedStat = (result.effects[0] as { stat: string }).stat;
+    // Source: Bulbapedia -- Moody Gen V-VII includes accuracy and evasion in the eligible stat pool
     expect(raisedStat).toBe("evasion");
   });
 
@@ -822,6 +827,7 @@ describe("handleGen5StatAbility -- Moody", () => {
     expect(result.activated).toBe(true);
     // Only the lower effect should be present
     expect(result.effects).toHaveLength(1);
+    // Source: Showdown data/mods/gen7/abilities.ts -- Moody lowers chosen stat by -1 stage
     expect((result.effects[0] as { stages: number }).stages).toBe(-1);
   });
 });
@@ -1008,6 +1014,7 @@ describe("handleGen5StatAbility -- Weak Armor Gen 5 Speed boost amount", () => {
       (e) => e.effectType === "stat-change" && (e as { stat: string }).stat === "speed",
     );
     expect(speedEffect).toBeDefined();
+    // Source: Showdown data/abilities.ts -- Speed Boost raises Speed by +1 stage per turn end
     expect((speedEffect as { stages: number }).stages).toBe(1);
   });
 });
