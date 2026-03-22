@@ -1,6 +1,4 @@
-import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen7Ruleset } from "../src/Gen7Ruleset.js";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "../src/Gen7TypeChart.js";
 
 /**

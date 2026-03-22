@@ -574,7 +574,8 @@ export class Gen7Ruleset extends BaseRuleset {
 
   /**
    * Gen 7 end-of-turn effect ordering.
-   * Similar to Gen 6 but includes aurora-veil-countdown.
+   * Identical to Gen 6 for now. Aurora Veil countdown will be added in Wave 4
+   * when `"aurora-veil-countdown"` is added to the `EndOfTurnEffect` union type.
    *
    * Source: Showdown data/conditions.ts -- residual order
    */
@@ -647,6 +648,8 @@ export class Gen7Ruleset extends BaseRuleset {
     const s = context.participantCount;
     const p = context.hasLuckyEgg ? 1.5 : 1;
 
+    // TODO(Wave 1): Verify rounding order against Showdown sim/battle-actions.ts Gen 7 EXP calc.
+    // Gen 6 floors between each multiplication step; Gen 7 may differ.
     let exp = Math.floor(((a * baseExp * l) / (5 * s)) * p);
 
     // Source: Showdown sim/battle-actions.ts -- traded EXP bonus applied after all other multipliers.
