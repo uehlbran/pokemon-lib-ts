@@ -217,10 +217,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "dive-ball"
+    "spriteKey": "dive-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3.5
+    }
   },
   {
     "id": "dome-fossil",
@@ -327,10 +331,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "friend-ball"
+    "spriteKey": "friend-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "ganlon-berry",
@@ -351,10 +359,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "great-ball"
+    "spriteKey": "great-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1.5
+    }
   },
   {
     "id": "grepa-berry",
@@ -576,10 +588,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "luxury-ball"
+    "spriteKey": "luxury-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "macho-brace",
@@ -653,10 +669,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "master-ball"
+    "spriteKey": "master-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 255
+    }
   },
   {
     "id": "mental-herb",
@@ -768,10 +788,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "nest-ball"
+    "spriteKey": "nest-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "net-ball",
@@ -780,10 +804,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "net-ball"
+    "spriteKey": "net-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3
+    }
   },
   {
     "id": "never-melt-ice",
@@ -922,10 +950,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "poke-ball"
+    "spriteKey": "poke-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "pomeg-berry",
@@ -946,10 +978,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "premier-ball"
+    "spriteKey": "premier-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "qualot-berry",
@@ -1022,10 +1058,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "repeat-ball"
+    "spriteKey": "repeat-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3
+    }
   },
   {
     "id": "root-fossil",
@@ -1294,10 +1334,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "timer-ball"
+    "spriteKey": "timer-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 4
+    }
   },
   {
     "id": "twisted-spoon",
@@ -1323,10 +1367,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "ultra-ball"
+    "spriteKey": "ultra-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 2
+    }
   },
   {
     "id": "up-grade",

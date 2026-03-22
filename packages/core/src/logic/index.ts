@@ -2,6 +2,8 @@ export {
   calculateModifiedCatchRate,
   calculateShakeChecks,
   STATUS_CATCH_MODIFIERS,
+  STATUS_CATCH_MODIFIERS_GEN5,
+  STATUS_CATCH_MODIFIERS_GEN34,
 } from "./catch-rate";
 export {
   CRIT_MULTIPLIER_CLASSIC,

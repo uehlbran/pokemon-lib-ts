@@ -1255,7 +1255,47 @@ function buildItemsData() {
       }
     }
 
-    const battleUsable = !!(holdEffect || item.isBerry);
+    // Build useEffect for Poke Balls
+    // Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+    // Catch rate multipliers are the base values; variable-rate balls use 1 as the default.
+    let useEffect: object | undefined;
+    if (item.isPokeball) {
+      const BALL_CATCH_MULTIPLIERS: Record<string, number> = {
+        "poke-ball": 1,
+        "great-ball": 1.5,
+        "ultra-ball": 2,
+        "master-ball": 255,
+        "safari-ball": 1.5,
+        "level-ball": 1,
+        "lure-ball": 3,
+        "moon-ball": 1,
+        "friend-ball": 1,
+        "love-ball": 1,
+        "heavy-ball": 1,
+        "fast-ball": 1,
+        "sport-ball": 1.5,
+        "net-ball": 3,
+        "dive-ball": 3.5,
+        "nest-ball": 1,
+        "repeat-ball": 3,
+        "timer-ball": 4,
+        "luxury-ball": 1,
+        "premier-ball": 1,
+        "dusk-ball": 3.5,
+        "heal-ball": 1,
+        "quick-ball": 5,
+        "cherish-ball": 1,
+        "park-ball": 255,
+        "dream-ball": 255,
+        "beast-ball": 5,
+      };
+      useEffect = {
+        type: "catch",
+        catchRateModifier: BALL_CATCH_MULTIPLIERS[kebabId] ?? 1,
+      };
+    }
+
+    const battleUsable = !!(holdEffect || item.isBerry || useEffect);
     const fieldUsable = false;
 
     const entry: Record<string, unknown> = {
@@ -1273,6 +1313,9 @@ function buildItemsData() {
 
     if (holdEffect) {
       entry.holdEffect = holdEffect;
+    }
+    if (useEffect) {
+      entry.useEffect = useEffect;
     }
 
     items.push(entry);
