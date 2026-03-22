@@ -531,12 +531,9 @@ describe("handleGen5RemainingAbility on-turn-end -- Healer", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given Healer in doubles with poisoned ally and rng below 0.3, when turn ends, then returns NO_EFFECT (ally-targeting stubbed until engine supports it)", () => {
+  it("given Healer in doubles with poisoned ally and rng below 0.3, when turn ends, then activates with status-cure targeting ally", () => {
     // Source: Showdown data/abilities.ts -- healer: this.randomChance(3, 10) = 30%
-    // rng.next() returns 0.2 < 0.3 => the 30% check passes, but NO_EFFECT is returned.
-    // AbilityEffect only supports target "self" | "opponent". Using target:"opponent"
-    // would cure the foe instead of the ally. Returning NO_EFFECT is a safe stopgap
-    // until target:"ally" / targetUid support is added to AbilityEffect and engine.
+    // rng.next() returns 0.2 < 0.3 => the 30% check passes, Healer cures ally's status
     const healer = makeActivePokemon({
       uid: "healer",
       ability: "healer",
@@ -563,7 +560,75 @@ describe("handleGen5RemainingAbility on-turn-end -- Healer", () => {
 
     const result = handleGen5RemainingAbility(ctx);
 
-    // Returns NO_EFFECT until ally-targeting is added to AbilityEffect/engine
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toEqual({ effectType: "status-cure", target: "ally" });
+    expect(result.messages[0]).toContain("Healer");
+    expect(result.messages[0]).toContain("Charizard");
+    expect(result.messages[0]).toContain("poison");
+  });
+
+  it("given Healer in doubles with burned ally and rng below 0.3, when turn ends, then activates with status-cure targeting ally", () => {
+    // Source: Showdown data/abilities.ts -- healer: allyActive.cureStatus()
+    // Healer cures any primary status, not just poison. Test with burn to triangulate.
+    const healer = makeActivePokemon({
+      uid: "healer",
+      ability: "healer",
+      nickname: "Audino",
+    });
+    const ally = makeActivePokemon({
+      uid: "ally",
+      ability: "blaze",
+      nickname: "Arcanine",
+      status: "burn",
+    });
+    const side0 = makeSide(0, [healer, ally]);
+    const side1 = makeSide(1);
+
+    const ctx = makeContext({
+      ability: "healer",
+      trigger: "on-turn-end",
+      format: "doubles",
+      sides: [side0, side1],
+      rngNextValues: [0.1],
+    });
+    (ctx.pokemon as any).pokemon.uid = "healer";
+
+    const result = handleGen5RemainingAbility(ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toEqual({ effectType: "status-cure", target: "ally" });
+    expect(result.messages[0]).toContain("burn");
+  });
+
+  it("given Healer in doubles with healthy ally, when turn ends, then does not activate", () => {
+    // Source: Showdown data/abilities.ts -- healer: `if (allyActive.status)`
+    // Only activates when ally has a status condition
+    const healer = makeActivePokemon({
+      uid: "healer",
+      ability: "healer",
+      nickname: "Audino",
+    });
+    const ally = makeActivePokemon({
+      uid: "ally",
+      ability: "blaze",
+      nickname: "Charizard",
+    });
+    const side0 = makeSide(0, [healer, ally]);
+    const side1 = makeSide(1);
+
+    const ctx = makeContext({
+      ability: "healer",
+      trigger: "on-turn-end",
+      format: "doubles",
+      sides: [side0, side1],
+      rngNextValues: [0.1],
+    });
+    (ctx.pokemon as any).pokemon.uid = "healer";
+
+    const result = handleGen5RemainingAbility(ctx);
+
     expect(result.activated).toBe(false);
   });
 

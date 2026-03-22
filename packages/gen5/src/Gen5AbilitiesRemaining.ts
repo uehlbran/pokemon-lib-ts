@@ -229,14 +229,19 @@ function handleHealer(ctx: AbilityContext): AbilityResult {
   const ally = allies[0];
   if (!ally) return NO_EFFECT;
 
-  // Healer cures an *ally*, but AbilityEffect only supports target "self" |
-  // "opponent". Using target:"opponent" would apply the cure to the opposing
-  // battler (the foe) instead of the ally. Returning NO_EFFECT is a safe
-  // stopgap until ally-targeting support is added to AbilityEffect/engine.
-  // TODO: add target:"ally" (or targetUid) to AbilityEffect and wire engine.
-  void ally;
-  void name;
-  return NO_EFFECT;
+  const allyName = ally.pokemon.nickname ?? String(ally.pokemon.speciesId);
+  const statusName = ally.pokemon.status;
+
+  // Source: Showdown data/abilities.ts -- healer: allyActive.cureStatus()
+  const effect: AbilityEffect = {
+    effectType: "status-cure",
+    target: "ally",
+  };
+  return {
+    activated: true,
+    effects: [effect],
+    messages: [`${name}'s Healer cured ${allyName}'s ${statusName}!`],
+  };
 }
 
 // ---------------------------------------------------------------------------

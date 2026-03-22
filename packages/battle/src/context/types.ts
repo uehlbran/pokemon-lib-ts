@@ -406,7 +406,7 @@ export type AbilityEffect =
       readonly types: readonly import("@pokemon-lib-ts/core").PokemonType[];
     }
   | { readonly effectType: "weather-immunity"; readonly target: "self" | "opponent" }
-  | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" }
+  | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" | "ally" }
   | {
       readonly effectType: "ability-change";
       readonly target: "self" | "opponent";
