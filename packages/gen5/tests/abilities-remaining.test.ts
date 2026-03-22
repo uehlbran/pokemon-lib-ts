@@ -320,9 +320,12 @@ describe("handleGen5RemainingAbility on-turn-end -- Zen Mode", () => {
     expect(result.effects).toHaveLength(0);
   });
 
-  it("given Darmanitan already in Zen Mode above 50% HP, when turn ends, then reverts to Standard", () => {
-    // Source: Showdown data/abilities.ts -- zenmode onResidual
+  it("given Darmanitan already in Zen Mode above 50% HP, when turn ends, then returns NO_EFFECT (revert stubbed until volatile-remove supported)", () => {
+    // Source: Showdown data/abilities.ts -- zenmode onResidual:
     //   pokemon.hp > pokemon.maxhp / 2 && Zen form => revert
+    // Implementation note: AbilityEffect has no volatile-remove type yet. Returning
+    // NO_EFFECT is a safe stopgap -- activated:true with effectType:"none" would emit
+    // a success message with no actual state change (volatile would not be removed).
     const zenVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     zenVolatiles.set("zen-mode" as never, { turnsLeft: -1 });
     const ctx = makeContext({
@@ -334,8 +337,8 @@ describe("handleGen5RemainingAbility on-turn-end -- Zen Mode", () => {
     });
     const result = handleGen5RemainingAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("Standard Mode");
+    // Revert path returns NO_EFFECT until volatile-remove AbilityEffect is added
+    expect(result.activated).toBe(false);
   });
 
   it("given Darmanitan already in Zen Mode at exactly 50% HP, when turn ends, then stays in Zen Mode", () => {
@@ -361,9 +364,11 @@ describe("handleGen5RemainingAbility on-turn-end -- Zen Mode", () => {
 // ===========================================================================
 
 describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
-  it("given Harvest with consumed berry and sun active, when turn ends, then always restores berry", () => {
-    // Source: Showdown data/abilities.ts -- harvest: 100% in sun
-    // rng value doesn't matter in sun -- always succeeds
+  it("given Harvest with consumed berry and sun active, when turn ends, then returns NO_EFFECT (item-restore effect stubbed until engine supports it)", () => {
+    // Source: Showdown data/abilities.ts -- harvest: 100% in sun, always restores.
+    // Implementation note: AbilityEffect has no item-restore type yet. Returning
+    // NO_EFFECT is a safe stopgap -- activated:true with effectType:"none" would emit
+    // a success message without actually restoring the berry (heldItem not set).
     const harvestVolatiles = new Map<
       string,
       { turnsLeft: number; data?: Record<string, unknown> }
@@ -382,13 +387,14 @@ describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
     });
     const result = handleGen5RemainingAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("sitrus-berry");
+    // Returns NO_EFFECT until item-restore AbilityEffect type is added
+    expect(result.activated).toBe(false);
   });
 
-  it("given Harvest with consumed berry, no sun, and rng below 0.5, when turn ends, then restores berry", () => {
+  it("given Harvest with consumed berry, no sun, and rng below 0.5, when turn ends, then returns NO_EFFECT (item-restore effect stubbed until engine supports it)", () => {
     // Source: Showdown data/abilities.ts -- harvest: this.randomChance(1, 2) = 50%
-    // rng.next() returns 0.3 < 0.5 => succeeds
+    // rng.next() returns 0.3 < 0.5 => the 50% check passes, but NO_EFFECT is returned
+    // until item-restore AbilityEffect type is added (stopgap -- see Harvest handler).
     const harvestVolatiles = new Map<
       string,
       { turnsLeft: number; data?: Record<string, unknown> }
@@ -406,8 +412,8 @@ describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
     });
     const result = handleGen5RemainingAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("lum-berry");
+    // Returns NO_EFFECT until item-restore AbilityEffect type is added
+    expect(result.activated).toBe(false);
   });
 
   it("given Harvest with consumed berry, no sun, and rng at 0.5, when turn ends, then fails to restore", () => {
@@ -485,9 +491,12 @@ describe("handleGen5RemainingAbility on-turn-end -- Healer", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given Healer in doubles with poisoned ally and rng below 0.3, when turn ends, then cures ally", () => {
+  it("given Healer in doubles with poisoned ally and rng below 0.3, when turn ends, then returns NO_EFFECT (ally-targeting stubbed until engine supports it)", () => {
     // Source: Showdown data/abilities.ts -- healer: this.randomChance(3, 10) = 30%
-    // rng.next() returns 0.2 < 0.3 => cures
+    // rng.next() returns 0.2 < 0.3 => the 30% check passes, but NO_EFFECT is returned.
+    // AbilityEffect only supports target "self" | "opponent". Using target:"opponent"
+    // would cure the foe instead of the ally. Returning NO_EFFECT is a safe stopgap
+    // until target:"ally" / targetUid support is added to AbilityEffect and engine.
     const healer = makeActivePokemon({
       uid: "healer",
       ability: "healer",
@@ -514,10 +523,8 @@ describe("handleGen5RemainingAbility on-turn-end -- Healer", () => {
 
     const result = handleGen5RemainingAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual({ effectType: "status-cure", target: "opponent" });
-    expect(result.messages[0]).toContain("Healer");
-    expect(result.messages[0]).toContain("Charizard");
+    // Returns NO_EFFECT until ally-targeting is added to AbilityEffect/engine
+    expect(result.activated).toBe(false);
   });
 
   it("given Healer in doubles with poisoned ally and rng at 0.3, when turn ends, then does not cure", () => {
@@ -628,12 +635,34 @@ describe("handleGen5RemainingAbility passive-immunity -- Telepathy", () => {
 
   it("given Telepathy in doubles, when ally targets this Pokemon, then prevents the move", () => {
     // Source: Showdown data/abilities.ts -- telepathy onTryHit
+    //   `if (target !== source && target.isAlly(source) && move.category !== 'Status')`
     //   `return null;` nullifies the move when target.isAlly(source)
+    // ctx.opponent must be on the SAME side as ctx.pokemon for Telepathy to activate.
+    const defender = makeActivePokemon({
+      uid: "defender",
+      ability: "telepathy",
+      nickname: "Reuniclus",
+    });
+    const allyAttacker = makeActivePokemon({
+      uid: "ally-attacker",
+      ability: "blaze",
+      nickname: "Infernape",
+    });
+    // Both on side 0 -- so attacker is an ally
+    const side0 = makeSide(0, [defender, allyAttacker]);
+    const side1 = makeSide(1);
+
     const ctx = makeContext({
       ability: "telepathy",
       trigger: "passive-immunity",
       format: "doubles",
+      sides: [side0, side1],
+      opponent: allyAttacker,
+      move: makeMove({ id: "earthquake", category: "physical" }),
     });
+    // Manually set the pokemon uid to match the side
+    (ctx.pokemon as any).pokemon.uid = "defender";
+
     const result = handleGen5RemainingAbility(ctx);
 
     expect(result.activated).toBe(true);

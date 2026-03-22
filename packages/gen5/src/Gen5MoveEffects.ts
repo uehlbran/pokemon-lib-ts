@@ -1,33 +1,90 @@
-import type { MoveEffectResult } from "@pokemon-lib-ts/battle";
-
 /**
- * Gen 5 move effect execution.
+ * Gen 5 move effect master dispatcher.
  *
- * Stub -- will be fully implemented in Waves 5-6.
+ * Routes move effect execution to the appropriate sub-module:
+ *   - Gen5MoveEffectsField: field effect moves (Magic Room, Wonder Room, Trick Room,
+ *     Quick Guard, Wide Guard)
+ *   - Gen5MoveEffectsBehavior: behavioral overrides (Defog, Scald, Growth, Knock Off)
+ *   - Gen5MoveEffectsCombat: combat moves (Shell Smash, Quiver Dance, Dragon Tail,
+ *     Acrobatics, Final Gambit, etc.)
  *
- * Gen 5 introduced many new moves:
- *   - Shell Smash: -1 Def/SpDef, +2 Atk/SpAtk/Speed
- *   - Quiver Dance: +1 SpAtk/SpDef/Speed
- *   - Dragon Tail / Circle Throw: force switch, negative priority
- *   - Acrobatics: 55 BP, doubles power with no held item
- *   - Scald: 80 BP, 30% burn chance
- *   - Quick Guard / Wide Guard: protect moves
- *   - Final Gambit: user faints, deals HP as damage
- *   - Retaliate: doubles power if ally fainted last turn
- *   - Round: base power doubles if ally used Round
- *   - Flame Charge: 50 BP + Speed +1
+ * Also re-exports all public functions from sub-modules for direct consumer access.
  *
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
+ * Source: references/pokemon-showdown/data/moves.ts
  */
-export function executeGen5MoveEffect(): MoveEffectResult {
-  // Stub -- implemented in Waves 5-6
-  return {
-    statusInflicted: null,
-    volatileInflicted: null,
-    statChanges: [],
-    recoilDamage: 0,
-    healAmount: 0,
-    switchOut: false,
-    messages: [],
-  };
+
+import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
+import type { SeededRandom } from "@pokemon-lib-ts/core";
+import { handleGen5BehaviorMove } from "./Gen5MoveEffectsBehavior";
+import { handleGen5CombatMove } from "./Gen5MoveEffectsCombat";
+import { handleGen5FieldMove } from "./Gen5MoveEffectsField";
+
+// ---------------------------------------------------------------------------
+// Re-exports from sub-modules
+// ---------------------------------------------------------------------------
+
+export {
+  handleGen5BehaviorMove,
+  isGen5PowderMoveBlocked,
+  isToxicGuaranteedAccuracy,
+} from "./Gen5MoveEffectsBehavior";
+
+export {
+  didAllyFaintLastTurn,
+  getAcrobaticsBP,
+  getElectroBallBP,
+  getGyroBallBP,
+  getRetaliateBP,
+  getWeightBasedBP,
+  handleGen5CombatMove,
+} from "./Gen5MoveEffectsCombat";
+
+export {
+  getGen5PriorityOverride,
+  handleGen5FieldMove,
+  isBlockedByQuickGuard,
+  isBlockedByWideGuard,
+} from "./Gen5MoveEffectsField";
+
+// ---------------------------------------------------------------------------
+// Master dispatcher
+// ---------------------------------------------------------------------------
+
+/**
+ * Master dispatch function for Gen 5 move effects.
+ *
+ * Tries each sub-module in order:
+ *   1. Field effects (Magic Room, Wonder Room, Trick Room, Quick Guard, Wide Guard)
+ *   2. Behavioral overrides (Defog, Scald, Growth, Knock Off)
+ *   3. Combat moves (Shell Smash, Dragon Tail, Acrobatics, Final Gambit, etc.)
+ *
+ * Returns the MoveEffectResult from the first sub-module that handles the move,
+ * or null if no sub-module recognizes it (the caller should fall through to
+ * BaseRuleset's default handler).
+ *
+ * @param ctx - Full move execution context
+ * @param rng - Seeded PRNG for moves that need randomness (e.g., Quick/Wide Guard stall check)
+ * @param rollProtectSuccess - Protect success roll function (for stalling moves)
+ * @returns MoveEffectResult if handled, or null if unrecognized
+ */
+export function executeGen5MoveEffect(
+  ctx: MoveEffectContext,
+  rng: SeededRandom,
+  rollProtectSuccess: (consecutiveProtects: number, rng: SeededRandom) => boolean,
+): MoveEffectResult | null {
+  // 1. Field effect moves (highest priority -- room effects, guards)
+  const fieldResult = handleGen5FieldMove(ctx, rng, rollProtectSuccess);
+  if (fieldResult !== null) return fieldResult;
+
+  // 2. Behavioral overrides (gen-specific move behavior differences)
+  const behaviorResult = handleGen5BehaviorMove(ctx);
+  if (behaviorResult !== null) return behaviorResult;
+
+  // 3. Combat moves (stat-boosting moves, force-switch, self-destruct, etc.)
+  const combatResult = handleGen5CombatMove(ctx);
+  if (combatResult !== null) return combatResult;
+
+  // Not handled by any Gen 5-specific sub-module
+  return null;
 }
