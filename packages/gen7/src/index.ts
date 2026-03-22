@@ -8,6 +8,19 @@ export {
   pokeRound,
   TYPE_RESIST_BERRIES,
 } from "./Gen7DamageCalc.js";
+export {
+  applyGen7EntryHazards,
+  applyGen7SpikesHazard,
+  applyGen7StealthRock,
+  applyGen7StickyWeb,
+  applyGen7ToxicSpikes,
+} from "./Gen7EntryHazards.js";
+export {
+  AURORA_VEIL_DEFAULT_TURNS,
+  AURORA_VEIL_LIGHT_CLAY_TURNS,
+  executeGen7MoveEffect,
+  handleAuroraVeil,
+} from "./Gen7MoveEffects.js";
 export { Gen7Ruleset } from "./Gen7Ruleset.js";
 export {
   applyGen7TerrainEffects,
@@ -20,3 +33,11 @@ export {
   TERRAIN_EXTENDED_TURNS,
 } from "./Gen7Terrain.js";
 export { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
+export {
+  ABILITY_WEATHER_TURNS,
+  applyGen7WeatherEffects,
+  HAIL_IMMUNE_TYPES,
+  isGen7WeatherImmune,
+  SANDSTORM_IMMUNE_TYPES,
+  WEATHER_ROCK_EXTENSION,
+} from "./Gen7Weather.js";

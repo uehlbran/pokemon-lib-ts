@@ -34,6 +34,8 @@ import type {
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
 import { calculateGen7Damage } from "./Gen7DamageCalc.js";
+import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
+import { executeGen7MoveEffect } from "./Gen7MoveEffects.js";
 import {
   applyGen7TerrainEffects,
   checkGen7TerrainStatusImmunity,
@@ -41,6 +43,7 @@ import {
   isSurgeAbility,
 } from "./Gen7Terrain.js";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
+import { applyGen7WeatherEffects } from "./Gen7Weather.js";
 
 /**
  * Gen 7 (Sun/Moon/Ultra Sun/Ultra Moon) ruleset.
@@ -159,12 +162,20 @@ export class Gen7Ruleset extends BaseRuleset {
   // --- Move Effects ---
 
   /**
-   * Gen 7 move effect dispatch stub.
-   * Will be fully implemented in Wave 5 (Move Effects).
+   * Gen 7 move effect dispatch.
+   *
+   * Currently handles:
+   *   - Aurora Veil (Hail-only dual screen)
+   *
+   * Falls through to BaseRuleset for unrecognized moves.
    *
    * Source: Showdown data/moves.ts -- Gen 7 move handlers
    */
   override executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    // Try Gen 7-specific move effects first
+    const gen7Result = executeGen7MoveEffect(context);
+    if (gen7Result !== null) return gen7Result;
+
     // Fall through to BaseRuleset for default handling
     return super.executeMoveEffect(context);
   }
@@ -561,14 +572,16 @@ export class Gen7Ruleset extends BaseRuleset {
   // --- Weather ---
 
   /**
-   * Gen 7 end-of-turn weather chip damage stub.
-   * Will be fully implemented in Wave 4.
+   * Gen 7 end-of-turn weather chip damage.
+   *
+   * Same as Gen 6: sandstorm and hail deal 1/16 max HP per turn to non-immune Pokemon.
+   * Gen 7 adds Slush Rush as a hail-immune ability.
    *
    * Source: Showdown data/conditions.ts -- weather end-of-turn damage
+   * Source: Bulbapedia -- Weather conditions page
    */
   override applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
-    void state;
-    return [];
+    return applyGen7WeatherEffects(state);
   }
 
   // --- Entry Hazards ---
@@ -584,17 +597,23 @@ export class Gen7Ruleset extends BaseRuleset {
   }
 
   /**
-   * Gen 7 entry hazards stub.
-   * Will be fully implemented in Wave 4.
+   * Gen 7 entry hazards: Stealth Rock, Spikes, Toxic Spikes, Sticky Web.
+   *
+   * Same mechanics as Gen 6. Magic Guard blocks damage/status hazards but not
+   * Sticky Web's stat drop. Full Metal Body (Gen 7 ability) blocks Sticky Web.
    *
    * Source: Showdown data/moves.ts -- hazard condition handlers
+   * Source: Bulbapedia -- individual hazard pages
    */
   override applyEntryHazards(
-    _pokemon: ActivePokemon,
-    _side: BattleSide,
-    _state?: BattleState,
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    state?: BattleState,
   ): EntryHazardResult {
-    return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    if (!state) {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+    return applyGen7EntryHazards(pokemon, side, state, this.getTypeChart());
   }
 
   // --- End of Turn ---
