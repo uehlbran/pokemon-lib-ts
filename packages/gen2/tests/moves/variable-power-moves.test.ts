@@ -529,7 +529,7 @@ describe("Gen 2 Fury Cutter Effect", () => {
     flags: {},
   } as unknown as MoveData;
 
-  it("given first use of Fury Cutter (no volatile), when executeMoveEffect is called, then sets volatile with count=0", () => {
+  it("given first use of Fury Cutter (no volatile), when executeMoveEffect is called, then sets volatile with count=1", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
     // First use: no existing volatile, count starts at 0.
