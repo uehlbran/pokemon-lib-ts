@@ -100,8 +100,11 @@ describe("calculateHp", () => {
   });
 
   it("should handle minimum values (0 IV, 0 EV, L1)", () => {
-    const result = calculateHp(78, 0, 0, 1);
-    expect(result).toBeGreaterThan(0);
+    // Source: pret/pokeemerald src/pokemon.c — HP formula:
+    // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
+    // Charizard (base HP=78), 0 IV, 0 EV, L1:
+    // floor((156 + 0 + 0) * 1 / 100) + 1 + 10 = floor(1.56) + 11 = 1 + 11 = 12
+    expect(calculateHp(78, 0, 0, 1)).toBe(12);
   });
 });
 
