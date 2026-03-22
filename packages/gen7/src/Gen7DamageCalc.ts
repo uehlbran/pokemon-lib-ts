@@ -720,7 +720,10 @@ export function calculateGen7Damage(
   //   power of the affected moves by 1.2."
   if (attackerAbility === "normalize") {
     effectiveMoveType = "normal";
-    ateBoostApplied = move.type !== "normal"; // Only boost if type actually changed
+    // Normalize always applies the 1.2x boost, including moves already Normal type.
+    // Source: Showdown data/abilities.ts -- normalize: onBasePower fires whenever
+    //   move.typeChangerBoosted === this.effect, set unconditionally in onModifyType.
+    ateBoostApplied = true;
   }
 
   // Klutz check
@@ -853,7 +856,11 @@ export function calculateGen7Damage(
 
   // Reckless: 1.2x power for moves with recoil
   // Source: Showdown data/abilities.ts -- Reckless
-  if (attackerAbility === "reckless" && hasRecoilEffect(move.effect)) {
+  // Reckless: 1.2x power for moves with recoil or crash damage
+  // Source: Showdown data/abilities.ts -- Reckless: onBasePower
+  //   if (move.recoil || move.hasCrashDamage) return this.chainModify(1.2)
+  // Crash damage moves (Jump Kick, High Jump Kick) also get the boost.
+  if (attackerAbility === "reckless" && (hasRecoilEffect(move.effect) || move.hasCrashDamage)) {
     power = Math.floor(power * 1.2);
   }
 
@@ -1248,16 +1255,23 @@ export function calculateGen7Damage(
     abilityMultiplier *= 2;
   }
 
-  // Filter / Solid Rock / Prism Armor (new in Gen 7): 0.75x damage if super effective
-  // Source: Showdown data/abilities.ts -- Filter / Solid Rock / Prism Armor
-  // Source: Bulbapedia "Prism Armor" -- reduces damage from super-effective moves by 25%
+  // Filter / Solid Rock: 0.75x damage if super effective.
+  // Both have flags: { breakable: 1 } in Showdown -- bypassed by Mold Breaker.
+  // Source: Showdown data/abilities.ts -- Filter/Solid Rock: flags: { breakable: 1 }
   if (
     !moldBreaker &&
-    (defenderAbility === "filter" ||
-      defenderAbility === "solid-rock" ||
-      defenderAbility === "prism-armor") &&
+    (defenderAbility === "filter" || defenderAbility === "solid-rock") &&
     effectiveness > 1
   ) {
+    baseDamage = pokeRound(baseDamage, 3072); // 0.75x
+    abilityMultiplier *= 0.75;
+  }
+
+  // Prism Armor (new in Gen 7): 0.75x damage if super effective.
+  // Unlike Filter/Solid Rock, Prism Armor is NOT bypassed by Mold Breaker.
+  // Source: Showdown data/abilities.ts -- prismarmo: onSourceModifyDamage (no breakable flag)
+  // Source: Bulbapedia "Prism Armor" -- "reduces damage from super-effective moves by 25%"
+  if (defenderAbility === "prism-armor" && effectiveness > 1) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
     abilityMultiplier *= 0.75;
   }

@@ -306,7 +306,7 @@ describe("Terrain Extender", () => {
     expect(hasTerrainExtender(pokemon)).toBe(false);
   });
 
-  it("should export the correct item ID constant", () => {
+  it("given the terrain extender item ID constant, when checked, then equals 'terrain-extender'", () => {
     // Source: Showdown data/items.ts -- item ID is 'terrainextender' (mapped to 'terrain-extender')
     expect(TERRAIN_EXTENDER_ITEM_ID).toBe("terrain-extender");
   });
