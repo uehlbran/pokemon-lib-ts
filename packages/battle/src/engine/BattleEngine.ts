@@ -4367,6 +4367,16 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "consume": {
+          // Track consumed berry for Harvest ability (Gen 5+).
+          // Source: Showdown data/abilities.ts -- harvest onResidual reads pokemon.lastItem
+          // Berry IDs always end with "-berry" per Showdown convention.
+          const consumedItemId = effect.value as string;
+          if (consumedItemId && consumedItemId.endsWith("-berry")) {
+            pokemon.volatileStatuses.set("harvest-berry", {
+              turnsLeft: -1,
+              data: { berryId: consumedItemId },
+            });
+          }
           pokemon.pokemon.heldItem = null;
           break;
         }
