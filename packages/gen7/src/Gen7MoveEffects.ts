@@ -612,6 +612,7 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
   // Source: Showdown sim/battle-actions.ts -- drain only triggers when damage > 0
   if (ctx.damage <= 0) return null;
 
+
   const drainFraction = ctx.move.effect.amount;
   let healAmount = Math.floor(ctx.damage * drainFraction);
 
