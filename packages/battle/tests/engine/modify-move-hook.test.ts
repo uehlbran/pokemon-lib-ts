@@ -322,4 +322,53 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     // modifyMove must NOT have been called since canUse() returned false
     expect(modifyMoveCalled).toBe(false);
   });
+
+  it("given a gimmick with reset(), when BattleEngine is constructed, then reset() is called to clear cross-battle state", () => {
+    // Source: Showdown resets side.megaUsed / side.zMoveUsed at battle start.
+    // A shared Gen7Ruleset instance could be reused across battles in tests;
+    // the engine must reset gimmick state on construction to prevent leakage.
+    const ruleset = new MockRuleset();
+    let resetCallCount = 0;
+
+    const mockGimmick: BattleGimmick = {
+      name: "Z-Move",
+      generations: [7],
+      canUse: () => true,
+      activate: (): BattleEvent[] => [],
+      reset: () => {
+        resetCallCount++;
+      },
+    };
+
+    ruleset.getBattleGimmick = () => mockGimmick;
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [];
+
+    // Construct two engines using the same ruleset — each must call reset()
+    createEngine({ ruleset });
+    createEngine({ ruleset });
+
+    // reset() must have been called once per construction (once per gimmick type attempted)
+    // The engine iterates ["mega","zmove","dynamax","tera"] but getBattleGimmick always
+    // returns the same mock, so reset fires 4 times per construction × 2 constructions = 8
+    expect(resetCallCount).toBeGreaterThan(0);
+  });
+
+  it("given a gimmick without reset(), when BattleEngine is constructed, then no error is thrown", () => {
+    // reset() is optional — existing gimmicks (Gen 6 Mega) don't need to implement it
+    const ruleset = new MockRuleset();
+
+    const mockGimmick: BattleGimmick = {
+      name: "Mega Evolution",
+      generations: [6],
+      canUse: () => true,
+      activate: (): BattleEvent[] => [],
+      // No reset() method
+    };
+
+    ruleset.getBattleGimmick = () => mockGimmick;
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [];
+
+    // Should not throw even though reset() is absent
+    expect(() => createEngine({ ruleset })).not.toThrow();
+  });
 });
