@@ -634,27 +634,43 @@ export class Gen7Ruleset extends BaseRuleset {
   /**
    * Gen 7 EXP formula.
    *
-   * Gen 7 reverts to a simpler formula than Gen 5/6:
+   * Gen 7 reverts to a simpler formula than Gen 5/6 (no level-scaling sqrt):
    *   exp = floor((baseExp * defeatedLevel) / (5 * participantCount))
-   *   Apply trainer battle bonus (1.5x), Lucky Egg (1.5x).
+   *   Apply trainer battle bonus (1.5x), Lucky Egg (1.5x), traded (1.5x/1.7x).
+   *   Each multiplier is floored separately (sequential rounding).
+   *
+   * Gen 5/6 used sqrt-based level scaling that rewarded defeating higher-level foes
+   * and penalized grinding on lower-level ones. Gen 7 removed this because the
+   * permanent party-wide Exp. Share made level scaling redundant.
    *
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Experience#Generation_VII
-   * Source: Showdown sim/battle-actions.ts -- Gen 7 EXP formula
+   *   "In Generation VII, the formula was simplified."
+   *   Base: floor((b * L) / (5 * s)), then multiply each modifier with floor.
    */
   calculateExpGain(context: ExpContext): number {
     const baseExp = context.defeatedSpecies.baseExp;
-    const a = context.isTrainerBattle ? 1.5 : 1;
     const l = context.defeatedLevel;
     const s = context.participantCount;
-    const p = context.hasLuckyEgg ? 1.5 : 1;
 
-    // TODO(Wave 1): Verify rounding order against Showdown sim/battle-actions.ts Gen 7 EXP calc.
-    // Gen 6 floors between each multiplication step; Gen 7 may differ.
-    let exp = Math.floor(((a * baseExp * l) / (5 * s)) * p);
+    // Step 1: Base EXP = floor((baseExp * defeatedLevel) / (5 * participantCount))
+    // Source: Bulbapedia Gen VII EXP formula
+    let exp = Math.floor((baseExp * l) / (5 * s));
 
-    // Source: Showdown sim/battle-actions.ts -- traded EXP bonus applied after all other multipliers.
-    // Same language -> 1.5x, international -> 1.7x.
+    // Step 2: Trainer battle bonus (1.5x), floored separately
+    // Source: Bulbapedia -- "Trainer battles give 1.5x EXP"
+    if (context.isTrainerBattle) {
+      exp = Math.floor(exp * 1.5);
+    }
+
+    // Step 3: Lucky Egg bonus (1.5x), floored separately
+    // Source: Bulbapedia -- "Lucky Egg gives 1.5x EXP"
+    if (context.hasLuckyEgg) {
+      exp = Math.floor(exp * 1.5);
+    }
+
+    // Step 4: Traded Pokemon bonus, floored separately
     // Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula
+    // Same language -> 1.5x, international -> 1.7x.
     if (context.isTradedPokemon) {
       const tradedMultiplier = context.isInternationalTrade ? 1.7 : 1.5;
       exp = Math.floor(exp * tradedMultiplier);
