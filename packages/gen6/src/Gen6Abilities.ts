@@ -4,8 +4,8 @@
  * Routes ability triggers to the appropriate sub-module:
  *   - Gen6AbilitiesDamage: damage-calc and damage-immunity abilities
  *   - Gen6AbilitiesStat: stat-modifying and priority abilities
- *   - Gen6AbilitiesSwitch: switch-in/out, contact, passive-immunity abilities (TODO: Wave 5B)
- *   - Gen6AbilitiesRemaining: remaining abilities (TODO: Wave 5B)
+ *   - Gen6AbilitiesSwitch: switch-in/out, contact, passive-immunity abilities
+ *   - Gen6AbilitiesRemaining: remaining abilities (Frisk, Zen Mode, Friend Guard, etc.)
  *
  * Also re-exports all public functions from sub-modules for direct consumer access.
  *
@@ -19,7 +19,9 @@ import {
   handleGen6DamageCalcAbility,
   handleGen6DamageImmunityAbility,
 } from "./Gen6AbilitiesDamage.js";
+import { handleGen6RemainingAbility } from "./Gen6AbilitiesRemaining.js";
 import { handleGen6StatAbility } from "./Gen6AbilitiesStat.js";
+import { handleGen6SwitchAbility } from "./Gen6AbilitiesSwitch.js";
 
 // ---------------------------------------------------------------------------
 // Re-exports from sub-modules
@@ -43,7 +45,27 @@ export {
   sheerForceSuppressesLifeOrb,
   sturdyBlocksOHKO,
 } from "./Gen6AbilitiesDamage.js";
+export {
+  FRIEND_GUARD_DAMAGE_MULTIPLIER,
+  getSereneGraceMultiplier,
+  getWeightMultiplier,
+  HARVEST_BASE_PROBABILITY,
+  HARVEST_SUN_PROBABILITY,
+  HEALER_PROBABILITY,
+  HEAVY_METAL_WEIGHT_MULTIPLIER,
+  handleGen6RemainingAbility,
+  LIGHT_METAL_WEIGHT_MULTIPLIER,
+  SERENE_GRACE_CHANCE_MULTIPLIER,
+} from "./Gen6AbilitiesRemaining.js";
 export { handleGen6StatAbility, isPranksterEligible } from "./Gen6AbilitiesStat.js";
+export {
+  handleGen6SwitchAbility,
+  isAromaVeilBlocked,
+  isBulletproofBlocked,
+  isMoldBreakerAbility,
+  isTrappedByAbility,
+  VICTORY_STAR_ACCURACY_MULTIPLIER,
+} from "./Gen6AbilitiesSwitch.js";
 
 // ---------------------------------------------------------------------------
 // Passive immunity: ability → immune move type mapping
@@ -79,20 +101,6 @@ const NO_ACTIVATION: AbilityResult = {
 };
 
 // ---------------------------------------------------------------------------
-// Stub dispatchers for not-yet-implemented sub-modules (Wave 5B)
-// ---------------------------------------------------------------------------
-
-// TODO (Wave 5B): Gen6AbilitiesSwitch -- Intimidate, Drizzle, Regenerator, etc.
-function handleGen6SwitchAbility(_trigger: AbilityTrigger, _ctx: AbilityContext): AbilityResult {
-  return NO_ACTIVATION;
-}
-
-// TODO (Wave 5B): Gen6AbilitiesRemaining -- Frisk, Friend Guard, Serene Grace, etc.
-function handleGen6RemainingAbility(_ctx: AbilityContext): AbilityResult {
-  return NO_ACTIVATION;
-}
-
-// ---------------------------------------------------------------------------
 // Master dispatcher
 // ---------------------------------------------------------------------------
 
@@ -111,8 +119,14 @@ function handleGen6RemainingAbility(_ctx: AbilityContext): AbilityResult {
  *     (Defiant, Competitive, Contrary, Simple), on-damage-taken (Justified,
  *     Weak Armor), on-turn-end (Speed Boost, Moody), on-flinch (Steadfast),
  *     on-item-use (Unnerve)
- *   - **Switch** (Gen6AbilitiesSwitch): TODO Wave 5B
- *   - **Remaining** (Gen6AbilitiesRemaining): TODO Wave 5B
+ *   - **Switch** (Gen6AbilitiesSwitch): on-switch-in (Intimidate, Drizzle/Drought/Sand/Snow
+ *     5-turn, Download, Trace, Stance Change), on-switch-out (Regenerator, Natural Cure),
+ *     on-contact (Static, Flame Body, Mummy, Pickpocket, etc.), passive-immunity
+ *     (Levitate, Bulletproof, Overcoat powder-block, Sweet Veil), on-stat-change (Big Pecks,
+ *     Flower Veil), on-accuracy-check (Victory Star)
+ *   - **Remaining** (Gen6AbilitiesRemaining): on-turn-end (Zen Mode, Harvest, Healer),
+ *     on-switch-in (Frisk, reveals all foes in Gen 6), passive-immunity (Telepathy, Oblivious),
+ *     on-damage-calc (Friend Guard, Serene Grace without Secret Power exclusion)
  *
  * For triggers handled by multiple sub-modules, we try each in order and return
  * the first activation.
@@ -208,7 +222,7 @@ export function applyGen6Ability(trigger: AbilityTrigger, ctx: AbilityContext): 
         };
       }
 
-      // Wave 5B: Switch passive-immunity (Levitate as switch-in announce, Flash Fire boost, etc.),
+      // Switch passive-immunity (Flash Fire boost, Water Absorb heal, Bulletproof, etc.),
       // then Remaining (Telepathy, Oblivious, Keen Eye)
       const switchResult = handleGen6SwitchAbility(trigger, ctx);
       if (switchResult.activated) return switchResult;
