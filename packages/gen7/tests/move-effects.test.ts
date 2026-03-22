@@ -1101,33 +1101,33 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
 // ===========================================================================
 
 describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
-  it("given Gen7Ruleset, when executing King's Shield, then returns kings-shield volatile", async () => {
-    // Source: Showdown mods/gen7/moves.ts -- kingsshield
+  // Share a single Gen7Ruleset instance across all integration tests to avoid
+  // repeated construction (loads 807 Pokemon + 690 moves from JSON) causing
+  // test timeouts on slow CI runners.
+  let ruleset: import("../src/Gen7Ruleset").Gen7Ruleset;
+  beforeAll(async () => {
     const { Gen7Ruleset } = await import("../src/Gen7Ruleset");
-    const ruleset = new Gen7Ruleset();
+    ruleset = new Gen7Ruleset();
+  });
 
+  it("given Gen7Ruleset, when executing King's Shield, then returns kings-shield volatile", () => {
+    // Source: Showdown mods/gen7/moves.ts -- kingsshield
     const ctx = makeContext("kings-shield");
     const result = ruleset.executeMoveEffect(ctx);
 
     expect(result.selfVolatileInflicted).toBe("kings-shield");
   });
 
-  it("given Gen7Ruleset, when executing Baneful Bunker, then returns baneful-bunker volatile", async () => {
+  it("given Gen7Ruleset, when executing Baneful Bunker, then returns baneful-bunker volatile", () => {
     // Source: Showdown data/moves.ts -- banefulbunker: volatileStatus
-    const { Gen7Ruleset } = await import("../src/Gen7Ruleset");
-    const ruleset = new Gen7Ruleset();
-
     const ctx = makeContext("baneful-bunker");
     const result = ruleset.executeMoveEffect(ctx);
 
     expect(result.selfVolatileInflicted).toBe("baneful-bunker");
   });
 
-  it("given Gen7Ruleset, when executing unrecognized move, then falls through to BaseRuleset", async () => {
+  it("given Gen7Ruleset, when executing unrecognized move, then falls through to BaseRuleset", () => {
     // Source: Gen7Ruleset.executeMoveEffect falls through to super.executeMoveEffect
-    const { Gen7Ruleset } = await import("../src/Gen7Ruleset");
-    const ruleset = new Gen7Ruleset();
-
     const ctx = makeContext("tackle");
     const result = ruleset.executeMoveEffect(ctx);
 
@@ -1137,12 +1137,10 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
     expect(result.statChanges).toEqual([]);
   });
 
-  it("given Gen7Ruleset, when executing Sleep Powder against Grass-type, then blocked by powder immunity", async () => {
+  it("given Gen7Ruleset, when executing Sleep Powder against Grass-type, then blocked by powder immunity", () => {
     // Source: Showdown data/moves.ts -- powder moves check target.hasType('Grass')
     // Source: Bulbapedia -- "As of Generation VI, Grass-type Pokemon are immune to
     //   powder and spore moves."
-    const { Gen7Ruleset } = await import("../src/Gen7Ruleset");
-    const ruleset = new Gen7Ruleset();
 
     const ctx = makeContext("sleep-powder", {
       defender: { types: ["grass", "poison"], nickname: "Bulbasaur" },
@@ -1175,10 +1173,8 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
     expect(result.statusInflicted).toBeNull();
   });
 
-  it("given Gen7Ruleset, when executing Sleep Powder against non-Grass, then NOT blocked", async () => {
+  it("given Gen7Ruleset, when executing Sleep Powder against non-Grass, then NOT blocked", () => {
     // Source: Powder immunity only applies to Grass types
-    const { Gen7Ruleset } = await import("../src/Gen7Ruleset");
-    const ruleset = new Gen7Ruleset();
 
     const ctx = makeContext("sleep-powder", {
       defender: { types: ["normal"] },
