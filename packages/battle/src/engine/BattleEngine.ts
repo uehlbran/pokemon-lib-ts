@@ -2877,6 +2877,19 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Wish scheduling — schedule heal for end of next turn on the attacker's side
+    // Source: Showdown data/moves.ts -- wish: { condition: { duration: 2, onResidual: heals floor(hp/2) } }
+    // Source: Bulbapedia -- "At the end of the next turn, the Pokemon in the slot
+    //   will be restored by half the maximum HP of the Pokemon that used Wish"
+    if (result.wishSet) {
+      const wisherSide = this.state.sides[attackerSide];
+      wisherSide.wish = {
+        active: true,
+        turnsLeft: 2, // Wish always counts down over 2 EOT phases
+        healAmount: result.wishSet.healAmount,
+      };
+    }
+
     // Forced move set (two-turn moves: Fly, Dig, Dive, SolarBeam, etc.)
     // Source: Showdown — two-turn moves set forcedMove on charge turn; volatile applied immediately
     if (result.forcedMoveSet) {

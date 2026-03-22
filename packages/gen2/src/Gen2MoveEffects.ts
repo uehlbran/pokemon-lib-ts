@@ -267,6 +267,7 @@ export function handleCustomEffect(
   move: MoveData,
   result: MutableResult,
   context: MoveEffectContext,
+  presentHealPending = false,
 ): void {
   const { attacker, defender } = context;
   const pokemonName = attacker.pokemon.nickname ?? "The Pokemon";
@@ -576,10 +577,16 @@ export function handleCustomEffect(
       // Source: pret/pokecrystal engine/battle/effect_commands.asm PresentEffect
       // The RNG roll and base power determination are handled in calculateGen2Damage
       // (using a dynamicPower override) so the damage formula applies correctly.
-      // The heal case (20%) produces 0 damage from calculateGen2Damage.
-      // Applying the heal to the defender requires MoveEffectResult.healDefender support
-      // in the engine — tracked in issue #526. Until then, the heal branch is rolled
-      // correctly but not applied.
+      // The heal case (20%) produces 0 damage from calculateGen2Damage and sets
+      // _presentHealPending on the Gen2Ruleset, which is passed here as presentHealPending.
+      if (presentHealPending) {
+        // Heal the DEFENDER by 1/4 of their max HP
+        // Source: pret/pokecrystal engine/battle/effect_commands.asm PresentEffect
+        //   "if heal, restore 1/4 of the target's max HP"
+        const defenderMaxHp =
+          context.defender.pokemon.calculatedStats?.hp ?? context.defender.pokemon.currentHp;
+        result.defenderHealAmount = Math.max(1, Math.floor(defenderMaxHp / 4));
+      }
       break;
     }
 
