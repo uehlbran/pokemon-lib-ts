@@ -4,12 +4,15 @@ import type {
   ActivePokemon,
   BattleGimmick,
   BattleGimmickType,
+  BattleSide,
   BattleState,
   CritContext,
   DamageContext,
   DamageResult,
+  EntryHazardResult,
   ExpContext,
   TerrainEffectResult,
+  WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
@@ -25,8 +28,10 @@ import { createGen8DataManager } from "./data/index.js";
 import { handleGen8SwitchAbility, shouldMirrorArmorReflect } from "./Gen8AbilitiesSwitch.js";
 import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 import { calculateGen8Damage } from "./Gen8DamageCalc.js";
+import { applyGen8EntryHazards } from "./Gen8EntryHazards.js";
 import { applyGen8TerrainEffects, checkGen8TerrainStatusImmunity } from "./Gen8Terrain.js";
 import { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
+import { applyGen8WeatherEffects } from "./Gen8Weather.js";
 
 /**
  * Gen 8 (Sword/Shield) ruleset.
@@ -187,16 +192,57 @@ export class Gen8Ruleset extends BaseRuleset {
     return false;
   }
 
+  // --- Weather ---
+
+  /**
+   * Gen 8 end-of-turn weather effects.
+   *
+   * Identical to Gen 7: sandstorm/hail deal 1/16 max HP chip damage.
+   * Gen 8 adds Ice Face as a hail-immune ability.
+   *
+   * Source: Showdown data/conditions.ts -- weather end-of-turn damage
+   * Source: Bulbapedia -- Weather conditions page
+   */
+  override applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
+    return applyGen8WeatherEffects(state);
+  }
+
   // --- Entry Hazards ---
 
   /**
-   * Gen 8 available hazards include Sticky Web (same as Gen 6-7).
+   * Gen 8 available hazards include Sticky Web and G-Max Steelsurge.
    *
    * Source: Bulbapedia -- Sticky Web introduced in Gen 6, still present in Gen 8
-   * Source: Showdown data/moves.ts -- stickyweb
+   * Source: Showdown data/moves.ts -- stickyweb, gmaxsteelsurge
+   * Source: Bulbapedia -- G-Max Steelsurge (Copperajah G-Max move)
    */
   override getAvailableHazards(): readonly EntryHazardType[] {
-    return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web"];
+    return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web", "gmax-steelsurge"];
+  }
+
+  /**
+   * Gen 8 entry hazards: Stealth Rock, Spikes, Toxic Spikes, Sticky Web, G-Max Steelsurge.
+   *
+   * New in Gen 8:
+   *   - G-Max Steelsurge: Steel-type Stealth Rock (type-effective damage)
+   *   - Heavy-Duty Boots: blocks ALL hazard effects on switch-in
+   *
+   * Magic Guard blocks damage/status hazards but not Sticky Web's stat drop.
+   * Full Metal Body (Gen 7 ability) blocks Sticky Web.
+   *
+   * Source: Showdown data/moves.ts -- hazard condition handlers
+   * Source: Showdown data/items.ts -- heavydutyboots
+   * Source: Bulbapedia -- individual hazard pages
+   */
+  override applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    state?: BattleState,
+  ): EntryHazardResult {
+    if (!state) {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+    return applyGen8EntryHazards(pokemon, side, state, this.getTypeChart());
   }
 
   // --- Battle Gimmick ---
