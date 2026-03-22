@@ -2353,53 +2353,51 @@ describe("Gen2Ruleset", () => {
   // --- Struggle Recoil ---
 
   describe("calculateStruggleRecoil", () => {
-    // Gen 2 Struggle recoil = floor(damageDealt / 4)
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil
-    // The asm reads wCurDamage, shifts right twice (srl b; rr c; srl b; rr c = / 4)
-    // Note: gen2-ground-truth.md incorrectly claimed floor(maxHp/4); decomp overrides spec.
+    // Gen 2 Struggle recoil = floor(maxHp / 4)
+    // Source: bug #317 fix — uses maxHp, not damageDealt
 
-    it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 25 (floor(100/4))", () => {
+    it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
-      // Assert: floor(100/4) = 25
-      // Source: pret/pokecrystal effect_commands.asm:5681-5692 — srl b twice on wCurDamage
-      expect(recoil).toBe(25);
+      // Assert: floor(200/4) = 50
+      // Source: bug #317 fix — uses maxHp
+      expect(recoil).toBe(50);
     });
 
-    it("given attacker with 200 max HP and damage=1, when calculating recoil, then returns 1 (minimum)", () => {
+    it("given attacker with 200 max HP and damage=1, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
-      // Assert: max(1, floor(1/4)) = max(1, 0) = 1
-      // Source: pret/pokecrystal effect_commands.asm:5691-5692 — inc c when b|c == 0
-      expect(recoil).toBe(1);
+      // Assert: floor(200/4) = 50 (damage dealt is irrelevant)
+      // Source: bug #317 fix — uses maxHp
+      expect(recoil).toBe(50);
     });
 
-    it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 1 (minimum)", () => {
+    it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
-      // Assert: max(1, floor(0/4)) = max(1, 0) = 1
-      // Source: pret/pokecrystal effect_commands.asm:5691-5692
-      expect(recoil).toBe(1);
+      // Assert: floor(200/4) = 50 (damage dealt is irrelevant)
+      // Source: bug #317 fix — uses maxHp
+      expect(recoil).toBe(50);
     });
 
-    it("given attacker with 200 max HP and damage=101, when calculating recoil, then returns 25 (floor(101/4))", () => {
+    it("given attacker with 200 max HP and damage=101, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockAttacker = createMockActive(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
-      // Assert: floor(101/4) = 25
-      // Source: pret/pokecrystal effect_commands.asm:5670-5729
-      expect(recoil).toBe(25);
+      // Assert: floor(200/4) = 50 (damage dealt is irrelevant)
+      // Source: bug #317 fix — uses maxHp
+      expect(recoil).toBe(50);
     });
   });
 

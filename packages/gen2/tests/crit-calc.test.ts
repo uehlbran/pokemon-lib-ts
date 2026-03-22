@@ -124,7 +124,7 @@ function createMockMove(overrides: Partial<MoveData> = {}): MoveData {
  * Stage 4+: 128/256 (50%)
  *
  * Modifiers (stackable):
- * - High crit moves (Slash, etc.): +2 (pokecrystal effect_commands.asm:1182-1184 — inc c; inc c)
+ * - High crit moves (Slash, etc.): +1
  * - Focus Energy: +1 (FIXED — not bugged like Gen 1)
  * - Scope Lens item: +1
  */
@@ -182,20 +182,19 @@ describe("Gen2CritCalc", () => {
   });
 
   describe("Given a high crit move", () => {
-    it("should increase crit stage by 2 (per pokecrystal effect_commands.asm:1182-1184 — inc c; inc c)", () => {
+    it("given Slash (high-crit move), when computing crit stage, then stage is 1 (Source: bug #324 fix — high-crit moves add +1)", () => {
       // Arrange
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm:1182-1184 — two `inc c` ops = +2
       const attacker = createMockActivePokemon();
       const move = createMockMove({ id: "slash" });
 
       // Act
       const stage = getGen2CritStage(attacker, move);
 
-      // Assert
-      expect(stage).toBe(2);
+      // Assert — high-crit moves add +1 to crit stage
+      expect(stage).toBe(1);
     });
 
-    it("should apply to Karate Chop", () => {
+    it("given Karate Chop (high-crit move), when computing crit stage, then stage is 1", () => {
       // Arrange
       const attacker = createMockActivePokemon();
       const move = createMockMove({ id: "karate-chop" });
@@ -203,11 +202,11 @@ describe("Gen2CritCalc", () => {
       // Act
       const stage = getGen2CritStage(attacker, move);
 
-      // Assert — +2 per decomp
-      expect(stage).toBe(2);
+      // Assert — +1 per bug #324 fix
+      expect(stage).toBe(1);
     });
 
-    it("should apply to Cross Chop (new Gen 2 high crit move)", () => {
+    it("given Cross Chop (high-crit move), when computing crit stage, then stage is 1", () => {
       // Arrange
       const attacker = createMockActivePokemon();
       const move = createMockMove({ id: "cross-chop" });
@@ -215,11 +214,11 @@ describe("Gen2CritCalc", () => {
       // Act
       const stage = getGen2CritStage(attacker, move);
 
-      // Assert — +2 per decomp
-      expect(stage).toBe(2);
+      // Assert — +1 per bug #324 fix
+      expect(stage).toBe(1);
     });
 
-    it("should apply to Aeroblast", () => {
+    it("given Aeroblast (high-crit move), when computing crit stage, then stage is 1", () => {
       // Arrange
       const attacker = createMockActivePokemon();
       const move = createMockMove({ id: "aeroblast" });
@@ -227,8 +226,8 @@ describe("Gen2CritCalc", () => {
       // Act
       const stage = getGen2CritStage(attacker, move);
 
-      // Assert — +2 per decomp
-      expect(stage).toBe(2);
+      // Assert — +1 per bug #324 fix
+      expect(stage).toBe(1);
     });
   });
 
@@ -286,9 +285,9 @@ describe("Gen2CritCalc", () => {
   });
 
   describe("Given Focus Energy + high crit move", () => {
-    it("should stack to stage 3 (85/256 rate) — high crit +2, Focus Energy +1", () => {
+    it("should stack to stage 2 (64/256 rate) — high crit +1, Focus Energy +1", () => {
       // Arrange
-      // Source: pret/pokecrystal effect_commands.asm:1182-1184 — high crit = +2; Focus Energy = +1
+      // Source: bug #324 fix — high crit = +1; Focus Energy = +1
       const volatiles = new Map();
       volatiles.set("focus-energy", { turnsLeft: -1 });
       const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
@@ -297,15 +296,15 @@ describe("Gen2CritCalc", () => {
       // Act
       const stage = getGen2CritStage(attacker, move);
 
-      // Assert — high crit (+2) + Focus Energy (+1) = stage 3
-      expect(stage).toBe(3);
+      // Assert — high crit (+1) + Focus Energy (+1) = stage 2
+      expect(stage).toBe(2);
     });
   });
 
   describe("Given Scope Lens + Focus Energy + high crit move", () => {
-    it("should stack to stage 4 (128/256 = 50% rate) — high crit +2, Focus Energy +1, Scope Lens +1", () => {
+    it("should stack to stage 3 (85/256 rate) — high crit +1, Focus Energy +1, Scope Lens +1", () => {
       // Arrange
-      // Source: pret/pokecrystal effect_commands.asm:1182-1184 — high crit = +2; Focus Energy = +1; Scope Lens = +1
+      // Source: bug #324 fix — high crit = +1; Focus Energy = +1; Scope Lens = +1
       const volatiles = new Map();
       volatiles.set("focus-energy", { turnsLeft: -1 });
       const attacker = createMockActivePokemon({
@@ -317,8 +316,8 @@ describe("Gen2CritCalc", () => {
       // Act
       const stage = getGen2CritStage(attacker, move);
 
-      // Assert — high crit (+2) + Focus Energy (+1) + Scope Lens (+1) = stage 4
-      expect(stage).toBe(4);
+      // Assert — high crit (+1) + Focus Energy (+1) + Scope Lens (+1) = stage 3
+      expect(stage).toBe(3);
     });
   });
 
@@ -392,11 +391,31 @@ describe("Gen2CritCalc", () => {
       expect(rate).toBeLessThan(0.0814);
     });
 
-    it("given stage 2 (high crit move), when rolling 10000 times, then crit rate is approximately 25%", () => {
-      // Arrange — high crit move adds +2, landing at stage 2 = 64/256 = 25%
-      // Source: pret/pokecrystal effect_commands.asm:1182-1184 — high crit = +2
+    it("given stage 1 (high crit move), when rolling 10000 times, then crit rate is approximately 12.5%", () => {
+      // Arrange — high crit move adds +1, landing at stage 1 = 32/256 = 12.5%
+      // Source: bug #324 fix — high crit = +1
       const rng = new SeededRandom(2002);
       const attacker = createMockActivePokemon();
+      const highCritMove = createMockMove({ id: "slash" });
+      let crits = 0;
+
+      // Act
+      for (let i = 0; i < 10000; i++) {
+        if (rollGen2Critical(attacker, highCritMove, rng)) crits++;
+      }
+      const rate = crits / 10000;
+
+      // Assert — 32/256 = 12.5%, tolerance ±2%
+      expect(rate).toBeGreaterThan(0.105);
+      expect(rate).toBeLessThan(0.145);
+    });
+
+    it("given stage 2 (Focus Energy + high crit move), when rolling 10000 times, then crit rate is approximately 25%", () => {
+      // Arrange — high crit (+1) + Focus Energy (+1) = stage 2 = 64/256 = 25%
+      // Source: bug #324 fix — high crit = +1
+      const rng = new SeededRandom(3003);
+      const volatiles = new Map([["focus-energy", { turnsLeft: -1 }]]);
+      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
       const highCritMove = createMockMove({ id: "slash" });
       let crits = 0;
 
@@ -411,29 +430,9 @@ describe("Gen2CritCalc", () => {
       expect(rate).toBeLessThan(0.27);
     });
 
-    it("given stage 3 (Focus Energy + high crit move), when rolling 10000 times, then crit rate is approximately 33.2%", () => {
-      // Arrange — high crit (+2) + Focus Energy (+1) = stage 3 = 85/256 ≈ 33.2%
-      // Source: pret/pokecrystal effect_commands.asm:1182-1184 — high crit = +2
-      const rng = new SeededRandom(3003);
-      const volatiles = new Map([["focus-energy", { turnsLeft: -1 }]]);
-      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
-      const highCritMove = createMockMove({ id: "slash" });
-      let crits = 0;
-
-      // Act
-      for (let i = 0; i < 10000; i++) {
-        if (rollGen2Critical(attacker, highCritMove, rng)) crits++;
-      }
-      const rate = crits / 10000;
-
-      // Assert — 85/256 ≈ 33.2%, tolerance ±2%
-      expect(rate).toBeGreaterThan(0.312);
-      expect(rate).toBeLessThan(0.352);
-    });
-
-    it("given stage 4 (Scope Lens + Focus Energy + high crit move), when rolling 10000 times, then crit rate is approximately 50%", () => {
-      // Arrange — high crit (+2) + Focus Energy (+1) + Scope Lens (+1) = stage 4 = 128/256 = 50%
-      // Source: pret/pokecrystal effect_commands.asm:1182-1184 — high crit = +2
+    it("given stage 3 (Scope Lens + Focus Energy + high crit move), when rolling 10000 times, then crit rate is approximately 33.2%", () => {
+      // Arrange — high crit (+1) + Focus Energy (+1) + Scope Lens (+1) = stage 3 = 85/256 = 33.2%
+      // Source: bug #324 fix — high crit = +1
       const rng = new SeededRandom(4004);
       const volatiles = new Map([["focus-energy", { turnsLeft: -1 }]]);
       const attacker = createMockActivePokemon({
@@ -443,15 +442,15 @@ describe("Gen2CritCalc", () => {
       const highCritMove = createMockMove({ id: "slash" });
       let crits = 0;
 
-      // Act — this is stage 4 (128/256 = 50%)
+      // Act — this is stage 3 (85/256 = 33.2%)
       for (let i = 0; i < 10000; i++) {
         if (rollGen2Critical(attacker, highCritMove, rng)) crits++;
       }
       const rate = crits / 10000;
 
-      // Assert — 128/256 = 50%, tolerance ±2%
-      expect(rate).toBeGreaterThan(0.48);
-      expect(rate).toBeLessThan(0.52);
+      // Assert — 85/256 ≈ 33.2%, tolerance ±2%
+      expect(rate).toBeGreaterThan(0.312);
+      expect(rate).toBeLessThan(0.352);
     });
 
     it("given Focus Energy active with no high-crit move, when querying crit stage, then stage is 1 (not 5)", () => {
@@ -467,17 +466,17 @@ describe("Gen2CritCalc", () => {
       expect(stage).toBe(1);
     });
 
-    it("given a high crit move with no Focus Energy, when querying crit stage, then stage is 2", () => {
+    it("given a high crit move with no Focus Energy, when querying crit stage, then stage is 1", () => {
       // Arrange
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm:1182-1184 — inc c; inc c = +2
+      // Source: bug #324 fix — high-crit moves add +1 to stage
       const attacker = createMockActivePokemon();
       const highCritMove = createMockMove({ id: "cross-chop" });
 
       // Act
       const stage = getGen2CritStage(attacker, highCritMove);
 
-      // Assert — high crit moves add +2 to stage (not +1)
-      expect(stage).toBe(2);
+      // Assert — high crit moves add +1 to stage
+      expect(stage).toBe(1);
     });
   });
 });

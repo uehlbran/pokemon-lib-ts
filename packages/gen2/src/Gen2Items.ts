@@ -91,7 +91,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "paralysis" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "prz-cure-berry" },
           ],
           messages: [`${pokemonName}'s PRZCureBerry cured its paralysis!`],
@@ -121,7 +121,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "burn" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "ice-berry" },
           ],
           messages: [`${pokemonName}'s Ice Berry cured its burn!`],
@@ -136,7 +136,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "sleep" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "mint-berry" },
           ],
           messages: [`${pokemonName}'s Mint Berry woke it up!`],
@@ -151,7 +151,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: "freeze" },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "burnt-berry" },
           ],
           messages: [`${pokemonName}'s Burnt Berry thawed it out!`],
@@ -166,7 +166,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self", value: status },
+            { type: "status-cure", target: "self" },
             { type: "consume", target: "self", value: "psn-cure-berry" },
           ],
           messages: [`${pokemonName}'s PSNCureBerry cured its poisoning!`],
@@ -199,7 +199,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       const effects: ItemEffect[] = [];
       if (hasPrimaryStatus) {
-        effects.push({ type: "status-cure", target: "self", value: status as string });
+        effects.push({ type: "status-cure", target: "self" });
       }
       if (hasConfusion) {
         effects.push({ type: "volatile-cure", target: "self", value: "confusion" });
