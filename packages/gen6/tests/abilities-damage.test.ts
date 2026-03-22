@@ -422,6 +422,12 @@ describe("Aerilate", () => {
     expect(override!.type).toBe("flying");
     expect(override!.multiplier).toBeCloseTo(5325 / 4096, 10);
   });
+
+  it("given Aerilate utility, when move is already Flying type, then returns null (no override)", () => {
+    // Source: Showdown data/abilities.ts -- aerilate only overrides Normal-type moves
+    const override = getAteAbilityOverride("aerilate", "flying");
+    expect(override).toBeNull();
+  });
 });
 
 // ===========================================================================
@@ -457,6 +463,12 @@ describe("Refrigerate", () => {
     expect(override).not.toBeNull();
     expect(override!.type).toBe("ice");
     expect(override!.multiplier).toBeCloseTo(5325 / 4096, 10);
+  });
+
+  it("given Refrigerate utility, when move is Fire type, then returns null (no override)", () => {
+    // Source: Showdown data/abilities.ts -- refrigerate only overrides Normal-type moves
+    const override = getAteAbilityOverride("refrigerate", "fire");
+    expect(override).toBeNull();
   });
 });
 
@@ -501,6 +513,14 @@ describe("Parental Bond", () => {
     // Source: Bulbapedia "Parental Bond" -- Gen 6: 50% second hit, Gen 7+: 25%
     // Source: Showdown data/abilities.ts -- secondHit 0.5 in Gen 6
     expect(PARENTAL_BOND_SECOND_HIT_MULTIPLIER).toBe(0.5);
+  });
+
+  it("given Parental Bond second-hit multiplier applied to 100 base power, then second hit is 50 power", () => {
+    // Source: Bulbapedia "Parental Bond" -- second hit deals 50% of first hit damage in Gen 6
+    // Formula: second hit power = floor(firstHitPower * PARENTAL_BOND_SECOND_HIT_MULTIPLIER)
+    const firstHitPower = 100;
+    const secondHitPower = Math.floor(firstHitPower * PARENTAL_BOND_SECOND_HIT_MULTIPLIER);
+    expect(secondHitPower).toBe(50);
   });
 
   it("given Parental Bond utility function, when checking single-hit damaging move, then returns true", () => {
@@ -655,5 +675,10 @@ describe("Sheer Force (carry-forward)", () => {
     // Source: Showdown data/abilities.ts -- sheerforce: chainModify([5325, 4096])
     const effect: MoveEffect = { type: "status-chance", status: "burn", chance: 10 };
     expect(getSheerForceMultiplier("sheer-force", effect)).toBeCloseTo(5325 / 4096, 10);
+  });
+
+  it("given Sheer Force utility, when move has no secondary effect, then returns 1 (no boost)", () => {
+    // Source: Showdown data/abilities.ts -- sheerforce: only activates for moves with secondaries
+    expect(getSheerForceMultiplier("sheer-force", null)).toBe(1);
   });
 });

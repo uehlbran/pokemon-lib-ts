@@ -14,7 +14,7 @@
  */
 
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
 import {
   handleGen6DamageCalcAbility,
   handleGen6DamageImmunityAbility,
@@ -44,6 +44,29 @@ export {
   sturdyBlocksOHKO,
 } from "./Gen6AbilitiesDamage.js";
 export { handleGen6StatAbility, isPranksterEligible } from "./Gen6AbilitiesStat.js";
+
+// ---------------------------------------------------------------------------
+// Passive immunity: ability → immune move type mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps ability IDs to the move type they grant immunity to.
+ * Mirrors the private ABILITY_TYPE_IMMUNITIES map in Gen6DamageCalc for use
+ * in the passive-immunity trigger.
+ *
+ * Source: Showdown data/abilities.ts -- Levitate/Volt Absorb/Water Absorb/Flash Fire etc.
+ */
+const PASSIVE_IMMUNITY_TYPES: Readonly<Record<string, PokemonType>> = {
+  levitate: "ground",
+  "volt-absorb": "electric",
+  "water-absorb": "water",
+  "flash-fire": "fire",
+  "motor-drive": "electric",
+  "dry-skin": "water",
+  "storm-drain": "water",
+  "lightning-rod": "electric",
+  "sap-sipper": "grass",
+};
 
 // ---------------------------------------------------------------------------
 // Inactive result sentinel
@@ -160,9 +183,33 @@ export function applyGen6Ability(trigger: AbilityTrigger, ctx: AbilityContext): 
     }
 
     case "passive-immunity": {
-      // Switch passive-immunity (Levitate, Flash Fire, etc.) first,
-      // then Remaining (Telepathy, Oblivious, Keen Eye),
-      // then Stat (fallback)
+      // Minimal handler for type-immunity abilities already recognized by Gen6DamageCalc.
+      // When calculateGen6Damage returns {damage:0, effectiveness:0} for an ability immunity,
+      // the engine checks applyAbility('passive-immunity', ...) to confirm the move is absorbed.
+      // This must return activated:true for the engine to skip downstream move effects.
+      //
+      // Source: Showdown data/abilities.ts -- Levitate, Volt Absorb, Water Absorb, etc.
+      const immuneType = PASSIVE_IMMUNITY_TYPES[ctx.pokemon.ability];
+      let levitateActive = true;
+      if (ctx.pokemon.ability === "levitate") {
+        // Levitate is negated by Gravity or Iron Ball
+        const gravityActive = ctx.state.gravity?.active ?? false;
+        const ironBallGrounded = ctx.pokemon.pokemon.heldItem === "iron-ball";
+        if (gravityActive || ironBallGrounded) {
+          levitateActive = false;
+        }
+      }
+      if (immuneType && ctx.move?.type === immuneType && levitateActive) {
+        const name = ctx.pokemon.pokemon.nickname ?? String(ctx.pokemon.pokemon.speciesId);
+        return {
+          activated: true,
+          effects: [{ effectType: "none", target: "self" }],
+          messages: [`${name}'s ${ctx.pokemon.ability} made ${ctx.move.displayName} miss!`],
+        };
+      }
+
+      // Wave 5B: Switch passive-immunity (Levitate as switch-in announce, Flash Fire boost, etc.),
+      // then Remaining (Telepathy, Oblivious, Keen Eye)
       const switchResult = handleGen6SwitchAbility(trigger, ctx);
       if (switchResult.activated) return switchResult;
       const remainingResult = handleGen6RemainingAbility(ctx);
