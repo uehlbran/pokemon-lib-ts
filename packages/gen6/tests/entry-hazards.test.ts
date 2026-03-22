@@ -475,8 +475,8 @@ describe("Gen6 Sticky Web", () => {
     const result = applyGen6StickyWeb(pokemon, false);
     expect(result.applied).toBe(true);
     expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
-    expect(result.messages.length).toBeGreaterThanOrEqual(1);
-    expect(result.messages[0]).toContain("sticky web");
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0]).toBe("TestMon was caught in a sticky web!");
   });
 
   it("given Sticky Web set, when a Water-type Pokemon switches in, then Speed stage drops by 1", () => {
@@ -675,7 +675,8 @@ describe("Gen6 applyGen6EntryHazards (combined)", () => {
   });
 
   it("given no hazards on the side, when any Pokemon switches in, then no damage and no status", () => {
-    // Source: obvious -- no hazards means no effects
+    // Source: Showdown data/moves.ts -- hazard onSwitchIn handlers only fire when side
+    //   has the corresponding sideCondition; an empty hazards array means no handlers run
     const pokemon = makeActivePokemon({ maxHp: 200, types: ["fire", "flying"] });
     const side = makeSide([]);
     const state = makeState();
