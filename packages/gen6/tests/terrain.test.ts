@@ -744,6 +744,8 @@ describe("applyGen6TerrainEffects", () => {
 
   describe("No terrain", () => {
     it("given no active terrain, returns empty results", () => {
+      // Source: Bulbapedia "Grassy Terrain" -- EoT heal only occurs while terrain is active
+      // No terrain = no EoT effects = empty array
       const state = makeState({ terrain: null });
       const results = applyGen6TerrainEffects(state);
       expect(results).toHaveLength(0);
@@ -909,6 +911,8 @@ describe("canInflictStatusWithTerrain", () => {
 
   describe("No terrain", () => {
     it("given no active terrain, all status can be inflicted", () => {
+      // Source: Bulbapedia "Electric Terrain" / "Misty Terrain" -- status immunity only while
+      // terrain is active. No terrain = no immunity = all statuses return true.
       const target = makeActive({ types: ["normal"] });
       const state = makeState({ terrain: null });
 
