@@ -273,14 +273,13 @@ describe("Bug #310 — Sucker Punch vs Struggling opponent", () => {
     // Assert — executeMoveEffect was called for Tackle (side 0's move)
     // and the context's defenderSelectedMove should show Struggle as physical
     // Source: Showdown sim — Sucker Punch succeeds when target is using Struggle
-    if (executeMoveEffectSpy.mock.calls.length > 0) {
-      const tackleCall = executeMoveEffectSpy.mock.calls[0];
-      const context = tackleCall[0];
-      // The defenderSelectedMove should be { id: "struggle", category: "physical" }
-      expect(context.defenderSelectedMove).toEqual({
-        id: "struggle",
-        category: "physical",
-      });
-    }
+    expect(executeMoveEffectSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
+    const tackleCall = executeMoveEffectSpy.mock.calls[0];
+    const context = tackleCall[0];
+    // The defenderSelectedMove should be { id: "struggle", category: "physical" }
+    expect(context.defenderSelectedMove).toEqual({
+      id: "struggle",
+      category: "physical",
+    });
   });
 });
