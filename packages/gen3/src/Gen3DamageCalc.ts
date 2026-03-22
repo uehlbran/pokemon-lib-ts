@@ -379,7 +379,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Get effective stats (with ability mods, items, and stat stages applied)
   // Burn is NOT applied here — it's applied AFTER the base formula per pokeemerald
-  let attack = getAttackStat(
+  const attack = getAttackStat(
     attacker,
     effectiveMoveType,
     isCrit,
@@ -407,14 +407,6 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     (effectiveMoveType === "fire" || effectiveMoveType === "ice")
   ) {
     abilityMultiplier = 0.5;
-  }
-
-  // Flash Fire: 1.5x boost to fire-type attack when attacker has the flash-fire volatile
-  // Source: pret/pokeemerald src/battle_util.c — ABILITY_FLASH_FIRE volatile boosts fire moves
-  // Source: Showdown data/abilities.ts — Flash Fire condition: onModifyAtk/onModifySpA 1.5x for fire
-  if (attacker.volatileStatuses.has("flash-fire") && effectiveMoveType === "fire") {
-    attack = Math.floor(attack * 1.5);
-    abilityMultiplier = abilityMultiplier === 1 ? 1.5 : abilityMultiplier * 1.5;
   }
 
   // Base formula: damage = Atk * Power * (2*L/5+2) / Def / 50
@@ -461,6 +453,16 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   const weatherMod = getWeatherDamageModifier(effectiveMoveType, weather);
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
+  }
+
+  // Flash Fire: 1.5x boost to fire-type damage when attacker has the flash-fire volatile.
+  // Applied to the damage variable AFTER the base formula, burn, screens, weather,
+  // but BEFORE the +2 constant — matching pokeemerald's CalculateBaseDamage order.
+  // Uses integer arithmetic: damage = damage * 15 / 10 (with floor).
+  // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire modifies damage, not stat
+  if (attacker.volatileStatuses.has("flash-fire") && effectiveMoveType === "fire") {
+    baseDamage = Math.floor((baseDamage * 15) / 10);
+    abilityMultiplier = abilityMultiplier === 1 ? 1.5 : abilityMultiplier * 1.5;
   }
 
   // Add 2 (the constant at the end of CalculateBaseDamage)

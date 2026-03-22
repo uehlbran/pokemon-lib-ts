@@ -15,11 +15,12 @@ import { GEN3_TYPE_CHART } from "../src/Gen3TypeChart";
  *
  * Tests for:
  *   - Flash Fire volatile: 1.5x boost to fire moves when attacker has "flash-fire" volatile
+ *   - Boost applied post-formula (to damage variable), NOT to the attack stat
  *   - No boost for non-fire moves
  *   - Flash Fire immunity is still handled (separate from boost)
  *
- * Source: pret/pokeemerald src/battle_util.c — ABILITY_FLASH_FIRE
- * Source: Showdown data/abilities.ts — Flash Fire condition: onModifyAtk/onModifySpA 1.5x
+ * Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire multiplies
+ *         the damage variable after base formula/weather but before +2, not the attack stat.
  */
 
 // ---------------------------------------------------------------------------
@@ -189,9 +190,10 @@ function createDamageContext(opts: {
 const chart = GEN3_TYPE_CHART;
 
 describe("Gen 3 Flash Fire damage boost", () => {
-  it("given attacker with flash-fire volatile, when using a fire move, then damage is boosted by 1.5x", () => {
-    // Source: pret/pokeemerald ABILITY_FLASH_FIRE
-    // Source: Showdown data/abilities.ts — Flash Fire condition: onModifyAtk/onModifySpA 1.5x for fire
+  it("given attacker with flash-fire volatile, when using a fire move, then damage is boosted by 1.5x post-formula", () => {
+    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire multiplies
+    // the damage variable (after base formula, weather, etc.) NOT the attack stat.
+    // The boost is applied: damage = damage * 15 / 10, before the final +2.
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 100,
@@ -214,16 +216,63 @@ describe("Gen 3 Flash Fire damage boost", () => {
     });
     const boostResult = calculateGen3Damage(boostCtx, chart);
 
-    // Without flash fire:
-    // levelFactor = 22, base = floor(floor(22*90*100/100)/50) = floor(1980/50) = 39
-    // +2 = 41, random*1.0 = 41, STAB(fire attacker, fire move) = floor(41*1.5) = 61
+    // With flash fire 1.5x applied post-formula (correct per pokeemerald):
+    // spAttack = 100 (NOT modified)
+    // levelFactor = floor(2*50/5) + 2 = 22
+    // base = floor(floor(22*90*100/100)/50) = floor(1980/50) = floor(39.6) = 39
+    // Flash Fire: floor(39 * 15 / 10) = floor(58.5) = 58
+    // +2 = 60, random@100 = 60, STAB(fire attacker) = floor(60*1.5) = 90
     //
-    // With flash fire 1.5x applied to attack stat:
-    // spAttack modified: floor(100*1.5) = 150
-    // base = floor(floor(22*90*150/100)/50) = floor(floor(297000/100)/50) = floor(2970/50) = 59
-    // +2 = 61, random*1.0 = 61, STAB = floor(61*1.5) = 91
-    // Source: manual derivation from pret/pokeemerald formula
-    expect(boostResult.damage).toBe(91);
+    // If Flash Fire were incorrectly applied to the attack stat:
+    // spAttack = floor(100*1.5) = 150
+    // base = floor(floor(22*90*150/100)/50) = floor(2970/50) = 59
+    // +2 = 61, random@100 = 61, STAB = floor(61*1.5) = 91
+    //
+    // The difference (90 vs 91) proves the placement matters.
+    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire on damage, not stat
+    expect(boostResult.damage).toBe(90);
+  });
+
+  it("given attacker with flash-fire volatile and spAttack=107, when using fire move, then post-formula rounding differs from stat-based", () => {
+    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire on damage
+    // Second triangulation case with different inputs to prove the formula is correct.
+    const attacker = createActivePokemon({
+      level: 50,
+      spAttack: 107,
+      types: ["fire"],
+      ability: "flash-fire",
+      hasFlashFire: true,
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      spDefense: 100,
+      types: ["normal"],
+    });
+    const fireBlast = createMove("fire", 80, "fire-blast");
+
+    const ctx = createDamageContext({
+      attacker,
+      defender,
+      move: fireBlast,
+      rng: createMockRng(100),
+    });
+    const result = calculateGen3Damage(ctx, chart);
+
+    // Post-formula Flash Fire (correct):
+    // levelFactor = 22, spAttack = 107
+    // base = floor(floor(22 * 80 * 107 / 100) / 50)
+    //       = floor(floor(188320 / 100) / 50) = floor(1883 / 50) = floor(37.66) = 37
+    // Flash Fire: floor(37 * 15 / 10) = floor(55.5) = 55
+    // +2 = 57, random@100 = 57, STAB = floor(57 * 1.5) = 85
+    //
+    // If Flash Fire were incorrectly on attack stat:
+    // spAttack = floor(107*1.5) = 160
+    // base = floor(floor(22*80*160/100)/50) = floor(2816/50) = floor(56.32) = 56
+    // +2 = 58, random@100 = 58, STAB = floor(58*1.5) = 87
+    //
+    // Difference: 85 vs 87 (2 damage off!)
+    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage
+    expect(result.damage).toBe(85);
   });
 
   it("given attacker with flash-fire volatile, when using a non-fire move, then no boost applied", () => {
