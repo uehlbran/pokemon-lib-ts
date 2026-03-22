@@ -390,16 +390,22 @@ describe("Orichalcum Pulse", () => {
     });
 
     it("given no weather + Orichalcum Pulse, when getting modifier, then returns 4096 (no boost)", () => {
+      // 4096 = identity modifier in the 4096-based system (no multiplication effect)
+      // Source: Showdown data/abilities.ts -- orichalcumpulse: no modification when not in Sun/Harsh Sun
       const mod = getOrichalcumPulseAtkModifier("orichalcum-pulse", null);
       expect(mod).toBe(4096);
     });
 
     it("given rain weather + Orichalcum Pulse, when getting modifier, then returns 4096 (no boost)", () => {
+      // 4096 = identity modifier in the 4096-based system (no multiplication effect)
+      // Source: Showdown data/abilities.ts -- orichalcumpulse: only activates in ['sunnyday', 'desolateland']
       const mod = getOrichalcumPulseAtkModifier("orichalcum-pulse", "rain");
       expect(mod).toBe(4096);
     });
 
     it("given non-Orichalcum Pulse ability in sun, when getting modifier, then returns 4096 (no effect)", () => {
+      // 4096 = identity modifier in the 4096-based system (no multiplication effect)
+      // Source: Showdown data/abilities.ts -- orichalcumpulse: checks ability === 'orichalcumpulse'
       const mod = getOrichalcumPulseAtkModifier("blaze", "sun");
       expect(mod).toBe(4096);
     });
@@ -616,18 +622,20 @@ describe("Protean / Libero (Gen 9 nerf)", () => {
 
 describe("Intrepid Sword (Gen 9 nerf)", () => {
   it("given fresh switch-in with Intrepid Sword, when ability triggers, then returns true (should boost Atk +1)", () => {
-    // Source: Showdown data/abilities.ts -- intrepidsword: onStart
+    // Source: Showdown data/abilities.ts -- intrepidsword: onStart: if (pokemon.swordBoost) return; pokemon.swordBoost = true;
     const pokemon = makeActive({ ability: "intrepid-sword" });
     const result = handleGen9IntrepidSword(pokemon);
 
     expect(result).toBe(true);
-    expect(pokemon.volatileStatuses.has("intrepid-sword-used" as VolatileStatus)).toBe(true);
+    // Flag stored on PokemonInstance (persists through switches), not volatileStatuses
+    expect(pokemon.pokemon.swordBoost).toBe(true);
   });
 
   it("given Intrepid Sword already used this battle, when ability would trigger again, then returns false (blocked)", () => {
     // Source: Showdown data/abilities.ts -- intrepidsword: if (pokemon.swordBoost) return;
+    // Persistent flag on PokemonInstance prevents re-activation even after switch-out/in
     const pokemon = makeActive({ ability: "intrepid-sword" });
-    pokemon.volatileStatuses.set("intrepid-sword-used" as VolatileStatus, { turnsLeft: -1 });
+    pokemon.pokemon.swordBoost = true;
     const result = handleGen9IntrepidSword(pokemon);
 
     expect(result).toBe(false);
@@ -639,6 +647,21 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
 
     expect(result).toBe(false);
   });
+
+  it("given Intrepid Sword activated, when switched out and back in (volatiles cleared), then ability is still blocked (once per battle)", () => {
+    // Source: Showdown data/abilities.ts -- swordBoost stored on pokemon (PokemonInstance), not as volatile
+    // This verifies the flag persists through switch-out (BaseRuleset.onSwitchOut clears volatileStatuses).
+    const pokemon = makeActive({ ability: "intrepid-sword" });
+    handleGen9IntrepidSword(pokemon);
+    expect(pokemon.pokemon.swordBoost).toBe(true);
+
+    // Simulate switch-out: clear volatile statuses (as BaseRuleset.onSwitchOut does)
+    pokemon.volatileStatuses.clear();
+
+    // swordBoost should still block re-activation — it lives on PokemonInstance
+    const result = handleGen9IntrepidSword(pokemon);
+    expect(result).toBe(false);
+  });
 });
 
 // ===========================================================================
@@ -647,18 +670,20 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
 
 describe("Dauntless Shield (Gen 9 nerf)", () => {
   it("given fresh switch-in with Dauntless Shield, when ability triggers, then returns true (should boost Def +1)", () => {
-    // Source: Showdown data/abilities.ts -- dauntlessshield: onStart
+    // Source: Showdown data/abilities.ts -- dauntlessshield: onStart: if (pokemon.shieldBoost) return; pokemon.shieldBoost = true;
     const pokemon = makeActive({ ability: "dauntless-shield" });
     const result = handleGen9DauntlessShield(pokemon);
 
     expect(result).toBe(true);
-    expect(pokemon.volatileStatuses.has("dauntless-shield-used" as VolatileStatus)).toBe(true);
+    // Flag stored on PokemonInstance (persists through switches), not volatileStatuses
+    expect(pokemon.pokemon.shieldBoost).toBe(true);
   });
 
   it("given Dauntless Shield already used this battle, when ability would trigger again, then returns false (blocked)", () => {
     // Source: Showdown data/abilities.ts -- dauntlessshield: if (pokemon.shieldBoost) return;
+    // Persistent flag on PokemonInstance prevents re-activation even after switch-out/in
     const pokemon = makeActive({ ability: "dauntless-shield" });
-    pokemon.volatileStatuses.set("dauntless-shield-used" as VolatileStatus, { turnsLeft: -1 });
+    pokemon.pokemon.shieldBoost = true;
     const result = handleGen9DauntlessShield(pokemon);
 
     expect(result).toBe(false);
@@ -668,6 +693,21 @@ describe("Dauntless Shield (Gen 9 nerf)", () => {
     const pokemon = makeActive({ ability: "blaze" });
     const result = handleGen9DauntlessShield(pokemon);
 
+    expect(result).toBe(false);
+  });
+
+  it("given Dauntless Shield activated, when switched out and back in (volatiles cleared), then ability is still blocked (once per battle)", () => {
+    // Source: Showdown data/abilities.ts -- shieldBoost stored on pokemon (PokemonInstance), not as volatile
+    // This verifies the flag persists through switch-out (BaseRuleset.onSwitchOut clears volatileStatuses).
+    const pokemon = makeActive({ ability: "dauntless-shield" });
+    handleGen9DauntlessShield(pokemon);
+    expect(pokemon.pokemon.shieldBoost).toBe(true);
+
+    // Simulate switch-out: clear volatile statuses (as BaseRuleset.onSwitchOut does)
+    pokemon.volatileStatuses.clear();
+
+    // shieldBoost should still block re-activation — it lives on PokemonInstance
+    const result = handleGen9DauntlessShield(pokemon);
     expect(result).toBe(false);
   });
 });

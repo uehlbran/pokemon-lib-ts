@@ -354,11 +354,12 @@ export function handleGen9ProteanTypeChange(
 export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
   if (pokemon.ability !== "intrepid-sword") return false;
 
-  // Check if already used this battle (persistent flag via volatile)
-  if (pokemon.volatileStatuses.has("intrepid-sword-used" as VolatileStatus)) return false;
+  // Check if already used this battle — persisted on PokemonInstance so it survives switches.
+  // Mirrors Showdown: if (pokemon.swordBoost) return; pokemon.swordBoost = true;
+  // Source: Showdown data/abilities.ts -- intrepidsword: onStart
+  if (pokemon.pokemon.swordBoost) return false;
 
-  // Set permanent flag (turnsLeft: -1 = persists indefinitely)
-  pokemon.volatileStatuses.set("intrepid-sword-used" as VolatileStatus, { turnsLeft: -1 });
+  pokemon.pokemon.swordBoost = true;
 
   return true;
 }
@@ -378,11 +379,12 @@ export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
 export function handleGen9DauntlessShield(pokemon: ActivePokemon): boolean {
   if (pokemon.ability !== "dauntless-shield") return false;
 
-  // Check if already used this battle (persistent flag via volatile)
-  if (pokemon.volatileStatuses.has("dauntless-shield-used" as VolatileStatus)) return false;
+  // Check if already used this battle — persisted on PokemonInstance so it survives switches.
+  // Mirrors Showdown: if (pokemon.shieldBoost) return; pokemon.shieldBoost = true;
+  // Source: Showdown data/abilities.ts -- dauntlessshield: onStart
+  if (pokemon.pokemon.shieldBoost) return false;
 
-  // Set permanent flag
-  pokemon.volatileStatuses.set("dauntless-shield-used" as VolatileStatus, { turnsLeft: -1 });
+  pokemon.pokemon.shieldBoost = true;
 
   return true;
 }
