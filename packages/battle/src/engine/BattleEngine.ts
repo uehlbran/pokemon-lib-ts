@@ -3673,6 +3673,12 @@ export class BattleEngine implements BattleEventEmitter {
               const active = side.active[0];
               if (!active || active.pokemon.currentHp <= 0) continue;
               if (active.pokemon.status === "sleep") {
+                // Soundproof blocks Uproar wake-up (Uproar is a sound-based move/effect)
+                // Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
+                // Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
+                if (this.ruleset.hasAbilities() && active.ability === "soundproof") {
+                  continue;
+                }
                 active.pokemon.status = null;
                 this.emit({
                   type: "status-cure",

@@ -369,3 +369,187 @@ describe("Bug #494 — Uproar wake condition", () => {
     expect(side1Active.pokemon.status).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bug #514: Uproar wake-up bypasses Soundproof
+// ---------------------------------------------------------------------------
+
+/**
+ * Bug #514: Uproar is a sound-based move/effect. Soundproof (Gen 3+) should
+ * block Uproar from waking sleeping Pokemon, but the engine unconditionally
+ * woke all sleeping Pokemon during the uproar EoT effect.
+ *
+ * Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
+ * Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
+ */
+describe("Bug #514 — Uproar + Soundproof", () => {
+  /**
+   * MockRuleset subclass that enables abilities and includes uproar in EoT.
+   */
+  class UproarSoundproofMockRuleset extends MockRuleset {
+    private abilityEnabled = false;
+
+    enableAbilities(enabled: boolean) {
+      this.abilityEnabled = enabled;
+    }
+
+    override hasAbilities(): boolean {
+      return this.abilityEnabled;
+    }
+
+    override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+      return ["uproar"];
+    }
+  }
+
+  function createUproarEngine(options?: { hasAbilities?: boolean }) {
+    const ruleset = new UproarSoundproofMockRuleset();
+    ruleset.enableAbilities(options?.hasAbilities ?? true);
+    const dataManager = createMockDataManager();
+    const events: BattleEvent[] = [];
+
+    const team1: PokemonInstance[] = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const team2: PokemonInstance[] = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const config: BattleConfig = {
+      generation: 5,
+      format: "singles",
+      teams: [team1, team2],
+      seed: 42,
+    };
+
+    const engine = new BattleEngine(config, ruleset, dataManager);
+    engine.on((e) => events.push(e));
+
+    return { engine, ruleset, events };
+  }
+
+  it("given a sleeping Pokemon with soundproof ability, when uproar EoT fires, then Pokemon remains asleep", () => {
+    // Arrange
+    const { engine, events } = createUproarEngine({ hasAbilities: true });
+    engine.start();
+
+    // Set up: side 0 has uproar active, side 1 is asleep with Soundproof
+    const side0Active = engine.getState().sides[0].active[0]!;
+    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 2 });
+
+    const side1Active = engine.getState().sides[1].active[0]!;
+    side1Active.pokemon.status = "sleep";
+    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
+    side1Active.ability = "soundproof";
+
+    // Act
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — Soundproof blocks uproar wake-up; Pokemon remains asleep
+    // Source: Bulbapedia — Soundproof blocks sound-based effects including Uproar
+    expect(side1Active.pokemon.status).toBe("sleep");
+
+    // No uproar-specific wake message for the Soundproof Pokemon
+    const uproarWakeMessages = events.filter(
+      (e) =>
+        e.type === "message" &&
+        typeof e.text === "string" &&
+        e.text.includes("Blastoise") &&
+        e.text.includes("woke up due to the uproar"),
+    );
+    expect(uproarWakeMessages.length).toBe(0);
+  });
+
+  it("given a sleeping Pokemon without soundproof ability, when uproar EoT fires, then Pokemon wakes up", () => {
+    // Arrange
+    const { engine, events } = createUproarEngine({ hasAbilities: true });
+    engine.start();
+
+    // Set up: side 0 has uproar active, side 1 is asleep without Soundproof
+    const side0Active = engine.getState().sides[0].active[0]!;
+    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 2 });
+
+    const side1Active = engine.getState().sides[1].active[0]!;
+    side1Active.pokemon.status = "sleep";
+    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
+    side1Active.ability = "torrent"; // Not soundproof
+
+    // Act
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — without Soundproof, uproar wakes the sleeping Pokemon
+    // Source: Bulbapedia — Uproar wakes sleeping Pokemon each turn
+    expect(side1Active.pokemon.status).toBeNull();
+
+    const uproarWakeMessages = events.filter(
+      (e) =>
+        e.type === "message" &&
+        typeof e.text === "string" &&
+        e.text.includes("Blastoise") &&
+        e.text.includes("woke up due to the uproar"),
+    );
+    expect(uproarWakeMessages.length).toBe(1);
+  });
+
+  it("given Gen 1 (no abilities) sleeping Pokemon, when uproar EoT fires, then Pokemon wakes up normally", () => {
+    // Arrange — abilities disabled (Gen 1/2 behavior)
+    const { engine, events } = createUproarEngine({ hasAbilities: false });
+    engine.start();
+
+    // Set up: side 0 has uproar active, side 1 is asleep
+    const side0Active = engine.getState().sides[0].active[0]!;
+    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 2 });
+
+    const side1Active = engine.getState().sides[1].active[0]!;
+    side1Active.pokemon.status = "sleep";
+    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
+    // Even if ability field is set, hasAbilities() returns false
+    side1Active.ability = "soundproof";
+
+    // Act
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — when hasAbilities() is false, Soundproof check is skipped; Pokemon wakes up
+    // Source: Showdown — Abilities don't exist in Gen 1-2
+    expect(side1Active.pokemon.status).toBeNull();
+
+    const uproarWakeMessages = events.filter(
+      (e) =>
+        e.type === "message" &&
+        typeof e.text === "string" &&
+        e.text.includes("Blastoise") &&
+        e.text.includes("woke up due to the uproar"),
+    );
+    expect(uproarWakeMessages.length).toBe(1);
+  });
+});
