@@ -959,12 +959,15 @@ describe("BaseRuleset", () => {
       expect(order).toContain("status-damage");
     });
 
-    it("given a base ruleset, when getEndOfTurnOrder is called, then nightmare is included after curse", () => {
+    // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11, curse onResidualOrder: 12
+    it("given a base ruleset, when getEndOfTurnOrder is called, then nightmare comes before curse", () => {
       const order = ruleset.getEndOfTurnOrder();
       expect(order).toContain("nightmare");
+      expect(order).toContain("curse");
       const curseIdx = order.indexOf("curse");
       const nightmareIdx = order.indexOf("nightmare");
-      expect(nightmareIdx).toBeGreaterThan(curseIdx);
+      // nightmare (Showdown order 11) must come before curse (order 12)
+      expect(nightmareIdx).toBeLessThan(curseIdx);
     });
   });
 
