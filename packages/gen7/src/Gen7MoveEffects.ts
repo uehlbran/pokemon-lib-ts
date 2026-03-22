@@ -418,7 +418,17 @@ export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string
   if (moveCategory !== "status") return false;
   // Does not block self-targeting or field-wide moves
   // Source: Showdown -- if (['self', 'all'].includes(move.target)) return;
-  if (moveTarget === "self" || moveTarget === "all" || moveTarget === "entire-field") return false;
+  // Entry hazards target "foe-field" or "user-field" and pass through Crafty Shield.
+  // Source: Bulbapedia -- Crafty Shield does not protect against entry hazard moves
+  // Source: Showdown data/moves.ts -- hazards (stealth-rock, spikes, toxic-spikes, sticky-web) use target: foeSide
+  if (
+    moveTarget === "self" ||
+    moveTarget === "all" ||
+    moveTarget === "entire-field" ||
+    moveTarget === "foe-field" ||
+    moveTarget === "user-field"
+  )
+    return false;
   return true;
 }
 
@@ -566,10 +576,15 @@ function handleTwoTurnMove(ctx: MoveEffectContext): MoveEffectResult | null {
   const messageTemplate = TWO_TURN_MESSAGES[move.id] ?? "{pokemon} is charging up!";
   const message = messageTemplate.replace("{pokemon}", attackerName);
 
+  // If the move is not in the attacker's moveset (e.g., invoked via Mirror Move/Metronome),
+  // gracefully abort charging rather than defaulting to slot 0 which would execute the wrong move.
+  // Source: Showdown -- two-turn moves are only charged from the user's own moveset
+  if (moveIndex < 0) return null;
+
   return {
     ...base,
     forcedMoveSet: {
-      moveIndex: moveIndex >= 0 ? moveIndex : 0,
+      moveIndex,
       moveId: move.id,
       volatileStatus: volatile,
     },
@@ -623,11 +638,15 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
 
   // Liquid Ooze: the attacker takes damage instead of healing
   // Source: Showdown data/abilities.ts -- liquidooze: return -heal
+  // Only deal recoil if healAmount > 0 (drain move actually drained some HP).
+  // When ctx.damage is 0 (e.g., move missed/didn't connect), healAmount is 0 and
+  // no recoil should occur.
   if (ctx.defender.ability === "liquid-ooze") {
+    if (healAmount <= 0) return createBaseResult();
     const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
     return {
       ...createBaseResult(),
-      recoilDamage: Math.max(1, healAmount),
+      recoilDamage: healAmount,
       messages: [`${attackerName} sucked up the liquid ooze!`],
     };
   }

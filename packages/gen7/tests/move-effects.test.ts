@@ -1,7 +1,7 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   calculateSpikyShieldDamage,
   executeGen7MoveEffect,
@@ -13,6 +13,7 @@ import {
   isBlockedBySpikyShield,
   isGen7GrassPowderBlocked,
 } from "../src/Gen7MoveEffects";
+import { Gen7Ruleset } from "../src/Gen7Ruleset";
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -365,10 +366,10 @@ describe("Gen7 isBlockedByBanefulBunker", () => {
     expect(result.contactPoison).toBe(false);
   });
 
-  it("given physical non-contact move with protect flag, when checking, then blocked without poison", () => {
-    // Source: Showdown -- only contact moves get the poison penalty
-    const result = isBlockedByBanefulBunker(true, false);
-    expect(result.blocked).toBe(true);
+  it("given move without protect flag and no contact, when checking, then NOT blocked and no poison", () => {
+    // Source: Showdown -- if (!move.flags['protect']) return; -- both false means neither blocked nor poisoned
+    const result = isBlockedByBanefulBunker(false, false);
+    expect(result.blocked).toBe(false);
     expect(result.contactPoison).toBe(false);
   });
 
@@ -482,6 +483,24 @@ describe("Gen7 isBlockedByCraftyShield", () => {
     // Source: Showdown -- if (... move.category !== 'Status') return;
     expect(isBlockedByCraftyShield("physical", "normal")).toBe(false);
   });
+
+  it("given stealth-rock (target foe-field), when checking, then NOT blocked", () => {
+    // Source: Bulbapedia -- Crafty Shield does not protect against entry hazards
+    // Source: Showdown data/moves.ts -- stealth-rock target: foeSide (maps to foe-field)
+    expect(isBlockedByCraftyShield("status", "foe-field")).toBe(false);
+  });
+
+  it("given spikes (target foe-field), when checking, then NOT blocked", () => {
+    // Source: Bulbapedia -- entry hazard moves pass through Crafty Shield
+    // Source: Showdown data/moves.ts -- spikes target: foeSide
+    expect(isBlockedByCraftyShield("status", "foe-field")).toBe(false);
+  });
+
+  it("given user-field targeting status move, when checking, then NOT blocked", () => {
+    // Source: Showdown -- user-field hazards (e.g. Sticky Web vs opponent side) are side-condition setters
+    // that should pass through Crafty Shield per Bulbapedia ruling
+    expect(isBlockedByCraftyShield("status", "user-field")).toBe(false);
+  });
 });
 
 // ===========================================================================
@@ -562,6 +581,27 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     expect(result!.healAmount).toBe(0);
     expect(result!.recoilDamage).toBe(50);
     expect(result!.messages[0]).toContain("liquid ooze");
+  });
+
+  it("given drain move against Liquid Ooze with zero damage dealt, when handling, then no recoil occurs", () => {
+    // Source: Showdown data/abilities.ts -- liquidooze: return -heal
+    // When ctx.damage is 0 (e.g., move dealt 0 damage), healAmount=0 and recoil must also be 0.
+    // Previously Math.max(1, 0)=1 caused phantom 1-damage recoil even on a 0-damage drain.
+    const ctx = makeContext("giga-drain", {
+      damage: 0,
+      defender: { ability: "liquid-ooze" },
+      moveOverrides: {
+        category: "special",
+        power: 75,
+        effect: { type: "drain", amount: 0.5 },
+      },
+    });
+    const result = handleDrainEffect(ctx);
+
+    // Wave 6 added an early guard: ctx.damage <= 0 returns null immediately
+    // (before the Liquid Ooze check), so no recoil occurs when drain damage is zero.
+    // Source: Showdown sim/battle-actions.ts -- drain only triggers when damage > 0
+    expect(result).toBeNull();
   });
 
   it("given move without drain effect, when handling, then returns null", () => {
@@ -929,6 +969,27 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     });
     expect(result!.messages[0]).toBe("Lopunny sprang up!");
   });
+
+  it("given Fly used when move is not in moveset (Mirror Move scenario), when charging, then returns null", () => {
+    // Source: Showdown -- two-turn moves invoked via Mirror Move/Metronome won't be in moveset
+    // When findIndex() returns -1, return null to avoid defaulting to slot 0 (wrong move).
+    const ctx = makeContext("fly", {
+      attacker: {
+        nickname: "Pidgeot",
+        // Moveset does NOT contain fly -- simulates Mirror Move / Metronome scenario
+        moves: [{ moveId: "tackle" }, { moveId: "roost" }],
+      },
+      moveOverrides: {
+        category: "physical",
+        power: 90,
+      },
+    });
+    const rng = new SeededRandom(42);
+    const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
+
+    // Should return null (no forced charge) to prevent slot-0 fallback executing wrong move
+    expect(result).toBeNull();
+  });
 });
 
 // ===========================================================================
@@ -1206,7 +1267,9 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
     });
     const result = ruleset.executeMoveEffect(ctx);
 
-    // Non-Grass target: falls through to BaseRuleset (default empty result)
-    expect(result.messages).not.toContain("doesn't affect");
+    // Non-Grass target: falls through to BaseRuleset (default empty result = no messages, no effects)
+    // Source: Gen7Ruleset delegates to super.executeMoveEffect which returns createBaseResult()
+    expect(result.messages).toEqual([]);
+    expect(result.statusInflicted).toBeNull();
   });
 });
