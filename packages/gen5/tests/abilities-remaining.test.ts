@@ -320,12 +320,10 @@ describe("handleGen5RemainingAbility on-turn-end -- Zen Mode", () => {
     expect(result.effects).toHaveLength(0);
   });
 
-  it("given Darmanitan already in Zen Mode above 50% HP, when turn ends, then returns NO_EFFECT (revert stubbed until volatile-remove supported)", () => {
+  it("given Darmanitan already in Zen Mode above 50% HP, when turn ends, then reverts to standard form via volatile-remove", () => {
     // Source: Showdown data/abilities.ts -- zenmode onResidual:
-    //   pokemon.hp > pokemon.maxhp / 2 && Zen form => revert
-    // Implementation note: AbilityEffect has no volatile-remove type yet. Returning
-    // NO_EFFECT is a safe stopgap -- activated:true with effectType:"none" would emit
-    // a success message with no actual state change (volatile would not be removed).
+    //   pokemon.hp > pokemon.maxhp / 2 && Zen form => formeChange back to standard
+    // Source: Bulbapedia -- Zen Mode: reverts when HP rises above 50%
     const zenVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     zenVolatiles.set("zen-mode" as never, { turnsLeft: -1 });
     const ctx = makeContext({
@@ -337,8 +335,39 @@ describe("handleGen5RemainingAbility on-turn-end -- Zen Mode", () => {
     });
     const result = handleGen5RemainingAbility(ctx);
 
-    // Revert path returns NO_EFFECT until volatile-remove AbilityEffect is added
-    expect(result.activated).toBe(false);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toEqual({
+      effectType: "volatile-remove",
+      target: "self",
+      volatile: "zen-mode",
+    });
+    expect(result.messages[0]).toContain("standard form");
+  });
+
+  it("given Darmanitan in Zen Mode at 51% HP (just above threshold), when turn ends, then reverts to standard form", () => {
+    // Source: Showdown data/abilities.ts -- zenmode onResidual:
+    //   pokemon.hp > pokemon.maxhp / 2 => revert to standard form
+    // 101/200: floor(200/2) = 100; 101 > 100 => reversion triggers
+    const zenVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+    zenVolatiles.set("zen-mode" as never, { turnsLeft: -1 });
+    const ctx = makeContext({
+      ability: "zen-mode",
+      trigger: "on-turn-end",
+      currentHp: 101,
+      maxHp: 200,
+      volatiles: zenVolatiles,
+    });
+    const result = handleGen5RemainingAbility(ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toEqual({
+      effectType: "volatile-remove",
+      target: "self",
+      volatile: "zen-mode",
+    });
+    expect(result.messages[0]).toContain("standard form");
   });
 
   it("given Darmanitan already in Zen Mode at exactly 50% HP, when turn ends, then stays in Zen Mode", () => {
@@ -364,11 +393,9 @@ describe("handleGen5RemainingAbility on-turn-end -- Zen Mode", () => {
 // ===========================================================================
 
 describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
-  it("given Harvest with consumed berry and sun active, when turn ends, then returns NO_EFFECT (item-restore effect stubbed until engine supports it)", () => {
+  it("given Harvest with consumed berry and sun active, when turn ends, then restores berry via item-restore", () => {
     // Source: Showdown data/abilities.ts -- harvest: 100% in sun, always restores.
-    // Implementation note: AbilityEffect has no item-restore type yet. Returning
-    // NO_EFFECT is a safe stopgap -- activated:true with effectType:"none" would emit
-    // a success message without actually restoring the berry (heldItem not set).
+    // Source: Bulbapedia -- Harvest: "Always restores the Berry in sunlight."
     const harvestVolatiles = new Map<
       string,
       { turnsLeft: number; data?: Record<string, unknown> }
@@ -387,14 +414,20 @@ describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
     });
     const result = handleGen5RemainingAbility(ctx);
 
-    // Returns NO_EFFECT until item-restore AbilityEffect type is added
-    expect(result.activated).toBe(false);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toEqual({
+      effectType: "item-restore",
+      target: "self",
+      item: "sitrus-berry",
+    });
+    expect(result.messages[0]).toContain("Harvest");
+    expect(result.messages[0]).toContain("sitrus-berry");
   });
 
-  it("given Harvest with consumed berry, no sun, and rng below 0.5, when turn ends, then returns NO_EFFECT (item-restore effect stubbed until engine supports it)", () => {
+  it("given Harvest with consumed berry, no sun, and rng below 0.5, when turn ends, then restores berry via item-restore", () => {
     // Source: Showdown data/abilities.ts -- harvest: this.randomChance(1, 2) = 50%
-    // rng.next() returns 0.3 < 0.5 => the 50% check passes, but NO_EFFECT is returned
-    // until item-restore AbilityEffect type is added (stopgap -- see Harvest handler).
+    // rng.next() returns 0.3 < 0.5 => the 50% check passes, berry is restored.
     const harvestVolatiles = new Map<
       string,
       { turnsLeft: number; data?: Record<string, unknown> }
@@ -412,8 +445,15 @@ describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
     });
     const result = handleGen5RemainingAbility(ctx);
 
-    // Returns NO_EFFECT until item-restore AbilityEffect type is added
-    expect(result.activated).toBe(false);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]).toEqual({
+      effectType: "item-restore",
+      target: "self",
+      item: "lum-berry",
+    });
+    expect(result.messages[0]).toContain("Harvest");
+    expect(result.messages[0]).toContain("lum-berry");
   });
 
   it("given Harvest with consumed berry, no sun, and rng at 0.5, when turn ends, then fails to restore", () => {

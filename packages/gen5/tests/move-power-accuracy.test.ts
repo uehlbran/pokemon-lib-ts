@@ -35,6 +35,7 @@ function makeActive(overrides: {
   heldItem?: string | null;
   itemKnockedOff?: boolean;
   currentHp?: number;
+  ability?: string;
 }): ActivePokemon {
   return {
     pokemon: {
@@ -53,7 +54,7 @@ function makeActive(overrides: {
       speciesId: 1,
       moves: [],
     },
-    ability: "blaze",
+    ability: overrides.ability ?? "blaze",
     types: overrides.types ?? ["normal"],
     volatileStatuses: new Map(),
     statStages: {
@@ -553,6 +554,51 @@ describe("Gen 5 Knock Off behavioral override", () => {
     // Item remains; flag was already set before call
     expect(ctx.defender.pokemon.heldItem).toBe("leftovers");
     expect(result!.messages).toEqual([]);
+  });
+
+  it("given Knock Off against a target with Unburden holding an item, when executed, then sets unburden volatile", () => {
+    // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem + onUpdate:
+    //   activates when the Pokemon loses its item by any means (consumed, stolen, knocked off).
+    // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
+    const ctx = makeCtx({
+      moveId: "knock-off",
+      defender: { heldItem: "leftovers", nickname: "Hitmonlee", ability: "unburden" },
+    });
+    const result = handleGen5BehaviorMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(ctx.defender.pokemon.heldItem).toBe(null);
+    expect(ctx.defender.volatileStatuses.has("unburden")).toBe(true);
+  });
+
+  it("given Knock Off against a target without Unburden holding an item, when executed, then does NOT set unburden volatile", () => {
+    // Source: Showdown data/abilities.ts -- Unburden only activates for holders of the ability
+    const ctx = makeCtx({
+      moveId: "knock-off",
+      defender: { heldItem: "leftovers", nickname: "Ferrothorn", ability: "iron-barbs" },
+    });
+    const result = handleGen5BehaviorMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(ctx.defender.pokemon.heldItem).toBe(null);
+    expect(ctx.defender.volatileStatuses.has("unburden")).toBe(false);
+  });
+
+  it("given Knock Off against a target with Unburden that already has the unburden volatile, when executed, then does not double-set", () => {
+    // Source: Showdown data/abilities.ts -- Unburden volatile is only set once;
+    //   checking !volatileStatuses.has('unburden') prevents duplicate setting.
+    const ctx = makeCtx({
+      moveId: "knock-off",
+      defender: { heldItem: "leftovers", nickname: "Hitmonlee", ability: "unburden" },
+    });
+    // Pre-set the volatile to simulate it was already activated
+    ctx.defender.volatileStatuses.set("unburden" as any, { turnsLeft: -1 });
+    const result = handleGen5BehaviorMove(ctx);
+
+    expect(result).not.toBeNull();
+    expect(ctx.defender.pokemon.heldItem).toBe(null);
+    // Still has the volatile (was already set), no error
+    expect(ctx.defender.volatileStatuses.has("unburden")).toBe(true);
   });
 });
 
