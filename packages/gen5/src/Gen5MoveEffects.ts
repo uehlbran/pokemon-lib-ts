@@ -4,7 +4,8 @@
  * Routes move effect execution to the appropriate sub-module:
  *   - Gen5MoveEffectsField: field effect moves (Magic Room, Wonder Room, Trick Room,
  *     Quick Guard, Wide Guard)
- *   - Gen5MoveEffectsBehavior: behavioral overrides (Defog, Scald, Growth, Knock Off)
+ *   - Gen5MoveEffectsBehavior: behavioral overrides (Defog, Scald, Growth, Knock Off,
+ *     Encore, Taunt, Disable)
  *   - Gen5MoveEffectsCombat: combat moves (Shell Smash, Quiver Dance, Dragon Tail,
  *     Acrobatics, Final Gambit, etc.)
  *   - Gen5MoveEffectsStatus: status/utility moves (Heal Pulse, Aromatherapy, Heal Bell,
