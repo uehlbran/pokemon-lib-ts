@@ -95,7 +95,8 @@ describe("Gen5Ruleset status conditions", () => {
     });
 
     it("given sleeping pokemon in Gen5, when processSleepTurn fires and counter reaches 0, then can act on wake turn", () => {
-      // Source: BaseRuleset.processSleepTurn -- Gen 5+ can act on wake turn (returns true)
+      // Source: references/pokemon-showdown/data/conditions.ts -- slp.onBeforeMove: when time <= 0, calls cureStatus() then returns (no return false)
+      // Gen 5+ can act on the wake turn; Gen 1-4 Showdown returns false (cannot act)
       const pokemon = makeActivePokemon({
         status: "sleep",
         volatileStatuses: new Map([["sleep-counter", { turnsLeft: 1 }]]),
@@ -104,7 +105,7 @@ describe("Gen5Ruleset status conditions", () => {
 
       // Process: should decrement from 1 to 0 and wake up
       const canAct = ruleset.processSleepTurn(pokemon, state);
-      // Source: BaseRuleset.processSleepTurn -- Gen 5+ can act on wake turn (returns true unlike Gen 1-4)
+      // Source: references/pokemon-showdown/data/conditions.ts -- slp.onBeforeMove returns undefined (not false) when waking; pokemon can act
       expect(canAct).toBe(true);
       expect(pokemon.pokemon.status).toBeNull();
     });
