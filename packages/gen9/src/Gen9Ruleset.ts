@@ -17,6 +17,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { createGen9DataManager } from "./data/index.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
+import { Gen9Terastallization } from "./Gen9Terastallization.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 
 /**
@@ -216,17 +217,20 @@ export class Gen9Ruleset extends BaseRuleset {
   // --- Battle Gimmick ---
 
   /**
-   * Gen 9 battle gimmick: Terastallization.
+   * Terastallization gimmick instance.
+   * Allocated once and reused across battles (stateless -- tracking is on BattleSide/ActivePokemon).
+   */
+  private readonly _tera = new Gen9Terastallization();
+
+  /**
+   * Gen 9 battle gimmick: Terastallization only.
    * Mega Evolution, Z-Moves, and Dynamax are all removed in Gen 9.
-   *
-   * Terastallization will be implemented in Wave 2.
-   * Currently returns null as a placeholder.
    *
    * Source: Showdown data/mods/gen9 -- no Mega, Z-Moves, or Dynamax
    * Source: Bulbapedia -- Terastallization is the Gen 9 battle gimmick
    */
-  getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {
-    // Wave 2 will implement Terastallization for type === "tera"
+  getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
+    if (type === "tera") return this._tera;
     return null;
   }
 
