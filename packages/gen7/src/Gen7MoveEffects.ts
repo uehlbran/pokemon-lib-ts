@@ -624,11 +624,15 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
 
   // Liquid Ooze: the attacker takes damage instead of healing
   // Source: Showdown data/abilities.ts -- liquidooze: return -heal
+  // Only deal recoil if healAmount > 0 (drain move actually drained some HP).
+  // When ctx.damage is 0 (e.g., move missed/didn't connect), healAmount is 0 and
+  // no recoil should occur.
   if (ctx.defender.ability === "liquid-ooze") {
+    if (healAmount <= 0) return createBaseResult();
     const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
     return {
       ...createBaseResult(),
-      recoilDamage: Math.max(1, healAmount),
+      recoilDamage: healAmount,
       messages: [`${attackerName} sucked up the liquid ooze!`],
     };
   }

@@ -565,6 +565,25 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     expect(result!.messages[0]).toContain("liquid ooze");
   });
 
+  it("given drain move against Liquid Ooze with zero damage dealt, when handling, then no recoil occurs", () => {
+    // Source: Showdown data/abilities.ts -- liquidooze: return -heal
+    // When ctx.damage is 0 (e.g., move dealt 0 damage), healAmount=0 and recoil must also be 0.
+    // Previously Math.max(1, 0)=1 caused phantom 1-damage recoil even on a 0-damage drain.
+    const ctx = makeContext("giga-drain", {
+      damage: 0,
+      defender: { ability: "liquid-ooze" },
+      moveOverrides: {
+        category: "special",
+        power: 75,
+        effect: { type: "drain", amount: 0.5 },
+      },
+    });
+    const result = handleDrainEffect(ctx);
+
+    expect(result).not.toBeNull();
+    expect(result!.recoilDamage).toBe(0);
+  });
+
   it("given move without drain effect, when handling, then returns null", () => {
     // Non-drain moves should fall through
     const ctx = makeContext("tackle", {
