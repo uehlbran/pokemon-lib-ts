@@ -182,7 +182,11 @@ describe("Gen6Ruleset — calculateExpGain traded Pokemon EXP bonus", () => {
       defeatedSpecies: { baseExp: 100 } as any,
     });
     const notTraded = ruleset.calculateExpGain(baseCtx);
-    const traded = ruleset.calculateExpGain({ ...baseCtx, isTradedPokemon: true, isInternationalTrade: false });
+    const traded = ruleset.calculateExpGain({
+      ...baseCtx,
+      isTradedPokemon: true,
+      isInternationalTrade: false,
+    });
 
     expect(notTraded).toBe(101);
     expect(traded).toBe(151);
@@ -197,7 +201,11 @@ describe("Gen6Ruleset — calculateExpGain traded Pokemon EXP bonus", () => {
       participantLevel: 50,
       defeatedSpecies: { baseExp: 100 } as any,
     });
-    const result = ruleset.calculateExpGain({ ...baseCtx, isTradedPokemon: true, isInternationalTrade: true });
+    const result = ruleset.calculateExpGain({
+      ...baseCtx,
+      isTradedPokemon: true,
+      isInternationalTrade: true,
+    });
 
     expect(result).toBe(171);
   });
