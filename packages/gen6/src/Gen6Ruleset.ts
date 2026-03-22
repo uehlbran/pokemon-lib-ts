@@ -1,4 +1,6 @@
 import type {
+  AbilityContext,
+  AbilityResult,
   ActivePokemon,
   BattleAction,
   BattleSide,
@@ -14,6 +16,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
+  AbilityTrigger,
   DataManager,
   MoveData,
   PokemonType,
@@ -24,6 +27,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
+import { applyGen6Ability } from "./Gen6Abilities.js";
 import { calculateGen6Damage } from "./Gen6DamageCalc.js";
 import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
 import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";
@@ -162,6 +166,28 @@ export class Gen6Ruleset extends BaseRuleset {
       };
     }
     return { immune: false };
+  }
+
+  // --- Ability System ---
+
+  /**
+   * Gen 6 ability dispatch.
+   *
+   * Routes ability triggers to Gen 6 ability sub-modules via the master dispatcher.
+   * Handles all Gen 5 carry-forward abilities plus Gen 6 newcomers:
+   *   - Tough Claws, Strong Jaw, Mega Launcher (damage-calc)
+   *   - Fur Coat (defender damage-calc)
+   *   - Pixilate, Aerilate, Refrigerate (Normal-type override)
+   *   - Parental Bond (double hit)
+   *   - Gale Wings (Flying priority, no HP check)
+   *   - Protean (type change before move)
+   *   - Competitive (+2 SpAtk on stat drop)
+   *
+   * Source: Showdown data/abilities.ts
+   * Source: Showdown data/mods/gen6/abilities.ts
+   */
+  override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+    return applyGen6Ability(trigger, context);
   }
 
   // --- Damage Calculation ---
