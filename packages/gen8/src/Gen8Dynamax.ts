@@ -185,7 +185,11 @@ export class Gen8Dynamax implements BattleGimmick {
       const newMaxHp = getDynamaxMaxHp(baseMaxHp, dynamaxLevel);
       const newCurrentHp = getDynamaxCurrentHp(pokemon.pokemon.currentHp, dynamaxLevel);
 
-      // Store the base max HP for later restoration
+      // Store the base max HP for exact restoration on revert.
+      // Avoids off-by-1 from reverse-dividing Math.floor'd values.
+      // Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP during Dynamax
+      pokemon.pokemon.preDynamaxMaxHp = baseMaxHp;
+
       // MutableStatBlock cast is required because StatBlock is readonly
       const stats = pokemon.pokemon.calculatedStats as { hp: number };
       stats.hp = newMaxHp;
@@ -218,17 +222,21 @@ export class Gen8Dynamax implements BattleGimmick {
    * Source: Showdown data/conditions.ts lines 801-802 -- HP restoration
    * Source: Bulbapedia "Dynamax" -- reversion mechanics
    */
-  revert(pokemon: ActivePokemon, _state: BattleState): BattleEvent[] {
+  revert(pokemon: ActivePokemon, state: BattleState): BattleEvent[] {
     if (!pokemon.isDynamaxed) return [];
-
-    const dynamaxLevel = pokemon.pokemon.dynamaxLevel ?? 10;
 
     // Restore HP proportionally
     // Source: Showdown data/conditions.ts lines 801-802
     if (pokemon.pokemon.calculatedStats) {
       const currentMaxHp = pokemon.pokemon.calculatedStats.hp;
-      const ratio = 1.5 + dynamaxLevel * 0.05;
-      const baseMaxHp = Math.round(currentMaxHp / ratio);
+
+      // Use stored base max HP (set during activate) to avoid off-by-1 from reverse-dividing.
+      // Fallback to reverse-division only if preDynamaxMaxHp is missing (e.g., legacy state).
+      // Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP during Dynamax
+      const baseMaxHp =
+        pokemon.pokemon.preDynamaxMaxHp ??
+        Math.round(currentMaxHp / (1.5 + (pokemon.pokemon.dynamaxLevel ?? 10) * 0.05));
+
       const restoredHp = getUndynamaxedHp(pokemon.pokemon.currentHp, currentMaxHp, baseMaxHp);
 
       const stats = pokemon.pokemon.calculatedStats as { hp: number };
@@ -236,13 +244,20 @@ export class Gen8Dynamax implements BattleGimmick {
       pokemon.pokemon.currentHp = Math.min(restoredHp, baseMaxHp);
     }
 
-    // Clear Dynamax state
+    // Clear Dynamax state and stored base HP
     pokemon.isDynamaxed = false;
     pokemon.dynamaxTurnsLeft = 0;
+    pokemon.pokemon.preDynamaxMaxHp = undefined;
+
+    // Look up the correct side index from the battle state
+    // Source: BattleState.sides[n].active contains the ActivePokemon references
+    const sideIndex = state.sides.findIndex((s) =>
+      s.active.some((a) => a?.pokemon.uid === pokemon.pokemon.uid),
+    );
 
     const event: BattleEvent = {
       type: "dynamax-end",
-      side: 0, // Side index is not available in revert; the engine sets the correct side
+      side: (sideIndex >= 0 ? sideIndex : 0) as 0 | 1,
       pokemon: pokemon.pokemon.uid,
     };
 

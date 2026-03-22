@@ -687,3 +687,107 @@ describe("Gen 8 Stat Abilities", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Moody — Gen 8 vs Gen 5-7 cross-gen boundary test
+// ---------------------------------------------------------------------------
+
+describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
+  // Source: Showdown data/abilities.ts -- Moody in Gen 8 only uses atk/def/spa/spd/spe
+  // Source: Bulbapedia "Moody" -- "From Generation VIII onwards, Moody can no longer
+  //   raise or lower Accuracy or Evasion"
+
+  const ELIGIBLE_STATS = ["attack", "defense", "spAttack", "spDefense", "speed"] as const;
+
+  it("given Moody in Gen 8, when on-turn-end fires with all stats at 0, then raises one of the 5 eligible stats by 2", () => {
+    // Source: Showdown data/abilities.ts -- Moody onResidual: boost one of [atk,def,spa,spd,spe] by +2
+    // Source: Bulbapedia "Moody" -- Gen 8 pool is exactly these 5 stats
+    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 42 });
+    const result = handleGen8StatAbility(ctx);
+
+    expect(result.activated).toBe(true);
+    const raiseEffect = result.effects.find(
+      (e) => e.effectType === "stat-change" && (e as any).stages === 2,
+    );
+    expect(raiseEffect).toBeDefined();
+    const raisedStat = (raiseEffect as any).stat;
+    expect(ELIGIBLE_STATS).toContain(raisedStat);
+    // Accuracy and evasion must NOT be raised by Gen 8 Moody
+    expect(raisedStat).not.toBe("accuracy");
+    expect(raisedStat).not.toBe("evasion");
+  });
+
+  it("given Moody in Gen 8, when on-turn-end fires, then lowers one of the 5 eligible stats by 1", () => {
+    // Source: Showdown data/abilities.ts -- Moody onResidual: lower a different stat by -1
+    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 42 });
+    const result = handleGen8StatAbility(ctx);
+
+    expect(result.activated).toBe(true);
+    const lowerEffect = result.effects.find(
+      (e) => e.effectType === "stat-change" && (e as any).stages === -1,
+    );
+    expect(lowerEffect).toBeDefined();
+    const loweredStat = (lowerEffect as any).stat;
+    expect(ELIGIBLE_STATS).toContain(loweredStat);
+    // Accuracy and evasion must NOT be lowered by Gen 8 Moody either
+    expect(loweredStat).not.toBe("accuracy");
+    expect(loweredStat).not.toBe("evasion");
+  });
+
+  it("given Moody in Gen 8, when on-turn-end fires, then raised stat and lowered stat are different", () => {
+    // Source: Showdown data/abilities.ts -- Moody raises one stat and lowers a DIFFERENT one
+    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 42 });
+    const result = handleGen8StatAbility(ctx);
+
+    const raiseEffect = result.effects.find(
+      (e) => e.effectType === "stat-change" && (e as any).stages === 2,
+    );
+    const lowerEffect = result.effects.find(
+      (e) => e.effectType === "stat-change" && (e as any).stages === -1,
+    );
+    expect(raiseEffect).toBeDefined();
+    expect(lowerEffect).toBeDefined();
+    expect((raiseEffect as any).stat).not.toBe((lowerEffect as any).stat);
+  });
+
+  it("given Moody in Gen 8, when a stat is already at +6, then that stat is excluded from the raise pool", () => {
+    // Source: Showdown data/abilities.ts -- Moody plusPool excludes stats already at +6
+    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 99 });
+    // Set attack to +6 (maxed) — should not be raised further
+    ctx.pokemon.statStages.attack = 6;
+    ctx.pokemon.statStages.defense = 6;
+    ctx.pokemon.statStages.spAttack = 6;
+    ctx.pokemon.statStages.spDefense = 6;
+    // Only speed can be raised
+    ctx.pokemon.statStages.speed = 0;
+
+    const result = handleGen8StatAbility(ctx);
+    if (result.activated) {
+      const raiseEffect = result.effects.find(
+        (e) => e.effectType === "stat-change" && (e as any).stages === 2,
+      );
+      if (raiseEffect) {
+        expect((raiseEffect as any).stat).toBe("speed");
+      }
+    }
+  });
+
+  it("given Moody in Gen 8 vs Gen 5-7 cross-gen boundary, then Gen 8 pool is exactly 5 stats (no accuracy/evasion)", () => {
+    // Cross-gen regression: Gen 5-7 Moody can raise/lower all 7 stats including accuracy/evasion.
+    // Gen 8 Moody is restricted to the 5 battle stats only.
+    // Source: Bulbapedia "Moody" -- "From Generation VIII onwards, Moody can no longer
+    //   raise or lower Accuracy or Evasion. This changed in Generation VIII."
+    // This test runs 100 seeds to confirm accuracy/evasion never appear in Gen 8 Moody pool.
+    const INELIGIBLE_STATS = ["accuracy", "evasion"];
+    for (let seed = 0; seed < 100; seed++) {
+      const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed });
+      const result = handleGen8StatAbility(ctx);
+      for (const effect of result.effects) {
+        if (effect.effectType === "stat-change") {
+          const stat = (effect as any).stat as string;
+          expect(INELIGIBLE_STATS).not.toContain(stat);
+        }
+      }
+    }
+  });
+});

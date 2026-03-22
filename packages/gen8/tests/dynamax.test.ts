@@ -104,9 +104,15 @@ function createMockSide(overrides: Partial<BattleSide> = {}): BattleSide {
   } as BattleSide;
 }
 
-function createMockState(): BattleState {
+function createMockState(
+  side0Active: ActivePokemon | null = null,
+  side1Active: ActivePokemon | null = null,
+): BattleState {
   return {
-    sides: [createMockSide(), createMockSide({ index: 1 })],
+    sides: [
+      createMockSide({ active: side0Active ? [side0Active] : [] }),
+      createMockSide({ index: 1, active: side1Active ? [side1Active] : [] }),
+    ],
     weather: null,
     terrain: null,
     trickRoom: null,
@@ -423,6 +429,215 @@ describe("Gen8Dynamax", () => {
 
       expect(events).toHaveLength(1);
       expect(events[0].type).toBe("dynamax-end");
+    });
+  });
+
+  describe("Gen8Dynamax.revert side index (Bug M1)", () => {
+    it("given dynamaxed pokemon on side 0, when reverting, then emits event with side: 0", () => {
+      // Source: BattleState.sides[n].active maps ActivePokemon to side index
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({ dynamaxLevel: 10 });
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
+
+      dynamax.activate(pokemon, side, state);
+      const events = dynamax.revert(pokemon, state);
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toEqual({
+        type: "dynamax-end",
+        side: 0,
+        pokemon: "test-pokemon-1",
+      });
+    });
+
+    it("given dynamaxed pokemon on side 1, when reverting, then emits event with side: 1", () => {
+      // Bug M1: Previously hardcoded side: 0, which was wrong for opponent-side pokemon
+      // Source: BattleState.sides[n].active maps ActivePokemon to side index
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({ uid: "opponent-pokemon-1", dynamaxLevel: 10 }, {});
+      const side = createMockSide({ index: 1, active: [pokemon] });
+      const state = createMockState(null, pokemon);
+
+      dynamax.activate(pokemon, side, state);
+      const events = dynamax.revert(pokemon, state);
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toEqual({
+        type: "dynamax-end",
+        side: 1,
+        pokemon: "opponent-pokemon-1",
+      });
+    });
+
+    it("given dynamaxed pokemon not found in any side active slot, when reverting, then falls back to side: 0", () => {
+      // Edge case: if the state's active arrays don't contain this pokemon (shouldn't
+      // happen in practice), falls back to 0 rather than emitting an invalid side index.
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({ uid: "orphan-pokemon", dynamaxLevel: 10 });
+      const side = createMockSide();
+      const state = createMockState(); // No active pokemon in either side
+
+      dynamax.activate(pokemon, side, state);
+      const events = dynamax.revert(pokemon, state);
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toEqual({
+        type: "dynamax-end",
+        side: 0,
+        pokemon: "orphan-pokemon",
+      });
+    });
+  });
+
+  describe("Gen8Dynamax.revert HP round-trip (Bug M2)", () => {
+    it("given HP=100 and dynamaxLevel=10 (ratio=2.0), when activate then revert at full HP, then restores exactly 100", () => {
+      // Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP
+      // Inline: activate: maxHp = floor(100 * 2.0) = 200, currentHp = floor(100 * 2.0) = 200
+      // revert: baseMaxHp = stored 100 (not round(200/2.0) = 100), restoredHp = round(200*100/200) = 100
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({
+        currentHp: 100,
+        dynamaxLevel: 10,
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 80,
+          spAttack: 90,
+          spDefense: 70,
+          speed: 110,
+        },
+      });
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
+
+      dynamax.activate(pokemon, side, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(200);
+      expect(pokemon.pokemon.currentHp).toBe(200);
+
+      dynamax.revert(pokemon, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(100);
+      expect(pokemon.pokemon.currentHp).toBe(100);
+    });
+
+    it("given HP=137 and dynamaxLevel=7 (ratio=1.85), when activate then revert at full HP, then restores exactly 137", () => {
+      // This is an edge case where reverse-division could produce off-by-1.
+      // Inline: activate: maxHp = floor(137 * 1.85) = floor(253.45) = 253
+      //         currentHp = floor(137 * 1.85) = 253
+      // Old buggy revert: baseMaxHp = round(253 / 1.85) = round(136.756...) = 137 (happens to be correct here)
+      // New revert: baseMaxHp = stored 137 (always exact)
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({
+        currentHp: 137,
+        dynamaxLevel: 7,
+        calculatedStats: {
+          hp: 137,
+          attack: 100,
+          defense: 80,
+          spAttack: 90,
+          spDefense: 70,
+          speed: 110,
+        },
+      });
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
+
+      dynamax.activate(pokemon, side, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(253); // floor(137 * 1.85)
+      expect(pokemon.pokemon.currentHp).toBe(253);
+
+      dynamax.revert(pokemon, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(137);
+      expect(pokemon.pokemon.currentHp).toBe(137);
+    });
+
+    it("given HP=141 and dynamaxLevel=3 (ratio=1.65), when activate then revert at full HP, then restores exactly 141", () => {
+      // This exercises a case where floor(141 * 1.65) = floor(232.65) = 232
+      // Old buggy revert: round(232 / 1.65) = round(140.606...) = 141 (happens to round correctly)
+      // But floor(currentHp * baseMaxHp / maxHp) = round(232 * 141 / 232) = round(141) = 141
+      // With stored baseMaxHp we always get exactly 141.
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({
+        currentHp: 141,
+        dynamaxLevel: 3,
+        calculatedStats: {
+          hp: 141,
+          attack: 100,
+          defense: 80,
+          spAttack: 90,
+          spDefense: 70,
+          speed: 110,
+        },
+      });
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
+
+      dynamax.activate(pokemon, side, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(232); // floor(141 * 1.65)
+      expect(pokemon.pokemon.currentHp).toBe(232);
+
+      dynamax.revert(pokemon, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(141);
+      expect(pokemon.pokemon.currentHp).toBe(141);
+    });
+
+    it("given HP=201 and dynamaxLevel=1 (ratio=1.55), when activate then take damage then revert, then HP is proportional", () => {
+      // Tests proportional HP restoration after damage with stored baseMaxHp
+      // Inline: activate: maxHp = floor(201 * 1.55) = floor(311.55) = 311
+      //         currentHp = floor(201 * 1.55) = 311
+      // Take 100 damage -> currentHp = 211
+      // Revert: baseMaxHp = stored 201, restoredHp = round(211 * 201 / 311) = round(136.37...) = 136
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({
+        currentHp: 201,
+        dynamaxLevel: 1,
+        calculatedStats: {
+          hp: 201,
+          attack: 100,
+          defense: 80,
+          spAttack: 90,
+          spDefense: 70,
+          speed: 110,
+        },
+      });
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
+
+      dynamax.activate(pokemon, side, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(311); // floor(201 * 1.55)
+
+      // Simulate taking 100 damage
+      pokemon.pokemon.currentHp = 211;
+
+      dynamax.revert(pokemon, state);
+      expect(pokemon.pokemon.calculatedStats!.hp).toBe(201);
+      // round(211 * 201 / 311) = round(136.373...) = 136
+      expect(pokemon.pokemon.currentHp).toBe(136);
+    });
+
+    it("given revert clears preDynamaxMaxHp field, when checking after revert, then field is undefined", () => {
+      // Ensures the stored value is cleaned up after revert
+      const dynamax = new Gen8Dynamax();
+      const pokemon = createMockActive({
+        currentHp: 100,
+        dynamaxLevel: 10,
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 80,
+          spAttack: 90,
+          spDefense: 70,
+          speed: 110,
+        },
+      });
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
+
+      dynamax.activate(pokemon, side, state);
+      expect(pokemon.pokemon.preDynamaxMaxHp).toBe(100);
+
+      dynamax.revert(pokemon, state);
+      expect(pokemon.pokemon.preDynamaxMaxHp).toBeUndefined();
     });
   });
 

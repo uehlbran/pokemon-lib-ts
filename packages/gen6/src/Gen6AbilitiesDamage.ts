@@ -52,12 +52,17 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  * Source: Showdown data/moves.ts -- triattack: secondary.onHit randomly picks
  *   from burn/paralysis/freeze with 20% chance
  */
-const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set(["tri-attack"]);
+const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([
+  "tri-attack", // 20% burn/paralysis/freeze; custom onHit in Showdown, effect=null in our data
+  "secret-power", // 30% secondary effect varies by terrain; effect is representable but whitelisted for consistency
+  "relic-song", // 10% sleep chance; effect is representable but whitelisted for consistency
+]);
 
 /**
  * Check if a move is on the Sheer Force whitelist.
+ * Matches the whitelists in Gen6DamageCalc.ts and Gen6Items.ts for consistency.
  *
- * Source: Showdown data/moves.ts -- triattack secondary.onHit
+ * Source: Showdown data/moves.ts -- triattack secondary.onHit, secretpower, relicsong
  */
 export function isSheerForceWhitelistedMove(moveId: string): boolean {
   return SHEER_FORCE_MOVE_WHITELIST.has(moveId);

@@ -283,7 +283,7 @@ describe("Gen5Ruleset sleep counter reset on switch-in (Gen5 unique mechanic)", 
 // Gen 5 Protect Formula (doubling counter, capped at 1/256)
 // ---------------------------------------------------------------------------
 
-describe("Gen5Ruleset rollProtectSuccess (doubling counter, cap at 1/256)", () => {
+describe("Gen5Ruleset rollProtectSuccess (doubling counter, effectively impossible at cap)", () => {
   const ruleset = new Gen5Ruleset();
 
   it("given 0 consecutive protects in Gen5, when rollProtectSuccess is called, then always returns true", () => {
@@ -323,23 +323,23 @@ describe("Gen5Ruleset rollProtectSuccess (doubling counter, cap at 1/256)", () =
     expect(rate).toBeLessThan(0.014);
   });
 
-  it("given 8 consecutive protects in Gen5, when rollProtectSuccess called 100000 times, then ~1/256 success rate (cap)", () => {
-    // Source: Gen5Ruleset.rollProtectSuccess -- Math.min(256, 2^8) = 256 denominator
-    // 1/256 ≈ 0.0039. This is the cap.
+  it("given 8 consecutive protects in Gen5, when rollProtectSuccess called 100000 times, then effectively 0 successes (cap hit)", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- counterMax: 256
+    //   At N=8, counter = 2^8 = 256 = cap. Showdown uses randomChance(1, 2**32)
+    //   which is ~1 in 4 billion, effectively impossible.
     const rng = new SeededRandom(77);
     let successes = 0;
     for (let i = 0; i < 100000; i++) {
       if (ruleset.rollProtectSuccess(8, rng)) successes++;
     }
-    const rate = successes / 100000;
-    // 1/256 ≈ 0.0039; generous tolerance
-    expect(rate).toBeGreaterThan(0.001);
-    expect(rate).toBeLessThan(0.008);
+    // Expected: ~0 successes (1 in 2^32 chance per attempt)
+    expect(successes).toBe(0);
   });
 
-  it("given 10 consecutive protects in Gen5, when rollProtectSuccess called 100000 times, then same ~1/256 rate as 8 (capped)", () => {
-    // Source: Gen5Ruleset.rollProtectSuccess -- Math.min(256, 2^10) = 256, same as 2^8
-    // The cap is 256 regardless of how many times in a row Protect is used beyond 8
+  it("given 10 consecutive protects in Gen5, when rollProtectSuccess called 100000 times, then effectively 0 successes (same as 8, both capped)", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- counterMax: 256
+    //   Both N=8 and N=10 hit the cap (2^8=256, 2^10=1024 > cap).
+    //   Both use randomChance(1, 2**32) -- effectively impossible.
     const rng8 = new SeededRandom(42);
     const rng10 = new SeededRandom(42); // same seed for fair comparison
     let successes8 = 0;
@@ -348,7 +348,10 @@ describe("Gen5Ruleset rollProtectSuccess (doubling counter, cap at 1/256)", () =
       if (ruleset.rollProtectSuccess(8, rng8)) successes8++;
       if (ruleset.rollProtectSuccess(10, rng10)) successes10++;
     }
-    // Same seed, same denominator => identical results
+    // Both should be 0 (effectively impossible)
+    expect(successes8).toBe(0);
+    expect(successes10).toBe(0);
+    // Same seed, same cap behavior => identical results
     expect(successes8).toBe(successes10);
   });
 

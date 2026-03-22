@@ -9,6 +9,7 @@ import type {
   CritContext,
   DamageContext,
   DamageResult,
+  EndOfTurnEffect,
   EntryHazardResult,
   ExpContext,
   ItemContext,
@@ -21,12 +22,15 @@ import type {
   AbilityTrigger,
   DataManager,
   EntryHazardType,
+  MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
+import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
+import { handleGen8StatAbility } from "./Gen8AbilitiesStat.js";
 import { handleGen8SwitchAbility, shouldMirrorArmorReflect } from "./Gen8AbilitiesSwitch.js";
 import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 import { calculateGen8Damage } from "./Gen8DamageCalc.js";
@@ -276,14 +280,20 @@ export class Gen8Ruleset extends BaseRuleset {
    * Routes triggers to the appropriate Gen 8 ability handler module.
    * Covers all Gen 7 carryforward abilities plus new Gen 8 abilities:
    *   - on-switch-in: Intimidate, weather, Screen Cleaner, Neutralizing Gas,
-   *     Intrepid Sword, Dauntless Shield, etc.
-   *   - on-switch-out: Regenerator, Natural Cure
+   *     Intrepid Sword, Dauntless Shield, etc. (switch handler + stat handler)
+   *   - on-switch-out: Regenerator, Natural Cure (switch handler)
    *   - on-contact: Static, Flame Body, Wandering Spirit, Perish Body,
-   *     Gulp Missile, Ice Face, Mummy, etc.
-   *   - on-status-inflicted: Synchronize
-   *   - on-before-move: Libero, Protean
-   *   - on-stat-change: Mirror Armor
-   *   - on-turn-end: Hunger Switch
+   *     Gulp Missile, Ice Face, Mummy, etc. (switch handler)
+   *   - on-status-inflicted: Synchronize (switch handler)
+   *   - on-before-move: Libero, Protean (stat handler)
+   *   - on-stat-change: Mirror Armor (special), Defiant, Competitive, Contrary, Simple (stat handler)
+   *   - on-turn-end: Hunger Switch (switch handler), Speed Boost, Moody (stat handler)
+   *   - on-priority-check: Prankster, Gale Wings, Triage, Quick Draw (stat handler)
+   *   - on-after-move-used: Moxie, Beast Boost (stat handler)
+   *   - on-flinch: Steadfast (stat handler)
+   *   - on-item-use: Unnerve (stat handler)
+   *   - passive-immunity: passive type immunities (stat handler)
+   *   - on-damage-taken: Sturdy OHKO block (damage handler), Justified, Weak Armor, etc. (stat handler)
    *
    * Source: Showdown data/abilities.ts -- Gen 8 ability handlers
    */
@@ -308,8 +318,9 @@ export class Gen8Ruleset extends BaseRuleset {
       return noActivation;
     }
 
-    // Route all other triggers through the switch handler
+    // Route all other triggers through the appropriate handler
     switch (trigger) {
+      // Triggers handled by the switch/contact/field handler module
       case "on-switch-in":
       case "on-switch-out":
       case "on-contact":
@@ -318,9 +329,84 @@ export class Gen8Ruleset extends BaseRuleset {
       case "on-turn-end":
         return handleGen8SwitchAbility(trigger, context);
 
+      // Triggers handled by the stat/priority handler module
+      case "on-priority-check":
+      case "on-after-move-used":
+      case "on-flinch":
+      case "on-item-use":
+      case "passive-immunity":
+        return handleGen8StatAbility(context);
+
+      // on-stat-change for non-Mirror Armor abilities (Defiant, Competitive, Contrary, Simple)
+      case "on-stat-change":
+        return handleGen8StatAbility(context);
+
+      // on-damage-taken: try damage-immunity handler first (Sturdy OHKO block), then stat handler
+      case "on-damage-taken": {
+        const immunityResult = handleGen8DamageImmunityAbility(context);
+        if (immunityResult.activated) return immunityResult;
+        return handleGen8StatAbility(context);
+      }
+
       default:
         return noActivation;
     }
+  }
+
+  // --- End-of-Turn Order ---
+
+  /**
+   * Gen 8 end-of-turn effect ordering.
+   *
+   * Identical to Gen 7: 37+ effects in Showdown residual order.
+   * Gen 8 does not remove any EoT effects from Gen 7.
+   *
+   * Source: Showdown data/conditions.ts -- residual order
+   * Source: Bulbapedia -- Sword/Shield battle mechanics
+   */
+  override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+    return [
+      "weather-damage",
+      "future-attack",
+      "wish",
+      "weather-healing",
+      "shed-skin",
+      "leech-seed",
+      "leftovers",
+      "black-sludge",
+      "aqua-ring",
+      "ingrain",
+      "poison-heal",
+      "grassy-terrain-heal",
+      "status-damage",
+      "nightmare",
+      "curse",
+      "bad-dreams",
+      "bind",
+      "yawn-countdown",
+      "encore-countdown",
+      "taunt-countdown",
+      "disable-countdown",
+      "heal-block-countdown",
+      "embargo-countdown",
+      "magnet-rise-countdown",
+      "perish-song",
+      "screen-countdown",
+      "safeguard-countdown",
+      "tailwind-countdown",
+      "trick-room-countdown",
+      "magic-room-countdown",
+      "wonder-room-countdown",
+      "gravity-countdown",
+      "slow-start-countdown",
+      "terrain-countdown",
+      "weather-countdown",
+      "toxic-orb-activation",
+      "flame-orb-activation",
+      "speed-boost",
+      "moody",
+      "healing-items",
+    ];
   }
 
   // --- Experience ---
@@ -389,6 +475,61 @@ export class Gen8Ruleset extends BaseRuleset {
       context,
       this.getTypeChart() as Record<string, Record<string, number>>,
     );
+  }
+
+  /**
+   * Cap lethal damage for Disguise (Gen 8: 1/8 chip) and Sturdy.
+   *
+   * Disguise (Gen 8 change): when busted, deals 1/8 max HP chip damage instead
+   * of 0 chip (Gen 7). Priority 1 (before Sturdy at -30).
+   *
+   * Sturdy: survive any hit from full HP at 1 HP (unchanged from Gen 5+).
+   *
+   * Source: Showdown data/abilities.ts -- disguise: onDamage (priority 1, Gen 8: 1/8 chip)
+   * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
+   * Source: Bulbapedia -- Disguise (Ability), Gen 8: "deals 1/8 of max HP as damage"
+   */
+  capLethalDamage(
+    damage: number,
+    defender: ActivePokemon,
+    _attacker: ActivePokemon,
+    move: MoveData,
+    _state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[] } {
+    const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+    const currentHp = defender.pokemon.currentHp;
+    const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+    // Disguise: block incoming damage, deal 1/8 max HP chip instead (Gen 8 change)
+    // Disguise checks BEFORE Sturdy (higher priority in Showdown: priority 1 vs -30)
+    // Gen 8: 1/8 max HP chip damage on Disguise break (changed from 0 in Gen 7)
+    // Source: Showdown data/abilities.ts -- disguise onDamage, Gen 8: Math.ceil(maxhp / 8)
+    if (
+      defender.ability === "disguise" &&
+      !defender.volatileStatuses.has("disguise-broken") &&
+      move.category !== "status"
+    ) {
+      // Mark Disguise as broken
+      (defender.volatileStatuses as Map<string, unknown>).set("disguise-broken", true);
+      const chipDamage = Math.ceil(maxHp / 8);
+      return {
+        damage: chipDamage,
+        survived: true,
+        messages: [`${name}'s Disguise was busted!`],
+      };
+    }
+
+    // Sturdy: if at full HP and damage would KO, cap at maxHp - 1
+    // Source: Showdown data/abilities.ts -- sturdy onDamage (priority -30)
+    if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on thanks to Sturdy!`],
+      };
+    }
+
+    return { damage, survived: false, messages: [] };
   }
 
   /**

@@ -1295,14 +1295,34 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Protect check
+    // Z-Moves and Max Moves bypass Protect but deal only 25% damage.
+    // The hitThroughProtect flag is passed to the damage calc via DamageContext.
+    // Source: Showdown sim/battle-actions.ts -- Z-Moves/Max Moves bypass Protect at 0.25x
+    // Source: Bulbapedia "Z-Move" -- "deals a quarter of its damage" through Protect
+    let hitThroughProtect = false;
     if (defender.volatileStatuses.has("protect") && moveData.flags.protect) {
-      this.emit({
-        type: "message",
-        text: `${getPokemonName(defender)} protected itself!`,
-      });
-      actor.lastMoveUsed = moveData.id;
-      actor.movedThisTurn = true;
-      return;
+      // Z-Moves (zMovePower > 0) and Max Moves (isDynamaxed) bypass Protect
+      const isZMove = effectiveMoveData.zMovePower != null && effectiveMoveData.zMovePower > 0;
+      const isMaxMove = actor.isDynamaxed;
+      if (isZMove || isMaxMove) {
+        hitThroughProtect = true;
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(defender)} protected itself!`,
+        });
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(defender)} couldn't fully protect itself!`,
+        });
+      } else {
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(defender)} protected itself!`,
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
     }
 
     // Quick Guard check (Gen 5+): blocks moves with natural priority > 0 (except Feint)
@@ -1383,6 +1403,7 @@ export class BattleEngine implements BattleEventEmitter {
         state: this.state,
         rng: this.state.rng,
         isCrit,
+        hitThroughProtect,
       });
 
       damage = result.damage;
