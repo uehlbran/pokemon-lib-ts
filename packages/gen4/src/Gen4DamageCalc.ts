@@ -964,9 +964,13 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     if (metronomeState?.data?.count) {
       const boostSteps = (metronomeState.data.count as number) - 1;
       if (boostSteps > 0) {
-        const multiplier = 1 + boostSteps * 0.1;
-        baseDamage = Math.floor(baseDamage * multiplier);
-        itemMultiplier = multiplier;
+        // Use integer arithmetic to avoid float-floor drift: 0.1 is not exactly
+        // representable in binary float, so Math.floor(damage * (1 + n*0.1)) can
+        // underflow by 1 at precision boundaries (e.g. boostSteps=10 → 2.0x).
+        // Equivalent formula as exact integers: damage * (10 + boostSteps) / 10.
+        const numerator = 10 + boostSteps;
+        baseDamage = Math.floor((baseDamage * numerator) / 10);
+        itemMultiplier = numerator / 10;
       }
     }
   }

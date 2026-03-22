@@ -506,16 +506,16 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
 });
 
 // ---------------------------------------------------------------------------
-// Bug #358: Metronome item — 0.1x step / 1.5x cap (Gen 4), not 0.2x / 2.0x (Gen 5+)
+// Bug #559: Metronome item — 0.1x step with NO cap (Gen 4), not 0.2x / 2.0x (Gen 5+)
 // ---------------------------------------------------------------------------
 
 describe("Gen4DamageCalc Metronome item — Gen 4 step size (0.1x) with no cap", () => {
   it("given a Pokemon holding Metronome item using the same move for 3 consecutive turns (count=3), when calculating damage, then boost is 1.2x (not 1.4x which is Gen 5+)", () => {
-    // Source: Showdown Gen 4 mod — Metronome item onModifyMove: +10% per consecutive use, cap 1.5x
-    // Source: Bulbapedia — Metronome (item) Gen 4: "Boosts moves used consecutively by 10%,
-    //   up to 50% (1.5x)."
+    // Source: Showdown data/mods/gen4/items.ts — Metronome onModifyDamagePhase2:
+    //   return damage * (1 + (this.effectState.numConsecutive / 10));
+    //   No Math.min cap — Gen 4 boost accumulates indefinitely.
     //
-    // Gen 4 formula: boost = 1.0 + (count - 1) * 0.1, capped at 1.5
+    // Gen 4 formula: boost = damage * (10 + boostSteps) / 10, no cap (Bug #559)
     // count=3 (3 consecutive uses): boost = 1.0 + 2 * 0.1 = 1.2x
     // Gen 5+ formula: 1.0 + (count - 1) * 0.2, cap 2.0 → at count=3 would be 1.4x
     //

@@ -247,7 +247,7 @@ describe("Gen 4 Metronome item — no consecutive-use cap (bug #559)", () => {
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 7, moveId: "test" },
+      data: { count: 7, moveId: "test-move" },
     });
 
     const defender = createActivePokemon({
@@ -280,7 +280,7 @@ describe("Gen 4 Metronome item — no consecutive-use cap (bug #559)", () => {
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 11, moveId: "test" },
+      data: { count: 11, moveId: "test-move" },
     });
 
     const defender = createActivePokemon({
@@ -313,7 +313,7 @@ describe("Gen 4 Metronome item — no consecutive-use cap (bug #559)", () => {
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 21, moveId: "test" },
+      data: { count: 21, moveId: "test-move" },
     });
 
     const defender = createActivePokemon({
