@@ -289,4 +289,37 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     expect(zMoveContext.move.type).toBe("fire");
     expect(zMoveContext.move.power).toBe(160);
   });
+
+  it("given a gimmick with modifyMove but canUse returns false, when move executes with zMove flag, then modifyMove is NOT called", () => {
+    // Guards against a regression where modifyMove was called unconditionally on the action
+    // flag, even if canUse() returned false and activation was skipped.
+    // Source: Showdown sim/battle-actions.ts — modifyMove only runs after activation succeeds
+    const ruleset = new MockRuleset();
+    let modifyMoveCalled = false;
+
+    const mockGimmick: BattleGimmick = {
+      name: "Z-Move",
+      generations: [7],
+      // canUse returns false — gimmick cannot activate this turn
+      canUse: (_pokemon: ActivePokemon, _side: BattleSide, _state: BattleState) => false,
+      activate: (): BattleEvent[] => [],
+      modifyMove: (move: MoveData): MoveData => {
+        modifyMoveCalled = true;
+        return { ...move, power: 9999 };
+      },
+    };
+
+    ruleset.getBattleGimmick = () => mockGimmick;
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [];
+
+    const { engine } = createEngine({ ruleset });
+    engine.start();
+
+    // Action has zMove flag but canUse() returns false
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, zMove: true });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // modifyMove must NOT have been called since canUse() returned false
+    expect(modifyMoveCalled).toBe(false);
+  });
 });
