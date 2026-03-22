@@ -125,15 +125,19 @@ describe("Gen6Ruleset — calculateExpGain modifiers", () => {
     expect(ruleset.calculateExpGain(context)).toBe(50);
   });
 
-  it("given very low EXP scenario, when calculating EXP, then returns at least 1", () => {
-    // Source: Bulbapedia -- minimum 1 EXP
+  it("given very low EXP scenario, when calculating EXP, then returns 1 (minimum floor)", () => {
+    // Source: Bulbapedia -- minimum 1 EXP guaranteed by Math.max(1, exp)
+    // a = 2*1 + 10 = 12; sqrt(12)*12^2 = 3.464...*144 = 498.xx, floor = 498
+    // b = 1 + 100 + 10 = 111; sqrt(111)*111^2 = 10.535...*12321 = 129788.xx, floor = 129788
+    // exp = floor(498 * 1 / 129788) + 1 = floor(0.003...) + 1 = 0 + 1 = 1
+    // participantCount=6: floor(1 / 6) = 0, then Math.max(1, 0) = 1
     const context = makeExpContext({
       defeatedLevel: 1,
       participantLevel: 100,
       defeatedSpecies: { baseExp: 1 } as any,
       participantCount: 6,
     });
-    expect(ruleset.calculateExpGain(context)).toBeGreaterThanOrEqual(1);
+    expect(ruleset.calculateExpGain(context)).toBe(1);
   });
 });
 
