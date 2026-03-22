@@ -1427,7 +1427,14 @@ export function calculateGen8Damage(
     }
   }
 
-  // 10. Minimum 1 damage (unless type immune)
+  // 10. Max Move through Protect: 0.25x modifier
+  // Source: Showdown sim/battle-actions.ts -- Max Moves bypass Protect at 0.25x damage
+  // Source: Bulbapedia "Max Move" -- Max Moves also deal 25% through Protect
+  if (context.hitThroughProtect) {
+    baseDamage = pokeRound(baseDamage, 1024); // 0.25x via pokeRound (1024/4096)
+  }
+
+  // 11. Minimum 1 damage (unless type immune)
   // Source: Showdown sim/battle-actions.ts -- minimum 1 damage
   const finalDamage = Math.max(1, baseDamage);
 

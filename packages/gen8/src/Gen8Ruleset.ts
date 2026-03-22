@@ -326,8 +326,12 @@ export class Gen8Ruleset extends BaseRuleset {
       case "on-contact":
       case "on-status-inflicted":
       case "on-before-move":
-      case "on-turn-end":
-        return handleGen8SwitchAbility(trigger, context);
+      case "on-turn-end": {
+        // Try switch/field handler first (Hunger Switch, etc.), then stat handler (Speed Boost, Moody)
+        const switchResult = handleGen8SwitchAbility(trigger, context);
+        if (switchResult.activated) return switchResult;
+        return handleGen8StatAbility(context);
+      }
 
       // Triggers handled by the stat/priority handler module
       case "on-priority-check":
@@ -510,7 +514,7 @@ export class Gen8Ruleset extends BaseRuleset {
       move.category !== "status"
     ) {
       // Mark Disguise as broken
-      (defender.volatileStatuses as Map<string, unknown>).set("disguise-broken", true);
+      defender.volatileStatuses.set("disguise-broken", { turnsLeft: -1 });
       const chipDamage = Math.ceil(maxHp / 8);
       return {
         damage: chipDamage,
