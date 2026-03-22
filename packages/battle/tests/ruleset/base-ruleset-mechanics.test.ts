@@ -336,9 +336,9 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   = floor(floor(floor(22 * 4000) / 100) / 50) + 2
     //   = floor(floor(88000 / 100) / 50) + 2
     //   = floor(880 / 50) + 2
-    //   = floor(17.6) + 2 = 17 + 2 = 19
-    // Note: BaseRuleset does not apply the random roll (known issue #557),
-    //   so we test the base formula only.
+    //   = floor(17.6) + 2 = 17 + 2 = 19 (base damage)
+    //   Random factor with seed 42: rng.int(0,15)=9, so randomFactor=94
+    //   finalDamage = max(1, floor(19 * 94 / 100)) = max(1, floor(17.86)) = 17
     const pokemon = createTestPokemon(6, 50, {
       calculatedStats: {
         hp: 200,
@@ -356,9 +356,8 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     const damage = ruleset.calculateConfusionDamage(active, emptyState, rng);
 
     // Assert
-    // levelFactor = floor(2*50/5) + 2 = floor(20) + 2 = 22
-    // damage = floor(floor(22 * 40 * 100) / 100 / 50) + 2 = floor(880/50) + 2 = 17 + 2 = 19
-    expect(damage).toBe(19);
+    // baseDamage=19, randomFactor=94 (seed 42), final=floor(19*94/100)=17
+    expect(damage).toBe(17);
   });
 
   it("given a level 100 pokemon with 200 attack and 100 defense, when calculateConfusionDamage is called, then damage scales correctly", () => {
@@ -368,7 +367,9 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   baseDamage = floor(floor(42 * 40 * 200) / 100) / 50) + 2
     //   = floor(floor(336000 / 100) / 50) + 2
     //   = floor(3360 / 50) + 2
-    //   = floor(67.2) + 2 = 67 + 2 = 69
+    //   = floor(67.2) + 2 = 67 + 2 = 69 (base damage)
+    //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
+    //   finalDamage = max(1, floor(69 * 94 / 100)) = max(1, floor(64.86)) = 64
     const pokemon = createTestPokemon(6, 100, {
       calculatedStats: {
         hp: 300,
@@ -385,8 +386,8 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     // Act
     const damage = ruleset.calculateConfusionDamage(active, emptyState, rng);
 
-    // Assert
-    expect(damage).toBe(69);
+    // Assert — baseDamage=69, randomFactor=94, final=floor(69*94/100)=64
+    expect(damage).toBe(64);
   });
 
   it("given a burned pokemon with neutral attack stages, when calculateConfusionDamage is called, then attack is halved before calculation", () => {
@@ -395,7 +396,9 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   burn halves the attack stat (same as any physical attack)
     //   With burn: effective attack = floor(100 / 2) = 50
     //   levelFactor = floor(2*50/5) + 2 = 22
-    //   damage = floor(floor(22 * 40 * 50) / 100 / 50) + 2 = floor(440/50) + 2 = 8 + 2 = 10
+    //   baseDamage = floor(floor(22 * 40 * 50) / 100 / 50) + 2 = floor(440/50) + 2 = 8 + 2 = 10
+    //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
+    //   finalDamage = max(1, floor(10 * 94 / 100)) = max(1, floor(9.4)) = 9
     const pokemon = createTestPokemon(6, 50, {
       status: "burn",
       calculatedStats: {
@@ -413,8 +416,8 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     // Act
     const damage = ruleset.calculateConfusionDamage(active, emptyState, rng);
 
-    // Assert — burn halves attack: floor(22 * 40 * 50) / 100 / 50 = 8.8 → 8 + 2 = 10
-    expect(damage).toBe(10);
+    // Assert — burn halves atk: baseDamage=10, randomFactor=94, final=floor(10*94/100)=9
+    expect(damage).toBe(9);
   });
 
   it("given a pokemon with attack stage +6 (boosted), when calculateConfusionDamage is called, then boosted attack is applied", () => {
@@ -422,7 +425,9 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     // Source: Showdown — confusion self-hit applies stat stages
     //   +6 stage = 4x multiplier; 100 attack * 4 = 400
     //   levelFactor = floor(2*50/5) + 2 = 22
-    //   damage = floor(floor(22 * 40 * 400) / 100 / 50) + 2 = floor(3520/50) + 2 = 70 + 2 = 72
+    //   baseDamage = floor(floor(22 * 40 * 400) / 100 / 50) + 2 = floor(3520/50) + 2 = 70 + 2 = 72
+    //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
+    //   finalDamage = max(1, floor(72 * 94 / 100)) = max(1, floor(67.68)) = 67
     const pokemon = createTestPokemon(6, 50, {
       calculatedStats: {
         hp: 200,
@@ -440,11 +445,8 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     // Act
     const damage = ruleset.calculateConfusionDamage(active, emptyState, rng);
 
-    // Assert
-    // +6 stage multiplier = 4x (getStatStageMultiplier(6) = 4)
-    // atk = floor(100 * 4) = 400
-    // damage = floor(floor(22 * 40 * 400) / 100 / 50) + 2 = floor(3520/50) + 2 = 70 + 2 = 72
-    expect(damage).toBe(72);
+    // Assert — baseDamage=72, randomFactor=94, final=floor(72*94/100)=67
+    expect(damage).toBe(67);
   });
 });
 
@@ -760,16 +762,11 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     ruleset = new TestRuleset();
   });
 
-  // FIXME(#555): Unskip when getEndOfTurnOrder ordering is fixed
-  it.skip("given the base ruleset, when getEndOfTurnOrder is called, then future-attack comes before weather-damage", () => {
+  it("given the base ruleset, when getEndOfTurnOrder is called, then future-attack comes before weather-damage", () => {
     // Arrange
     // Source: Showdown data/conditions.ts — futuremove onResidualOrder: 3 (first)
     //   weather damage (Sandstorm/Hail) onResidualOrder: 5
     //   future-attack MUST precede weather-damage per Showdown
-    //
-    // BUG: Current BaseRuleset places future-attack AFTER wish, nightmare, curse etc.
-    // This test documents the CORRECT expected behavior per Showdown.
-    // See GitHub issue #555
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
@@ -779,15 +776,12 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     // Assert — future-attack (Showdown order 3) must come before weather-damage (order 5)
     expect(futureIdx).toBeGreaterThanOrEqual(0); // must be present
     expect(weatherIdx).toBeGreaterThanOrEqual(0); // must be present
-    // FIXME(#555): This assertion currently FAILS because future-attack is misplaced
     expect(futureIdx).toBeLessThan(weatherIdx);
   });
 
-  // FIXME(#555): Unskip when getEndOfTurnOrder ordering is fixed
-  it.skip("given the base ruleset, when getEndOfTurnOrder is called, then wish comes before weather-damage", () => {
+  it("given the base ruleset, when getEndOfTurnOrder is called, then wish comes before weather-damage", () => {
     // Arrange
     // Source: Showdown data/moves.ts — wish onResidualOrder: 4 (before weather at 5)
-    // BUG: Current BaseRuleset places wish AFTER curse and nightmare (#555)
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
@@ -797,16 +791,13 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     // Assert — wish (Showdown order 4) must come before weather-damage (order 5)
     expect(wishIdx).toBeGreaterThanOrEqual(0);
     expect(weatherIdx).toBeGreaterThanOrEqual(0);
-    // FIXME(#555): This assertion currently FAILS because wish is misplaced
     expect(wishIdx).toBeLessThan(weatherIdx);
   });
 
-  // FIXME(#555): Unskip when getEndOfTurnOrder ordering is fixed
-  it.skip("given the base ruleset, when getEndOfTurnOrder is called, then leftovers comes before leech-seed", () => {
+  it("given the base ruleset, when getEndOfTurnOrder is called, then leftovers comes before leech-seed", () => {
     // Arrange
     // Source: Showdown data/items.ts — leftovers onResidualOrder: 5
     //          data/moves.ts — leechseed onResidualOrder: 8
-    // Current order in BaseRuleset: leech-seed BEFORE leftovers — this is WRONG
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
@@ -816,16 +807,13 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     // Assert — leftovers (order 5) must come before leech-seed (order 8)
     expect(leftoversIdx).toBeGreaterThanOrEqual(0);
     expect(leechIdx).toBeGreaterThanOrEqual(0);
-    // FIXME(#555): This assertion currently FAILS because leech-seed is before leftovers
     expect(leftoversIdx).toBeLessThan(leechIdx);
   });
 
-  // FIXME(#555): Unskip when getEndOfTurnOrder ordering is fixed
-  it.skip("given the base ruleset, when getEndOfTurnOrder is called, then leech-seed comes before status-damage", () => {
+  it("given the base ruleset, when getEndOfTurnOrder is called, then leech-seed comes before status-damage", () => {
     // Arrange
     // Source: Showdown data/moves.ts — leechseed onResidualOrder: 8
     //          data/conditions.ts — brn onResidualOrder: 10; psn onResidualOrder: 9
-    // Current BaseRuleset: status-damage BEFORE leech-seed — this is WRONG per Showdown
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
@@ -835,16 +823,13 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     // Assert — leech-seed (order 8) must come before status-damage (order 9/10)
     expect(leechIdx).toBeGreaterThanOrEqual(0);
     expect(statusIdx).toBeGreaterThanOrEqual(0);
-    // FIXME(#555): This assertion currently FAILS
     expect(leechIdx).toBeLessThan(statusIdx);
   });
 
-  // FIXME(#555): Unskip when getEndOfTurnOrder ordering is fixed
-  it.skip("given the base ruleset, when getEndOfTurnOrder is called, then nightmare comes before bind", () => {
+  it("given the base ruleset, when getEndOfTurnOrder is called, then nightmare comes before bind", () => {
     // Arrange
     // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11
     //          data/conditions.ts — partiallytrapped onResidualOrder: 13
-    // Current BaseRuleset: bind BEFORE nightmare and curse — this is WRONG
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
@@ -854,16 +839,13 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     // Assert — nightmare (order 11) must come before bind (order 13)
     expect(nightmareIdx).toBeGreaterThanOrEqual(0);
     expect(bindIdx).toBeGreaterThanOrEqual(0);
-    // FIXME(#555): This assertion currently FAILS because bind is before nightmare
     expect(nightmareIdx).toBeLessThan(bindIdx);
   });
 
-  // FIXME(#555): Unskip when getEndOfTurnOrder ordering is fixed
-  it.skip("given the base ruleset, when getEndOfTurnOrder is called, then curse comes before bind", () => {
+  it("given the base ruleset, when getEndOfTurnOrder is called, then curse comes before bind", () => {
     // Arrange
     // Source: Showdown data/moves.ts — curse onResidualOrder: 12
     //          data/conditions.ts — partiallytrapped onResidualOrder: 13
-    // Current BaseRuleset: bind BEFORE curse — this is WRONG
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
@@ -873,7 +855,6 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     // Assert — curse (order 12) must come before bind (order 13)
     expect(curseIdx).toBeGreaterThanOrEqual(0);
     expect(bindIdx).toBeGreaterThanOrEqual(0);
-    // FIXME(#555): This assertion currently FAILS
     expect(curseIdx).toBeLessThan(bindIdx);
   });
 

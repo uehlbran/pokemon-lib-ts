@@ -634,16 +634,13 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return 0.5;
   }
 
-  calculateConfusionDamage(
-    pokemon: ActivePokemon,
-    _state: BattleState,
-    _rng: SeededRandom,
-  ): number {
+  calculateConfusionDamage(pokemon: ActivePokemon, _state: BattleState, rng: SeededRandom): number {
     // Gen 3+: confusion self-hit uses 40 base power with the user's own Attack and Defense.
-    // No random variance, no STAB, no critical hit, no type effectiveness.
+    // Applies 85-100% random variance like normal damage, but no STAB, no critical hit,
+    // no type effectiveness.
     // Burn halves physical attack even on confusion self-hits (confusion is always physical-category).
     // No Gen 1 stat overflow check — that bug is Gen 1 specific.
-    // Source: Showdown sim/battle.ts confusion self-damage logic
+    // Source: Showdown sim/battle-actions.ts confusion self-damage logic
     const level = pokemon.pokemon.level;
     const calcStats = pokemon.pokemon.calculatedStats;
     const baseAtk = calcStats?.attack ?? 50;
@@ -660,7 +657,13 @@ export abstract class BaseRuleset implements GenerationRuleset {
     }
 
     const levelFactor = Math.floor((2 * level) / 5) + 2;
-    const damage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
+    const baseDamage = Math.floor(Math.floor(levelFactor * 40 * atk) / def / 50) + 2;
+
+    // Source: Showdown sim/battle-actions.ts — confusion self-hit applies 85-100% random factor
+    // damage = tr(damage * (85 + rng.next(16)) / 100)
+    const randomFactor = 85 + rng.int(0, 15);
+    const damage = Math.floor((baseDamage * randomFactor) / 100);
+
     return Math.max(1, damage);
   }
 
@@ -899,23 +902,30 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // Note: "defrost" is intentionally absent here. Gen 3+ handle freeze thaw pre-move
     // via checkFreezeThaw (20% per turn), NOT between turns. Only Gen 2 includes "defrost"
     // in its EoT order (see Gen2Ruleset.getEndOfTurnOrder and processEndOfTurnDefrost).
+    // Source: Showdown sim/battle-actions.ts residualOrder values from
+    // data/conditions.ts, data/moves.ts, data/items.ts
+    // future-attack(3), wish(4), weather-damage(5), leftovers/black-sludge(5.2),
+    // ingrain(7), leech-seed(8), status-damage(9-10), nightmare(11),
+    // curse(12), bind/partiallytrapped(13), perish-song(24), countdowns(26)
     return [
+      "future-attack",
+      "wish",
       "weather-damage",
-      "weather-countdown",
-      "terrain-countdown",
-      "status-damage",
-      "leech-seed",
       "leftovers",
       "black-sludge",
-      "bind",
-      "curse",
+      "ingrain",
+      "leech-seed",
+      "status-damage",
       "nightmare",
-      "wish",
-      "future-attack",
+      "curse",
+      "bind",
       "perish-song",
       "screen-countdown",
+      "weather-countdown",
+      "terrain-countdown",
       "tailwind-countdown",
       "trick-room-countdown",
+      "encore-countdown",
     ];
   }
 
