@@ -25,6 +25,7 @@ import {
   isAssaultVestHolder,
   isChoiceLocked,
 } from "../src/Gen8Items";
+import { Gen8Ruleset } from "../src/Gen8Ruleset";
 
 // ---------------------------------------------------------------------------
 // Helper factories
@@ -288,6 +289,26 @@ describe("getItemDamageModifier", () => {
     const result = getItemDamageModifier("potion", {
       moveCategory: "physical",
       moveType: "normal",
+    });
+    expect(result).toBe(4096);
+  });
+
+  // Source: Showdown data/items.ts -- type-boost onBasePower and Life Orb onModifyDamage
+  //   only fire on damaging hits, never on status moves
+  it("given Life Orb with a status move, when calculating modifier, then returns 4096 (no boost)", () => {
+    // Status moves (Will-O-Wisp, Toxic, etc.) must not receive a damage modifier
+    const result = getItemDamageModifier("life-orb", {
+      moveCategory: "status",
+      moveType: "fire",
+    });
+    expect(result).toBe(4096);
+  });
+
+  it("given Charcoal with a Fire-type status move, when calculating modifier, then returns 4096 (no boost)", () => {
+    // Type-boost items must not activate for status moves regardless of type match
+    const result = getItemDamageModifier("charcoal", {
+      moveCategory: "status",
+      moveType: "fire",
     });
     expect(result).toBe(4096);
   });
@@ -804,6 +825,20 @@ describe("applyGen8HeldItem", () => {
         value: "air-balloon",
       });
     });
+
+    // Source: Showdown data/items.ts -- Air Balloon: pops on hit regardless of damage amount
+    it("given Air Balloon holder taking 1 damage (minimum), when applying item, then balloon pops (consumed)", () => {
+      // Triangulation: different damage value confirms balloon always pops when hit
+      const pokemon = makeActive({ heldItem: "air-balloon", hp: 400, currentHp: 400 });
+      const ctx = makeContext({ pokemon, damage: 1 });
+      const result = applyGen8HeldItem("on-damage-taken", ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects[0]).toEqual({
+        type: "consume",
+        target: "self",
+        value: "air-balloon",
+      });
+    });
   });
 
   describe("on-contact triggers", () => {
@@ -863,6 +898,21 @@ describe("applyGen8HeldItem", () => {
       // floor(200 / 10) = 20
       expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: 20 });
     });
+
+    // Source: Showdown data/items.ts -- Life Orb: floor(baseMaxhp / 10)
+    it("given Life Orb holder with 300 max HP dealing a special move, when applying item, then takes 30 recoil", () => {
+      // Triangulation: different HP value confirms it's not a constant return
+      const pokemon = makeActive({ heldItem: "life-orb", hp: 300, currentHp: 300 });
+      const ctx = makeContext({
+        pokemon,
+        damage: 80,
+        move: { id: "flamethrower", type: "fire", category: "special", power: 90 },
+      });
+      const result = applyGen8HeldItem("on-hit", ctx);
+      expect(result.activated).toBe(true);
+      // floor(300 / 10) = 30
+      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: 30 });
+    });
   });
 
   describe("suppression mechanics", () => {
@@ -915,5 +965,31 @@ describe("applyGen8HeldItem", () => {
       const result = applyGen8HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(false);
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Gen8Ruleset.applyHeldItem wiring
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Gen 8 Ruleset -- applyHeldItem wiring", () => {
+  // Source: Showdown data/items.ts -- Leftovers heals 1/16 max HP each end-of-turn
+  // Verifies Gen8Ruleset.applyHeldItem delegates to applyGen8HeldItem (not a no-op)
+  it("given Gen8Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen8 item handler", () => {
+    const ruleset = new Gen8Ruleset();
+    const pokemon = makeActive({ heldItem: "leftovers", hp: 160, currentHp: 120 });
+    const ctx = makeContext({ pokemon });
+    const result = ruleset.applyHeldItem("end-of-turn", ctx);
+    expect(result.activated).toBe(true);
+    // floor(160 / 16) = 10 HP healed
+    expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: 10 });
+  });
+
+  it("given Gen8Ruleset, when calling applyHeldItem with no item, then returns inactive result", () => {
+    const ruleset = new Gen8Ruleset();
+    const pokemon = makeActive({ heldItem: null });
+    const ctx = makeContext({ pokemon });
+    const result = ruleset.applyHeldItem("end-of-turn", ctx);
+    expect(result.activated).toBe(false);
   });
 });

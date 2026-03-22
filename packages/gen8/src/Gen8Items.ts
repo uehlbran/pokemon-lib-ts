@@ -191,9 +191,14 @@ export function getItemDamageModifier(
 ): number {
   const moveType = context.moveType;
   const moveCategory = context.moveCategory;
+  // Type-boost items and Life Orb only apply to damaging moves (physical or special).
+  // Status moves like Will-O-Wisp and Toxic must not receive a boost.
+  // Source: Showdown data/items.ts -- all type-boost and Life Orb handlers check for
+  //   damaging hits via onBasePower / onModifyDamage (which never fire for status moves)
+  const isDamagingMove = moveCategory === "physical" || moveCategory === "special";
 
   // Type-boost items: 1.2x (4915/4096) for matching type
-  if (moveType) {
+  if (isDamagingMove && moveType) {
     const typeBoost = TYPE_BOOST_ITEMS[item];
     if (typeBoost === moveType) return 4915;
 
@@ -206,7 +211,7 @@ export function getItemDamageModifier(
 
   // Life Orb: 1.3x (5325/4096) -- applies to all damaging moves
   // Source: Showdown data/items.ts -- Life Orb onModifyDamage chainModify([5325, 4096])
-  if (item === "life-orb") return 5325;
+  if (item === "life-orb" && isDamagingMove) return 5325;
 
   // Choice Band: 1.5x (6144/4096) for physical moves only
   // Source: Showdown data/items.ts -- Choice Band onModifyAtk
@@ -622,23 +627,34 @@ function sheerForceSuppressesLifeOrb(
  * Find the opponent's max HP from the battle state.
  * Used by Rocky Helmet, Jaboca/Rowap Berry to deal retaliation damage
  * based on the attacker's HP.
+ *
+ * Prefers context.opponent (the direct attacker reference) over the sides
+ * array lookup, to avoid misattributing retaliation damage to the wrong
+ * Pokemon or falling back to the holder's own HP.
+ *
+ * Returns null when the attacker cannot be resolved — callers must skip
+ * activation in that case.
  */
-function getOpponentMaxHp(context: ItemContext): number {
+function getOpponentMaxHp(context: ItemContext): number | null {
+  // Prefer the direct attacker reference provided by the engine
+  if (context.opponent) {
+    return context.opponent.pokemon.calculatedStats?.hp ?? context.opponent.pokemon.currentHp;
+  }
   const pokemon = context.pokemon;
   const sides = context.state?.sides;
   if (!sides) {
-    return pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return null;
   }
   const holderSide = sides.findIndex((s) =>
     s.active.some((a: { pokemon: unknown } | null) => a && a.pokemon === pokemon.pokemon),
   );
   if (holderSide === -1) {
-    return pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return null;
   }
   const opponentSide = holderSide === 0 ? 1 : 0;
   const opponent = sides[opponentSide]?.active?.[0];
   if (!opponent) {
-    return pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    return null;
   }
   return opponent.pokemon.calculatedStats?.hp ?? opponent.pokemon.currentHp;
 }
@@ -1207,6 +1223,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       const moveCategory = context.move?.category;
       if (moveCategory === "physical" && damage > 0) {
         const attackerMaxHp = getOpponentMaxHp(context);
+        if (attackerMaxHp === null) return NO_ACTIVATION;
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
         return {
           activated: true,
@@ -1226,6 +1243,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       const moveCategory = context.move?.category;
       if (moveCategory === "special" && damage > 0) {
         const attackerMaxHp = getOpponentMaxHp(context);
+        if (attackerMaxHp === null) return NO_ACTIVATION;
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
         return {
           activated: true,
@@ -1462,6 +1480,7 @@ function handleOnContact(item: string, context: ItemContext): ItemResult {
         return NO_ACTIVATION;
       }
       const attackerMaxHp = getOpponentMaxHp(context);
+      if (attackerMaxHp === null) return NO_ACTIVATION;
       const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 6));
       return {
         activated: true,
