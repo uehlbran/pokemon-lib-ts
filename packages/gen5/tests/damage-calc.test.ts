@@ -1424,3 +1424,101 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     expect(result.damage).toBeGreaterThan(30);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Sheer Force power boost tests
+// ---------------------------------------------------------------------------
+
+describe("Sheer Force power boost in damage calc", () => {
+  it("given Sheer Force user using Flamethrower (10% burn secondary), when calculating damage, then power is boosted by 5325/4096", () => {
+    // Source: Showdown data/abilities.ts -- sheerforce: onBasePower chainModify([5325, 4096])
+    // Source: Bulbapedia -- "Sheer Force raises the base power of moves that have
+    //   additional effects by approximately 30%"
+    //
+    // Derivation:
+    //   base power 90
+    //   Sheer Force: pokeRound(90, 5325) = floor((90*5325 + 2048) / 4096)
+    //     = floor(481298 / 4096) = floor(117.504...) = 117
+    //   L50, spAtk 100 vs spDef 100, fire vs normal (neutral)
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   baseDamage = floor(floor(22 * 117 * 100 / 100) / 50) = floor(51.48) = 51
+    //   +2 => 53
+    //   random(seed=42) = 94 => floor(53 * 94 / 100) = floor(49.82) = 49
+    //   No STAB, neutral type, no burn => final damage = 49
+    const attacker = makeActive({ spAttack: 100, ability: "sheer-force", types: ["normal"] });
+    const defender = makeActive({ spDefense: 100, types: ["normal"] });
+    const move = makeMove({
+      id: "flamethrower",
+      type: "fire",
+      category: "special",
+      power: 90,
+      flags: { contact: false },
+      effect: { type: "status-chance", status: "burn", chance: 10 },
+    });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen5Damage(
+      ctx,
+      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+    );
+    expect(result.damage).toBe(49);
+  });
+
+  it("given Sheer Force user using Earthquake (no secondary effect), when calculating damage, then power is unchanged", () => {
+    // Source: Showdown data/abilities.ts -- sheerforce only activates when move has secondaries
+    // Source: Bulbapedia -- "Sheer Force does not affect moves that do not have
+    //   additional effects"
+    //
+    // Derivation (no boost):
+    //   base power 100, no secondary => no Sheer Force boost
+    //   L50, atk 100 vs def 100, ground vs normal (neutral)
+    //   levelFactor = 22
+    //   baseDamage = floor(floor(22 * 100 * 100 / 100) / 50) = floor(44) = 44
+    //   +2 => 46
+    //   random(seed=42) = 94 => floor(46 * 94 / 100) = floor(43.24) = 43
+    //   No STAB, neutral type, no burn => final damage = 43
+    const attacker = makeActive({ attack: 100, ability: "sheer-force", types: ["normal"] });
+    const defender = makeActive({ defense: 100, types: ["normal"] });
+    const move = makeMove({
+      id: "earthquake",
+      type: "ground",
+      category: "physical",
+      power: 100,
+      effect: null,
+    });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen5Damage(
+      ctx,
+      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+    );
+    expect(result.damage).toBe(43);
+  });
+
+  it("given non-Sheer-Force user using Flamethrower, when calculating damage, then power uses base 90 (no boost)", () => {
+    // Source: Showdown -- only sheer-force ability triggers the boost
+    //
+    // Derivation (no ability boost):
+    //   base power 90, no Sheer Force
+    //   L50, spAtk 100 vs spDef 100, fire vs normal (neutral)
+    //   levelFactor = 22
+    //   baseDamage = floor(floor(22 * 90 * 100 / 100) / 50) = floor(39.6) = 39
+    //   +2 => 41
+    //   random(seed=42) = 94 => floor(41 * 94 / 100) = floor(38.54) = 38
+    //   No STAB, neutral type => final damage = 38
+    const attacker = makeActive({ spAttack: 100, ability: "blaze", types: ["normal"] });
+    const defender = makeActive({ spDefense: 100, types: ["normal"] });
+    const move = makeMove({
+      id: "flamethrower",
+      type: "fire",
+      category: "special",
+      power: 90,
+      flags: { contact: false },
+      effect: { type: "status-chance", status: "burn", chance: 10 },
+    });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen5Damage(
+      ctx,
+      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+    );
+    expect(result.damage).toBe(38);
+  });
+});
