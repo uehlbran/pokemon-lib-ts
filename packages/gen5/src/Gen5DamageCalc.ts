@@ -500,8 +500,11 @@ export function calculateGen5Damage(
 
   // Gem boost: 1.5x base power in Gen 5 (consumed before damage)
   // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts gem condition -- chainModify(1.5)
+  // Embargo suppresses all held item effects including gems
+  // Source: Showdown data/moves.ts -- embargo: suppresses item use
+  const attackerHasEmbargo = attacker.volatileStatuses.has("embargo");
   let gemConsumed = false;
-  if (!attackerHasKlutz && attackerItem) {
+  if (!attackerHasKlutz && !attackerHasEmbargo && attackerItem) {
     const gemType = GEM_ITEMS[attackerItem];
     if (gemType && gemType === effectiveMoveType) {
       power = Math.floor(power * 1.5);
@@ -956,9 +959,13 @@ export function calculateGen5Damage(
   // Source: Showdown sim/battle-actions.ts -- minimum 1 damage
   const finalDamage = Math.max(1, baseDamage);
 
-  // Consume gem if activated
+  // Consume gem if activated; trigger Unburden if attacker has the ability
+  // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
     attacker.pokemon.heldItem = null;
+    if (attacker.ability === "unburden" && !attacker.volatileStatuses.has("unburden")) {
+      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    }
   }
 
   const breakdown: DamageBreakdown = {
