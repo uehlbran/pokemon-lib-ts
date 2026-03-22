@@ -2107,12 +2107,12 @@ describe("Gen1BadgeBoosts — applyGen1BadgeBoosts", () => {
     expect(result.attack).toBe(86);
   });
 
-  it("given a large stat value with soul badge, when applying badge boosts, then result scales correctly", () => {
-    // Source: pret/pokered engine/battle/core.asm — badge boost = × 9/8 (floor)
-    // floor(999 * 9 / 8) = floor(1123.875) = 1123
+  it("given a large stat value with soul badge, when applying badge boosts, then result is capped at MAX_STAT_VALUE (999)", () => {
+    // Source: pret/pokered engine/battle/core.asm — ApplyBadgeStatBoosts caps at MAX_STAT_VALUE (999)
+    // floor(999 * 9 / 8) = floor(1123.875) = 1123, but capped at 999
     const stats = { hp: 100, attack: 100, defense: 100, speed: 999, spAttack: 100, spDefense: 100 };
     const result = applyGen1BadgeBoosts(stats, { soul: true });
-    expect(result.speed).toBe(1123);
+    expect(result.speed).toBe(999);
   });
 });
 

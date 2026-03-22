@@ -17,13 +17,15 @@ export interface Gen1BadgeBoosts {
  * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts routine
  */
 export function applyGen1BadgeBoosts(stats: StatBlock, badges: Gen1BadgeBoosts): StatBlock {
+  // Source: pret/pokered engine/battle/core.asm — ApplyBadgeStatBoosts caps at MAX_STAT_VALUE (999)
+  const MAX_STAT_VALUE = 999;
   let { hp, attack, defense, speed, spAttack, spDefense } = stats;
-  if (badges.boulder) attack = Math.floor((attack * 9) / 8);
-  if (badges.thunder) defense = Math.floor((defense * 9) / 8);
-  if (badges.soul) speed = Math.floor((speed * 9) / 8);
+  if (badges.boulder) attack = Math.min(MAX_STAT_VALUE, Math.floor((attack * 9) / 8));
+  if (badges.thunder) defense = Math.min(MAX_STAT_VALUE, Math.floor((defense * 9) / 8));
+  if (badges.soul) speed = Math.min(MAX_STAT_VALUE, Math.floor((speed * 9) / 8));
   if (badges.volcano) {
-    spAttack = Math.floor((spAttack * 9) / 8);
-    spDefense = Math.floor((spDefense * 9) / 8); // spDefense === spAttack in Gen 1
+    spAttack = Math.min(MAX_STAT_VALUE, Math.floor((spAttack * 9) / 8));
+    spDefense = Math.min(MAX_STAT_VALUE, Math.floor((spDefense * 9) / 8)); // spDefense === spAttack in Gen 1
   }
   return { hp, attack, defense, speed, spAttack, spDefense };
 }
