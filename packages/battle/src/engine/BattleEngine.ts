@@ -433,6 +433,16 @@ export class BattleEngine implements BattleEventEmitter {
         // Source: Bulbapedia — "Taunt prevents the target from using status moves"
         disabled = true;
         disabledReason = "Blocked by Taunt";
+      } else if (
+        this.ruleset.hasHeldItems() &&
+        active.pokemon.heldItem === "assault-vest" &&
+        moveData?.category === "status"
+      ) {
+        // Assault Vest prevents the holder from using status moves
+        // Source: Showdown data/items.ts — Assault Vest: "The holder is unable to use status moves"
+        // Source: Bulbapedia "Assault Vest" — "The holder cannot use status moves"
+        disabled = true;
+        disabledReason = "Blocked by Assault Vest";
       } else if (active.volatileStatuses.has("choice-locked")) {
         // Choice lock restricts to the locked move only
         // Source: Bulbapedia — Choice Band/Specs/Scarf lock the user into the first move used
@@ -2488,6 +2498,21 @@ export class BattleEngine implements BattleEventEmitter {
       this.emit({
         type: "message",
         text: `${getPokemonName(actor)} can't use ${move.id} after the taunt!`,
+      });
+      return false;
+    }
+
+    // Assault Vest check — prevents status moves (runtime enforcement, mirrors getAvailableMoves)
+    // Source: Showdown data/items.ts — Assault Vest: "The holder is unable to use status moves"
+    // Source: Bulbapedia "Assault Vest" — "The holder cannot use status moves"
+    if (
+      this.ruleset.hasHeldItems() &&
+      actor.pokemon.heldItem === "assault-vest" &&
+      move.category === "status"
+    ) {
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(actor)} can't use ${move.displayName} because of its Assault Vest!`,
       });
       return false;
     }

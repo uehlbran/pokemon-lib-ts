@@ -564,15 +564,46 @@ export class Gen5Ruleset extends BaseRuleset {
 
         let priorityA = 0;
         let priorityB = 0;
+        let moveDataA: MoveData | undefined;
+        let moveDataB: MoveData | undefined;
         try {
-          priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
+          moveDataA = this.dataManager.getMove(moveSlotA.moveId);
+          priorityA = moveDataA.priority;
         } catch {
           /* default 0 */
         }
         try {
-          priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
+          moveDataB = this.dataManager.getMove(moveSlotB.moveId);
+          priorityB = moveDataB.priority;
         } catch {
           /* default 0 */
+        }
+
+        // Ability-based priority boosts (Prankster in Gen 5)
+        // Source: Showdown data/abilities.ts -- Prankster onModifyPriority: +1 for status moves
+        if (activeA.ability && moveDataA) {
+          const resultA = this.applyAbility("on-priority-check", {
+            pokemon: activeA,
+            state,
+            rng: state.rng,
+            trigger: "on-priority-check",
+            move: moveDataA,
+          });
+          if (resultA.activated) {
+            priorityA += 1;
+          }
+        }
+        if (activeB.ability && moveDataB) {
+          const resultB = this.applyAbility("on-priority-check", {
+            pokemon: activeB,
+            state,
+            rng: state.rng,
+            trigger: "on-priority-check",
+            move: moveDataB,
+          });
+          if (resultB.activated) {
+            priorityB += 1;
+          }
         }
 
         if (priorityA !== priorityB) return priorityB - priorityA;

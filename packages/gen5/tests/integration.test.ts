@@ -23,6 +23,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen5DataManager } from "../src/data";
 import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
 import { GEN5_CRIT_MULTIPLIER } from "../src/Gen5CritCalc";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
@@ -581,4 +582,83 @@ describe("Gen 5 integration: Protect consecutive use penalty", () => {
     // If the cap is enforced, same seed produces same result for N=8 and N=9
     expect(mismatches).toBe(0);
   });
+});
+
+// ---------------------------------------------------------------------------
+// I) Prankster Priority Boost in resolveTurnOrder
+// ---------------------------------------------------------------------------
+
+describe("Gen 5 integration: Prankster priority boost in resolveTurnOrder", () => {
+  // Must use createGen5DataManager() so move lookups in resolveTurnOrder succeed.
+  // The default Gen5Ruleset constructor uses an empty DataManager.
+  const ruleset = new Gen5Ruleset(createGen5DataManager());
+
+  it(
+    "given Prankster user with a status move vs faster opponent with a damage move, " +
+      "when resolveTurnOrder is called, then Prankster user moves first due to +1 priority",
+    () => {
+      // Source: Showdown data/abilities.ts -- Prankster onModifyPriority: +1 for status moves
+      // Both moves have base priority 0. Prankster boosts the status move to priority 1.
+      const pranksterMon = makeActivePokemon({
+        ability: "prankster",
+        speed: 50,
+        nickname: "Sableye",
+        moves: [{ moveId: "will-o-wisp", pp: 15, maxPp: 15 }],
+      });
+      const fastMon = makeActivePokemon({
+        speed: 200,
+        nickname: "Opponent",
+        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      });
+
+      const side0 = makeSide(pranksterMon, 0);
+      const side1 = makeSide(fastMon, 1);
+      const state = makeState({ sides: [side0, side1] });
+
+      const actions = [
+        { type: "move" as const, side: 0 as const, moveIndex: 0 },
+        { type: "move" as const, side: 1 as const, moveIndex: 0 },
+      ];
+
+      const rng = new SeededRandom(42);
+      const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+      // Prankster user (side 0) should go first despite being slower
+      expect(ordered[0].side).toBe(0);
+    },
+  );
+
+  it(
+    "given Prankster user with a physical move vs faster opponent, " +
+      "when resolveTurnOrder is called, then faster opponent moves first (Prankster does not boost damage moves)",
+    () => {
+      // Source: Showdown data/abilities.ts -- Prankster only boosts status moves
+      const pranksterMon = makeActivePokemon({
+        ability: "prankster",
+        speed: 50,
+        nickname: "Sableye",
+        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      });
+      const fastMon = makeActivePokemon({
+        speed: 200,
+        nickname: "Opponent",
+        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      });
+
+      const side0 = makeSide(pranksterMon, 0);
+      const side1 = makeSide(fastMon, 1);
+      const state = makeState({ sides: [side0, side1] });
+
+      const actions = [
+        { type: "move" as const, side: 0 as const, moveIndex: 0 },
+        { type: "move" as const, side: 1 as const, moveIndex: 0 },
+      ];
+
+      const rng = new SeededRandom(42);
+      const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+      // Faster opponent (side 1) should go first
+      expect(ordered[0].side).toBe(1);
+    },
+  );
 });
