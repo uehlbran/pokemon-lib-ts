@@ -412,4 +412,60 @@ describe("Gen7Ruleset -- dual gimmick access via getBattleGimmick", () => {
     // side.gimmickUsed is NOT set by Gen 7's mega
     expect(side.gimmickUsed).toBe(false);
   });
+
+  it("given gimmicks used in battle 1, when reset() is called, then battle 2 can use both gimmicks again", () => {
+    // Source: Qodo review PR #699 -- gimmick state must be cleared between battles
+    // when the same ruleset instance is reused (e.g., via GenerationRegistry).
+    const ruleset = new Gen7Ruleset();
+    const mega = ruleset.getBattleGimmick("mega") as Gen7MegaEvolution;
+    const zmove = ruleset.getBattleGimmick("zmove") as Gen7ZMove;
+    const side = makeSide(0);
+    const state = makeState();
+
+    const charizard = makeActivePokemon({
+      uid: "charizard",
+      speciesId: 6,
+      heldItem: "charizardite-x",
+    });
+    const pikachu = makeActivePokemon({
+      uid: "pikachu",
+      speciesId: 25,
+      heldItem: "normalium-z",
+      types: ["electric"],
+      ability: "static",
+      moves: [{ moveId: "tackle" }],
+    });
+
+    // Battle 1: use both gimmicks on side 0
+    mega.activate(charizard, side, state);
+    zmove.activate(pikachu, side, state);
+    expect(mega.hasUsedMega(0)).toBe(true);
+    expect(zmove.hasUsedZMove(0)).toBe(true);
+
+    // Simulate BattleEngine.start() calling reset on battle 2
+    mega.reset();
+    zmove.reset();
+
+    // Battle 2: per-side tracking is cleared
+    expect(mega.hasUsedMega(0)).toBe(false);
+    expect(zmove.hasUsedZMove(0)).toBe(false);
+
+    // Fresh Pokemon instances for battle 2 (the old ones were mutated by activate)
+    const charizard2 = makeActivePokemon({
+      uid: "charizard-b2",
+      speciesId: 6,
+      heldItem: "charizardite-x",
+    });
+    const pikachu2 = makeActivePokemon({
+      uid: "pikachu-b2",
+      speciesId: 25,
+      heldItem: "normalium-z",
+      types: ["electric"],
+      ability: "static",
+      moves: [{ moveId: "tackle" }],
+    });
+    const side2 = makeSide(0);
+    expect(mega.canUse(charizard2, side2, state)).toBe(true);
+    expect(zmove.canUse(pikachu2, side2, state)).toBe(true);
+  });
 });
