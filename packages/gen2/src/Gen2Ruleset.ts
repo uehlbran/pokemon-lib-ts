@@ -383,7 +383,7 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    const { move, attacker, defender, damage } = context;
+    const { move, defender } = context;
     const result: MutableResult = {
       statusInflicted: null,
       volatileInflicted: null,
