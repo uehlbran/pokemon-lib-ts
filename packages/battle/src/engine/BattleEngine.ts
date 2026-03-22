@@ -106,6 +106,13 @@ export class BattleEngine implements BattleEventEmitter {
         pokemon.currentHp = pokemon.calculatedStats.hp;
       }
     }
+
+    // Reset per-battle gimmick state so that a shared ruleset instance can be
+    // safely reused across multiple battles without cross-battle state leakage.
+    // Source: Showdown resets side.megaUsed / side.zMoveUsed at battle start.
+    for (const gimmickType of ["mega", "zmove", "dynamax", "tera"] as const) {
+      this.ruleset.getBattleGimmick(gimmickType)?.reset?.();
+    }
   }
 
   /**
