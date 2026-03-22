@@ -5,19 +5,10 @@ import { GEN9_TYPE_CHART, GEN9_TYPES } from "../src/Gen9TypeChart.js";
  * Type chart tests for Gen 9.
  * Gen 9 uses the same 18-type chart as Gen 6-8 (no type changes).
  *
- * Note: These tests require the data/type-chart.json file to exist.
- * They will be skipped if the file hasn't been generated yet.
+ * Data files are committed to the repo and always present.
  */
 describe("Gen9TypeChart", () => {
-  // Check if type chart data is available; skip if not
-  let typeChartAvailable = false;
-  try {
-    typeChartAvailable = GEN9_TYPE_CHART !== undefined && Object.keys(GEN9_TYPE_CHART).length > 0;
-  } catch {
-    typeChartAvailable = false;
-  }
-
-  describe.skipIf(!typeChartAvailable)("type availability", () => {
+  describe("type availability", () => {
     it("given Gen 9 types, when counting, then there are 18 types", () => {
       // Source: Bulbapedia -- Gen 6+ has 18 types (Normal through Fairy)
       // Gen 9 did not add any new types.
@@ -57,13 +48,25 @@ describe("Gen9TypeChart", () => {
     });
   });
 
-  describe.skipIf(!typeChartAvailable)("type effectiveness", () => {
+  describe("type effectiveness", () => {
     /**
      * Helper to look up type effectiveness from the chart.
+     * Throws if the attack type or defense type is missing from the chart,
+     * ensuring test failures surface actual data problems.
      */
     function getEffectiveness(attackType: string, defenseType: string): number {
       const chart = GEN9_TYPE_CHART as Record<string, Record<string, number>>;
-      return chart[attackType]?.[defenseType] ?? 1;
+      const attackRow = chart[attackType];
+      if (!attackRow) {
+        throw new Error(`Attack type "${attackType}" not found in type chart`);
+      }
+      const value = attackRow[defenseType];
+      if (value === undefined) {
+        throw new Error(
+          `Defense type "${defenseType}" not found in "${attackType}" row of type chart`,
+        );
+      }
+      return value;
     }
 
     // --- Super effective ---
