@@ -47,7 +47,8 @@ import {
 import { createGen1DataManager } from "./data";
 import { rollGen1Critical } from "./Gen1CritCalc";
 import { calculateGen1Damage } from "./Gen1DamageCalc";
-import { calculateGen1Stats } from "./Gen1StatCalc";
+import type { Gen1BadgeBoosts } from "./Gen1StatCalc";
+import { applyGen1BadgeBoosts, calculateGen1Stats } from "./Gen1StatCalc";
 import { GEN1_TYPE_CHART, GEN1_TYPES } from "./Gen1TypeChart";
 
 /**
@@ -58,6 +59,16 @@ import { GEN1_TYPE_CHART, GEN1_TYPES } from "./Gen1TypeChart";
  * for crit calculations (rollCritical uses the Speed-based formula).
  */
 const GEN1_CRIT_RATE_TABLE: readonly number[] = [1 / 16] as const;
+
+/** Options for Gen1Ruleset constructor. */
+export interface Gen1RulesetOptions {
+  /**
+   * Opt-in badge stat boosts. Each badge multiplies the relevant stat by ×9/8 (floor).
+   * These are a single-player mechanic — competitive/link battles never apply them.
+   * Default: undefined (no badge boosts applied).
+   */
+  readonly badgeBoosts?: Gen1BadgeBoosts;
+}
 
 /**
  * Gen1Ruleset — implements GenerationRuleset directly (not extending BaseRuleset).
@@ -78,6 +89,11 @@ export class Gen1Ruleset implements GenerationRuleset {
   readonly name = "Gen 1 (RBY)";
 
   private readonly dataManager = createGen1DataManager();
+  private readonly badgeBoosts?: Gen1BadgeBoosts;
+
+  constructor(options?: Gen1RulesetOptions) {
+    this.badgeBoosts = options?.badgeBoosts;
+  }
 
   // --- Type System ---
 
@@ -92,7 +108,8 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- Stat Calculation ---
 
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
-    return calculateGen1Stats(pokemon, species);
+    const base = calculateGen1Stats(pokemon, species);
+    return this.badgeBoosts ? applyGen1BadgeBoosts(base, this.badgeBoosts) : base;
   }
 
   // --- Damage Calculation ---

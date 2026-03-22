@@ -1,6 +1,33 @@
 import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
 import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
 
+// Source: pret/pokered engine/battle/core.asm — badge stat boost table
+// Boulder Badge → Attack, Thunder Badge → Defense, Soul Badge → Speed, Volcano Badge → Special
+export interface Gen1BadgeBoosts {
+  readonly boulder?: boolean; // × 9/8 on Attack
+  readonly thunder?: boolean; // × 9/8 on Defense
+  readonly soul?: boolean; // × 9/8 on Speed
+  readonly volcano?: boolean; // × 9/8 on Special (both spAttack and spDefense)
+}
+
+/**
+ * Apply Gen 1 badge stat boosts. Each badge multiplies the relevant stat by 9/8 (floor).
+ * In Gen 1, badge boosts are a single-player mechanic — competitive/link battles never apply them.
+ *
+ * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts routine
+ */
+export function applyGen1BadgeBoosts(stats: StatBlock, badges: Gen1BadgeBoosts): StatBlock {
+  let { hp, attack, defense, speed, spAttack, spDefense } = stats;
+  if (badges.boulder) attack = Math.floor((attack * 9) / 8);
+  if (badges.thunder) defense = Math.floor((defense * 9) / 8);
+  if (badges.soul) speed = Math.floor((speed * 9) / 8);
+  if (badges.volcano) {
+    spAttack = Math.floor((spAttack * 9) / 8);
+    spDefense = Math.floor((spDefense * 9) / 8); // spDefense === spAttack in Gen 1
+  }
+  return { hp, attack, defense, speed, spAttack, spDefense };
+}
+
 /**
  * Gen 1 formula for non-HP stats.
  *

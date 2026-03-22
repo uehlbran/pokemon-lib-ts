@@ -17,6 +17,7 @@ import type {
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
+import { applyGen1BadgeBoosts } from "../src/Gen1StatCalc";
 
 /**
  * Gen1Ruleset Branch Coverage Tests
@@ -2004,10 +2005,295 @@ describe("Gen 1 Quirks", () => {
   });
 
   // --- Badge Stat Boosts ---
+});
 
-  it.todo(
-    "given badge stat boosts, when applying boosts, then Attack/Defense/Speed/Special are modified (not yet implemented)",
-  );
+// ============================================================================
+// Gen 1 Badge Stat Boosts — applyGen1BadgeBoosts
+// ============================================================================
+
+describe("Gen1BadgeBoosts — applyGen1BadgeBoosts", () => {
+  it("given boulder badge, when applying badge boosts, then attack is multiplied by 9/8 (floor)", () => {
+    // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts routine
+    // Boulder Badge boosts Attack by × 9/8: floor(100 * 9 / 8) = floor(112.5) = 112
+    const stats = { hp: 100, attack: 100, defense: 100, speed: 100, spAttack: 100, spDefense: 100 };
+    const result = applyGen1BadgeBoosts(stats, { boulder: true });
+    expect(result.attack).toBe(112);
+    expect(result.defense).toBe(100); // unchanged
+    expect(result.speed).toBe(100); // unchanged
+    expect(result.spAttack).toBe(100); // unchanged
+    expect(result.spDefense).toBe(100); // unchanged
+    expect(result.hp).toBe(100); // HP is never boosted by badges
+  });
+
+  it("given thunder badge, when applying badge boosts, then defense is multiplied by 9/8 (floor)", () => {
+    // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts routine
+    // Thunder Badge boosts Defense by × 9/8: floor(150 * 9 / 8) = floor(168.75) = 168
+    const stats = { hp: 200, attack: 100, defense: 150, speed: 100, spAttack: 100, spDefense: 100 };
+    const result = applyGen1BadgeBoosts(stats, { thunder: true });
+    expect(result.defense).toBe(168);
+    expect(result.attack).toBe(100); // unchanged
+    expect(result.speed).toBe(100); // unchanged
+    expect(result.spAttack).toBe(100); // unchanged
+    expect(result.hp).toBe(200); // unchanged
+  });
+
+  it("given soul badge, when applying badge boosts, then speed is multiplied by 9/8 (floor)", () => {
+    // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts routine
+    // Soul Badge boosts Speed by × 9/8: floor(180 * 9 / 8) = floor(202.5) = 202
+    const stats = { hp: 100, attack: 100, defense: 100, speed: 180, spAttack: 100, spDefense: 100 };
+    const result = applyGen1BadgeBoosts(stats, { soul: true });
+    expect(result.speed).toBe(202);
+    expect(result.attack).toBe(100); // unchanged
+    expect(result.defense).toBe(100); // unchanged
+    expect(result.spAttack).toBe(100); // unchanged
+  });
+
+  it("given volcano badge, when applying badge boosts, then spAttack and spDefense are both multiplied by 9/8 (floor)", () => {
+    // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts routine
+    // Volcano Badge boosts Special by × 9/8 (Gen 1 unified Special → both spAttack and spDefense)
+    // floor(160 * 9 / 8) = floor(180) = 180
+    const stats = { hp: 100, attack: 100, defense: 100, speed: 100, spAttack: 160, spDefense: 160 };
+    const result = applyGen1BadgeBoosts(stats, { volcano: true });
+    expect(result.spAttack).toBe(180);
+    expect(result.spDefense).toBe(180);
+    expect(result.attack).toBe(100); // unchanged
+    expect(result.defense).toBe(100); // unchanged
+    expect(result.speed).toBe(100); // unchanged
+  });
+
+  it("given all four badges, when applying badge boosts, then all combat stats are boosted", () => {
+    // Source: pret/pokered engine/battle/core.asm — four badge boosts:
+    //   Boulder(Atk), Thunder(Def), Soul(Spe), Volcano(SpAtk/SpDef)
+    const stats = {
+      hp: 100,
+      attack: 200,
+      defense: 150,
+      speed: 180,
+      spAttack: 160,
+      spDefense: 160,
+    };
+    const result = applyGen1BadgeBoosts(stats, {
+      boulder: true,
+      thunder: true,
+      soul: true,
+      volcano: true,
+    });
+    // attack: floor(200 * 9 / 8) = floor(225) = 225
+    expect(result.attack).toBe(225);
+    // defense: floor(150 * 9 / 8) = floor(168.75) = 168
+    expect(result.defense).toBe(168);
+    // speed: floor(180 * 9 / 8) = floor(202.5) = 202
+    expect(result.speed).toBe(202);
+    // spAttack: floor(160 * 9 / 8) = floor(180) = 180
+    expect(result.spAttack).toBe(180);
+    // spDefense: floor(160 * 9 / 8) = floor(180) = 180
+    expect(result.spDefense).toBe(180);
+    // HP is never boosted by badges
+    expect(result.hp).toBe(100);
+  });
+
+  it("given no badges, when applying badge boosts, then stats are unchanged", () => {
+    // Source: pret/pokered — badges are optional, no boost if not set
+    const stats = { hp: 100, attack: 100, defense: 100, speed: 100, spAttack: 100, spDefense: 100 };
+    const result = applyGen1BadgeBoosts(stats, {});
+    expect(result).toEqual(stats);
+  });
+
+  it("given an odd stat value with boulder badge, when applying badge boosts, then result is floored correctly", () => {
+    // Source: pret/pokered engine/battle/core.asm — integer floor on badge boost
+    // floor(77 * 9 / 8) = floor(86.625) = 86 (verifies floor behavior on non-clean division)
+    const stats = { hp: 100, attack: 77, defense: 100, speed: 100, spAttack: 100, spDefense: 100 };
+    const result = applyGen1BadgeBoosts(stats, { boulder: true });
+    expect(result.attack).toBe(86);
+  });
+
+  it("given a large stat value with soul badge, when applying badge boosts, then result scales correctly", () => {
+    // Source: pret/pokered engine/battle/core.asm — badge boost = × 9/8 (floor)
+    // floor(999 * 9 / 8) = floor(1123.875) = 1123
+    const stats = { hp: 100, attack: 100, defense: 100, speed: 999, spAttack: 100, spDefense: 100 };
+    const result = applyGen1BadgeBoosts(stats, { soul: true });
+    expect(result.speed).toBe(1123);
+  });
+});
+
+// ============================================================================
+// Gen 1 Badge Boosts via Gen1Ruleset constructor
+// ============================================================================
+
+describe("Gen1Ruleset constructor badgeBoosts option", () => {
+  it("given badgeBoosts config with boulder badge, when calculateStats is called, then attack is boosted by 9/8", () => {
+    // Source: pret/pokered engine/battle/core.asm — badge boosts applied after stat calculation
+    // Pikachu (speciesId 25): base Attack = 55
+    // With DVs = 15, stat EXP = 0, level 50:
+    //   Attack = floor(((55 + 15) * 2 + 0) * 50 / 100) + 5 = floor(7000/100) + 5 = 70 + 5 = 75
+    // With Boulder badge: floor(75 * 9 / 8) = floor(84.375) = 84
+    const rulesetWithBadge = new Gen1Ruleset({ badgeBoosts: { boulder: true } });
+    const rulesetNoBadge = new Gen1Ruleset();
+
+    const pokemon = {
+      uid: "test-uid",
+      speciesId: 25,
+      nickname: null,
+      level: 50,
+      experience: 0,
+      nature: "hardy",
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      moves: [],
+      currentHp: 100,
+      status: null,
+      friendship: 70,
+      heldItem: null,
+      ability: "",
+      abilitySlot: "normal1" as const,
+      gender: "male" as const,
+      isShiny: false,
+      metLocation: "pallet-town",
+      metLevel: 5,
+      originalTrainer: "Red",
+      originalTrainerId: 12345,
+      pokeball: "poke-ball",
+      calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    } as PokemonInstance;
+
+    // Pikachu species data: base Attack = 55
+    // Source: Showdown/PokeAPI — Pikachu Gen 1 base stats
+    const species = {
+      id: 25,
+      name: "pikachu",
+      displayName: "Pikachu",
+      types: ["electric"],
+      baseStats: { hp: 35, attack: 55, defense: 40, spAttack: 50, spDefense: 50, speed: 90 },
+    } as PokemonSpeciesData;
+
+    const statsNoBadge = rulesetNoBadge.calculateStats(pokemon, species);
+    const statsWithBadge = rulesetWithBadge.calculateStats(pokemon, species);
+
+    // Without badge: Attack = floor(((55+15)*2+0)*50/100) + 5 = 75
+    expect(statsNoBadge.attack).toBe(75);
+    // With boulder badge: floor(75 * 9/8) = floor(84.375) = 84
+    expect(statsWithBadge.attack).toBe(84);
+    // Other stats should be unchanged
+    expect(statsWithBadge.defense).toBe(statsNoBadge.defense);
+    expect(statsWithBadge.speed).toBe(statsNoBadge.speed);
+    expect(statsWithBadge.spAttack).toBe(statsNoBadge.spAttack);
+    expect(statsWithBadge.hp).toBe(statsNoBadge.hp);
+  });
+
+  it("given no badgeBoosts option, when calculateStats is called, then stats match base calculation", () => {
+    // Source: pret/pokered — default (no badges) should produce identical stats
+    const rulesetDefault = new Gen1Ruleset();
+    const rulesetExplicitNone = new Gen1Ruleset({});
+
+    const pokemon = {
+      uid: "test-uid",
+      speciesId: 6,
+      nickname: null,
+      level: 50,
+      experience: 0,
+      nature: "hardy",
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      moves: [],
+      currentHp: 100,
+      status: null,
+      friendship: 70,
+      heldItem: null,
+      ability: "",
+      abilitySlot: "normal1" as const,
+      gender: "male" as const,
+      isShiny: false,
+      metLocation: "pallet-town",
+      metLevel: 5,
+      originalTrainer: "Red",
+      originalTrainerId: 12345,
+      pokeball: "poke-ball",
+      calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    } as PokemonInstance;
+
+    // Charizard base stats (Gen 1): HP=78, Atk=84, Def=78, SpAtk=109, SpDef=109, Spe=100
+    // Source: Showdown/PokeAPI — Charizard Gen 1 base stats
+    const species = {
+      id: 6,
+      name: "charizard",
+      displayName: "Charizard",
+      types: ["fire", "flying"],
+      baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 109, speed: 100 },
+    } as PokemonSpeciesData;
+
+    const statsDefault = rulesetDefault.calculateStats(pokemon, species);
+    const statsExplicitNone = rulesetExplicitNone.calculateStats(pokemon, species);
+
+    expect(statsDefault).toEqual(statsExplicitNone);
+  });
+
+  it("given all four badges with Charizard, when calculateStats is called, then all combat stats are boosted", () => {
+    // Source: pret/pokered engine/battle/core.asm — full badge boost verification
+    // Charizard L50, DVs=15, StatEXP=0, base stats: Atk=84, Def=78, Spe=100, SpAtk=109
+    const rulesetAllBadges = new Gen1Ruleset({
+      badgeBoosts: { boulder: true, thunder: true, soul: true, volcano: true },
+    });
+
+    const pokemon = {
+      uid: "test-uid",
+      speciesId: 6,
+      nickname: null,
+      level: 50,
+      experience: 0,
+      nature: "hardy",
+      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
+      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      moves: [],
+      currentHp: 100,
+      status: null,
+      friendship: 70,
+      heldItem: null,
+      ability: "",
+      abilitySlot: "normal1" as const,
+      gender: "male" as const,
+      isShiny: false,
+      metLocation: "pallet-town",
+      metLevel: 5,
+      originalTrainer: "Red",
+      originalTrainerId: 12345,
+      pokeball: "poke-ball",
+      calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    } as PokemonInstance;
+
+    // Charizard Gen 1 base stats
+    // Source: Showdown/PokeAPI — Charizard Gen 1 base stats
+    const species = {
+      id: 6,
+      name: "charizard",
+      displayName: "Charizard",
+      types: ["fire", "flying"],
+      baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 109, speed: 100 },
+    } as PokemonSpeciesData;
+
+    const stats = rulesetAllBadges.calculateStats(pokemon, species);
+
+    // Base stats (no badges, DVs=15, StatEXP=0, L50):
+    //   HP DV = ((15&1)<<3)|((15&1)<<2)|((15&1)<<1)|(15&1) = 8|4|2|1 = 15
+    //   HP = floor(((78+15)*2+0)*50/100) + 50 + 10 = floor(93*100/100) + 60 = 93 + 60 = 153
+    //   Attack = floor(((84+15)*2+0)*50/100) + 5 = floor(99*100/100) + 5 = 99 + 5 = 104
+    //   Defense = floor(((78+15)*2+0)*50/100) + 5 = floor(93*100/100) + 5 = 93 + 5 = 98
+    //   Speed = floor(((100+15)*2+0)*50/100) + 5 = floor(115*100/100) + 5 = 115 + 5 = 120
+    //   Special = floor(((109+15)*2+0)*50/100) + 5 = floor(124*100/100) + 5 = 124 + 5 = 129
+
+    // With all badges:
+    //   Attack: floor(104 * 9/8) = floor(117) = 117
+    expect(stats.attack).toBe(117);
+    //   Defense: floor(98 * 9/8) = floor(110.25) = 110
+    expect(stats.defense).toBe(110);
+    //   Speed: floor(120 * 9/8) = floor(135) = 135
+    expect(stats.speed).toBe(135);
+    //   SpAttack: floor(129 * 9/8) = floor(145.125) = 145
+    expect(stats.spAttack).toBe(145);
+    //   SpDefense: floor(129 * 9/8) = floor(145.125) = 145
+    expect(stats.spDefense).toBe(145);
+    //   HP: unchanged (badges never boost HP)
+    expect(stats.hp).toBe(153);
+  });
 });
 
 // ============================================================================
