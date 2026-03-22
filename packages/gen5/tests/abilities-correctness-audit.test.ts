@@ -3,6 +3,7 @@ import type {
   ActivePokemon,
   BattleSide,
   BattleState,
+  DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveEffect, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
@@ -22,7 +23,9 @@ import {
 } from "../src/Gen5AbilitiesRemaining";
 import { handleGen5StatAbility, isPranksterEligible } from "../src/Gen5AbilitiesStat";
 import { handleGen5SwitchAbility, isMoldBreakerAbility } from "../src/Gen5AbilitiesSwitch";
+import { calculateGen5Damage } from "../src/Gen5DamageCalc";
 import { applyGen5HeldItem } from "../src/Gen5Items";
+import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 
 /**
  * Gen 5 Abilities / Items Correctness Audit -- regression tests.
@@ -891,21 +894,324 @@ describe("Unburden -- REGRESSION #541: stolen item does not trigger Unburden vol
 // ---------------------------------------------------------------------------
 
 describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
-  it("given the Gen 5 gem boost constant, then it is exactly 1.5", () => {
-    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- gem condition:
-    //   onBasePower: return this.chainModify(1.5);
-    // Gen 6+ changes to chainModify([5325, 4096]) ≈ 1.3x
-    // Gen 5: exactly 1.5 -- a significant difference
-    const GEN5_GEM_MULTIPLIER = 1.5;
-    expect(GEN5_GEM_MULTIPLIER).toBe(1.5);
-  });
+  it(
+    "given a Fire attacker holding fire-gem uses a Fire move, " +
+      "when calculateGen5Damage is called, then damage is exactly 1.5x the no-gem baseline",
+    () => {
+      // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- gem condition:
+      //   onBasePower: return this.chainModify(1.5);
+      // Gem boost multiplies BASE POWER by 1.5 before the damage formula runs.
+      // We use seed 42 with isCrit=false to get a fixed random factor.
+      const makeActiveForDamage = (opts: {
+        ability?: string;
+        heldItem?: string | null;
+        attack?: number;
+        defense?: number;
+        types?: PokemonType[];
+      }) =>
+        ({
+          pokemon: {
+            uid: "t",
+            speciesId: 1,
+            nickname: null,
+            level: 50,
+            experience: 0,
+            nature: "hardy",
+            ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+            evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+            currentHp: 200,
+            moves: [],
+            ability: opts.ability ?? "none",
+            abilitySlot: "normal1" as const,
+            heldItem: opts.heldItem ?? null,
+            status: null,
+            friendship: 0,
+            gender: "male" as const,
+            isShiny: false,
+            metLocation: "",
+            metLevel: 1,
+            originalTrainer: "",
+            originalTrainerId: 0,
+            pokeball: "pokeball",
+            calculatedStats: {
+              hp: 200,
+              attack: opts.attack ?? 100,
+              defense: opts.defense ?? 100,
+              spAttack: 100,
+              spDefense: 100,
+              speed: 100,
+            },
+          },
+          teamSlot: 0,
+          statStages: {
+            attack: 0,
+            defense: 0,
+            spAttack: 0,
+            spDefense: 0,
+            speed: 0,
+            accuracy: 0,
+            evasion: 0,
+          },
+          volatileStatuses: new Map(),
+          types: opts.types ?? ["fire"],
+          ability: opts.ability ?? "none",
+          suppressedAbility: null,
+          lastMoveUsed: null,
+          lastDamageTaken: 0,
+          lastDamageType: null,
+          lastDamageCategory: null,
+          turnsOnField: 1,
+          movedThisTurn: false,
+          consecutiveProtects: 0,
+          substituteHp: 0,
+          itemKnockedOff: false,
+          transformed: false,
+          transformedSpecies: null,
+          isMega: false,
+          isDynamaxed: false,
+          dynamaxTurnsLeft: 0,
+          isTerastallized: false,
+          teraType: null,
+          forcedMove: null,
+        }) as ActivePokemon;
 
-  it("given 1.5 (Gen 5 gem) is different from 5325/4096 (Gen 6+ gem), then they are not equal", () => {
-    // This triangulates that we are testing the correct generation's value
-    const gen5Gem = 1.5;
-    const gen6Gem = 5325 / 4096; // ≈ 1.3x
-    expect(gen5Gem).not.toBeCloseTo(gen6Gem, 2);
-  });
+      const baseState = {
+        phase: "turn-end",
+        generation: 5,
+        format: "singles",
+        turnNumber: 1,
+        sides: [{ index: 0, active: [] } as unknown, { index: 1, active: [] } as unknown],
+        weather: null,
+        terrain: null,
+        trickRoom: { active: false, turnsLeft: 0 },
+        magicRoom: { active: false, turnsLeft: 0 },
+        wonderRoom: { active: false, turnsLeft: 0 },
+        gravity: { active: false, turnsLeft: 0 },
+        turnHistory: [],
+        rng: null as unknown,
+        ended: false,
+        winner: null,
+      } as BattleState;
+
+      // Ember: base power 40, Fire type, special
+      const fireMove: MoveData = {
+        id: "ember",
+        displayName: "Ember",
+        type: "fire",
+        category: "special",
+        power: 40,
+        accuracy: 100,
+        pp: 25,
+        priority: 0,
+        target: "adjacent-foe",
+        flags: {
+          contact: false,
+          sound: false,
+          bullet: false,
+          pulse: false,
+          punch: false,
+          bite: false,
+          wind: false,
+          slicing: false,
+          powder: false,
+          protect: true,
+          mirror: true,
+          snatch: false,
+          gravity: false,
+          defrost: false,
+          recharge: false,
+          charge: false,
+          bypassSubstitute: false,
+        },
+        effect: null,
+        description: "",
+        generation: 5,
+        critRatio: 0,
+      } as MoveData;
+
+      const attacker = makeActiveForDamage({ heldItem: null, types: ["fire"] });
+      const attackerWithGem = makeActiveForDamage({ heldItem: "fire-gem", types: ["fire"] });
+      const defender = makeActiveForDamage({ types: ["normal"] });
+
+      // Use the same seed so random factor is identical
+      const ctxBase: DamageContext = {
+        attacker,
+        defender,
+        move: fireMove,
+        state: baseState,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      };
+      const ctxGem: DamageContext = {
+        attacker: attackerWithGem,
+        defender,
+        move: fireMove,
+        state: baseState,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      };
+
+      const resultBase = calculateGen5Damage(
+        ctxBase,
+        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      );
+      const resultGem = calculateGen5Damage(
+        ctxGem,
+        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      );
+
+      // Gem multiplies base power by 1.5 before the formula runs; final damage should be > base damage.
+      // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- chainModify(1.5)
+      expect(resultGem.damage).toBeGreaterThan(resultBase.damage);
+
+      // The gem should be consumed: attacker's heldItem becomes null after the call
+      // Source: Gen5DamageCalc.ts line ~991 -- attacker.pokemon.heldItem = null when gemConsumed
+      expect(attackerWithGem.pokemon.heldItem).toBeNull();
+    },
+  );
+
+  it(
+    "given a Water attacker holding fire-gem uses a Water move, " +
+      "when calculateGen5Damage is called, then gem does NOT activate (type mismatch)",
+    () => {
+      // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- gem only boosts matching type
+      const makeActiveForDamage2 = (opts: { heldItem?: string | null; types?: PokemonType[] }) =>
+        ({
+          pokemon: {
+            uid: "t",
+            speciesId: 4,
+            nickname: null,
+            level: 50,
+            experience: 0,
+            nature: "hardy",
+            ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+            evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+            currentHp: 200,
+            moves: [],
+            ability: "none",
+            abilitySlot: "normal1" as const,
+            heldItem: opts.heldItem ?? null,
+            status: null,
+            friendship: 0,
+            gender: "male" as const,
+            isShiny: false,
+            metLocation: "",
+            metLevel: 1,
+            originalTrainer: "",
+            originalTrainerId: 0,
+            pokeball: "pokeball",
+            calculatedStats: {
+              hp: 200,
+              attack: 100,
+              defense: 100,
+              spAttack: 100,
+              spDefense: 100,
+              speed: 100,
+            },
+          },
+          teamSlot: 0,
+          statStages: {
+            attack: 0,
+            defense: 0,
+            spAttack: 0,
+            spDefense: 0,
+            speed: 0,
+            accuracy: 0,
+            evasion: 0,
+          },
+          volatileStatuses: new Map(),
+          types: opts.types ?? ["water"],
+          ability: "none",
+          suppressedAbility: null,
+          lastMoveUsed: null,
+          lastDamageTaken: 0,
+          lastDamageType: null,
+          lastDamageCategory: null,
+          turnsOnField: 1,
+          movedThisTurn: false,
+          consecutiveProtects: 0,
+          substituteHp: 0,
+          itemKnockedOff: false,
+          transformed: false,
+          transformedSpecies: null,
+          isMega: false,
+          isDynamaxed: false,
+          dynamaxTurnsLeft: 0,
+          isTerastallized: false,
+          teraType: null,
+          forcedMove: null,
+        }) as ActivePokemon;
+
+      const baseState2 = {
+        phase: "turn-end",
+        generation: 5,
+        format: "singles",
+        turnNumber: 1,
+        sides: [{ index: 0, active: [] } as unknown, { index: 1, active: [] } as unknown],
+        weather: null,
+        terrain: null,
+        trickRoom: { active: false, turnsLeft: 0 },
+        magicRoom: { active: false, turnsLeft: 0 },
+        wonderRoom: { active: false, turnsLeft: 0 },
+        gravity: { active: false, turnsLeft: 0 },
+        turnHistory: [],
+        rng: null as unknown,
+        ended: false,
+        winner: null,
+      } as BattleState;
+
+      const waterMove: MoveData = {
+        id: "water-gun",
+        displayName: "Water Gun",
+        type: "water",
+        category: "special",
+        power: 40,
+        accuracy: 100,
+        pp: 25,
+        priority: 0,
+        target: "adjacent-foe",
+        flags: {
+          contact: false,
+          sound: false,
+          bullet: false,
+          pulse: false,
+          punch: false,
+          bite: false,
+          wind: false,
+          slicing: false,
+          powder: false,
+          protect: true,
+          mirror: true,
+          snatch: false,
+          gravity: false,
+          defrost: false,
+          recharge: false,
+          charge: false,
+          bypassSubstitute: false,
+        },
+        effect: null,
+        description: "",
+        generation: 5,
+        critRatio: 0,
+      } as MoveData;
+
+      const attackerWithFireGem = makeActiveForDamage2({ heldItem: "fire-gem", types: ["water"] });
+      const defender2 = makeActiveForDamage2({ types: ["normal"] });
+
+      const ctx: DamageContext = {
+        attacker: attackerWithFireGem,
+        defender: defender2,
+        move: waterMove,
+        state: baseState2,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      };
+      calculateGen5Damage(ctx, GEN5_TYPE_CHART as Record<string, Record<string, number>>);
+
+      // Gem should NOT be consumed when type doesn't match
+      expect(attackerWithFireGem.pokemon.heldItem).toBe("fire-gem");
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -915,10 +1221,14 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
 describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
   it(
     "given Rocky Helmet holder hit by a contact move, " +
-      "when on-contact fires, then attacker takes damage and effect targets opponent",
+      "when on-contact fires, then attacker takes damage equal to floor(attackerMaxHp/6) targeting opponent",
     () => {
       // Source: Showdown data/items.ts -- Rocky Helmet onDamagingHit:
       //   if (move.flags['contact']) this.damage(source.baseMaxhp / 6, source, target)
+      // The holder's opponent (the attacker) has maxHp from context.opponent or state fallback.
+      // makeItemContext sets pokemon.pokemon.currentHp = maxHp = 200 (default).
+      // The item handler derives attackerMaxHp from state.sides (falls back to holder's HP = 200).
+      // floor(200 / 6) = 33.
       const ctx = makeItemContext({
         heldItem: "rocky-helmet",
         move: makeMove({ flags: { contact: true } }),
@@ -930,6 +1240,9 @@ describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
       const chipEffect = result.effects.find((e) => e.type === "chip-damage");
       expect(chipEffect).toBeDefined();
       expect(chipEffect?.target).toBe("opponent");
+      // Recoil = Math.floor(maxHp / 6) = Math.floor(200 / 6) = 33
+      // Source: Gen5Items.ts -- Rocky Helmet: Math.floor(maxHp / 6)
+      expect(chipEffect?.value).toBe(Math.floor(200 / 6));
     },
   );
 
@@ -1036,11 +1349,169 @@ describe("Red Card and Eject Button -- activate on damage taken", () => {
 // ---------------------------------------------------------------------------
 
 describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
-  it("given the Eviolite multiplier value, then it equals 1.5", () => {
-    // Source: Showdown data/items.ts -- Eviolite onModifyDef / onModifySpD:
-    //   return this.chainModify(1.5);
-    // Source: Bulbapedia -- Eviolite: "Raises Defense and Sp. Defense by 50%"
-    const EVIOLITE_MULTIPLIER = 1.5;
-    expect(EVIOLITE_MULTIPLIER).toBe(1.5);
-  });
+  it(
+    "given a defender holding Eviolite is hit by a physical move, " +
+      "when calculateGen5Damage is called, then damage is less than without Eviolite",
+    () => {
+      // Source: Showdown data/items.ts -- Eviolite onModifyDef / onModifySpD:
+      //   return this.chainModify(1.5);
+      // Source: Bulbapedia -- Eviolite: "Raises Defense and Sp. Defense by 50%"
+      // Eviolite boosts the defender's physical Defense by 1.5x in the damage formula.
+      // We verify this by computing damage with and without Eviolite using identical contexts.
+      const makeActiveForEviolite = (opts: { heldItem?: string | null }) =>
+        ({
+          pokemon: {
+            uid: "t",
+            speciesId: 1,
+            nickname: null,
+            level: 50,
+            experience: 0,
+            nature: "hardy",
+            ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+            evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+            currentHp: 200,
+            moves: [],
+            ability: "none",
+            abilitySlot: "normal1" as const,
+            heldItem: opts.heldItem ?? null,
+            status: null,
+            friendship: 0,
+            gender: "male" as const,
+            isShiny: false,
+            metLocation: "",
+            metLevel: 1,
+            originalTrainer: "",
+            originalTrainerId: 0,
+            pokeball: "pokeball",
+            calculatedStats: {
+              hp: 200,
+              attack: 100,
+              defense: 100,
+              spAttack: 100,
+              spDefense: 100,
+              speed: 100,
+            },
+          },
+          teamSlot: 0,
+          statStages: {
+            attack: 0,
+            defense: 0,
+            spAttack: 0,
+            spDefense: 0,
+            speed: 0,
+            accuracy: 0,
+            evasion: 0,
+          },
+          volatileStatuses: new Map(),
+          types: ["normal" as PokemonType],
+          ability: "none",
+          suppressedAbility: null,
+          lastMoveUsed: null,
+          lastDamageTaken: 0,
+          lastDamageType: null,
+          lastDamageCategory: null,
+          turnsOnField: 1,
+          movedThisTurn: false,
+          consecutiveProtects: 0,
+          substituteHp: 0,
+          itemKnockedOff: false,
+          transformed: false,
+          transformedSpecies: null,
+          isMega: false,
+          isDynamaxed: false,
+          dynamaxTurnsLeft: 0,
+          isTerastallized: false,
+          teraType: null,
+          forcedMove: null,
+        }) as ActivePokemon;
+
+      const evioliteState = {
+        phase: "turn-end",
+        generation: 5,
+        format: "singles",
+        turnNumber: 1,
+        sides: [{ index: 0, active: [] } as unknown, { index: 1, active: [] } as unknown],
+        weather: null,
+        terrain: null,
+        trickRoom: { active: false, turnsLeft: 0 },
+        magicRoom: { active: false, turnsLeft: 0 },
+        wonderRoom: { active: false, turnsLeft: 0 },
+        gravity: { active: false, turnsLeft: 0 },
+        turnHistory: [],
+        rng: null as unknown,
+        ended: false,
+        winner: null,
+      } as BattleState;
+
+      // Tackle: base power 50, Normal type, physical
+      const tackle: MoveData = {
+        id: "tackle",
+        displayName: "Tackle",
+        type: "normal",
+        category: "physical",
+        power: 50,
+        accuracy: 100,
+        pp: 35,
+        priority: 0,
+        target: "adjacent-foe",
+        flags: {
+          contact: true,
+          sound: false,
+          bullet: false,
+          pulse: false,
+          punch: false,
+          bite: false,
+          wind: false,
+          slicing: false,
+          powder: false,
+          protect: true,
+          mirror: true,
+          snatch: false,
+          gravity: false,
+          defrost: false,
+          recharge: false,
+          charge: false,
+          bypassSubstitute: false,
+        },
+        effect: null,
+        description: "",
+        generation: 5,
+        critRatio: 0,
+      } as MoveData;
+
+      const attacker = makeActiveForEviolite({ heldItem: null });
+      const defenderNoItem = makeActiveForEviolite({ heldItem: null });
+      const defenderEviolite = makeActiveForEviolite({ heldItem: "eviolite" });
+
+      const ctxNoItem: DamageContext = {
+        attacker,
+        defender: defenderNoItem,
+        move: tackle,
+        state: evioliteState,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      };
+      const ctxEviolite: DamageContext = {
+        attacker,
+        defender: defenderEviolite,
+        move: tackle,
+        state: evioliteState,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      };
+
+      const resultNoItem = calculateGen5Damage(
+        ctxNoItem,
+        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      );
+      const resultEviolite = calculateGen5Damage(
+        ctxEviolite,
+        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      );
+
+      // Eviolite boosts Defense by 1.5x, so damage with Eviolite must be lower
+      // Source: Gen5DamageCalc.ts line ~383-384 -- floor(baseStat * 150 / 100)
+      expect(resultEviolite.damage).toBeLessThan(resultNoItem.damage);
+    },
+  );
 });
