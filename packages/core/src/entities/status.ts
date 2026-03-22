@@ -68,4 +68,6 @@ export type VolatileStatus =
   | "quick-guard" // Quick Guard — protects the user's side from priority moves (Gen 5+)
   | "wide-guard" // Wide Guard — protects the user's side from multi-target moves (Gen 5+)
   | "uproar" // Uproar — prevents all Pokemon from falling asleep, lasts 3 turns (Gen 3+)
-  | "illusion"; // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)
+  | "illusion" // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)
+  | "rollout" // Gen 2+ — tracks consecutive turn count for Rollout escalating power
+  | "fury-cutter"; // Gen 2+ — tracks consecutive use count for Fury Cutter escalating power

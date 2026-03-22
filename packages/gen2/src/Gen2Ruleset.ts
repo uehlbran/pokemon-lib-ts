@@ -392,7 +392,11 @@ export class Gen2Ruleset implements GenerationRuleset {
       move.id === "counter" ||
       move.id === "mirror-coat" ||
       move.id === "whirlwind" ||
-      move.id === "roar"
+      move.id === "roar" ||
+      move.id === "rollout" ||
+      move.id === "fury-cutter" ||
+      move.id === "snore" ||
+      move.id === "triple-kick"
     ) {
       handleCustomEffect(move, result, context);
       return result;
