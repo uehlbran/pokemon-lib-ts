@@ -436,11 +436,16 @@ export class BattleEngine implements BattleEventEmitter {
       } else if (
         this.ruleset.hasHeldItems() &&
         active.pokemon.heldItem === "assault-vest" &&
-        moveData?.category === "status"
+        moveData?.category === "status" &&
+        active.ability !== "klutz" &&
+        !active.volatileStatuses.has("embargo")
       ) {
         // Assault Vest prevents the holder from using status moves
         // Source: Showdown data/items.ts — Assault Vest: "The holder is unable to use status moves"
         // Source: Bulbapedia "Assault Vest" — "The holder cannot use status moves"
+        // Klutz and Embargo suppress held-item effects including Assault Vest's restriction
+        // Source: Showdown data/abilities.ts — Klutz: "This Pokemon's held item has no effect"
+        // Source: Showdown data/moves.ts — Embargo: "Prevents the target from using held items"
         disabled = true;
         disabledReason = "Blocked by Assault Vest";
       } else if (active.volatileStatuses.has("choice-locked")) {
@@ -2505,10 +2510,15 @@ export class BattleEngine implements BattleEventEmitter {
     // Assault Vest check — prevents status moves (runtime enforcement, mirrors getAvailableMoves)
     // Source: Showdown data/items.ts — Assault Vest: "The holder is unable to use status moves"
     // Source: Bulbapedia "Assault Vest" — "The holder cannot use status moves"
+    // Klutz and Embargo suppress held-item effects including Assault Vest's restriction
+    // Source: Showdown data/abilities.ts — Klutz: "This Pokemon's held item has no effect"
+    // Source: Showdown data/moves.ts — Embargo: "Prevents the target from using held items"
     if (
       this.ruleset.hasHeldItems() &&
       actor.pokemon.heldItem === "assault-vest" &&
-      move.category === "status"
+      move.category === "status" &&
+      actor.ability !== "klutz" &&
+      !actor.volatileStatuses.has("embargo")
     ) {
       this.emit({
         type: "message",

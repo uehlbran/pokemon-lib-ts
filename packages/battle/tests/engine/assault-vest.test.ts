@@ -150,10 +150,13 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0, target: 0 }); // tackle
 
       // Should have a message about Assault Vest blocking
-      const blockMessage = events.find(
+      const blockMessages = events.filter(
         (e) => e.type === "message" && e.text.includes("Assault Vest"),
       );
-      expect(blockMessage).toBeDefined();
+      expect(blockMessages.length).toBe(1);
+      expect((blockMessages[0] as { type: "message"; text: string }).text).toBe(
+        "Charizard can't use Swords Dance because of its Assault Vest!",
+      );
     },
   );
 
@@ -180,10 +183,10 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0, target: 0 }); // tackle
 
       // Should NOT have an Assault Vest blocking message
-      const blockMessage = events.find(
+      const blockMessages = events.filter(
         (e) => e.type === "message" && e.text.includes("Assault Vest"),
       );
-      expect(blockMessage).toBeUndefined();
+      expect(blockMessages.length).toBe(0);
     },
   );
 });
