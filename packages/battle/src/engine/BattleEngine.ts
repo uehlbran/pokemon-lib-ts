@@ -2522,8 +2522,8 @@ export class BattleEngine implements BattleEventEmitter {
   ): void {
     // Terrain-based status immunity check (Gen 6+)
     // Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
-    if (this.ruleset.canInflictStatus) {
-      const terrainResult = this.ruleset.canInflictStatus(status, target, this.state);
+    if (this.ruleset.checkTerrainStatusImmunity) {
+      const terrainResult = this.ruleset.checkTerrainStatusImmunity(status, target, this.state);
       if (terrainResult.immune) {
         if (terrainResult.message) {
           this.emit({ type: "message", text: terrainResult.message });

@@ -122,7 +122,7 @@ export class Gen6Ruleset extends BaseRuleset {
    *
    * Electric Terrain and Misty Terrain have no EoT healing effect; their effects
    * are handled via damage modifiers (in Gen6DamageCalc) and status immunity
-   * (via canInflictStatus).
+   * (via checkTerrainStatusImmunity).
    *
    * Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal at EoT for grounded Pokemon
    * Source: Showdown data/conditions.ts -- grassyterrain.onResidual
@@ -143,7 +143,7 @@ export class Gen6Ruleset extends BaseRuleset {
    *   status conditions."
    * Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
    */
-  canInflictStatus(
+  checkTerrainStatusImmunity(
     status: PrimaryStatus,
     target: ActivePokemon,
     state: BattleState,

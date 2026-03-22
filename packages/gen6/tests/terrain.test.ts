@@ -922,10 +922,10 @@ describe("canInflictStatusWithTerrain", () => {
 });
 
 // ===========================================================================
-// Gen6Ruleset.canInflictStatus — integration via ruleset
+// Gen6Ruleset.checkTerrainStatusImmunity — integration via ruleset
 // ===========================================================================
 
-describe("Gen6Ruleset.canInflictStatus", () => {
+describe("Gen6Ruleset.checkTerrainStatusImmunity", () => {
   const ruleset = new Gen6Ruleset();
 
   it("given Electric Terrain + grounded target + sleep, returns immune=true with message", () => {
@@ -935,7 +935,7 @@ describe("Gen6Ruleset.canInflictStatus", () => {
       terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
     });
 
-    const result = ruleset.canInflictStatus("sleep", target, state);
+    const result = ruleset.checkTerrainStatusImmunity("sleep", target, state);
     expect(result.immune).toBe(true);
     expect(result.message).toContain("Electric Terrain");
   });
@@ -947,7 +947,7 @@ describe("Gen6Ruleset.canInflictStatus", () => {
       terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
     });
 
-    const result = ruleset.canInflictStatus("burn", target, state);
+    const result = ruleset.checkTerrainStatusImmunity("burn", target, state);
     expect(result.immune).toBe(true);
     expect(result.message).toContain("Misty Terrain");
   });
@@ -956,7 +956,7 @@ describe("Gen6Ruleset.canInflictStatus", () => {
     const target = makeActive({ types: ["normal"] });
     const state = makeState({ terrain: null });
 
-    const result = ruleset.canInflictStatus("sleep", target, state);
+    const result = ruleset.checkTerrainStatusImmunity("sleep", target, state);
     expect(result.immune).toBe(false);
   });
 
@@ -967,7 +967,7 @@ describe("Gen6Ruleset.canInflictStatus", () => {
       terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
     });
 
-    const result = ruleset.canInflictStatus("sleep", target, state);
+    const result = ruleset.checkTerrainStatusImmunity("sleep", target, state);
     expect(result.immune).toBe(false);
   });
 });
