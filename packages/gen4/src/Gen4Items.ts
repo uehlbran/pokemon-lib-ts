@@ -117,9 +117,9 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
  * The Metronome item tracks how many times the holder uses the same move
  * in a row, boosting damage for consecutive uses.
  *
- * Source: Showdown sim/items.ts — Metronome item onModifyDamage
- * Source: Bulbapedia — Metronome (item): "Boosts the power of moves used
- *   consecutively. +20% per consecutive use, up to 100% (2.0x)."
+ * Source: Showdown data/mods/gen4/items.ts — Metronome item onModifyDamagePhase2:
+ *   return damage * (1 + (this.effectState.numConsecutive / 10));
+ * Gen 4: +10% per consecutive use, NO cap (boost accumulates indefinitely).
  */
 function handleBeforeMove(item: string, context: ItemContext): ItemResult {
   if (item !== "metronome") return NO_ACTIVATION;

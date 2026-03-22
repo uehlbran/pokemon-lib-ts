@@ -673,8 +673,8 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     // count=6 is correct at 82 (numConsecutive=5 → 1.5x)
     expect(resultCount6.damage).toBe(82);
     // count=7 per Showdown (no cap) should give 88 (numConsecutive=6 → 1.6x); #559 caps at 1.5x → 82
-    // TODO(#559): assert toBe(88) once the Math.min cap is removed from Gen4DamageCalc.ts
-    expect(resultCount7.damage).toBe(82);
+    // Fix #559: Math.min cap removed from Gen4DamageCalc.ts
+    expect(resultCount7.damage).toBe(88);
   });
 
   it("given Metronome item with count=2 (second consecutive use), when calculating damage, then boost is 1.1x", () => {
