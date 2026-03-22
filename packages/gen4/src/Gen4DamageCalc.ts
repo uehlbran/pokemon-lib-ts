@@ -9,6 +9,7 @@ import {
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
+  getTypeMultiplier,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
 
@@ -452,7 +453,10 @@ function getDefenseStat(
     defender.ability === "marvel-scale" &&
     defender.pokemon.status !== null
   ) {
-    baseStat = Math.floor(baseStat * 1.5);
+    // Integer arithmetic matching pokeplatinum: (defense * 150) / 100
+    // Source: pret/pokeplatinum src/battle/battle_lib.c:6799 — defenseStat * 150 / 100
+    // Bug #BUG-6: was Math.floor(baseStat * 1.5) (float), now integer math
+    baseStat = Math.floor((baseStat * 150) / 100);
   }
 
   // Sandstorm Rock SpDef boost (NEW in Gen 4): 1.5x SpDef for Rock-types in sandstorm
@@ -1014,6 +1018,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
     effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
   }
+  // Track the types to use for sequential application (may change with Scrappy)
+  let sequentialTypes: readonly PokemonType[] = effectiveDefenderTypes;
   let effectiveness = getTypeEffectiveness(effectiveMoveType, effectiveDefenderTypes, typeChart);
 
   // Scrappy: Normal-type and Fighting-type moves used by a Pokemon with Scrappy
@@ -1030,6 +1036,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     // Recalculate effectiveness treating Ghost as neutral to Normal/Fighting.
     // Remove Ghost from defender types for this recalculation.
     const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== "ghost");
+    sequentialTypes = nonGhostTypes.length > 0 ? nonGhostTypes : (["normal"] as PokemonType[]);
     effectiveness =
       nonGhostTypes.length > 0
         ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart)
@@ -1093,9 +1100,18 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     };
   }
 
-  // 17. Apply type effectiveness as a multiplier
-  // Source: Showdown sim/battle.ts — type effectiveness application
-  baseDamage = Math.floor(baseDamage * effectiveness);
+  // 17. Apply type effectiveness SEQUENTIALLY with intermediate floor for each defender type.
+  // Source: pret/pokeplatinum src/battle/battle_lib.c:2612-2646 — ApplyTypeMultiplier called
+  //   once per defender type with BattleSystem_Divide(damage * mul, 10) (integer truncation).
+  //   Type1 is applied first (line 2625-2627), then Type2 (line 2634-2637) if different.
+  // Source: pret/pokeemerald src/battle_script_commands.c — same sequential pattern.
+  // Bug #BUG-3: previous code applied combined effectiveness in one floor(); sequential
+  //   application can differ by 1 for dual-type defenders with mixed effectiveness
+  //   (e.g. damage=7, 0.5x type1 × 2x type2: single gives floor(7)=7, sequential gives 6).
+  for (const defType of sequentialTypes) {
+    const mult = getTypeMultiplier(effectiveMoveType, defType, typeChart);
+    baseDamage = Math.floor(baseDamage * mult);
+  }
 
   // 18. Tinted Lens (NEW in Gen 4): double damage if not very effective
   // Source: Bulbapedia — Tinted Lens: "The power of not very effective moves is doubled."
