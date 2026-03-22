@@ -179,32 +179,59 @@ function makeDamageContext(overrides: {
 // ---------------------------------------------------------------------------
 
 describe("pokeRound function", () => {
-  it("given value=100 and modifier=6144, when applying pokeRound, then returns floor((100 * 6144 + 2048) / 4096) = 150", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((100 * 6144 + 2048) / 4096) = floor((614400 + 2048) / 4096)
-    // = floor(616448 / 4096) = floor(150.5) = 150
+  it("given value=100 and modifier=6144, when applying pokeRound, then returns floor((100 * 6144 + 2047) / 4096) = 150", () => {
+    // Source: references/pokemon-showdown/sim/battle.ts line 2344 — modify() uses +2047 (2048-1)
+    // floor((100 * 6144 + 2047) / 4096) = floor((614400 + 2047) / 4096)
+    // = floor(616447 / 4096) = floor(150.4997...) = 150
     expect(pokeRound(100, 6144)).toBe(150);
   });
 
-  it("given value=100 and modifier=2048, when applying pokeRound, then returns floor((100 * 2048 + 2048) / 4096) = 50", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((100 * 2048 + 2048) / 4096) = floor((204800 + 2048) / 4096)
-    // = floor(206848 / 4096) = floor(50.5) = 50
+  it("given value=100 and modifier=2048, when applying pokeRound, then returns floor((100 * 2048 + 2047) / 4096) = 50", () => {
+    // Source: references/pokemon-showdown/sim/battle.ts line 2344 — modify() uses +2047 (2048-1)
+    // floor((100 * 2048 + 2047) / 4096) = floor((204800 + 2047) / 4096)
+    // = floor(206847 / 4096) = floor(50.4997...) = 50
     expect(pokeRound(100, 2048)).toBe(50);
   });
 
-  it("given value=57 and modifier=6144, when applying pokeRound, then returns floor((57 * 6144 + 2048) / 4096) = 85", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((57 * 6144 + 2048) / 4096) = floor((350208 + 2048) / 4096)
-    // = floor(352256 / 4096) = floor(86.0) = 86
-    // Wait: 57 * 6144 = 350208; 350208 + 2048 = 352256; 352256 / 4096 = 86.0
-    expect(pokeRound(57, 6144)).toBe(86);
+  it("given value=57 and modifier=6144, when applying pokeRound, then returns floor((57 * 6144 + 2047) / 4096) = 85", () => {
+    // Source: references/pokemon-showdown/sim/battle.ts line 2344 — modify() uses +2047 (2048-1)
+    // floor((57 * 6144 + 2047) / 4096) = floor((350208 + 2047) / 4096)
+    // = floor(352255 / 4096) = floor(85.9997...) = 85
+    // This is a boundary case: with the wrong +2048, this would be 86
+    expect(pokeRound(57, 6144)).toBe(85);
   });
 
   it("given value=1 and modifier=4096, when applying pokeRound (1.0x), then returns 1", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((1 * 4096 + 2048) / 4096) = floor(6144 / 4096) = floor(1.5) = 1
+    // Source: references/pokemon-showdown/sim/battle.ts line 2344 — modify() uses +2047 (2048-1)
+    // floor((1 * 4096 + 2047) / 4096) = floor(6143 / 4096) = floor(1.4997...) = 1
     expect(pokeRound(1, 4096)).toBe(1);
+  });
+
+  // Regression tests for issue #536: +2047 vs +2048 boundary cases
+  // These test cases produce different results with +2048 (wrong) vs +2047 (correct)
+
+  it("given value=3 and modifier=2048 (burn 0.5x), when applying pokeRound, then returns 1 (not 2)", () => {
+    // Source: references/pokemon-showdown/sim/battle.ts line 2344 — modify() uses +2047
+    // Showdown: floor((3 * 2048 + 2047) / 4096) = floor(8191 / 4096) = floor(1.9997...) = 1
+    // Wrong (+2048): floor((3 * 2048 + 2048) / 4096) = floor(8192 / 4096) = 2 (off-by-one!)
+    expect(pokeRound(3, 2048)).toBe(1);
+  });
+
+  it("given value=1 and modifier=2048 (burn 0.5x on minimum damage), when applying pokeRound, then returns 0", () => {
+    // Source: references/pokemon-showdown/sim/battle.ts line 2344 — modify() uses +2047
+    // Showdown: floor((1 * 2048 + 2047) / 4096) = floor(4095 / 4096) = floor(0.9997...) = 0
+    // Wrong (+2048): floor((1 * 2048 + 2048) / 4096) = floor(4096 / 4096) = 1 (off-by-one!)
+    // Note: Gen 5 damage floor (baseDamage=1 if 0) catches this downstream,
+    // but pokeRound itself must return 0 here to match Showdown.
+    expect(pokeRound(1, 2048)).toBe(0);
+  });
+
+  it("given value=5 and modifier=6144 (weather 1.5x), when applying pokeRound, then returns 7 (not 8)", () => {
+    // Source: references/pokemon-showdown/sim/battle.ts line 2344 — modify() uses +2047
+    // 5 * 6144 = 30720; 30720 mod 4096 = 30720 - 7*4096 = 30720 - 28672 = 2048
+    // Exact midpoint! +2047: floor((30720 + 2047) / 4096) = floor(32767 / 4096) = floor(7.9997...) = 7
+    // Wrong (+2048): floor((30720 + 2048) / 4096) = floor(32768 / 4096) = 8 (off-by-one!)
+    expect(pokeRound(5, 6144)).toBe(7);
   });
 });
 
@@ -484,8 +511,9 @@ describe("Gen 5 damage calc -- burn penalty", () => {
     // baseDamage = floor(floor(22*70*100/100)/50) + 2 = floor(1540/50) + 2 = 30 + 2 = 32
     // Random range: floor(32*85/100)=27 to 32
     // Burn: pokeRound(val, 2048)
-    // Max: pokeRound(32, 2048) = floor((32*2048+2048)/4096) = floor(67584/4096) = 16
-    // Min: pokeRound(27, 2048) = floor((27*2048+2048)/4096) = floor(57344/4096) = 14
+    // Max: pokeRound(32, 2048) = floor((32*2048+2047)/4096) = floor(67583/4096) = 16
+    // Min: pokeRound(27, 2048) = floor((27*2048+2047)/4096) = floor(57343/4096) = 13
+    // Note: 27 is a midpoint case (27*2048 mod 4096 = 2048), so +2047 gives 13, not 14
     const attacker = makeActive({ attack: 100, status: "burn" });
     const defender = makeActive({ defense: 100 });
     const move = makeMove({ id: "facade", type: "normal", power: 70, category: "physical" });
@@ -494,8 +522,8 @@ describe("Gen 5 damage calc -- burn penalty", () => {
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
-    // With burn penalty applied: 14-16
-    expect(result.damage).toBeGreaterThanOrEqual(14);
+    // With burn penalty applied: 13-16
+    expect(result.damage).toBeGreaterThanOrEqual(13);
     expect(result.damage).toBeLessThanOrEqual(16);
   });
 
@@ -535,18 +563,10 @@ describe("Gen 5 damage calc -- Gen 5 damage floor", () => {
     // levelFactor = floor(2*1/5) + 2 = 0 + 2 = 2
     // baseDamage = floor(floor(2*1*1/200)/50) + 2 = floor(0/50) + 2 = 2
     // crit: no. random: floor(2 * r/100). At r=85: floor(1.7) = 1
-    // STAB: no. Type eff: 1. Burn: pokeRound(1, 2048) = floor((2048+2048)/4096) = floor(1.0) = 1
-    // Actually burn makes it 1 not 0 in this case. Let me construct a scenario where burn => 0.
-    // pokeRound(0, 2048) = floor((0+2048)/4096) = 0. So we need random to give 0 first.
-    // floor(2 * 85/100) = 1, floor(2 * 86/100) = 1, ..., floor(2 * 100/100) = 2
-    // So random never gives 0 from 2. The minimum damage after formula is always >= 2 (the +2).
-    // With random 85% of 2 = floor(1.7) = 1, burn -> pokeRound(1, 2048) = 1.
-    // To get 0 after burn, need random to produce 0, which requires baseDamage < 85/100 = 0.85.
-    // Since baseDamage is always >= 2 from the formula, random always gives >= 1.
-    // pokeRound(1, 2048) = floor((1*2048 + 2048)/4096) = floor(4096/4096) = 1. Still 1.
-    // In practice, the Gen 5 floor is needed for edge cases with modifier chains.
-    // Let's just test with a minimal case: burn with very low power.
-    // The floor guarantees damage >= 1 when not immune.
+    // STAB: no. Type eff: 1. Burn: pokeRound(1, 2048) = floor((2048+2047)/4096) = floor(0.999...) = 0
+    // With +2047 (correct per Showdown), pokeRound(1, 2048) = 0.
+    // Gen 5 floor catches this: if (!baseDamage) baseDamage = 1.
+    // So final damage is still 1, demonstrating the Gen 5 floor is necessary.
     const attacker = makeActive({ level: 1, attack: 1, status: "burn" });
     const defender = makeActive({ defense: 200 });
     const move = makeMove({ type: "normal", power: 1, category: "physical" });
