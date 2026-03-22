@@ -188,6 +188,120 @@ describe("Bug #309 — Pressure + self-target moves", () => {
   });
 });
 
+// ─── Bug #512 — Pressure PP cost applied to foe-field/entire-field moves ─────
+
+/**
+ * Bug #512: The engine did not exclude foe-field and entire-field targeting moves
+ * from the Pressure PP cost check. Stealth Rock (foe-field) and Gravity
+ * (entire-field) should not trigger Pressure's extra PP cost because they
+ * do not directly target the opposing Pokemon.
+ *
+ * Source: Showdown sim/battle.ts — Pressure only applies when move targets the ability-bearer
+ * Source: Bulbapedia — "Pressure causes any Pokemon targeting the ability-bearer to use 2 PP"
+ */
+describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
+  it("given a foe-field move (stealth-rock target), when opponent has Pressure, then PP cost is 1", () => {
+    // Arrange — create a Pokemon with stealth-rock and a Pressure opponent
+    const ruleset = new MockRuleset();
+    vi.spyOn(ruleset, "getPPCost").mockImplementation((_actor, defender, _state) => {
+      // Simulate Pressure: cost 2 when defender is non-null (opponent targeted)
+      return defender?.ability === "pressure" ? 2 : 1;
+    });
+
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [
+          { moveId: "stealth-rock", currentPP: 20, maxPP: 20, ppUps: 0 },
+          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+        ],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const { engine } = createEngine({ team1, ruleset });
+    engine.start();
+
+    // Set opponent's ability to Pressure
+    const active1 = engine.getActive(1);
+    expect(active1).not.toBeNull();
+    active1!.ability = "pressure";
+
+    const active0 = engine.getActive(0);
+    expect(active0).not.toBeNull();
+    const stealthRockSlot = active0!.pokemon.moves[0];
+    expect(stealthRockSlot).toBeDefined();
+    const ppBefore = stealthRockSlot!.currentPP;
+
+    // Act — side 0 uses Stealth Rock (foe-field targeting)
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — Stealth Rock cost 1 PP (Pressure doesn't apply to foe-field moves)
+    // Source: Showdown — foe-field moves do not target the ability-bearer directly
+    expect(stealthRockSlot!.currentPP).toBe(ppBefore - 1);
+  });
+
+  it("given an entire-field move (gravity target), when opponent has Pressure, then PP cost is 1", () => {
+    // Arrange — create a Pokemon with gravity and a Pressure opponent
+    const ruleset = new MockRuleset();
+    vi.spyOn(ruleset, "getPPCost").mockImplementation((_actor, defender, _state) => {
+      return defender?.ability === "pressure" ? 2 : 1;
+    });
+
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [
+          { moveId: "gravity", currentPP: 5, maxPP: 5, ppUps: 0 },
+          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+        ],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const { engine } = createEngine({ team1, ruleset });
+    engine.start();
+
+    // Set opponent's ability to Pressure
+    const active1 = engine.getActive(1);
+    expect(active1).not.toBeNull();
+    active1!.ability = "pressure";
+
+    const active0 = engine.getActive(0);
+    expect(active0).not.toBeNull();
+    const gravitySlot = active0!.pokemon.moves[0];
+    expect(gravitySlot).toBeDefined();
+    const ppBefore = gravitySlot!.currentPP;
+
+    // Act — side 0 uses Gravity (entire-field targeting)
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert — Gravity cost 1 PP (Pressure doesn't apply to entire-field moves)
+    // Source: Showdown — entire-field moves do not target the ability-bearer directly
+    expect(gravitySlot!.currentPP).toBe(ppBefore - 1);
+  });
+});
+
 // ─── Bug #310 — Sucker Punch fails against Struggling opponent ───────────────
 
 /**

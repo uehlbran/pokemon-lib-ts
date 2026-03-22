@@ -994,13 +994,16 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: pret/pokeemerald — PP deducted when move is selected, before accuracy check
     // Pressure only applies to moves that target the opponent — self-targeting moves
     // (Swords Dance, Recover, etc.) and user-side moves (Reflect, etc.) are unaffected.
+    // "foe-field" (Spikes, Stealth Rock) and "entire-field" (Gravity, Trick Room) also excluded.
     // Source: Showdown sim/battle.ts — Pressure check skips self-target/user-field/user-and-allies
     // Source: Bulbapedia — "Pressure causes any Pokémon targeting the ability-bearer [...] to use
     //   2 PP for their move instead of 1." Self-targeting moves don't target the ability-bearer.
     const defenderForPP =
       moveData.target === "self" ||
       moveData.target === "user-field" ||
-      moveData.target === "user-and-allies"
+      moveData.target === "user-and-allies" ||
+      moveData.target === "foe-field" ||
+      moveData.target === "entire-field"
         ? null
         : this.getOpponentActive(action.side);
     const ppCost = this.ruleset.getPPCost(actor, defenderForPP, this.state);
@@ -1266,6 +1269,21 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
       } else {
+        // Pre-damage survival check: allows abilities (Sturdy) to cap lethal damage before HP subtraction.
+        // Source: Showdown sim/battle-actions.ts — onDamage handlers run before HP reduction
+        if (damage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+          const survivalResult = this.ruleset.capLethalDamage(
+            damage,
+            defender,
+            actor,
+            effectiveMoveData,
+            this.state,
+          );
+          damage = survivalResult.damage;
+          for (const msg of survivalResult.messages) {
+            this.emit({ type: "message", text: msg });
+          }
+        }
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
         defender.lastDamageTaken = damage;
         defender.lastDamageType = result.effectiveType ?? effectiveMoveData.type;
@@ -1295,6 +1313,7 @@ export class BattleEngine implements BattleEventEmitter {
           rng: this.state.rng,
           damage,
           move: effectiveMoveData,
+          opponent: actor, // attacker is the opponent from the defender's perspective
         });
         if (defItemResult.activated) {
           this.processItemResult(defItemResult, defender, actor, defenderSide as 0 | 1);
@@ -1493,6 +1512,7 @@ export class BattleEngine implements BattleEventEmitter {
         state: this.state,
         rng: this.state.rng,
         move: effectiveMoveData,
+        opponent: defender, // defender is the opponent from the attacker's perspective
       });
       if (atkItemResult.activated) {
         this.processItemResult(atkItemResult, actor, action.side);
@@ -3315,10 +3335,13 @@ export class BattleEngine implements BattleEventEmitter {
               if (active && active.pokemon.currentHp > 0) {
                 let futureDamage = side.futureAttack.damage;
 
-                // Gen 4+: damage is calculated at hit time, not on use
-                // Source: Bulbapedia — "In Generations II-IV, damage is calculated
-                // when Future Sight or Doom Desire hits."
-                if (futureDamage === 0) {
+                // Protocol: Gen 2-4 rulesets store pre-calculated damage at use time (non-zero).
+                // Gen 5+ rulesets signal hit-time recalculation by returning true from
+                // recalculatesFutureAttackDamage(), OR by storing 0 as a sentinel.
+                // Source: Bulbapedia — "From Generation V onwards, damage is calculated when
+                //   Future Sight or Doom Desire hits, not when it is used."
+                // Source: Showdown sim/battle-actions.ts — Gen 5+ recalculates future attack damage
+                if (futureDamage === 0 || this.ruleset.recalculatesFutureAttackDamage?.()) {
                   const sourceSideState = this.state.sides[side.futureAttack.sourceSide];
                   const sourceActive = sourceSideState.active[0];
                   if (sourceActive && sourceActive.pokemon.currentHp > 0) {
@@ -3670,6 +3693,12 @@ export class BattleEngine implements BattleEventEmitter {
               const active = side.active[0];
               if (!active || active.pokemon.currentHp <= 0) continue;
               if (active.pokemon.status === "sleep") {
+                // Soundproof blocks Uproar wake-up (Uproar is a sound-based move/effect)
+                // Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
+                // Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
+                if (this.ruleset.hasAbilities() && active.ability === "soundproof") {
+                  continue;
+                }
                 active.pokemon.status = null;
                 this.emit({
                   type: "status-cure",

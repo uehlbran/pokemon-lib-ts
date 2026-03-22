@@ -99,6 +99,18 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   abstract calculateDamage(context: DamageContext): DamageResult;
 
+  /**
+   * Whether future attacks (Future Sight, Doom Desire) recalculate damage at hit time.
+   * Default: false (Gen 2-4 behavior -- damage stored at use time).
+   * Gen 5+ override to return true.
+   *
+   * Source: Bulbapedia -- "From Generation V onwards, damage is calculated when
+   *   Future Sight or Doom Desire hits, not when it is used."
+   */
+  recalculatesFutureAttackDamage(): boolean {
+    return false;
+  }
+
   // Gen 6+ default; Gen 3-5 use a 2-stage table with 1/16 and 1/8 rates
   getCritRateTable(): readonly number[] {
     // Gen 6+: 1/24, 1/8, 1/2, 1/1
