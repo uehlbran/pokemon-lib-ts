@@ -82,6 +82,14 @@ export {
   TYPE_RESIST_BERRIES,
 } from "./Gen8DamageCalc.js";
 export {
+  DYNAMAX_IMMUNE_SPECIES,
+  DYNAMAX_TURNS,
+  Gen8Dynamax,
+  getDynamaxCurrentHp,
+  getDynamaxMaxHp,
+  getUndynamaxedHp,
+} from "./Gen8Dynamax.js";
+export {
   applyGen8EntryHazards,
   applyGen8GMaxSteelsurge,
   applyGen8SpikesHazard,
@@ -90,6 +98,21 @@ export {
   applyGen8ToxicSpikes,
   hasHeavyDutyBoots,
 } from "./Gen8EntryHazards.js";
+export {
+  GMAX_MOVES,
+  type GMaxMoveData,
+  type GMaxMoveEffectType,
+  getGMaxMove,
+  getGMaxMoveEffect,
+  isGigantamaxEligible,
+} from "./Gen8GMaxMoves.js";
+export {
+  getMaxMoveName,
+  getMaxMovePower,
+  getMaxMoveSecondaryEffect,
+  isMaxGuard,
+  type MaxMoveEffect,
+} from "./Gen8MaxMoves.js";
 export {
   AURORA_VEIL_DEFAULT_TURNS,
   AURORA_VEIL_LIGHT_CLAY_TURNS,

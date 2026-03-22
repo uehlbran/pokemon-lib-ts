@@ -104,10 +104,13 @@ describe("Gen8Ruleset -- getBattleGimmick", () => {
     expect(ruleset.getBattleGimmick("zmove")).toBeNull();
   });
 
-  it("given getBattleGimmick('dynamax'), then returns null (stub until Wave 8)", () => {
-    // Dynamax will be implemented in Wave 8
-    // For now, returns null as a placeholder
-    expect(ruleset.getBattleGimmick("dynamax")).toBeNull();
+  it("given getBattleGimmick('dynamax'), then returns Gen8Dynamax gimmick", () => {
+    // Source: Bulbapedia -- Dynamax is the Gen 8 battle gimmick
+    // Source: Showdown data/conditions.ts -- Dynamax condition
+    const gimmick = ruleset.getBattleGimmick("dynamax");
+    expect(gimmick).not.toBeNull();
+    expect(gimmick!.name).toBe("Dynamax");
+    expect(gimmick!.generations).toEqual([8]);
   });
 
   it("given getBattleGimmick('tera'), then returns null (Tera is Gen 9 only)", () => {
