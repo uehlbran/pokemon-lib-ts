@@ -2630,9 +2630,11 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Hazard from move effects
+    // Source: Showdown data/moves.ts — spikes max 3 layers, toxic-spikes max 2, others max 1
     if (result.hazardSet) {
       const targetSide = this.state.sides[result.hazardSet.targetSide];
       const hazardType = result.hazardSet.hazard;
+      const maxLayers = hazardType === "spikes" ? 3 : hazardType === "toxic-spikes" ? 2 : 1;
       const existing = targetSide.hazards.find((h) => h.type === hazardType);
       if (!existing) {
         targetSide.hazards.push({ type: hazardType, layers: 1 });
@@ -2642,7 +2644,17 @@ export class BattleEngine implements BattleEventEmitter {
           hazard: hazardType,
           layers: 1,
         });
+      } else if (existing.layers < maxLayers) {
+        // Bug #537 fix: increment layers for stackable hazards
+        existing.layers += 1;
+        this.emit({
+          type: "hazard-set",
+          side: result.hazardSet.targetSide,
+          hazard: hazardType,
+          layers: existing.layers,
+        });
       }
+      // If already at max layers, do nothing (matches cartridge behavior — move fails silently)
     }
 
     // Clear volatiles from move effects (e.g., Rapid Spin)
