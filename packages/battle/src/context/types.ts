@@ -339,6 +339,21 @@ export interface MoveEffectResult {
    */
   readonly perHitDamage?: readonly number[] | null;
   /**
+   * Lazy per-hit damage function for multi-hit moves with variable power/stats.
+   * When set, the engine calls `perHitDamageFn(hitIndex)` for each additional hit
+   * instead of indexing into a precomputed `perHitDamage` array. This ensures RNG
+   * is only consumed for hits that actually execute (e.g., if the target faints
+   * after hit 1, no RNG is consumed for hit 2).
+   *
+   * Takes precedence over `perHitDamage` when both are set.
+   *
+   * `hitIndex` is 0-based for additional hits (hit index 0 = the 2nd hit overall).
+   *
+   * Source: pret/pokecrystal engine/battle/effect_commands.asm — TripleKickEffect
+   *   and BeatUpEffect both compute damage inside the hit loop, not before it.
+   */
+  readonly perHitDamageFn?: ((hitIndex: number) => number) | null;
+  /**
    * Schedule a Wish on the attacker's side. At the end of the next turn, the
    * active Pokemon in that slot is healed by `healAmount` HP.
    *

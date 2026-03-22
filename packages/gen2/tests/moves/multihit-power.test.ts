@@ -1,12 +1,15 @@
 /**
  * Tests for per-hit damage variation in multi-hit moves (Triple Kick, Beat Up).
  *
- * Verifies that the `perHitDamage` field on MoveEffectResult is correctly
- * computed by Gen2Ruleset.computePerHitDamage for moves that vary damage per hit.
+ * Verifies that the `perHitDamageFn` callback on MoveEffectResult is correctly
+ * set by Gen2Ruleset.computePerHitDamage for moves that vary damage per hit.
+ * The callback is lazy -- RNG is only consumed when the function is called,
+ * not when the move effect is computed. This prevents RNG desync when the
+ * target faints mid-multi-hit.
  *
- * Source: pret/pokecrystal engine/battle/effect_commands.asm — TripleKickEffect, BeatUpEffect
- * Source: Bulbapedia — "Triple Kick: Power increases by 10 with each hit: 10, 20, 30"
- * Source: Bulbapedia — "Beat Up: each hit uses the corresponding party member's base Attack"
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm -- TripleKickEffect, BeatUpEffect
+ * Source: Bulbapedia -- "Triple Kick: Power increases by 10 with each hit: 10, 20, 30"
+ * Source: Bulbapedia -- "Beat Up: each hit uses the corresponding party member's base Attack"
  */
 
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
@@ -151,10 +154,10 @@ function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
 }
 
 // ---------------------------------------------------------------------------
-// Triple Kick — perHitDamage tests
+// Triple Kick -- perHitDamageFn tests
 // ---------------------------------------------------------------------------
 
-describe("Gen 2 Triple Kick perHitDamage", () => {
+describe("Gen 2 Triple Kick perHitDamageFn", () => {
   const ruleset = new Gen2Ruleset();
 
   const tripleKickMove = {
@@ -170,10 +173,10 @@ describe("Gen 2 Triple Kick perHitDamage", () => {
     flags: { contact: true },
   } as unknown as MoveData;
 
-  it("given Triple Kick is used, when executeMoveEffect is called, then perHitDamage has length 2 for the two additional hits", () => {
+  it("given Triple Kick is used, when executeMoveEffect is called, then perHitDamageFn is set as a function", () => {
     // Arrange
-    // Source: Bulbapedia — "Triple Kick: Power increases by 10 with each hit: 10, 20, 30"
-    // perHitDamage should have 2 entries (for hits 2 and 3; hit 1 uses normal damage)
+    // Source: Bulbapedia -- "Triple Kick: Power increases by 10 with each hit: 10, 20, 30"
+    // perHitDamageFn should be a lazy function for computing damage per hit
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -189,13 +192,13 @@ describe("Gen 2 Triple Kick perHitDamage", () => {
     });
 
     // Assert
-    // Source: Bulbapedia — Triple Kick has 3 hits; hit 1 uses normal engine damage,
-    // so perHitDamage should contain exactly 2 entries (for hits 2 and 3).
-    expect(Array.isArray(result.perHitDamage)).toBe(true);
-    expect(result.perHitDamage!.length).toBe(2);
+    // Source: Bulbapedia -- Triple Kick has 3 hits; hit 1 uses normal engine damage,
+    // so perHitDamageFn should be set to lazily compute hits 2 and 3.
+    expect(typeof result.perHitDamageFn).toBe("function");
+    expect(result.multiHitCount).toBe(2);
   });
 
-  it("given Triple Kick with L50 attacker (Atk 100) vs L50 defender (Def 100, Normal type), when executeMoveEffect is called, then perHitDamage[0] is in range for power 20 (Fighting 2x vs Normal)", () => {
+  it("given Triple Kick with L50 attacker (Atk 100) vs L50 defender (Def 100, Normal type), when perHitDamageFn(0) is called, then returns damage in range for power 20 (Fighting 2x vs Normal)", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm TripleKickEffect
     // Hit 2 uses power 20. Fighting is super effective (2x) vs Normal type.
@@ -203,7 +206,7 @@ describe("Gen 2 Triple Kick perHitDamage", () => {
     //   levelFactor = floor(2*50/5) + 2 = 22
     //   baseDmg = floor(floor(22 * 20 * 100) / 100 / 50) = floor(440/50) = 8
     //   + 2 = 10
-    //   Type effectiveness: Fighting vs Normal = 2x → floor(10 * 20/10) = 20
+    //   Type effectiveness: Fighting vs Normal = 2x -> floor(10 * 20/10) = 20
     //   Random factor (217-255)/255: range [floor(20*217/255), floor(20*255/255)] = [17, 20]
     const attacker = createMockActive();
     const defender = createMockActive();
@@ -218,22 +221,23 @@ describe("Gen 2 Triple Kick perHitDamage", () => {
       state,
       rng: new SeededRandom(42),
     });
+    const hit2Damage = result.perHitDamageFn!(0);
 
     // Assert
-    // Source: Gen 2 damage formula derivation above — range [17, 20]
-    expect(result.perHitDamage![0]).toBeGreaterThanOrEqual(17);
-    expect(result.perHitDamage![0]).toBeLessThanOrEqual(20);
+    // Source: Gen 2 damage formula derivation above -- range [17, 20]
+    expect(hit2Damage).toBeGreaterThanOrEqual(17);
+    expect(hit2Damage).toBeLessThanOrEqual(20);
   });
 
-  it("given Triple Kick with L50 attacker (Atk 100) vs L50 defender (Def 100, Normal type), when executeMoveEffect is called, then perHitDamage[1] is in range for power 30 (Fighting 2x vs Normal)", () => {
+  it("given Triple Kick with L50 attacker (Atk 100) vs L50 defender (Def 100, Normal type), when perHitDamageFn(0) then perHitDamageFn(1) are called, then hit 3 is in range for power 30 (Fighting 2x vs Normal)", () => {
     // Arrange
-    // Source: Bulbapedia — "Triple Kick: power 30 for the third hit"
+    // Source: Bulbapedia -- "Triple Kick: power 30 for the third hit"
     // Fighting is super effective (2x) vs Normal type.
     // Gen 2 damage formula derivation for power 30:
     //   levelFactor = floor(2*50/5) + 2 = 22
     //   baseDmg = floor(floor(22 * 30 * 100) / 100 / 50) = floor(660/50) = 13
     //   + 2 = 15
-    //   Type effectiveness: Fighting vs Normal = 2x → floor(15 * 20/10) = 30
+    //   Type effectiveness: Fighting vs Normal = 2x -> floor(15 * 20/10) = 30
     //   Random factor (217-255)/255: range [floor(30*217/255), floor(30*255/255)] = [25, 30]
     const attacker = createMockActive();
     const defender = createMockActive();
@@ -248,17 +252,20 @@ describe("Gen 2 Triple Kick perHitDamage", () => {
       state,
       rng: new SeededRandom(42),
     });
+    // Must call hit 2 first to advance RNG correctly (lazy evaluation)
+    result.perHitDamageFn!(0);
+    const hit3Damage = result.perHitDamageFn!(1);
 
     // Assert
-    // Source: Gen 2 damage formula derivation above — range [25, 30]
-    expect(result.perHitDamage![1]).toBeGreaterThanOrEqual(25);
-    expect(result.perHitDamage![1]).toBeLessThanOrEqual(30);
+    // Source: Gen 2 damage formula derivation above -- range [25, 30]
+    expect(hit3Damage).toBeGreaterThanOrEqual(25);
+    expect(hit3Damage).toBeLessThanOrEqual(30);
   });
 
-  it("given Triple Kick with two different seeds, when executeMoveEffect is called, then perHitDamage values may differ due to random factor", () => {
+  it("given Triple Kick with two different seeds, when perHitDamageFn is called, then values may differ due to random factor", () => {
     // Arrange
     // Triangulation: verify the damage isn't a constant (RNG matters)
-    // Source: pret/pokecrystal — random factor (217-255)/255 applied to each hit
+    // Source: pret/pokecrystal -- random factor (217-255)/255 applied to each hit
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -281,25 +288,115 @@ describe("Gen 2 Triple Kick perHitDamage", () => {
       rng: new SeededRandom(9999),
     });
 
-    // Assert — both should have perHitDamage with 2 entries
-    expect(result1.perHitDamage).toBeDefined();
-    expect(result1.perHitDamage!.length).toBe(2);
-    expect(result2.perHitDamage).toBeDefined();
-    expect(result2.perHitDamage!.length).toBe(2);
+    // Assert -- both should have perHitDamageFn set
+    expect(typeof result1.perHitDamageFn).toBe("function");
+    expect(typeof result2.perHitDamageFn).toBe("function");
+
+    // Invoke lazily and compare
+    const dmg1_0 = result1.perHitDamageFn!(0);
+    const dmg1_1 = result1.perHitDamageFn!(1);
+    const dmg2_0 = result2.perHitDamageFn!(0);
+    const dmg2_1 = result2.perHitDamageFn!(1);
+
     // At least one pair should differ (random factor varies with seed)
-    // This is a triangulation test — two seeds producing the same damage is extremely unlikely
-    const allSame =
-      result1.perHitDamage![0] === result2.perHitDamage![0] &&
-      result1.perHitDamage![1] === result2.perHitDamage![1];
+    // This is a triangulation test -- two seeds producing the same damage is extremely unlikely
+    const allSame = dmg1_0 === dmg2_0 && dmg1_1 === dmg2_1;
     expect(allSame).toBe(false);
+  });
+
+  it("given Triple Kick where target faints on hit 1, when perHitDamageFn is never called, then no additional RNG is consumed vs calling it once", () => {
+    // Arrange
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm TripleKickEffect
+    // Fix for #620: damage computed inside the hit loop, not before it.
+    // If the target faints after hit 1, no per-hit RNG should be consumed.
+    // We verify this by comparing two identical RNG streams: one where perHitDamageFn
+    // is never called (simulating early KO) and one where it is called once.
+    // If the implementation is lazy, these two should diverge.
+    const attacker = createMockActive();
+    const defender = createMockActive();
+    const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+    const rngA = new SeededRandom(42);
+    const rngB = new SeededRandom(42);
+
+    // Act -- Scenario A: call executeMoveEffect but never call perHitDamageFn (early KO)
+    ruleset.executeMoveEffect({
+      attacker,
+      defender,
+      move: tripleKickMove,
+      damage: 10,
+      state,
+      rng: rngA,
+    });
+    // Do NOT call perHitDamageFn -- simulating target fainted after hit 1
+
+    // Scenario B: call executeMoveEffect AND invoke perHitDamageFn(0) (one additional hit)
+    const resultB = ruleset.executeMoveEffect({
+      attacker,
+      defender,
+      move: tripleKickMove,
+      damage: 10,
+      state,
+      rng: rngB,
+    });
+    resultB.perHitDamageFn!(0); // This consumes RNG for hit 2's crit roll + random factor
+
+    // Assert -- rngA and rngB should now be in DIFFERENT states because rngB consumed
+    // additional RNG for the perHitDamageFn call while rngA did not.
+    // Source: Fix for #620 -- lazy evaluation means uncalled perHitDamageFn doesn't consume RNG
+    const nextA = rngA.int(0, 1000);
+    const nextB = rngB.int(0, 1000);
+    expect(nextA).not.toBe(nextB);
+  });
+
+  it("given Triple Kick where only hit 2 executes (hit 3 skipped), when perHitDamageFn(0) is called once, then exactly 1 hit's worth of RNG is consumed", () => {
+    // Arrange
+    // Source: pret/pokecrystal -- each hit independently rolls crit + random factor
+    // Fix for #620: if hit 3 is skipped (target faints after hit 2), only hit 2's RNG is consumed.
+    const attacker = createMockActive();
+    const defender = createMockActive();
+    const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+    const rng1 = new SeededRandom(42);
+    const rng2 = new SeededRandom(42);
+
+    // Act -- result 1: call perHitDamageFn(0) only (1 additional hit executed)
+    const result1 = ruleset.executeMoveEffect({
+      attacker,
+      defender,
+      move: tripleKickMove,
+      damage: 10,
+      state,
+      rng: rng1,
+    });
+    result1.perHitDamageFn!(0);
+
+    // result 2: call perHitDamageFn(0) AND perHitDamageFn(1) (both additional hits executed)
+    const result2 = ruleset.executeMoveEffect({
+      attacker,
+      defender,
+      move: tripleKickMove,
+      damage: 10,
+      state,
+      rng: rng2,
+    });
+    result2.perHitDamageFn!(0);
+    result2.perHitDamageFn!(1);
+
+    // Assert -- rng1 and rng2 should now be in DIFFERENT states since rng2
+    // consumed more RNG calls (for hit 3's crit roll + random factor)
+    // Source: Fix for #620 -- lazy RNG means partial execution uses less RNG
+    const nextA = rng1.int(0, 1000);
+    const nextB = rng2.int(0, 1000);
+    expect(nextA).not.toBe(nextB);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Beat Up — perHitDamage tests
+// Beat Up -- perHitDamageFn tests
 // ---------------------------------------------------------------------------
 
-describe("Gen 2 Beat Up perHitDamage", () => {
+describe("Gen 2 Beat Up perHitDamageFn", () => {
   const ruleset = new Gen2Ruleset();
 
   const beatUpMove = {
@@ -315,11 +412,11 @@ describe("Gen 2 Beat Up perHitDamage", () => {
     flags: {},
   } as unknown as MoveData;
 
-  it("given a team of 3 eligible Pokemon, when Beat Up is used, then perHitDamage has length 2 (one per non-active eligible member)", () => {
+  it("given a team of 3 eligible Pokemon, when Beat Up is used, then perHitDamageFn is set and multiHitCount is 2", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
     // Beat Up hits once per eligible party member. The first hit (active Pokemon)
-    // uses the engine's normal damage flow. perHitDamage covers the additional hits.
+    // uses the engine's normal damage flow. perHitDamageFn covers the additional hits.
     const attacker = createMockActive({ uid: "attacker-uid" });
     const team = [
       { ...attacker.pokemon, uid: "attacker-uid" } as unknown as PokemonInstance,
@@ -343,11 +440,10 @@ describe("Gen 2 Beat Up perHitDamage", () => {
 
     // Assert
     expect(result.multiHitCount).toBe(2);
-    expect(result.perHitDamage).toBeDefined();
-    expect(result.perHitDamage!.length).toBe(2);
+    expect(typeof result.perHitDamageFn).toBe("function");
   });
 
-  it("given a team with members of different species, when Beat Up is used, then perHitDamage uses each member's species base Attack", () => {
+  it("given a team with members of different species, when Beat Up is used and perHitDamageFn is called, then damage uses each member's species base Attack", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
     // Each hit uses the party member's species base Attack stat.
@@ -395,20 +491,21 @@ describe("Gen 2 Beat Up perHitDamage", () => {
     });
 
     // Assert
-    expect(result.perHitDamage).toBeDefined();
-    expect(result.perHitDamage!.length).toBe(2);
+    expect(typeof result.perHitDamageFn).toBe("function");
+    const dmg0 = result.perHitDamageFn!(0); // Charmander's hit
+    const dmg1 = result.perHitDamageFn!(1); // Squirtle's hit
 
     // Both should be integers in the formula-derived range [5, 6].
-    // Source: Beat Up formula derivation above — Charmander (BaseAtk=52) and
+    // Source: Beat Up formula derivation above -- Charmander (BaseAtk=52) and
     // Squirtle (BaseAtk=48) both produce base damage 6 before random factor;
     // random factor (217/255 to 255/255) gives floor(6*217/255)=5 to floor(6*255/255)=6.
-    for (const dmg of result.perHitDamage!) {
-      expect(dmg).toBeGreaterThanOrEqual(5);
-      expect(dmg).toBeLessThanOrEqual(6);
-    }
+    expect(dmg0).toBeGreaterThanOrEqual(5);
+    expect(dmg0).toBeLessThanOrEqual(6);
+    expect(dmg1).toBeGreaterThanOrEqual(5);
+    expect(dmg1).toBeLessThanOrEqual(6);
   });
 
-  it("given a team with high-Attack and low-Attack species, when Beat Up is used, then perHitDamage reflects the Attack difference", () => {
+  it("given a team with high-Attack and low-Attack species, when Beat Up is used and perHitDamageFn is called, then damage reflects the Attack values", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
     // Pikachu (id=25): base Attack = 55
@@ -430,7 +527,7 @@ describe("Gen 2 Beat Up perHitDamage", () => {
     //
     // Both produce base damage 6 before random factor. The formula's granularity
     // at these low values means small Attack differences may not produce different damage.
-    // That's correct behavior — the test verifies the formula is applied, not that
+    // That's correct behavior -- the test verifies the formula is applied, not that
     // all outputs are distinct.
     const attacker = createMockActive({ uid: "attacker-uid", speciesId: 1 });
     const team = [
@@ -454,22 +551,23 @@ describe("Gen 2 Beat Up perHitDamage", () => {
     });
 
     // Assert
-    expect(result.perHitDamage).toBeDefined();
-    expect(result.perHitDamage!.length).toBe(2);
+    expect(typeof result.perHitDamageFn).toBe("function");
+    const dmg0 = result.perHitDamageFn!(0);
+    const dmg1 = result.perHitDamageFn!(1);
 
     // Both hits should produce damage in the range [5, 6]
-    // Source: formula derivation above — base damage 6, random factor gives [5, 6]
-    for (const dmg of result.perHitDamage!) {
-      expect(dmg).toBeGreaterThanOrEqual(5);
-      expect(dmg).toBeLessThanOrEqual(6);
-    }
+    // Source: formula derivation above -- base damage 6, random factor gives [5, 6]
+    expect(dmg0).toBeGreaterThanOrEqual(5);
+    expect(dmg0).toBeLessThanOrEqual(6);
+    expect(dmg1).toBeGreaterThanOrEqual(5);
+    expect(dmg1).toBeLessThanOrEqual(6);
   });
 
-  it("given only the active Pokemon is eligible, when Beat Up is used, then perHitDamage is empty (no additional hits need variable damage)", () => {
+  it("given only the active Pokemon is eligible, when Beat Up is used, then perHitDamageFn is not set (no additional hits)", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
     // With only 1 eligible member (the active Pokemon), multiHitCount = 0.
-    // perHitDamage should not be set (no additional hits).
+    // perHitDamageFn should not be set (no additional hits).
     const attacker = createMockActive({ uid: "attacker-uid" });
     const team = [
       { ...attacker.pokemon, uid: "attacker-uid" } as unknown as PokemonInstance,
@@ -493,11 +591,11 @@ describe("Gen 2 Beat Up perHitDamage", () => {
 
     // Assert
     expect(result.multiHitCount).toBe(0);
-    // perHitDamage should not be set since multiHitCount is 0
-    expect(result.perHitDamage).toBeUndefined();
+    // perHitDamageFn should not be set since multiHitCount is 0
+    expect(result.perHitDamageFn).toBeUndefined();
   });
 
-  it("given a team of 6 with 2 fainted, when Beat Up is used, then perHitDamage has length 3 (4 eligible minus 1 active = 3 additional hits)", () => {
+  it("given a team of 6 with 2 fainted, when Beat Up is used and perHitDamageFn is called for each hit, then all 3 hits produce positive damage", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
     // 6 members - 2 fainted = 4 eligible. Active Pokemon gets first hit.
@@ -528,11 +626,59 @@ describe("Gen 2 Beat Up perHitDamage", () => {
 
     // Assert
     expect(result.multiHitCount).toBe(3);
-    expect(result.perHitDamage).toBeDefined();
-    expect(result.perHitDamage!.length).toBe(3);
+    expect(typeof result.perHitDamageFn).toBe("function");
     // Each hit should produce positive damage
-    for (const dmg of result.perHitDamage!) {
-      expect(dmg).toBeGreaterThanOrEqual(1);
+    for (let i = 0; i < 3; i++) {
+      expect(result.perHitDamageFn!(i)).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  it("given Beat Up with 3 eligible members where hit 2 executes but hit 3 is skipped (early KO), when perHitDamageFn is called once vs twice, then different RNG is consumed", () => {
+    // Arrange
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
+    // Fix for #620: each hit's RNG is consumed lazily, not eagerly.
+    const attacker = createMockActive({ uid: "attacker-uid" });
+    const team = [
+      { ...attacker.pokemon, uid: "attacker-uid" } as unknown as PokemonInstance,
+      createMockTeamMember({ uid: "m2" }),
+      createMockTeamMember({ uid: "m3" }),
+    ];
+    const side0 = createMockSide(0, attacker, team);
+    const defender = createMockActive({ uid: "defender-uid" });
+    const side1 = createMockSide(1, defender);
+    const state = createMockState(side0, side1);
+
+    const rng1 = new SeededRandom(42);
+    const rng2 = new SeededRandom(42);
+
+    // Act -- result1: call only perHitDamageFn(0) (1 additional hit)
+    const result1 = ruleset.executeMoveEffect({
+      attacker,
+      defender,
+      move: beatUpMove,
+      damage: 10,
+      state,
+      rng: rng1,
+    });
+    result1.perHitDamageFn!(0);
+
+    // result2: call both perHitDamageFn(0) and perHitDamageFn(1) (2 additional hits)
+    const result2 = ruleset.executeMoveEffect({
+      attacker,
+      defender,
+      move: beatUpMove,
+      damage: 10,
+      state,
+      rng: rng2,
+    });
+    result2.perHitDamageFn!(0);
+    result2.perHitDamageFn!(1);
+
+    // Assert -- rng1 and rng2 should be in different states since rng2 consumed
+    // more RNG (for hit 2's random factor roll)
+    // Source: Fix for #620 -- lazy RNG means partial execution uses less RNG
+    const nextA = rng1.int(0, 1000);
+    const nextB = rng2.int(0, 1000);
+    expect(nextA).not.toBe(nextB);
   });
 });

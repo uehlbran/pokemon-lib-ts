@@ -1548,10 +1548,12 @@ export class BattleEngine implements BattleEventEmitter {
         }
 
         // Use per-hit damage if provided (Triple Kick, Beat Up); otherwise reuse first hit.
+        // Prefer perHitDamageFn (lazy, RNG consumed per-hit) over perHitDamage (eager).
+        // Source: pret/pokecrystal TripleKickEffect/BeatUpEffect — damage computed in hit loop
         // Source: Bulbapedia — Triple Kick power escalates 10/20/30 per hit
-        // Source: pret/pokecrystal BeatUpEffect — each hit uses a different party member
-        let hitDamage =
-          effectResult.perHitDamage && i < effectResult.perHitDamage.length
+        let hitDamage = effectResult.perHitDamageFn
+          ? effectResult.perHitDamageFn(i)
+          : effectResult.perHitDamage && i < effectResult.perHitDamage.length
             ? (effectResult.perHitDamage[i] ?? firstHitDamage)
             : firstHitDamage;
         if (hitDamage <= 0) break;
