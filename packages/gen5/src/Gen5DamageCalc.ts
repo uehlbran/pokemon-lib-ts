@@ -22,11 +22,10 @@ import {
  * Equivalent to Showdown's `modify(value, modifier/4096)`:
  *   `tr((tr(value * modifier) + 2048 - 1) / 4096)`
  *
- * However, Showdown's tr() is `num >>> 0` (unsigned 32-bit truncation), which for
- * positive integers is equivalent to Math.floor. The `- 1` is included in Showdown's
- * modify() to handle edge cases with negative values, but for positive damage values
- * we can simplify to:
- *   `floor((value * modifier + 2048) / 4096)`
+ * Showdown's tr() is `num >>> 0` (unsigned 32-bit truncation), which for
+ * positive integers is equivalent to Math.floor. For positive damage values,
+ * `tr(v*m) + 2048 - 1` simplifies to `v*m + 2047`, giving:
+ *   `floor((value * modifier + 2047) / 4096)`
  *
  * Source: references/pokemon-showdown/sim/battle.ts modify() method (line 2334-2344)
  * Source: references/pokemon-showdown/sim/dex.ts trunc() — num >>> 0
@@ -38,8 +37,9 @@ import {
 export function pokeRound(value: number, modifier: number): number {
   // Source: references/pokemon-showdown/sim/battle.ts line 2344
   // return tr((tr(value * modifier) + 2048 - 1) / 4096)
-  // For positive integers, equivalent to: floor((value * modifier + 2048) / 4096)
-  return Math.floor((value * modifier + 2048) / 4096);
+  // For positive integers, equivalent to: floor((value * modifier + 2047) / 4096)
+  // Fix: +2047 not +2048 -- see GitHub #536
+  return Math.floor((value * modifier + 2047) / 4096);
 }
 
 // ---- Type-Boosting Items ----

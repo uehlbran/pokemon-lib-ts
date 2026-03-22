@@ -179,31 +179,28 @@ function makeDamageContext(overrides: {
 // ---------------------------------------------------------------------------
 
 describe("pokeRound function", () => {
-  it("given value=100 and modifier=6144, when applying pokeRound, then returns floor((100 * 6144 + 2048) / 4096) = 150", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((100 * 6144 + 2048) / 4096) = floor((614400 + 2048) / 4096)
-    // = floor(616448 / 4096) = floor(150.5) = 150
+  it("given value=100 and modifier=6144, when applying pokeRound (1.5x), then returns 150", () => {
+    // Source: Showdown sim/battle.ts modify() — tr((tr(100*6144) + 2047) / 4096)
+    // 100 * 6144 = 614400; floor((614400 + 2047) / 4096) = floor(616447 / 4096) = 150
     expect(pokeRound(100, 6144)).toBe(150);
   });
 
-  it("given value=100 and modifier=2048, when applying pokeRound, then returns floor((100 * 2048 + 2048) / 4096) = 50", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((100 * 2048 + 2048) / 4096) = floor((204800 + 2048) / 4096)
-    // = floor(206848 / 4096) = floor(50.5) = 50
+  it("given value=100 and modifier=2048, when applying pokeRound (0.5x), then returns 50", () => {
+    // Source: Showdown sim/battle.ts modify() — tr((tr(100*2048) + 2047) / 4096)
+    // 100 * 2048 = 204800; floor((204800 + 2047) / 4096) = floor(206847 / 4096) = 50
     expect(pokeRound(100, 2048)).toBe(50);
   });
 
-  it("given value=57 and modifier=6144, when applying pokeRound, then returns floor((57 * 6144 + 2048) / 4096) = 85", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((57 * 6144 + 2048) / 4096) = floor((350208 + 2048) / 4096)
-    // = floor(352256 / 4096) = floor(86.0) = 86
-    // Wait: 57 * 6144 = 350208; 350208 + 2048 = 352256; 352256 / 4096 = 86.0
-    expect(pokeRound(57, 6144)).toBe(86);
+  it("given value=57 and modifier=6144, when applying pokeRound, then returns 85", () => {
+    // Source: Showdown sim/battle.ts modify() — tr((tr(57*6144) + 2047) / 4096)
+    // 57 * 6144 = 350208; floor((350208 + 2047) / 4096) = floor(352255 / 4096) = 85
+    // This is a boundary case: 350208 % 4096 === 2048 (exact midpoint)
+    expect(pokeRound(57, 6144)).toBe(85);
   });
 
   it("given value=1 and modifier=4096, when applying pokeRound (1.0x), then returns 1", () => {
-    // Source: references/pokemon-showdown/sim/battle.ts modify() method
-    // floor((1 * 4096 + 2048) / 4096) = floor(6144 / 4096) = floor(1.5) = 1
+    // Source: Showdown sim/battle.ts modify() — tr((tr(1*4096) + 2047) / 4096)
+    // 1 * 4096 = 4096; floor((4096 + 2047) / 4096) = floor(6143 / 4096) = 1
     expect(pokeRound(1, 4096)).toBe(1);
   });
 });
@@ -304,10 +301,10 @@ describe("Gen 5 damage calc -- STAB", () => {
     // STAB: pokeRound(24 * r_applied, 6144) where r_applied is after random
     // Actually the order is: baseDamage=24, random, then STAB
     // With max random (100%): 24 * 100/100 = 24, then STAB: pokeRound(24, 6144)
-    //   = floor((24 * 6144 + 2048) / 4096) = floor((147456 + 2048)/4096) = floor(149504/4096)
+    //   = floor((24 * 6144 + 2047) / 4096) = floor((147456 + 2047)/4096) = floor(149503/4096)
     //   = floor(36.5) = 36
     // With min random (85%): floor(24*85/100) = floor(20.4) = 20, then STAB: pokeRound(20, 6144)
-    //   = floor((20 * 6144 + 2048) / 4096) = floor((122880 + 2048)/4096) = floor(124928/4096)
+    //   = floor((20 * 6144 + 2047) / 4096) = floor((122880 + 2047)/4096) = floor(124927/4096)
     //   = floor(30.5) = 30
     const attacker = makeActive({ attack: 100, types: ["fire"] });
     const defender = makeActive({ defense: 100, types: ["normal"] });
@@ -326,10 +323,10 @@ describe("Gen 5 damage calc -- STAB", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- Adaptability uses 2x STAB
     // Base damage = 24 (same setup as above)
     // With max random (100%): 24, then STAB: pokeRound(24, 8192)
-    //   = floor((24 * 8192 + 2048) / 4096) = floor((196608 + 2048)/4096) = floor(198656/4096)
+    //   = floor((24 * 8192 + 2047) / 4096) = floor((196608 + 2047)/4096) = floor(198655/4096)
     //   = floor(48.5) = 48
     // With min random (85%): floor(24*85/100) = 20, then STAB: pokeRound(20, 8192)
-    //   = floor((20 * 8192 + 2048) / 4096) = floor((163840 + 2048)/4096) = floor(165888/4096)
+    //   = floor((20 * 8192 + 2047) / 4096) = floor((163840 + 2047)/4096) = floor(165887/4096)
     //   = floor(40.5) = 40
     const attacker = makeActive({ attack: 100, types: ["fire"], ability: "adaptability" });
     const defender = makeActive({ defense: 100, types: ["normal"] });
@@ -535,15 +532,15 @@ describe("Gen 5 damage calc -- Gen 5 damage floor", () => {
     // levelFactor = floor(2*1/5) + 2 = 0 + 2 = 2
     // baseDamage = floor(floor(2*1*1/200)/50) + 2 = floor(0/50) + 2 = 2
     // crit: no. random: floor(2 * r/100). At r=85: floor(1.7) = 1
-    // STAB: no. Type eff: 1. Burn: pokeRound(1, 2048) = floor((2048+2048)/4096) = floor(1.0) = 1
+    // STAB: no. Type eff: 1. Burn: pokeRound(1, 2048) = floor((2048+2047)/4096) = floor(0.999...) = 0
     // Actually burn makes it 1 not 0 in this case. Let me construct a scenario where burn => 0.
     // pokeRound(0, 2048) = floor((0+2048)/4096) = 0. So we need random to give 0 first.
     // floor(2 * 85/100) = 1, floor(2 * 86/100) = 1, ..., floor(2 * 100/100) = 2
     // So random never gives 0 from 2. The minimum damage after formula is always >= 2 (the +2).
-    // With random 85% of 2 = floor(1.7) = 1, burn -> pokeRound(1, 2048) = 1.
+    // With random 85% of 2 = floor(1.7) = 1, burn -> pokeRound(1, 2048) = 0. Gen 5 floor -> 1.
     // To get 0 after burn, need random to produce 0, which requires baseDamage < 85/100 = 0.85.
     // Since baseDamage is always >= 2 from the formula, random always gives >= 1.
-    // pokeRound(1, 2048) = floor((1*2048 + 2048)/4096) = floor(4096/4096) = 1. Still 1.
+    // pokeRound(1, 2048) = floor((1*2048 + 2047)/4096) = floor(4095/4096) = 0. Gen 5 floor -> 1.
     // In practice, the Gen 5 floor is needed for edge cases with modifier chains.
     // Let's just test with a minimal case: burn with very low power.
     // The floor guarantees damage >= 1 when not immune.
