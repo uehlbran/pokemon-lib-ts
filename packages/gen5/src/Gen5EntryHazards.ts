@@ -84,9 +84,16 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   //   Flying/Levitate checks
   if (pokemon.volatileStatuses.has("ingrain")) return true;
 
-  // Iron Ball grounds the holder
+  // Compute item suppression once. Klutz ability and Embargo volatile both suppress
+  // held-item effects, preventing Iron Ball from grounding and Air Balloon from levitating.
+  // Source: Showdown sim/pokemon.ts -- isGrounded: suppresses items under Klutz/Embargo
+  // Source: Bulbapedia -- Klutz: "The held item has no effect"
+  // Source: Bulbapedia -- Embargo: "The target cannot use its held item"
+  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
+
+  // Iron Ball grounds the holder (only when item effects are active)
   // Source: Bulbapedia -- Iron Ball: "makes the holder grounded"
-  if (pokemon.pokemon.heldItem === "iron-ball") return true;
+  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
 
   // Smack Down grounds the target
   // Source: Showdown data/moves.ts -- smackdown volatile grounds the target
@@ -106,13 +113,7 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   if (pokemon.volatileStatuses.has("magnet-rise")) return false;
 
   // Air Balloon grants levitation ONLY when item effects are not suppressed.
-  // Klutz ability and Embargo volatile both suppress held-item effects.
-  // Source: Showdown sim/pokemon.ts -- isGrounded: checks item suppression
-  //   before treating Air Balloon as levitating
   // Source: Bulbapedia -- Air Balloon: "makes the holder immune to Ground-type moves"
-  // Source: Bulbapedia -- Klutz: "The held item has no effect" (suppresses items)
-  // Source: Bulbapedia -- Embargo: "The target cannot use its held item" (suppresses items)
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
   if (pokemon.pokemon.heldItem === "air-balloon" && !itemsSuppressed) return false;
 
   return true;
@@ -141,6 +142,9 @@ export function applyGen5SpikesHazard(
   layers: number,
   gravityActive: boolean,
 ): HazardDamageResult | null {
+  // No layers -> no hazard
+  if (layers <= 0) return null;
+
   // Not grounded -> immune
   if (!isGen5Grounded(switchingIn, gravityActive)) return null;
 
@@ -150,7 +154,7 @@ export function applyGen5SpikesHazard(
   // Source: Showdown data/moves.ts -- spikes: damageAmounts = [0, 3, 4, 6]
   // damage = damageAmounts[layers] * maxhp / 24
   const damageNumerators = [0, 3, 4, 6];
-  const clampedLayers = Math.min(Math.max(layers, 1), 3);
+  const clampedLayers = Math.min(layers, 3);
   const numerator = damageNumerators[clampedLayers] ?? 3;
   const damage = Math.max(1, Math.floor((maxHp * numerator) / 24));
 
@@ -227,6 +231,11 @@ export function applyGen5ToxicSpikes(
 ): ToxicSpikesResult {
   const pokemonName = switchingIn.pokemon.nickname ?? String(switchingIn.pokemon.speciesId);
 
+  // No layers -> no hazard
+  if (layers <= 0) {
+    return { absorbed: false, status: null, message: null };
+  }
+
   // Not grounded -> immune
   if (!isGen5Grounded(switchingIn, gravityActive)) {
     return { absorbed: false, status: null, message: null };
@@ -254,7 +263,7 @@ export function applyGen5ToxicSpikes(
   }
 
   // Apply poison based on layers
-  const clampedLayers = Math.min(Math.max(layers, 1), 2);
+  const clampedLayers = Math.min(layers, 2);
   if (clampedLayers >= 2) {
     return {
       absorbed: false,

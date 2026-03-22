@@ -179,6 +179,25 @@ describe("Gen5 isGen5Grounded", () => {
     const pokemon = makeActivePokemon({ heldItem: "air-balloon", volatiles });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
+
+  it("given a Flying-type Iron Ball holder with Klutz, when checking grounding, then is NOT grounded (item suppressed)", () => {
+    // Source: Showdown sim/pokemon.ts -- isGrounded: Iron Ball grounding is suppressed by Klutz
+    // Klutz suppresses held-item effects, so Iron Ball cannot force grounding.
+    const pokemon = makeActivePokemon({
+      types: ["flying"],
+      heldItem: "iron-ball",
+      ability: "klutz",
+    });
+    expect(isGen5Grounded(pokemon, false)).toBe(false);
+  });
+
+  it("given a Flying-type Iron Ball holder under Embargo, when checking grounding, then is NOT grounded (item suppressed)", () => {
+    // Source: Showdown sim/pokemon.ts -- isGrounded: Iron Ball grounding is suppressed by Embargo
+    // Embargo suppresses held-item effects, so Iron Ball cannot force grounding.
+    const volatiles = new Map([["embargo", { turnsLeft: 5 }]]);
+    const pokemon = makeActivePokemon({ types: ["flying"], heldItem: "iron-ball", volatiles });
+    expect(isGen5Grounded(pokemon, false)).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
