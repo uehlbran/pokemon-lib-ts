@@ -1,4 +1,4 @@
-import type { ActivePokemon, BattleSide, DamageContext } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonInstance,
