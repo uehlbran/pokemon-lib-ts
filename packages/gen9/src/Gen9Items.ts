@@ -1409,7 +1409,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Red Card: forces the attacker to switch out after being hit (consumed)
     // Source: Showdown data/items.ts -- Red Card onAfterMoveSecondary
     case "red-card": {
-      if (damage > 0) {
+      if (currentHp > 0 && damage > 0) {
         return {
           activated: true,
           effects: [
@@ -1425,7 +1425,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Eject Button: holder switches out after being hit (consumed)
     // Source: Showdown data/items.ts -- Eject Button onAfterMoveSecondary
     case "eject-button": {
-      if (damage > 0) {
+      if (currentHp > 0 && damage > 0) {
         return {
           activated: true,
           effects: [
@@ -1441,7 +1441,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Absorb Bulb: +1 SpA when hit by a Water-type move (consumed)
     // Source: Showdown data/items.ts -- Absorb Bulb onDamagingHit
     case "absorb-bulb": {
-      if (damage > 0 && context.move?.type === "water") {
+      if (currentHp > 0 && damage > 0 && context.move?.type === "water") {
         return {
           activated: true,
           effects: [
@@ -1457,7 +1457,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Cell Battery: +1 Atk when hit by an Electric-type move (consumed)
     // Source: Showdown data/items.ts -- Cell Battery onDamagingHit
     case "cell-battery": {
-      if (damage > 0 && context.move?.type === "electric") {
+      if (currentHp > 0 && damage > 0 && context.move?.type === "electric") {
         return {
           activated: true,
           effects: [
@@ -1474,7 +1474,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Source: Showdown data/items.ts -- weaknesspolicy: onDamagingHit
     // Source: Bulbapedia "Weakness Policy" -- +2 Atk/SpAtk on super-effective hit
     case "weakness-policy": {
-      if (damage > 0 && context.move) {
+      if (currentHp > 0 && damage > 0 && context.move) {
         const effectiveness = getTypeEffectiveness(
           context.move.type,
           pokemon.types,
@@ -1498,7 +1498,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Kee Berry: +1 Def when hit by a physical move (consumed)
     // Source: Showdown data/items.ts -- keeberry: onDamagingHit physical
     case "kee-berry": {
-      if (damage > 0 && context.move?.category === "physical") {
+      if (currentHp > 0 && damage > 0 && context.move?.category === "physical") {
         return {
           activated: true,
           effects: [
@@ -1514,7 +1514,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Maranga Berry: +1 SpDef when hit by a special move (consumed)
     // Source: Showdown data/items.ts -- marangaberry: onDamagingHit special
     case "maranga-berry": {
-      if (damage > 0 && context.move?.category === "special") {
+      if (currentHp > 0 && damage > 0 && context.move?.category === "special") {
         return {
           activated: true,
           effects: [
@@ -1530,7 +1530,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Luminous Moss: +1 SpDef when hit by a Water-type move (consumed)
     // Source: Showdown data/items.ts -- luminousmoss: onDamagingHit Water
     case "luminous-moss": {
-      if (damage > 0 && context.move?.type === "water") {
+      if (currentHp > 0 && damage > 0 && context.move?.type === "water") {
         return {
           activated: true,
           effects: [
@@ -1546,7 +1546,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Snowball: +1 Atk when hit by an Ice-type move (consumed)
     // Source: Showdown data/items.ts -- snowball: onDamagingHit Ice
     case "snowball": {
-      if (damage > 0 && context.move?.type === "ice") {
+      if (currentHp > 0 && damage > 0 && context.move?.type === "ice") {
         return {
           activated: true,
           effects: [
@@ -1566,14 +1566,19 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       if (!moveUsed?.flags?.contact) {
         return NO_ACTIVATION;
       }
-      const sides = context.state?.sides;
-      if (!sides) return NO_ACTIVATION;
-      const holderSide = sides.findIndex((s) =>
-        s.active.some((a: { pokemon: unknown } | null) => a && a.pokemon === pokemon.pokemon),
-      );
-      if (holderSide === -1) return NO_ACTIVATION;
-      const opponentSide = holderSide === 0 ? 1 : 0;
-      const opponent = sides[opponentSide]?.active?.[0];
+      // Prefer context.opponent (direct reference), fall back to scanning sides.
+      // Source: Showdown data/items.ts -- Sticky Barb transfers to the attacker
+      let opponent = context.opponent ?? null;
+      if (!opponent) {
+        const sides = context.state?.sides;
+        if (!sides) return NO_ACTIVATION;
+        const holderSide = sides.findIndex((s) =>
+          s.active.some((a: { pokemon: unknown } | null) => a && a.pokemon === pokemon.pokemon),
+        );
+        if (holderSide === -1) return NO_ACTIVATION;
+        const opponentSide = holderSide === 0 ? 1 : 0;
+        opponent = sides[opponentSide]?.active?.[0] ?? null;
+      }
       if (!opponent) return NO_ACTIVATION;
       if (opponent.pokemon.heldItem !== null) {
         return NO_ACTIVATION;
@@ -1716,11 +1721,11 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Throat Spray: +1 SpA when using a sound-based move (consumed)
-    // Source: Showdown data/items.ts -- Throat Spray onAfterMoveSecondarySelf
+    // Throat Spray: +1 SpA when using a sound-based move (consumed).
+    // Activates for any sound move, including status moves (Growl, Metal Sound, etc.).
+    // Source: Showdown data/items.ts -- Throat Spray onAfterMoveSecondarySelf: sound flag only
     case "throat-spray": {
-      const damageDealt = context.damage ?? 0;
-      if (damageDealt > 0 && context.move?.flags?.sound) {
+      if (context.move?.flags?.sound) {
         return {
           activated: true,
           effects: [
