@@ -345,7 +345,8 @@ export interface WeatherSystem {
 export interface TerrainSystem {
   /**
    * Whether terrain mechanics exist in this generation.
-   * Gen 1-6: false. Gen 7+: true.
+   * Gen 1-5: false. Gen 6+: true.
+   * Source: Showdown — Electric/Grassy/Misty Terrain introduced in Gen 6 (XY)
    */
   hasTerrain(): boolean;
   /** Apply terrain effects */

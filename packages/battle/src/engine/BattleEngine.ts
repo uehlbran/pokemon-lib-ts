@@ -986,6 +986,20 @@ export class BattleEngine implements BattleEventEmitter {
         ? { ...moveData, power: moveData.power * powerMultiplier }
         : moveData;
 
+    // Handle battle gimmick activation (Mega Evolution, Z-Move, Dynamax, Tera).
+    // Gimmick fires before immobilization checks — even a paralyzed Pokemon mega evolves.
+    // Source: Showdown sim/battle-actions.ts — gimmick activates at start of runMove
+    if (action.mega || action.zMove || action.dynamax || action.terastallize) {
+      const gimmick = this.ruleset.getBattleGimmick();
+      const side = this.state.sides[action.side];
+      if (gimmick && side && gimmick.canUse(actor, side, this.state)) {
+        const gimmickEvents = gimmick.activate(actor, side, this.state);
+        for (const event of gimmickEvents) {
+          this.emit(event);
+        }
+      }
+    }
+
     // Pre-move checks: can the pokemon actually move?
     if (!this.canExecuteMove(actor, moveData)) return;
 
@@ -2591,6 +2605,30 @@ export class BattleEngine implements BattleEventEmitter {
       this.fireWeatherChangeAbilities();
     }
 
+    // Terrain from move effects (Gen 6+)
+    // Source: Showdown sim/battle-actions.ts — terrain moves set terrain for 5 turns
+    if (result.terrainSet !== undefined && this.ruleset.hasTerrain()) {
+      if (result.terrainSet !== null) {
+        this.state.terrain = {
+          type: result.terrainSet.terrain,
+          turnsLeft: result.terrainSet.turns,
+          source: result.terrainSet.source,
+        };
+        this.emit({
+          type: "terrain-set",
+          terrain: result.terrainSet.terrain,
+          source: result.terrainSet.source,
+        });
+      } else {
+        // null = clear terrain
+        const previousTerrain = this.state.terrain?.type;
+        if (previousTerrain) {
+          this.state.terrain = null;
+          this.emit({ type: "terrain-end", terrain: previousTerrain });
+        }
+      }
+    }
+
     // Hazard from move effects
     if (result.hazardSet) {
       const targetSide = this.state.sides[result.hazardSet.targetSide];
@@ -3822,14 +3860,32 @@ export class BattleEngine implements BattleEventEmitter {
         }
         case "grassy-terrain-heal": {
           // Gen 6+ terrain: heals grounded Pokemon for 1/16 max HP at EoT.
-          // Stub: delegates to ruleset terrain effects. No gen currently returns this effect.
           // Source: Showdown sim/field.ts — Grassy Terrain heals at residual phase
           if (this.state.terrain?.type === "grassy") {
             const terrainResults = this.ruleset.applyTerrainEffects(this.state);
             for (const result of terrainResults) {
               const active = this.getActive(result.side);
               if (active && active.pokemon.currentHp > 0) {
-                this.emit({ type: "message", text: result.message });
+                const healAmount = result.healAmount ?? 0;
+                if (healAmount > 0) {
+                  const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+                  const healed = Math.min(healAmount, maxHp - active.pokemon.currentHp);
+                  if (healed > 0) {
+                    active.pokemon.currentHp += healed;
+                    this.emit({
+                      type: "heal",
+                      side: result.side,
+                      pokemon: result.pokemon,
+                      amount: healed,
+                      currentHp: active.pokemon.currentHp,
+                      maxHp,
+                      source: "grassy-terrain",
+                    });
+                  }
+                }
+                if (result.message) {
+                  this.emit({ type: "message", text: result.message });
+                }
               }
             }
           }

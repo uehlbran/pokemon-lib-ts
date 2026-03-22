@@ -10,6 +10,7 @@ import type {
   PokemonType,
   PrimaryStatus,
   SeededRandom,
+  TerrainType,
   VolatileStatus,
   WeatherType,
 } from "@pokemon-lib-ts/core";
@@ -217,6 +218,15 @@ export interface MoveEffectResult {
   /** Wave 2/3: Data for volatile status infliction (turnsLeft, etc.) */
   readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   readonly weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
+  /**
+   * Set terrain on the field (Gen 6+). `null` clears terrain.
+   * Source: Showdown sim/battle-actions.ts — terrain moves set terrain for 5 turns (8 with Terrain Extender)
+   */
+  readonly terrainSet?: {
+    terrain: TerrainType;
+    turns: number;
+    source: string;
+  } | null;
   readonly hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
   readonly volatilesToClear?: ReadonlyArray<{
     target: "attacker" | "defender";
@@ -783,6 +793,12 @@ export interface TerrainEffectResult {
   readonly effect: string;
   /** Message to emit describing the terrain effect */
   readonly message: string;
+  /**
+   * HP to restore via terrain healing (e.g., Grassy Terrain 1/16 max HP).
+   * 0 or omitted if no healing applies.
+   * Source: Showdown sim/field.ts — Grassy Terrain heals 1/16 max HP at residual phase
+   */
+  readonly healAmount?: number;
 }
 
 /**
