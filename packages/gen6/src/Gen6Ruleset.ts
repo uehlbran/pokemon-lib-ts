@@ -11,6 +11,8 @@ import type {
   EndOfTurnEffect,
   EntryHazardResult,
   ExpContext,
+  ItemContext,
+  ItemResult,
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
@@ -30,6 +32,7 @@ import { createGen6DataManager } from "./data/index.js";
 import { applyGen6Ability } from "./Gen6Abilities.js";
 import { calculateGen6Damage } from "./Gen6DamageCalc.js";
 import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
+import { applyGen6HeldItem } from "./Gen6Items.js";
 import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
 import { applyGen6WeatherEffects } from "./Gen6Weather.js";
@@ -375,9 +378,13 @@ export class Gen6Ruleset extends BaseRuleset {
     // Apply stat stages
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(speedStage));
 
-    // Choice Scarf: 1.5x Speed (suppressed by Klutz)
+    // Embargo: prevents held item effects (Gen 5+)
+    // Source: Bulbapedia -- Embargo: "prevents the target from using its held item"
+    const isEmbargoed = active.volatileStatuses.has("embargo");
+
+    // Choice Scarf: 1.5x Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Choice Scarf boosts Speed 1.5x
-    if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz") {
+    if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz" && !isEmbargoed) {
       effective = Math.floor(effective * 1.5);
     }
 
@@ -425,9 +432,9 @@ export class Gen6Ruleset extends BaseRuleset {
       effective = Math.floor(effective * 0.25);
     }
 
-    // Iron Ball: halve Speed (suppressed by Klutz)
+    // Iron Ball: halve Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Iron Ball halves Speed
-    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz") {
+    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz" && !isEmbargoed) {
       effective = Math.floor(effective * 0.5);
     }
 
@@ -685,6 +692,21 @@ export class Gen6Ruleset extends BaseRuleset {
     }
 
     return Math.max(1, exp);
+  }
+
+  // --- Held Items ---
+
+  /**
+   * Gen 6 held item application.
+   *
+   * Delegates to applyGen6HeldItem which handles all Gen 5 items carried forward
+   * plus new Gen 6 items: Assault Vest, Safety Goggles, Weakness Policy,
+   * Kee/Maranga/Roseli berries, Luminous Moss, Snowball, etc.
+   *
+   * Source: Showdown data/items.ts -- Gen 6 item handlers
+   */
+  override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
+    return applyGen6HeldItem(trigger, context);
   }
 
   // --- Catch Rate ---

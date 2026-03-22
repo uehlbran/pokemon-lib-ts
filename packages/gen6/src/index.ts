@@ -32,6 +32,13 @@ export {
   applyGen6ToxicSpikes,
   isGen6Grounded,
 } from "./Gen6EntryHazards.js";
+export {
+  applyGen6HeldItem,
+  GEM_TYPES,
+  getPinchBerryThreshold,
+  isGen6PowderBlocked,
+  isMegaStone,
+} from "./Gen6Items.js";
 export { Gen6Ruleset } from "./Gen6Ruleset.js";
 export type { TerrainDamageModifier } from "./Gen6Terrain.js";
 export {
