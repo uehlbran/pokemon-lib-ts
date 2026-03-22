@@ -701,6 +701,9 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
 
     expect(result.activated).toBe(true);
     expect(defender.volatileStatuses.has("unburden")).toBe(true);
+    // -1 is the permanent volatile sentinel: turnsLeft < 0 means "never expires" (never ticked down)
+    // Source: BattleEngine.ts processScreenCountdown — "if (screen.turnsLeft < 0) return true; // permanent sentinel"
+    // Unburden lasts for the rest of the battle (until the Pokemon holds an item again), so turnsLeft = -1
     expect(defender.volatileStatuses.get("unburden")?.turnsLeft).toBe(-1);
   });
 
@@ -738,8 +741,8 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
       heldItem: "sticky-barb",
       ability: "unburden",
     });
-    // Pre-set Unburden volatile
-    defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    // Pre-set Unburden volatile with a distinctive turnsLeft value so we can verify it is NOT overwritten
+    defender.volatileStatuses.set("unburden", { turnsLeft: 99 });
     const state = createMinimalBattleState(attacker, defender);
 
     const ctx: ItemContext = {
@@ -754,8 +757,10 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
 
     expect(result.activated).toBe(true);
     expect(defender.volatileStatuses.has("unburden")).toBe(true);
-    // Map only has one entry for "unburden"
-    expect(defender.volatileStatuses.size).toBe(1);
+    // The existing volatile must NOT be overwritten — guard is
+    // Asserting turnsLeft remained 99 (not reset to -1) proves the guard prevented an overwrite
+    // Source: Gen4Items.ts Sticky Barb handler — volatile only set if !pokemon.volatileStatuses.has("unburden")
+    expect(defender.volatileStatuses.get("unburden")?.turnsLeft).toBe(99);
   });
 });
 
