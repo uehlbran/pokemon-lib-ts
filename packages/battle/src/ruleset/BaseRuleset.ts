@@ -111,6 +111,16 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return false;
   }
 
+  /**
+   * Default: no moves bypass Protect via this mechanic.
+   * Gen 7 overrides for Z-Moves; Gen 8 overrides for Max Moves.
+   *
+   * Source: Showdown sim/battle-actions.ts -- Z-Moves/Max Moves bypass Protect at 0.25x
+   */
+  canBypassProtect(_move: MoveData, _actor: ActivePokemon): boolean {
+    return false;
+  }
+
   // Gen 6+ default; Gen 3-5 use a 2-stage table with 1/16 and 1/8 rates
   getCritRateTable(): readonly number[] {
     // Gen 6+: 1/24, 1/8, 1/2, 1/1

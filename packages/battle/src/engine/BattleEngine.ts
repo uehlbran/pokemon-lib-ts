@@ -1295,16 +1295,12 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Protect check
-    // Z-Moves and Max Moves bypass Protect but deal only 25% damage.
-    // The hitThroughProtect flag is passed to the damage calc via DamageContext.
+    // Delegate to ruleset: gen-specific logic determines which moves bypass Protect.
+    // Gen 7: Z-Moves; Gen 8: Max Moves; other gens: none.
     // Source: Showdown sim/battle-actions.ts -- Z-Moves/Max Moves bypass Protect at 0.25x
-    // Source: Bulbapedia "Z-Move" -- "deals a quarter of its damage" through Protect
     let hitThroughProtect = false;
     if (defender.volatileStatuses.has("protect") && moveData.flags.protect) {
-      // Z-Moves (zMovePower > 0) and Max Moves (isDynamaxed) bypass Protect
-      const isZMove = effectiveMoveData.zMovePower != null && effectiveMoveData.zMovePower > 0;
-      const isMaxMove = actor.isDynamaxed;
-      if (isZMove || isMaxMove) {
+      if (this.ruleset.canBypassProtect?.(effectiveMoveData, actor) ?? false) {
         hitThroughProtect = true;
         this.emit({
           type: "message",

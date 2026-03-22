@@ -162,14 +162,6 @@ export interface PokemonInstance {
    * Source: Showdown data/moves.ts:15127 — Math.min(350, 50 + 50 * pokemon.timesAttacked)
    */
   timesAttacked?: number;
-
-  /**
-   * Original max HP before Dynamax, stored at activation so revert can restore it exactly.
-   * Avoids off-by-1 errors from reverse-dividing (Math.floor on activate + Math.round on revert
-   * can disagree for certain HP values). Set by Gen8Dynamax.activate(), cleared on revert.
-   * Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP during Dynamax.
-   */
-  preDynamaxMaxHp?: number;
 }
 
 /** Options for creating a new PokemonInstance */

@@ -278,6 +278,7 @@ describe("Dynamax 3-turn lifecycle integration", () => {
     const pokemon = makeActive({ maxHp: 300, currentHp: 300, dynamaxLevel: 10 });
     const side = makeSide();
     const state = makeState();
+    state.sides[0].active = [pokemon]; // revert() needs to find pokemon in active slot
 
     // Step 1: Verify canUse
     expect(gimmick.canUse(pokemon, side, state)).toBe(true);
@@ -320,6 +321,7 @@ describe("Dynamax 3-turn lifecycle integration", () => {
     const pokemon = makeActive({ maxHp: 200, currentHp: 150, dynamaxLevel: 5 });
     const side = makeSide();
     const state = makeState();
+    state.sides[0].active = [pokemon]; // revert() needs to find pokemon in active slot
 
     gimmick.activate(pokemon, side, state);
 

@@ -324,6 +324,17 @@ export class Gen7Ruleset extends BaseRuleset {
   }
 
   /**
+   * Gen 7: Z-Moves bypass Protect at 0.25x damage.
+   * A move is a Z-Move if its zMovePower is set and > 0.
+   *
+   * Source: Showdown sim/battle-actions.ts -- Z-Moves bypass Protect at 0.25x
+   * Source: Bulbapedia "Z-Move" -- "deals a quarter of its damage" through Protect
+   */
+  override canBypassProtect(move: MoveData, _actor: ActivePokemon): boolean {
+    return move.zMovePower != null && move.zMovePower > 0;
+  }
+
+  /**
    * Gen 5+ recalculates future attack damage at hit time, not at use time.
    *
    * Source: Bulbapedia -- "From Generation V onwards, damage is calculated when
@@ -363,6 +374,9 @@ export class Gen7Ruleset extends BaseRuleset {
       !defender.volatileStatuses.has("disguise-broken") &&
       move.category !== "status"
     ) {
+      // Mark Disguise as broken so it cannot activate again
+      // Source: Showdown data/abilities.ts -- disguise: sets disguise-broken volatile on activation
+      defender.volatileStatuses.set("disguise-broken", { turnsLeft: -1 });
       return {
         damage: 0,
         survived: true,

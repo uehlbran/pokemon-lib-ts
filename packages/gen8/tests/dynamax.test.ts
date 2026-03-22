@@ -358,8 +358,8 @@ describe("Gen8Dynamax", () => {
       // Source: Showdown data/conditions.ts -- Dynamax end
       const dynamax = new Gen8Dynamax();
       const pokemon = createMockActive({ dynamaxLevel: 10 });
-      const side = createMockSide();
-      const state = createMockState();
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
 
       // First activate
       dynamax.activate(pokemon, side, state);
@@ -377,8 +377,8 @@ describe("Gen8Dynamax", () => {
       // Revert: currentHp 600 * (300/600) = 300
       const dynamax = new Gen8Dynamax();
       const pokemon = createMockActive({ currentHp: 300, dynamaxLevel: 10 });
-      const side = createMockSide();
-      const state = createMockState();
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(600);
@@ -396,8 +396,8 @@ describe("Gen8Dynamax", () => {
       // Revert: round(300 * 300 / 600) = round(150) = 150
       const dynamax = new Gen8Dynamax();
       const pokemon = createMockActive({ currentHp: 300, dynamaxLevel: 10 });
-      const side = createMockSide();
-      const state = createMockState();
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       // Simulate damage
@@ -411,7 +411,7 @@ describe("Gen8Dynamax", () => {
     it("given non-dynamaxed pokemon, when reverting, then returns empty events", () => {
       const dynamax = new Gen8Dynamax();
       const pokemon = createMockActive();
-      const state = createMockState();
+      const state = createMockState(pokemon, null);
 
       const events = dynamax.revert(pokemon, state);
       expect(events).toHaveLength(0);
@@ -421,8 +421,8 @@ describe("Gen8Dynamax", () => {
       // Source: BattleEvent interface -- dynamax-end event
       const dynamax = new Gen8Dynamax();
       const pokemon = createMockActive({ dynamaxLevel: 10 });
-      const side = createMockSide();
-      const state = createMockState();
+      const side = createMockSide({ active: [pokemon] });
+      const state = createMockState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       const events = dynamax.revert(pokemon, state);
@@ -470,23 +470,19 @@ describe("Gen8Dynamax", () => {
       });
     });
 
-    it("given dynamaxed pokemon not found in any side active slot, when reverting, then falls back to side: 0", () => {
-      // Edge case: if the state's active arrays don't contain this pokemon (shouldn't
-      // happen in practice), falls back to 0 rather than emitting an invalid side index.
+    it("given dynamaxed pokemon not found in any side active slot, when reverting, then throws", () => {
+      // Bug M1 fix: rather than silently emitting side: 0 for an invalid state, we now
+      // throw an error to surface the corrupted state immediately.
+      // Source: Showdown -- BattleState always has the Dynamaxed pokemon in an active slot
       const dynamax = new Gen8Dynamax();
       const pokemon = createMockActive({ uid: "orphan-pokemon", dynamaxLevel: 10 });
       const side = createMockSide();
       const state = createMockState(); // No active pokemon in either side
 
       dynamax.activate(pokemon, side, state);
-      const events = dynamax.revert(pokemon, state);
-
-      expect(events).toHaveLength(1);
-      expect(events[0]).toEqual({
-        type: "dynamax-end",
-        side: 0,
-        pokemon: "orphan-pokemon",
-      });
+      expect(() => dynamax.revert(pokemon, state)).toThrow(
+        "Gen8Dynamax.revert: Pokemon uid=orphan-pokemon not found in any active slot",
+      );
     });
   });
 
@@ -634,10 +630,10 @@ describe("Gen8Dynamax", () => {
       const state = createMockState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
-      expect(pokemon.pokemon.preDynamaxMaxHp).toBe(100);
+      expect(pokemon.preDynamaxMaxHp).toBe(100);
 
       dynamax.revert(pokemon, state);
-      expect(pokemon.pokemon.preDynamaxMaxHp).toBeUndefined();
+      expect(pokemon.preDynamaxMaxHp).toBeUndefined();
     });
   });
 

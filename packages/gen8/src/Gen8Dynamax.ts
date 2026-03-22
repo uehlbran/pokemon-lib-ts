@@ -188,7 +188,7 @@ export class Gen8Dynamax implements BattleGimmick {
       // Store the base max HP for exact restoration on revert.
       // Avoids off-by-1 from reverse-dividing Math.floor'd values.
       // Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP during Dynamax
-      pokemon.pokemon.preDynamaxMaxHp = baseMaxHp;
+      pokemon.preDynamaxMaxHp = baseMaxHp;
 
       // MutableStatBlock cast is required because StatBlock is readonly
       const stats = pokemon.pokemon.calculatedStats as { hp: number };
@@ -234,7 +234,7 @@ export class Gen8Dynamax implements BattleGimmick {
       // Fallback to reverse-division only if preDynamaxMaxHp is missing (e.g., legacy state).
       // Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP during Dynamax
       const baseMaxHp =
-        pokemon.pokemon.preDynamaxMaxHp ??
+        pokemon.preDynamaxMaxHp ??
         Math.round(currentMaxHp / (1.5 + (pokemon.pokemon.dynamaxLevel ?? 10) * 0.05));
 
       const restoredHp = getUndynamaxedHp(pokemon.pokemon.currentHp, currentMaxHp, baseMaxHp);
@@ -247,7 +247,7 @@ export class Gen8Dynamax implements BattleGimmick {
     // Clear Dynamax state and stored base HP
     pokemon.isDynamaxed = false;
     pokemon.dynamaxTurnsLeft = 0;
-    pokemon.pokemon.preDynamaxMaxHp = undefined;
+    pokemon.preDynamaxMaxHp = undefined;
 
     // Look up the correct side index from the battle state
     // Source: BattleState.sides[n].active contains the ActivePokemon references
@@ -255,9 +255,15 @@ export class Gen8Dynamax implements BattleGimmick {
       s.active.some((a) => a?.pokemon.uid === pokemon.pokemon.uid),
     );
 
+    if (sideIndex < 0) {
+      throw new Error(
+        `Gen8Dynamax.revert: Pokemon uid=${pokemon.pokemon.uid} not found in any active slot`,
+      );
+    }
+
     const event: BattleEvent = {
       type: "dynamax-end",
-      side: (sideIndex >= 0 ? sideIndex : 0) as 0 | 1,
+      side: sideIndex as 0 | 1,
       pokemon: pokemon.pokemon.uid,
     };
 

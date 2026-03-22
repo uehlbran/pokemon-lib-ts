@@ -111,6 +111,13 @@ export interface ActivePokemon {
   isDynamaxed: boolean;
   /** Turns of Dynamax remaining (0 when not dynamaxed; Gen 8) */
   dynamaxTurnsLeft: number;
+  /**
+   * Original max HP before Dynamax, stored at activation for exact HP restoration on revert.
+   * Avoids off-by-1 from reverse-dividing Math.floor'd activate values.
+   * Set by Gen8Dynamax.activate(), cleared (set to undefined) on revert.
+   * Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP during Dynamax.
+   */
+  preDynamaxMaxHp?: number;
   /** `true` if this Pokémon has terastallized this battle (Gen 9) */
   isTerastallized: boolean;
   /** Active Tera Type after terastallization, or `null` if not terastallized (Gen 9) */

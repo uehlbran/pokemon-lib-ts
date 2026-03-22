@@ -515,7 +515,8 @@ export class Gen8Ruleset extends BaseRuleset {
     ) {
       // Mark Disguise as broken
       defender.volatileStatuses.set("disguise-broken", { turnsLeft: -1 });
-      const chipDamage = Math.ceil(maxHp / 8);
+      // Guard against NaN/0 maxHp from malformed state — floor at 1 damage
+      const chipDamage = maxHp > 0 ? Math.ceil(maxHp / 8) : 1;
       return {
         damage: chipDamage,
         survived: true,
@@ -534,6 +535,17 @@ export class Gen8Ruleset extends BaseRuleset {
     }
 
     return { damage, survived: false, messages: [] };
+  }
+
+  /**
+   * Gen 8: Max Moves (used by Dynamaxed Pokemon) bypass Protect at 0.25x damage.
+   *
+   * Source: Showdown sim/battle-actions.ts -- Max Moves bypass Protect at 0.25x
+   * Source: Bulbapedia "Dynamax" -- Max Moves deal 25% damage through Protect
+   */
+  override canBypassProtect(_move: MoveData, actor: ActivePokemon): boolean {
+    // Gen 8: Max Moves (used by Dynamaxed Pokemon) bypass Protect at 0.25x
+    return actor.isDynamaxed;
   }
 
   /**
