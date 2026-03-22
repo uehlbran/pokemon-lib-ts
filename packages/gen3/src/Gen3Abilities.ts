@@ -481,12 +481,12 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
  * these abilities may trigger effects on the attacker (context.opponent).
  *
  * Implemented:
- *   - Static: 30% chance to paralyze attacker
- *   - Flame Body: 30% chance to burn attacker
- *   - Poison Point: 30% chance to poison attacker
+ *   - Static: 33.3% (1/3) chance to paralyze attacker
+ *   - Flame Body: 33.3% (1/3) chance to burn attacker
+ *   - Poison Point: 33.3% (1/3) chance to poison attacker
  *   - Rough Skin: 1/16 attacker's max HP chip damage (Gen 3 = 1/16, Gen 4+ = 1/8)
- *   - Effect Spore: 30% chance; if triggered, 1/3 each for poison/paralysis/sleep
- *   - Cute Charm: 30% chance to infatuate attacker (requires opposite gender)
+ *   - Effect Spore: 10% chance total; if triggered, 1/3 each for poison/paralysis/sleep
+ *   - Cute Charm: 33.3% (1/3) chance to infatuate attacker (requires opposite gender)
  *
  * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects contact checks
  */

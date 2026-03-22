@@ -41,6 +41,25 @@ export function isWeatherSuppressedGen4(
 }
 
 /**
+ * Check if any active Pokemon on the field suppresses weather.
+ *
+ * Used for turn-order speed checks (Chlorophyll/Swift Swim) and weather chip damage,
+ * where we need to scan the entire field rather than just an attacker/defender pair.
+ *
+ * Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check scans all active battlers
+ */
+export function isWeatherSuppressedOnField(state: {
+  sides: { active: ({ ability: string } | null)[] }[];
+}): boolean {
+  for (const side of state.sides) {
+    for (const active of side.active) {
+      if (active && GEN4_WEATHER_SUPPRESSING_ABILITIES.has(active.ability)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Maps Plate held items to their corresponding PokemonType for Multitype.
  * Source: Showdown Gen 4 mod — Multitype plate-to-type mapping
  * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Plate_(item)

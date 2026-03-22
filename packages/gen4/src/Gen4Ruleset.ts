@@ -35,7 +35,11 @@ import {
   gen14MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
-import { applyGen4Ability, isWeatherSuppressedGen4 } from "./Gen4Abilities";
+import {
+  applyGen4Ability,
+  isWeatherSuppressedGen4,
+  isWeatherSuppressedOnField,
+} from "./Gen4Abilities";
 import { GEN4_CRIT_MULTIPLIER, GEN4_CRIT_RATE_DENOMINATORS } from "./Gen4CritCalc";
 import { calculateGen4Damage } from "./Gen4DamageCalc";
 import { applyGen4HeldItem } from "./Gen4Items";
@@ -792,19 +796,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Cloud Nine / Air Lock suppress weather for speed-doubling abilities too.
     // Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check gates weather-dependent speed
     const rawWeather = state.weather?.type ?? null;
-    let weatherSuppressed = false;
-    if (rawWeather) {
-      for (const side of state.sides) {
-        for (const active of side.active) {
-          if (active && (active.ability === "cloud-nine" || active.ability === "air-lock")) {
-            weatherSuppressed = true;
-            break;
-          }
-        }
-        if (weatherSuppressed) break;
-      }
-    }
-    this._currentWeather = weatherSuppressed ? null : rawWeather;
+    this._currentWeather = rawWeather && isWeatherSuppressedOnField(state) ? null : rawWeather;
 
     // Pre-roll Quick Claw before tiebreak keys (preserves PRNG consumption order)
     const quickClawActivated = this.getQuickClawActivated(actions, state, rng);

@@ -93,38 +93,31 @@ export function calculateGen2Stats(
   const spcDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.spAttack)));
   const hpDv = ((atkDv & 1) << 3) | ((defDv & 1) << 2) | ((speDv & 1) << 1) | (spcDv & 1);
 
+  // Use clamped DV variables for all stats for consistency with the HP derivation above.
+  // This ensures a caller passing DV > 15 gets the same clamped value for HP and all
+  // other stats, rather than the raw value for non-HP stats. Matches Gen 1 pattern.
   return {
     hp: calculateGen2Hp(species.baseStats.hp, hpDv, pokemon.evs.hp, pokemon.level),
-    attack: calculateGen2Stat(
-      species.baseStats.attack,
-      pokemon.ivs.attack,
-      pokemon.evs.attack,
-      pokemon.level,
-    ),
+    attack: calculateGen2Stat(species.baseStats.attack, atkDv, pokemon.evs.attack, pokemon.level),
     defense: calculateGen2Stat(
       species.baseStats.defense,
-      pokemon.ivs.defense,
+      defDv,
       pokemon.evs.defense,
       pokemon.level,
     ),
     spAttack: calculateGen2Stat(
       species.baseStats.spAttack,
-      pokemon.ivs.spAttack,
+      spcDv,
       pokemon.evs.spAttack,
       pokemon.level,
     ),
     // Gen 2 unified Special DV — same DV for both SpAtk and SpDef. Source: pret/pokecrystal
     spDefense: calculateGen2Stat(
       species.baseStats.spDefense,
-      pokemon.ivs.spAttack,
+      spcDv,
       pokemon.evs.spDefense,
       pokemon.level,
     ),
-    speed: calculateGen2Stat(
-      species.baseStats.speed,
-      pokemon.ivs.speed,
-      pokemon.evs.speed,
-      pokemon.level,
-    ),
+    speed: calculateGen2Stat(species.baseStats.speed, speDv, pokemon.evs.speed, pokemon.level),
   };
 }
