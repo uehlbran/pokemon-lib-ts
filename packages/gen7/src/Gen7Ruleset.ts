@@ -37,7 +37,9 @@ import {
   handleGen7DamageCalcAbility,
   handleGen7DamageImmunityAbility,
 } from "./Gen7AbilitiesDamage.js";
+import { handleGen7NewAbility } from "./Gen7AbilitiesNew.js";
 import { handleGen7StatAbility, isPranksterBlockedByDarkType } from "./Gen7AbilitiesStat.js";
+import { handleGen7SwitchAbility } from "./Gen7AbilitiesSwitch.js";
 import { calculateGen7Damage } from "./Gen7DamageCalc.js";
 import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
 import { applyGen7HeldItem } from "./Gen7Items.js";
@@ -237,6 +239,11 @@ export class Gen7Ruleset extends BaseRuleset {
   override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
     const noActivation: AbilityResult = { activated: false, effects: [], messages: [] };
 
+    // Try new Gen 7 abilities first (Disguise, Schooling, Battle Bond, etc.)
+    // These have their own trigger routing
+    const newAbilityResult = handleGen7NewAbility(context);
+    if (newAbilityResult.activated) return newAbilityResult;
+
     switch (trigger) {
       case "on-switch-in": {
         // Surge abilities trigger on switch-in
@@ -244,7 +251,25 @@ export class Gen7Ruleset extends BaseRuleset {
         if (isSurgeAbility(context.pokemon.ability)) {
           return handleSurgeAbility(context);
         }
+        // Switch-in abilities: Intimidate, weather, Download, Trace, Mold Breaker, etc.
+        const switchResult = handleGen7SwitchAbility(trigger, context);
+        if (switchResult.activated) return switchResult;
         return noActivation;
+      }
+
+      case "on-switch-out": {
+        // Switch-out abilities: Regenerator, Natural Cure
+        return handleGen7SwitchAbility(trigger, context);
+      }
+
+      case "on-contact": {
+        // Contact abilities: Rough Skin, Flame Body, Static, Mummy, Gooey, etc.
+        return handleGen7SwitchAbility(trigger, context);
+      }
+
+      case "on-status-inflicted": {
+        // Status-inflicted abilities: Synchronize
+        return handleGen7SwitchAbility(trigger, context);
       }
 
       case "on-damage-calc": {
@@ -307,25 +332,44 @@ export class Gen7Ruleset extends BaseRuleset {
   }
 
   /**
-   * Cap lethal damage for Sturdy (Gen 5+): survive any hit from full HP at 1 HP.
-   * Stub -- will be enhanced with Disguise handling in Wave 7.
+   * Cap lethal damage for Sturdy (Gen 5+) and Disguise (Gen 7).
+   *
+   * Sturdy: survive any hit from full HP at 1 HP.
+   * Disguise: block first hit entirely (Gen 7: no chip damage on break).
    *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
-   * Source: Bulbapedia -- Sturdy (Ability)
+   * Source: Showdown data/abilities.ts -- disguise: onDamage (priority 1)
+   * Source: Bulbapedia -- Sturdy (Ability), Disguise (Ability)
    */
   capLethalDamage(
     damage: number,
     defender: ActivePokemon,
     _attacker: ActivePokemon,
-    _move: MoveData,
+    move: MoveData,
     _state: BattleState,
   ): { damage: number; survived: boolean; messages: string[] } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
+    const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+    // Disguise: block damage entirely if Disguise hasn't broken
+    // Disguise checks BEFORE Sturdy (higher priority in Showdown: priority 1 vs -30)
+    // Gen 7: NO chip damage on Disguise break
+    // Source: Showdown data/abilities.ts -- disguise onDamage priority 1
+    if (
+      defender.ability === "disguise" &&
+      !defender.volatileStatuses.has("disguise-broken") &&
+      move.category !== "status"
+    ) {
+      return {
+        damage: 0,
+        survived: true,
+        messages: [`${name}'s Disguise was busted!`],
+      };
+    }
 
     // Sturdy: if at full HP and damage would KO, cap at maxHp - 1
     if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
-      const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
       return {
         damage: maxHp - 1,
         survived: true,

@@ -76,4 +76,7 @@ export type VolatileStatus =
   | "spiky-shield" // Spiky Shield — protect variant, blocks all moves with protect flag; 1/8 HP chip on contact (Gen 6+)
   | "mat-block" // Mat Block — team-side protect, blocks damaging moves; first turn only (Gen 6+)
   | "crafty-shield" // Crafty Shield — team-side protect, blocks status moves targeting the side (Gen 6+)
-  | "baneful-bunker"; // Baneful Bunker — protect variant, blocks all moves with protect flag; poisons contact attackers (Gen 7+)
+  | "baneful-bunker" // Baneful Bunker — protect variant, blocks all moves with protect flag; poisons contact attackers (Gen 7+)
+  | "disguise-broken" // Disguise — Mimikyu's Disguise has been broken; takes full damage (Gen 7+)
+  | "power-construct-transformed" // Power Construct — Zygarde has transformed to Complete Form this battle (Gen 7+)
+  | "battle-bond-transformed"; // Battle Bond — Greninja has transformed to Ash-Greninja this battle (Gen 7+)

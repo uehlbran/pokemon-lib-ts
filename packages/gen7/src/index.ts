@@ -20,12 +20,42 @@ export {
   sturdyBlocksOHKO,
 } from "./Gen7AbilitiesDamage.js";
 export {
+  getDisguiseBreakDamage,
+  getRKSType,
+  handleGen7NewAbility,
+  isComatoseAsleep,
+  isComatoseStatusImmune,
+  isDisguiseActive,
+  isSchoolForm,
+  isShieldsDownMeteorForm,
+  MEMORY_TYPE_MAP,
+  SCHOOLING_HP_THRESHOLD,
+  SCHOOLING_MIN_LEVEL,
+  shouldBattleBondTransform,
+  shouldPowerConstructTransform,
+} from "./Gen7AbilitiesNew.js";
+export {
   getTriagePriorityBonus,
   handleGen7StatAbility,
   isGaleWingsActive,
   isPranksterBlockedByDarkType,
   isPranksterEligible,
 } from "./Gen7AbilitiesStat.js";
+export {
+  getWeatherDuration,
+  handleGen7SwitchAbility,
+  hasMagicGuard,
+  hasOvercoat,
+  isBulletproofBlocked,
+  isDampBlocked,
+  isMoldBreakerAbility,
+  isSoundproofBlocked,
+  MOLD_BREAKER_ALIASES,
+  rollHarvest,
+  rollShedSkin,
+  TRACE_UNCOPYABLE_ABILITIES,
+  UNSUPPRESSABLE_ABILITIES,
+} from "./Gen7AbilitiesSwitch.js";
 export { GEN7_CRIT_MULTIPLIER, GEN7_CRIT_RATE_TABLE } from "./Gen7CritCalc.js";
 export {
   calculateGen7Damage,
