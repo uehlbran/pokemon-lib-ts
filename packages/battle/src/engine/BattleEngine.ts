@@ -994,13 +994,16 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: pret/pokeemerald — PP deducted when move is selected, before accuracy check
     // Pressure only applies to moves that target the opponent — self-targeting moves
     // (Swords Dance, Recover, etc.) and user-side moves (Reflect, etc.) are unaffected.
+    // "foe-field" (Spikes, Stealth Rock) and "entire-field" (Gravity, Trick Room) also excluded.
     // Source: Showdown sim/battle.ts — Pressure check skips self-target/user-field/user-and-allies
     // Source: Bulbapedia — "Pressure causes any Pokémon targeting the ability-bearer [...] to use
     //   2 PP for their move instead of 1." Self-targeting moves don't target the ability-bearer.
     const defenderForPP =
       moveData.target === "self" ||
       moveData.target === "user-field" ||
-      moveData.target === "user-and-allies"
+      moveData.target === "user-and-allies" ||
+      moveData.target === "foe-field" ||
+      moveData.target === "entire-field"
         ? null
         : this.getOpponentActive(action.side);
     const ppCost = this.ruleset.getPPCost(actor, defenderForPP, this.state);
