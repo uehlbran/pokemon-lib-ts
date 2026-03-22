@@ -687,15 +687,26 @@ describe("getPinchBerryThreshold", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("Type Resist Berry (Occa Berry)", () => {
-  it("given type resist berries are handled in damage calc, when noting test expectations, then this documents the expected behavior", () => {
-    // Source: Showdown data/items.ts -- Occa Berry: onSourceModifyDamage halves Fire damage
-    // Type resist berries are handled in Gen7DamageCalc.ts as pre-damage modifiers,
-    // matching Showdown's onSourceModifyDamage timing. They are NOT handled in the
-    // applyGen7HeldItem function. This test documents the design decision.
-    //
-    // The expected behavior: Occa Berry halves super-effective Fire damage and is consumed.
-    // This is tested in the damage-calc.test.ts file.
-    expect(true).toBe(true);
+  it("given a Pokemon with Occa Berry, when applyGen7HeldItem is called on-damage-taken, then NO_ACTIVATION is returned (handled in damage calc)", () => {
+    // Type-resist berries (Occa, Passho, Wacan, Rindo, Yache, Chople, Kebia, Shuca, Coba,
+    // Payapa, Tanga, Charti, Kasib, Haban, Colbur, Babiri, Chilan, Roseli) activate at the
+    // pre-damage modifier stage inside Gen7DamageCalc.ts -- NOT in applyGen7HeldItem.
+    // Source: Showdown data/items.ts -- Occa Berry: onSourceModifyDamage halves SE Fire damage
+    // Source: Showdown sim/battle-actions.ts -- item modifiers run before final damage is applied
+    // This test verifies the design: applyGen7HeldItem does NOT activate Occa Berry on-damage-taken.
+    const pokemon = makeActive({ heldItem: "occa-berry", hp: 200, currentHp: 100 });
+    const ctx = makeItemContext({ pokemon, damage: 50 });
+    const result = applyGen7HeldItem("on-damage-taken", ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given a non-fire move hitting an Occa Berry holder, when applyGen7HeldItem is called on-damage-taken, then NO_ACTIVATION is returned", () => {
+    // Occa Berry should not activate even for non-fire hits (handled in damage calc only).
+    // Source: Showdown data/items.ts -- Occa Berry only activates for Fire moves in damage calc
+    const pokemon = makeActive({ heldItem: "occa-berry", hp: 200, currentHp: 50 });
+    const ctx = makeItemContext({ pokemon, damage: 30 });
+    const result = applyGen7HeldItem("on-damage-taken", ctx);
+    expect(result.activated).toBe(false);
   });
 });
 

@@ -547,6 +547,9 @@ function handleTwoTurnMove(ctx: MoveEffectContext): MoveEffectResult | null {
   // Source: Showdown data/items.ts -- powerherb: skip charge turn, consume
   // Source: Bulbapedia -- "Power Herb allows the holder to skip the charge turn"
   if (attacker.pokemon.heldItem === "power-herb") {
+    // Consume the Power Herb immediately -- it is single-use.
+    // Source: Showdown data/items.ts -- powerherb: onTryMove, item is consumed then move fires
+    attacker.pokemon.heldItem = null;
     const base = createBaseResult();
     return {
       ...base,
@@ -603,6 +606,11 @@ function handleTwoTurnMove(ctx: MoveEffectContext): MoveEffectResult | null {
  */
 export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | null {
   if (ctx.move.effect?.type !== "drain") return null;
+
+  // Guard: no drain effect if the move dealt no damage (e.g., move missed after hitting substitute,
+  // or target already fainted). Without this, Math.max(1, 0) would trigger 1 Liquid Ooze recoil.
+  // Source: Showdown sim/battle-actions.ts -- drain only triggers when damage > 0
+  if (ctx.damage <= 0) return null;
 
   const drainFraction = ctx.move.effect.amount;
   let healAmount = Math.floor(ctx.damage * drainFraction);

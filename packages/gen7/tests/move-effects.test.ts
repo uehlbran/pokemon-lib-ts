@@ -901,6 +901,9 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toBeUndefined();
     expect(result!.messages[0]).toContain("Power Herb");
+    // Power Herb is consumed (single-use)
+    // Source: Showdown data/items.ts -- powerherb onTryMove: item is consumed after activation
+    expect(ctx.attacker.pokemon.heldItem).toBeNull();
   });
 
   it("given Bounce on charge turn, when used, then sets flying volatile", () => {

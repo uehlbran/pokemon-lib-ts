@@ -1,4 +1,5 @@
 ---
+"@pokemon-lib-ts/core": minor
 "@pokemon-lib-ts/gen7": minor
 ---
 
