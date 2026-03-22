@@ -1022,7 +1022,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Apply power multiplier (e.g., Pursuit pre-switch doubles power)
-    const effectiveMoveData =
+    let effectiveMoveData =
       powerMultiplier !== 1 && moveData.power !== null
         ? { ...moveData, power: moveData.power * powerMultiplier }
         : moveData;
@@ -1067,6 +1067,24 @@ export class BattleEngine implements BattleEventEmitter {
             this.processAbilityResult(megaAbilityResult, actor, opponent, action.side);
           }
         }
+      }
+    }
+
+    // Allow gimmick to transform the move (e.g., Z-Move power/type override, Max Move conversion).
+    // This runs after gimmick.activate() so the gimmick state is set, and before damage calc
+    // so the modified power/type is used in the damage formula.
+    // Source: Showdown sim/battle-actions.ts — Z-Move base power override happens in useMove
+    if (action.mega || action.zMove || action.dynamax || action.terastallize) {
+      const gimmickType = action.mega
+        ? "mega"
+        : action.zMove
+          ? "zmove"
+          : action.dynamax
+            ? "dynamax"
+            : "tera";
+      const gimmick = this.ruleset.getBattleGimmick(gimmickType);
+      if (gimmick?.modifyMove) {
+        effectiveMoveData = gimmick.modifyMove(effectiveMoveData, actor);
       }
     }
 
