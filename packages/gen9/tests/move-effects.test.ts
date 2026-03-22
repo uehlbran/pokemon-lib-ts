@@ -272,12 +272,18 @@ describe("Gen9 Population Bomb", () => {
     expect(result!.volatileInflicted).toBeNull();
   });
 
-  it("given Population Bomb used, when executeGen9MoveEffect is called, then multiHitCount is 9 (9 additional hits beyond the first)", () => {
-    // Source: Showdown data/moves.ts:14121 -- multihit: 10
-    // multiHitCount = total hits - 1 = 10 - 1 = 9 (engine counts first hit separately)
-    const ctx = makeContext("population-bomb");
-    const result = executeGen9MoveEffect(ctx);
-    expect(result!.multiHitCount).toBe(9);
+  it("given Population Bomb used, when checking move properties, then multihit is 10 and accuracy is 90", () => {
+    // Source: Showdown data/moves.ts:14121-14122
+    // Population Bomb: multihit: 10, multiaccuracy: true (each hit checks 90% accuracy)
+    // Verify that the gen9 moves data file encodes these properties correctly.
+    type MoveEntry = { id: string; accuracy: number; effect?: { min?: number; max?: number } };
+    const movesData: MoveEntry[] = require("../data/moves.json");
+    const populationBomb = movesData.find((m) => m.id === "population-bomb");
+    expect(populationBomb).toBeDefined();
+    expect(populationBomb!.accuracy).toBe(90);
+    // multihit is encoded as effect.min and effect.max
+    expect(populationBomb!.effect?.min).toBe(10);
+    expect(populationBomb!.effect?.max).toBe(10);
   });
 });
 
@@ -356,6 +362,24 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
 
     const pokemon = defender.pokemon as unknown as Record<string, unknown>;
     expect(pokemon.timesAttacked).toBe(4);
+  });
+
+  it("given a multi-hit move on turn 2, when onDamageReceived called twice same turn, then timesAttacked only increments once", () => {
+    // Source: Showdown sim/pokemon.ts -- timesAttacked incremented once per move use
+    // Multi-hit moves (e.g., Population Bomb) call onDamageReceived once per hit,
+    // but timesAttacked must only increment once per move use.
+    const ruleset = new Gen9Ruleset();
+    const defender = makeActivePokemon({ timesAttacked: 0 });
+    const move = makeMove("population-bomb", { category: "physical", power: 20 });
+    const state = { ...makeState(), turnNumber: 2 } as unknown as BattleState;
+
+    // Simulate two hits of the same multi-hit move in the same turn
+    ruleset.onDamageReceived(defender, 20, move, state);
+    ruleset.onDamageReceived(defender, 20, move, state);
+
+    const pokemon = defender.pokemon as unknown as Record<string, unknown>;
+    // Should be 1, not 2 — second hit is deduplicated by turn+move tracking
+    expect(pokemon.timesAttacked).toBe(1);
   });
 });
 

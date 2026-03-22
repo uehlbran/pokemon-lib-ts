@@ -732,6 +732,8 @@ export interface BattleGimmick {
  * - `toxic-orb-activation` — Toxic Orb badly poisons holder at end of turn
  * - `flame-orb-activation` — Flame Orb burns holder at end of turn
  * - `slow-start-countdown` — Slow Start 5-turn counter decrement
+ * - `magnet-rise-countdown` — Magnet Rise levitation duration countdown
+ * - `salt-cure` — Salt Cure end-of-turn residual damage (Gen 9)
  */
 export type EndOfTurnEffect =
   | "weather-damage"
