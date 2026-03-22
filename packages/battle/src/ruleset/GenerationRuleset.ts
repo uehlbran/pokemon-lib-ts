@@ -197,6 +197,35 @@ export interface MoveSystem {
     move: MoveData,
     state: BattleState,
   ): void;
+
+  /**
+   * Check if a move should be reflected back at the user by the defender's ability
+   * (e.g., Magic Bounce in Gen 5+).
+   *
+   * Called after the accuracy check but before damage/effect execution.
+   * If this returns a non-null result, the engine skips normal execution and instead
+   * executes the move with attacker/defender swapped (the defender uses the move
+   * against the original attacker).
+   *
+   * @param move - The move being used
+   * @param attacker - The Pokemon using the move
+   * @param defender - The target Pokemon (potential Magic Bounce holder)
+   * @param state - Current battle state
+   * @returns An object with `reflected: true` and `messages` if the move is reflected,
+   *   or `null` if the move proceeds normally.
+   *
+   * Gen 1-4: returns null (Magic Bounce does not exist).
+   * Gen 5+: checks if defender has Magic Bounce and the move has the reflectable flag.
+   *
+   * Source: Showdown data/abilities.ts -- magicbounce.onTryHit:
+   *   checks move.flags['reflectable'] and move.hasBounced
+   */
+  shouldReflectMove?(
+    move: MoveData,
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): { reflected: true; messages: string[] } | null;
 }
 
 /**

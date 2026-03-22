@@ -336,6 +336,20 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // Source: pret/pokered — Rage and Bide are Gen 1 only in base form
   }
 
+  /**
+   * Default: no move reflection. Gen 5+ overrides to check for Magic Bounce.
+   *
+   * Source: Showdown data/abilities.ts -- magicbounce only exists from Gen 5
+   */
+  shouldReflectMove(
+    _move: MoveData,
+    _attacker: ActivePokemon,
+    _defender: ActivePokemon,
+    _state: BattleState,
+  ): { reflected: true; messages: string[] } | null {
+    return null;
+  }
+
   // Burn: Gen 7+ default (1/16 max HP); Gen 3-6 must override (1/8 max HP)
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;

@@ -1198,6 +1198,35 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Magic Bounce / shouldReflectMove check (Gen 5+)
+    // If the defender's ability reflects the move, skip normal execution and
+    // re-execute the move with attacker/defender swapped.
+    // Source: Showdown data/abilities.ts -- magicbounce.onTryHit
+    if (this.ruleset.shouldReflectMove) {
+      const reflectResult = this.ruleset.shouldReflectMove(
+        effectiveMoveData,
+        actor,
+        defender,
+        this.state,
+      );
+      if (reflectResult) {
+        for (const msg of reflectResult.messages) {
+          this.emit({ type: "message", text: msg });
+        }
+        // Execute the reflected move: defender uses the move against the original attacker
+        this.executeMoveById(
+          effectiveMoveData.id,
+          defender,
+          defenderSide as 0 | 1,
+          actor,
+          action.side,
+        );
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+    }
+
     // Damage calculation (for damaging moves)
     let damage = 0;
     let brokeSubstitute = false;

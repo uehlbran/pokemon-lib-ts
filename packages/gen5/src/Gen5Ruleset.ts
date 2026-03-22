@@ -35,6 +35,7 @@ import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_DENOMINATORS } from "./Gen5CritCal
 import { calculateGen5Damage } from "./Gen5DamageCalc";
 import { applyGen5EntryHazards } from "./Gen5EntryHazards";
 import { applyGen5HeldItem } from "./Gen5Items";
+import { shouldReflectMoveGen5 } from "./Gen5MagicBounce";
 import { executeGen5MoveEffect } from "./Gen5MoveEffects";
 import { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
 import { applyGen5WeatherEffects } from "./Gen5Weather";
@@ -389,6 +390,23 @@ export class Gen5Ruleset extends BaseRuleset {
    */
   override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
     return applyGen5Ability(trigger, context);
+  }
+
+  // --- Magic Bounce ---
+
+  /**
+   * Gen 5 Magic Bounce: reflect reflectable status moves back at the user.
+   *
+   * Source: Showdown data/abilities.ts -- magicbounce.onTryHit
+   * Source: Bulbapedia -- Magic Bounce ability page
+   */
+  override shouldReflectMove(
+    move: MoveData,
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): { reflected: true; messages: string[] } | null {
+    return shouldReflectMoveGen5(move, attacker, defender, state);
   }
 
   // --- Speed ---
