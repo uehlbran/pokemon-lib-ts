@@ -164,7 +164,7 @@ function handleHarvest(ctx: AbilityContext): AbilityResult {
   if (pokemon.pokemon.heldItem) return NO_EFFECT;
 
   // Check for consumed berry in volatile data
-  const harvestData = pokemon.volatileStatuses.get("harvest-berry" as never);
+  const harvestData = pokemon.volatileStatuses.get("harvest-berry");
   if (!harvestData?.data?.berryId) return NO_EFFECT;
 
   const berryId = harvestData.data.berryId as string;

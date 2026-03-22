@@ -70,4 +70,5 @@ export type VolatileStatus =
   | "uproar" // Uproar — prevents all Pokemon from falling asleep, lasts 3 turns (Gen 3+)
   | "illusion" // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)
   | "rollout" // Gen 2+ — tracks consecutive turn count for Rollout escalating power
-  | "fury-cutter"; // Gen 2+ — tracks consecutive use count for Fury Cutter escalating power
+  | "fury-cutter" // Gen 2+ — tracks consecutive use count for Fury Cutter escalating power
+  | "harvest-berry"; // Tracks the last consumed berry for Harvest ability (Gen 5+); data: { berryId: string }
