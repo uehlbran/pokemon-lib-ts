@@ -35,7 +35,7 @@ import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
 import { calculateGen7Damage } from "./Gen7DamageCalc.js";
 import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
-import { executeGen7MoveEffect } from "./Gen7MoveEffects.js";
+import { executeGen7MoveEffect, isGen7GrassPowderBlocked } from "./Gen7MoveEffects.js";
 import {
   applyGen7TerrainEffects,
   checkGen7TerrainStatusImmunity,
@@ -164,16 +164,45 @@ export class Gen7Ruleset extends BaseRuleset {
   /**
    * Gen 7 move effect dispatch.
    *
-   * Currently handles:
+   * Handles:
+   *   - Grass-type powder immunity (Gen 6+ carry-forward)
    *   - Aurora Veil (Hail-only dual screen)
+   *   - Baneful Bunker (new Gen 7 protect variant)
+   *   - Protect variants (King's Shield with -2 Atk, Spiky Shield, Mat Block, Crafty Shield)
+   *   - Two-turn moves (Fly, Dig, Dive, Bounce, Solar Beam, Solar Blade, Phantom Force,
+   *     Shadow Force, Sky Attack)
+   *   - Drain effects (Giga Drain, Drain Kiss, Leech Life, etc.)
    *
    * Falls through to BaseRuleset for unrecognized moves.
    *
    * Source: Showdown data/moves.ts -- Gen 7 move handlers
+   * Source: Showdown data/mods/gen7/moves.ts -- Gen 7 overrides
    */
   override executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    // Gen 6+: Grass types are immune to powder/spore moves
+    // Source: Showdown data/moves.ts -- every powder move checks target.hasType('Grass')
+    // Source: Bulbapedia -- "As of Generation VI, Grass-type Pokemon are immune to
+    //   powder and spore moves."
+    if (isGen7GrassPowderBlocked(context.move, context.defender.types)) {
+      const defenderName =
+        context.defender.pokemon.nickname ?? String(context.defender.pokemon.speciesId);
+      return {
+        statusInflicted: null,
+        volatileInflicted: null,
+        statChanges: [],
+        recoilDamage: 0,
+        healAmount: 0,
+        switchOut: false,
+        messages: [`It doesn't affect ${defenderName}...`],
+      };
+    }
+
     // Try Gen 7-specific move effects first
-    const gen7Result = executeGen7MoveEffect(context);
+    const gen7Result = executeGen7MoveEffect(
+      context,
+      context.state.rng,
+      this.rollProtectSuccess.bind(this),
+    );
     if (gen7Result !== null) return gen7Result;
 
     // Fall through to BaseRuleset for default handling
