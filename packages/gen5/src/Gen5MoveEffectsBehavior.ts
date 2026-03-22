@@ -12,6 +12,7 @@
  *   - Growth: +2 Atk/SpAtk in sun (data shows +1, behavioral override doubles it)
  *   - Powder moves: Grass types are NOT immune (Gen 6+ adds Grass immunity)
  *   - Knock Off: 20 BP flat, no damage bonus (Gen 6+ adds 1.5x bonus for item removal)
+ *   - Thief/Covet: steal target's held item (identical to Gen 6+ but listed here for completeness)
  *   - String Shot: -1 Speed (Gen 7+ is -2)
  *   - Sweet Scent: -1 Evasion (Gen 6+ is -2)
  *   - Encore: exactly 3 turns (Gen 4 was random 4-8)
@@ -105,6 +106,9 @@ export function handleGen5BehaviorMove(ctx: MoveEffectContext): MoveEffectResult
       return handleGrowth(ctx);
     case "knock-off":
       return handleKnockOff(ctx);
+    case "thief":
+    case "covet":
+      return handleThiefCovet(ctx);
     case "rapid-spin":
       return handleRapidSpin(ctx);
     case "encore":
@@ -250,6 +254,75 @@ function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
   }
 
   return makeResult({ messages: [] });
+}
+
+/**
+ * Gen 5 Thief / Covet: steal the target's held item after dealing damage.
+ *
+ * Thief (40 BP Dark physical) and Covet (60 BP Normal physical) share identical
+ * steal logic: if the user has no held item and the target does, transfer the
+ * target's item to the user. The steal only fires when the move deals damage
+ * (onAfterHit, not onHit).
+ *
+ * Source: Showdown data/moves.ts -- thief.onAfterHit / covet.onAfterHit:
+ *   `if (source.item || source.volatiles['gem']) return;`
+ *   `let yourItem = target.takeItem(source);`
+ *   `if (!yourItem) return;`
+ *   `source.setItem(yourItem);`
+ * Source: Bulbapedia -- Thief: "If the user is not holding an item and the
+ *   target is, the user will steal the target's held item."
+ */
+function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
+  // onAfterHit: only fires when damage > 0
+  // Source: Showdown data/moves.ts -- thief/covet use onAfterHit callback
+  if (ctx.damage <= 0) {
+    return makeResult({ messages: [] });
+  }
+
+  // Cannot steal through a Substitute -- move hit the sub, not the Pokemon.
+  // Source: Showdown sim/battle-actions.ts -- onAfterHit only fires when the target is hit directly.
+  // brokeSubstitute means this hit destroyed the sub (still did not hit the Pokemon directly).
+  if (
+    ctx.brokeSubstitute ||
+    (ctx.defender.volatileStatuses.has("substitute") && !ctx.move.flags.bypassSubstitute)
+  ) {
+    return makeResult({ messages: [] });
+  }
+
+  const userItem = ctx.attacker.pokemon.heldItem;
+  const targetItem = ctx.defender.pokemon.heldItem;
+
+  // User already has an item -- cannot steal.
+  // Also blocked if the user consumed a Gem this move (gem-used volatile marks this).
+  // Source: Showdown data/moves.ts -- `if (source.item || source.volatiles['gem']) return;`
+  if (userItem != null && userItem !== "") {
+    return makeResult({ messages: [] });
+  }
+  if (
+    ctx.attacker.volatileStatuses.has("gem-used" as import("@pokemon-lib-ts/core").VolatileStatus)
+  ) {
+    return makeResult({ messages: [] });
+  }
+
+  // Target has no item -- nothing to steal
+  if (targetItem == null || targetItem === "") {
+    return makeResult({ messages: [] });
+  }
+
+  const attackerName = ctx.attacker.pokemon.nickname ?? "The user";
+  const defenderName = ctx.defender.pokemon.nickname ?? "the target";
+
+  // Unburden: if the target has Unburden, set the volatile to double Speed.
+  // Source: Showdown data/abilities.ts -- Unburden activates when item is lost by any means.
+  // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
+  if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
+    ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+  }
+
+  return makeResult({
+    itemTransfer: { from: "defender", to: "attacker" },
+    messages: [`${attackerName} stole ${defenderName}'s ${targetItem}!`],
+  });
 }
 
 /**
