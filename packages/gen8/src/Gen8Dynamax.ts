@@ -242,12 +242,15 @@ export class Gen8Dynamax implements BattleGimmick {
     if (pokemon.pokemon.calculatedStats) {
       const currentMaxHp = pokemon.pokemon.calculatedStats.hp;
 
-      // Use stored base max HP (set during activate) to avoid off-by-1 from reverse-dividing.
-      // Fallback to reverse-division only if preDynamaxMaxHp is missing (e.g., legacy state).
+      // preDynamaxMaxHp is always set by activate() — absence means corrupted Dynamax state.
+      // Throw rather than silently reverse-dividing (which produces wrong HP for certain values).
       // Source: Showdown sim/pokemon.ts -- pokemon.baseMaxhp stores original max HP during Dynamax
-      const baseMaxHp =
-        pokemon.preDynamaxMaxHp ??
-        Math.round(currentMaxHp / (1.5 + (pokemon.pokemon.dynamaxLevel ?? 10) * 0.05));
+      if (pokemon.preDynamaxMaxHp === undefined) {
+        throw new Error(
+          `Gen8Dynamax.revert: preDynamaxMaxHp missing for uid=${pokemon.pokemon.uid} — corrupted Dynamax state`,
+        );
+      }
+      const baseMaxHp = pokemon.preDynamaxMaxHp;
 
       const restoredHp = getUndynamaxedHp(pokemon.pokemon.currentHp, currentMaxHp, baseMaxHp);
 

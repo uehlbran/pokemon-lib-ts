@@ -330,7 +330,11 @@ export class Gen7Ruleset extends BaseRuleset {
    * Source: Showdown sim/battle-actions.ts -- Z-Moves bypass Protect at 0.25x
    * Source: Bulbapedia "Z-Move" -- "deals a quarter of its damage" through Protect
    */
-  override canBypassProtect(move: MoveData, _actor: ActivePokemon): boolean {
+  override canBypassProtect(
+    move: MoveData,
+    _actor: ActivePokemon,
+    _activeVolatile: "protect" | "max-guard",
+  ): boolean {
     return move.zMovePower != null && move.zMovePower > 0;
   }
 

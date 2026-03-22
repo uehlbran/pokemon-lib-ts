@@ -1008,7 +1008,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, Math.floor(maxHp / 4));
   }
 
-  canBypassProtect(_move: MoveData, _actor: ActivePokemon): boolean {
+  canBypassProtect(
+    _move: MoveData,
+    _actor: ActivePokemon,
+    _activeVolatile: "protect" | "max-guard",
+  ): boolean {
     // Gen 2: no moves can bypass Protect (Z-Moves/Max Moves are Gen 7-8 only)
     return false;
   }
