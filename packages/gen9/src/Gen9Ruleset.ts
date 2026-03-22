@@ -1,4 +1,6 @@
 import type {
+  AbilityContext,
+  AbilityResult,
   BattleGimmick,
   BattleGimmickType,
   CritContext,
@@ -10,6 +12,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
+  AbilityTrigger,
   DataManager,
   EntryHazardType,
   PokemonType,
@@ -18,6 +21,7 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { createGen9DataManager } from "./data/index.js";
+import { handleGen9Ability } from "./Gen9Abilities.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
 import { calculateGen9Damage } from "./Gen9DamageCalc.js";
 import { applyGen9HeldItem } from "./Gen9Items.js";
@@ -305,6 +309,23 @@ export class Gen9Ruleset extends BaseRuleset {
    */
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
     return applyGen9HeldItem(trigger, context);
+  }
+
+  // --- Ability System ---
+
+  /**
+   * Gen 9 ability dispatch.
+   *
+   * Delegates to the Gen 9 ability handler which routes to:
+   *   - Gen9AbilitiesStat: Protosynthesis, Quark Drive
+   *   - Gen9AbilitiesNew: Toxic Chain, Good as Gold, Embody Aspect, Mycelium Might,
+   *     Supreme Overlord, Intrepid Sword/Dauntless Shield (nerfed), Protean/Libero (nerfed)
+   *   - Gen9AbilitiesSwitch: carry-forward switch/contact/passive abilities
+   *
+   * Source: Showdown data/abilities.ts
+   */
+  override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+    return handleGen9Ability(trigger, context);
   }
 
   // --- Damage Calculation ---

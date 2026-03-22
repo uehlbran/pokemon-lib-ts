@@ -81,4 +81,12 @@ export type VolatileStatus =
   | "power-construct-transformed" // Power Construct — Zygarde has transformed to Complete Form this battle (Gen 7+)
   | "battle-bond-transformed" // Battle Bond — Greninja has transformed to Ash-Greninja this battle (Gen 7+)
   | "obstruct" // Obstruct — protect variant, blocks moves with protect flag; -2 Def on contact (Gen 8)
-  | "jaw-lock"; // Jaw Lock — traps both user and target (Gen 8)
+  | "jaw-lock" // Jaw Lock — traps both user and target (Gen 8)
+  | "protosynthesis" // Protosynthesis — boosts highest stat in Sun or with Booster Energy (Gen 9); data: { boostedStat: string }
+  | "quarkdrive" // Quark Drive — boosts highest stat on Electric Terrain or with Booster Energy (Gen 9); data: { boostedStat: string }
+  | "embody-aspect-used" // Embody Aspect (Ogerpon) — tracks once-per-battle activation (Gen 9)
+  | "intrepid-sword-used" // Intrepid Sword — once-per-battle flag (Gen 9 nerf)
+  | "dauntless-shield-used" // Dauntless Shield — once-per-battle flag (Gen 9 nerf)
+  | "protean-used" // Protean/Libero — once-per-switchin flag (Gen 9 nerf)
+  | "silk-trap" // Silk Trap — protect variant, blocks moves with protect flag; -1 Speed on contact (Gen 9)
+  | "salt-cure"; // Salt Cure — residual 1/8 (1/4 for Water/Steel) damage per turn (Gen 9)
