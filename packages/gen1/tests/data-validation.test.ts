@@ -546,7 +546,7 @@ describe("Gen 1 Ruleset Feature Flags", () => {
     const ruleset = new Gen1Ruleset();
 
     // Act
-    const result = ruleset.getBattleGimmick();
+    const result = ruleset.getBattleGimmick("mega");
 
     // Assert: Battle gimmicks (Mega, Z-Moves, etc.) didn't exist in Gen 1
     expect(result).toBeNull();

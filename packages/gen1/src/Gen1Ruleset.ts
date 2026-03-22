@@ -6,6 +6,7 @@ import type {
   BagItemResult,
   BattleAction,
   BattleGimmick,
+  BattleGimmickType,
   BattleSide,
   BattleState,
   CatchResult,
@@ -1361,7 +1362,7 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // --- Battle Gimmick (not in Gen 1) ---
 
-  getBattleGimmick(): BattleGimmick | null {
+  getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {
     return null;
   }
 

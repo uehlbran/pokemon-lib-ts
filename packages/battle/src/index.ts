@@ -93,6 +93,7 @@ export type {
 export type {
   AbilitySystem,
   BagItemSystem,
+  BattleGimmickType,
   CatchSystem,
   CriticalHitSystem,
   DamageSystem,

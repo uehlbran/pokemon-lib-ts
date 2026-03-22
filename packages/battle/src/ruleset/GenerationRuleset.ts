@@ -590,6 +590,13 @@ export interface BagItemSystem {
   applyBagItem(itemId: string, target: ActivePokemon, state: BattleState): BagItemResult;
 }
 
+/**
+ * Which gimmick the player explicitly requested for this action.
+ * Passed to `getBattleGimmick()` so multi-gimmick gens (e.g., Gen 7 has both
+ * Mega Evolution and Z-Moves) can return the correct gimmick implementation.
+ */
+export type BattleGimmickType = "mega" | "zmove" | "dynamax" | "tera";
+
 /** Pokémon validation, EXP gain, and battle gimmick (Mega/Z-Move/Dynamax/Tera). */
 export interface ValidationSystem {
   /**
@@ -604,8 +611,13 @@ export interface ValidationSystem {
    * The special battle mechanic for this generation (if any).
    * Gen 1-5: null. Gen 6-7: Mega Evolution. Gen 7: Z-Moves.
    * Gen 8: Dynamax. Gen 9: Terastallization.
+   *
+   * @param type - Which gimmick the player requested ('mega', 'zmove', 'dynamax', or 'tera').
+   *   Required so multi-gimmick gens (Gen 7: Mega + Z-Move) can return the correct
+   *   gimmick implementation rather than always returning the same one.
+   *   Single-gimmick gens may ignore this parameter.
    */
-  getBattleGimmick(): BattleGimmick | null;
+  getBattleGimmick(type: BattleGimmickType): BattleGimmick | null;
 }
 
 /**

@@ -43,7 +43,7 @@ import type {
 } from "../context";
 import type { BattleAction } from "../events";
 import type { ActivePokemon, BattleSide, BattleState } from "../state";
-import type { GenerationRuleset } from "./GenerationRuleset";
+import type { BattleGimmickType, GenerationRuleset } from "./GenerationRuleset";
 
 /**
  * Abstract base class implementing GenerationRuleset with Gen 6+/7+ defaults.
@@ -628,7 +628,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return Math.floor(((a * b * l) / (5 * s)) * p);
   }
 
-  getBattleGimmick(): BattleGimmick | null {
+  getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {
     return null;
   }
 

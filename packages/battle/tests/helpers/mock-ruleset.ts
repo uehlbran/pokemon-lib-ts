@@ -34,7 +34,7 @@ import type {
   WeatherEffectResult,
 } from "../../src/context";
 import type { BattleAction } from "../../src/events";
-import type { GenerationRuleset } from "../../src/ruleset";
+import type { BattleGimmickType, GenerationRuleset } from "../../src/ruleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
 
 /**
@@ -377,7 +377,7 @@ export class MockRuleset implements GenerationRuleset {
     );
   }
 
-  getBattleGimmick(): BattleGimmick | null {
+  getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {
     return null;
   }
 

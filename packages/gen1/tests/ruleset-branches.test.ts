@@ -1840,7 +1840,7 @@ describe("Gen1Ruleset no-op methods", () => {
   });
 
   it("given Gen1Ruleset, when calling getBattleGimmick, then returns null", () => {
-    expect(ruleset.getBattleGimmick()).toBeNull();
+    expect(ruleset.getBattleGimmick("mega")).toBeNull();
   });
 
   it("given Gen1Ruleset, when calling getAvailableHazards, then returns empty array", () => {
@@ -1988,7 +1988,7 @@ describe("Gen 1 Quirks", () => {
     expect(ruleset.hasHeldItems()).toBe(false);
     expect(ruleset.hasWeather()).toBe(false);
     expect(ruleset.hasTerrain()).toBe(false);
-    expect(ruleset.getBattleGimmick()).toBeNull();
+    expect(ruleset.getBattleGimmick("mega")).toBeNull();
     expect(ruleset.getAvailableHazards()).toEqual([]);
   });
 

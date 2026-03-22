@@ -955,7 +955,7 @@ describe("BaseRuleset", () => {
 
   describe("getBattleGimmick", () => {
     it("given a base ruleset, when getBattleGimmick is called, then null is returned", () => {
-      expect(ruleset.getBattleGimmick()).toBeNull();
+      expect(ruleset.getBattleGimmick("mega")).toBeNull();
     });
   });
 
