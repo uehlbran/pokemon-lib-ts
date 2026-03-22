@@ -17,11 +17,7 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  applyGen8HeldItem,
-  getItemDamageModifier,
-  getPinchBerryThreshold,
-} from "../src/Gen8Items";
+import { applyGen8HeldItem, getItemDamageModifier, getPinchBerryThreshold } from "../src/Gen8Items";
 
 // ---------------------------------------------------------------------------
 // Helper factories (mirror the style used in items.test.ts)
@@ -200,7 +196,7 @@ function itemCtx(overrides: {
       ability: overrides.ability ?? "none",
       types: overrides.types ?? ["normal"],
       hp: overrides.hp ?? 200,
-      currentHp: overrides.currentHp ?? (overrides.hp ?? 200),
+      currentHp: overrides.currentHp ?? overrides.hp ?? 200,
       status: overrides.status ?? null,
       volatiles: overrides.volatiles ?? new Map(),
     }),
@@ -473,24 +469,18 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
-  it(
-    "given sitrus-berry, when damage taken but HP stays above 50%, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Sitrus Berry activates at <= 50% HP
-      // 150/200 = 75% HP, still above threshold
-      const ctx = itemCtx({ heldItem: "sitrus-berry", hp: 200, currentHp: 150, damage: 10 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given sitrus-berry, when damage taken but HP stays above 50%, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Sitrus Berry activates at <= 50% HP
+    // 150/200 = 75% HP, still above threshold
+    const ctx = itemCtx({ heldItem: "sitrus-berry", hp: 200, currentHp: 150, damage: 10 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
-  it(
-    "given oran-berry, when damage taken but HP stays above 50%, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Oran Berry activates at <= 50% HP
-      const ctx = itemCtx({ heldItem: "oran-berry", hp: 200, currentHp: 150, damage: 10 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given oran-berry, when damage taken but HP stays above 50%, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Oran Berry activates at <= 50% HP
+    const ctx = itemCtx({ heldItem: "oran-berry", hp: 200, currentHp: 150, damage: 10 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
   it(
     "given liechi-berry holder at 60% HP after damage, " +
@@ -503,41 +493,29 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
     },
   );
 
-  it(
-    "given ganlon-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Ganlon Berry activates at <= 25% HP
-      const ctx = itemCtx({ heldItem: "ganlon-berry", hp: 200, currentHp: 120, damage: 10 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given ganlon-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Ganlon Berry activates at <= 25% HP
+    const ctx = itemCtx({ heldItem: "ganlon-berry", hp: 200, currentHp: 120, damage: 10 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
-  it(
-    "given salac-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Salac Berry activates at <= 25% HP
-      const ctx = itemCtx({ heldItem: "salac-berry", hp: 200, currentHp: 120, damage: 10 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given salac-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Salac Berry activates at <= 25% HP
+    const ctx = itemCtx({ heldItem: "salac-berry", hp: 200, currentHp: 120, damage: 10 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
-  it(
-    "given petaya-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Petaya Berry activates at <= 25% HP
-      const ctx = itemCtx({ heldItem: "petaya-berry", hp: 200, currentHp: 120, damage: 10 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given petaya-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Petaya Berry activates at <= 25% HP
+    const ctx = itemCtx({ heldItem: "petaya-berry", hp: 200, currentHp: 120, damage: 10 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
-  it(
-    "given apicot-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Apicot Berry activates at <= 25% HP
-      const ctx = itemCtx({ heldItem: "apicot-berry", hp: 200, currentHp: 120, damage: 10 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given apicot-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Apicot Berry activates at <= 25% HP
+    const ctx = itemCtx({ heldItem: "apicot-berry", hp: 200, currentHp: 120, damage: 10 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
   it(
     "given jaboca-berry and a special move, " +
@@ -581,23 +559,17 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
     },
   );
 
-  it(
-    "given red-card and damage = 0, " + "when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Red Card requires actual damage dealt (> 0)
-      const ctx = itemCtx({ heldItem: "red-card", damage: 0 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given red-card and damage = 0, " + "when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Red Card requires actual damage dealt (> 0)
+    const ctx = itemCtx({ heldItem: "red-card", damage: 0 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
-  it(
-    "given eject-button and damage = 0, " + "when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Eject Button requires actual damage dealt (> 0)
-      const ctx = itemCtx({ heldItem: "eject-button", damage: 0 });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given eject-button and damage = 0, " + "when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Eject Button requires actual damage dealt (> 0)
+    const ctx = itemCtx({ heldItem: "eject-button", damage: 0 });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
   it(
     "given absorb-bulb and a fire move (not water), " + "when on-damage-taken, then NO_ACTIVATION",
@@ -612,18 +584,15 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
     },
   );
 
-  it(
-    "given cell-battery and a water move, " + "when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Cell Battery only triggers on Electric-type moves
-      const ctx = itemCtx({
-        heldItem: "cell-battery",
-        damage: 50,
-        move: makeMove({ type: "water" }),
-      });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given cell-battery and a water move, " + "when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Cell Battery only triggers on Electric-type moves
+    const ctx = itemCtx({
+      heldItem: "cell-battery",
+      damage: 50,
+      move: makeMove({ type: "water" }),
+    });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
   it(
     "given weakness-policy and normal-type holder hit by normal-type move (neutral effectiveness), " +
@@ -669,31 +638,25 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
     },
   );
 
-  it(
-    "given luminous-moss and a fire move, " + "when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Luminous Moss only triggers on Water-type moves
-      const ctx = itemCtx({
-        heldItem: "luminous-moss",
-        damage: 50,
-        move: makeMove({ type: "fire" }),
-      });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given luminous-moss and a fire move, " + "when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Luminous Moss only triggers on Water-type moves
+    const ctx = itemCtx({
+      heldItem: "luminous-moss",
+      damage: 50,
+      move: makeMove({ type: "fire" }),
+    });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 
-  it(
-    "given snowball and a fire move, " + "when on-damage-taken, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Snowball only triggers on Ice-type moves
-      const ctx = itemCtx({
-        heldItem: "snowball",
-        damage: 50,
-        move: makeMove({ type: "fire" }),
-      });
-      expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
-    },
-  );
+  it("given snowball and a fire move, " + "when on-damage-taken, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Snowball only triggers on Ice-type moves
+    const ctx = itemCtx({
+      heldItem: "snowball",
+      damage: 50,
+      move: makeMove({ type: "fire" }),
+    });
+    expect(applyGen8HeldItem("on-damage-taken", ctx).activated).toBe(false);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -701,25 +664,19 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("handleOnHit — NO_ACTIVATION paths", () => {
-  it(
-    "given shell-bell attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Shell Bell onAfterMoveSecondarySelf:
-      //   requires damageDealt > 0
-      const ctx = itemCtx({ heldItem: "shell-bell", damage: 0 });
-      expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
-    },
-  );
+  it("given shell-bell attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Shell Bell onAfterMoveSecondarySelf:
+    //   requires damageDealt > 0
+    const ctx = itemCtx({ heldItem: "shell-bell", damage: 0 });
+    expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
+  });
 
-  it(
-    "given life-orb attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Life Orb onAfterMoveSecondarySelf:
-      //   requires damageDealt > 0
-      const ctx = itemCtx({ heldItem: "life-orb", damage: 0 });
-      expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
-    },
-  );
+  it("given life-orb attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Life Orb onAfterMoveSecondarySelf:
+    //   requires damageDealt > 0
+    const ctx = itemCtx({ heldItem: "life-orb", damage: 0 });
+    expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
+  });
 
   it(
     "given kings-rock attacker with damage > 0 and RNG returns false, " +
@@ -732,14 +689,11 @@ describe("handleOnHit — NO_ACTIVATION paths", () => {
     },
   );
 
-  it(
-    "given kings-rock attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — King's Rock: damage guard check before RNG
-      const ctx = itemCtx({ heldItem: "kings-rock", damage: 0 });
-      expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
-    },
-  );
+  it("given kings-rock attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — King's Rock: damage guard check before RNG
+    const ctx = itemCtx({ heldItem: "kings-rock", damage: 0 });
+    expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
+  });
 
   it(
     "given razor-fang attacker with damage > 0 and RNG returns false, " +
@@ -751,14 +705,11 @@ describe("handleOnHit — NO_ACTIVATION paths", () => {
     },
   );
 
-  it(
-    "given razor-fang attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION",
-    () => {
-      // Source: Showdown data/items.ts — Razor Fang: damage guard check before RNG
-      const ctx = itemCtx({ heldItem: "razor-fang", damage: 0 });
-      expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
-    },
-  );
+  it("given razor-fang attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION", () => {
+    // Source: Showdown data/items.ts — Razor Fang: damage guard check before RNG
+    const ctx = itemCtx({ heldItem: "razor-fang", damage: 0 });
+    expect(applyGen8HeldItem("on-hit", ctx).activated).toBe(false);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -825,26 +776,20 @@ describe("handleEndOfTurn — activation (true branches)", () => {
     },
   );
 
-  it(
-    "given sitrus-berry holder at 40% HP, " + "when end-of-turn, then activated",
-    () => {
-      // Source: Showdown data/items.ts — Sitrus Berry heals 1/4 HP when at <= 50% HP
-      // 80/200 = 40% HP, below 50% threshold
-      const ctx = itemCtx({ heldItem: "sitrus-berry", hp: 200, currentHp: 80 });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
-      expect(result.activated).toBe(true);
-    },
-  );
+  it("given sitrus-berry holder at 40% HP, " + "when end-of-turn, then activated", () => {
+    // Source: Showdown data/items.ts — Sitrus Berry heals 1/4 HP when at <= 50% HP
+    // 80/200 = 40% HP, below 50% threshold
+    const ctx = itemCtx({ heldItem: "sitrus-berry", hp: 200, currentHp: 80 });
+    const result = applyGen8HeldItem("end-of-turn", ctx);
+    expect(result.activated).toBe(true);
+  });
 
-  it(
-    "given cheri-berry holder with paralysis, " + "when end-of-turn, then activated",
-    () => {
-      // Source: Showdown data/items.ts — Cheri Berry cures paralysis at end of turn
-      const ctx = itemCtx({ heldItem: "cheri-berry", status: "paralysis" });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
-      expect(result.activated).toBe(true);
-    },
-  );
+  it("given cheri-berry holder with paralysis, " + "when end-of-turn, then activated", () => {
+    // Source: Showdown data/items.ts — Cheri Berry cures paralysis at end of turn
+    const ctx = itemCtx({ heldItem: "cheri-berry", status: "paralysis" });
+    const result = applyGen8HeldItem("end-of-turn", ctx);
+    expect(result.activated).toBe(true);
+  });
 });
 
 describe("handleOnHit — activation (true branches)", () => {
