@@ -633,7 +633,7 @@ describe("Gen 2 Beat Up perHitDamageFn", () => {
     }
   });
 
-  it("given Beat Up with 3 eligible members where target faints after hit 1, when only perHitDamageFn(0) is called, then RNG is consumed for only 1 hit", () => {
+  it("given Beat Up with 3 eligible members where hit 2 executes but hit 3 is skipped (early KO), when perHitDamageFn is called once vs twice, then different RNG is consumed", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
     // Fix for #620: each hit's RNG is consumed lazily, not eagerly.
