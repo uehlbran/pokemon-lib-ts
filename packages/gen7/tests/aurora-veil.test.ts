@@ -246,7 +246,7 @@ describe("Gen7 Aurora Veil", () => {
     const ctx = makeMoveEffectContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
-    expect(result.messages.length).toBeGreaterThan(0);
+    expect(result.messages).toHaveLength(1);
     expect(result.messages[0]).toContain("Aurora Veil");
     expect(result.messages[0]).toContain("Alolan Ninetales");
   });
