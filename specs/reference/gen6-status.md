@@ -57,6 +57,7 @@
 - PR #634: Hazard maxLayers delegation to GenerationRuleset
 - PR #635: Traded Pokemon EXP bonus (1.5x same-language, 1.7x international)
 - PR #636: Type param to getBattleGimmick() for Gen 7 disambiguation
+- PR #752: Deep bughunt — EoT order adds `magic-room-countdown`, `wonder-room-countdown`, `gravity-countdown`, `slow-start-countdown`; Sheer Force whitelist adds `secret-power`, `relic-song` (closes #733 #734 #740)
 
 ## OPEN BUGS
 None. Issue #627 (Prankster/Gale Wings turn order) closed 2026-03-22 — was already fixed in PR #631 + #637.
