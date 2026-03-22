@@ -5,7 +5,7 @@
  * in feat/gen4-battle-types-eot:
  *  - tailwindSet / trickRoomSet move effect results → correct state fields
  *  - weather-healing, speed-boost, shed-skin, poison-heal, bad-dreams → applyAbility("on-turn-end")
- *  - toxic-orb-activation / flame-orb-activation → applyHeldItem("end-of-turn") → status-inflict
+ *  - toxic-orb-activation / flame-orb-activation → applyHeldItem("end-of-turn") → inflict-status
  *  - aqua-ring, ingrain → 1/16 max HP heal per turn
  *  - wish → heal activates when turnsLeft reaches 0
  *
@@ -426,7 +426,7 @@ describe("toxic-orb-activation EoT slot", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "status-inflict", value: "badly-poisoned" }],
+      effects: [{ type: "inflict-status", target: "self", status: "badly-poisoned" }],
       messages: [],
     });
 
@@ -478,7 +478,7 @@ describe("flame-orb-activation EoT slot", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["flame-orb-activation"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "status-inflict", value: "burn" }],
+      effects: [{ type: "inflict-status", target: "self", status: "burn" }],
       messages: [],
     });
 
@@ -713,14 +713,14 @@ describe("processAbilityResult — chip-damage effect type", () => {
   });
 });
 
-describe("processItemResult — status-inflict and self-damage effect types", () => {
-  it("given an item result with status-inflict effect, when processed, then Pokemon status is set and status-inflict event is emitted", () => {
+describe("processItemResult — inflict-status and chip-damage effect types", () => {
+  it("given an item result with inflict-status effect, when processed, then Pokemon status is set and status-inflict event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Toxic Orb / Flame Orb inflict status via item effects
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "status-inflict", value: "poison" }],
+      effects: [{ type: "inflict-status", target: "self", status: "poison" }],
       messages: [],
     });
 
@@ -735,13 +735,13 @@ describe("processItemResult — status-inflict and self-damage effect types", ()
     expect(statusInflictEvents.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("given an item result with self-damage effect, when processed, then Pokemon HP decreases and damage event is emitted with source 'held-item'", () => {
+  it("given an item result with chip-damage effect, when processed, then Pokemon HP decreases and damage event is emitted with source 'held-item'", () => {
     // Source: Pokemon Showdown Gen 4 mod — Black Sludge damages non-Poison types
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["black-sludge"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "self-damage", value: 10 }],
+      effects: [{ type: "chip-damage", target: "self", value: 10 }],
       messages: [],
     });
 
