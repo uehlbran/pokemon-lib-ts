@@ -1014,7 +1014,7 @@ describe("handleGen5StatAbility -- Weak Armor Gen 5 Speed boost amount", () => {
       (e) => e.effectType === "stat-change" && (e as { stat: string }).stat === "speed",
     );
     expect(speedEffect).toBeDefined();
-    // Source: Showdown data/abilities.ts -- Speed Boost raises Speed by +1 stage per turn end
+    // Source: Showdown data/mods/gen6/abilities.ts -- Weak Armor (Gen 5-6): this.boost({def: -1, spe: 1}) raises Speed by +1 stage
     expect((speedEffect as { stages: number }).stages).toBe(1);
   });
 });
