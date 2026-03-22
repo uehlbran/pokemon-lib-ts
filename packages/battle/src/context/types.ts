@@ -630,6 +630,26 @@ export interface ExpContext {
   readonly hasExpShare: boolean;
   /** `true` if an Affection/friendship bonus applies (Gen 6+) */
   readonly affectionBonus: boolean;
+  /**
+   * `true` if the gaining Pokémon was obtained via trade (not caught by this trainer).
+   * Traded Pokémon receive a boosted EXP multiplier. Defaults to `false` (not traded).
+   *
+   * Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
+   *   `BattleSystem_PokemonIsOT` returns FALSE for traded Pokémon → EXP boost applied.
+   */
+  readonly isTradedPokemon?: boolean;
+  /**
+   * `true` if the trade was from a different game language/region (international trade).
+   * Only meaningful when `isTradedPokemon` is `true`. Defaults to `false`.
+   *
+   * Gen 1–2: no language metadata exists — international trade is not modeled, so
+   * only the 1.5× same-language bonus applies regardless of this field.
+   * Gen 3+: international trades give 1.7× instead of 1.5×.
+   *
+   * Source: pret/pokeplatinum src/battle/battle_script.c lines 9981-9984
+   *   `Pokemon_GetValue(mon, MON_DATA_LANGUAGE, NULL) != gGameLanguage` → 1.7×
+   */
+  readonly isInternationalTrade?: boolean;
 }
 
 /**

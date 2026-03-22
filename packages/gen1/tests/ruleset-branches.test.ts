@@ -2370,6 +2370,58 @@ describe("Gen1Ruleset calculateExpGain", () => {
     // Assert
     expect(trainerExp).toBeGreaterThan(wildExp);
   });
+
+  it("given a traded Pokemon (isTradedPokemon=true), when calculateExpGain, then returns 1.5x EXP bonus", () => {
+    // Source: pret/pokered — Gen 1 trade mechanic: traded Pokemon receive 1.5x EXP
+    // (Language tracking not available in Gen 1 — only 1.5x same-language bonus modeled)
+    // Formula: floor((b * L_d / 7) / s * t) → then floor(result * 1.5)
+    // b=64, L_d=25, s=1, t=1.0:
+    //   step1 = floor(64 * 25 / 7) = floor(1600 / 7) = floor(228.57) = 228
+    //   step2 = floor(228 / 1)     = 228
+    //   step3 = floor(228 * 1.0)   = 228
+    //   traded: floor(228 * 1.5)   = 342
+    const context = {
+      defeatedSpecies: { baseExp: 64 } as PokemonSpeciesData,
+      defeatedLevel: 25,
+      participantLevel: 50,
+      isTrainerBattle: false,
+      participantCount: 1,
+      hasLuckyEgg: false,
+      hasExpShare: false,
+      affectionBonus: false,
+      isTradedPokemon: true,
+      isInternationalTrade: false,
+    };
+    // Act
+    const tradedExp = ruleset.calculateExpGain(context);
+    const notTradedExp = ruleset.calculateExpGain({ ...context, isTradedPokemon: false });
+    // Assert
+    expect(tradedExp).toBe(342);
+    expect(notTradedExp).toBe(228);
+    expect(tradedExp).toBeGreaterThan(notTradedExp);
+  });
+
+  it("given a traded Pokemon with isInternationalTrade=true in Gen 1, when calculateExpGain, then still returns 1.5x (no international concept in Gen 1)", () => {
+    // Source: pret/pokered — Gen 1 cartridges have no language field; international trade
+    // is not detectable, so only the standard 1.5x traded bonus applies regardless.
+    // b=64, L_d=25, s=1, t=1.0 → base=228; floor(228 * 1.5) = 342
+    const context = {
+      defeatedSpecies: { baseExp: 64 } as PokemonSpeciesData,
+      defeatedLevel: 25,
+      participantLevel: 50,
+      isTrainerBattle: false,
+      participantCount: 1,
+      hasLuckyEgg: false,
+      hasExpShare: false,
+      affectionBonus: false,
+      isTradedPokemon: true,
+      isInternationalTrade: true, // Gen 1 ignores this flag
+    };
+    // Act
+    const result = ruleset.calculateExpGain(context);
+    // Assert — same as same-language: 1.5x only
+    expect(result).toBe(342);
+  });
 });
 
 // ============================================================================

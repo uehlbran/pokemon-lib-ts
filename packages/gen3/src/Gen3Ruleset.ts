@@ -391,12 +391,16 @@ export class Gen3Ruleset extends BaseRuleset {
    * Also: packages/core/src/logic/experience.ts calculateExpGainClassic
    */
   calculateExpGain(context: ExpContext): number {
+    // Source: pret/pokeemerald src/battle_util.c GiveExpToMon — traded bonus applied after Lucky Egg
+    // Gen 3+ tracks language in the Pokemon data structure; international trades give 1.7x.
     return calculateExpGainClassic(
       context.defeatedSpecies.baseExp,
       context.defeatedLevel,
       context.isTrainerBattle,
       context.participantCount,
       context.hasLuckyEgg,
+      context.isTradedPokemon ?? false,
+      context.isInternationalTrade ?? false,
     );
   }
 
