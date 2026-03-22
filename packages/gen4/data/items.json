@@ -421,10 +421,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "dive-ball"
+    "spriteKey": "dive-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3.5
+    }
   },
   {
     "id": "dome-fossil",
@@ -527,10 +531,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "dusk-ball"
+    "spriteKey": "dusk-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3.5
+    }
   },
   {
     "id": "dusk-stone",
@@ -599,10 +607,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "fast-ball"
+    "spriteKey": "fast-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "figy-berry",
@@ -699,10 +711,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "friend-ball"
+    "spriteKey": "friend-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "full-incense",
@@ -735,10 +751,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "great-ball"
+    "spriteKey": "great-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1.5
+    }
   },
   {
     "id": "grepa-berry",
@@ -812,10 +832,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "heal-ball"
+    "spriteKey": "heal-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "heat-rock",
@@ -836,10 +860,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "heavy-ball"
+    "spriteKey": "heavy-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "helix-fossil",
@@ -1084,10 +1112,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "level-ball"
+    "spriteKey": "level-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "liechi-berry",
@@ -1148,10 +1180,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "love-ball"
+    "spriteKey": "love-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "lucky-punch",
@@ -1188,10 +1224,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "lure-ball"
+    "spriteKey": "lure-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3
+    }
   },
   {
     "id": "lustrous-orb",
@@ -1212,10 +1252,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "luxury-ball"
+    "spriteKey": "luxury-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "macho-brace",
@@ -1301,10 +1345,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "master-ball"
+    "spriteKey": "master-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 255
+    }
   },
   {
     "id": "meadow-plate",
@@ -1423,10 +1471,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "moon-ball"
+    "spriteKey": "moon-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "moon-stone",
@@ -1488,10 +1540,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "nest-ball"
+    "spriteKey": "nest-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "net-ball",
@@ -1500,10 +1556,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "net-ball"
+    "spriteKey": "net-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3
+    }
   },
   {
     "id": "never-melt-ice",
@@ -1702,10 +1762,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "poke-ball"
+    "spriteKey": "poke-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "pomeg-berry",
@@ -1810,10 +1874,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "premier-ball"
+    "spriteKey": "premier-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "protector",
@@ -1846,10 +1914,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "quick-ball"
+    "spriteKey": "quick-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 5
+    }
   },
   {
     "id": "quick-claw",
@@ -1970,10 +2042,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "repeat-ball"
+    "spriteKey": "repeat-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3
+    }
   },
   {
     "id": "rindo-berry",
@@ -2306,10 +2382,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "sport-ball"
+    "spriteKey": "sport-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1.5
+    }
   },
   {
     "id": "starf-berry",
@@ -2434,10 +2514,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "timer-ball"
+    "spriteKey": "timer-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 4
+    }
   },
   {
     "id": "toxic-orb",
@@ -2487,10 +2571,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "ultra-ball"
+    "spriteKey": "ultra-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 2
+    }
   },
   {
     "id": "up-grade",

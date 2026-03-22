@@ -568,6 +568,25 @@ export class Gen5Ruleset extends BaseRuleset {
     return Math.max(1, exp);
   }
 
+  // --- Catch Rate ---
+
+  /**
+   * Gen 5 uses 2.5x status catch modifier for sleep/freeze (Gen 3-4 used 2.0x).
+   *
+   * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+   * Source: Pokemon Showdown sim/battle-actions.ts — Gen 5+ sleep/freeze multiplier
+   */
+  protected override getStatusCatchModifiers(): Record<PrimaryStatus, number> {
+    return {
+      sleep: 2.5,
+      freeze: 2.5,
+      paralysis: 1.5,
+      burn: 1.5,
+      poison: 1.5,
+      "badly-poisoned": 1.5,
+    };
+  }
+
   // --- End of Turn ---
 
   /**

@@ -153,4 +153,53 @@ describe("calculateExpGainClassic (Gen 1-4)", () => {
     // Calling with same params should give same result.
     expect(lowLevel).toBe(calculateExpGainClassic(64, 25, false, 1));
   });
+
+  it("given baseExpYield=64, defeatedLevel=50, trainer battle, 1 participant, when calculating EXP, then applies step-by-step truncation yielding 685", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — Cmd_getexp
+    //   Step 1: floor(64 * 50 / 7) = floor(457.14) = 457
+    //   Step 2: floor(457 / 1) = 457
+    //   Step 3: floor(457 * 1.5) = floor(685.5) = 685
+    const result = calculateExpGainClassic(64, 50, true, 1);
+    expect(result).toBe(685);
+  });
+
+  it("given baseExpYield=65, defeatedLevel=50, trainer battle, 3 participants, when calculating EXP, then step-by-step truncation yields 231 (not 232)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — Cmd_getexp
+    //   Step 1: floor(65 * 50 / 7) = floor(464.2857) = 464
+    //   Step 2: floor(464 / 3) = floor(154.666) = 154
+    //   Step 3: floor(154 * 1.5) = floor(231) = 231
+    //   Without step-by-step: floor(464.2857 / 3 * 1.5) = floor(232.14) = 232
+    // The difference demonstrates that intermediate floors matter.
+    const result = calculateExpGainClassic(65, 50, true, 3);
+    expect(result).toBe(231);
+  });
+
+  it("given baseExpYield=100, defeatedLevel=30, wild battle, 1 participant with Lucky Egg, when calculating EXP, then Lucky Egg applies 1.5x multiplier", () => {
+    // Source: pret/pokeemerald — Lucky Egg 1.5x multiplier after trainer bonus
+    //   Step 1: floor(100 * 30 / 7) = floor(428.57) = 428
+    //   Step 2: floor(428 / 1) = 428
+    //   Step 3: floor(428 * 1.0) = 428 (wild battle)
+    //   Step 4 (Lucky Egg): floor(428 * 1.5) = floor(642) = 642
+    const withoutEgg = calculateExpGainClassic(100, 30, false, 1, false);
+    const withEgg = calculateExpGainClassic(100, 30, false, 1, true);
+    expect(withoutEgg).toBe(428);
+    expect(withEgg).toBe(642);
+  });
+
+  it("given baseExpYield=64, defeatedLevel=50, wild battle, 1 participant with Lucky Egg, when calculating EXP, then returns floor(457 * 1.5) = 685", () => {
+    // Source: pret/pokeemerald — Lucky Egg multiplier
+    //   Step 1: floor(64 * 50 / 7) = floor(457.14) = 457
+    //   Step 2: floor(457 / 1) = 457
+    //   Step 3: floor(457 * 1.0) = 457 (wild)
+    //   Step 4: floor(457 * 1.5) = floor(685.5) = 685
+    const result = calculateExpGainClassic(64, 50, false, 1, true);
+    expect(result).toBe(685);
+  });
+
+  it("given very small values, when calculating EXP, then returns minimum 1", () => {
+    // Source: pret/pokeemerald — EXP is always at least 1
+    const result = calculateExpGainClassic(1, 1, false, 7);
+    // floor(1 * 1 / 7) = 0, but max(1, 0) = 1
+    expect(result).toBe(1);
+  });
 });

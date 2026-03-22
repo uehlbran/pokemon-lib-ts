@@ -572,6 +572,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       context.defeatedLevel,
       context.isTrainerBattle,
       context.participantCount,
+      context.hasLuckyEgg,
     );
   }
 

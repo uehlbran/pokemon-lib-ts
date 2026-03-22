@@ -186,10 +186,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "fast-ball"
+    "spriteKey": "fast-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "fire-stone",
@@ -226,10 +230,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "friend-ball"
+    "spriteKey": "friend-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "gold-berry",
@@ -255,10 +263,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "great-ball"
+    "spriteKey": "great-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1.5
+    }
   },
   {
     "id": "hard-stone",
@@ -284,10 +296,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "heavy-ball"
+    "spriteKey": "heavy-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "ice-berry",
@@ -357,10 +373,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "level-ball"
+    "spriteKey": "level-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "light-ball",
@@ -385,10 +405,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "love-ball"
+    "spriteKey": "love-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "lucky-punch",
@@ -413,10 +437,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "lure-ball"
+    "spriteKey": "lure-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 3
+    }
   },
   {
     "id": "magnet",
@@ -454,10 +482,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "master-ball"
+    "spriteKey": "master-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 255
+    }
   },
   {
     "id": "metal-coat",
@@ -550,10 +582,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "moon-ball"
+    "spriteKey": "moon-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "moon-stone",
@@ -659,10 +695,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "poke-ball"
+    "spriteKey": "poke-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1
+    }
   },
   {
     "id": "polkadot-bow",
@@ -822,10 +862,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "sport-ball"
+    "spriteKey": "sport-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 1.5
+    }
   },
   {
     "id": "stick",
@@ -907,10 +951,14 @@
     "category": "pokeball",
     "pocket": "pokeballs",
     "price": 0,
-    "battleUsable": false,
+    "battleUsable": true,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "ultra-ball"
+    "spriteKey": "ultra-ball",
+    "useEffect": {
+      "type": "catch",
+      "catchRateModifier": 2
+    }
   },
   {
     "id": "up-grade",

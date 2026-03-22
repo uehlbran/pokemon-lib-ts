@@ -3,6 +3,8 @@ import {
   calculateModifiedCatchRate,
   calculateShakeChecks,
   STATUS_CATCH_MODIFIERS,
+  STATUS_CATCH_MODIFIERS_GEN5,
+  STATUS_CATCH_MODIFIERS_GEN34,
 } from "../../src/logic/catch-rate";
 import { SeededRandom } from "../../src/prng/seeded-random";
 
@@ -42,18 +44,85 @@ describe("calculateModifiedCatchRate", () => {
   });
 });
 
-describe("STATUS_CATCH_MODIFIERS", () => {
-  it("should have sleep and freeze at 2.5", () => {
+describe("STATUS_CATCH_MODIFIERS (Gen 5+ default)", () => {
+  it("given Gen 5+ defaults, when checking sleep/freeze modifiers, then they are 2.5x", () => {
+    // Source: Bulbapedia — Catch rate: Gen 5+ changed sleep/freeze from 2.0 to 2.5
     expect(STATUS_CATCH_MODIFIERS.sleep).toBe(2.5);
     expect(STATUS_CATCH_MODIFIERS.freeze).toBe(2.5);
   });
 
-  it("should have paralysis, burn, poison at 1.5", () => {
+  it("given Gen 5+ defaults, when checking other status modifiers, then they are 1.5x", () => {
+    // Source: Bulbapedia — Catch rate: paralysis/burn/poison are 1.5x across all gens
     expect(STATUS_CATCH_MODIFIERS.paralysis).toBe(1.5);
     expect(STATUS_CATCH_MODIFIERS.burn).toBe(1.5);
     expect(STATUS_CATCH_MODIFIERS.poison).toBe(1.5);
     expect(STATUS_CATCH_MODIFIERS["badly-poisoned"]).toBe(1.5);
   });
+
+  it("given STATUS_CATCH_MODIFIERS alias, when compared to STATUS_CATCH_MODIFIERS_GEN5, then they are identical", () => {
+    // STATUS_CATCH_MODIFIERS is an alias for GEN5 for backwards compatibility
+    expect(STATUS_CATCH_MODIFIERS).toBe(STATUS_CATCH_MODIFIERS_GEN5);
+  });
+});
+
+describe("STATUS_CATCH_MODIFIERS_GEN34", () => {
+  it("given Gen 3-4 modifiers, when checking sleep/freeze, then they are 2.0x (not 2.5x)", () => {
+    // Source: pret/pokeemerald src/battle_script_commands.c — sleep/freeze: odds *= 2
+    expect(STATUS_CATCH_MODIFIERS_GEN34.sleep).toBe(2.0);
+    expect(STATUS_CATCH_MODIFIERS_GEN34.freeze).toBe(2.0);
+  });
+
+  it("given Gen 3-4 modifiers, when checking other statuses, then they are 1.5x (same as Gen 5+)", () => {
+    // Source: pret/pokeemerald — poison/burn/paralysis: odds = (odds * 15) / 10
+    expect(STATUS_CATCH_MODIFIERS_GEN34.paralysis).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN34.burn).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN34.poison).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN34["badly-poisoned"]).toBe(1.5);
+  });
+});
+
+describe("STATUS_CATCH_MODIFIERS_GEN5", () => {
+  it("given Gen 5+ modifiers, when checking sleep/freeze, then they are 2.5x", () => {
+    // Source: Bulbapedia — Catch rate: Gen 5+ changed sleep/freeze to 2.5x
+    expect(STATUS_CATCH_MODIFIERS_GEN5.sleep).toBe(2.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5.freeze).toBe(2.5);
+  });
+
+  it("given Gen 5+ modifiers, when checking other statuses, then they are 1.5x", () => {
+    // Source: Bulbapedia — Catch rate: paralysis/burn/poison unchanged at 1.5x
+    expect(STATUS_CATCH_MODIFIERS_GEN5.paralysis).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5.burn).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5.poison).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5["badly-poisoned"]).toBe(1.5);
+  });
+});
+
+describe("Poke Ball items have catch useEffect in generated data", () => {
+  // Source: Bug #301 — Poke Ball items were missing useEffect.type=catch
+  for (const gen of [2, 3, 4, 5]) {
+    it(`given Gen ${gen} items.json, when checking Poke Ball items, then at least one has useEffect.type=catch`, () => {
+      // Source: Bulbapedia — Poke Balls have a catch rate modifier
+      const items = require(`../../../../packages/gen${gen}/data/items.json`);
+      const pokeballs = items.filter((item: { category: string }) => item.category === "pokeball");
+      expect(pokeballs.length).toBeGreaterThan(0);
+      const withCatchEffect = pokeballs.filter(
+        (item: { useEffect?: { type: string } }) => item.useEffect?.type === "catch",
+      );
+      expect(withCatchEffect.length).toBe(pokeballs.length);
+    });
+
+    it(`given Gen ${gen} items.json, when checking Ultra Ball, then catchRateModifier is 2`, () => {
+      // Source: Bulbapedia — Ultra Ball catch rate modifier is 2x
+      const items = require(`../../../../packages/gen${gen}/data/items.json`);
+      const ultraBall = items.find((item: { id: string }) => item.id === "ultra-ball");
+      if (ultraBall) {
+        expect(ultraBall.useEffect).toEqual({
+          type: "catch",
+          catchRateModifier: 2,
+        });
+      }
+    });
+  }
 });
 
 describe("calculateShakeChecks", () => {

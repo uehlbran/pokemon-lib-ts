@@ -3779,7 +3779,7 @@ export class BattleEngine implements BattleEventEmitter {
         participantLevel: participant.level,
         isTrainerBattle: !this.state.isWildBattle,
         participantCount, // living participants only — Source: Bulbapedia EXP mechanics
-        hasLuckyEgg: false, // TODO: check held item in a future pass
+        hasLuckyEgg: participant.heldItem === "lucky-egg",
         hasExpShare: false, // TODO: Gen 2+ Exp. Share in a future pass
         affectionBonus: false,
       };

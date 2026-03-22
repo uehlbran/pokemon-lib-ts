@@ -2,21 +2,42 @@ import type { PrimaryStatus } from "../entities/status";
 import type { SeededRandom } from "../prng/seeded-random";
 
 /**
- * Status condition catch rate modifiers.
+ * Gen 3-4 status condition catch rate modifiers.
  *
  * Source: pret/pokeemerald src/battle_script_commands.c:9991 Cmd_handleballthrow
- *   sleep/freeze: odds *= 2 (Gen 3-4), Gen 5+ changed to 2.5
+ *   sleep/freeze: odds *= 2
  *   poison/burn/paralysis/toxic: odds = (odds * 15) / 10
  * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
  */
-export const STATUS_CATCH_MODIFIERS: Record<PrimaryStatus, number> = {
-  sleep: 2.5, // Gen 5+ (was 2.0 in Gen 3-4)
-  freeze: 2.5, // Gen 5+ (was 2.0 in Gen 3-4)
+export const STATUS_CATCH_MODIFIERS_GEN34: Record<PrimaryStatus, number> = {
+  sleep: 2.0,
+  freeze: 2.0,
   paralysis: 1.5,
   burn: 1.5,
   poison: 1.5,
   "badly-poisoned": 1.5,
 } as const;
+
+/**
+ * Gen 5+ status condition catch rate modifiers.
+ *
+ * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
+ * Source: Pokemon Showdown sim/battle-actions.ts — Gen 5+ sleep/freeze multiplier is 2.5
+ */
+export const STATUS_CATCH_MODIFIERS_GEN5: Record<PrimaryStatus, number> = {
+  sleep: 2.5,
+  freeze: 2.5,
+  paralysis: 1.5,
+  burn: 1.5,
+  poison: 1.5,
+  "badly-poisoned": 1.5,
+} as const;
+
+/**
+ * Default status catch modifiers — uses Gen 5+ values for backwards compatibility.
+ * Gen 3-4 rulesets should use STATUS_CATCH_MODIFIERS_GEN34 instead.
+ */
+export const STATUS_CATCH_MODIFIERS: Record<PrimaryStatus, number> = STATUS_CATCH_MODIFIERS_GEN5;
 
 /**
  * Calculate the modified catch rate.
