@@ -1,11 +1,13 @@
 import type {
   ActivePokemon,
   BattleAction,
+  BattleSide,
   BattleState,
   CritContext,
   DamageContext,
   DamageResult,
   EndOfTurnEffect,
+  EntryHazardResult,
   ExpContext,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
@@ -21,6 +23,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
+import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
 import { applyGen6WeatherEffects } from "./Gen6Weather.js";
 
@@ -572,6 +575,27 @@ export class Gen6Ruleset extends BaseRuleset {
    */
   override getAvailableHazards(): readonly import("@pokemon-lib-ts/core").EntryHazardType[] {
     return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web"];
+  }
+
+  /**
+   * Gen 6 entry hazards: Stealth Rock, Spikes, Toxic Spikes, and Sticky Web.
+   *
+   * Delegates to applyGen6EntryHazards which handles all four hazard types
+   * including the new Sticky Web (-1 Speed to grounded switch-ins).
+   *
+   * Source: Showdown data/moves.ts -- individual hazard condition.onSwitchIn handlers
+   * Source: Bulbapedia -- Sticky Web introduced in Gen 6
+   */
+  override applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    state?: BattleState,
+  ): EntryHazardResult {
+    // BattleState is optional in the interface but required for grounding checks
+    if (!state) {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+    return applyGen6EntryHazards(pokemon, side, state, this.getTypeChart());
   }
 
   // --- End of Turn ---
