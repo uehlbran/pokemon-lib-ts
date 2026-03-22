@@ -45,6 +45,33 @@ export {
   pokeRound,
   TYPE_RESIST_BERRIES,
 } from "./Gen8DamageCalc.js";
+export {
+  AURORA_VEIL_DEFAULT_TURNS,
+  AURORA_VEIL_LIGHT_CLAY_TURNS,
+  calculateClangorousSoulCost,
+  calculateObstructPenalty,
+  calculateSpikyShieldDamage,
+  calculateSteelBeamRecoil,
+  executeGen8Defog,
+  executeGen8MoveEffect,
+  getFishiousBoltBeakPower,
+  getRapidSpinSpeedBoost,
+  handleDrainEffect,
+  handleJawLock,
+  handleNoRetreat,
+  handleTarShot,
+  isAntiDynamaxMove,
+  isBlockedByBanefulBunker,
+  isBlockedByCraftyShield,
+  isBlockedByKingsShield,
+  isBlockedByMatBlock,
+  isBlockedByObstruct,
+  isBlockedBySpikyShield,
+  isBodyPress,
+  isGen8GrassPowderBlocked,
+  isSteelBeamRecoil,
+  isTarShotActive,
+} from "./Gen8MoveEffects.js";
 export { Gen8Ruleset } from "./Gen8Ruleset.js";
 export {
   applyGen8TerrainEffects,
