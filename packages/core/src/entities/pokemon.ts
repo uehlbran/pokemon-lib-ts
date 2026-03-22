@@ -72,6 +72,21 @@ export interface PokemonInstance {
   /** Ball this Pokemon was caught in */
   readonly pokeball: string;
 
+  /**
+   * Whether this Pokemon was obtained via trade (not from the current player's OT).
+   * When true, applies a 1.5x EXP bonus (Gen 3+: 1.7x for international trades).
+   * Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
+   */
+  isTradedPokemon?: boolean;
+
+  /**
+   * Whether the trade was international (different-language cartridge).
+   * Only meaningful when `isTradedPokemon` is true.
+   * Gen 1-2: always false (no language metadata on cartridge).
+   * Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
+   */
+  isInternationalTrade?: boolean;
+
   // --- Cached computed values (not serialized) ---
 
   /** Computed stats — recalculated when level/EVs/nature change */

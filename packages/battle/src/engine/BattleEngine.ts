@@ -4386,6 +4386,10 @@ export class BattleEngine implements BattleEventEmitter {
         hasLuckyEgg: participant.heldItem === "lucky-egg",
         hasExpShare: false, // TODO: Gen 2+ Exp. Share in a future pass
         affectionBonus: false,
+        // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
+        // Passed from PokemonInstance so consumers can set traded status on their Pokemon.
+        isTradedPokemon: participant.isTradedPokemon ?? false,
+        isInternationalTrade: participant.isInternationalTrade ?? false,
       };
 
       const expGained = this.ruleset.calculateExpGain(context);

@@ -167,7 +167,7 @@ describe("Gen3Ruleset calculateExpGain — traded Pokemon EXP bonus", () => {
     expect(result).toBe(616);
   });
 
-  it("given international trade bonus is strictly greater than same-language trade bonus", () => {
+  it("given traded Gen 3 EXP contexts, when comparing international vs same-language trade, then international bonus is larger", () => {
     // Arrange
     // Source: pret/pokeplatinum src/battle/battle_script.c lines 9981-9984
     //   170/100 vs 150/100 — international is always larger
