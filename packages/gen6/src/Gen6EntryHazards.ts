@@ -89,10 +89,29 @@ export interface StickyWebResult {
  * Source: Showdown sim/pokemon.ts -- isGrounded()
  * Source: Bulbapedia -- individual ability/item/move pages
  */
+/**
+ * Airborne semi-invulnerable volatiles.
+ * Pokemon using Fly, Bounce, Shadow Force, or Phantom Force are airborne and NOT grounded.
+ * Dig and Dive are underground/underwater, NOT airborne -- still grounded for terrain purposes.
+ *
+ * Source: Showdown sim/pokemon.ts -- isGrounded: returns false for Pokemon using Fly/Bounce
+ * Source: Showdown data/conditions.ts -- terrain conditions check target.isGrounded()
+ * Source: Bulbapedia "Semi-invulnerable turn" -- Fly/Bounce elevate the user
+ */
+const AIRBORNE_SEMI_INVULNERABLE = new Set(["fly", "bounce", "shadow-force", "phantom-force"]);
+
 export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
-  // Gravity grounds everything
+  // Gravity grounds everything (even semi-invulnerable airborne Pokemon)
   // Source: Bulbapedia -- Gravity: "All Pokemon are grounded."
   if (gravityActive) return true;
+
+  // Airborne semi-invulnerable state makes the Pokemon NOT grounded.
+  // Fly, Bounce, Shadow Force, and Phantom Force all elevate the user off the ground.
+  // Dig and Dive do NOT affect grounding (underground/underwater but still "on ground").
+  // Source: Showdown sim/pokemon.ts -- isGrounded checks for semi-invulnerable volatiles
+  for (const v of AIRBORNE_SEMI_INVULNERABLE) {
+    if (pokemon.volatileStatuses.has(v as VolatileStatus)) return false;
+  }
 
   // Ingrain grounds the user even if Flying-type or Levitate
   // Source: Bulbapedia -- Ingrain: "The user is affected by hazards on the ground,

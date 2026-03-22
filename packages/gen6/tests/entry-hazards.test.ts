@@ -212,6 +212,60 @@ describe("Gen6 isGen6Grounded", () => {
     const pokemon = makeActivePokemon({ types: ["flying"], heldItem: "iron-ball", volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
+
+  // --- Semi-invulnerable grounding (bugs #667, #665, #664) ---
+
+  it("given a Pokemon using Fly (semi-invulnerable airborne), when checking grounding, then is NOT grounded", () => {
+    // Source: Showdown sim/pokemon.ts -- isGrounded: fly volatile makes Pokemon airborne
+    // Source: Bulbapedia "Fly" -- "The user flies up high on the first turn"
+    // Bug #667: Previously Fly/Bounce were not checked, treating airborne Pokemon as grounded.
+    const volatiles = new Map([["fly", { turnsLeft: 1 }]]);
+    const pokemon = makeActivePokemon({ types: ["normal"], volatiles });
+    expect(isGen6Grounded(pokemon, false)).toBe(false);
+  });
+
+  it("given a Pokemon using Bounce (semi-invulnerable airborne), when checking grounding, then is NOT grounded", () => {
+    // Source: Showdown sim/pokemon.ts -- isGrounded: bounce volatile makes Pokemon airborne
+    // Source: Bulbapedia "Bounce" -- "The user bounces up high"
+    // Bug #665: Semi-invulnerable airborne moves must unground the user.
+    const volatiles = new Map([["bounce", { turnsLeft: 1 }]]);
+    const pokemon = makeActivePokemon({ types: ["normal"], volatiles });
+    expect(isGen6Grounded(pokemon, false)).toBe(false);
+  });
+
+  it("given a Pokemon using Dig (semi-invulnerable underground), when checking grounding, then IS grounded", () => {
+    // Source: Showdown sim/pokemon.ts -- isGrounded: dig does NOT make the user airborne
+    // Source: Bulbapedia "Dig" -- "The user burrows underground" (still on the ground)
+    // Bug #664: Only airborne semi-invulnerable states (Fly, Bounce, Shadow Force, Phantom Force)
+    // should unground; Dig/Dive stay grounded.
+    const volatiles = new Map([["dig", { turnsLeft: 1 }]]);
+    const pokemon = makeActivePokemon({ types: ["normal"], volatiles });
+    expect(isGen6Grounded(pokemon, true)).toBe(true);
+  });
+
+  it("given a Pokemon using Shadow Force (semi-invulnerable airborne), when checking grounding, then is NOT grounded", () => {
+    // Source: Showdown sim/pokemon.ts -- isGrounded: shadow-force makes user semi-invulnerable and airborne
+    // Source: Bulbapedia "Shadow Force" -- Giratina vanishes and strikes next turn
+    const volatiles = new Map([["shadow-force", { turnsLeft: 1 }]]);
+    const pokemon = makeActivePokemon({ types: ["ghost"], volatiles });
+    expect(isGen6Grounded(pokemon, false)).toBe(false);
+  });
+
+  it("given a Pokemon using Phantom Force (semi-invulnerable airborne), when checking grounding, then is NOT grounded", () => {
+    // Source: Showdown sim/pokemon.ts -- isGrounded: phantom-force is airborne semi-invulnerable
+    // Source: Bulbapedia "Phantom Force" -- user vanishes on first turn
+    const volatiles = new Map([["phantom-force", { turnsLeft: 1 }]]);
+    const pokemon = makeActivePokemon({ types: ["ghost"], volatiles });
+    expect(isGen6Grounded(pokemon, false)).toBe(false);
+  });
+
+  it("given a Pokemon using Fly under Gravity, when checking grounding, then IS grounded (Gravity overrides)", () => {
+    // Source: Showdown sim/pokemon.ts -- Gravity overrides all airborne states
+    // Source: Bulbapedia "Gravity" -- "All Pokemon are grounded"
+    const volatiles = new Map([["fly", { turnsLeft: 1 }]]);
+    const pokemon = makeActivePokemon({ types: ["normal"], volatiles });
+    expect(isGen6Grounded(pokemon, true)).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

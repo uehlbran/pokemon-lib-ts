@@ -657,7 +657,11 @@ describe("handleGen6SwitchAbility — passive-immunity", () => {
     const ctx = makeCtx({
       ability: "sweet-veil",
       trigger: "passive-immunity",
-      move: makeMove("normal", { id: "spore", category: "status" }),
+      move: makeMove("normal", {
+        id: "spore",
+        category: "status",
+        effect: { type: "status-guaranteed", status: "sleep" },
+      }),
     });
     const result = handleGen6SwitchAbility("passive-immunity", ctx);
     expect(result.activated).toBe(true);
