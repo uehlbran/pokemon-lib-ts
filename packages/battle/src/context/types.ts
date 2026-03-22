@@ -322,6 +322,19 @@ export interface MoveEffectResult {
    * Source: pokered multi-hit distribution — 37.5/37.5/12.5/12.5% for 2/3/4/5 hits.
    */
   readonly multiHitCount?: number | null;
+  /**
+   * Schedule a Wish on the attacker's side. At the end of the next turn, the
+   * active Pokemon in that slot is healed by `healAmount` HP.
+   *
+   * `turnsLeft` is the countdown duration; Gen 3+ Wish uses 2 (fires at end of the
+   * next turn). Handlers must set this explicitly so the engine does not hardcode
+   * the duration — this allows future gens to vary Wish timing if needed.
+   *
+   * Source: Showdown data/moves.ts -- wish: { condition: { duration: 2, onResidual: heals floor(hp/2) } }
+   * Source: Bulbapedia -- "At the end of the next turn, the Pokemon in the slot
+   *   will be restored by half the maximum HP of the Pokemon that used Wish"
+   */
+  readonly wishSet?: { healAmount: number; turnsLeft: number } | null;
 }
 
 /**

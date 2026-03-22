@@ -83,6 +83,13 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   private readonly dataManager = createGen2DataManager();
 
+  /**
+   * Internal flag set by calculateDamage when Present's heal case is rolled.
+   * Read and cleared by executeMoveEffect's Present handler.
+   * This avoids polluting DamageResult or MoveEffectContext with gen-specific state.
+   */
+  private _presentHealPending = false;
+
   // --- Type System ---
 
   getTypeChart(): TypeChart {
@@ -103,7 +110,14 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   calculateDamage(context: DamageContext): DamageResult {
     const attackerSpecies = this.dataManager.getSpecies(context.attacker.pokemon.speciesId);
-    return calculateGen2Damage(context, GEN2_TYPE_CHART, attackerSpecies);
+    const result = calculateGen2Damage(context, GEN2_TYPE_CHART, attackerSpecies);
+    // Track Present heal case: calculateGen2Damage returns damage=0, effectiveness=1
+    // for the heal roll (vs. damage=0, effectiveness=0 for type immunity).
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm PresentEffect
+    if (context.move.id === "present" && result.damage === 0 && result.effectiveness === 1) {
+      this._presentHealPending = true;
+    }
+    return result;
   }
 
   // --- Critical Hits ---
@@ -396,9 +410,11 @@ export class Gen2Ruleset implements GenerationRuleset {
       move.id === "rollout" ||
       move.id === "fury-cutter" ||
       move.id === "snore" ||
-      move.id === "triple-kick"
+      move.id === "triple-kick" ||
+      move.id === "present"
     ) {
-      handleCustomEffect(move, result, context);
+      handleCustomEffect(move, result, context, this._presentHealPending);
+      this._presentHealPending = false;
       return result;
     }
 

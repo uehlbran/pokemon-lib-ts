@@ -87,6 +87,7 @@ type MutableResult = {
     volatileStatus: VolatileStatus;
   } | null;
   itemConsumed?: boolean;
+  wishSet?: { healAmount: number; turnsLeft: number } | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -789,8 +790,14 @@ function handleCustomEffect(
     }
 
     case "wish": {
-      // Set Wish to heal next turn — engine handles Wish tracking via side state
-      // Source: Showdown Gen 4 — Wish heals at end of next turn
+      // Schedule Wish heal — at the end of the next turn, heal active Pokemon
+      // by floor(wisher's max HP / 2).
+      // Source: Showdown data/moves.ts -- wish condition: { duration: 2, onResidual: heals floor(hp/2) }
+      // Source: Bulbapedia -- "At the end of the next turn, the Pokemon in the slot
+      //   will be restored by half the maximum HP of the Pokemon that used Wish"
+      const wisherMaxHp =
+        context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
+      result.wishSet = { healAmount: Math.floor(wisherMaxHp / 2), turnsLeft: 2 };
       result.messages.push(`${attackerName} made a wish!`);
       break;
     }
@@ -1021,8 +1028,14 @@ function handleNullEffectMoves(
     }
 
     case "wish": {
-      // Set Wish to heal next turn — engine handles Wish tracking
-      // Source: Showdown Gen 4 — Wish heals at end of next turn
+      // Schedule Wish heal — at the end of the next turn, heal active Pokemon
+      // by floor(wisher's max HP / 2).
+      // Source: Showdown data/moves.ts -- wish condition: { duration: 2, onResidual: heals floor(hp/2) }
+      // Source: Bulbapedia -- "At the end of the next turn, the Pokemon in the slot
+      //   will be restored by half the maximum HP of the Pokemon that used Wish"
+      const wisherMaxHp2 =
+        context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
+      result.wishSet = { healAmount: Math.floor(wisherMaxHp2 / 2), turnsLeft: 2 };
       result.messages.push(`${attackerName} made a wish!`);
       break;
     }
