@@ -726,20 +726,44 @@ function handleCustomEffect(
     }
 
     case "pain-split": {
-      // Set both sides to the average HP, capped at maxHp.
-      // Directly mutates currentHp for both Pokemon — consistent with Knock Off's
-      // direct mutation pattern (no engine extension needed).
+      // Pain Split: set both sides to the average HP, capped at each Pokemon's maxHp.
+      // Uses event-stream-compatible result fields wherever possible (#311 fix).
+      //
       // Source: Showdown Gen 4 — Pain Split sets both to floor((a + b) / 2)
       // Source: Bulbapedia — "each have their HP set to the average of the two"
-      const average = Math.floor((attacker.pokemon.currentHp + defender.pokemon.currentHp) / 2);
-      attacker.pokemon.currentHp = Math.min(
-        average,
-        attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp,
-      );
-      defender.pokemon.currentHp = Math.min(
-        average,
-        defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp,
-      );
+      const attackerHp = attacker.pokemon.currentHp;
+      const defenderHp = defender.pokemon.currentHp;
+      const attackerMaxHp = attacker.pokemon.calculatedStats?.hp ?? attackerHp;
+      const defenderMaxHp = defender.pokemon.calculatedStats?.hp ?? defenderHp;
+      const average = Math.floor((attackerHp + defenderHp) / 2);
+      const newAttackerHp = Math.min(average, attackerMaxHp);
+      const newDefenderHp = Math.min(average, defenderMaxHp);
+
+      // Attacker HP change: use healAmount (gain) or recoilDamage (loss)
+      const attackerDelta = newAttackerHp - attackerHp;
+      if (attackerDelta > 0) {
+        result.healAmount = attackerDelta;
+      } else if (attackerDelta < 0) {
+        result.recoilDamage = -attackerDelta;
+      }
+
+      // Defender HP change: use customDamage (loss) or direct mutation (gain).
+      // MoveEffectResult has no "defender heal" field, so defender healing must be
+      // done via direct mutation. This is a known limitation — see #311 comment.
+      const defenderDelta = newDefenderHp - defenderHp;
+      if (defenderDelta < 0) {
+        result.customDamage = {
+          target: "defender",
+          amount: -defenderDelta,
+          source: "pain-split",
+        };
+      } else if (defenderDelta > 0) {
+        // FIXME: Direct mutation for defender healing — MoveEffectResult lacks a
+        // defenderHealAmount field. The engine emits no heal event for the defender.
+        // A follow-up to add defender healing to MoveEffectResult would fix this.
+        defender.pokemon.currentHp = newDefenderHp;
+      }
+
       result.messages.push("The battlers shared their pain!");
       break;
     }

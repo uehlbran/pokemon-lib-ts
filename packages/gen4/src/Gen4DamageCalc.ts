@@ -555,6 +555,9 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
   const weather = context.state.weather?.type ?? null;
+  // Track base-power-phase item multiplier for breakdown.itemMultiplier (#306 fix).
+  // Updated wherever a held item modifies base power (Muscle Band, Wise Glasses, Orbs, Light Ball).
+  let basePowerItemMultiplier = 1;
 
   // SolarBeam half power in rain/sand/hail (NOT sun or harsh-sun)
   // In sun/harsh-sun, SolarBeam skips the charge turn and fires at full 120 base power.
@@ -593,9 +596,11 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const plateItemType = PLATE_ITEMS[attacker.pokemon.heldItem ?? ""];
   if (!attackerHasKlutz && typeBoostItemType === effectiveMoveType) {
     power = Math.floor((power * 4915) / 4096);
+    basePowerItemMultiplier = 4915 / 4096; // 1.2x
   }
   if (!attackerHasKlutz && plateItemType === effectiveMoveType) {
     power = Math.floor((power * 4915) / 4096);
+    basePowerItemMultiplier = 4915 / 4096; // 1.2x
   }
 
   // 1c. Muscle Band (physical) / Wise Glasses (special): ~1.1x base power.
@@ -609,6 +614,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     move.category === "physical"
   ) {
     power = Math.floor((power * 4505) / 4096);
+    basePowerItemMultiplier = 4505 / 4096; // ~1.1x
   }
   if (
     !attackerHasKlutz &&
@@ -616,6 +622,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     move.category === "special"
   ) {
     power = Math.floor((power * 4505) / 4096);
+    basePowerItemMultiplier = 4505 / 4096; // ~1.1x
   }
 
   // Mold Breaker: attacker's ability bypasses defender's defensive abilities
@@ -718,6 +725,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
   ) {
     power = Math.floor((power * 4915) / 4096);
+    basePowerItemMultiplier = 4915 / 4096; // 1.2x in Gen 4 fraction form
   }
   if (
     !attackerHasKlutzPower &&
@@ -726,6 +734,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     (effectiveMoveType === "water" || effectiveMoveType === "dragon")
   ) {
     power = Math.floor((power * 4915) / 4096);
+    basePowerItemMultiplier = 4915 / 4096; // 1.2x in Gen 4 fraction form
   }
   // Griseous Orb: 1.2x base power for Giratina (487) on Ghost/Dragon moves
   // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
@@ -738,6 +747,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
   ) {
     power = Math.floor((power * 4915) / 4096);
+    basePowerItemMultiplier = 4915 / 4096; // 1.2x in Gen 4 fraction form
   }
   // Light Ball: 2x base power for Pikachu (speciesId 25) on ALL moves
   // In Gen 4, Light Ball doubles base power (onBasePower), not the attack stat.
@@ -749,6 +759,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     attackerSpeciesIdPower === 25 // Pikachu
   ) {
     power = power * 2;
+    basePowerItemMultiplier = 2;
   }
 
   // 4. Defender ability type immunities
@@ -916,7 +927,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // --- Post-formula modifiers ---
 
   // Track item multiplier for breakdown (used across Phase 2 and final modifier sections)
-  let itemMultiplier = 1;
+  // Start from basePowerItemMultiplier to include Orb/Light Ball boosts applied earlier (#306 fix)
+  let itemMultiplier = basePowerItemMultiplier;
 
   // 12. Critical hit multiplier
   // Gen 4: 2.0x normally, 3.0x with Sniper (NEW ability in Gen 4)
@@ -1152,8 +1164,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Metronome item: moved to Phase 2 (after crit, before random/STAB/types).
   // See step 12b above.
 
-  // Type-boost items and Plates now modify base power (not attack stat),
-  // so they're already baked into baseDamage. No separate itemMultiplier needed for them.
+  // Type-boost items, Plates, Orbs, and Light Ball modify base power (not the damage formula
+  // directly). Their contribution is tracked via basePowerItemMultiplier for breakdown (#306 fix).
 
   // 21. Minimum 1 damage (unless type immune, which returns 0 above)
   // Source: Showdown sim/battle.ts — minimum 1 damage
