@@ -5,6 +5,8 @@ import type {
   DamageContext,
   DamageResult,
   ExpContext,
+  ItemContext,
+  ItemResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
@@ -18,6 +20,7 @@ import type {
 import { createGen9DataManager } from "./data/index.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
 import { calculateGen9Damage } from "./Gen9DamageCalc.js";
+import { applyGen9HeldItem } from "./Gen9Items.js";
 import { Gen9Terastallization } from "./Gen9Terastallization.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 
@@ -281,6 +284,27 @@ export class Gen9Ruleset extends BaseRuleset {
     }
 
     return Math.max(1, exp);
+  }
+
+  // --- Held Items ---
+
+  /**
+   * Gen 9 held item handler.
+   *
+   * Delegates to applyGen9HeldItem which handles all item triggers:
+   * before-move, end-of-turn, on-damage-taken, on-contact, on-hit.
+   *
+   * Gen 9 changes from Gen 8:
+   *   - No Z-Crystals or Mega Stones (already removed in Gen 8)
+   *   - No Dynamax suppression of Choice lock (Dynamax removed)
+   *   - Booster Energy (new): Protosynthesis/Quark Drive trigger item
+   *   - Covert Cloak (new): blocks secondary effects
+   *   - Fairy Feather (new): 1.2x Fairy-type boost
+   *
+   * Source: Showdown data/items.ts -- Gen 9 item handlers
+   */
+  override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
+    return applyGen9HeldItem(trigger, context);
   }
 
   // --- Damage Calculation ---
