@@ -229,6 +229,7 @@ describe("Z-Crystal Identification", () => {
     });
 
     it("given a non-Z-Crystal item, when getting type, then returns null", () => {
+      // Source: Showdown data/items.ts -- non-Z items have no zMoveType property
       expect(getZCrystalType("leftovers")).toBeNull();
     });
   });
