@@ -189,7 +189,9 @@ describe("Gen 2 Triple Kick perHitDamage", () => {
     });
 
     // Assert
-    expect(result.perHitDamage).toBeDefined();
+    // Source: Bulbapedia — Triple Kick has 3 hits; hit 1 uses normal engine damage,
+    // so perHitDamage should contain exactly 2 entries (for hits 2 and 3).
+    expect(Array.isArray(result.perHitDamage)).toBe(true);
     expect(result.perHitDamage!.length).toBe(2);
   });
 
@@ -396,11 +398,13 @@ describe("Gen 2 Beat Up perHitDamage", () => {
     expect(result.perHitDamage).toBeDefined();
     expect(result.perHitDamage!.length).toBe(2);
 
-    // Both should be positive integers in the expected range
-    // Source: Beat Up formula derivation above — damage range [5, 6] for both
+    // Both should be integers in the formula-derived range [5, 6].
+    // Source: Beat Up formula derivation above — Charmander (BaseAtk=52) and
+    // Squirtle (BaseAtk=48) both produce base damage 6 before random factor;
+    // random factor (217/255 to 255/255) gives floor(6*217/255)=5 to floor(6*255/255)=6.
     for (const dmg of result.perHitDamage!) {
-      expect(dmg).toBeGreaterThanOrEqual(1);
-      expect(dmg).toBeLessThanOrEqual(10); // Conservative upper bound
+      expect(dmg).toBeGreaterThanOrEqual(5);
+      expect(dmg).toBeLessThanOrEqual(6);
     }
   });
 
