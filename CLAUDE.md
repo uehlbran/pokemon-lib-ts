@@ -219,10 +219,11 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 
 ## Implementation Phases
 
-- **Phase 1**: Core + Battle + Gen 1 (simplest gen — no abilities, no held items, 151 Pokemon, 165 moves, 15-type chart). Ship 0.1.0.
-- **Phase 2**: Gen 2 (second simplest — no abilities, adds held items, weather, Dark/Steel types, Special split). Ship 0.2.0.
-- **Phase 3**: Gen 9 (most complex — proves architecture scales).
-- **Phase 4+**: Remaining gens, community-driven.
+- **Phase 1** (DONE): Core + Battle + Gen 1 (simplest gen — no abilities, no held items, 151 Pokemon, 165 moves, 15-type chart). Shipped 0.1.0.
+- **Phase 2** (DONE): Gen 2 (second simplest — no abilities, adds held items, weather, Dark/Steel types, Special split). Shipped 0.2.0.
+- **Phase 3** (DONE): Gen 3–6 (sequential — each extends BaseRuleset; abilities system, items system, weather, terrain, Mega Evolution).
+- **Phase 4** (IN PROGRESS): Gen 7 (Z-Moves, Alolan Forms, Tapu terrain abilities, Ultra Burst).
+- **Phase 5+**: Gen 8–9, community-driven.
 
 ## Package Versioning
 
