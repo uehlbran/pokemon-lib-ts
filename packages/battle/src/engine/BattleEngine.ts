@@ -1206,15 +1206,40 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       // Held item: on-damage-taken trigger for defender
+      // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks (Absorb Bulb, Cell Battery, etc.)
       if (this.ruleset.hasHeldItems() && damage > 0) {
         const defItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
           pokemon: defender,
           state: this.state,
           rng: this.state.rng,
           damage,
+          move: effectiveMoveData,
         });
         if (defItemResult.activated) {
-          this.processItemResult(defItemResult, defender, defenderSide as 0 | 1);
+          this.processItemResult(defItemResult, defender, actor, defenderSide as 0 | 1);
+        }
+      }
+
+      // Held item: on-contact trigger for defender (Rocky Helmet, etc.)
+      // Source: Showdown sim/battle-actions.ts — onDamagingHit contact item hooks
+      if (
+        this.ruleset.hasHeldItems() &&
+        damage > 0 &&
+        effectiveMoveData.flags.contact &&
+        !hitSubstitute
+      ) {
+        if (defender.pokemon.currentHp > 0) {
+          const contactItemResult = this.ruleset.applyHeldItem("on-contact", {
+            pokemon: defender,
+            opponent: actor,
+            state: this.state,
+            rng: this.state.rng,
+            damage,
+            move: effectiveMoveData,
+          });
+          if (contactItemResult.activated) {
+            this.processItemResult(contactItemResult, defender, actor, defenderSide as 0 | 1);
+          }
         }
       }
 
@@ -3973,8 +3998,22 @@ export class BattleEngine implements BattleEventEmitter {
   private processItemResult(
     result: import("../context").ItemResult,
     pokemon: ActivePokemon,
-    side: 0 | 1,
+    opponentOrSide: ActivePokemon | (0 | 1),
+    sideParam?: 0 | 1,
   ): void {
+    // Support two call signatures:
+    //   processItemResult(result, pokemon, side)             — no opponent needed
+    //   processItemResult(result, pokemon, opponent, side)   — opponent available for targeted effects
+    let side: 0 | 1;
+    let opponent: ActivePokemon | null;
+    if (typeof opponentOrSide === "number") {
+      side = opponentOrSide as 0 | 1;
+      opponent = null;
+    } else {
+      side = sideParam as 0 | 1;
+      opponent = opponentOrSide;
+    }
+
     for (const effect of result.effects) {
       switch (effect.type) {
         case "heal": {
@@ -4018,9 +4057,9 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "flinch": {
-          const opponent = this.getOpponentActive(side);
-          if (opponent) {
-            opponent.volatileStatuses.set("flinch", { turnsLeft: 1 });
+          const flinchTarget = opponent ?? this.getOpponentActive(side);
+          if (flinchTarget) {
+            flinchTarget.volatileStatuses.set("flinch", { turnsLeft: 1 });
           }
           break;
         }
@@ -4048,21 +4087,77 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "self-damage": {
-          const amount = effect.value as number;
-          const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
-          pokemon.pokemon.currentHp = Math.max(0, pokemon.pokemon.currentHp - amount);
+        case "inflict-status": {
+          // Typed variant: status field is a PrimaryStatus (Toxic Orb, Flame Orb)
+          // Source: Showdown data/items.ts -- Toxic Orb / Flame Orb onResidual
+          if (!pokemon.pokemon.status) {
+            this.applyPrimaryStatus(pokemon, effect.status, side);
+          }
+          break;
+        }
+        case "chip-damage": {
+          // Typed variant: chip damage with explicit target (Life Orb, Black Sludge, Sticky Barb, Rocky Helmet, Jaboca/Rowap Berry)
+          // Source: Showdown data/items.ts -- various item onResidual / onDamagingHit
+          const chipAmount = effect.value;
+          const damagedPokemon = effect.target === "opponent" && opponent ? opponent : pokemon;
+          const damagedSide: 0 | 1 =
+            effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+          const maxHpChip =
+            damagedPokemon.pokemon.calculatedStats?.hp ?? damagedPokemon.pokemon.currentHp;
+          damagedPokemon.pokemon.currentHp = Math.max(
+            0,
+            damagedPokemon.pokemon.currentHp - chipAmount,
+          );
           this.emit({
             type: "damage",
-            side,
-            pokemon: getPokemonName(pokemon),
+            side: damagedSide,
+            pokemon: getPokemonName(damagedPokemon),
+            amount: chipAmount,
+            currentHp: damagedPokemon.pokemon.currentHp,
+            maxHp: maxHpChip,
+            source: "held-item",
+          });
+          break;
+        }
+        case "stat-boost": {
+          // +1 stage boost to the specified stat for the holder
+          // Source: Showdown -- stat pinch berries, Absorb Bulb, Cell Battery onEat/onDamagingHit
+          const stat = effect.value as string;
+          const stages = pokemon.statStages as Record<string, number>;
+          if (stat in stages) {
+            stages[stat] = Math.min(6, (stages[stat] ?? 0) + 1);
+          }
+          break;
+        }
+        case "self-damage": {
+          const amount = effect.value as number;
+          // Respect effect.target: 'opponent' means damage the attacker (e.g., Rocky Helmet, Jaboca Berry)
+          // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks damage the source
+          const damagedPokemon = effect.target === "opponent" && opponent ? opponent : pokemon;
+          const damagedSide: 0 | 1 =
+            effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+          const maxHp =
+            damagedPokemon.pokemon.calculatedStats?.hp ?? damagedPokemon.pokemon.currentHp;
+          damagedPokemon.pokemon.currentHp = Math.max(0, damagedPokemon.pokemon.currentHp - amount);
+          this.emit({
+            type: "damage",
+            side: damagedSide,
+            pokemon: getPokemonName(damagedPokemon),
             amount,
-            currentHp: pokemon.pokemon.currentHp,
+            currentHp: damagedPokemon.pokemon.currentHp,
             maxHp,
             source: "held-item",
           });
           break;
         }
+        case "none":
+        case "damage-boost":
+        case "speed-boost":
+        case "status-prevention":
+          // These effect types carry no immediate engine action here.
+          // 'none' is used for force-switch and other engine-deferred behaviors.
+          // 'damage-boost', 'speed-boost', 'status-prevention' are applied inline in item handlers.
+          break;
       }
     }
     for (const msg of result.messages) {

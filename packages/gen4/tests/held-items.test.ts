@@ -184,7 +184,7 @@ describe("applyGen4HeldItem end-of-turn — Black Sludge (NEW in Gen 4)", () => 
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "none", value: -20 });
+    expect(result.effects[0]).toMatchObject({ type: "chip-damage", value: 20 });
     expect(result.messages[0]).toContain("Black Sludge");
   });
 
@@ -209,7 +209,7 @@ describe("applyGen4HeldItem end-of-turn — Toxic Orb (NEW in Gen 4)", () => {
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ value: "badly-poisoned" });
+    expect(result.effects[0]).toMatchObject({ type: "inflict-status", status: "badly-poisoned" });
     expect(result.messages[0]).toContain("Toxic Orb");
   });
 
@@ -234,7 +234,7 @@ describe("applyGen4HeldItem end-of-turn — Flame Orb (NEW in Gen 4)", () => {
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ value: "burn" });
+    expect(result.effects[0]).toMatchObject({ type: "inflict-status", status: "burn" });
     expect(result.messages[0]).toContain("Flame Orb");
   });
 
@@ -402,7 +402,7 @@ describe("applyGen4HeldItem on-hit — Life Orb (NEW in Gen 4)", () => {
     const result = applyGen4HeldItem("on-hit", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "none", value: -16 });
+    expect(result.effects[0]).toMatchObject({ type: "chip-damage", value: 16 });
     expect(result.messages[0]).toContain("Life Orb");
   });
 
@@ -412,7 +412,7 @@ describe("applyGen4HeldItem on-hit — Life Orb (NEW in Gen 4)", () => {
     const ctx = makeContext({ heldItem: "life-orb", maxHp: 200, damage: 100 });
     const result = applyGen4HeldItem("on-hit", ctx);
 
-    expect(result.effects[0]).toMatchObject({ type: "none", value: -20 });
+    expect(result.effects[0]).toMatchObject({ type: "chip-damage", value: 20 });
   });
 
   it("given Life Orb and 0 damage dealt, when on-hit triggers, then does not activate (status moves)", () => {
@@ -503,7 +503,7 @@ describe("applyGen4HeldItem end-of-turn — Chesto Berry", () => {
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "status-cure", value: "sleep" });
+    expect(result.effects[0]).toMatchObject({ type: "status-cure" });
     expect(result.effects[1]).toMatchObject({ type: "consume", value: "chesto-berry" });
   });
 
@@ -522,7 +522,7 @@ describe("applyGen4HeldItem end-of-turn — Rawst Berry", () => {
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "status-cure", value: "burn" });
+    expect(result.effects[0]).toMatchObject({ type: "status-cure" });
     expect(result.effects[1]).toMatchObject({ type: "consume", value: "rawst-berry" });
   });
 });
@@ -534,7 +534,7 @@ describe("applyGen4HeldItem end-of-turn — Aspear Berry", () => {
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "status-cure", value: "freeze" });
+    expect(result.effects[0]).toMatchObject({ type: "status-cure" });
     expect(result.effects[1]).toMatchObject({ type: "consume", value: "aspear-berry" });
   });
 });
@@ -630,7 +630,7 @@ describe("applyGen4HeldItem end-of-turn — status-curing berries", () => {
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "status-cure", value: "paralysis" });
+    expect(result.effects[0]).toMatchObject({ type: "status-cure" });
     expect(result.effects[1]).toMatchObject({ type: "consume", value: "cheri-berry" });
   });
 
@@ -640,7 +640,7 @@ describe("applyGen4HeldItem end-of-turn — status-curing berries", () => {
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "status-cure", value: "badly-poisoned" });
+    expect(result.effects[0]).toMatchObject({ type: "status-cure" });
   });
 
   it("given Lum Berry with both burn status and confusion, when end-of-turn triggers, then cures both and consumes", () => {
@@ -923,7 +923,7 @@ describe("applyGen4HeldItem end-of-turn — calculatedStats hp fallback", () => 
     const result = applyGen4HeldItem("on-hit", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "none", value: -16 });
+    expect(result.effects[0]).toMatchObject({ type: "chip-damage", value: 16 });
   });
 });
 

@@ -8,6 +8,8 @@ import type {
   DamageResult,
   EndOfTurnEffect,
   ExpContext,
+  ItemContext,
+  ItemResult,
   MoveEffectContext,
   MoveEffectResult,
   WeatherEffectResult,
@@ -23,6 +25,7 @@ import type {
 import { DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_DENOMINATORS } from "./Gen5CritCalc";
 import { calculateGen5Damage } from "./Gen5DamageCalc";
+import { applyGen5HeldItem } from "./Gen5Items";
 import { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
 import { applyGen5WeatherEffects } from "./Gen5Weather";
 
@@ -297,6 +300,22 @@ export class Gen5Ruleset extends BaseRuleset {
    */
   applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
     return applyGen5WeatherEffects(state);
+  }
+
+  // --- Held Items ---
+
+  /**
+   * Gen 5 held item effects.
+   * Delegates to applyGen5HeldItem for all held item triggers.
+   *
+   * Gen 5 introduces: Type Gems, Rocky Helmet, Air Balloon, Red Card,
+   * Eject Button, Absorb Bulb, Cell Battery, Ring Target, Binding Band,
+   * Jaboca/Rowap Berry, Unburden tracking, Embargo/Klutz suppression.
+   *
+   * Source: references/pokemon-showdown/data/items.ts (Gen 5 entries)
+   */
+  override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
+    return applyGen5HeldItem(trigger, context);
   }
 
   // --- Speed ---

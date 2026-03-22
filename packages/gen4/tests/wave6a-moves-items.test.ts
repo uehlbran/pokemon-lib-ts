@@ -587,7 +587,7 @@ describe("Sticky Barb", () => {
 
     expect(result.activated).toBe(true);
     // floor(200 / 8) = 25
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -25 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 25 }]);
     expect(result.messages).toContain("Holder was hurt by its Sticky Barb!");
   });
 
@@ -609,7 +609,7 @@ describe("Sticky Barb", () => {
     });
 
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "none", target: "self", value: -2 }]);
+    expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 2 }]);
   });
 });
 

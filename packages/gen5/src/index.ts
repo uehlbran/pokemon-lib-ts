@@ -10,7 +10,7 @@ export {
   GEN5_CRIT_RATES,
 } from "./Gen5CritCalc";
 export { calculateGen5Damage, pokeRound } from "./Gen5DamageCalc";
-export { applyGen5HeldItem } from "./Gen5Items";
+export { applyGen5HeldItem, GEM_TYPES, getPinchBerryThreshold } from "./Gen5Items";
 export { executeGen5MoveEffect } from "./Gen5MoveEffects";
 export { Gen5Ruleset } from "./Gen5Ruleset";
 export { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";

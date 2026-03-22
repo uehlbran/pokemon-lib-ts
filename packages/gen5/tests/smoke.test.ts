@@ -182,10 +182,28 @@ describe("Gen 5 stub functions", () => {
     expect(result).toEqual([]);
   });
 
-  it("given applyGen5HeldItem stub, when called, then returns empty array", () => {
-    // Source: Stub -- will be implemented in Wave 4
-    const result = applyGen5HeldItem();
-    expect(result).toEqual([]);
+  it("given applyGen5HeldItem with no held item, when called, then returns no activation", () => {
+    // Source: applyGen5HeldItem returns NO_ACTIVATION when pokemon has no item
+    const mockPokemon = {
+      pokemon: {
+        heldItem: null,
+        currentHp: 100,
+        calculatedStats: { hp: 100 },
+        nickname: null,
+        speciesId: 1,
+        status: null,
+      },
+      types: ["normal"],
+      ability: "none",
+      volatileStatuses: new Map(),
+    } as unknown as ActivePokemon;
+    const result = applyGen5HeldItem("end-of-turn", {
+      pokemon: mockPokemon,
+      state: {} as BattleState,
+      rng: { chance: () => false, nextInt: () => 0, next: () => 0 } as any,
+    });
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
   });
 
   it("given executeGen5MoveEffect stub, when called, then returns default MoveEffectResult", () => {
