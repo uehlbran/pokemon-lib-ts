@@ -10,7 +10,7 @@ import type {
   MoveAction,
   RunAction,
 } from "../events";
-import type { GenerationRuleset } from "../ruleset";
+import type { BattleGimmickType, GenerationRuleset } from "../ruleset";
 import { generations } from "../ruleset";
 import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";
 import {
@@ -177,6 +177,16 @@ export class BattleEngine implements BattleEventEmitter {
   start(): void {
     if (this.state.phase !== "battle-start") {
       throw new Error(`Cannot start battle in phase ${this.state.phase}`);
+    }
+
+    // Reset per-battle gimmick state so cached ruleset instances (e.g., via
+    // GenerationRegistry) start each battle fresh. Gen 7 uses internal Set<0|1>
+    // tracking for Z-Move and Mega Evolution — without this, usedBySide persists
+    // across battles and incorrectly blocks gimmick use.
+    // Source: Qodo review — gimmick state leaks across battles (PR #699)
+    const gimmickTypes: BattleGimmickType[] = ["mega", "zmove", "dynamax", "tera"];
+    for (const type of gimmickTypes) {
+      this.ruleset.getBattleGimmick(type)?.reset?.();
     }
 
     this.emit({

@@ -688,6 +688,13 @@ export interface BattleGimmick {
    * Returns the (possibly modified) move data.
    */
   modifyMove?(move: MoveData, pokemon: ActivePokemon): MoveData;
+  /**
+   * Resets per-battle state (e.g., clears usedBySide tracking) so the gimmick
+   * is ready for a new battle when the same ruleset instance is reused.
+   * Called by BattleEngine.start() before the battle begins.
+   * Optional — only needed for gimmicks that cache state internally.
+   */
+  reset?(): void;
 }
 
 /**
