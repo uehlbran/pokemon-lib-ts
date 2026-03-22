@@ -1351,17 +1351,11 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- EXP Gain ---
 
   calculateExpGain(context: ExpContext): number {
-    // Gen 1 has no language metadata — only the 1.5× same-language trade bonus applies.
-    // isInternationalTrade is always false here (Gen 1 cartridges cannot detect foreign language).
-    // Source: pret/pokered — no language field exists on Gen 1 box data.
     return calculateExpGainClassic(
       context.defeatedSpecies.baseExp,
       context.defeatedLevel,
       context.isTrainerBattle,
       context.participantCount,
-      false, // Gen 1: no Lucky Egg
-      context.isTradedPokemon ?? false,
-      false, // Gen 1: no international trade concept
     );
   }
 

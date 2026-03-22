@@ -683,18 +683,12 @@ export class Gen2Ruleset implements GenerationRuleset {
   // --- EXP Gain ---
 
   calculateExpGain(context: ExpContext): number {
-    // Gen 2 has no language metadata — only the 1.5× same-language trade bonus applies.
-    // International trading existed between Japanese and other versions but language was not
-    // tracked in the Pokemon data structure, so only the 1.5× bonus is modeled.
-    // Source: pret/pokecrystal — no language field exists on Gen 2 box data.
     return calculateExpGainClassic(
       context.defeatedSpecies.baseExp,
       context.defeatedLevel,
       context.isTrainerBattle,
       context.participantCount,
       context.hasLuckyEgg,
-      context.isTradedPokemon ?? false,
-      false, // Gen 2: no international trade concept
     );
   }
 
