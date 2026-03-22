@@ -280,9 +280,54 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Process when all pending switches are submitted
     if (this.pendingSwitches.size === this.sidesNeedingSwitch.size) {
-      for (const [switchSide, slot] of this.pendingSwitches) {
-        this.sendOut(this.state.sides[switchSide], slot);
+      const isDoubleSwitch = this.pendingSwitches.size > 1;
+
+      if (isDoubleSwitch) {
+        // Phase 1: Send out all replacement Pokemon without ability triggers.
+        // When both sides faint simultaneously, we must get both replacements on
+        // the field before firing switch-in abilities, so each ability correctly
+        // targets the opponent's new Pokemon (not the fainted one).
+        // Source: Showdown sim/battle.ts — simultaneous switches send out first, abilities second
+        for (const [switchSide, slot] of this.pendingSwitches) {
+          this.sendOut(this.state.sides[switchSide], slot, true);
+        }
+
+        // Phase 2: Fire switch-in abilities in speed order (faster first).
+        if (this.ruleset.hasAbilities()) {
+          const entries: Array<{ side: 0 | 1; pokemon: ActivePokemon }> = [];
+          for (const [switchSide] of this.pendingSwitches) {
+            const active = this.state.sides[switchSide].active[0];
+            if (active && active.pokemon.currentHp > 0) {
+              entries.push({ side: switchSide, pokemon: active });
+            }
+          }
+          // Sort by speed (faster goes first)
+          entries.sort((a, b) => {
+            const speedA = a.pokemon.pokemon.calculatedStats?.speed ?? 0;
+            const speedB = b.pokemon.pokemon.calculatedStats?.speed ?? 0;
+            return speedB - speedA;
+          });
+          for (const entry of entries) {
+            const opponent = this.getOpponentActive(entry.side);
+            if (opponent) {
+              const abilityResult = this.ruleset.applyAbility("on-switch-in", {
+                pokemon: entry.pokemon,
+                opponent,
+                state: this.state,
+                rng: this.state.rng,
+                trigger: "on-switch-in",
+              });
+              this.processAbilityResult(abilityResult, entry.pokemon, opponent, entry.side);
+            }
+          }
+        }
+      } else {
+        // Single switch: normal path (sendOut handles abilities internally)
+        for (const [switchSide, slot] of this.pendingSwitches) {
+          this.sendOut(this.state.sides[switchSide], slot);
+        }
       }
+
       this.pendingSwitches.clear();
       this.sidesNeedingSwitch.clear();
 
@@ -679,6 +724,10 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Delegate gen-specific switch-in hooks (e.g., Gen 5 sleep counter reset).
+    // Called after hazards but before abilities, so the Pokemon's state is up-to-date.
+    this.ruleset.onSwitchIn(active, this.state);
+
     // Apply on-switch-in abilities for the newly sent-out Pokemon
     // Source: pret/pokeemerald src/battle_util.c AbilityBattleEffects — switch-in abilities
     // must have their results processed
@@ -1035,6 +1084,8 @@ export class BattleEngine implements BattleEventEmitter {
             pokemon: getPokemonName(actor),
             move: moveData.id,
           });
+          // Delegate miss-related effects to the ruleset (explosion self-faint, etc.)
+          this.ruleset.onMoveMiss(actor, moveData, this.state);
           actor.lastMoveUsed = moveData.id;
           actor.movedThisTurn = true;
           return;
@@ -1487,6 +1538,8 @@ export class BattleEngine implements BattleEventEmitter {
           pokemon: getPokemonName(actor),
           move: moveId,
         });
+        // Delegate miss-related effects to the ruleset (explosion self-faint, etc.)
+        this.ruleset.onMoveMiss(actor, moveData, this.state);
         return;
       }
     }

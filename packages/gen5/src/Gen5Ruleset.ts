@@ -236,10 +236,8 @@ export class Gen5Ruleset extends BaseRuleset {
    * Source: references/pokemon-showdown/data/mods/gen5/conditions.ts --
    *   slp.onSwitchIn: "this.effectState.time = this.effectState.startTime"
    *
-   * NOTE: This method is NOT on the GenerationRuleset interface yet and is not called by
-   * BattleEngine. The sleep-counter-reset mechanic is unit-tested here but will only
-   * take effect in actual battles once onSwitchIn is added to GenerationRuleset and
-   * wired in the engine's switch handler. Tracked for Wave 9 engine integration.
+   * This method is called by BattleEngine.sendOut() after entry hazards are applied
+   * and before switch-in abilities fire.
    */
   onSwitchIn(pokemon: ActivePokemon, _state: BattleState): void {
     if (pokemon.pokemon.status === "sleep") {

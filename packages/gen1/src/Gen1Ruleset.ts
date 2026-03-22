@@ -1489,6 +1489,12 @@ export class Gen1Ruleset implements GenerationRuleset {
     }
   }
 
+  // --- Switch In ---
+
+  onSwitchIn(_pokemon: ActivePokemon, _state: BattleState): void {
+    // Gen 1: no switch-in effects needed beyond hazards/abilities (which Gen 1 doesn't have).
+  }
+
   // --- Switch Out ---
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {

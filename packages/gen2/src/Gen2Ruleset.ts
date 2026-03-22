@@ -663,6 +663,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return bound.turnsLeft > 0;
   }
 
+  // --- Switch In ---
+
+  onSwitchIn(_pokemon: ActivePokemon, _state: BattleState): void {
+    // Gen 2: no switch-in effects needed beyond hazards/items (handled by engine).
+  }
+
   // --- Switch Out ---
 
   onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
