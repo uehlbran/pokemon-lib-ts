@@ -323,6 +323,22 @@ export interface MoveEffectResult {
    */
   readonly multiHitCount?: number | null;
   /**
+   * Pre-computed damage values for each additional hit of a multi-hit move.
+   * When set, the engine uses `perHitDamage[i]` instead of repeating the first hit's
+   * damage for the i-th additional hit (0-indexed).
+   *
+   * Required for moves where damage varies per hit:
+   * - Triple Kick: power escalates 10 → 20 → 30 per hit
+   * - Beat Up (Gen 2): each hit uses a different party member's base Attack
+   *
+   * Length should equal `multiHitCount`. If shorter, remaining hits use first-hit damage.
+   * If not set or null, all hits use the first hit's damage (default behavior).
+   *
+   * Source: Bulbapedia — "Triple Kick: Power increases by 10 with each successive hit"
+   * Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
+   */
+  readonly perHitDamage?: readonly number[] | null;
+  /**
    * Schedule a Wish on the attacker's side. At the end of the next turn, the
    * active Pokemon in that slot is healed by `healAmount` HP.
    *
