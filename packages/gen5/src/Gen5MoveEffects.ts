@@ -55,7 +55,13 @@ export {
   isBlockedByWideGuard,
 } from "./Gen5MoveEffectsField";
 
-export { handleGen5StatusMove, isBerry } from "./Gen5MoveEffectsStatus";
+export {
+  GEN5_CANTSUPPRESS,
+  GEN5_FAIL_ROLE_PLAY,
+  GEN5_FAIL_SKILL_SWAP,
+  handleGen5StatusMove,
+  isBerry,
+} from "./Gen5MoveEffectsStatus";
 
 export { handleGen5PledgeMove, isPledgeMove } from "./Gen5MovePledges";
 
