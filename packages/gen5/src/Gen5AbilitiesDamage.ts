@@ -73,10 +73,8 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  *   if (move.secondaries) { delete move.secondaries; delete move.self; ... }
  * Source: Showdown data/moves.ts -- secondary vs self field placement
  *
- * Note on data model limitation: our `stat-change` with `target: "self"` cannot
- * distinguish Flame Charge (secondary.self → eligible) from Close Combat (self → not eligible).
- * Self-targeted stat-changes are conservatively excluded — incorrect only for Flame Charge.
- * See GitHub issue for data model fix tracking this.
+ * The `fromSecondary` field on StatChangeEffect distinguishes these: effects from
+ * secondary.self.boosts have `fromSecondary: true`, while primary self-effects do not.
  */
 export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
   if (!effect) return false;
@@ -87,14 +85,15 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
       return true;
 
     case "stat-change":
-      // Foe-targeted stat changes in Showdown's `secondary` field are eligible,
-      // regardless of chance value. This fixes guaranteed 100% foe-drops like:
-      //   - Acid Spray (SpDef -2, chance 100)
-      //   - Bulldoze (Speed -1, chance 100)
-      //   - Electroweb, Icy Wind, Mud Shot, Rock Tomb (Speed -1, chance 100)
-      // Self-targeted stat changes are excluded — see data model limitation above.
-      // Source: Showdown data/moves.ts — acidspray, bulldoze use `secondary` field
-      return effect.target === "foe" && effect.chance > 0;
+      // Foe-targeted stat changes are always eligible (Acid Spray, Bulldoze, etc.)
+      if (effect.target === "foe" && effect.chance > 0) return true;
+      // Self-targeted stat changes are eligible ONLY when they come from secondary.self
+      // (e.g., Flame Charge Speed boost). Primary self-effects (Close Combat Def/SpDef drop,
+      // Draco Meteor SpAtk drop) are NOT eligible.
+      // Source: Showdown data/abilities.ts -- sheerforce: delete move.secondaries; delete move.self
+      //   (move.self is only deleted when move.secondaries exists -- i.e., secondary.self)
+      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      return false;
 
     case "volatile-status":
       // Volatile-status secondaries include guaranteed (chance=100) effects:
@@ -466,25 +465,10 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
  * - Sturdy (Gen 5+): Blocks OHKO moves AND survives any hit from full HP at 1 HP
  *
  * For Sturdy, there are two distinct effects:
- * 1. OHKO move immunity: checked via move.effect.type === "ohko" — WORKS correctly
- *    (handled via "on-damage-calc" trigger before damage is applied)
- * 2. Focus Sash effect: at full HP, any damage that would KO is reduced to leave 1 HP
- *    — STUB: cannot be activated via "on-damage-taken" due to engine timing.
- *
- * Engine timing limitation for Effect 2:
- * BattleEngine applies damage to HP (setting currentHp = 0 on lethal hits) BEFORE
- * firing the "on-damage-taken" ability hook. The hook is also gated on `currentHp > 0`,
- * so it never fires when the hit is lethal. Even if it fired, `processAbilityResult`
- * does not handle `damage-reduction` effects post-hoc (by design — per the engine
- * architecture, damage reduction is applied inline in the damage calc pipeline).
- *
- * The correct fix requires one of:
- *   a) A new pre-damage engine hook ("on-lethal-damage") fired before HP subtraction
- *   b) An `AbilityEffect` type of `survive`/`set-hp` that the engine processes
- *      to override the HP result
- *   c) Inline handling in `calculateDamage` to cap damage at maxHp-1 when Sturdy
- *      is active and defender is at full HP
- * See GitHub issue tracking the engine pre-damage hook.
+ * 1. OHKO move immunity: checked via move.effect.type === "ohko" — handled here
+ *    (via "on-damage-calc" trigger before damage is applied)
+ * 2. Survive at 1 HP from full HP: handled by Gen5Ruleset.capLethalDamage()
+ *    via the engine's pre-damage hook (capLethalDamage fires before HP subtraction).
  *
  * Source: Showdown data/abilities.ts -- sturdy
  *   onTryHit: if move.ohko, return null (blocks OHKO)
@@ -496,8 +480,6 @@ export function handleGen5DamageImmunityAbility(ctx: AbilityContext): AbilityRes
 
   switch (abilityId) {
     case "sturdy": {
-      // Sturdy has two effects in Gen 5+:
-
       // Effect 1: Block OHKO moves entirely
       // Source: Showdown data/abilities.ts -- sturdy onTryHit
       if (ctx.move?.effect?.type === "ohko") {
@@ -509,17 +491,9 @@ export function handleGen5DamageImmunityAbility(ctx: AbilityContext): AbilityRes
         };
       }
 
-      // Effect 2: Survive at 1 HP from full HP (Focus Sash effect) — STUB
-      // Source: Showdown data/abilities.ts -- sturdy onDamage (priority -30)
-      //   if (target.hp === target.maxhp && damage >= target.hp && effect.effectType === 'Move')
-      //     return target.hp - 1
-      //
-      // ARCHITECTURAL LIMITATION: This handler cannot be correctly triggered via
-      // "on-damage-taken" because the engine applies damage (sets currentHp=0) BEFORE
-      // firing this hook, and gates the hook on `currentHp > 0`. Even if the hook fired,
-      // `processAbilityResult` intentionally does not handle `damage-reduction` post-hoc.
-      // Requires a pre-damage engine hook to implement. See class JSDoc above and the
-      // tracking GitHub issue for the engine pre-damage hook.
+      // Effect 2 (survive at 1 HP from full HP) is now handled by
+      // Gen5Ruleset.capLethalDamage() via the engine's pre-damage hook.
+      // See BattleEngine.ts — capLethalDamage fires before HP subtraction.
       return NO_ACTIVATION;
     }
 

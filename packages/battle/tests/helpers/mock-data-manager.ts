@@ -426,6 +426,78 @@ export function createMockDataManager(): DataManager {
     spriteKey: "ultra-ball",
   };
 
+  // foe-field targeting move for Pressure PP cost tests
+  // Source: Bulbapedia — "Stealth Rock sets an entry hazard on the opposing side"
+  const stealthRockMoveData: MoveData = {
+    id: "stealth-rock",
+    displayName: "Stealth Rock",
+    type: "rock",
+    category: "status",
+    power: null,
+    accuracy: null,
+    pp: 20,
+    priority: 0,
+    target: "foe-field",
+    flags: {
+      contact: false,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: false,
+      mirror: true,
+      snatch: false,
+      gravity: false,
+      defrost: false,
+      recharge: false,
+      charge: false,
+      bypassSubstitute: false,
+    },
+    effect: { type: "entry-hazard", hazardType: "stealth-rock", target: "opponent" },
+    description: "The user lays a trap of levitating stones around the opposing team.",
+    generation: 4,
+  };
+
+  // entire-field targeting move for Pressure PP cost tests
+  // Source: Bulbapedia — "Gravity intensifies gravity for five turns"
+  const gravityMoveData: MoveData = {
+    id: "gravity",
+    displayName: "Gravity",
+    type: "psychic",
+    category: "status",
+    power: null,
+    accuracy: null,
+    pp: 5,
+    priority: 0,
+    target: "entire-field",
+    flags: {
+      contact: false,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: false,
+      mirror: false,
+      snatch: false,
+      gravity: false,
+      defrost: false,
+      recharge: false,
+      charge: false,
+      bypassSubstitute: false,
+    },
+    effect: null,
+    description: "Gravity is intensified for five turns, grounding all Pokemon.",
+    generation: 4,
+  };
+
   dm.loadFromObjects({
     pokemon: [charizardSpecies, blastoiseSpecies, pikachuSpecies],
     moves: [
@@ -436,6 +508,8 @@ export function createMockDataManager(): DataManager {
       flyMoveData,
       flameWheelMoveData,
       swordsDanceMoveData,
+      stealthRockMoveData,
+      gravityMoveData,
     ],
     items: [pokeBallItem, ultraBallItem],
     typeChart: typeChart as unknown as TypeChart,
