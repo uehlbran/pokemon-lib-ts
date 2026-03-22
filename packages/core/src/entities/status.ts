@@ -71,4 +71,8 @@ export type VolatileStatus =
   | "illusion" // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)
   | "rollout" // Gen 2+ — tracks consecutive turn count for Rollout escalating power
   | "fury-cutter" // Gen 2+ — tracks consecutive use count for Fury Cutter escalating power
-  | "harvest-berry"; // Tracks the last consumed berry for Harvest ability (Gen 5+); data: { berryId: string }
+  | "harvest-berry" // Tracks the last consumed berry for Harvest ability (Gen 5+); data: { berryId: string }
+  | "kings-shield" // King's Shield — protect variant, blocks non-Status moves with protect flag; -1 Atk on contact (Gen 6+)
+  | "spiky-shield" // Spiky Shield — protect variant, blocks all moves with protect flag; 1/8 HP chip on contact (Gen 6+)
+  | "mat-block" // Mat Block — team-side protect, blocks damaging moves; first turn only (Gen 6+)
+  | "crafty-shield"; // Crafty Shield — team-side protect, blocks status moves targeting the side (Gen 6+)

@@ -14,6 +14,8 @@ import type {
   ExpContext,
   ItemContext,
   ItemResult,
+  MoveEffectContext,
+  MoveEffectResult,
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
@@ -35,6 +37,7 @@ import { calculateGen6Damage } from "./Gen6DamageCalc.js";
 import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
 import { applyGen6HeldItem } from "./Gen6Items.js";
 import { Gen6MegaEvolution } from "./Gen6MegaEvolution.js";
+import { executeGen6MoveEffect, isGen6GrassPowderBlocked } from "./Gen6MoveEffects.js";
 import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
 import { applyGen6WeatherEffects } from "./Gen6Weather.js";
@@ -171,6 +174,50 @@ export class Gen6Ruleset extends BaseRuleset {
       };
     }
     return { immune: false };
+  }
+
+  // --- Move Effects ---
+
+  /**
+   * Gen 6 move effect dispatch.
+   *
+   * 1. Powder immunity: Grass-type Pokemon are immune to all powder/spore moves
+   *    (moves with `flags.powder === true`). This was introduced in Gen 6.
+   * 2. Gen 6-specific move effects (protect variants, two-turn moves, drain moves).
+   * 3. Falls through to BaseRuleset for moves with no Gen 6-specific handling.
+   *
+   * Source: Showdown data/moves.ts -- powder moves have onTryHit checking target.hasType('Grass')
+   * Source: Bulbapedia -- "As of Generation VI, Grass-type Pokemon are immune to
+   *   powder and spore moves."
+   * Source: specs/battle/07-gen6.md Section 12
+   */
+  override executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    // Gen 6+: Grass types are immune to powder/spore moves
+    // Source: Showdown data/moves.ts -- every powder move checks target.hasType('Grass')
+    if (isGen6GrassPowderBlocked(context.move, context.defender.types)) {
+      const defenderName =
+        context.defender.pokemon.nickname ?? String(context.defender.pokemon.speciesId);
+      return {
+        statusInflicted: null,
+        volatileInflicted: null,
+        statChanges: [],
+        recoilDamage: 0,
+        healAmount: 0,
+        switchOut: false,
+        messages: [`It doesn't affect ${defenderName}...`],
+      };
+    }
+
+    // Gen 6-specific move effects (protect variants, two-turn, drain)
+    const result = executeGen6MoveEffect(
+      context,
+      context.state.rng,
+      this.rollProtectSuccess.bind(this),
+    );
+    if (result !== null) return result;
+
+    // Fall through to BaseRuleset for unhandled moves
+    return super.executeMoveEffect(context);
   }
 
   // --- Ability System ---
