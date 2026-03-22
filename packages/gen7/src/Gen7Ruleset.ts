@@ -35,6 +35,7 @@ import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
 import { calculateGen7Damage } from "./Gen7DamageCalc.js";
 import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
+import { applyGen7HeldItem } from "./Gen7Items.js";
 import { executeGen7MoveEffect, isGen7GrassPowderBlocked } from "./Gen7MoveEffects.js";
 import {
   applyGen7TerrainEffects,
@@ -757,13 +758,15 @@ export class Gen7Ruleset extends BaseRuleset {
   // --- Held Items ---
 
   /**
-   * Gen 7 held item application stub.
-   * Will be fully implemented in Wave 6 (Held Items).
+   * Gen 7 held item application.
+   *
+   * Delegates to applyGen7HeldItem which handles all Gen 6 items carried forward
+   * plus Gen 7 additions: Z-Crystal identification, Terrain Extender, Soul Dew change.
    *
    * Source: Showdown data/items.ts -- Gen 7 item handlers
    */
-  override applyHeldItem(_trigger: string, _context: ItemContext): ItemResult {
-    return { activated: false, effects: [], messages: [] };
+  override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
+    return applyGen7HeldItem(trigger, context);
   }
 
   // --- Battle Gimmick (Z-Moves + Mega Evolution) ---
