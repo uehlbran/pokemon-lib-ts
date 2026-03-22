@@ -1,6 +1,31 @@
 // @pokemon-lib-ts/gen7 -- Gen7Ruleset + complete Gen 7 data
 
 export { createGen7DataManager } from "./data/index.js";
+export {
+  getAteAbilityOverride,
+  getFurCoatMultiplier,
+  getMegaLauncherMultiplier,
+  getMultiscaleMultiplier,
+  getSheerForceMultiplier,
+  getStrongJawMultiplier,
+  getSturdyDamageCap,
+  getToughClawsMultiplier,
+  handleGen7DamageCalcAbility,
+  handleGen7DamageImmunityAbility,
+  hasSheerForceEligibleEffect,
+  isParentalBondEligible,
+  isSheerForceEligibleMove,
+  PARENTAL_BOND_SECOND_HIT_MULTIPLIER,
+  sheerForceSuppressesLifeOrb,
+  sturdyBlocksOHKO,
+} from "./Gen7AbilitiesDamage.js";
+export {
+  getTriagePriorityBonus,
+  handleGen7StatAbility,
+  isGaleWingsActive,
+  isPranksterBlockedByDarkType,
+  isPranksterEligible,
+} from "./Gen7AbilitiesStat.js";
 export { GEN7_CRIT_MULTIPLIER, GEN7_CRIT_RATE_TABLE } from "./Gen7CritCalc.js";
 export {
   calculateGen7Damage,
