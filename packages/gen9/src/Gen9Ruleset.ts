@@ -1,14 +1,20 @@
 import type {
   AbilityContext,
   AbilityResult,
+  ActivePokemon,
   BattleGimmick,
   BattleGimmickType,
+  BattleSide,
+  BattleState,
   CritContext,
   DamageContext,
   DamageResult,
+  EntryHazardResult,
   ExpContext,
   ItemContext,
   ItemResult,
+  TerrainEffectResult,
+  WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
@@ -16,6 +22,7 @@ import type {
   DataManager,
   EntryHazardType,
   PokemonType,
+  PrimaryStatus,
   SeededRandom,
   TypeChart,
   VolatileStatus,
@@ -24,9 +31,11 @@ import { createGen9DataManager } from "./data/index.js";
 import { handleGen9Ability } from "./Gen9Abilities.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
 import { calculateGen9Damage } from "./Gen9DamageCalc.js";
-import { applyGen9HeldItem } from "./Gen9Items.js";
+import { applyGen9EntryHazards } from "./Gen9EntryHazards.js";
 import { Gen9Terastallization } from "./Gen9Terastallization.js";
+import { applyGen9TerrainEffects, checkGen9TerrainStatusImmunity } from "./Gen9Terrain.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
+import { applyGen9WeatherEffects } from "./Gen9Weather.js";
 
 /**
  * Gen 9 (Scarlet/Violet) ruleset.
@@ -133,6 +142,22 @@ export class Gen9Ruleset extends BaseRuleset {
     return 1 / 3;
   }
 
+  // --- Weather ---
+
+  /**
+   * Gen 9 end-of-turn weather effects.
+   *
+   * Key Gen 9 change: Snow replaces Hail. Snow has NO chip damage.
+   * Only sandstorm deals chip damage (1/16 max HP to non-Rock/Ground/Steel).
+   *
+   * Source: Showdown data/conditions.ts:696-728 -- Snow has no residual damage
+   * Source: Showdown data/conditions.ts -- sandstorm weather chip damage
+   * Source: Bulbapedia -- Weather conditions page, Snow replaces Hail in Gen 9
+   */
+  override applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
+    return applyGen9WeatherEffects(state);
+  }
+
   // --- Terrain ---
 
   /**
@@ -143,6 +168,38 @@ export class Gen9Ruleset extends BaseRuleset {
    */
   hasTerrain(): boolean {
     return true;
+  }
+
+  /**
+   * Gen 9 terrain end-of-turn effects.
+   *
+   * Currently handles Grassy Terrain healing (1/16 max HP for grounded Pokemon).
+   *
+   * Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal at EoT for grounded Pokemon
+   * Source: Showdown data/conditions.ts -- grassyterrain.onResidual
+   */
+  override applyTerrainEffects(state: BattleState): TerrainEffectResult[] {
+    return applyGen9TerrainEffects(state);
+  }
+
+  /**
+   * Check if a primary status condition can be inflicted on a target,
+   * considering active terrain effects.
+   *
+   * - Electric Terrain: grounded Pokemon cannot fall asleep
+   * - Misty Terrain: grounded Pokemon cannot gain any primary status condition
+   *
+   * Source: Bulbapedia "Electric Terrain" Gen 9 -- "Grounded Pokemon cannot fall asleep."
+   * Source: Bulbapedia "Misty Terrain" Gen 9 -- "Grounded Pokemon are protected from
+   *   status conditions."
+   * Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
+   */
+  checkTerrainStatusImmunity(
+    status: PrimaryStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): { immune: boolean; message?: string } {
+    return checkGen9TerrainStatusImmunity(status, target, state);
   }
 
   // --- Switch System ---
@@ -167,6 +224,28 @@ export class Gen9Ruleset extends BaseRuleset {
    */
   override getAvailableHazards(): readonly EntryHazardType[] {
     return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web"];
+  }
+
+  /**
+   * Gen 9 entry hazards: Stealth Rock, Spikes, Toxic Spikes, Sticky Web.
+   *
+   * G-Max Steelsurge is NOT available (Dynamax removed in Gen 9).
+   * Heavy-Duty Boots still blocks ALL hazard effects on switch-in.
+   * Magic Guard blocks damage/status hazards but not Sticky Web's stat drop.
+   *
+   * Source: Showdown data/moves.ts -- hazard condition handlers
+   * Source: Showdown data/items.ts -- heavydutyboots
+   * Source: Bulbapedia -- individual hazard pages
+   */
+  override applyEntryHazards(
+    pokemon: ActivePokemon,
+    side: BattleSide,
+    state?: BattleState,
+  ): EntryHazardResult {
+    if (!state) {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+    return applyGen9EntryHazards(pokemon, side, state, this.getTypeChart());
   }
 
   // --- Future Attack ---

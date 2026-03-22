@@ -76,6 +76,14 @@ export {
   TYPE_RESIST_BERRIES,
 } from "./Gen9DamageCalc.js";
 export {
+  applyGen9EntryHazards,
+  applyGen9SpikesHazard,
+  applyGen9StealthRock,
+  applyGen9StickyWeb,
+  applyGen9ToxicSpikes,
+  hasHeavyDutyBoots,
+} from "./Gen9EntryHazards.js";
+export {
   applyGen9HeldItem,
   getBlackSludgeEffect,
   getChoiceItemBoost,
@@ -103,5 +111,23 @@ export {
   TERRAIN_EXTENDER_ITEM_ID,
 } from "./Gen9Items.js";
 export { Gen9Ruleset } from "./Gen9Ruleset.js";
+export {
+  applyGen9TerrainEffects,
+  checkGen9TerrainStatusImmunity,
+  checkMistyTerrainConfusionImmunity,
+  checkPsychicTerrainPriorityBlock,
+  getSurgeTerrainType,
+  isSurgeAbility,
+  TERRAIN_DEFAULT_TURNS,
+  TERRAIN_EXTENDED_TURNS,
+} from "./Gen9Terrain.js";
 export { calculateTeraStab, Gen9Terastallization } from "./Gen9Terastallization.js";
 export { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
+export {
+  ABILITY_WEATHER_TURNS,
+  applyGen9WeatherEffects,
+  getWeatherDuration,
+  isGen9WeatherImmune,
+  SANDSTORM_IMMUNE_TYPES,
+  WEATHER_ROCK_EXTENSION,
+} from "./Gen9Weather.js";
