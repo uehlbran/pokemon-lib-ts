@@ -167,3 +167,38 @@ describe("Gen6Ruleset — calculateExpGain with different baseExp values", () =>
     expect(ruleset.calculateExpGain(context)).toBe(51);
   });
 });
+
+describe("Gen6Ruleset — calculateExpGain traded Pokemon EXP bonus", () => {
+  const ruleset = new Gen6Ruleset();
+
+  it("given a traded (same-language) Pokemon in Gen 6, when calculateExpGain with isTradedPokemon=true, then returns 1.5x boosted EXP", () => {
+    // Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula (Gen 6)
+    // Gen 6 uses the same sqrt-based formula as Gen 5; traded bonus applied after all multipliers.
+    // baseExp=100, L_d=50, L_p=50 → exp=101 (from equal-level base test)
+    // traded (same language): floor(101 * 1.5) = 151
+    const baseCtx = makeExpContext({
+      defeatedLevel: 50,
+      participantLevel: 50,
+      defeatedSpecies: { baseExp: 100 } as any,
+    });
+    const notTraded = ruleset.calculateExpGain(baseCtx);
+    const traded = ruleset.calculateExpGain({ ...baseCtx, isTradedPokemon: true, isInternationalTrade: false });
+
+    expect(notTraded).toBe(101);
+    expect(traded).toBe(151);
+  });
+
+  it("given a traded international Pokemon in Gen 6, when calculateExpGain with isInternationalTrade=true, then returns 1.7x boosted EXP", () => {
+    // Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula (Gen 6)
+    // baseExp=100, L_d=50, L_p=50 → exp=101 (from equal-level base test)
+    // international: floor(101 * 1.7) = floor(171.7) = 171
+    const baseCtx = makeExpContext({
+      defeatedLevel: 50,
+      participantLevel: 50,
+      defeatedSpecies: { baseExp: 100 } as any,
+    });
+    const result = ruleset.calculateExpGain({ ...baseCtx, isTradedPokemon: true, isInternationalTrade: true });
+
+    expect(result).toBe(171);
+  });
+});
