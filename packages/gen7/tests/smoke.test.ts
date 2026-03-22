@@ -141,10 +141,12 @@ describe("Gen7Ruleset", () => {
       expect(gimmick!.name).toBe("Z-Move");
     });
 
-    it("given a Gen7Ruleset, when getting battle gimmick for mega, then returns null (stub)", () => {
-      // Mega Evolution will be implemented in a later wave
+    it("given a Gen7Ruleset, when getting battle gimmick for mega, then returns Gen7MegaEvolution instance", () => {
+      // Source: Bulbapedia "Mega Evolution" -- available in Gen 7 (Sun/Moon/USUM)
       const ruleset = createTestRuleset();
-      expect(ruleset.getBattleGimmick("mega")).toBeNull();
+      const gimmick = ruleset.getBattleGimmick("mega");
+      expect(gimmick).not.toBeNull();
+      expect(gimmick!.name).toBe("Mega Evolution");
     });
   });
 });

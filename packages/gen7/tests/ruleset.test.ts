@@ -889,9 +889,11 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     expect(gimmick!.name).toBe("Z-Move");
   });
 
-  it("given Gen7Ruleset, when getting battle gimmick for mega, then returns null (stub)", () => {
-    // Stub -- Mega Evolution will be implemented in Wave 9
-    expect(ruleset.getBattleGimmick("mega")).toBeNull();
+  it("given Gen7Ruleset, when getting battle gimmick for mega, then returns Gen7MegaEvolution instance", () => {
+    // Source: Bulbapedia "Mega Evolution" -- available in Gen 7 (Sun/Moon/USUM)
+    const gimmick = ruleset.getBattleGimmick("mega");
+    expect(gimmick).not.toBeNull();
+    expect(gimmick!.name).toBe("Mega Evolution");
   });
 
   it("given Gen7Ruleset with no held item, when applying held item trigger, then returns not activated", () => {

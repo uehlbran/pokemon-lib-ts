@@ -43,6 +43,7 @@ import { handleGen7SwitchAbility } from "./Gen7AbilitiesSwitch.js";
 import { calculateGen7Damage } from "./Gen7DamageCalc.js";
 import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
 import { applyGen7HeldItem } from "./Gen7Items.js";
+import { Gen7MegaEvolution } from "./Gen7MegaEvolution.js";
 import { executeGen7MoveEffect, isGen7GrassPowderBlocked } from "./Gen7MoveEffects.js";
 import {
   applyGen7TerrainEffects,
@@ -912,10 +913,16 @@ export class Gen7Ruleset extends BaseRuleset {
    */
   private readonly _zMove = new Gen7ZMove();
 
+  /**
+   * Mega Evolution gimmick instance (shared across the battle for per-side tracking).
+   * Gen 7 uses internal tracking (not side.gimmickUsed) so Mega and Z-Move coexist.
+   * Source: Showdown sim/side.ts:170 -- megaUsed per-side tracking (separate from zMoveUsed)
+   */
+  private readonly _mega = new Gen7MegaEvolution();
+
   override getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
     if (type === "zmove") return this._zMove;
-    // Mega Evolution will be implemented in Wave 9
-    if (type === "mega") return null;
+    if (type === "mega") return this._mega;
     return null;
   }
 
