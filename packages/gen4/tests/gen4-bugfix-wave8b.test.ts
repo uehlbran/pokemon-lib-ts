@@ -215,7 +215,7 @@ function createNeutralTypeChart(): TypeChart {
   return chart as TypeChart;
 }
 
-function createTypeChart(overrides: [PokemonType, PokemonType, number][]): TypeChart {
+function _createTypeChart(overrides: [PokemonType, PokemonType, number][]): TypeChart {
   const chart = createNeutralTypeChart();
   for (const [atk, def, mult] of overrides) {
     (chart as Record<string, Record<string, number>>)[atk]![def] = mult;

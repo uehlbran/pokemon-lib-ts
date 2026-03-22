@@ -2,7 +2,7 @@ import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/
 import type { MoveData, MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
+import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
 // ---------------------------------------------------------------------------
@@ -1136,7 +1136,7 @@ describe("Legend orbs in damage calc", () => {
     );
 
     const baseAttacker = makeActive({ types: ["ghost", "dragon"], speciesId: 487, heldItem: null });
-    const baseResult = calculateGen6Damage(
+    const _baseResult = calculateGen6Damage(
       makeDamageContext({ attacker: baseAttacker, defender, move: ghostMove, seed: 100 }),
       typeChart,
     );

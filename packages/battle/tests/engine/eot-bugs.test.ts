@@ -31,7 +31,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
       return true;
     }
 
-    override applyAbility(trigger: AbilityTrigger, context: AbilityContext) {
+    override applyAbility(trigger: AbilityTrigger, _context: AbilityContext) {
       if (trigger === "on-turn-end") {
         this.onTurnEndCallCount++;
         // Simulate Speed Boost: +1 speed to the Pokemon

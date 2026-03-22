@@ -1,4 +1,4 @@
-import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
+import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType } from "@pokemon-lib-ts/core";
 
 /**

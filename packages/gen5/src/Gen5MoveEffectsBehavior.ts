@@ -22,12 +22,7 @@
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
  */
 
-import type {
-  ActivePokemon,
-  BattleState,
-  MoveEffectContext,
-  MoveEffectResult,
-} from "@pokemon-lib-ts/battle";
+import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
 import type { BattleStat, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
@@ -137,7 +132,7 @@ export function handleGen5BehaviorMove(ctx: MoveEffectContext): MoveEffectResult
  *   removes reflect, lightscreen, safeguard, mist, spikes, toxicspikes, stealthrock
  *   from `pokemon.side` (the TARGET's side only), plus evasion -1.
  */
-function handleDefog(ctx: MoveEffectContext): MoveEffectResult {
+function handleDefog(_ctx: MoveEffectContext): MoveEffectResult {
   return makeResult({
     // Evasion -1 on target
     // Source: Showdown gen5/moves.ts -- `this.boost({evasion: -1})` on target

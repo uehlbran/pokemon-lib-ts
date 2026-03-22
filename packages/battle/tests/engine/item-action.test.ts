@@ -1,6 +1,6 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BagItemResult, BattleConfig } from "../../src/context";
+import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent, HealEvent, StatChangeEvent, StatusCureEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";

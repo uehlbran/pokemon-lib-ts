@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen5Damage, pokeRound } from "../src/Gen5DamageCalc";
@@ -673,7 +673,7 @@ describe("Gen 5 damage calc -- spread modifier", () => {
     // Let's check how the damage calc detects spread moves...
     // For now, spread moves are a doubles format detail. We'll test via the format.
     const state = makeState({ format: "doubles" });
-    const ctx = makeDamageContext({ attacker, defender, move, state });
+    const _ctx = makeDamageContext({ attacker, defender, move, state });
     // The spread modifier is only applied when move.target is "all-adjacent-foes" or similar
     // and format is doubles. Let's make a spread move.
     const spreadMove = makeMove({

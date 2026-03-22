@@ -22,7 +22,6 @@ import {
   WEATHER_SUPPRESSING_ABILITIES,
 } from "../src/Gen3Abilities";
 import { calculateGen3Damage } from "../src/Gen3DamageCalc";
-import { executeGen3MoveEffect } from "../src/Gen3MoveEffects";
 import { Gen3Ruleset } from "../src/Gen3Ruleset";
 import { applyGen3WeatherEffects } from "../src/Gen3Weather";
 

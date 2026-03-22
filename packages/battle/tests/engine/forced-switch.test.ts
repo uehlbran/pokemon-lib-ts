@@ -107,7 +107,7 @@ describe("Forced switch (phazing) action inheritance", () => {
 
     // Assert — count how many "move-execute" (or damage) events happened.
     // Only side 0's move should execute. Side 1's queued move should be skipped.
-    const moveExecuteEvents = events.filter((e) => e.type === "damage" && "side" in e);
+    const _moveExecuteEvents = events.filter((e) => e.type === "damage" && "side" in e);
 
     // Side 0's tackle does damage (10, from MockRuleset.fixedDamage).
     // Side 1 was phased — the replacement should NOT have acted.

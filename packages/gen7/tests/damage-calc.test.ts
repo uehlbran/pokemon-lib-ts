@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen7Damage, pokeRound } from "../src/Gen7DamageCalc";
@@ -3445,7 +3445,7 @@ describe("Gen 7 Embargo suppresses items", () => {
     // Source: Showdown data/conditions.ts -- Embargo: suppresses item effects
     const vols = new Map<string, any>();
     vols.set("embargo", { turnsLeft: 5 });
-    const ctx = makeDamageContext({
+    const _ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, heldItem: "life-orb", volatiles: vols }),
       defender: makeActive({}),
       move: makeMove({ power: 50, category: "physical" }),

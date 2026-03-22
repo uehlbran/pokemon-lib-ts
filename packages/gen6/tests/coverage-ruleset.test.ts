@@ -23,7 +23,7 @@ import type {
   CritContext,
   ExpContext,
 } from "@pokemon-lib-ts/battle";
-import type { PokemonType, SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
 

@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
 

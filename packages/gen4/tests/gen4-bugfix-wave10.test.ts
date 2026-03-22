@@ -1,7 +1,6 @@
 import type {
   ActivePokemon,
   BattleAction,
-  BattleSide,
   BattleState,
   DamageContext,
   MoveEffectContext,

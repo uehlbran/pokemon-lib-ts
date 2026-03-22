@@ -1,17 +1,3 @@
-/**
- * Gen 8 Ruleset tests -- Wave 1 core overrides.
- *
- * Covers:
- *   - getAvailableTypes (18 types including Fairy)
- *   - shouldExecutePursuitPreSwitch (false, Pursuit removed in Gen 8)
- *   - getBattleGimmick (null for mega/zmove; dynamax stub for Wave 8)
- *   - rollConfusionSelfHit / getConfusionSelfHitChance (33% in Gen 7+)
- *   - hasTerrain (true, Gen 6+ feature)
- *   - generation property (8)
- *
- * Source: Showdown sim/battle.ts, data/mods/gen8/moves.ts
- */
-import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";

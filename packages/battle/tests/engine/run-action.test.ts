@@ -5,7 +5,6 @@ import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent, FleeAttemptEvent } from "../../src/events";
 import { BaseRuleset } from "../../src/ruleset/BaseRuleset";
-import type { BattleState } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";

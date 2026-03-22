@@ -854,7 +854,7 @@ describe("on-status-inflicted ability hook", () => {
     });
 
     // When on-status-inflicted fires, mirror the status to the opponent
-    ruleset.setAbilityHandler((trigger, ctx) => {
+    ruleset.setAbilityHandler((trigger, _ctx) => {
       if (trigger === "on-status-inflicted") {
         // The status-inflicted pokemon mirrors the status to the opponent
         return {

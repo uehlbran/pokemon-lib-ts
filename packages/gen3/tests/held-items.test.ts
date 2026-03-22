@@ -434,7 +434,7 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
+      const _statusCure = result.effects.find((e) => e.type === "status-cure");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("lum-berry");
     });
 

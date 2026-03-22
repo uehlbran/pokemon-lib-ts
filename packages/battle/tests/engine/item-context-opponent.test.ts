@@ -1,6 +1,6 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { describe, expect, it, vi } from "vitest";
-import type { BattleConfig, EndOfTurnEffect, ItemContext, ItemResult } from "../../src/context";
+import { describe, expect, it } from "vitest";
+import type { BattleConfig, ItemContext, ItemResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";

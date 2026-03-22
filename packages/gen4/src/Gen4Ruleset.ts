@@ -278,7 +278,7 @@ export class Gen4Ruleset extends BaseRuleset {
     if (context.defender && context.state?.sides) {
       for (const side of context.state.sides) {
         const active = side.active;
-        if (active && active.some((a) => a === context.defender)) {
+        if (active?.some((a) => a === context.defender)) {
           if (side.luckyChant?.active) {
             return false;
           }

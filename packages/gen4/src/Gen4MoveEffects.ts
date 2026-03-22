@@ -1876,7 +1876,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     const defenderName = defender.pokemon.nickname ?? "The foe";
     const defenderItem = defender.pokemon.heldItem;
     // Check if defender holds a berry (berry IDs end with "-berry")
-    if (defenderItem && defenderItem.endsWith("-berry")) {
+    if (defenderItem?.endsWith("-berry")) {
       // Steal and consume the berry
       const stolenBerry = defenderItem;
       defender.pokemon.heldItem = null;

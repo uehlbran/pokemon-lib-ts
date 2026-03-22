@@ -1159,7 +1159,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
  * Format an item ID into a display-friendly name.
  * Converts "roseli-berry" to "Roseli Berry".
  */
-function formatItemName(itemId: string): string {
+function _formatItemName(itemId: string): string {
   return itemId
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

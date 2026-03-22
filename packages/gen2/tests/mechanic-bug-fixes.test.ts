@@ -27,7 +27,6 @@ import type {
   PokemonInstance,
   PokemonType,
   PrimaryStatus,
-  StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";

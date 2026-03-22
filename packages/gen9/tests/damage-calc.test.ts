@@ -22,7 +22,7 @@
  * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
  */
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -2241,7 +2241,7 @@ describe("Move-specific power doubling", () => {
 
   it("given Hex vs statused target, when calculating, then power doubles (65 -> 130)", () => {
     // Source: Showdown data/moves.ts -- hex: onBasePower chainModify(2) when target has status
-    const ctxStatus = makeDamageContext({
+    const _ctxStatus = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["ghost"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], status: "paralysis" }),
       move: makeMove({ id: "hex", type: "ghost", category: "special", power: 65 }),

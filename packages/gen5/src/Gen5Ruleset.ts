@@ -1,7 +1,6 @@
 import type {
   AbilityContext,
   AbilityResult,
-  AccuracyContext,
   ActivePokemon,
   BattleAction,
   BattleSide,

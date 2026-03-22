@@ -5,30 +5,17 @@
  * Each test exercises at least 2 subsystems in combination.
  */
 
-import type {
-  AbilityContext,
-  ActivePokemon,
-  BattleState,
-  ItemContext,
-} from "@pokemon-lib-ts/battle";
+import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  getAteAbilityOverride,
-  handleGen7DamageCalcAbility,
-  isParentalBondEligible,
-  PARENTAL_BOND_SECOND_HIT_MULTIPLIER,
-} from "../src/Gen7AbilitiesDamage";
 import { handleGen7NewAbility, isSchoolForm } from "../src/Gen7AbilitiesNew";
 import {
-  getTriagePriorityBonus,
   handleGen7StatAbility,
   isGaleWingsActive,
   isPranksterBlockedByDarkType,
 } from "../src/Gen7AbilitiesStat";
 import { calculateGen7Damage } from "../src/Gen7DamageCalc";
-import { applyGen7HeldItem } from "../src/Gen7Items";
 import { Gen7MegaEvolution } from "../src/Gen7MegaEvolution";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
 import {

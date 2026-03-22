@@ -26,7 +26,6 @@ import {
   getMultiscaleMultiplier,
   getPunkRockIncomingMultiplier,
   getPunkRockMultiplier,
-  getSheerForceMultiplier,
   getSteelworkerMultiplier,
   getStrongJawMultiplier,
   getSturdyDamageCap,
@@ -39,20 +38,8 @@ import {
   sheerForceSuppressesLifeOrb,
   sturdyBlocksOHKO,
 } from "../src/Gen8AbilitiesDamage";
-import { calculateGen8Damage, pokeRound } from "../src/Gen8DamageCalc";
-import {
-  applyGen8HeldItem,
-  getBlackSludgeEffect,
-  getConsumableItemEffect,
-  getFocusSashTrigger,
-  getItemDamageModifier,
-  getLeftoversHeal,
-  getLifeOrbRecoil,
-  getRockyHelmetDamage,
-  getTypeBoostItem,
-  getTypeResistBerry,
-  isChoiceLocked,
-} from "../src/Gen8Items";
+import { calculateGen8Damage } from "../src/Gen8DamageCalc";
+import { applyGen8HeldItem, getConsumableItemEffect } from "../src/Gen8Items";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 
 // ---------------------------------------------------------------------------

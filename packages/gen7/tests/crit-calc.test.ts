@@ -85,11 +85,11 @@ describe("Gen 7 critical hit roll behavior", () => {
     attackerAbility?: string;
   }) {
     // Deterministic fake RNG that always returns the first value
-    let callCount = 0;
+    let _callCount = 0;
     const fakeRng = {
       next: () => 0.5,
-      int: (min: number, max: number) => {
-        callCount++;
+      int: (min: number, _max: number) => {
+        _callCount++;
         // Return min to trigger a crit (rng.int(1, rate) === 1 when rate > 1)
         return min;
       },

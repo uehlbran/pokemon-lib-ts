@@ -1,9 +1,4 @@
-import type {
-  ActivePokemon,
-  BattleSide,
-  BattleState,
-  WeatherEffectResult,
-} from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import { describe, expect, it } from "vitest";
 import {
   applyGen7WeatherEffects,

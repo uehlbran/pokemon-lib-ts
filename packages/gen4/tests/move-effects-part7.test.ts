@@ -120,7 +120,7 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function _createMove(id: string, overrides?: Partial<MoveData>): MoveData {
   return {
     id,
     name: id,

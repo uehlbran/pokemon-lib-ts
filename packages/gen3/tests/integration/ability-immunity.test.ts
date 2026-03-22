@@ -2,7 +2,7 @@ import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib-t
 import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { canInflictGen3Status, createGen3DataManager, Gen3Ruleset } from "../../src";
-import { isGen3AbilityStatusImmune, isGen3VolatileBlockedByAbility } from "../../src/Gen3Abilities";
+import { isGen3VolatileBlockedByAbility } from "../../src/Gen3Abilities";
 
 /**
  * Gen 3 Ability Immunity Integration Tests

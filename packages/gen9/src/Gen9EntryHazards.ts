@@ -1,20 +1,23 @@
 /**
- * Gen 7 Entry Hazards
+ * Gen 9 Entry Hazards
  *
- * Implements Spikes, Stealth Rock, Toxic Spikes, and Sticky Web hazard
- * application for Pokemon switching into battle. Gen 7 hazards are identical
- * to Gen 6 mechanics.
+ * Implements Spikes, Stealth Rock, Toxic Spikes, and Sticky Web
+ * hazard application for Pokemon switching into battle.
  *
- * Key mechanics:
+ * Key mechanics (same as Gen 7-8 for the hazards that remain):
  *   - Spikes: layer-scaled HP damage (1/8, 1/6, 1/4), grounded-only
  *   - Stealth Rock: Rock-type effectiveness-scaled damage (no grounding check)
  *   - Toxic Spikes: poison/badly-poisoned on grounded switch-in; Poison-type absorbs
  *   - Sticky Web: -1 Speed stage to grounded switch-ins
  *   - Magic Guard: immune to ALL hazard effects (damage, status) but NOT Sticky Web
  *   - Air Balloon: grants levitation (immune to ground-based hazards)
- *   - Heavy-Duty Boots do NOT exist in Gen 7 (introduced Gen 8)
  *
- * Source: Showdown data/moves.ts -- spikes, stealthrock, toxicspikes, stickyweb conditions
+ * Gen 9 differences from Gen 8:
+ *   - G-Max Steelsurge is NOT available (Dynamax removed)
+ *   - Heavy-Duty Boots: still blocks ALL entry hazard effects on switch-in
+ *
+ * Source: Showdown data/moves.ts -- spikes, stealthrock, toxicspikes, stickyweb
+ * Source: Showdown data/items.ts -- heavydutyboots
  * Source: Bulbapedia -- individual hazard pages
  */
 
@@ -25,13 +28,13 @@ import type {
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
 import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
-import { isGen7Grounded } from "./Gen7DamageCalc.js";
+import { isGen9Grounded } from "./Gen9Terrain.js";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/** Result of applying a single damage-dealing hazard (Spikes or Stealth Rock) */
+/** Result of applying a single damage-dealing hazard (Spikes, Stealth Rock) */
 export interface HazardDamageResult {
   /** HP damage dealt */
   readonly damage: number;
@@ -68,6 +71,23 @@ export interface StickyWebResult {
 }
 
 // ---------------------------------------------------------------------------
+// Heavy-Duty Boots Check
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether a Pokemon has Heavy-Duty Boots equipped.
+ *
+ * Heavy-Duty Boots (introduced Gen 8) blocks ALL entry hazard effects on switch-in:
+ * Stealth Rock, Spikes, Toxic Spikes, Sticky Web.
+ *
+ * Source: Showdown data/items.ts -- heavydutyboots: onDamagePriority = -30, all hazards nullified
+ * Source: Bulbapedia -- Heavy-Duty Boots page
+ */
+export function hasHeavyDutyBoots(pokemon: ActivePokemon): boolean {
+  return pokemon.pokemon.heldItem === "heavy-duty-boots";
+}
+
+// ---------------------------------------------------------------------------
 // Individual Hazard Functions
 // ---------------------------------------------------------------------------
 
@@ -85,7 +105,7 @@ export interface StickyWebResult {
  *   const damageAmounts = [0, 3, 4, 6]; // fractions of maxhp/24
  *   this.damage(damageAmounts[layers] * pokemon.maxhp / 24);
  */
-export function applyGen7SpikesHazard(
+export function applyGen9SpikesHazard(
   switchingIn: ActivePokemon,
   layers: number,
   gravityActive: boolean,
@@ -93,7 +113,7 @@ export function applyGen7SpikesHazard(
   if (layers <= 0) return null;
 
   // Not grounded -> immune
-  if (!isGen7Grounded(switchingIn, gravityActive)) return null;
+  if (!isGen9Grounded(switchingIn, gravityActive)) return null;
 
   const maxHp = switchingIn.pokemon.calculatedStats?.hp ?? switchingIn.pokemon.currentHp;
   const pokemonName = switchingIn.pokemon.nickname ?? String(switchingIn.pokemon.speciesId);
@@ -117,16 +137,16 @@ export function applyGen7SpikesHazard(
  * where typeEffectiveness is Rock-type's effectiveness against the switching Pokemon's types.
  *
  * Stealth Rock has NO grounding check -- it hits Flying-types, Levitate, etc.
- * Only Magic Guard prevents the damage.
+ * Only Magic Guard or Heavy-Duty Boots prevents the damage.
  *
  * Source: Showdown data/moves.ts -- stealthrock.condition.onSwitchIn
  *   const typeMod = this.clampIntRange(pokemon.runEffectiveness(...), -6, 6);
  *   this.damage(pokemon.maxhp * (2 ** typeMod) / 8);
  */
-export function applyGen7StealthRock(
+export function applyGen9StealthRock(
   switchingIn: ActivePokemon,
   typeChart: TypeChart,
-): HazardDamageResult | null {
+): HazardDamageResult {
   const maxHp = switchingIn.pokemon.calculatedStats?.hp ?? switchingIn.pokemon.currentHp;
   const pokemonName = switchingIn.pokemon.nickname ?? String(switchingIn.pokemon.speciesId);
 
@@ -167,7 +187,7 @@ export function applyGen7StealthRock(
  *   elif (layers >= 2) -> trySetStatus('tox')
  *   else -> trySetStatus('psn')
  */
-export function applyGen7ToxicSpikes(
+export function applyGen9ToxicSpikes(
   switchingIn: ActivePokemon,
   layers: number,
   gravityActive: boolean,
@@ -179,7 +199,7 @@ export function applyGen7ToxicSpikes(
   }
 
   // Not grounded -> immune
-  if (!isGen7Grounded(switchingIn, gravityActive)) {
+  if (!isGen9Grounded(switchingIn, gravityActive)) {
     return { absorbed: false, status: null, message: null };
   }
 
@@ -244,14 +264,14 @@ export function applyGen7ToxicSpikes(
  * Source: Bulbapedia -- Full Metal Body: "prevents other Pokemon from lowering this
  *   Pokemon's stat stages" (Gen 7+ ability, Solgaleo/Necrozma)
  */
-export function applyGen7StickyWeb(
+export function applyGen9StickyWeb(
   switchingIn: ActivePokemon,
   gravityActive: boolean,
 ): StickyWebResult {
   const pokemonName = switchingIn.pokemon.nickname ?? String(switchingIn.pokemon.speciesId);
 
   // Not grounded -> immune
-  if (!isGen7Grounded(switchingIn, gravityActive)) {
+  if (!isGen9Grounded(switchingIn, gravityActive)) {
     return { applied: false, statChange: null, statChanges: [], messages: [] };
   }
 
@@ -277,18 +297,26 @@ export function applyGen7StickyWeb(
     };
   }
 
-  // Apply -1 Speed stage
+  // Contrary: reverses stat stage changes, so Sticky Web becomes +1 Speed instead of -1.
+  // Defiant/Competitive do NOT trigger when Contrary converts the drop to a boost.
+  // Source: Showdown data/abilities.ts -- contrary: onBoost reverses all stages
+  // Source: Bulbapedia -- Contrary page; Sticky Web page
+  const hasContrary = switchingIn.ability === "contrary";
+  const speedStages = hasContrary ? 1 : -1;
+
+  // Apply Speed stage change (negative unless Contrary)
   const messages: string[] = [`${pokemonName} was caught in a sticky web!`];
-  const speedChange: { stat: BattleStat; stages: number } = { stat: "speed", stages: -1 };
+  const speedChange: { stat: BattleStat; stages: number } = { stat: "speed", stages: speedStages };
   const allStatChanges: Array<{ stat: BattleStat; stages: number }> = [speedChange];
 
-  // Defiant / Competitive: triggered by opponent-caused stat drop, raise Attack or Sp. Atk by +2
+  // Defiant / Competitive: triggered by opponent-caused stat DROP, raise Attack or Sp. Atk by +2.
+  // These do NOT trigger when Contrary converts the speed drop to a boost.
   // Source: Showdown data/abilities.ts -- Defiant/Competitive onAfterEachBoost
   // Source: Bulbapedia "Defiant" -- "raises Attack by 2 when its stats are lowered by an opponent"
-  if (switchingIn.ability === "defiant") {
+  if (!hasContrary && switchingIn.ability === "defiant") {
     messages.push(`${pokemonName}'s Defiant sharply raised its Attack!`);
     allStatChanges.push({ stat: "attack", stages: 2 });
-  } else if (switchingIn.ability === "competitive") {
+  } else if (!hasContrary && switchingIn.ability === "competitive") {
     messages.push(`${pokemonName}'s Competitive sharply raised its Sp. Atk!`);
     allStatChanges.push({ stat: "spAttack", stages: 2 });
   }
@@ -309,14 +337,18 @@ export function applyGen7StickyWeb(
  * Apply all entry hazards to a Pokemon switching in.
  *
  * Processes hazards in order: Stealth Rock, Spikes, Toxic Spikes, Sticky Web.
+ * (G-Max Steelsurge is NOT available in Gen 9 -- Dynamax was removed.)
  *
- * Magic Guard prevents ALL hazard effects (both damage and status) but NOT
+ * Heavy-Duty Boots: blocks ALL hazard effects (damage, status, stat drops).
+ * Magic Guard: prevents ALL hazard effects (both damage and status) but NOT
  * Sticky Web's stat drop (Sticky Web is not damage).
  *
  * Source: Showdown sim/battle-actions.ts -- runSwitch: sideConditions applied individually
+ * Source: Showdown data/items.ts -- heavydutyboots: blocks all hazards
  * Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
+ * Source: Bulbapedia -- Heavy-Duty Boots: "blocks entry hazard damage on switch-in"
  */
-export function applyGen7EntryHazards(
+export function applyGen9EntryHazards(
   switchingIn: ActivePokemon,
   side: BattleSide,
   state: BattleState,
@@ -329,6 +361,17 @@ export function applyGen7EntryHazards(
   const statChanges: Array<{ stat: BattleStat; stages: number }> = [];
   const gravityActive = state.gravity?.active ?? false;
 
+  // Heavy-Duty Boots: blocks ALL hazard effects on switch-in, unless item is suppressed.
+  // Klutz ability and Embargo volatile status suppress held item effects.
+  // Source: Showdown data/items.ts -- heavydutyboots: onDamagePriority = -30, all hazards nullified
+  // Source: Showdown data/abilities.ts -- klutz: ignoreItem = true (item has no effect)
+  // Source: Bulbapedia -- Heavy-Duty Boots page; Klutz page
+  const itemSuppressed =
+    switchingIn.ability === "klutz" || switchingIn.volatileStatuses?.has("embargo") === true;
+  if (hasHeavyDutyBoots(switchingIn) && !itemSuppressed) {
+    return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+  }
+
   // Magic Guard: immune to all DAMAGE-related hazard effects but NOT Sticky Web
   // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
   const hasMagicGuard = switchingIn.ability === "magic-guard";
@@ -338,17 +381,15 @@ export function applyGen7EntryHazards(
     // No grounding check -- Stealth Rock hits everything
     const stealthRock = side.hazards.find((h) => h.type === "stealth-rock");
     if (stealthRock && stealthRock.layers > 0) {
-      const result = applyGen7StealthRock(switchingIn, typeChart);
-      if (result) {
-        totalDamage += result.damage;
-        messages.push(result.message);
-      }
+      const result = applyGen9StealthRock(switchingIn, typeChart);
+      totalDamage += result.damage;
+      messages.push(result.message);
     }
 
     // --- Spikes ---
     const spikes = side.hazards.find((h) => h.type === "spikes");
     if (spikes && spikes.layers > 0) {
-      const result = applyGen7SpikesHazard(switchingIn, spikes.layers, gravityActive);
+      const result = applyGen9SpikesHazard(switchingIn, spikes.layers, gravityActive);
       if (result) {
         totalDamage += result.damage;
         messages.push(result.message);
@@ -358,14 +399,14 @@ export function applyGen7EntryHazards(
     // --- Toxic Spikes ---
     const toxicSpikes = side.hazards.find((h) => h.type === "toxic-spikes");
     if (toxicSpikes && toxicSpikes.layers > 0) {
-      const result = applyGen7ToxicSpikes(switchingIn, toxicSpikes.layers, gravityActive);
+      const result = applyGen9ToxicSpikes(switchingIn, toxicSpikes.layers, gravityActive);
       if (result.absorbed) {
         hazardsToRemove.push("toxic-spikes");
       }
       // Misty Terrain blocks all status for grounded Pokemon
       // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus blocks all status
       const terrainBlocksStatus =
-        state.terrain?.type === "misty" && isGen7Grounded(switchingIn, gravityActive);
+        state.terrain?.type === "misty" && isGen9Grounded(switchingIn, gravityActive);
       if (result.status && !terrainBlocksStatus) {
         statusInflicted = result.status;
       }
@@ -379,10 +420,11 @@ export function applyGen7EntryHazards(
 
   // --- Sticky Web ---
   // NOT gated by Magic Guard (Sticky Web is a stat drop, not damage)
+  // NOT gated by Heavy-Duty Boots (already handled above)
   // Source: Showdown data/moves.ts -- stickyweb.condition.onSwitchIn
   const stickyWeb = side.hazards.find((h) => h.type === "sticky-web");
   if (stickyWeb && stickyWeb.layers > 0) {
-    const result = applyGen7StickyWeb(switchingIn, gravityActive);
+    const result = applyGen9StickyWeb(switchingIn, gravityActive);
     if (result.applied && result.statChanges.length > 0) {
       statChanges.push(...result.statChanges);
     }

@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, SeededRandom, TypeChart } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen6Damage, TYPE_RESIST_BERRIES } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";

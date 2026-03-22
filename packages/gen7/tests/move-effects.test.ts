@@ -13,7 +13,6 @@ import {
   isBlockedBySpikyShield,
   isGen7GrassPowderBlocked,
 } from "../src/Gen7MoveEffects";
-import { Gen7Ruleset } from "../src/Gen7Ruleset";
 
 // ---------------------------------------------------------------------------
 // Test Helpers
