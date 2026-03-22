@@ -542,9 +542,12 @@ export function calculateGen2Damage(
   }
 
   // Step 9: Random factor (217-255) / 255
+  // Source: pret/pokecrystal engine/battle/core.asm — integer multiply then divide by 255
+  // Must use integer-only arithmetic: floor((baseDamage * roll) / 255)
+  // The float path floor(baseDamage * (roll / 255)) diverges at boundary values due to IEEE 754
   const randomRoll = rng.int(217, 255);
-  const randomFactor = randomRoll / 255;
-  let finalDamage = Math.floor(baseDamage * randomFactor);
+  const randomFactor = randomRoll / 255; // kept for DamageBreakdown.randomMultiplier display only
+  let finalDamage = Math.floor((baseDamage * randomRoll) / 255);
 
   // Minimum 1 damage
   finalDamage = Math.max(1, finalDamage);
