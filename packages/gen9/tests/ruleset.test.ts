@@ -16,8 +16,8 @@
  */
 import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen9Terastallization } from "../src/Gen9Terastallization";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
+import { Gen9Terastallization } from "../src/Gen9Terastallization";
 
 const ruleset = new Gen9Ruleset(new DataManager());
 
