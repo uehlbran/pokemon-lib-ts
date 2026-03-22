@@ -481,12 +481,12 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
  * these abilities may trigger effects on the attacker (context.opponent).
  *
  * Implemented:
- *   - Static: 30% chance to paralyze attacker
- *   - Flame Body: 30% chance to burn attacker
- *   - Poison Point: 30% chance to poison attacker
+ *   - Static: 33.3% (1/3) chance to paralyze attacker
+ *   - Flame Body: 33.3% (1/3) chance to burn attacker
+ *   - Poison Point: 33.3% (1/3) chance to poison attacker
  *   - Rough Skin: 1/16 attacker's max HP chip damage (Gen 3 = 1/16, Gen 4+ = 1/8)
- *   - Effect Spore: 30% chance; if triggered, 1/3 each for poison/paralysis/sleep
- *   - Cute Charm: 30% chance to infatuate attacker (requires opposite gender)
+ *   - Effect Spore: 10% chance total; if triggered, 1/3 each for poison/paralysis/sleep
+ *   - Cute Charm: 33.3% (1/3) chance to infatuate attacker (requires opposite gender)
  *
  * Source: pret/pokeemerald src/battle_util.c — AbilityBattleEffects contact checks
  */
@@ -496,10 +496,10 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
 
   switch (abilityId) {
     case "static": {
-      // Source: pret/pokeemerald — Static: 30% chance to paralyze attacker on contact
-      // Source: Bulbapedia — Static has a 30% chance of triggering
+      // Source: pret/pokeemerald src/battle_util.c:2821-2827 — Static: (Random() % 3) == 0 = 33.3%
+      // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
       if (attacker.pokemon.status) return { activated: false, effects: [], messages: [] };
-      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
       if (!canInflictContactStatus("paralysis", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
@@ -510,10 +510,10 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
     }
 
     case "flame-body": {
-      // Source: pret/pokeemerald — Flame Body: 30% chance to burn attacker on contact
-      // Source: Bulbapedia — Flame Body has a 30% chance of triggering
+      // Source: pret/pokeemerald src/battle_util.c:2836-2842 — Flame Body: (Random() % 3) == 0 = 33.3%
+      // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
       if (attacker.pokemon.status) return { activated: false, effects: [], messages: [] };
-      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
       if (!canInflictContactStatus("burn", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
@@ -524,10 +524,10 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
     }
 
     case "poison-point": {
-      // Source: pret/pokeemerald — Poison Point: 30% chance to poison attacker on contact
-      // Source: Bulbapedia — Poison Point has a 30% chance of triggering
+      // Source: pret/pokeemerald src/battle_util.c:2806-2812 — Poison Point: (Random() % 3) == 0 = 33.3%
+      // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
       if (attacker.pokemon.status) return { activated: false, effects: [], messages: [] };
-      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
       if (!canInflictContactStatus("poison", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
@@ -551,13 +551,28 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
     }
 
     case "effect-spore": {
-      // Source: pret/pokeemerald — Effect Spore: 30% total chance on contact; if triggered,
-      //   1/3 chance each for poison, paralysis, sleep
-      // Source: Bulbapedia — Effect Spore: 30% chance, then equal split
+      // Source: pret/pokeemerald src/battle_util.c:2782-2804 — Effect Spore:
+      //   (Random() % 10) == 0 = 10% total trigger chance (NOT 30%)
+      //   Then picks MOVE_EFFECT via (Random() & 3), rerolling 0, giving equal 1/3 for each:
+      //     1 = MOVE_EFFECT_SLEEP, 2 = MOVE_EFFECT_POISON, 3 = MOVE_EFFECT_BURN → PARALYSIS
+      // Note: Gen 3 uses 10% total (3.33% per status). Gen 4+ uses 30% total (10% per status).
       if (attacker.pokemon.status) return { activated: false, effects: [], messages: [] };
-      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      if (context.rng.next() >= 0.1) return { activated: false, effects: [], messages: [] };
+      // Pick one of three statuses with equal probability (1/3 each)
+      // Source: pokeemerald — do { r = Random() & 3; } while (r == 0); → 1, 2, or 3
       const roll = context.rng.next();
       if (roll < 1 / 3) {
+        // MOVE_EFFECT_SLEEP (value 1)
+        if (!canInflictContactStatus("sleep", attacker))
+          return { activated: false, effects: [], messages: [] };
+        return {
+          activated: true,
+          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+          messages: [],
+        };
+      }
+      if (roll < 2 / 3) {
+        // MOVE_EFFECT_POISON (value 2)
         if (!canInflictContactStatus("poison", attacker))
           return { activated: false, effects: [], messages: [] };
         return {
@@ -566,29 +581,20 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           messages: [],
         };
       }
-      if (roll < 2 / 3) {
-        if (!canInflictContactStatus("paralysis", attacker))
-          return { activated: false, effects: [], messages: [] };
-        return {
-          activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
-          messages: [],
-        };
-      }
-      if (!canInflictContactStatus("sleep", attacker))
+      // MOVE_EFFECT_BURN → replaced with MOVE_EFFECT_PARALYSIS (value 3 → adjusted to paralysis)
+      if (!canInflictContactStatus("paralysis", attacker))
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
         messages: [],
       };
     }
 
     case "cute-charm": {
-      // Source: pret/pokeemerald — Cute Charm: 30% chance to infatuate attacker on contact
-      //   requires opposite genders, fails if either is genderless
-      // Source: Bulbapedia — Cute Charm gender check
-      if (context.rng.next() >= 0.3) return { activated: false, effects: [], messages: [] };
+      // Source: pret/pokeemerald src/battle_util.c:2851-2858 — Cute Charm: (Random() % 3) == 0 = 33.3%
+      // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
+      if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
       const defenderGender = context.pokemon.pokemon.gender;
       const attackerGender = attacker.pokemon.gender;
       if (
@@ -651,8 +657,15 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
     }
 
     case "speed-boost": {
-      // Source: pret/pokeemerald — Speed Boost: raises Speed by 1 stage at end of each turn
-      // Source: Bulbapedia — Speed Boost activates at the end of every turn
+      // Source: pret/pokeemerald src/battle_util.c:2642-2643 — Speed Boost:
+      //   gDisableStructs[battler].isFirstTurn != 2 — does NOT activate on the first turn
+      //   after switching in.
+      // turnsOnField is 0 on the first end-of-turn after switch-in (incremented after EoT).
+      // Source: Bulbapedia — "Speed Boost raises Speed by 1 at the end of each turn"
+      //   (but confirmed by decomp: not on the very first turn)
+      if (context.pokemon.turnsOnField === 0) {
+        return { activated: false, effects: [], messages: [] };
+      }
       return {
         activated: true,
         effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],

@@ -1238,4 +1238,123 @@ describe("Gen 3 Species-Specific Items", () => {
       expect(resultWithItem.damage).toBe(resultWithoutItem.damage);
     });
   });
+
+  // =========================================================================
+  // Metal Powder -- Ditto (species 132) physical Defense ×2 (BUG-7)
+  // =========================================================================
+
+  describe("Metal Powder (Ditto species 132 physical Defense ×2)", () => {
+    // Source: pret/pokeemerald src/pokemon.c:3197 —
+    //   if (defenderHoldEffect == HOLD_EFFECT_METAL_POWDER && defender->species == SPECIES_DITTO)
+    //     defense *= 2;
+    // Note: only physical Defense is doubled; SpDef is unaffected.
+    // BUG-7: Metal Powder was not implemented in Gen3DamageCalc.getDefenseStat.
+
+    it("given Ditto (132) holding Metal Powder when taking a physical hit, then Defense is doubled (damage reduced)", () => {
+      // Formula derivation (physical normal move, neutral type chart, fire-type attacker — no STAB):
+      //   levelFactor = floor(2*50/5) + 2 = 22
+      //   "normal" type move is physical in Gen 3; fire-type attacker has no STAB on normal move.
+      //   Without Metal Powder (def=100):
+      //     step2 = floor(22 * 80 * 100 / 100) = 1760; step3 = floor(1760/50) = 35; base = 37
+      //     random roll = 100/100 = 1.0x → damage = 37
+      //   With Metal Powder (def=200):
+      //     step2 = floor(22 * 80 * 100 / 200) = 880; step3 = floor(880/50) = 17; base = 19
+      //     random roll = 1.0x → damage = 19
+      // Source: pret/pokeemerald src/pokemon.c:3197 — defense *= 2 for SPECIES_DITTO
+      const typeChart = createNeutralTypeChart();
+      const move = createMove("normal", 80); // Normal is physical in Gen 3
+
+      const dittoWithItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        speciesId: 132, // Ditto
+        heldItem: "metal-powder",
+      });
+      const dittoWithoutItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        speciesId: 132,
+        heldItem: null,
+      });
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["fire"], // fire-type attacker → no STAB on normal move
+      });
+
+      const resultWith = calculateGen3Damage(
+        createDamageContext({ attacker, defender: dittoWithItem, move }),
+        typeChart,
+      );
+      const resultWithout = calculateGen3Damage(
+        createDamageContext({ attacker, defender: dittoWithoutItem, move }),
+        typeChart,
+      );
+
+      expect(resultWith.damage).toBe(19);
+      expect(resultWithout.damage).toBe(37);
+    });
+
+    it("given a non-Ditto (species 1) holding Metal Powder when taking a physical hit, then Defense is NOT boosted", () => {
+      // Triangulates: Metal Powder is species-gated to Ditto (132).
+      // Non-Ditto holding Metal Powder gets no Defense boost.
+      // Source: pret/pokeemerald src/pokemon.c:3197 — species check is strictly SPECIES_DITTO
+      // Fire-type attacker → no STAB on normal move → damage = 37 regardless of item.
+      const typeChart = createNeutralTypeChart();
+      const move = createMove("normal", 80);
+
+      const nonDittoWithItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        speciesId: 1, // Bulbasaur — not Ditto
+        heldItem: "metal-powder",
+      });
+      const nonDittoWithoutItem = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        speciesId: 1,
+        heldItem: null,
+      });
+      const attacker = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["fire"], // no STAB on normal move
+      });
+
+      const resultWith = calculateGen3Damage(
+        createDamageContext({ attacker, defender: nonDittoWithItem, move }),
+        typeChart,
+      );
+      const resultWithout = calculateGen3Damage(
+        createDamageContext({ attacker, defender: nonDittoWithoutItem, move }),
+        typeChart,
+      );
+
+      // No boost for non-Ditto species
+      expect(resultWith.damage).toBe(resultWithout.damage);
+      expect(resultWith.damage).toBe(37);
+    });
+  });
 });

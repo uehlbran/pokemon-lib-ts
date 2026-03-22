@@ -227,6 +227,14 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
+  // Metal Powder: doubles Ditto's physical Defense (species 132)
+  // Source: pret/pokeemerald src/pokemon.c:3197 —
+  //   if (defenderHoldEffect == HOLD_EFFECT_METAL_POWDER && defender->species == SPECIES_DITTO) defense *= 2
+  // Note: only affects physical Defense; SpDef unaffected. Ditto-specific item.
+  if (physical && defenderItem === "metal-powder" && defenderSpecies === 132) {
+    baseStat = baseStat * 2;
+  }
+
   // Get the appropriate stage
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
 

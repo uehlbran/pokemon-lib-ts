@@ -11,11 +11,11 @@ import { getWeatherDamageModifier } from "./Gen2Weather";
 
 /**
  * Gen 2 Hidden Power type/power lookup table.
- * Source: Bulbapedia — "Hidden Power (move)/Generation II"
- * Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+ * Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
  *
- * Type index = (AtkDV % 2) * 8 + (DefDV % 2) * 4 + (SpeDV % 2) * 2 + (SpcDV % 2)
- * Power = floor(((bit3Atk*32 + bit3Def*16 + bit3Spe*8 + bit3Spc*4 + bit2Atk*2 + bit2Def) * 40) / 63) + 31
+ * Type index = (AtkDV & 3) * 4 + (DefDV & 3)   [range 0-15]
+ * Power = floor((topBits * 5 + (SpcDV & 3)) / 2) + 31
+ *   where topBits = ((AtkDV>>3)&1)*8 + ((DefDV>>3)&1)*4 + ((SpdDV>>3)&1)*2 + ((SpcDV>>3)&1)
  *
  * In Gen 2 "Spc" DV is the unified special DV — the same value used for both SpAtk and SpDef.
  * In our data model, `ivs.spAttack` holds this value (0-15 DV range).
@@ -42,8 +42,11 @@ const HP_TYPES: readonly PokemonType[] = [
 /**
  * Calculate Hidden Power's type and base power from the attacker's DVs (Gen 2).
  *
- * Source: Bulbapedia — "Hidden Power (move)/Generation II"
- * Source: pret/pokecrystal engine/battle/effect_commands.asm HiddenPower
+ * Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
+ *
+ * Type formula:  typeIndex = (atkDv & 3) * 4 + (defDv & 3)  [range 0-15]
+ * Power formula: floor((topBits * 5 + (spcDv & 3)) / 2) + 31
+ *   where topBits = ((atkDv>>3)&1)*8 + ((defDv>>3)&1)*4 + ((spdDv>>3)&1)*2 + ((spcDv>>3)&1)
  *
  * Type range: one of 16 types (Fighting through Dark — excludes Normal)
  * Power range: 31 to 70
@@ -60,24 +63,21 @@ export function calculateGen2HiddenPower(attacker: ActivePokemon): {
   // In Gen 2 the special DV applies to both SpAtk and SpDef; we read spAttack as the canonical source
   const spcDv = ivs.spAttack ?? 15;
 
-  // Type calculation: uses low bit of each DV
-  const typeIndex = (atkDv % 2) * 8 + (defDv % 2) * 4 + (speDv % 2) * 2 + (spcDv % 2);
+  // Type calculation: uses low 2 bits of Atk DV and Def DV
+  // Source: pret/pokecrystal engine/battle/hidden_power.asm:67-77
+  const typeIndex = (atkDv & 3) * 4 + (defDv & 3);
   const hpType = HP_TYPES[typeIndex] ?? "fighting";
 
-  // Power calculation: uses bits 3 and 2 (counting from bit 0) of each DV
-  // bit3X = (DV >> 3) & 1  (the 4th bit, value 8)
-  // bit2X = (DV >> 2) & 1  (the 3rd bit, value 4)
-  const bit3Atk = (atkDv >> 3) & 1;
-  const bit3Def = (defDv >> 3) & 1;
-  const bit3Spe = (speDv >> 3) & 1;
-  const bit3Spc = (spcDv >> 3) & 1;
-  const bit2Atk = (atkDv >> 2) & 1;
-  const bit2Def = (defDv >> 2) & 1;
-
-  const powerBits = bit3Atk * 32 + bit3Def * 16 + bit3Spe * 8 + bit3Spc * 4 + bit2Atk * 2 + bit2Def;
-  // Source: Bulbapedia — "The base power can range between 31 and 70"
-  // The raw formula gives 71 at max DVs (powerBits=63), so cap at 70.
-  const hpPower = Math.min(70, Math.floor((powerBits * 40) / 63) + 31);
+  // Power calculation: uses top bit (bit 3) of each of the 4 DVs, plus low 2 bits of Spc DV
+  // Source: pret/pokecrystal engine/battle/hidden_power.asm:13-61
+  const topBits =
+    (((atkDv >> 3) & 1) << 3) |
+    (((defDv >> 3) & 1) << 2) |
+    (((speDv >> 3) & 1) << 1) |
+    ((spcDv >> 3) & 1);
+  // power = floor((topBits * 5 + (spcDv & 3)) / 2) + 31
+  // The assembly does: multiply by 5, add (spcDv & 3), divide by 2, add 31
+  const hpPower = Math.floor((topBits * 5 + (spcDv & 3)) / 2) + 31;
 
   return { type: hpType, power: hpPower };
 }
@@ -211,7 +211,8 @@ function getDefenseStat(
 
 /**
  * Type-boosting held items in Gen 2.
- * Each provides a 10% damage boost (1.1x) when the holder uses a move of that type.
+ * Each provides a 10% damage boost (damage * 110 / 100) when the holder uses a move of that type.
+ * Source: pret/pokecrystal data/types/type_boost_items.asm
  */
 const TYPE_BOOSTING_ITEMS: Record<string, PokemonType> = {
   charcoal: "fire",
@@ -236,17 +237,21 @@ const TYPE_BOOSTING_ITEMS: Record<string, PokemonType> = {
 };
 
 /**
- * Get the held item damage modifier.
- * Type-boosting items give a 1.1x boost in Gen 2.
+ * Check whether the attacker's held item boosts the given move type.
+ *
+ * Source: pret/pokecrystal engine/battle/effect_commands.asm:2983-3019
+ * Source: pret/pokecrystal data/items/attributes.asm — type boost items have param=10
+ *
+ * Returns true if the held item boosts this type; the caller applies
+ * the integer modifier `damage * 110 / 100` (matching the decomp's
+ * `damage * (100 + param) / 100` with param=10).
  */
-function getItemModifier(attacker: ActivePokemon, moveType: PokemonType): number {
+function hasTypeBoostItem(attacker: ActivePokemon, moveType: PokemonType): boolean {
   const item = attacker.pokemon.heldItem;
-  if (!item) return 1;
+  if (!item) return false;
 
   const boostedType = TYPE_BOOSTING_ITEMS[item];
-  if (boostedType === moveType) return 1.1;
-
-  return 1;
+  return boostedType === moveType;
 }
 
 /**
@@ -282,7 +287,7 @@ export function getFuryCutterPower(attacker: ActivePokemon): number {
  * Formula per pret/pokecrystal BattleCommand_DamageCalc (effect_commands.asm:2900-3129):
  *   1. levelFactor = floor(2*level/5) + 2 (level is NEVER doubled for crits)
  *      baseDamage = floor(floor(floor(levelFactor * P * A) / D) / 50)
- *   2. Item modifier (type-boost items at 1.1x) — line 2983
+ *   2. Item modifier (type-boost items: damage * 110 / 100) — line 2983
  *   3. Crit: baseDamage *= 2 (lines 3108-3129 .CriticalMultiplier: sla = *2)
  *   4. Clamp: max(1, min(997, baseDamage))
  *   5. + 2
@@ -297,7 +302,7 @@ export function getFuryCutterPower(attacker: ActivePokemon): number {
  * Key differences from Gen 1:
  * - SpAttack and SpDefense are separate stats
  * - Weather modifiers (Rain/Sun)
- * - Held item modifiers (type-boosting items at 1.1x)
+ * - Held item modifiers (type-boosting items: damage * 110 / 100)
  * - Critical hits: compare atkStage vs defStage to decide whether to ignore all boosts
  * - Steel and Dark types added
  */
@@ -476,11 +481,13 @@ export function calculateGen2Damage(
   let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense);
   baseDamage = Math.floor(baseDamage / 50);
 
-  // Step 2: Item modifier (type-boosting items at 1.1x)
-  // Source: pret/pokecrystal engine/battle/effect_commands.asm:2983 — items applied in modifier chain
-  const itemMod = getItemModifier(attacker, effectiveMoveType);
-  if (itemMod !== 1) {
-    baseDamage = Math.floor(baseDamage * itemMod);
+  // Step 2: Item modifier (type-boosting items: damage * 110 / 100)
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm:2983-3019
+  // Source: pret/pokecrystal data/items/attributes.asm — param=10 for type boost items
+  // The decomp computes: damage = damage * (100 + param) / 100
+  // We use integer arithmetic (multiply then divide) to match the decomp exactly.
+  if (hasTypeBoostItem(attacker, effectiveMoveType)) {
+    baseDamage = Math.floor((baseDamage * 110) / 100);
   }
 
   // Step 3: Critical hit 2x multiplier — applied AFTER item boost, BEFORE clamp
@@ -572,7 +579,7 @@ export function calculateGen2Damage(
     typeMultiplier: effectiveness,
     burnMultiplier: physical && attacker.pokemon.status === "burn" && !ignoreBurn ? 0.5 : 1,
     abilityMultiplier: 1, // No abilities in Gen 2
-    itemMultiplier: itemMod,
+    itemMultiplier: hasTypeBoostItem(attacker, effectiveMoveType) ? 1.1 : 1,
     otherMultiplier: 1,
     finalDamage,
   };

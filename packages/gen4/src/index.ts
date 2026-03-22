@@ -7,7 +7,13 @@ export type {
   ItemResult,
 } from "@pokemon-lib-ts/battle";
 export { createGen4DataManager } from "./data";
-export { applyGen4Ability, PLATE_TO_TYPE } from "./Gen4Abilities";
+export {
+  applyGen4Ability,
+  GEN4_WEATHER_SUPPRESSING_ABILITIES,
+  isWeatherSuppressedGen4,
+  isWeatherSuppressedOnField,
+  PLATE_TO_TYPE,
+} from "./Gen4Abilities";
 export {
   CRIT_MULTIPLIER_CLASSIC,
   CRIT_RATES_GEN3_5,

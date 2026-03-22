@@ -1,5 +1,6 @@
 import type { BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import { isWeatherSuppressedOnField } from "./Gen4Abilities";
 
 /**
  * Types immune to sandstorm chip damage in Gen 4.
@@ -82,6 +83,11 @@ export function applyGen4WeatherEffects(state: BattleState): WeatherEffectResult
   if (!state.weather) return results;
   const weatherType = state.weather.type;
   if (weatherType !== "sand" && weatherType !== "hail") return results;
+
+  // Cloud Nine / Air Lock suppress all weather effects including chip damage.
+  // Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check gates weather chip damage
+  // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
+  if (isWeatherSuppressedOnField(state)) return results;
 
   // Process each side
   for (const side of state.sides) {

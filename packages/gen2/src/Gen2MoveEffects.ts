@@ -410,17 +410,13 @@ export function handleCustomEffect(
 
     case "counter": {
       // Counter reflects 2x the physical damage taken back at the attacker.
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
-      // Gen 2: Counter only reflects Normal-type and Fighting-type moves.
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm:5113-5142
-      //   cp NORMAL ; jr z, .counter_physical
-      //   cp FIGHTING ; jr nz, .failed
-      // This restricts Counter to Normal/Fighting only — NOT all physical moves.
-      if (
-        attacker.lastDamageTaken <= 0 ||
-        attacker.lastDamageCategory !== "physical" ||
-        (attacker.lastDamageType !== "normal" && attacker.lastDamageType !== "fighting")
-      ) {
+      // Source: pret/pokecrystal engine/battle/move_effects/counter.asm:33-35
+      //   ld a, [wStringBuffer1 + MOVE_TYPE]
+      //   cp SPECIAL        ; SPECIAL = 20 (Fire is first special type)
+      //   ret nc            ; fail if type >= SPECIAL (i.e., special type)
+      // Counter works on ALL physical-type moves (type < SPECIAL): Normal, Fighting,
+      // Flying, Poison, Ground, Rock, Bug, Ghost, Steel — not just Normal/Fighting.
+      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
         result.messages.push("But it failed!");
         break;
       }

@@ -83,38 +83,41 @@ export function calculateGen2Stats(
   pokemon: PokemonInstance,
   species: PokemonSpeciesData,
 ): StatBlock {
+  // Source: pret/pokecrystal engine/pokemon/move_mon.asm:1483
+  // HP DV is derived from the LSBs of the other 4 DVs, not stored independently.
+  // HP_DV = ((Atk & 1) << 3) | ((Def & 1) << 2) | ((Spe & 1) << 1) | (Spc & 1)
+  // Same DV system as Gen 1 — the unified Special DV is in ivs.spAttack.
+  const atkDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.attack)));
+  const defDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.defense)));
+  const speDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.speed)));
+  const spcDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.spAttack)));
+  const hpDv = ((atkDv & 1) << 3) | ((defDv & 1) << 2) | ((speDv & 1) << 1) | (spcDv & 1);
+
+  // Use clamped DV variables for all stats for consistency with the HP derivation above.
+  // This ensures a caller passing DV > 15 gets the same clamped value for HP and all
+  // other stats, rather than the raw value for non-HP stats. Matches Gen 1 pattern.
   return {
-    hp: calculateGen2Hp(species.baseStats.hp, pokemon.ivs.hp, pokemon.evs.hp, pokemon.level),
-    attack: calculateGen2Stat(
-      species.baseStats.attack,
-      pokemon.ivs.attack,
-      pokemon.evs.attack,
-      pokemon.level,
-    ),
+    hp: calculateGen2Hp(species.baseStats.hp, hpDv, pokemon.evs.hp, pokemon.level),
+    attack: calculateGen2Stat(species.baseStats.attack, atkDv, pokemon.evs.attack, pokemon.level),
     defense: calculateGen2Stat(
       species.baseStats.defense,
-      pokemon.ivs.defense,
+      defDv,
       pokemon.evs.defense,
       pokemon.level,
     ),
     spAttack: calculateGen2Stat(
       species.baseStats.spAttack,
-      pokemon.ivs.spAttack,
+      spcDv,
       pokemon.evs.spAttack,
       pokemon.level,
     ),
     // Gen 2 unified Special DV — same DV for both SpAtk and SpDef. Source: pret/pokecrystal
     spDefense: calculateGen2Stat(
       species.baseStats.spDefense,
-      pokemon.ivs.spAttack,
+      spcDv,
       pokemon.evs.spDefense,
       pokemon.level,
     ),
-    speed: calculateGen2Stat(
-      species.baseStats.speed,
-      pokemon.ivs.speed,
-      pokemon.evs.speed,
-      pokemon.level,
-    ),
+    speed: calculateGen2Stat(species.baseStats.speed, speDv, pokemon.evs.speed, pokemon.level),
   };
 }

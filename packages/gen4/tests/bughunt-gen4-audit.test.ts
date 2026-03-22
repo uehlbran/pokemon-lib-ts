@@ -927,3 +927,163 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     expect(defender.pokemon.heldItem).toBeNull();
   });
 });
+
+// ===========================================================================
+// BUG-3: Sequential type effectiveness with intermediate floor per defender type
+// ===========================================================================
+
+describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermediate floor", () => {
+  // Source: pret/pokeplatinum src/battle/battle_lib.c:2612-2646 — ApplyTypeMultiplier
+  //   called separately for type1 (line 2625-2627) and type2 (line 2634-2637) with
+  //   BattleSystem_Divide(damage * mul, 10) — integer truncation per type, NOT combined.
+  // Bug: previous code applied combined effectiveness in one floor() call.
+  //   For dual-type defenders with mixed effectiveness (e.g. 0.5x × 2x = 1.0x combined),
+  //   an odd baseDamage produces a different result:
+  //   damage=19 → sequential: floor(floor(19*0.5)*2)=floor(9*2)=18; single: floor(19*1.0)=19.
+
+  it("given L50 attacker (SpA=100) using water special power=40 vs water/rock defender (SpD=100), when calculating damage, then sequential type floors produce 18 (not 19)", () => {
+    // Formula derivation (special move, no STAB — attacker is normal-type):
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   step2 = floor(22 * 40 * 100 / 100) = 880
+    //   step3 = floor(880 / 50) = 17
+    //   baseDamage = 17 + 2 = 19
+    //   random roll = 100/100 = 1.0x (max)
+    //   type seq: floor(19 * 0.5) = 9  (water vs water)
+    //             floor(9  * 2.0) = 18 (water vs rock)
+    //   Single (buggy): floor(19 * 1.0) = 19
+    // Source: pret/pokeplatinum battle_lib.c:2625-2637 — BattleSystem_Divide per type
+    const attacker = createActivePokemon({ level: 50, spAttack: 100, types: ["normal"] });
+    const defender = createActivePokemon({ level: 50, spDefense: 100, types: ["water", "rock"] });
+    const move = createMove({ type: "water", power: 40, category: "special" });
+    const rng = createMockRng(100); // no random reduction
+    const state = createNullState();
+
+    const result = calculateGen4Damage(
+      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    expect(result.damage).toBe(18);
+  });
+
+  it("given L25 attacker (SpA=100) using water special power=40 vs water/rock defender (SpD=100), when calculating damage, then sequential type floors produce 10 (not 11)", () => {
+    // Formula derivation (triangulation at L25):
+    //   levelFactor = floor(2*25/5) + 2 = 12
+    //   step2 = floor(12 * 40 * 100 / 100) = 480
+    //   step3 = floor(480 / 50) = 9
+    //   baseDamage = 9 + 2 = 11
+    //   random roll = 100/100 = 1.0x
+    //   type seq: floor(11 * 0.5) = 5  (water vs water)
+    //             floor(5  * 2.0) = 10 (water vs rock)
+    //   Single (buggy): floor(11 * 1.0) = 11
+    // Source: pret/pokeplatinum battle_lib.c:2625-2637 — same sequential pattern
+    const attacker = createActivePokemon({ level: 25, spAttack: 100, types: ["normal"] });
+    const defender = createActivePokemon({ level: 25, spDefense: 100, types: ["water", "rock"] });
+    const move = createMove({ type: "water", power: 40, category: "special" });
+    const rng = createMockRng(100);
+    const state = createNullState();
+
+    const result = calculateGen4Damage(
+      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    expect(result.damage).toBe(10);
+  });
+});
+
+// ===========================================================================
+// BUG-6: Marvel Scale — integer arithmetic floor((stat * 150) / 100)
+// ===========================================================================
+
+describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pokeplatinum", () => {
+  // Source: pret/pokeplatinum src/battle/battle_lib.c:6799 — defenseStat * 150 / 100
+  // Bug: was Math.floor(baseStat * 1.5) (float); fixed to Math.floor((baseStat * 150) / 100)
+  // Both expressions are numerically equivalent for integer inputs, but the integer form
+  // matches the decomp and avoids any theoretical float precision issues at extreme values.
+
+  it("given a statused defender with Marvel Scale, when taking a physical hit, then Defense is boosted (damage lower than without status)", () => {
+    // Source: pret/pokeplatinum battle_lib.c:6799 — Marvel Scale: defense * 150 / 100
+    // Attacker is fire-type so no STAB on normal move. normal vs normal type = 1.0x.
+    // Without status (L50, atk=100, def=100, power=40, fire attacker / normal move / normal defender):
+    //   levelFactor=22; step2=floor(22*40*100/100)=880; step3=floor(880/50)=17; base=19; roll=1.0x → 19
+    // With status + Marvel Scale (def becomes floor(100*150/100)=150):
+    //   step2=floor(22*40*100/150)=floor(586.67)=586; step3=floor(586/50)=11; base=13; roll=1.0x → 13
+    // Source: pret/pokeplatinum src/battle/battle_lib.c:6799
+    const attackerBase = createActivePokemon({ level: 50, attack: 100, types: ["fire"] });
+    const defenderNoStatus = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+      ability: "marvel-scale",
+      status: null,
+    });
+    const defenderStatused = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+      ability: "marvel-scale",
+      status: "paralysis",
+    });
+    const move = createMove({ type: "normal", power: 40, category: "physical" });
+    const rng = createMockRng(100);
+    const state = createNullState();
+
+    const resultNoStatus = calculateGen4Damage(
+      {
+        attacker: attackerBase,
+        defender: defenderNoStatus,
+        move,
+        isCrit: false,
+        rng: rng as any,
+        state,
+      } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+    const resultStatused = calculateGen4Damage(
+      {
+        attacker: attackerBase,
+        defender: defenderStatused,
+        move,
+        isCrit: false,
+        rng: rng as any,
+        state,
+      } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    expect(resultNoStatus.damage).toBe(19);
+    expect(resultStatused.damage).toBe(13);
+  });
+
+  it("given a statused defender WITHOUT Marvel Scale, when taking a physical hit, then Defense is NOT boosted (damage same as unstated)", () => {
+    // Triangulates: Marvel Scale is ability-gated. Without the ability, status has no
+    // defensive effect on raw Defense stat, so damage equals the no-status baseline (19).
+    const attacker = createActivePokemon({ level: 50, attack: 100, types: ["fire"] });
+    const defenderNoAbility = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+      ability: "shed-skin", // different ability — no Defense boost
+      status: "paralysis",
+    });
+    const move = createMove({ type: "normal", power: 40, category: "physical" });
+    const rng = createMockRng(100);
+    const state = createNullState();
+
+    const result = calculateGen4Damage(
+      {
+        attacker,
+        defender: defenderNoAbility,
+        move,
+        isCrit: false,
+        rng: rng as any,
+        state,
+      } as DamageContext,
+      GEN4_TYPE_CHART,
+    );
+
+    // No Marvel Scale → Defense unchanged → same as no-status baseline (19)
+    expect(result.damage).toBe(19);
+  });
+});

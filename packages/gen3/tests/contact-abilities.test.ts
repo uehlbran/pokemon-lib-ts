@@ -507,72 +507,24 @@ describe("Gen 3 Rough Skin ability (on-contact)", () => {
 });
 
 // ===========================================================================
-// Effect Spore -- 30% chance, then 1/3 each for poison/paralysis/sleep
+// Effect Spore -- 10% chance (Gen 3), then 1/3 each for sleep/poison/paralysis
 // ===========================================================================
 
 describe("Gen 3 Effect Spore ability (on-contact)", () => {
-  // Source: pret/pokeemerald -- Effect Spore: 30% total, then 1/3 each
-  // Source: Bulbapedia -- "30% chance of inflicting poison, paralysis, or sleep"
+  // Source: pret/pokeemerald src/battle_util.c:2782-2804 — Effect Spore:
+  //   (Random() % 10) == 0 = 10% total trigger chance
+  //   Then picks via (Random() & 3), rerolling 0:
+  //     1 = MOVE_EFFECT_SLEEP, 2 = MOVE_EFFECT_POISON, 3 = PARALYSIS
 
-  it("given rng triggers (< 0.3) and sub-roll < 1/3, when contact made, then poison is inflicted", () => {
-    // First rng.next() = 0.1 (< 0.3, triggers)
-    // Second rng.next() = 0.1 (< 1/3, picks poison)
+  it("given rng triggers (< 0.1) and sub-roll < 1/3, when contact made, then sleep is inflicted", () => {
+    // Source: pret/pokeemerald src/battle_util.c:2788 — (Random() % 10) == 0 → 10% trigger
+    // Source: pret/pokeemerald — MOVE_EFFECT_SLEEP (value 1) is first status in 1/3 split
+    // First rng.next() = 0.05 (< 0.1, triggers)
+    // Second rng.next() = 0.1 (< 1/3, picks sleep)
     const defender = createMockPokemon({ types: ["grass"], ability: "effect-spore" });
     const attacker = createMockPokemon({ types: ["normal"] });
     const state = createMinimalBattleState(attacker, defender);
-    const rng = createMockRng([0.1, 0.1]);
-
-    const context: AbilityContext = {
-      pokemon: defender,
-      opponent: attacker,
-      state,
-      rng,
-      trigger: "on-contact",
-      move: createContactMove(),
-    };
-
-    const result = applyGen3Ability("on-contact", context);
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual({
-      effectType: "status-inflict",
-      target: "opponent",
-      status: "poison",
-    });
-  });
-
-  it("given rng triggers and sub-roll between 1/3 and 2/3, when contact made, then paralysis is inflicted", () => {
-    // First rng.next() = 0.2 (< 0.3, triggers)
-    // Second rng.next() = 0.5 (1/3 <= 0.5 < 2/3, picks paralysis)
-    const defender = createMockPokemon({ types: ["grass"], ability: "effect-spore" });
-    const attacker = createMockPokemon({ types: ["normal"] });
-    const state = createMinimalBattleState(attacker, defender);
-    const rng = createMockRng([0.2, 0.5]);
-
-    const context: AbilityContext = {
-      pokemon: defender,
-      opponent: attacker,
-      state,
-      rng,
-      trigger: "on-contact",
-      move: createContactMove(),
-    };
-
-    const result = applyGen3Ability("on-contact", context);
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual({
-      effectType: "status-inflict",
-      target: "opponent",
-      status: "paralysis",
-    });
-  });
-
-  it("given rng triggers and sub-roll >= 2/3, when contact made, then sleep is inflicted", () => {
-    // First rng.next() = 0.1 (< 0.3, triggers)
-    // Second rng.next() = 0.8 (>= 2/3, picks sleep)
-    const defender = createMockPokemon({ types: ["grass"], ability: "effect-spore" });
-    const attacker = createMockPokemon({ types: ["normal"] });
-    const state = createMinimalBattleState(attacker, defender);
-    const rng = createMockRng([0.1, 0.8]);
+    const rng = createMockRng([0.05, 0.1]);
 
     const context: AbilityContext = {
       pokemon: defender,
@@ -592,11 +544,66 @@ describe("Gen 3 Effect Spore ability (on-contact)", () => {
     });
   });
 
-  it("given rng does not trigger (>= 0.3), when contact made, then no effect", () => {
+  it("given rng triggers (< 0.1) and sub-roll between 1/3 and 2/3, when contact made, then poison is inflicted", () => {
+    // Source: pret/pokeemerald — MOVE_EFFECT_POISON (value 2) is second status in 1/3 split
+    // First rng.next() = 0.05 (< 0.1, triggers)
+    // Second rng.next() = 0.5 (1/3 <= 0.5 < 2/3, picks poison)
     const defender = createMockPokemon({ types: ["grass"], ability: "effect-spore" });
     const attacker = createMockPokemon({ types: ["normal"] });
     const state = createMinimalBattleState(attacker, defender);
-    const rng = createMockRng([0.5]);
+    const rng = createMockRng([0.05, 0.5]);
+
+    const context: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      rng,
+      trigger: "on-contact",
+      move: createContactMove(),
+    };
+
+    const result = applyGen3Ability("on-contact", context);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toEqual({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "poison",
+    });
+  });
+
+  it("given rng triggers (< 0.1) and sub-roll >= 2/3, when contact made, then paralysis is inflicted", () => {
+    // Source: pret/pokeemerald — MOVE_EFFECT_BURN→PARALYSIS (value 3) is third in 1/3 split
+    // First rng.next() = 0.05 (< 0.1, triggers)
+    // Second rng.next() = 0.8 (>= 2/3, picks paralysis)
+    const defender = createMockPokemon({ types: ["grass"], ability: "effect-spore" });
+    const attacker = createMockPokemon({ types: ["normal"] });
+    const state = createMinimalBattleState(attacker, defender);
+    const rng = createMockRng([0.05, 0.8]);
+
+    const context: AbilityContext = {
+      pokemon: defender,
+      opponent: attacker,
+      state,
+      rng,
+      trigger: "on-contact",
+      move: createContactMove(),
+    };
+
+    const result = applyGen3Ability("on-contact", context);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toEqual({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "paralysis",
+    });
+  });
+
+  it("given rng does not trigger (>= 0.1), when contact made, then no effect", () => {
+    // Source: pret/pokeemerald — (Random() % 10) == 0, so >= 0.1 does not trigger
+    const defender = createMockPokemon({ types: ["grass"], ability: "effect-spore" });
+    const attacker = createMockPokemon({ types: ["normal"] });
+    const state = createMinimalBattleState(attacker, defender);
+    const rng = createMockRng([0.15]);
 
     const context: AbilityContext = {
       pokemon: defender,
