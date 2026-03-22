@@ -576,10 +576,15 @@ function handleTwoTurnMove(ctx: MoveEffectContext): MoveEffectResult | null {
   const messageTemplate = TWO_TURN_MESSAGES[move.id] ?? "{pokemon} is charging up!";
   const message = messageTemplate.replace("{pokemon}", attackerName);
 
+  // If the move is not in the attacker's moveset (e.g., invoked via Mirror Move/Metronome),
+  // gracefully abort charging rather than defaulting to slot 0 which would execute the wrong move.
+  // Source: Showdown -- two-turn moves are only charged from the user's own moveset
+  if (moveIndex < 0) return null;
+
   return {
     ...base,
     forcedMoveSet: {
-      moveIndex: moveIndex >= 0 ? moveIndex : 0,
+      moveIndex,
       moveId: move.id,
       volatileStatus: volatile,
     },
@@ -621,7 +626,6 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
   // or target already fainted). Without this, Math.max(1, 0) would trigger 1 Liquid Ooze recoil.
   // Source: Showdown sim/battle-actions.ts -- drain only triggers when damage > 0
   if (ctx.damage <= 0) return null;
-
 
   const drainFraction = ctx.move.effect.amount;
   let healAmount = Math.floor(ctx.damage * drainFraction);
