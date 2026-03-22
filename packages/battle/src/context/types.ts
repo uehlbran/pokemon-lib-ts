@@ -264,6 +264,10 @@ export interface MoveEffectResult {
   readonly futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;
   /** Activate Gravity field effect (Gen 4+) */
   readonly gravitySet?: boolean;
+  /** Set Magic Room on the field (Gen 5+); suppresses held items for 5 turns */
+  readonly magicRoomSet?: { turnsLeft: number } | null;
+  /** Set Wonder Room on the field (Gen 5+); swaps Def and SpDef for 5 turns */
+  readonly wonderRoomSet?: { turnsLeft: number } | null;
   /**
    * Set a forced move for the next turn (two-turn moves like Fly, Dig, SolarBeam).
    * The volatile status is applied to the attacker during the charge turn; it is
@@ -594,6 +598,8 @@ export type EndOfTurnEffect =
   | "taunt-countdown"
   | "disable-countdown"
   | "gravity-countdown"
+  | "magic-room-countdown"
+  | "wonder-room-countdown"
   | "yawn-countdown"
   | "heal-block-countdown"
   | "embargo-countdown"
