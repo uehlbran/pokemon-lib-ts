@@ -137,11 +137,12 @@ export function getAccuracyEvasionMultiplier(stage: number): number {
 /**
  * Calculate the effective accuracy of a move in battle.
  *
- * Stages are netted first (accStage - evaStage) to avoid floating-point rounding
- * artifacts from intermediate division. Formula: acc * (3 + net) / 3 for positive net,
- * acc * 3 / (3 - net) for negative net.
+ * Nets accuracy and evasion stages, then applies the cartridge-accurate
+ * ratio from ACCURACY_STAGE_RATIOS (sourced from pokeemerald sAccuracyStageRatios).
  *
  * If move accuracy is null, the move never misses (returns Infinity).
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:588 sAccuracyStageRatios
  */
 export function calculateAccuracy(
   moveAccuracy: number | null,
@@ -150,7 +151,6 @@ export function calculateAccuracy(
 ): number {
   if (moveAccuracy === null) return Number.POSITIVE_INFINITY;
   const netStage = Math.max(-6, Math.min(6, accuracyStage - evasionStage));
-  if (netStage > 0) return Math.floor((moveAccuracy * (3 + netStage)) / 3);
-  if (netStage < 0) return Math.floor((moveAccuracy * 3) / (3 - netStage));
-  return moveAccuracy;
+  const { num, den } = getAccuracyStageRatio(netStage);
+  return Math.floor((moveAccuracy * num) / den);
 }

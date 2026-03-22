@@ -135,43 +135,115 @@ describe("getAccuracyEvasionMultiplier", () => {
 });
 
 describe("calculateAccuracy", () => {
-  it("should return Infinity for moves that never miss (accuracy null)", () => {
+  it("given a null-accuracy move, when calculating, then returns Infinity (never misses)", () => {
     expect(calculateAccuracy(null, 0, 0)).toBe(Number.POSITIVE_INFINITY);
   });
 
-  it("should return base accuracy when both stages are 0", () => {
+  it("given stage 0 with 100-accuracy move, when calculating, then returns 100 unchanged", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage 0 = {1, 1} => 100 * 1 / 1 = 100
     expect(calculateAccuracy(100, 0, 0)).toBe(100);
+  });
+
+  it("given stage 0 with 95-accuracy move, when calculating, then returns 95 unchanged", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage 0 = {1, 1} => 95 * 1 / 1 = 95
     expect(calculateAccuracy(95, 0, 0)).toBe(95);
   });
 
-  it("should increase accuracy with positive accuracy stage", () => {
-    const base = calculateAccuracy(100, 0, 0);
-    const boosted = calculateAccuracy(100, 1, 0);
-    expect(boosted).toBeGreaterThan(base);
-  });
-
-  it("should decrease accuracy with positive evasion stage", () => {
-    const base = calculateAccuracy(100, 0, 0);
-    const evaded = calculateAccuracy(100, 0, 1);
-    expect(evaded).toBeLessThan(base);
-  });
-
-  it("should return base accuracy when accuracy and evasion cancel out", () => {
-    // +1 accuracy vs +1 evasion: net stage = 0, so accuracy is unchanged
-    const result = calculateAccuracy(100, 1, 1);
-    expect(result).toBe(100);
-  });
-
-  it("should floor the result", () => {
-    // 100 * (4/3) = 133.33... -> floor -> 133
+  it("given net stage +1 with 100-accuracy move, when calculating, then returns 133", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage +1 = {133, 100} => floor(100 * 133 / 100) = 133
     expect(calculateAccuracy(100, 1, 0)).toBe(133);
   });
 
-  it("should handle netted stages correctly across stage combinations", () => {
-    // +3 acc vs +2 eva: net +1, floor(100 * 4/3) = 133
+  it("given net stage +2 with 100-accuracy move, when calculating, then returns 166", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage +2 = {166, 100} => floor(100 * 166 / 100) = 166
+    expect(calculateAccuracy(100, 2, 0)).toBe(166);
+  });
+
+  it("given net stage +3 with 100-accuracy move, when calculating, then returns 200", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage +3 = {2, 1} => floor(100 * 2 / 1) = 200
+    expect(calculateAccuracy(100, 3, 0)).toBe(200);
+  });
+
+  it("given net stage +4 with 100-accuracy move, when calculating, then returns 233", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage +4 = {233, 100} => floor(100 * 233 / 100) = 233
+    expect(calculateAccuracy(100, 4, 0)).toBe(233);
+  });
+
+  it("given net stage +5 with 100-accuracy move, when calculating, then returns 266", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage +5 = {133, 50} => floor(100 * 133 / 50) = 266
+    expect(calculateAccuracy(100, 5, 0)).toBe(266);
+  });
+
+  it("given net stage +6 with 100-accuracy move, when calculating, then returns 300", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage +6 = {3, 1} => floor(100 * 3 / 1) = 300
+    expect(calculateAccuracy(100, 6, 0)).toBe(300);
+  });
+
+  it("given net stage -1 with 100-accuracy move, when calculating, then returns 75", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage -1 = {75, 100} => floor(100 * 75 / 100) = 75
+    expect(calculateAccuracy(100, 0, 1)).toBe(75);
+  });
+
+  it("given net stage -2 with 100-accuracy move, when calculating, then returns 60", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage -2 = {60, 100} => floor(100 * 60 / 100) = 60
+    expect(calculateAccuracy(100, 0, 2)).toBe(60);
+  });
+
+  it("given net stage -3 with 100-accuracy move, when calculating, then returns 50", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage -3 = {50, 100} => floor(100 * 50 / 100) = 50
+    expect(calculateAccuracy(100, 0, 3)).toBe(50);
+  });
+
+  it("given net stage -4 with 100-accuracy move, when calculating, then returns 43 (not 42 from simplified formula)", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage -4 = {43, 100} => floor(100 * 43 / 100) = 43
+    // Bug #560: simplified formula 3/(3-(-4)) = 3/7 => floor(100 * 3/7) = 42 (wrong!)
+    expect(calculateAccuracy(100, 0, 4)).toBe(43);
+  });
+
+  it("given net stage -5 with 100-accuracy move, when calculating, then returns 36 (not 37 from simplified formula)", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage -5 = {36, 100} => floor(100 * 36 / 100) = 36
+    // Bug #560: simplified formula 3/(3-(-5)) = 3/8 => floor(100 * 3/8) = 37 (wrong!)
+    expect(calculateAccuracy(100, 0, 5)).toBe(36);
+  });
+
+  it("given net stage -6 with 100-accuracy move, when calculating, then returns 33", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage -6 = {33, 100} => floor(100 * 33 / 100) = 33
+    expect(calculateAccuracy(100, 0, 6)).toBe(33);
+  });
+
+  it("given accuracy and evasion stages that cancel out, when calculating, then returns base accuracy", () => {
+    // +1 accuracy vs +1 evasion: net stage = 0, so accuracy is unchanged
+    expect(calculateAccuracy(100, 1, 1)).toBe(100);
+  });
+
+  it("given combined stages that net to +1, when calculating, then returns 133", () => {
+    // +3 acc vs +2 eva: net +1 => floor(100 * 133 / 100) = 133
+    // Source: pokeemerald sAccuracyStageRatios -- stage +1 = {133, 100}
     expect(calculateAccuracy(100, 3, 2)).toBe(133);
-    // +2 acc vs +3 eva: net -1, floor(100 * 3/4) = 75
+  });
+
+  it("given combined stages that net to -1, when calculating, then returns 75", () => {
+    // +2 acc vs +3 eva: net -1 => floor(100 * 75 / 100) = 75
+    // Source: pokeemerald sAccuracyStageRatios -- stage -1 = {75, 100}
     expect(calculateAccuracy(100, 2, 3)).toBe(75);
+  });
+
+  it("given net stage beyond +6, when calculating, then clamps to stage +6 result", () => {
+    // +6 acc vs -3 eva: net +9 => clamped to +6 => floor(100 * 3 / 1) = 300
+    // Source: pokeemerald sAccuracyStageRatios -- stage +6 = {3, 1}
+    expect(calculateAccuracy(100, 6, -3)).toBe(300);
+  });
+
+  it("given net stage beyond -6, when calculating, then clamps to stage -6 result", () => {
+    // -3 acc vs +6 eva: net -9 => clamped to -6 => floor(100 * 33 / 100) = 33
+    // Source: pokeemerald sAccuracyStageRatios -- stage -6 = {33, 100}
+    expect(calculateAccuracy(100, -3, 6)).toBe(33);
+  });
+
+  it("given a 95-accuracy move at net stage -5, when calculating, then returns 34", () => {
+    // Source: pokeemerald sAccuracyStageRatios -- stage -5 = {36, 100} => floor(95 * 36 / 100) = floor(34.2) = 34
+    // Triangulation: different move accuracy than the 100-accuracy tests above
+    expect(calculateAccuracy(95, 0, 5)).toBe(34);
   });
 });
 
@@ -181,7 +253,7 @@ describe("calculateAccuracy", () => {
 
 describe("GEN12_STAT_STAGE_RATIOS", () => {
   it("given the table, has 13 entries for stages -6 through +6", () => {
-    // Source: pret/pokered data/battle/stat_modifiers.asm — 13 pairs
+    // Source: pret/pokered data/battle/stat_modifiers.asm -- 13 pairs
     expect(GEN12_STAT_STAGE_RATIOS).toHaveLength(13);
   });
 });
@@ -213,7 +285,7 @@ describe("getGen12StatStageRatio", () => {
   });
 
   it("given stage 0, returns {num: 1, den: 1} per pokered stat_modifiers.asm", () => {
-    // Source: pokered — db 1, 1 for stage 0
+    // Source: pokered -- db 1, 1 for stage 0
     expect(getGen12StatStageRatio(0)).toEqual({ num: 1, den: 1 });
   });
 
@@ -226,7 +298,7 @@ describe("getGen12StatStageRatio", () => {
   });
 
   it("given stage +3, returns {num: 25, den: 10} per pokered stat_modifiers.asm", () => {
-    // Source: pokered — db 25, 10 = 2.50x (NOT 2.66x like Gen 3+)
+    // Source: pokered -- db 25, 10 = 2.50x (NOT 2.66x like Gen 3+)
     expect(getGen12StatStageRatio(3)).toEqual({ num: 25, den: 10 });
   });
 
@@ -239,7 +311,7 @@ describe("getGen12StatStageRatio", () => {
   });
 
   it("given stage +6, returns {num: 4, den: 1} per pokered stat_modifiers.asm", () => {
-    // Source: pokered — db 4, 1 = 4.00x (NOT 5.00x like Gen 3+)
+    // Source: pokered -- db 4, 1 = 4.00x (NOT 5.00x like Gen 3+)
     expect(getGen12StatStageRatio(6)).toEqual({ num: 4, den: 1 });
   });
 
@@ -256,7 +328,7 @@ describe("getGen12StatStageRatio", () => {
 
 describe("GEN3_STAT_STAGE_RATIOS", () => {
   it("given the table, has 13 entries for stages -6 through +6", () => {
-    // Source: pret/pokeemerald src/pokemon.c:1868 gStatStageRatios — 13 pairs
+    // Source: pret/pokeemerald src/pokemon.c:1868 gStatStageRatios -- 13 pairs
     expect(GEN3_STAT_STAGE_RATIOS).toHaveLength(13);
   });
 });
@@ -276,12 +348,12 @@ describe("getGen3StatStageRatio", () => {
   });
 
   it("given stage +3, returns {num: 25, den: 10} per pokeemerald gStatStageRatios", () => {
-    // Source: pokeemerald — {25, 10} = 2.5x
+    // Source: pokeemerald -- {25, 10} = 2.5x
     expect(getGen3StatStageRatio(3)).toEqual({ num: 25, den: 10 });
   });
 
   it("given stage +6, returns {num: 40, den: 10} per pokeemerald gStatStageRatios", () => {
-    // Source: pokeemerald — {40, 10} = 4.0x
+    // Source: pokeemerald -- {40, 10} = 4.0x
     expect(getGen3StatStageRatio(6)).toEqual({ num: 40, den: 10 });
   });
 
@@ -296,7 +368,7 @@ describe("getGen3StatStageRatio", () => {
   it("given all stages, integer arithmetic produces correct effective ratios", () => {
     // Verify: stat * num / den produces the expected multiplied stat
     // Using a base stat of 100 for clarity
-    // Source: pokeemerald APPLY_STAT_MOD macro — var = stat * ratio[0]; var /= ratio[1]
+    // Source: pokeemerald APPLY_STAT_MOD macro -- var = stat * ratio[0]; var /= ratio[1]
     const base = 100;
     const expected = [25, 28, 33, 40, 50, 66, 100, 150, 200, 250, 300, 350, 400];
     for (let stage = -6; stage <= 6; stage++) {
@@ -309,7 +381,7 @@ describe("getGen3StatStageRatio", () => {
 
 describe("ACCURACY_STAGE_RATIOS", () => {
   it("given the table, has 13 entries for stages -6 through +6", () => {
-    // Source: pret/pokeemerald src/battle_script_commands.c:588 — 13 pairs
+    // Source: pret/pokeemerald src/battle_script_commands.c:588 -- 13 pairs
     expect(ACCURACY_STAGE_RATIOS).toHaveLength(13);
   });
 });
@@ -344,7 +416,7 @@ describe("getAccuracyStageRatio", () => {
   });
 
   it("given stage 0, returns {num: 1, den: 1} per pokeemerald sAccuracyStageRatios", () => {
-    // Source: pokeemerald — {1, 1} for stage 0
+    // Source: pokeemerald -- {1, 1} for stage 0
     expect(getAccuracyStageRatio(0)).toEqual({ num: 1, den: 1 });
   });
 
@@ -365,8 +437,8 @@ describe("getAccuracyStageRatio", () => {
   });
 
   it("given stage +5, returns {num: 133, den: 50} per pokeemerald sAccuracyStageRatios", () => {
-    // Source: pokeemerald — {133, 50} = 2.66x (not {266, 100})
-    // Source: pokecrystal — db 133, 50 for +5
+    // Source: pokeemerald -- {133, 50} = 2.66x (not {266, 100})
+    // Source: pokecrystal -- db 133, 50 for +5
     expect(getAccuracyStageRatio(5)).toEqual({ num: 133, den: 50 });
   });
 
@@ -383,7 +455,7 @@ describe("getAccuracyStageRatio", () => {
   });
 
   it("given a 100-accuracy move at stage -5, integer math yields 36 not 37", () => {
-    // Source: pokeemerald sAccuracyStageRatios — {36, 100}
+    // Source: pokeemerald sAccuracyStageRatios -- {36, 100}
     // calc = moveAcc * dividend / divisor = 100 * 36 / 100 = 36
     // The simplified (3+stage)/3 formula gives 100*3/8 = 37.5 -> floor 37 (wrong!)
     const { num, den } = getAccuracyStageRatio(-5);
@@ -392,7 +464,7 @@ describe("getAccuracyStageRatio", () => {
   });
 
   it("given a 100-accuracy move at stage -4, integer math yields 43 not 42", () => {
-    // Source: pokeemerald sAccuracyStageRatios — {43, 100}
+    // Source: pokeemerald sAccuracyStageRatios -- {43, 100}
     // calc = 100 * 43 / 100 = 43
     // The simplified formula gives 100*3/7 = 42.857 -> floor 42 (wrong!)
     const { num, den } = getAccuracyStageRatio(-4);
