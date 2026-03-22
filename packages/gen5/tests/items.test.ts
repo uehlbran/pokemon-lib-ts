@@ -175,6 +175,7 @@ function makeItemContext(overrides: {
 
 describe("Gen 5 Items -- Klutz and Embargo suppression", () => {
   it("given a Pokemon with Klutz holding Leftovers, when end-of-turn triggers, then the item does not activate", () => {
+    // Source: Showdown data/abilities.ts -- Klutz: suppresses all held item effects for the holder
     const pokemon = makeActive({
       heldItem: "leftovers",
       ability: "klutz",
@@ -187,6 +188,7 @@ describe("Gen 5 Items -- Klutz and Embargo suppression", () => {
   });
 
   it("given a Pokemon under Embargo holding Leftovers, when end-of-turn triggers, then the item does not activate", () => {
+    // Source: Showdown data/moves.ts -- embargo condition: suppresses held item effects for 5 turns
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set("embargo", { turnsLeft: 3 });
     const pokemon = makeActive({
@@ -201,6 +203,7 @@ describe("Gen 5 Items -- Klutz and Embargo suppression", () => {
   });
 
   it("given a Pokemon with no held item, when any trigger fires, then the item does not activate", () => {
+    // Source: Gen5Items.ts suppression guard -- early return if heldItem is null
     const pokemon = makeActive({ heldItem: null });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -287,6 +290,7 @@ describe("Gen 5 Items -- Toxic Orb", () => {
   });
 
   it("given a Pokemon already burned holding Toxic Orb, when end-of-turn triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Toxic Orb: only activates if target has no status condition
     const pokemon = makeActive({
       heldItem: "toxic-orb",
       types: ["normal"],
@@ -310,6 +314,7 @@ describe("Gen 5 Items -- Toxic Orb", () => {
   });
 
   it("given a Steel-type holding Toxic Orb, when end-of-turn triggers, then it does not activate (type immune)", () => {
+    // Source: Showdown -- Steel-types are immune to Poison status; Orb cannot inflict it
     const pokemon = makeActive({
       heldItem: "toxic-orb",
       types: ["steel"],
@@ -340,6 +345,7 @@ describe("Gen 5 Items -- Flame Orb", () => {
   });
 
   it("given a Fire-type holding Flame Orb, when end-of-turn triggers, then it does not activate (type immune)", () => {
+    // Source: Showdown -- Fire-types are immune to Burn status; Orb cannot inflict it
     const pokemon = makeActive({
       heldItem: "flame-orb",
       types: ["fire"],
@@ -369,7 +375,8 @@ describe("Gen 5 Items -- Sitrus Berry", () => {
   });
 
   it("given a Pokemon at 51% HP holding Sitrus Berry, when end-of-turn triggers, then it does not activate", () => {
-    // 102 > floor(200/2) = 100
+    // Source: Showdown data/items.ts -- Sitrus Berry: activates at <= 50% HP
+    // 102 > floor(200 / 2) = 100, so threshold is not met
     const pokemon = makeActive({ heldItem: "sitrus-berry", hp: 200, currentHp: 102 });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -410,6 +417,7 @@ describe("Gen 5 Items -- Lum Berry", () => {
   });
 
   it("given a confused Pokemon holding Lum Berry, when end-of-turn triggers, then it cures confusion and is consumed", () => {
+    // Source: Showdown data/items.ts -- Lum Berry onUpdate: also cures confusion (volatile status)
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set("confusion", { turnsLeft: 3 });
     const pokemon = makeActive({
@@ -426,6 +434,7 @@ describe("Gen 5 Items -- Lum Berry", () => {
   });
 
   it("given a healthy Pokemon holding Lum Berry, when end-of-turn triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Lum Berry onUpdate: only triggers if status or confusion present
     const pokemon = makeActive({ heldItem: "lum-berry" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -439,6 +448,7 @@ describe("Gen 5 Items -- Lum Berry", () => {
 
 describe("Gen 5 Items -- Status-cure berries", () => {
   it("given a paralyzed Pokemon holding Cheri Berry, when end-of-turn triggers, then it cures paralysis and is consumed", () => {
+    // Source: Showdown data/items.ts -- Cheri Berry onUpdate: cures 'par' status
     const pokemon = makeActive({ heldItem: "cheri-berry", status: "paralysis" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -450,6 +460,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
   });
 
   it("given a sleeping Pokemon holding Chesto Berry, when end-of-turn triggers, then it cures sleep and is consumed", () => {
+    // Source: Showdown data/items.ts -- Chesto Berry onUpdate: cures 'slp' status
     const pokemon = makeActive({ heldItem: "chesto-berry", status: "sleep" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -461,6 +472,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
   });
 
   it("given a poisoned Pokemon holding Pecha Berry, when end-of-turn triggers, then it cures poison and is consumed", () => {
+    // Source: Showdown data/items.ts -- Pecha Berry onUpdate: cures 'psn' and 'tox' status
     const pokemon = makeActive({ heldItem: "pecha-berry", status: "poison" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -472,6 +484,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
   });
 
   it("given a badly-poisoned Pokemon holding Pecha Berry, when end-of-turn triggers, then it cures badly-poisoned", () => {
+    // Source: Showdown data/items.ts -- Pecha Berry cures both 'psn' and 'tox' (badly-poisoned)
     const pokemon = makeActive({ heldItem: "pecha-berry", status: "badly-poisoned" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -483,6 +496,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
   });
 
   it("given a burned Pokemon holding Rawst Berry, when end-of-turn triggers, then it cures burn and is consumed", () => {
+    // Source: Showdown data/items.ts -- Rawst Berry onUpdate: cures 'brn' status
     const pokemon = makeActive({ heldItem: "rawst-berry", status: "burn" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -494,6 +508,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
   });
 
   it("given a frozen Pokemon holding Aspear Berry, when end-of-turn triggers, then it cures freeze and is consumed", () => {
+    // Source: Showdown data/items.ts -- Aspear Berry onUpdate: cures 'frz' status
     const pokemon = makeActive({ heldItem: "aspear-berry", status: "freeze" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -505,6 +520,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
   });
 
   it("given a healthy Pokemon holding Cheri Berry, when end-of-turn triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- single-status berries only fire if the matched condition is present
     const pokemon = makeActive({ heldItem: "cheri-berry" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -518,6 +534,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
 
 describe("Gen 5 Items -- Persim Berry", () => {
   it("given a confused Pokemon holding Persim Berry, when end-of-turn triggers, then it cures confusion and is consumed", () => {
+    // Source: Showdown data/items.ts -- Persim Berry onUpdate: removes 'confusion' volatile status
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set("confusion", { turnsLeft: 3 });
     const pokemon = makeActive({ heldItem: "persim-berry", volatiles });
@@ -531,6 +548,7 @@ describe("Gen 5 Items -- Persim Berry", () => {
   });
 
   it("given a non-confused Pokemon holding Persim Berry, when end-of-turn triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Persim Berry only fires if confusion volatile is present
     const pokemon = makeActive({ heldItem: "persim-berry" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -575,6 +593,7 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
   });
 
   it("given a Pokemon with Encore and Disable holding Mental Herb, when end-of-turn triggers, then it cures both volatiles", () => {
+    // Source: Showdown data/items.ts -- Mental Herb Gen 5 expansion: checks attract, taunt, encore, torment, disable, healblock; cures all present
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set("encore", { turnsLeft: 3 });
     volatiles.set("disable", { turnsLeft: 4 });
@@ -593,6 +612,7 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
   });
 
   it("given a healthy Pokemon holding Mental Herb, when end-of-turn triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Mental Herb only fires when one of the six volatiles is present
     const pokemon = makeActive({ heldItem: "mental-herb" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -615,7 +635,8 @@ describe("Gen 5 Items -- Sticky Barb", () => {
   });
 
   it("given a Pokemon with 7 max HP holding Sticky Barb, when end-of-turn triggers, then it takes 1 HP damage (minimum 1)", () => {
-    // floor(7/8) = 0, clamped to 1
+    // Source: Showdown data/items.ts -- Sticky Barb: floor(maxHP / 8), minimum 1
+    // floor(7 / 8) = 0, clamped to 1
     const pokemon = makeActive({ heldItem: "sticky-barb", hp: 7, currentHp: 5 });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -642,6 +663,7 @@ describe("Gen 5 Items -- Focus Sash", () => {
   });
 
   it("given a non-full-HP Pokemon holding Focus Sash taking a KO hit, when on-damage-taken triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Focus Sash: requires pokemon.hp === pokemon.baseMaxhp to activate
     const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 199 });
     const ctx = makeItemContext({ pokemon, damage: 250 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -649,6 +671,7 @@ describe("Gen 5 Items -- Focus Sash", () => {
   });
 
   it("given a full-HP Pokemon holding Focus Sash taking a non-KO hit, when on-damage-taken triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Focus Sash: only blocks hits that would reduce HP to 0 or below
     const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -683,6 +706,7 @@ describe("Gen 5 Items -- Focus Band", () => {
   });
 
   it("given a Pokemon taking a non-KO hit, when Focus Band is checked, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Focus Band: only applies when damage would be lethal
     const pokemon = makeActive({ heldItem: "focus-band", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -708,7 +732,8 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   });
 
   it("given a Pokemon at 26% HP after damage holding Liechi Berry, when on-damage-taken triggers, then it does not activate", () => {
-    // 100 - 49 = 51 > floor(200*0.25) = 50
+    // Source: Showdown data/items.ts -- pinch berries activate at <= 25% HP threshold
+    // 100 - 49 = 51 > floor(200 * 0.25) = 50, so threshold is not met
     const pokemon = makeActive({ heldItem: "liechi-berry", hp: 200, currentHp: 100 });
     const ctx = makeItemContext({ pokemon, damage: 49 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -734,6 +759,7 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   });
 
   it("given Ganlon Berry activating, then it boosts Defense", () => {
+    // Source: Showdown data/items.ts -- Ganlon Berry onEat: boosts: { def: 1 }
     const pokemon = makeActive({ heldItem: "ganlon-berry", hp: 200, currentHp: 100 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -746,6 +772,7 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   });
 
   it("given Salac Berry activating, then it boosts Speed", () => {
+    // Source: Showdown data/items.ts -- Salac Berry onEat: boosts: { spe: 1 }
     const pokemon = makeActive({ heldItem: "salac-berry", hp: 200, currentHp: 100 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -758,6 +785,7 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   });
 
   it("given Petaya Berry activating, then it boosts Sp. Atk", () => {
+    // Source: Showdown data/items.ts -- Petaya Berry onEat: boosts: { spa: 1 }
     const pokemon = makeActive({ heldItem: "petaya-berry", hp: 200, currentHp: 100 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -770,6 +798,7 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   });
 
   it("given Apicot Berry activating, then it boosts Sp. Def", () => {
+    // Source: Showdown data/items.ts -- Apicot Berry onEat: boosts: { spd: 1 }
     const pokemon = makeActive({ heldItem: "apicot-berry", hp: 200, currentHp: 100 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -788,15 +817,17 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
 
 describe("Gen 5 Items -- getPinchBerryThreshold", () => {
   it("given a Pokemon with Gluttony and a 25% threshold, then returns 50%", () => {
+    // Source: Bulbapedia -- Gluttony: pinch berries (<=25% threshold) activate at <=50% instead
     expect(getPinchBerryThreshold({ ability: "gluttony" }, 0.25)).toBe(0.5);
   });
 
   it("given a Pokemon without Gluttony and a 25% threshold, then returns 25%", () => {
+    // Source: Showdown data/items.ts -- default pinch berry threshold is 0.25 (25% HP)
     expect(getPinchBerryThreshold({ ability: "none" }, 0.25)).toBe(0.25);
   });
 
   it("given a Pokemon with Gluttony and a 50% threshold (Sitrus), then returns 50% unchanged", () => {
-    // Gluttony only affects berries with threshold <= 0.25
+    // Source: Bulbapedia -- Gluttony only affects berries with threshold <= 0.25; Sitrus (0.5) is unaffected
     expect(getPinchBerryThreshold({ ability: "gluttony" }, 0.5)).toBe(0.5);
   });
 });
@@ -825,6 +856,7 @@ describe("Gen 5 Items -- Rocky Helmet", () => {
   });
 
   it("given a defender with Rocky Helmet hit by a non-contact move, when on-contact triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Rocky Helmet: only fires when move.flags['contact'] is true
     const defender = makeActive({ heldItem: "rocky-helmet", hp: 200, currentHp: 150 });
     const nonContactMove = makeMove({ flags: { contact: false } });
     const ctx = makeItemContext({ pokemon: defender, move: nonContactMove, damage: 50 });
@@ -849,6 +881,7 @@ describe("Gen 5 Items -- Air Balloon", () => {
   });
 
   it("given a defender with Air Balloon taking 0 damage, when on-damage-taken triggers, then it does not pop", () => {
+    // Source: Showdown data/items.ts -- Air Balloon onDamagingHit only fires on actual damaging hits
     const pokemon = makeActive({ heldItem: "air-balloon", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 0 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -877,6 +910,7 @@ describe("Gen 5 Items -- Red Card", () => {
   });
 
   it("given a defender with Red Card taking 0 damage, when on-damage-taken triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Red Card only fires on actual damaging hits
     const pokemon = makeActive({ heldItem: "red-card", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 0 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -905,6 +939,7 @@ describe("Gen 5 Items -- Eject Button", () => {
   });
 
   it("given a defender with Eject Button taking 0 damage, when on-damage-taken triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Eject Button only fires on actual damaging hits
     const pokemon = makeActive({ heldItem: "eject-button", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 0 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
@@ -932,6 +967,7 @@ describe("Gen 5 Items -- Absorb Bulb", () => {
   });
 
   it("given a defender with Absorb Bulb hit by a non-Water move, when on-damage-taken triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Absorb Bulb: only triggers on Water-type moves
     const pokemon = makeActive({ heldItem: "absorb-bulb", hp: 200, currentHp: 150 });
     const fireMove = makeMove({ type: "fire" });
     const ctx = makeItemContext({ pokemon, move: fireMove, damage: 50 });
@@ -960,6 +996,7 @@ describe("Gen 5 Items -- Cell Battery", () => {
   });
 
   it("given a defender with Cell Battery hit by a non-Electric move, when on-damage-taken triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Cell Battery: only triggers on Electric-type moves
     const pokemon = makeActive({ heldItem: "cell-battery", hp: 200, currentHp: 150 });
     const normalMove = makeMove({ type: "normal" });
     const ctx = makeItemContext({ pokemon, move: normalMove, damage: 50 });
@@ -991,6 +1028,7 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
   });
 
   it("given a Pokemon with Razor Fang dealing damage, when on-hit triggers with lucky RNG, then it causes flinch", () => {
+    // Source: Showdown data/items.ts -- Razor Fang: same 10% flinch chance as King's Rock, applies to all damaging moves in Gen 5
     let flinchResult: ReturnType<typeof applyGen5HeldItem> | undefined;
     for (let seed = 0; seed < 1000; seed++) {
       const pokemon = makeActive({ heldItem: "razor-fang" });
@@ -1006,6 +1044,7 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
   });
 
   it("given a Pokemon with King's Rock dealing 0 damage, when on-hit triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- King's Rock: requires damage > 0 to have a flinch chance
     const pokemon = makeActive({ heldItem: "kings-rock" });
     const ctx = makeItemContext({ pokemon, damage: 0 });
     const result = applyGen5HeldItem("on-hit", ctx);
@@ -1028,7 +1067,8 @@ describe("Gen 5 Items -- Shell Bell", () => {
   });
 
   it("given a Pokemon with Shell Bell dealing 5 damage, when on-hit triggers, then it heals 1 HP (minimum 1)", () => {
-    // floor(5/8) = 0, clamped to 1
+    // Source: Showdown data/items.ts -- Shell Bell: heal floor(damage / 8), minimum 1
+    // floor(5 / 8) = 0, clamped to 1
     const pokemon = makeActive({ heldItem: "shell-bell" });
     const ctx = makeItemContext({ pokemon, damage: 5 });
     const result = applyGen5HeldItem("on-hit", ctx);
@@ -1052,7 +1092,8 @@ describe("Gen 5 Items -- Life Orb", () => {
   });
 
   it("given a Pokemon with 15 max HP and Life Orb dealing damage, when on-hit triggers, then it takes 1 HP recoil (minimum 1)", () => {
-    // floor(15/10) = 1
+    // Source: Showdown data/items.ts -- Life Orb: floor(maxHP / 10), minimum 1
+    // floor(15 / 10) = 1
     const pokemon = makeActive({ heldItem: "life-orb", hp: 15, currentHp: 15 });
     const ctx = makeItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem("on-hit", ctx);
@@ -1061,6 +1102,7 @@ describe("Gen 5 Items -- Life Orb", () => {
   });
 
   it("given a Pokemon with Life Orb dealing 0 damage, when on-hit triggers, then it does not take recoil", () => {
+    // Source: Showdown data/items.ts -- Life Orb: requires damage > 0 to trigger recoil
     const pokemon = makeActive({ heldItem: "life-orb", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 0 });
     const result = applyGen5HeldItem("on-hit", ctx);
@@ -1098,6 +1140,7 @@ describe("Gen 5 Items -- Life Orb + Sheer Force interaction", () => {
   });
 
   it("given a Sheer Force Pokemon using a move without a secondary effect and Life Orb, when on-hit triggers, then Life Orb recoil is NOT suppressed", () => {
+    // Source: Showdown scripts.ts -- Sheer Force: only suppresses Life Orb recoil when move.hasSheerForce is set (move has eligible secondary)
     // When the move doesn't qualify for Sheer Force, Life Orb recoil applies normally
     const pokemon = makeActive({
       heldItem: "life-orb",
@@ -1134,6 +1177,7 @@ describe("Gen 5 Items -- Unburden interaction", () => {
   });
 
   it("given a Pokemon without Unburden whose item is consumed, when the item triggers, then no unburden volatile is set", () => {
+    // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem: only sets volatile when pokemon.hasAbility('unburden')
     const pokemon = makeActive({
       heldItem: "sitrus-berry",
       ability: "none",
@@ -1171,6 +1215,7 @@ describe("Gen 5 Items -- Metronome item", () => {
   });
 
   it("given a Pokemon with Metronome item switching moves, when before-move triggers, then consecutive count resets to 1", () => {
+    // Source: Showdown data/items.ts -- Metronome item: count resets to 1 when moveId !== lastMoveId
     const pokemon = makeActive({ heldItem: "metronome" });
     const move1 = makeMove({ id: "ice-beam" });
     const move2 = makeMove({ id: "thunderbolt" });
@@ -1241,6 +1286,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
   });
 
   it("given a Pokemon holding Jaboca Berry hit by a special move, when on-damage-taken triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Jaboca Berry: only fires when move.category === 'physical'
     const defender = makeActive({ heldItem: "jaboca-berry", hp: 200, currentHp: 150 });
     const specialMove = makeMove({ category: "special" });
     const ctx = makeItemContext({ pokemon: defender, move: specialMove, damage: 50 });
@@ -1267,6 +1313,7 @@ describe("Gen 5 Items -- Berry Juice", () => {
   });
 
   it("given a Pokemon above 50% HP holding Berry Juice, when end-of-turn triggers, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Berry Juice: threshold is currentHP <= maxHP / 2; 150 > 100 so no activation
     const pokemon = makeActive({ heldItem: "berry-juice", hp: 200, currentHp: 150 });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -1280,6 +1327,7 @@ describe("Gen 5 Items -- Berry Juice", () => {
 
 describe("Gen 5 Items -- unknown trigger and unknown items", () => {
   it("given a Pokemon with an unrecognized item, when any trigger fires, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- unrecognized item IDs have no handler; applyGen5HeldItem returns { activated: false }
     const pokemon = makeActive({ heldItem: "some-unknown-item" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("end-of-turn", ctx);
@@ -1287,6 +1335,7 @@ describe("Gen 5 Items -- unknown trigger and unknown items", () => {
   });
 
   it("given a Pokemon with Leftovers, when an unknown trigger fires, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- unrecognized trigger names fall through the switch; returns { activated: false }
     const pokemon = makeActive({ heldItem: "leftovers" });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen5HeldItem("some-unknown-trigger", ctx);
