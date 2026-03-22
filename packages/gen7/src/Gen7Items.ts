@@ -322,6 +322,13 @@ export function applyGen7HeldItem(trigger: string, context: ItemContext): ItemRe
     return NO_ACTIVATION;
   }
 
+  // Magic Room: suppresses all held item effects for 5 turns
+  // Source: Showdown data/moves.ts -- magicroom condition: onTakeItem returns false
+  // Source: Bulbapedia "Magic Room" -- "makes all held items have no effect in battle"
+  if (context.state.magicRoom?.active) {
+    return NO_ACTIVATION;
+  }
+
   let result: ItemResult;
   switch (trigger) {
     case "before-move":

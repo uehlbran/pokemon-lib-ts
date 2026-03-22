@@ -257,12 +257,12 @@ describe("Gen7 Aurora Veil", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen7 Aurora Veil constants", () => {
-  it("default turns is 5", () => {
+  it("given the aurora veil default turns constant, when checked, then equals 5", () => {
     // Source: Showdown data/moves.ts -- auroraveil: duration: 5
     expect(AURORA_VEIL_DEFAULT_TURNS).toBe(5);
   });
 
-  it("Light Clay turns is 8", () => {
+  it("given the Light Clay turns constant, when checked, then equals 8", () => {
     // Source: Showdown data/items.ts -- lightclay: extends screens by 3 turns (5+3=8)
     expect(AURORA_VEIL_LIGHT_CLAY_TURNS).toBe(8);
   });
