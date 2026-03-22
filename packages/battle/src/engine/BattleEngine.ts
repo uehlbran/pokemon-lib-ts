@@ -21,6 +21,14 @@ import {
 } from "../utils";
 
 /**
+ * Moves that can be used while the user is asleep.
+ * Source: Showdown data/moves.ts — sleepUsable flag on sleep-talk and snore
+ * Source: Bulbapedia — "Sleep Talk can only be used while asleep"
+ * Source: Bulbapedia — "Snore can only be used while asleep"
+ */
+const SLEEP_USABLE_MOVES: ReadonlySet<string> = new Set(["sleep-talk", "snore"]);
+
+/**
  * The core battle engine. Manages the battle state machine, delegates
  * generation-specific behavior to the provided ruleset, and emits
  * a stream of BattleEvents for UI/logging consumers.
@@ -2275,6 +2283,8 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Sleep check
+    // Source: Showdown sim/battle-actions.ts — sleepUsable moves (Sleep Talk, Snore)
+    // bypass the sleep immobilization check but still decrement the sleep counter.
     if (actor.pokemon.status === "sleep") {
       const canAct = this.ruleset.processSleepTurn(actor, this.state);
       if (actor.pokemon.status === null) {
@@ -2292,7 +2302,15 @@ export class BattleEngine implements BattleEventEmitter {
           text: `${getPokemonName(actor)} is fast asleep!`,
         });
       }
-      if (!canAct) return false;
+      if (!canAct) {
+        // Sleep Talk and Snore are usable while asleep — they bypass immobilization.
+        // Source: Showdown data/moves.ts — sleepUsable flag on sleep-talk and snore
+        // Source: Bulbapedia — "Sleep Talk can only be used while asleep"
+        // Source: Bulbapedia — "Snore can only be used while asleep"
+        if (!SLEEP_USABLE_MOVES.has(move.id)) {
+          return false;
+        }
+      }
     }
 
     // Freeze check
