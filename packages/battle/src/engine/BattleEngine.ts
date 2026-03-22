@@ -2769,11 +2769,10 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Hazard from move effects
-    // Source: Showdown data/moves.ts — spikes max 3 layers, toxic-spikes max 2, others max 1
     if (result.hazardSet) {
       const targetSide = this.state.sides[result.hazardSet.targetSide];
       const hazardType = result.hazardSet.hazard;
-      const maxLayers = hazardType === "spikes" ? 3 : hazardType === "toxic-spikes" ? 2 : 1;
+      const maxLayers = this.ruleset.getMaxHazardLayers(hazardType);
       const existing = targetSide.hazards.find((h) => h.type === hazardType);
       if (!existing) {
         targetSide.hazards.push({ type: hazardType, layers: 1 });

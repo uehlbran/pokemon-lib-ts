@@ -884,6 +884,25 @@ describe("BaseRuleset", () => {
     });
   });
 
+  describe("getMaxHazardLayers", () => {
+    it("given spikes in BaseRuleset (Gen 3+ default), when querying max layers, then returns 3", () => {
+      // Source: Showdown data/moves.ts — spikes max 3 layers (Gen 3+)
+      // Derivation: multi-layer Spikes introduced in Gen 3, max is 3.
+      expect(ruleset.getMaxHazardLayers("spikes")).toBe(3);
+    });
+
+    it("given toxic-spikes in BaseRuleset (Gen 4+ default), when querying max layers, then returns 2", () => {
+      // Source: Showdown data/moves.ts — toxic-spikes max 2 layers
+      // 1 layer = regular poison, 2 layers = bad poison
+      expect(ruleset.getMaxHazardLayers("toxic-spikes")).toBe(2);
+    });
+
+    it("given stealth-rock in BaseRuleset, when querying max layers, then returns 1", () => {
+      // Source: Showdown data/moves.ts — stealth-rock is always 1 layer (not stackable)
+      expect(ruleset.getMaxHazardLayers("stealth-rock")).toBe(1);
+    });
+  });
+
   describe("calculateExpGain", () => {
     it("given a defeated pokemon, when calculateExpGain is called, then EXP is calculated", () => {
       const exp = ruleset.calculateExpGain({

@@ -609,8 +609,15 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
   }
 
+  getMaxHazardLayers(hazardType: EntryHazardType): number {
+    // Source: Showdown data/moves.ts — spikes max 3 layers, toxic-spikes max 2, others max 1
+    if (hazardType === "spikes") return 3;
+    if (hazardType === "toxic-spikes") return 2;
+    return 1;
+  }
+
   calculateExpGain(context: ExpContext): number {
-    // Simplified Gen 5+ scaled formula
+    // Simplified Gen 5+ scaled formula (default fallback for gens not overriding this method)
     const baseExp = context.defeatedSpecies.baseExp;
     const a = context.isTrainerBattle ? 1.5 : 1;
     const b = baseExp;
@@ -618,7 +625,16 @@ export abstract class BaseRuleset implements GenerationRuleset {
     const s = context.participantCount;
     const p = context.hasLuckyEgg ? 1.5 : 1;
 
-    return Math.floor(((a * b * l) / (5 * s)) * p);
+    let exp = Math.floor(((a * b * l) / (5 * s)) * p);
+
+    // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9984
+    //   traded EXP bonus: same language → 1.5×, international → 1.7×
+    if (context.isTradedPokemon) {
+      const tradedMultiplier = context.isInternationalTrade ? 1.7 : 1.5;
+      exp = Math.floor(exp * tradedMultiplier);
+    }
+
+    return exp;
   }
 
   getBattleGimmick(): BattleGimmick | null {

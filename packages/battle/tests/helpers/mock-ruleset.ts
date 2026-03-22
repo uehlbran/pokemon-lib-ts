@@ -347,6 +347,14 @@ export class MockRuleset implements GenerationRuleset {
     return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
   }
 
+  getMaxHazardLayers(hazardType: EntryHazardType): number {
+    // Mock defaults match Gen 3+ behavior (spikes=3, toxic-spikes=2, others=1).
+    // Tests that override hazard layer limits should use a custom ruleset.
+    if (hazardType === "spikes") return 3;
+    if (hazardType === "toxic-spikes") return 2;
+    return 1;
+  }
+
   private nextExpGain: number | null = null;
 
   /**

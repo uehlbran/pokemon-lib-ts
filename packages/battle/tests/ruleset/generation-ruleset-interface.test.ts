@@ -51,6 +51,7 @@ describe("GenerationRuleset interface verification", () => {
     // Entry hazards
     "getAvailableHazards",
     "applyEntryHazards",
+    "getMaxHazardLayers",
     // EXP
     "calculateExpGain",
     // Battle gimmick

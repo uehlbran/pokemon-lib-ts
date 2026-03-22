@@ -324,6 +324,26 @@ describe("Gen3 entry hazards — available hazard types", () => {
 });
 
 // ---------------------------------------------------------------------------
+// getMaxHazardLayers delegation tests
+// ---------------------------------------------------------------------------
+
+describe("Gen3 entry hazards — getMaxHazardLayers", () => {
+  it("given spikes in Gen 3, when querying max layers, then returns 3", () => {
+    // Source: pret/pokeemerald — multi-layer Spikes introduced in Gen 3, max 3 layers.
+    // Derivation: SetSpikesDamage uses fractions[layers - 1] for layers 1-3.
+    const ruleset = makeRuleset();
+    expect(ruleset.getMaxHazardLayers("spikes")).toBe(3);
+  });
+
+  it("given stealth-rock in Gen 3 (hypothetical), when querying max layers, then returns 1", () => {
+    // Stealth Rock was introduced in Gen 4; it is always 1 layer (set once, not stackable).
+    // Source: Showdown data/moves.ts — stealthrock max 1 layer.
+    const ruleset = makeRuleset();
+    expect(ruleset.getMaxHazardLayers("stealth-rock")).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Result structure tests
 // ---------------------------------------------------------------------------
 
