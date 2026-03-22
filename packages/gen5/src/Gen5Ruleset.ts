@@ -135,25 +135,64 @@ export class Gen5Ruleset extends BaseRuleset {
   }
 
   /**
-   * Cap lethal damage for Sturdy (Gen 5+): survive any hit from full HP at 1 HP.
+   * Cap lethal damage for survival abilities and items:
+   *   - Sturdy (Gen 5+): survive any hit from full HP at 1 HP (ability)
+   *   - Focus Sash: survive any hit from full HP at 1 HP (item, consumed)
+   *   - Focus Band: 10% chance to survive any KO hit at 1 HP (item, NOT consumed)
+   *
+   * Priority: Sturdy fires first (priority -30), then Focus Sash/Band (priority -10).
+   * If Sturdy caps the damage, Focus Sash won't fire (damage < currentHp after cap).
    *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
-   *   "If this Pokemon is at full HP, it survives attacks that would KO it with 1 HP."
-   * Source: Bulbapedia -- Sturdy (Ability)
+   * Source: Showdown data/items.ts -- Focus Sash: onDamage; Focus Band: onDamage
+   * Source: Bulbapedia -- Focus Sash, Focus Band, Sturdy (Ability)
    */
   capLethalDamage(
     damage: number,
     defender: ActivePokemon,
     _attacker: ActivePokemon,
     _move: MoveData,
-    _state: BattleState,
-  ): { damage: number; survived: boolean; messages: string[] } {
+    state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+    const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+    // 1. Sturdy (ability) -- priority -30, fires first
     const capped = getSturdyDamageCap(defender.ability, damage, defender.pokemon.currentHp, maxHp);
     if (capped < damage) {
-      const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
       return { damage: capped, survived: true, messages: [`${name} held on thanks to Sturdy!`] };
     }
+
+    // 2. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
+    // Source: Showdown data/items.ts -- Focus Sash onDamage
+    // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
+    const heldItem = defender.pokemon.heldItem;
+    if (
+      heldItem === "focus-sash" &&
+      defender.pokemon.currentHp === maxHp &&
+      damage >= defender.pokemon.currentHp
+    ) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on with its Focus Sash!`],
+        consumedItem: "focus-sash",
+      };
+    }
+
+    // 3. Focus Band (item) -- 10% chance to survive at 1 HP, NOT consumed
+    // Source: Showdown data/items.ts -- Focus Band 10% activation
+    // Fix: use currentHp - 1 (not maxHp - 1) to leave exactly 1 HP regardless of current HP
+    if (heldItem === "focus-band" && damage >= defender.pokemon.currentHp) {
+      if (state.rng.chance(0.1)) {
+        return {
+          damage: defender.pokemon.currentHp - 1,
+          survived: true,
+          messages: [`${name} hung on using its Focus Band!`],
+        };
+      }
+    }
+
     return { damage, survived: false, messages: [] };
   }
 

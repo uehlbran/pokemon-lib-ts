@@ -96,13 +96,16 @@ export interface DamageSystem {
   recalculatesFutureAttackDamage?(): boolean;
 
   /**
-   * Cap lethal damage for survival abilities (Sturdy in Gen 5+, etc.).
+   * Cap lethal damage for survival abilities/items (Sturdy, Focus Sash, Focus Band).
    * Called BEFORE HP is subtracted when damage >= defender's currentHp.
    * Returns the (possibly reduced) damage and messages to emit.
    * Default: no capping (returns damage unchanged).
    *
+   * If `consumedItem` is set, the engine will set heldItem to null and emit
+   * an `item-consumed` event after applying the capped damage.
+   *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
-   * "If this Pokemon is at full HP, it survives attacks that would KO it with 1 HP."
+   * Source: Showdown data/items.ts -- Focus Sash: onDamage
    */
   capLethalDamage?(
     damage: number,
@@ -110,7 +113,7 @@ export interface DamageSystem {
     attacker: ActivePokemon,
     move: MoveData,
     state: BattleState,
-  ): { damage: number; survived: boolean; messages: string[] };
+  ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string };
 }
 
 /** Critical hit rate table, multiplier, and roll. */
