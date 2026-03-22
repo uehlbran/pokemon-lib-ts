@@ -837,8 +837,11 @@ describe("Gen 7 Normalize", () => {
     expect(withNorm.damage).toBeGreaterThan(noNorm.damage);
   });
 
-  it("given Normalize and a Normal move, when calculating, then no boost applied (type unchanged)", () => {
-    // Source: Showdown data/abilities.ts -- Normalize only boosts when type actually changes
+  it("given Normalize and a Normal move, when calculating, then 1.2x boost still applied (boosted unconditionally in Gen 7)", () => {
+    // Gen 7: Normalize boosts ALL moves it normalizes, including already-Normal moves.
+    // Source: Showdown data/abilities.ts -- normalize: onModifyType sets typeChangerBoosted
+    //   unconditionally; onBasePower fires whenever typeChangerBoosted === this.effect.
+    //   No check whether the type actually changed.
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, ability: "normalize", types: ["normal"] }),
       defender: makeActive({ defense: 100 }),
@@ -855,8 +858,8 @@ describe("Gen 7 Normalize", () => {
     const withNorm = calculateGen7Damage(ctx, typeChart);
     const withoutNorm = calculateGen7Damage(noAbilityCtx, typeChart);
 
-    // Normal move stays Normal -- no boost from Normalize
-    expect(withNorm.damage).toBe(withoutNorm.damage);
+    // Normal move also gets the 1.2x boost from Normalize in Gen 7
+    expect(withNorm.damage).toBeGreaterThan(withoutNorm.damage);
   });
 });
 
@@ -1086,6 +1089,81 @@ describe("Gen 7 Prism Armor", () => {
 
     // Neutral hit -- Prism Armor doesn't apply
     expect(withArmor.damage).toBe(noArmor.damage);
+  });
+});
+// ---------------------------------------------------------------------------
+// Mold Breaker vs Filter/Solid Rock/Prism Armor (Gen 7 distinction)
+// ---------------------------------------------------------------------------
+
+describe("Gen 7 Mold Breaker vs Filter/Solid Rock/Prism Armor", () => {
+  it("given Mold Breaker attacker vs defender with Filter, when super-effective, then damage reduction bypassed", () => {
+    // Source: Showdown data/abilities.ts -- filter: flags: { breakable: 1 } (bypassed by Mold Breaker)
+    // Source: Bulbapedia "Mold Breaker" -- "moves bypass the effects of abilities"
+    const normalCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, ability: "none" }),
+      defender: makeActive({ defense: 100, types: ["fire"], ability: "filter" }),
+      move: makeMove({ power: 50, type: "water" }),
+      seed: 42,
+    });
+    const moldBreakerCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, ability: "mold-breaker" }),
+      defender: makeActive({ defense: 100, types: ["fire"], ability: "filter" }),
+      move: makeMove({ power: 50, type: "water" }),
+      seed: 42,
+    });
+
+    const withFilter = calculateGen7Damage(normalCtx, typeChart);
+    const withMoldBreaker = calculateGen7Damage(moldBreakerCtx, typeChart);
+
+    // Mold Breaker bypasses Filter -- damage should be higher (no reduction)
+    expect(withMoldBreaker.damage).toBeGreaterThan(withFilter.damage);
+    expect(withMoldBreaker.breakdown?.abilityMultiplier).toBe(1);
+  });
+
+  it("given Mold Breaker attacker vs defender with Solid Rock, when super-effective, then damage reduction bypassed", () => {
+    // Source: Showdown data/abilities.ts -- solidrock: flags: { breakable: 1 } (bypassed by Mold Breaker)
+    const normalCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, ability: "none" }),
+      defender: makeActive({ defense: 100, types: ["fire"], ability: "solid-rock" }),
+      move: makeMove({ power: 50, type: "water" }),
+      seed: 42,
+    });
+    const moldBreakerCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, ability: "mold-breaker" }),
+      defender: makeActive({ defense: 100, types: ["fire"], ability: "solid-rock" }),
+      move: makeMove({ power: 50, type: "water" }),
+      seed: 42,
+    });
+
+    const withSolidRock = calculateGen7Damage(normalCtx, typeChart);
+    const withMoldBreaker = calculateGen7Damage(moldBreakerCtx, typeChart);
+
+    expect(withMoldBreaker.damage).toBeGreaterThan(withSolidRock.damage);
+    expect(withMoldBreaker.breakdown?.abilityMultiplier).toBe(1);
+  });
+
+  it("given Mold Breaker attacker vs defender with Prism Armor, when super-effective, then damage reduction still applies", () => {
+    // Source: Showdown data/abilities.ts -- prismarmo: no breakable flag (not bypassed by Mold Breaker)
+    // Source: Bulbapedia "Prism Armor" -- unlike Filter/Solid Rock, not bypassed by Mold Breaker
+    const normalCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, ability: "none" }),
+      defender: makeActive({ defense: 100, types: ["fire"], ability: "prism-armor" }),
+      move: makeMove({ power: 50, type: "water" }),
+      seed: 42,
+    });
+    const moldBreakerCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, ability: "mold-breaker" }),
+      defender: makeActive({ defense: 100, types: ["fire"], ability: "prism-armor" }),
+      move: makeMove({ power: 50, type: "water" }),
+      seed: 42,
+    });
+
+    const withPrismArmor = calculateGen7Damage(normalCtx, typeChart);
+    const withMoldBreaker = calculateGen7Damage(moldBreakerCtx, typeChart);
+
+    // Prism Armor is NOT bypassed by Mold Breaker -- damage should be equal
+    expect(withMoldBreaker.damage).toBe(withPrismArmor.damage);
+    expect(withMoldBreaker.breakdown?.abilityMultiplier).toBe(0.75);
   });
 });
 

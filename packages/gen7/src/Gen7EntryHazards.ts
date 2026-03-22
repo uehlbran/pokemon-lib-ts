@@ -59,8 +59,8 @@ export interface ToxicSpikesResult {
 export interface StickyWebResult {
   /** Whether the Speed drop was applied */
   readonly applied: boolean;
-  /** Stat change to emit (speed: -1), or null if immune */
-  readonly statChange: { stat: BattleStat; stages: number } | null;
+  /** Stat changes to emit (speed: -1, plus Defiant/Competitive bonus if applicable) */
+  readonly statChanges: ReadonlyArray<{ stat: BattleStat; stages: number }>;
   /** Messages to emit */
   readonly messages: string[];
 }
@@ -250,7 +250,7 @@ export function applyGen7StickyWeb(
 
   // Not grounded -> immune
   if (!isGen7Grounded(switchingIn, gravityActive)) {
-    return { applied: false, statChange: null, messages: [] };
+    return { applied: false, statChanges: [], messages: [] };
   }
 
   // Clear Body / White Smoke / Full Metal Body: prevents stat drops
@@ -269,24 +269,29 @@ export function applyGen7StickyWeb(
     const abilityName = abilityNames[switchingIn.ability] ?? switchingIn.ability;
     return {
       applied: false,
-      statChange: null,
+      statChanges: [],
       messages: [`${pokemonName}'s ${abilityName} prevents stat loss!`],
     };
   }
 
   // Apply -1 Speed stage
   const messages: string[] = [`${pokemonName} was caught in a sticky web!`];
+  const statChanges: Array<{ stat: BattleStat; stages: number }> = [{ stat: "speed", stages: -1 }];
 
-  // Defiant / Competitive trigger
+  // Defiant / Competitive trigger: +2 Atk or +2 SpA when a stat is lowered by an opponent
+  // Source: Showdown data/abilities.ts -- defiant: +2 Atk on any stat drop from opponent
+  // Source: Showdown data/abilities.ts -- competitive: +2 SpA on any stat drop from opponent
   if (switchingIn.ability === "defiant") {
     messages.push(`${pokemonName}'s Defiant sharply raised its Attack!`);
+    statChanges.push({ stat: "attack", stages: 2 });
   } else if (switchingIn.ability === "competitive") {
     messages.push(`${pokemonName}'s Competitive sharply raised its Sp. Atk!`);
+    statChanges.push({ stat: "spAttack", stages: 2 });
   }
 
   return {
     applied: true,
-    statChange: { stat: "speed", stages: -1 },
+    statChanges,
     messages,
   };
 }
@@ -373,8 +378,8 @@ export function applyGen7EntryHazards(
   const stickyWeb = side.hazards.find((h) => h.type === "sticky-web");
   if (stickyWeb && stickyWeb.layers > 0) {
     const result = applyGen7StickyWeb(switchingIn, gravityActive);
-    if (result.applied && result.statChange) {
-      statChanges.push(result.statChange);
+    if (result.applied && result.statChanges.length > 0) {
+      statChanges.push(...result.statChanges);
     }
     messages.push(...result.messages);
   }

@@ -305,7 +305,7 @@ describe("Terrain Extender", () => {
     expect(hasTerrainExtender(pokemon)).toBe(false);
   });
 
-  it("should export the correct item ID constant", () => {
+  it("given the terrain extender item ID constant, when checked, then equals 'terrain-extender'", () => {
     // Source: Showdown data/items.ts -- item ID is 'terrainextender' (mapped to 'terrain-extender')
     expect(TERRAIN_EXTENDER_ITEM_ID).toBe("terrain-extender");
   });
@@ -686,15 +686,16 @@ describe("getPinchBerryThreshold", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("Type Resist Berry (Occa Berry)", () => {
-  it("given type resist berries are handled in damage calc, when noting test expectations, then this documents the expected behavior", () => {
+  it("given a Pokemon holding Occa Berry, when checking via applyGen7HeldItem on-damage-taken, then activated is false (handled in damage calc)", () => {
     // Source: Showdown data/items.ts -- Occa Berry: onSourceModifyDamage halves Fire damage
     // Type resist berries are handled in Gen7DamageCalc.ts as pre-damage modifiers,
     // matching Showdown's onSourceModifyDamage timing. They are NOT handled in the
-    // applyGen7HeldItem function. This test documents the design decision.
-    //
-    // The expected behavior: Occa Berry halves super-effective Fire damage and is consumed.
-    // This is tested in the damage-calc.test.ts file.
-    expect(true).toBe(true);
+    // applyGen7HeldItem function. Full behavior tested in damage-calc.test.ts.
+    const pokemon = makeActive({ heldItem: "occa-berry", types: ["grass"] });
+    const ctx = makeItemContext({ pokemon, damage: 50 });
+    const result = applyGen7HeldItem("on-damage-taken", ctx);
+    // applyGen7HeldItem should NOT activate type-resist berries -- damage calc handles them
+    expect(result.activated).toBe(false);
   });
 });
 

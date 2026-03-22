@@ -272,7 +272,7 @@ describe("Gen7 Sticky Web", () => {
     const mon = makeActivePokemon({ types: ["normal"], maxHp: 200, nickname: "Snorlax" });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(true);
-    expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
+    expect(result.statChanges).toEqual([{ stat: "speed", stages: -1 }]);
     expect(result.messages).toContain("Snorlax was caught in a sticky web!");
   });
 
@@ -281,7 +281,7 @@ describe("Gen7 Sticky Web", () => {
     const mon = makeActivePokemon({ types: ["flying"], maxHp: 200 });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(false);
-    expect(result.statChange).toBeNull();
+    expect(result.statChanges).toEqual([]);
   });
 
   it("given a Levitate Pokemon switching into Sticky Web, when applied, then immune (not grounded)", () => {
@@ -289,7 +289,7 @@ describe("Gen7 Sticky Web", () => {
     const mon = makeActivePokemon({ types: ["normal"], ability: "levitate", maxHp: 200 });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(false);
-    expect(result.statChange).toBeNull();
+    expect(result.statChanges).toEqual([]);
   });
 
   it("given a Clear Body Pokemon switching into Sticky Web, when applied, then blocks stat drop", () => {
@@ -301,7 +301,7 @@ describe("Gen7 Sticky Web", () => {
     });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(false);
-    expect(result.statChange).toBeNull();
+    expect(result.statChanges).toEqual([]);
     expect(result.messages[0]).toContain("Clear Body");
   });
 
@@ -314,7 +314,7 @@ describe("Gen7 Sticky Web", () => {
     });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(false);
-    expect(result.statChange).toBeNull();
+    expect(result.statChanges).toEqual([]);
     expect(result.messages[0]).toContain("White Smoke");
   });
 
@@ -327,7 +327,7 @@ describe("Gen7 Sticky Web", () => {
     });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(false);
-    expect(result.statChange).toBeNull();
+    expect(result.statChanges).toEqual([]);
     expect(result.messages[0]).toContain("Full Metal Body");
   });
 
@@ -336,7 +336,8 @@ describe("Gen7 Sticky Web", () => {
     const mon = makeActivePokemon({ types: ["normal"], ability: "defiant", nickname: "Braviary" });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(true);
-    expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
+    expect(result.statChanges).toContainEqual({ stat: "speed", stages: -1 });
+    expect(result.statChanges).toContainEqual({ stat: "attack", stages: 2 });
     expect(result.messages).toContain("Braviary's Defiant sharply raised its Attack!");
   });
 
@@ -349,6 +350,8 @@ describe("Gen7 Sticky Web", () => {
     });
     const result = applyGen7StickyWeb(mon, false);
     expect(result.applied).toBe(true);
+    expect(result.statChanges).toContainEqual({ stat: "speed", stages: -1 });
+    expect(result.statChanges).toContainEqual({ stat: "spAttack", stages: 2 });
     expect(result.messages).toContain("Milotic's Competitive sharply raised its Sp. Atk!");
   });
 });
