@@ -17,6 +17,7 @@ function makeActivePokemon(overrides: {
   ability?: string;
   heldItem?: string | null;
   volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
+  consecutiveProtects?: number;
 }): ActivePokemon {
   return {
     pokemon: {
@@ -36,6 +37,7 @@ function makeActivePokemon(overrides: {
     ability: overrides.ability ?? "blaze",
     volatileStatuses: overrides.volatileStatuses ?? new Map(),
     types: ["normal"] as const,
+    consecutiveProtects: overrides.consecutiveProtects ?? 0,
     statStages: {
       attack: 0,
       defense: 0,
@@ -284,17 +286,24 @@ describe("Gen5 Quick Guard", () => {
     expect(result!.messages[0]).toBe("But it failed!");
   });
 
-  it("given attacker has protect volatile with consecutive uses, when Quick Guard is used, then reads consecutive count from protect data", () => {
+  it("given attacker has consecutiveProtects set, when Quick Guard is used, then passes correct count to rollProtectSuccess", () => {
+    // Source: BattleEngine.ts -- consecutiveProtects tracked on ActivePokemon, not volatile data
     // Source: Showdown Gen 5 -- Quick Guard shares stall counter with Protect
-    // The protect volatile's data.consecutiveUses tracks how many times in a row
-    const protectData = new Map([["protect", { turnsLeft: 0, data: { consecutiveUses: 2 } }]]);
-    const ctx = makeContext("quick-guard", {}, { volatileStatuses: protectData });
+    const ctx = makeContext("quick-guard", {}, { consecutiveProtects: 2 });
     const rng = new SeededRandom(42);
 
-    // With alwaysSucceedProtect, it succeeds regardless of consecutive count
-    const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
+    // Capture the consecutiveProtects value passed to rollProtectSuccess
+    let capturedCount = -1;
+    const captureProtectRoll = (count: number, _rng: SeededRandom): boolean => {
+      capturedCount = count;
+      return true;
+    };
+
+    const result = handleGen5FieldMove(ctx, rng, captureProtectRoll);
     expect(result).not.toBeNull();
     expect(result!.selfVolatileInflicted).toBe("quick-guard");
+    // Verify that consecutiveProtects from ActivePokemon (2) was passed, not 0 from volatile data
+    expect(capturedCount).toBe(2);
   });
 });
 

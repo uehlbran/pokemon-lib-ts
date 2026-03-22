@@ -150,14 +150,11 @@ function handleQuickGuard(
 ): MoveEffectResult {
   const base = createBaseResult();
 
-  // Quick Guard uses the same stalling mechanic as Protect
+  // Quick Guard uses the same stalling mechanic as Protect.
+  // consecutiveProtects is tracked on ActivePokemon, not in the volatile data.
+  // Source: BattleEngine.ts -- actor.consecutiveProtects incremented on protect success
   // Source: Showdown Gen 5 quickguard -- stallingMove: true, onTry checks StallMove
-  const protectVolatile = ctx.attacker.volatileStatuses.get("protect");
-  const consecutiveProtects = protectVolatile?.data
-    ? (((protectVolatile.data as Record<string, unknown>).consecutiveUses as number) ?? 0)
-    : 0;
-
-  if (!rollProtectSuccess(consecutiveProtects, rng)) {
+  if (!rollProtectSuccess(ctx.attacker.consecutiveProtects, rng)) {
     return {
       ...base,
       messages: ["But it failed!"],
@@ -193,14 +190,11 @@ function handleWideGuard(
 ): MoveEffectResult {
   const base = createBaseResult();
 
-  // Wide Guard uses the same stalling mechanic as Protect
+  // Wide Guard uses the same stalling mechanic as Protect.
+  // consecutiveProtects is tracked on ActivePokemon, not in the volatile data.
+  // Source: BattleEngine.ts -- actor.consecutiveProtects incremented on protect success
   // Source: Showdown Gen 5 wideguard -- stallingMove: true, onTry checks StallMove
-  const protectVolatile = ctx.attacker.volatileStatuses.get("protect");
-  const consecutiveProtects = protectVolatile?.data
-    ? (((protectVolatile.data as Record<string, unknown>).consecutiveUses as number) ?? 0)
-    : 0;
-
-  if (!rollProtectSuccess(consecutiveProtects, rng)) {
+  if (!rollProtectSuccess(ctx.attacker.consecutiveProtects, rng)) {
     return {
       ...base,
       messages: ["But it failed!"],

@@ -1114,6 +1114,36 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
+    // Quick Guard check (Gen 5+): blocks moves with natural priority > 0 (except Feint)
+    // Source: Showdown Gen 5 quickguard condition — blocks if dex.moves.get(id).priority > 0 && not feint
+    if (defender.volatileStatuses.has("quick-guard") && moveData.flags.protect) {
+      const naturalPriority: number = moveData.priority ?? 0;
+      if (moveData.id !== "feint" && naturalPriority > 0) {
+        this.emit({
+          type: "message",
+          text: `Quick Guard protected ${getPokemonName(defender)}!`,
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+    }
+
+    // Wide Guard check (Gen 5+): blocks spread moves (all-adjacent, all-adjacent-foes)
+    // Source: Showdown wideguard condition — blocks if move.target is allAdjacent or allAdjacentFoes
+    if (defender.volatileStatuses.has("wide-guard") && moveData.flags.protect) {
+      const moveTarget = moveData.target ?? "";
+      if (moveTarget === "all-adjacent" || moveTarget === "all-adjacent-foes") {
+        this.emit({
+          type: "message",
+          text: `Wide Guard protected ${getPokemonName(defender)}!`,
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+    }
+
     // Damage calculation (for damaging moves)
     let damage = 0;
     let brokeSubstitute = false;
@@ -2535,6 +2565,24 @@ export class BattleEngine implements BattleEventEmitter {
       this.state.trickRoom = { active: trActive, turnsLeft: result.trickRoomSet.turnsLeft };
     }
 
+    // Magic Room set (Gen 5+)
+    // When turnsLeft > 0, activate Magic Room. When turnsLeft <= 0, deactivate it (toggle off).
+    // Messaging is handled by the gen ruleset via result.messages.
+    // Source: Showdown magicroom condition — duration: 5, onFieldRestart toggles off
+    if (result.magicRoomSet) {
+      const mrActive = result.magicRoomSet.turnsLeft > 0;
+      this.state.magicRoom = { active: mrActive, turnsLeft: result.magicRoomSet.turnsLeft };
+    }
+
+    // Wonder Room set (Gen 5+)
+    // When turnsLeft > 0, activate Wonder Room. When turnsLeft <= 0, deactivate it (toggle off).
+    // Messaging is handled by the gen ruleset via result.messages.
+    // Source: Showdown wonderroom condition — duration: 5, onFieldRestart toggles off
+    if (result.wonderRoomSet) {
+      const wrActive = result.wonderRoomSet.turnsLeft > 0;
+      this.state.wonderRoom = { active: wrActive, turnsLeft: result.wonderRoomSet.turnsLeft };
+    }
+
     // Future attack (Future Sight / Doom Desire) — schedule on the target's side
     // Source: Bulbapedia — "In Generations II-IV, damage is calculated when
     // Future Sight or Doom Desire hits."
@@ -3289,6 +3337,33 @@ export class BattleEngine implements BattleEventEmitter {
             if (this.state.gravity.turnsLeft <= 0) {
               this.state.gravity.active = false;
               this.emit({ type: "message", text: "Gravity returned to normal!" });
+            }
+          }
+          break;
+        }
+        case "magic-room-countdown": {
+          // Magic Room field countdown — deactivate when turnsLeft reaches 0
+          // Source: Showdown magicroom condition — duration: 5
+          if (this.state.magicRoom.active) {
+            this.state.magicRoom.turnsLeft--;
+            if (this.state.magicRoom.turnsLeft <= 0) {
+              this.state.magicRoom.active = false;
+              this.emit({ type: "message", text: "The area returned to normal!" });
+            }
+          }
+          break;
+        }
+        case "wonder-room-countdown": {
+          // Wonder Room field countdown — deactivate when turnsLeft reaches 0
+          // Source: Showdown wonderroom condition — duration: 5
+          if (this.state.wonderRoom.active) {
+            this.state.wonderRoom.turnsLeft--;
+            if (this.state.wonderRoom.turnsLeft <= 0) {
+              this.state.wonderRoom.active = false;
+              this.emit({
+                type: "message",
+                text: "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
+              });
             }
           }
           break;

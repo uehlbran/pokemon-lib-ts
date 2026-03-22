@@ -23,6 +23,8 @@ import type {
 import { DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_DENOMINATORS } from "./Gen5CritCalc";
 import { calculateGen5Damage } from "./Gen5DamageCalc";
+import { handleGen5CombatMove } from "./Gen5MoveEffectsCombat";
+import { handleGen5FieldMove } from "./Gen5MoveEffectsField";
 import { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
 import { applyGen5WeatherEffects } from "./Gen5Weather";
 
@@ -118,7 +120,21 @@ export class Gen5Ruleset extends BaseRuleset {
    * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    // Stub -- delegates to BaseRuleset default for now
+    // Try field effect moves first (Magic Room, Wonder Room, Trick Room, Quick Guard, Wide Guard)
+    // Source: references/pokemon-showdown/data/mods/gen5/moves.ts
+    const fieldResult = handleGen5FieldMove(
+      context,
+      context.state.rng,
+      this.rollProtectSuccess.bind(this),
+    );
+    if (fieldResult !== null) return fieldResult;
+
+    // Try combat moves (Shell Smash, Quiver Dance, Dragon Tail, etc.)
+    // Source: references/pokemon-showdown/data/mods/gen5/moves.ts
+    const combatResult = handleGen5CombatMove(context);
+    if (combatResult !== null) return combatResult;
+
+    // Delegate to BaseRuleset for any remaining moves
     return super.executeMoveEffect(context);
   }
 
@@ -671,6 +687,8 @@ export class Gen5Ruleset extends BaseRuleset {
       "safeguard-countdown",
       "tailwind-countdown",
       "trick-room-countdown",
+      "magic-room-countdown", // Magic Room duration (5 turns)
+      "wonder-room-countdown", // Wonder Room duration (5 turns)
       "gravity-countdown",
       "weather-countdown",
       "toxic-orb-activation", // Toxic Orb — after weather countdown
