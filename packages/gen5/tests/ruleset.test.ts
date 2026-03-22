@@ -109,31 +109,39 @@ describe("Gen5 Protect consecutive success", () => {
     expect(ratio).toBeLessThan(0.016);
   });
 
-  it("given 8 consecutive Protects, when rollProtectSuccess called, then has approximately 1/256 success chance (cap hit)", () => {
+  it("given 8 consecutive Protects (cap hit), when rollProtectSuccess called, then has effectively 0% success chance", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- counterMax: 256
-    //   At N=8, counter = 2^8 = 256 = cap → chance = 1/256 ≈ 0.0039
+    //   At N=8, counter = 2^8 = 256 = cap. Showdown uses randomChance(1, 2**32)
+    //   which is ~1 in 4 billion, effectively impossible.
     const rng = new SeededRandom(42);
     let successCount = 0;
     const iterations = 10000;
     for (let i = 0; i < iterations; i++) {
       if (ruleset.rollProtectSuccess(8, rng)) successCount++;
     }
-    const ratio = successCount / iterations;
-    // Expected: 1/256 ~ 0.0039, with wide tolerance due to rarity
-    expect(ratio).toBeLessThan(0.012);
+    // Expected: ~0 successes (1 in 2^32 chance per attempt)
+    expect(successCount).toBe(0);
   });
 
-  it("given 10 consecutive Protects, when rollProtectSuccess called, then still capped at 1/256", () => {
-    // Source: counterMax: 256 in Showdown conditions.ts -- 2^10=1024 > cap, so stays at 1/256
+  it("given 10 consecutive Protects (beyond cap), when rollProtectSuccess called, then has effectively 0% success chance", () => {
+    // Source: Showdown Gen 5 conditions.ts -- counterMax: 256, 2^10=1024 > cap
+    //   Still uses randomChance(1, 2**32) since denominator >= 256
     const rng = new SeededRandom(42);
     let successCount = 0;
     const iterations = 10000;
     for (let i = 0; i < iterations; i++) {
       if (ruleset.rollProtectSuccess(10, rng)) successCount++;
     }
-    const ratio = successCount / iterations;
-    // Should be same as 8 consecutive (both capped at 1/256)
-    expect(ratio).toBeLessThan(0.012);
+    // Expected: ~0 successes (1 in 2^32 chance per attempt)
+    expect(successCount).toBe(0);
+  });
+
+  it("given consecutiveProtects=0, when rollProtectSuccess called, then first use never consumes RNG (always true)", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- first use always succeeds
+    // Verifying that consecutiveProtects=0 is a deterministic true, confirming the formula boundary.
+    const rng = new SeededRandom(12345);
+    expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
+    expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
   });
 });
 

@@ -14,6 +14,8 @@ import {
   handleGen6DamageCalcAbility,
   handleGen6DamageImmunityAbility,
   isParentalBondEligible,
+  isSheerForceEligibleMove,
+  isSheerForceWhitelistedMove,
   PARENTAL_BOND_SECOND_HIT_MULTIPLIER,
   sturdyBlocksOHKO,
 } from "../src/Gen6AbilitiesDamage";
@@ -681,5 +683,87 @@ describe("Sheer Force (carry-forward)", () => {
   it("given Sheer Force utility, when move has no secondary effect, then returns 1 (no boost)", () => {
     // Source: Showdown data/abilities.ts -- sheerforce: only activates for moves with secondaries
     expect(getSheerForceMultiplier("sheer-force", null)).toBe(1);
+  });
+
+  it("given Sheer Force + Tri Attack (effect=null, whitelisted), when checking activation, then activates", () => {
+    // Source: Showdown data/moves.ts -- triattack has secondary.onHit with chance: 20
+    //   Our data stores effect=null because the onHit function is not serializable
+    const ctx = makeAbilityContext({
+      pokemon: makeActive({ ability: "sheer-force" }),
+      move: makeMove({ id: "tri-attack", effect: null }),
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(true);
+  });
+
+  it("given Sheer Force + Secret Power (whitelisted), when checking activation, then activates", () => {
+    // Source: Showdown data/moves.ts -- secretpower has secondary effect (30% chance)
+    //   In Gen 6 data, effect is status-chance (paralysis 30%), so it would also be caught
+    //   by hasSheerForceEligibleEffect. The whitelist provides defense-in-depth.
+    const ctx = makeAbilityContext({
+      pokemon: makeActive({ ability: "sheer-force" }),
+      move: makeMove({ id: "secret-power", effect: null }),
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(true);
+  });
+
+  it("given Sheer Force + Relic Song (whitelisted), when checking activation, then activates", () => {
+    // Source: Showdown data/moves.ts -- relicsong has secondary (10% sleep)
+    //   In Gen 6 data, effect is status-chance (sleep 10%), so it would also be caught
+    //   by hasSheerForceEligibleEffect. The whitelist provides defense-in-depth.
+    const ctx = makeAbilityContext({
+      pokemon: makeActive({ ability: "sheer-force" }),
+      move: makeMove({ id: "relic-song", effect: null }),
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(true);
+  });
+});
+
+// ===========================================================================
+// Sheer Force whitelist consistency
+// ===========================================================================
+
+describe("Sheer Force whitelist consistency (Gen 6)", () => {
+  it("given tri-attack, when checking whitelist, then returns true", () => {
+    // Source: Showdown data/moves.ts -- triattack has secondary.onHit
+    //   effect=null in our data, whitelist is essential
+    expect(isSheerForceWhitelistedMove("tri-attack")).toBe(true);
+  });
+
+  it("given secret-power, when checking whitelist, then returns true", () => {
+    // Source: Showdown data/moves.ts -- secretpower has secondary effect
+    //   Whitelisted for consistency with Gen6DamageCalc.ts and Gen6Items.ts
+    expect(isSheerForceWhitelistedMove("secret-power")).toBe(true);
+  });
+
+  it("given relic-song, when checking whitelist, then returns true", () => {
+    // Source: Showdown data/moves.ts -- relicsong has secondary (10% sleep)
+    //   Whitelisted for consistency with Gen6DamageCalc.ts and Gen6Items.ts
+    expect(isSheerForceWhitelistedMove("relic-song")).toBe(true);
+  });
+
+  it("given earthquake (no secondary), when checking whitelist, then returns false", () => {
+    // Source: Showdown data/moves.ts -- earthquake has no secondary field
+    expect(isSheerForceWhitelistedMove("earthquake")).toBe(false);
+  });
+
+  it("given tri-attack with effect=null, when checking isSheerForceEligibleMove, then returns true via whitelist", () => {
+    // Source: Showdown data/abilities.ts -- sheerforce triggers for triattack
+    //   Our data has effect=null so the whitelist is the only path
+    expect(isSheerForceEligibleMove(null, "tri-attack")).toBe(true);
+  });
+
+  it("given secret-power with effect=null, when checking isSheerForceEligibleMove, then returns true via whitelist", () => {
+    // Source: Showdown data/moves.ts -- secretpower secondary
+    //   Even if data import changed effect to null, whitelist ensures Sheer Force still triggers
+    expect(isSheerForceEligibleMove(null, "secret-power")).toBe(true);
+  });
+
+  it("given relic-song with effect=null, when checking isSheerForceEligibleMove, then returns true via whitelist", () => {
+    // Source: Showdown data/moves.ts -- relicsong secondary (10% sleep)
+    //   Even if data import changed effect to null, whitelist ensures Sheer Force still triggers
+    expect(isSheerForceEligibleMove(null, "relic-song")).toBe(true);
   });
 });

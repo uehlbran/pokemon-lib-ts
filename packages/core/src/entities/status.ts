@@ -82,6 +82,7 @@ export type VolatileStatus =
   | "battle-bond-transformed" // Battle Bond — Greninja has transformed to Ash-Greninja this battle (Gen 7+)
   | "obstruct" // Obstruct — protect variant, blocks moves with protect flag; -2 Def on contact (Gen 8)
   | "jaw-lock" // Jaw Lock — traps both user and target (Gen 8)
+  | "max-guard" // Max Guard — Dynamax protect variant; blocks ALL moves including other Max Moves (Gen 8)
   | "protosynthesis" // Protosynthesis — boosts highest stat in Sun or with Booster Energy (Gen 9); data: { boostedStat: string }
   | "quarkdrive" // Quark Drive — boosts highest stat on Electric Terrain or with Booster Energy (Gen 9); data: { boostedStat: string }
   | "embody-aspect-used" // Embody Aspect (Ogerpon) — tracks once-per-battle activation (Gen 9)

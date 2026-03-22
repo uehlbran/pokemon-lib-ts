@@ -1294,15 +1294,40 @@ export class BattleEngine implements BattleEventEmitter {
       return;
     }
 
-    // Protect check
-    if (defender.volatileStatuses.has("protect") && moveData.flags.protect) {
-      this.emit({
-        type: "message",
-        text: `${getPokemonName(defender)} protected itself!`,
-      });
-      actor.lastMoveUsed = moveData.id;
-      actor.movedThisTurn = true;
-      return;
+    // Protect check: detect which protect-type volatile is active, then delegate to ruleset.
+    // The ruleset decides whether the move bypasses — Gen 8 returns false for "max-guard"
+    // (Max Guard blocks all moves including other Max Moves) and actor.isDynamaxed for "protect".
+    // Gen 7 returns zMovePower > 0 for "protect". Other gens return false.
+    // Source: Showdown sim/battle-actions.ts -- Z-Moves/Max Moves bypass Protect at 0.25x
+    // Source: Showdown sim/battle-actions.ts -- Max Guard blocks all moves including Max Moves
+    let hitThroughProtect = false;
+    const activeProtectVolatile: "protect" | "max-guard" | null = defender.volatileStatuses.has(
+      "max-guard",
+    )
+      ? "max-guard"
+      : defender.volatileStatuses.has("protect")
+        ? "protect"
+        : null;
+    if (activeProtectVolatile !== null && effectiveMoveData.flags.protect) {
+      if (this.ruleset.canBypassProtect(effectiveMoveData, actor, activeProtectVolatile)) {
+        hitThroughProtect = true;
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(defender)} protected itself!`,
+        });
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(defender)} couldn't fully protect itself!`,
+        });
+      } else {
+        this.emit({
+          type: "message",
+          text: `${getPokemonName(defender)} protected itself!`,
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
     }
 
     // Quick Guard check (Gen 5+): blocks moves with natural priority > 0 (except Feint)
@@ -1383,6 +1408,7 @@ export class BattleEngine implements BattleEventEmitter {
         state: this.state,
         rng: this.state.rng,
         isCrit,
+        hitThroughProtect,
       });
 
       damage = result.damage;

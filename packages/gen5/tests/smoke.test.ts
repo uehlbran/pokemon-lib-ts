@@ -282,8 +282,9 @@ describe("Gen5Ruleset rollProtectSuccess", () => {
     expect(calledWith).toBe(0.5);
   });
 
-  it("given 8+ consecutive protects, when rolling, then uses capped 1/256 chance", () => {
-    // Source: Showdown Gen 5 mod -- counterMax: 256
+  it("given 8+ consecutive protects, when rolling, then uses effectively-impossible 1/2^32 chance", () => {
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- counterMax: 256
+    //   At cap (counter >= 256), Showdown uses randomChance(1, 2**32), not 1/256.
     let calledWith = 0;
     const rng = {
       chance: (p: number) => {
@@ -292,7 +293,7 @@ describe("Gen5Ruleset rollProtectSuccess", () => {
       },
     } as any;
     ruleset.rollProtectSuccess(10, rng);
-    expect(calledWith).toBeCloseTo(1 / 256);
+    expect(calledWith).toBeCloseTo(1 / 2 ** 32);
   });
 });
 

@@ -40,6 +40,15 @@ export interface DamageContext {
   readonly rng: SeededRandom;
   /** Whether this hit is a critical hit (already determined before damage calc) */
   readonly isCrit: boolean;
+  /**
+   * Set to `true` when a Z-Move or Max Move bypasses Protect/Detect/etc.
+   * The damage calc should apply a 0.25x modifier (via pokeRound) when this flag is set.
+   *
+   * Source: Showdown sim/battle-actions.ts -- Z-Moves bypass Protect at 0.25x damage
+   * Source: Bulbapedia "Z-Move" -- "deals a quarter of its damage" through Protect
+   * Source: Bulbapedia "Max Move" -- Max Moves also deal 25% through Protect
+   */
+  readonly hitThroughProtect?: boolean;
 }
 
 /**

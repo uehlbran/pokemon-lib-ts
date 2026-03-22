@@ -636,13 +636,23 @@ export class Gen5Ruleset extends BaseRuleset {
 
   /**
    * Gen 5 Protect/Detect consecutive activation formula.
-   * Uses doubling denominator: 2^N, capped at 256.
+   * Uses doubling denominator: 2^N, capped at 256. When the cap is reached,
+   * Showdown uses randomChance(1, 2^32) which is effectively impossible.
    *
    * Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- stall condition
+   *   onStart: counter = 2
+   *   onStallMove: if counter >= 256 -> randomChance(1, 2**32); else randomChance(1, counter)
+   *   onRestart: counter *= 2 (capped at counterMax=256)
    */
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
     if (consecutiveProtects === 0) return true;
     const denominator = Math.min(256, 2 ** consecutiveProtects);
+    // Source: Showdown Gen 5 conditions.ts -- at counter >= 256, uses randomChance(1, 2**32)
+    // which is ~1 in 4 billion, effectively impossible. We match this by using
+    // 1 / 2^32 instead of 1 / 256 when the cap is reached.
+    if (denominator >= 256) {
+      return rng.chance(1 / 2 ** 32);
+    }
     return rng.chance(1 / denominator);
   }
 

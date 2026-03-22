@@ -9,7 +9,7 @@
  *   - Normalize (Gen 7): 1.2x boost on top of Normal conversion (new in Gen 7)
  *   - Soul Dew: boosts Dragon/Psychic moves by 1.2x (was stat boost in Gen 3-6)
  *   - Parental Bond second hit: 0.25x (was 0.5x in Gen 6) -- handled by engine, not here
- *   - Z-Move through Protect: 0.25x modifier when zBrokeProtect flag set -- deferred to Wave 8
+ *   - Z-Move through Protect: 0.25x modifier when hitThroughProtect flag set on DamageContext
  *   - Psychic Terrain: 1.5x Psychic moves for grounded attacker (new terrain)
  *   - Normal Gem is the only gem available in Gen 7 (others removed)
  *   - Facade bypasses burn penalty (same as Gen 6)
@@ -1377,6 +1377,13 @@ export function calculateGen7Damage(
         typeResistBerryConsumed = defenderItemForBerry;
       }
     }
+  }
+
+  // Z-Move through Protect: 0.25x modifier
+  // Source: Showdown sim/battle-actions.ts -- Z-Moves bypass Protect at 0.25x damage
+  // Source: Bulbapedia "Z-Move" -- "deals a quarter of its damage" through Protect
+  if (context.hitThroughProtect) {
+    baseDamage = pokeRound(baseDamage, 1024); // 0.25x via pokeRound (1024/4096)
   }
 
   // 10. Minimum 1 damage (unless type immune)

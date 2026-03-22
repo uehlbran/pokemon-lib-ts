@@ -461,6 +461,14 @@ export class MockRuleset implements GenerationRuleset {
     return Math.max(1, Math.floor(damageDealt / 2));
   }
 
+  canBypassProtect(
+    _move: MoveData,
+    _actor: ActivePokemon,
+    _activeVolatile: "protect" | "max-guard",
+  ): boolean {
+    return false;
+  }
+
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
     return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
   }

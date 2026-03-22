@@ -1859,6 +1859,15 @@ export class Gen1Ruleset implements GenerationRuleset {
     return Math.max(1, Math.floor(damageDealt / 2));
   }
 
+  canBypassProtect(
+    _move: MoveData,
+    _actor: ActivePokemon,
+    _activeVolatile: "protect" | "max-guard",
+  ): boolean {
+    // Gen 1: no Protect move exists; no moves can bypass it
+    return false;
+  }
+
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
     return gen14MultiHitRoll(rng);
   }

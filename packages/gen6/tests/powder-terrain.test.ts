@@ -327,6 +327,8 @@ describe("isGen6GrassPowderBlocked — pure function", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen6Ruleset.executeMoveEffect — powder immunity integration", () => {
+  // 15s timeout: async dynamic import triggers module compilation; under full-suite parallel
+  // load this can take longer than the default 5s.
   it("given Grass-type defender and powder move, when executeMoveEffect called, then returns blocked result with immunity message", async () => {
     // Source: Showdown -- powder moves return null against Grass types
     // Source: Bulbapedia -- "It doesn't affect <target>..."
@@ -362,7 +364,7 @@ describe("Gen6Ruleset.executeMoveEffect — powder immunity integration", () => 
     expect(result.statusInflicted).toBeNull();
     expect(result.healAmount).toBe(0);
     expect(result.messages).toEqual(["It doesn't affect Bulbasaur..."]);
-  });
+  }, 15000);
 
   it("given Grass/Poison-type defender and Stun Spore, when executeMoveEffect called, then returns blocked result", async () => {
     // Source: Showdown -- any Pokemon with Grass as one of its types is immune

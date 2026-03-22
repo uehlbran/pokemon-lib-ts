@@ -166,6 +166,7 @@ function makeDamageContext(overrides: {
   state?: BattleState;
   isCrit?: boolean;
   seed?: number;
+  hitThroughProtect?: boolean;
 }): DamageContext {
   return {
     attacker: overrides.attacker ?? makeActive({}),
@@ -174,6 +175,7 @@ function makeDamageContext(overrides: {
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
+    hitThroughProtect: overrides.hitThroughProtect,
   };
 }
 
@@ -3631,5 +3633,204 @@ describe("Gen 7 Aurora Veil screen damage reduction", () => {
     // Derivation: base=34 (no screen) * 1.5x crit = pokeRound(34, 6144) = 51
     expect(resultWithCrit.damage).toBe(51);
     expect(resultWithCrit.breakdown?.otherMultiplier).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Z-Move through Protect: 0.25x modifier
+// ---------------------------------------------------------------------------
+
+describe("Z-Move through Protect (hitThroughProtect)", () => {
+  it("given a Z-Move hitting through Protect, when damage is calculated, then damage is 25% of normal", () => {
+    // Source: Showdown sim/battle-actions.ts -- Z-Moves bypass Protect at 0.25x damage
+    // Source: Bulbapedia "Z-Move" -- "deals a quarter of its damage" through Protect
+    //
+    // Setup: L50 attacker (100 Atk) vs L50 defender (100 Def), Normal-type Z-Move
+    // with 100 power (from Breakneck Blitz). zMovePower field marks it as a Z-Move.
+    //
+    // Normal damage derivation (seed 42, no crit):
+    //   Base: floor(floor((2*50/5+2) * 100 * 100/100) / 50) + 2 = floor(2200/50) + 2 = 46
+    //   Random roll: floor(46 * roll / 100) where roll comes from RNG
+    //   STAB: 1.0x (attacker is psychic-type, move is normal-type)
+    //   Type: 1.0x (normal vs psychic)
+    //   Final: some value from random roll
+
+    const attacker = makeActive({ attack: 100, types: ["psychic"] });
+    const defender = makeActive({ defense: 100, types: ["psychic"] });
+    const zMove = makeMove({
+      id: "breakneck-blitz",
+      type: "normal",
+      power: 100,
+      category: "physical",
+    });
+    // Mark as a Z-Move via the zMovePower field (set by Gen7ZMove.modifyMove)
+    (zMove as any).zMovePower = 100;
+
+    // Calculate normal damage (no Protect)
+    const normalCtx = makeDamageContext({
+      attacker,
+      defender,
+      move: zMove,
+      seed: 42,
+      hitThroughProtect: false,
+    });
+    const normalResult = calculateGen7Damage(normalCtx, typeChart);
+
+    // Calculate damage through Protect (hitThroughProtect = true)
+    const protectCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, types: ["psychic"] }),
+      defender: makeActive({ defense: 100, types: ["psychic"] }),
+      move: { ...zMove },
+      seed: 42,
+      hitThroughProtect: true,
+    });
+    // Re-set zMovePower on the cloned move
+    (protectCtx.move as any).zMovePower = 100;
+    const protectResult = calculateGen7Damage(protectCtx, typeChart);
+
+    // The Protect version should be 25% of normal (via pokeRound with 1024/4096)
+    // pokeRound(normalDamage, 1024) = floor((normalDamage * 1024 + 2047) / 4096)
+    const expectedProtectDamage = Math.floor((normalResult.damage * 1024 + 2047) / 4096);
+    // Guard: ensure the normal damage is nontrivial so the 0.25x is meaningful
+    expect(normalResult.damage).toBeGreaterThan(4);
+    // Protect damage should be approximately 25% of normal
+    expect(protectResult.damage).toBe(Math.max(1, expectedProtectDamage));
+  });
+
+  it("given a Z-Move with hitThroughProtect=false, when damage is calculated, then damage is normal (no 0.25x)", () => {
+    // Source: Showdown sim/battle-actions.ts -- 0.25x only applies when hitting through Protect
+    //
+    // Same setup as above but hitThroughProtect is false -- damage should be full.
+
+    const attacker = makeActive({ attack: 100, types: ["fire"] });
+    const defender = makeActive({ defense: 100, types: ["normal"] });
+    const zMove = makeMove({
+      id: "inferno-overdrive",
+      type: "fire",
+      power: 175,
+      category: "physical",
+    });
+    (zMove as any).zMovePower = 175;
+
+    const ctx = makeDamageContext({
+      attacker,
+      defender,
+      move: zMove,
+      seed: 42,
+      hitThroughProtect: false,
+    });
+    const result = calculateGen7Damage(ctx, typeChart);
+
+    // Without hitThroughProtect, damage should be full (no 0.25x applied)
+    // Derivation: base = floor((floor((2*50/5+2) * 175 * 100/100) / 50) + 2) = floor(3850/50) + 2 = 79
+    // STAB: fire attacker using fire move -> pokeRound(79, 6144) = 118 (wait, 1.5x)
+    // Actually: attacker types are ["fire"], move type is "fire" -> STAB = 1.5x
+    // base = floor((22 * 175 * 100/100) / 50) + 2 = floor(3850/50) + 2 = floor(77) + 2 = 79
+    // STAB: pokeRound(79, 6144) = floor((79*6144+2047)/4096) = floor((485376+2047)/4096) = floor(487423/4096) = 118
+    // Random factor will apply, so let's just verify it's > 100 (with STAB and 175 power)
+    expect(result.damage).toBeGreaterThan(80);
+
+    // Now verify with hitThroughProtect=true for comparison
+    const protectCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, types: ["fire"] }),
+      defender: makeActive({ defense: 100, types: ["normal"] }),
+      move: { ...zMove },
+      seed: 42,
+      hitThroughProtect: true,
+    });
+    (protectCtx.move as any).zMovePower = 175;
+    const protectResult = calculateGen7Damage(protectCtx, typeChart);
+
+    // Protect result should be significantly less than normal
+    expect(protectResult.damage).toBeLessThan(result.damage);
+    // pokeRound(result.damage, 1024) should give roughly 25%
+    const expected = Math.max(1, Math.floor((result.damage * 1024 + 2047) / 4096));
+    expect(protectResult.damage).toBe(expected);
+  });
+
+  it("given a non-Z-Move with hitThroughProtect=true, when damage is calculated, then 0.25x is still applied (engine prevents this case)", () => {
+    // Source: Showdown sim/battle-actions.ts -- the 0.25x applies to any move that hit
+    // through Protect (engine only sets this flag for Z-Moves/Max Moves).
+    // The damage calc itself doesn't check for Z-Move -- it trusts the engine's flag.
+    //
+    // This test verifies the damage calc applies 0.25x purely based on the flag,
+    // regardless of whether the move is a Z-Move. The engine is responsible for only
+    // setting the flag on Z-Moves/Max Moves.
+
+    const attacker = makeActive({ attack: 100 });
+    const defender = makeActive({ defense: 100 });
+    const normalMove = makeMove({ power: 80, type: "normal", category: "physical" });
+
+    const normalCtx = makeDamageContext({
+      attacker,
+      defender,
+      move: normalMove,
+      seed: 42,
+      hitThroughProtect: false,
+    });
+    const normalResult = calculateGen7Damage(normalCtx, typeChart);
+
+    const protectCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100 }),
+      defender: makeActive({ defense: 100 }),
+      move: makeMove({ power: 80, type: "normal", category: "physical" }),
+      seed: 42,
+      hitThroughProtect: true,
+    });
+    const protectResult = calculateGen7Damage(protectCtx, typeChart);
+
+    const expected = Math.max(1, Math.floor((normalResult.damage * 1024 + 2047) / 4096));
+    expect(protectResult.damage).toBe(expected);
+  });
+
+  it("given a Z-Move hitting through Protect with high damage, when calculating, then 0.25x is correctly applied via pokeRound", () => {
+    // Source: Showdown sim/battle-actions.ts -- uses this.modify(damage, 0.25) which is
+    // pokeRound(damage, 1024)
+    //
+    // Verify with a high-power scenario to ensure pokeRound rounding is correct.
+    // L100 attacker with 200 Atk, Z-Move power 200, vs L100 defender with 100 Def.
+    //
+    // Base: floor((floor((2*100/5+2) * 200 * 200/100) / 50) + 2)
+    //     = floor((42 * 200 * 200/100) / 50) + 2
+    //     = floor(42 * 400 / 50) + 2
+    //     = floor(16800/50) + 2
+    //     = floor(336) + 2 = 338
+
+    const attacker = makeActive({ level: 100, attack: 200, types: ["dragon"] });
+    const defender = makeActive({ level: 100, defense: 100, types: ["normal"] });
+    const zMove = makeMove({
+      id: "devastating-drake",
+      type: "dragon",
+      power: 200,
+      category: "physical",
+    });
+    (zMove as any).zMovePower = 200;
+
+    const normalCtx = makeDamageContext({
+      attacker,
+      defender,
+      move: zMove,
+      seed: 42,
+    });
+    const normalResult = calculateGen7Damage(normalCtx, typeChart);
+
+    const protectCtx = makeDamageContext({
+      attacker: makeActive({ level: 100, attack: 200, types: ["dragon"] }),
+      defender: makeActive({ level: 100, defense: 100, types: ["normal"] }),
+      move: { ...zMove },
+      seed: 42,
+      hitThroughProtect: true,
+    });
+    (protectCtx.move as any).zMovePower = 200;
+    const protectResult = calculateGen7Damage(protectCtx, typeChart);
+
+    // pokeRound(normalDamage, 1024) = floor((normalDamage * 1024 + 2047) / 4096)
+    const expected = Math.max(1, Math.floor((normalResult.damage * 1024 + 2047) / 4096));
+    expect(protectResult.damage).toBe(expected);
+
+    // Sanity: normal damage should be substantial, protect damage should be ~25%
+    expect(normalResult.damage).toBeGreaterThan(200);
+    expect(protectResult.damage).toBeGreaterThan(50);
+    expect(protectResult.damage).toBeLessThan(normalResult.damage * 0.3);
   });
 });

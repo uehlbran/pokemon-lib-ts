@@ -279,7 +279,8 @@ export interface ProtectEffect {
     | "spiky-shield"
     | "kings-shield"
     | "silk-trap"
-    | "burning-bulwark";
+    | "burning-bulwark"
+    | "max-guard"; // Gen 8: Max Guard — blocks all moves including other Max Moves
 }
 
 /**

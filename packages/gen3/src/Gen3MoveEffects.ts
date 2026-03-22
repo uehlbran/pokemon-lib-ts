@@ -264,7 +264,10 @@ function applyMoveEffect(
     case "protect": {
       // Protect/Detect — engine handles protect volatile + consecutive-use scaling
       // Source: pret/pokeemerald — Protect sets PROTECTED status
-      result.volatileInflicted = "protect";
+      // Max Guard uses a distinct "max-guard" volatile that the engine treats as always-block
+      // (cannot be bypassed by any move, including other Max Moves).
+      // Source: Showdown sim/battle-actions.ts -- Max Guard blocks all moves including Max Moves
+      result.volatileInflicted = effect.variant === "max-guard" ? "max-guard" : "protect";
       break;
     }
 

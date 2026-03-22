@@ -114,6 +114,26 @@ export interface DamageSystem {
     move: MoveData,
     state: BattleState,
   ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string };
+
+  /**
+   * Returns `true` if the given move, when used by the given actor, can bypass Protect-type
+   * volatile statuses and hit the defender for reduced (0.25x) damage.
+   *
+   * Gen 7: Z-Moves (zMovePower > 0) bypass regular Protect at 0.25x.
+   * Gen 8: Max Moves (actor.isDynamaxed) bypass regular Protect at 0.25x but NOT Max Guard.
+   * All other gens: no moves bypass Protect via this mechanic.
+   *
+   * The `activeVolatile` parameter tells the ruleset which protect-type volatile is active.
+   * Max Guard (`"max-guard"`) is always-block — rulesets should return false for it.
+   *
+   * Source: Showdown sim/battle-actions.ts -- Z-Moves/Max Moves bypass Protect at 0.25x
+   * Source: Showdown sim/battle-actions.ts -- Max Guard blocks all moves including Max Moves
+   */
+  canBypassProtect(
+    move: MoveData,
+    actor: ActivePokemon,
+    activeVolatile: "protect" | "max-guard",
+  ): boolean;
 }
 
 /** Critical hit rate table, multiplier, and roll. */
