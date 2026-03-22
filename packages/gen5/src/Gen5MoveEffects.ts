@@ -7,6 +7,8 @@
  *   - Gen5MoveEffectsBehavior: behavioral overrides (Defog, Scald, Growth, Knock Off)
  *   - Gen5MoveEffectsCombat: combat moves (Shell Smash, Quiver Dance, Dragon Tail,
  *     Acrobatics, Final Gambit, etc.)
+ *   - Gen5MoveEffectsStatus: status/utility moves (Heal Pulse, Aromatherapy, Heal Bell,
+ *     Soak, Incinerate, Bestow, Entrainment, Round)
  *
  * Also re-exports all public functions from sub-modules for direct consumer access.
  *
@@ -19,6 +21,7 @@ import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { handleGen5BehaviorMove } from "./Gen5MoveEffectsBehavior";
 import { handleGen5CombatMove } from "./Gen5MoveEffectsCombat";
 import { handleGen5FieldMove } from "./Gen5MoveEffectsField";
+import { handleGen5StatusMove } from "./Gen5MoveEffectsStatus";
 
 // ---------------------------------------------------------------------------
 // Re-exports from sub-modules
@@ -47,6 +50,8 @@ export {
   isBlockedByWideGuard,
 } from "./Gen5MoveEffectsField";
 
+export { handleGen5StatusMove, isBerry } from "./Gen5MoveEffectsStatus";
+
 // ---------------------------------------------------------------------------
 // Master dispatcher
 // ---------------------------------------------------------------------------
@@ -58,6 +63,8 @@ export {
  *   1. Field effects (Magic Room, Wonder Room, Trick Room, Quick Guard, Wide Guard)
  *   2. Behavioral overrides (Defog, Scald, Growth, Knock Off)
  *   3. Combat moves (Shell Smash, Dragon Tail, Acrobatics, Final Gambit, etc.)
+ *   4. Status/utility moves (Heal Pulse, Aromatherapy, Heal Bell, Soak, Incinerate,
+ *      Bestow, Entrainment, Round)
  *
  * Returns the MoveEffectResult from the first sub-module that handles the move,
  * or null if no sub-module recognizes it (the caller should fall through to
@@ -84,6 +91,10 @@ export function executeGen5MoveEffect(
   // 3. Combat moves (stat-boosting moves, force-switch, self-destruct, etc.)
   const combatResult = handleGen5CombatMove(ctx);
   if (combatResult !== null) return combatResult;
+
+  // 4. Status/utility moves (Heal Pulse, Aromatherapy, Heal Bell, Soak, etc.)
+  const statusResult = handleGen5StatusMove(ctx);
+  if (statusResult !== null) return statusResult;
 
   // Not handled by any Gen 5-specific sub-module
   return null;

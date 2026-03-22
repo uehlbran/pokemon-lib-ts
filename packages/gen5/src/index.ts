@@ -48,6 +48,8 @@ export {
   handleGen5BehaviorMove,
   handleGen5CombatMove,
   handleGen5FieldMove,
+  handleGen5StatusMove,
+  isBerry,
   isBlockedByQuickGuard,
   isBlockedByWideGuard,
   isGen5PowderMoveBlocked,
