@@ -79,4 +79,6 @@ export type VolatileStatus =
   | "baneful-bunker" // Baneful Bunker — protect variant, blocks all moves with protect flag; poisons contact attackers (Gen 7+)
   | "disguise-broken" // Disguise — Mimikyu's Disguise has been broken; takes full damage (Gen 7+)
   | "power-construct-transformed" // Power Construct — Zygarde has transformed to Complete Form this battle (Gen 7+)
-  | "battle-bond-transformed"; // Battle Bond — Greninja has transformed to Ash-Greninja this battle (Gen 7+)
+  | "battle-bond-transformed" // Battle Bond — Greninja has transformed to Ash-Greninja this battle (Gen 7+)
+  | "obstruct" // Obstruct — protect variant, blocks moves with protect flag; -2 Def on contact (Gen 8)
+  | "jaw-lock"; // Jaw Lock — traps both user and target (Gen 8)
