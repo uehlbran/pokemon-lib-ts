@@ -1,4 +1,6 @@
 import type {
+  AbilityContext,
+  AbilityResult,
   AccuracyContext,
   ActivePokemon,
   BattleAction,
@@ -16,6 +18,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
+  AbilityTrigger,
   MoveData,
   PokemonType,
   PrimaryStatus,
@@ -24,12 +27,12 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import { applyGen5Ability } from "./Gen5Abilities";
 import { getSturdyDamageCap } from "./Gen5AbilitiesDamage";
 import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_DENOMINATORS } from "./Gen5CritCalc";
 import { calculateGen5Damage } from "./Gen5DamageCalc";
 import { applyGen5HeldItem } from "./Gen5Items";
-import { handleGen5CombatMove } from "./Gen5MoveEffectsCombat";
-import { handleGen5FieldMove } from "./Gen5MoveEffectsField";
+import { executeGen5MoveEffect } from "./Gen5MoveEffects";
 import { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
 import { applyGen5WeatherEffects } from "./Gen5Weather";
 
@@ -73,6 +76,7 @@ import { applyGen5WeatherEffects } from "./Gen5Weather";
  *   - calculateExpGain -- Gen 5 sqrt-based EXP formula
  *   - getEndOfTurnOrder -- Gen 5-specific end-of-turn ordering
  *   - resolveTurnOrder -- Tailwind speed doubling
+ *   - applyAbility -- delegates to applyGen5Ability master dispatcher
  *
  * Source: references/pokemon-showdown/data/mods/gen5/
  */
@@ -153,24 +157,18 @@ export class Gen5Ruleset extends BaseRuleset {
 
   /**
    * Gen 5 move effect execution.
-   * Delegates to Gen5MoveEffects. Stub for Wave 0 -- returns base result.
+   * Delegates to the Gen5MoveEffects master dispatcher, which routes to
+   * field -> behavior -> combat sub-modules.
    *
    * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
-    // Try field effect moves first (Magic Room, Wonder Room, Trick Room, Quick Guard, Wide Guard)
-    // Source: references/pokemon-showdown/data/mods/gen5/moves.ts
-    const fieldResult = handleGen5FieldMove(
+    const result = executeGen5MoveEffect(
       context,
       context.state.rng,
       this.rollProtectSuccess.bind(this),
     );
-    if (fieldResult !== null) return fieldResult;
-
-    // Try combat moves (Shell Smash, Quiver Dance, Dragon Tail, etc.)
-    // Source: references/pokemon-showdown/data/mods/gen5/moves.ts
-    const combatResult = handleGen5CombatMove(context);
-    if (combatResult !== null) return combatResult;
+    if (result !== null) return result;
 
     // Delegate to BaseRuleset for any remaining moves
     return super.executeMoveEffect(context);
@@ -336,15 +334,6 @@ export class Gen5Ruleset extends BaseRuleset {
    * Gen 5 weather effects.
    * Delegates to applyGen5WeatherEffects for sandstorm/hail chip damage.
    *
-   * Gen 5 weather mechanics:
-   *   - Drizzle/Drought/Sand Stream/Snow Warning: infinite duration from ability
-   *     (Gen 6 changed these to 5 turns)
-   *   - Weather rocks (Damp Rock, Heat Rock, etc.): extend manual weather to 8 turns
-   *   - Rain: boosts Water 1.5x, weakens Fire 0.5x, Thunder/Hurricane always hit
-   *   - Sun: boosts Fire 1.5x, weakens Water 0.5x, SolarBeam skips charge
-   *   - Sandstorm: 1/16 HP damage (Rock/Ground/Steel immune), Rock SpDef +50%
-   *   - Hail: 1/16 HP damage (Ice immune), Blizzard always hits
-   *
    * Source: references/pokemon-showdown/data/mods/gen5/conditions.ts
    */
   applyWeatherEffects(state: BattleState): WeatherEffectResult[] {
@@ -357,33 +346,30 @@ export class Gen5Ruleset extends BaseRuleset {
    * Gen 5 held item effects.
    * Delegates to applyGen5HeldItem for all held item triggers.
    *
-   * Gen 5 introduces: Type Gems, Rocky Helmet, Air Balloon, Red Card,
-   * Eject Button, Absorb Bulb, Cell Battery, Ring Target, Binding Band,
-   * Jaboca/Rowap Berry, Unburden tracking, Embargo/Klutz suppression.
-   *
    * Source: references/pokemon-showdown/data/items.ts (Gen 5 entries)
    */
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
     return applyGen5HeldItem(trigger, context);
   }
 
+  // --- Abilities ---
+
+  /**
+   * Gen 5 ability effect dispatch.
+   * Delegates to the Gen5Abilities master dispatcher, which routes to
+   * Damage/Stat/Switch/Remaining sub-modules based on trigger type.
+   *
+   * Source: references/pokemon-showdown/data/mods/gen5/abilities.ts
+   * Source: references/pokemon-showdown/data/abilities.ts
+   */
+  override applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult {
+    return applyGen5Ability(trigger, context);
+  }
+
   // --- Speed ---
 
   /**
    * Gen 5 effective speed calculation.
-   *
-   * Applies (in order):
-   *   - Simple ability: doubles stat stage effects (clamped to [-6, 6])
-   *   - Stat stages
-   *   - Choice Scarf: 1.5x Speed (suppressed by Klutz)
-   *   - Chlorophyll: 2x Speed in sun
-   *   - Swift Swim: 2x Speed in rain
-   *   - Sand Rush: 2x Speed in sandstorm
-   *   - Slow Start: 0.5x Speed for first 5 turns
-   *   - Unburden: 2x Speed when held item consumed
-   *   - Quick Feet: 1.5x Speed when statused (OVERRIDES paralysis penalty)
-   *   - Paralysis: 0.25x (Gen 3-6; Gen 7+ uses 0.5x) -- skipped if Quick Feet
-   *   - Iron Ball: 0.5x Speed (suppressed by Klutz)
    *
    * Source: Showdown sim/pokemon.ts -- Gen 5 speed modifiers
    * Source: Bulbapedia -- individual ability/item pages
@@ -403,40 +389,31 @@ export class Gen5Ruleset extends BaseRuleset {
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(speedStage));
 
     // Choice Scarf: 1.5x Speed (suppressed by Klutz)
-    // Source: Bulbapedia -- Choice Scarf raises Speed by 50%
-    // Source: Bulbapedia -- Klutz prevents holder's items from taking effect
     if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz") {
       effective = Math.floor(effective * 1.5);
     }
 
     // Chlorophyll: 2x Speed in sun
-    // Source: Bulbapedia -- Chlorophyll doubles Speed in sun
     if (active.ability === "chlorophyll" && this._currentWeather === "sun") {
       effective = effective * 2;
     }
 
     // Swift Swim: 2x Speed in rain
-    // Source: Bulbapedia -- Swift Swim doubles Speed in rain
     if (active.ability === "swift-swim" && this._currentWeather === "rain") {
       effective = effective * 2;
     }
 
     // Sand Rush: 2x Speed in sandstorm (NEW in Gen 5)
-    // Source: Bulbapedia -- Sand Rush doubles Speed in sandstorm
     if (active.ability === "sand-rush" && this._currentWeather === "sand") {
       effective = effective * 2;
     }
 
     // Slow Start: halve Speed for the first 5 turns after entering battle.
-    // Tracked via the "slow-start" volatile status.
-    // Source: Bulbapedia -- Slow Start: "Halves Attack and Speed for 5 turns upon entering battle."
     if (active.ability === "slow-start" && active.volatileStatuses.has("slow-start")) {
       effective = Math.floor(effective / 2);
     }
 
     // Unburden: 2x Speed when held item is consumed/lost AND currently has no item.
-    // Source: Bulbapedia -- Unburden: "Doubles the Pokemon's Speed stat when its held
-    //   item is used or lost."
     if (
       active.ability === "unburden" &&
       active.volatileStatuses.has("unburden") &&
@@ -446,19 +423,14 @@ export class Gen5Ruleset extends BaseRuleset {
     }
 
     // Quick Feet: 1.5x Speed when statused, overrides paralysis penalty
-    // Source: Bulbapedia -- Quick Feet: "Boosts Speed by 50% when the Pokemon
-    //   has a status condition. The Speed drop from paralysis is also ignored."
     if (active.ability === "quick-feet" && active.pokemon.status !== null) {
       effective = Math.floor(effective * 1.5);
     } else if (active.pokemon.status === "paralysis") {
       // Gen 3-6: paralysis quarters speed (x0.25)
-      // Source: Showdown sim/pokemon.ts -- Gen < 7 paralysis speed penalty
       effective = Math.floor(effective * 0.25);
     }
 
     // Iron Ball: halve Speed (suppressed by Klutz)
-    // Source: Bulbapedia -- Iron Ball: "Cuts the Speed stat of the holder to half."
-    // Source: Bulbapedia -- Klutz prevents holder's items from taking effect
     if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz") {
       effective = Math.floor(effective * 0.5);
     }
@@ -471,44 +443,32 @@ export class Gen5Ruleset extends BaseRuleset {
   /**
    * Gen 5 turn order resolution with Tailwind speed doubling and Trick Room reversal.
    *
-   * Overrides BaseRuleset.resolveTurnOrder to incorporate Tailwind (doubles speed
-   * for the active side) and set _currentWeather for speed-based abilities.
-   *
-   * Source: Showdown Gen 5 mod -- Tailwind doubles Speed for 4 turns (Gen 5 = 4 turns)
+   * Source: Showdown Gen 5 mod -- Tailwind doubles Speed for 4 turns
    * Source: Bulbapedia -- Tailwind: doubles Speed of user's side
-   * Source: Showdown Gen 5 mod -- Trick Room: slower Pokemon move first
    */
   override resolveTurnOrder(
     actions: BattleAction[],
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
-    // Set weather context so getEffectiveSpeed can read it for Chlorophyll/Swift Swim/Sand Rush
     this._currentWeather = state.weather?.type ?? null;
 
-    // Assign one tiebreak key per action BEFORE sorting for deterministic PRNG consumption
-    // Source: GitHub issue #120 -- V8 sort calls comparator non-deterministic number of times
     const tagged = actions.map((action, idx) => ({ action, idx, tiebreak: rng.next() }));
-
     const trickRoomActive = state.trickRoom.active;
 
     tagged.sort((a, b) => {
       const actionA = a.action;
       const actionB = b.action;
 
-      // Switches always go first
       if (actionA.type === "switch" && actionB.type !== "switch") return -1;
       if (actionB.type === "switch" && actionA.type !== "switch") return 1;
 
-      // Item usage goes before moves
       if (actionA.type === "item" && actionB.type === "move") return -1;
       if (actionB.type === "item" && actionA.type === "move") return 1;
 
-      // Run goes before moves
       if (actionA.type === "run" && actionB.type === "move") return -1;
       if (actionB.type === "run" && actionA.type === "move") return 1;
 
-      // For moves, compare priority then speed
       if (actionA.type === "move" && actionB.type === "move") {
         const sideA = state.sides[actionA.side];
         const sideB = state.sides[actionB.side];
@@ -533,10 +493,8 @@ export class Gen5Ruleset extends BaseRuleset {
           /* default 0 */
         }
 
-        if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
+        if (priorityA !== priorityB) return priorityB - priorityA;
 
-        // Speed tiebreak with Tailwind doubling
-        // Source: Bulbapedia -- Tailwind doubles Speed of user's side
         let speedA = this.getEffectiveSpeed(activeA);
         let speedB = this.getEffectiveSpeed(activeB);
 
@@ -547,8 +505,6 @@ export class Gen5Ruleset extends BaseRuleset {
           speedB *= 2;
         }
 
-        // Trick Room reverses speed order (slower goes first)
-        // Source: Showdown Gen 5 mod -- Trick Room
         if (trickRoomActive) {
           if (speedA !== speedB) return speedA - speedB;
         } else {
@@ -557,13 +513,10 @@ export class Gen5Ruleset extends BaseRuleset {
         return a.tiebreak < b.tiebreak ? -1 : 1;
       }
 
-      // Deterministic tiebreak (non-move vs non-move of same type)
       return a.tiebreak < b.tiebreak ? -1 : 1;
     });
 
-    // Clear weather context after sort
     this._currentWeather = null;
-
     return tagged.map((t) => t.action);
   }
 
@@ -571,33 +524,12 @@ export class Gen5Ruleset extends BaseRuleset {
 
   /**
    * Gen 5 Protect/Detect consecutive activation formula.
+   * Uses doubling denominator: 2^N, capped at 256.
    *
-   * Success rate uses a doubling denominator: 2^N, capped at 256.
-   *   consecutiveUses=0: always succeeds (100%)
-   *   consecutiveUses=1: 1/2 (denominator = 2^1 = 2) — stall counter starts at 2 on first use
-   *   consecutiveUses=2: 1/4 (denominator = 2^2 = 4) — doubled by onRestart
-   *   consecutiveUses=3: 1/8 (denominator = 2^3 = 8)
-   *   consecutiveUses=8: 1/256 (denominator = 2^8 = 256) -- cap
-   *   consecutiveUses=10: still 1/256 (capped)
-   *
-   * This differs from Gen 4 which uses a halving formula capped at 1/8.
-   *
-   * Source: references/pokemon-showdown/data/mods/gen5/conditions.ts --
-   *   stall: counter starts at 2, counterMax: 256, doubles on restart
-   *   success = random(counter) === 0
+   * Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- stall condition
    */
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
     if (consecutiveProtects === 0) return true;
-    // Denominator = 2^N, capped at 256
-    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- stall condition
-    //   onStart: counter = 2 (set after FIRST successful use)
-    //   onStallMove: chance = 1/counter (checked at SECOND+ use)
-    //   onRestart: counter *= 2
-    //   So at N=1 (second consecutive), counter=2 → chance=1/2
-    //   At N=2 (third), counter=4 → chance=1/4, etc.
-    //   Cap: counterMax=256; when counter≥256 Showdown uses randomChance(1, 2^32) ≈ 0
-    //   We simplify the capped case to 1/256 — effectively zero for any practical scenario.
-    //   Intentional minor divergence from Showdown (1/256 vs 1/4294967296 when N≥8).
     const denominator = Math.min(256, 2 ** consecutiveProtects);
     return rng.chance(1 / denominator);
   }
@@ -607,20 +539,7 @@ export class Gen5Ruleset extends BaseRuleset {
   /**
    * Gen 5 EXP formula with level-dependent scaling.
    *
-   * The Gen 5 formula uses sqrt to scale EXP based on level difference:
-   *   baseEXP = floor(sqrt(a) * a^2 * b / (sqrt(c) * c^2)) + 1
-   * where:
-   *   a = 2 * defeatedLevel + 10
-   *   c = defeatedLevel + participantLevel + 10
-   *   b = defeatedSpecies.baseExp
-   *
-   * Then multiplied by:
-   *   - 1.5x for trainer battles
-   *   - 1/participantCount for split
-   *   - 1.5x for Lucky Egg
-   *
    * Source: https://bulbapedia.bulbagarden.net/wiki/Experience#Generation_V_and_VI
-   * Source: specs/battle/06-gen5.md section 16
    */
   calculateExpGain(context: ExpContext): number {
     const a = 2 * context.defeatedLevel + 10;
@@ -628,26 +547,19 @@ export class Gen5Ruleset extends BaseRuleset {
     const sqrtA = Math.sqrt(a);
     const sqrtB = Math.sqrt(b);
 
-    // Core formula: floor(floor(sqrt(a) * a^2) * baseExp / floor(sqrt(b) * b^2)) + 1
     let exp =
       Math.floor(
         (Math.floor(sqrtA * a * a) * context.defeatedSpecies.baseExp) / Math.floor(sqrtB * b * b),
       ) + 1;
 
-    // Trainer battle multiplier: 1.5x
-    // Source: Bulbapedia -- Trainer battle modifier 1.5x
     if (context.isTrainerBattle) {
       exp = Math.floor(exp * 1.5);
     }
 
-    // Lucky Egg: 1.5x
-    // Source: Bulbapedia -- Lucky Egg modifier 1.5x
     if (context.hasLuckyEgg) {
       exp = Math.floor(exp * 1.5);
     }
 
-    // Participant split
-    // Source: Bulbapedia -- EXP is split among participants
     if (context.participantCount > 1) {
       exp = Math.floor(exp / context.participantCount);
     }
@@ -658,10 +570,9 @@ export class Gen5Ruleset extends BaseRuleset {
   // --- Catch Rate ---
 
   /**
-   * Gen 5 uses 2.5x status catch modifier for sleep/freeze (Gen 3-4 used 2.0x).
+   * Gen 5 uses 2.5x status catch modifier for sleep/freeze.
    *
-   * Source: Bulbapedia — Catch rate (https://bulbapedia.bulbagarden.net/wiki/Catch_rate)
-   * Source: Pokemon Showdown sim/battle-actions.ts — Gen 5+ sleep/freeze multiplier
+   * Source: Bulbapedia -- Catch rate
    */
   protected override getStatusCatchModifiers(): Record<PrimaryStatus, number> {
     return {
@@ -678,33 +589,6 @@ export class Gen5Ruleset extends BaseRuleset {
 
   /**
    * Gen 5 end-of-turn effect ordering.
-   *
-   * Gen 5 end-of-turn order follows this sequence:
-   *   1. Weather damage (sandstorm/hail chip)
-   *   2. Future attack (Future Sight / Doom Desire)
-   *   3. Wish recovery
-   *   4. Weather healing (Rain Dish, Dry Skin rain, Ice Body)
-   *   5. Shed Skin (33% cure)
-   *   6. Leech Seed drain
-   *   7. Leftovers recovery
-   *   8. Black Sludge
-   *   9. Aqua Ring recovery
-   *  10. Ingrain recovery
-   *  11. Poison Heal
-   *  12. Status damage (Poison/Toxic/Burn)
-   *  13. Nightmare damage
-   *  14. Curse (Ghost) damage
-   *  15. Bad Dreams
-   *  16. Bind/Trap damage
-   *  17. Perish Song countdown
-   *  18. Screen countdown (Reflect / Light Screen)
-   *  19. Safeguard countdown
-   *  20. Tailwind countdown
-   *  21. Trick Room countdown
-   *  22. Gravity countdown
-   *  23. Weather countdown
-   *  24. Speed Boost
-   *  25. Moody
    *
    * Source: specs/battle/06-gen5.md section 17
    * Source: Showdown data/mods/gen5/conditions.ts -- residual order
@@ -727,28 +611,28 @@ export class Gen5Ruleset extends BaseRuleset {
       "curse",
       "bad-dreams",
       "bind",
-      "yawn-countdown", // Yawn drowsy → sleep
-      "encore-countdown", // Encore timer
-      "taunt-countdown", // Taunt timer (3 turns in Gen 5)
-      "disable-countdown", // Disable timer
-      "heal-block-countdown", // Heal Block (5 turns)
-      "embargo-countdown", // Embargo (5 turns)
-      "magnet-rise-countdown", // Magnet Rise (5 turns)
+      "yawn-countdown",
+      "encore-countdown",
+      "taunt-countdown",
+      "disable-countdown",
+      "heal-block-countdown",
+      "embargo-countdown",
+      "magnet-rise-countdown",
       "perish-song",
       "screen-countdown",
       "safeguard-countdown",
       "tailwind-countdown",
       "trick-room-countdown",
-      "magic-room-countdown", // Magic Room duration (5 turns)
-      "wonder-room-countdown", // Wonder Room duration (5 turns)
+      "magic-room-countdown",
+      "wonder-room-countdown",
       "gravity-countdown",
       "weather-countdown",
-      "toxic-orb-activation", // Toxic Orb — after weather countdown
-      "flame-orb-activation", // Flame Orb — after weather countdown
-      "slow-start-countdown", // Slow Start (5 turns)
+      "toxic-orb-activation",
+      "flame-orb-activation",
+      "slow-start-countdown",
       "speed-boost",
-      "moody", // Moody (introduced Gen 5)
-      "healing-items", // Berry/item consumption
+      "moody",
+      "healing-items",
     ];
   }
 

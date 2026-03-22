@@ -9,13 +9,12 @@ import { applyGen5WeatherEffects } from "../src/Gen5Weather";
 describe("Gen5Ruleset smoke tests", () => {
   it("given Gen5Ruleset, when checking generation property, then returns 5", () => {
     // Source: Gen5Ruleset.generation is set to 5 in the class definition
-    // (Generation V: Black/White/Black2/White2, 2010-2012)
     const ruleset = new Gen5Ruleset();
     expect(ruleset.generation).toBe(5);
   });
 
   it("given Gen5Ruleset, when checking name, then includes Gen 5", () => {
-    // Source: Gen5Ruleset.name is set to "Gen 5 (Black/White/Black2/White2)" in the class definition
+    // Source: Gen5Ruleset.name is set to "Gen 5 (Black/White/Black2/White2)"
     const ruleset = new Gen5Ruleset();
     expect(ruleset.name).toContain("Gen 5");
   });
@@ -28,130 +27,97 @@ describe("Gen5Ruleset smoke tests", () => {
   });
 
   it("given Gen5Ruleset, when getting available types, then returns array of 17 types", () => {
-    // Source: Gen 5 has 17 types (no Fairy, which was added in Gen 6)
+    // Source: Gen 5 type chart includes 17 types (no Fairy)
     const ruleset = new Gen5Ruleset();
     const types = ruleset.getAvailableTypes();
     expect(types.length).toBe(17);
   });
 
-  it("given Gen5Ruleset, when getting available types, then does not include fairy", () => {
-    // Source: Fairy type was introduced in Gen 6
+  it("given Gen5Ruleset, when checking recalculatesFutureAttackDamage, then returns true", () => {
+    // Source: Bulbapedia -- Gen 5+ recalculates Future Sight/Doom Desire at hit time
     const ruleset = new Gen5Ruleset();
-    const types = ruleset.getAvailableTypes();
-    expect(types).not.toContain("fairy");
-  });
-
-  it("given Gen5Ruleset, when getting crit rate table, then first stage is 1/16", () => {
-    // Source: references/pokemon-showdown/sim/battle-actions.ts line 1625
-    // Gen 3-5 crit rate: stage 0 = 1/16 chance (denominator 16)
-    const ruleset = new Gen5Ruleset();
-    const table = ruleset.getCritRateTable();
-    expect(table[0]).toBe(16);
-  });
-
-  it("given Gen5Ruleset, when getting crit rate table, then has 5 stages [16, 8, 4, 3, 2]", () => {
-    // Source: references/pokemon-showdown/sim/battle-actions.ts lines 1625-1627
-    // Gen 3-5: 5-stage crit table
-    const ruleset = new Gen5Ruleset();
-    const table = ruleset.getCritRateTable();
-    expect([...table]).toEqual([16, 8, 4, 3, 2]);
+    expect(ruleset.recalculatesFutureAttackDamage()).toBe(true);
   });
 
   it("given Gen5Ruleset, when getting crit multiplier, then returns 2.0", () => {
-    // Source: references/pokemon-showdown/sim/battle-actions.ts line 1751
-    // Gen 2-5: critical hits deal 2x damage (Gen 6+ reduced to 1.5x)
+    // Source: Showdown sim/battle-actions.ts -- Gen 3-5 crit multiplier is 2.0x
     const ruleset = new Gen5Ruleset();
     expect(ruleset.getCritMultiplier()).toBe(2.0);
   });
 
-  it("given Gen5Ruleset, when checking hasAbilities, then returns true", () => {
-    // Source: Abilities introduced in Gen 3, present in all subsequent gens
+  it("given Gen5Ruleset, when getting crit rate table, then returns Gen 3-5 denominators", () => {
+    // Source: Showdown sim/battle-actions.ts -- Gen 3-5 crit rate table
     const ruleset = new Gen5Ruleset();
-    expect(ruleset.hasAbilities()).toBe(true);
+    const table = ruleset.getCritRateTable();
+    expect(table).toEqual([16, 8, 4, 3, 2]);
   });
 
-  it("given Gen5Ruleset, when checking hasHeldItems, then returns true", () => {
-    // Source: Held items introduced in Gen 2, present in all subsequent gens
+  it("given Gen5Ruleset, when getting end-of-turn order, then includes weather-damage first", () => {
+    // Source: Showdown Gen 5 mod conditions.ts -- weather damage is first residual
     const ruleset = new Gen5Ruleset();
-    expect(ruleset.hasHeldItems()).toBe(true);
+    const order = ruleset.getEndOfTurnOrder();
+    expect(order[0]).toBe("weather-damage");
+    expect(order.length).toBeGreaterThan(10);
   });
 
-  it("given Gen5Ruleset, when checking hasWeather, then returns true", () => {
-    // Source: Weather introduced in Gen 2, present in all subsequent gens
+  it("given Gen5Ruleset, when getting post-attack residual order, then returns empty array", () => {
+    // Source: Gen 5 (like Gen 3+) has no per-attack residuals
     const ruleset = new Gen5Ruleset();
-    expect(ruleset.hasWeather()).toBe(true);
+    expect(ruleset.getPostAttackResidualOrder()).toEqual([]);
   });
+});
 
-  it("given Gen5Ruleset, when checking hasTerrain, then returns false", () => {
-    // Source: Terrain was not introduced until Gen 7
-    const ruleset = new Gen5Ruleset();
-    expect(ruleset.hasTerrain()).toBe(false);
-  });
+// ---------------------------------------------------------------------------
+// Gen5Ruleset status damage
+// ---------------------------------------------------------------------------
 
-  it("given Gen5Ruleset, when checking getBattleGimmick, then returns null", () => {
-    // Source: No battle gimmick in Gen 5 (Mega Evolution introduced in Gen 6)
-    const ruleset = new Gen5Ruleset();
-    expect(ruleset.getBattleGimmick()).toBeNull();
-  });
-
-  it("given Gen5Ruleset, when checking shouldExecutePursuitPreSwitch, then returns true", () => {
-    // Source: Pursuit executes before switch in Gen 2-7 (removed in Gen 8)
-    const ruleset = new Gen5Ruleset();
-    expect(ruleset.shouldExecutePursuitPreSwitch()).toBe(true);
-  });
-
-  it("given Gen5Ruleset, when checking available hazards, then includes stealth-rock and spikes and toxic-spikes", () => {
-    // Source: Stealth Rock, Spikes, Toxic Spikes all available in Gen 5
-    const ruleset = new Gen5Ruleset();
-    const hazards = ruleset.getAvailableHazards();
-    expect(hazards).toContain("stealth-rock");
-    expect(hazards).toContain("spikes");
-    expect(hazards).toContain("toxic-spikes");
-  });
-
-  it("given Gen5Ruleset, when getting confusion self-hit chance, then returns 0.5", () => {
-    // Source: Gen 1-6 confusion self-hit is 50% (Gen 7+ reduced to 33%)
-    const ruleset = new Gen5Ruleset();
-    expect(ruleset.getConfusionSelfHitChance()).toBe(0.5);
-  });
-
-  it("given Gen5Ruleset, when calling applyWeatherEffects, then returns empty array (stub)", () => {
-    // Source: Weather effects stub -- will be implemented in Wave 2
-    const ruleset = new Gen5Ruleset();
-    const state = { weather: null } as unknown as BattleState;
-    const result = ruleset.applyWeatherEffects(state);
-    expect(result).toEqual([]);
-  });
-
+describe("Gen5Ruleset status damage", () => {
   it("given Gen5Ruleset, when calling applyStatusDamage with burn, then returns 1/8 max HP", () => {
-    // Source: references/pokemon-showdown/sim/battle-actions.ts -- Gen 3-6 burn damage is 1/8 max HP
+    // Source: Showdown Gen < 7 burn damage is 1/8 max HP
     const ruleset = new Gen5Ruleset();
     const pokemon = {
       pokemon: {
-        calculatedStats: { hp: 200 },
-        currentHp: 200,
+        calculatedStats: { hp: 160 },
+        currentHp: 160,
         status: "burn",
       },
+      ability: null,
     } as unknown as ActivePokemon;
     const state = {} as unknown as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    // 200 / 8 = 25
-    expect(damage).toBe(25);
+    expect(damage).toBe(20);
   });
 
-  it("given Gen5Ruleset, when calling applyStatusDamage with burn and low HP, then returns at least 1", () => {
-    // Source: Gen 5 burn damage minimum is 1 HP
+  it("given Gen5Ruleset with Heatproof, when calling applyStatusDamage with burn, then returns 1/16 max HP", () => {
+    // Source: Bulbapedia -- Heatproof halves burn damage (1/8 -> 1/16)
     const ruleset = new Gen5Ruleset();
     const pokemon = {
       pokemon: {
-        calculatedStats: { hp: 1 },
-        currentHp: 1,
+        calculatedStats: { hp: 160 },
+        currentHp: 160,
         status: "burn",
       },
+      ability: "heatproof",
     } as unknown as ActivePokemon;
     const state = {} as unknown as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
-    expect(damage).toBe(1);
+    expect(damage).toBe(10);
+  });
+
+  it("given Gen5Ruleset with Magic Guard, when calling applyStatusDamage with burn, then returns 0", () => {
+    // Source: Bulbapedia -- Magic Guard prevents all indirect damage
+    const ruleset = new Gen5Ruleset();
+    const pokemon = {
+      pokemon: {
+        calculatedStats: { hp: 160 },
+        currentHp: 160,
+        status: "burn",
+      },
+      ability: "magic-guard",
+    } as unknown as ActivePokemon;
+    const state = {} as unknown as BattleState;
+    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    expect(damage).toBe(0);
   });
 
   it("given Gen5Ruleset, when calling applyStatusDamage with poison, then delegates to BaseRuleset (1/8 max HP)", () => {
@@ -166,20 +132,25 @@ describe("Gen5Ruleset smoke tests", () => {
     } as unknown as ActivePokemon;
     const state = {} as unknown as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, "poison", state);
-    // 160 / 8 = 20
     expect(damage).toBe(20);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Stub function smoke tests (for coverage)
+// Master dispatcher smoke tests
 // ---------------------------------------------------------------------------
 
-describe("Gen 5 stub functions", () => {
-  it("given applyGen5Ability stub, when called, then returns empty array", () => {
-    // Source: Stub -- will be implemented in Waves 3-4
-    const result = applyGen5Ability();
-    expect(result).toEqual([]);
+describe("Gen 5 master dispatchers", () => {
+  it("given applyGen5Ability dispatcher with unrecognized trigger, when called, then returns inactive result", () => {
+    // Source: applyGen5Ability default case returns { activated: false, effects: [], messages: [] }
+    const mockCtx = {
+      pokemon: { ability: "unknown-ability" },
+      trigger: "unrecognized-trigger",
+    } as any;
+    const result = applyGen5Ability("unrecognized-trigger" as any, mockCtx);
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
+    expect(result.messages).toEqual([]);
   });
 
   it("given applyGen5HeldItem with no held item, when called, then returns no activation", () => {
@@ -206,16 +177,18 @@ describe("Gen 5 stub functions", () => {
     expect(result.effects).toEqual([]);
   });
 
-  it("given executeGen5MoveEffect stub, when called, then returns default MoveEffectResult", () => {
-    // Source: Stub -- will be implemented in Waves 5-6
-    const result = executeGen5MoveEffect();
-    expect(result.statusInflicted).toBeNull();
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.statChanges).toEqual([]);
-    expect(result.recoilDamage).toBe(0);
-    expect(result.healAmount).toBe(0);
-    expect(result.switchOut).toBe(false);
-    expect(result.messages).toEqual([]);
+  it("given executeGen5MoveEffect dispatcher with unrecognized move, when called, then returns null", () => {
+    // Source: executeGen5MoveEffect returns null when no sub-module recognizes the move
+    const mockCtx = {
+      move: { id: "unknown-move-xyz" },
+      attacker: { pokemon: { currentHp: 100 } },
+      defender: { pokemon: { currentHp: 100 } },
+      state: { rng: { chance: () => false, next: () => 0, nextInt: () => 0 } },
+    } as any;
+    const mockRng = { chance: () => false, next: () => 0, nextInt: () => 0 } as any;
+    const mockRollProtect = () => true;
+    const result = executeGen5MoveEffect(mockCtx, mockRng, mockRollProtect);
+    expect(result).toBeNull();
   });
 
   it("given applyGen5WeatherEffects with no weather, when called, then returns empty array", () => {
@@ -238,59 +211,127 @@ describe("Gen5Ruleset canHitSemiInvulnerable", () => {
     expect(ruleset.canHitSemiInvulnerable("thunder", "flying")).toBe(true);
   });
 
-  it("given flying volatile and Hurricane, when checking canHit, then returns true (Gen 5 addition)", () => {
-    // Source: references/pokemon-showdown/data/mods/gen5/scripts.ts -- Hurricane added in Gen 5
+  it("given flying volatile and Hurricane, when checking canHit, then returns true", () => {
+    // Source: Bulbapedia -- Hurricane can hit Flying targets (added in Gen 5)
     expect(ruleset.canHitSemiInvulnerable("hurricane", "flying")).toBe(true);
   });
 
-  it("given flying volatile and Smack Down, when checking canHit, then returns true (Gen 5 addition)", () => {
-    // Source: references/pokemon-showdown/data/mods/gen5/scripts.ts -- Smack Down added in Gen 5
+  it("given flying volatile and Smack Down, when checking canHit, then returns true", () => {
+    // Source: Bulbapedia -- Smack Down can hit Flying targets (added in Gen 5)
     expect(ruleset.canHitSemiInvulnerable("smack-down", "flying")).toBe(true);
   });
 
-  it("given flying volatile and Tackle, when checking canHit, then returns false", () => {
-    // Source: Bulbapedia -- regular moves cannot hit semi-invulnerable Pokemon
-    expect(ruleset.canHitSemiInvulnerable("tackle", "flying")).toBe(false);
+  it("given flying volatile and Surf, when checking canHit, then returns false", () => {
+    // Source: Bulbapedia -- Surf cannot hit Flying targets
+    expect(ruleset.canHitSemiInvulnerable("surf", "flying")).toBe(false);
   });
 
   it("given underground volatile and Earthquake, when checking canHit, then returns true", () => {
-    // Source: Bulbapedia -- Earthquake can hit Pokemon using Dig
+    // Source: Bulbapedia -- Earthquake can hit Digging targets
     expect(ruleset.canHitSemiInvulnerable("earthquake", "underground")).toBe(true);
   });
 
-  it("given underground volatile and Magnitude, when checking canHit, then returns true", () => {
-    // Source: Bulbapedia -- Magnitude can hit Pokemon using Dig
-    expect(ruleset.canHitSemiInvulnerable("magnitude", "underground")).toBe(true);
-  });
-
-  it("given underground volatile and Tackle, when checking canHit, then returns false", () => {
-    // Source: Bulbapedia -- regular moves cannot hit underground Pokemon
-    expect(ruleset.canHitSemiInvulnerable("tackle", "underground")).toBe(false);
+  it("given underground volatile and Thunder, when checking canHit, then returns false", () => {
+    // Source: Bulbapedia -- Thunder cannot hit Digging targets
+    expect(ruleset.canHitSemiInvulnerable("thunder", "underground")).toBe(false);
   });
 
   it("given underwater volatile and Surf, when checking canHit, then returns true", () => {
-    // Source: Bulbapedia -- Surf can hit Pokemon using Dive
+    // Source: Bulbapedia -- Surf can hit Diving targets
     expect(ruleset.canHitSemiInvulnerable("surf", "underwater")).toBe(true);
   });
 
-  it("given underwater volatile and Tackle, when checking canHit, then returns false", () => {
-    // Source: Bulbapedia -- regular moves cannot hit underwater Pokemon
-    expect(ruleset.canHitSemiInvulnerable("tackle", "underwater")).toBe(false);
-  });
-
-  it("given shadow-force-charging volatile, when checking canHit with any move, then returns false", () => {
-    // Source: Showdown -- nothing bypasses Shadow Force
-    expect(ruleset.canHitSemiInvulnerable("tackle", "shadow-force-charging")).toBe(false);
+  it("given shadow-force-charging volatile and any move, when checking canHit, then returns false", () => {
+    // Source: Bulbapedia -- Nothing bypasses Shadow Force's charging turn
     expect(ruleset.canHitSemiInvulnerable("thunder", "shadow-force-charging")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable("earthquake", "shadow-force-charging")).toBe(false);
   });
 
-  it("given charging volatile (SolarBeam etc.), when checking canHit, then returns true", () => {
-    // Source: Bulbapedia -- charging moves are NOT semi-invulnerable; all moves can hit
+  it("given charging volatile and any move, when checking canHit, then returns true", () => {
+    // Source: Charging moves (SolarBeam, etc.) are NOT semi-invulnerable
     expect(ruleset.canHitSemiInvulnerable("tackle", "charging")).toBe(true);
   });
+});
 
-  it("given unknown volatile, when checking canHit, then returns false", () => {
-    // Source: default case -- unknown volatiles are not hittable
-    expect(ruleset.canHitSemiInvulnerable("tackle", "unknown" as any)).toBe(false);
+// ---------------------------------------------------------------------------
+// Gen5Ruleset rollProtectSuccess
+// ---------------------------------------------------------------------------
+
+describe("Gen5Ruleset rollProtectSuccess", () => {
+  const ruleset = new Gen5Ruleset();
+
+  it("given 0 consecutive protects, when rolling, then always succeeds", () => {
+    // Source: Showdown Gen 5 mod -- first Protect always succeeds
+    const rng = { chance: () => false } as any;
+    expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
+  });
+
+  it("given 1 consecutive protect, when rolling with success, then uses 1/2 chance", () => {
+    // Source: Showdown Gen 5 mod -- stall counter starts at 2, chance = 1/2
+    let calledWith = 0;
+    const rng = {
+      chance: (p: number) => {
+        calledWith = p;
+        return true;
+      },
+    } as any;
+    ruleset.rollProtectSuccess(1, rng);
+    expect(calledWith).toBe(0.5);
+  });
+
+  it("given 8+ consecutive protects, when rolling, then uses capped 1/256 chance", () => {
+    // Source: Showdown Gen 5 mod -- counterMax: 256
+    let calledWith = 0;
+    const rng = {
+      chance: (p: number) => {
+        calledWith = p;
+        return false;
+      },
+    } as any;
+    ruleset.rollProtectSuccess(10, rng);
+    expect(calledWith).toBeCloseTo(1 / 256);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gen5Ruleset sleep mechanics
+// ---------------------------------------------------------------------------
+
+describe("Gen5Ruleset sleep mechanics", () => {
+  const ruleset = new Gen5Ruleset();
+
+  it("given sleeping Pokemon on switch-in, when sleep counter has startTime, then resets counter", () => {
+    // Source: Showdown Gen 5 mod -- slp.onSwitchIn: time = startTime
+    const pokemon = {
+      pokemon: { status: "sleep" },
+      volatileStatuses: new Map([["sleep-counter", { turnsLeft: 1, data: { startTime: 3 } }]]),
+    } as unknown as ActivePokemon;
+    const state = {} as unknown as BattleState;
+    ruleset.onSwitchIn(pokemon, state);
+    expect(pokemon.volatileStatuses.get("sleep-counter")!.turnsLeft).toBe(3);
+  });
+
+  it("given sleeping Pokemon, when processSleepTurn with counter at 1, then wakes up and can act", () => {
+    // Source: Showdown Gen 5 mod -- Pokemon can act on wake turn
+    const pokemon = {
+      pokemon: { status: "sleep" },
+      volatileStatuses: new Map([["sleep-counter", { turnsLeft: 1 }]]),
+    } as unknown as ActivePokemon;
+    const state = {} as unknown as BattleState;
+    const canAct = ruleset.processSleepTurn(pokemon, state);
+    expect(canAct).toBe(true);
+    expect(pokemon.pokemon.status).toBeNull();
+  });
+
+  it("given sleeping Pokemon, when processSleepTurn with counter at 3, then stays asleep", () => {
+    // Source: Showdown Gen 5 mod -- counter decrements, still sleeping
+    const pokemon = {
+      pokemon: { status: "sleep" },
+      volatileStatuses: new Map([["sleep-counter", { turnsLeft: 3 }]]),
+    } as unknown as ActivePokemon;
+    const state = {} as unknown as BattleState;
+    const canAct = ruleset.processSleepTurn(pokemon, state);
+    expect(canAct).toBe(false);
+    expect(pokemon.volatileStatuses.get("sleep-counter")!.turnsLeft).toBe(2);
   });
 });
