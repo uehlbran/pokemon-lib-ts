@@ -77,6 +77,13 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Source: Bulbapedia -- Gravity: "All Pokemon are grounded."
   if (gravityActive) return true;
 
+  // Ingrain grounds the user even if Flying-type or Levitate
+  // Source: Bulbapedia -- Ingrain: "The user is affected by hazards on the ground,
+  //   even if it is a Flying-type or has the Levitate ability."
+  // Source: Showdown sim/pokemon.ts -- isGrounded: checks 'ingrain' volatile before
+  //   Flying/Levitate checks
+  if (pokemon.volatileStatuses.has("ingrain")) return true;
+
   // Iron Ball grounds the holder
   // Source: Bulbapedia -- Iron Ball: "makes the holder grounded"
   if (pokemon.pokemon.heldItem === "iron-ball") return true;
@@ -98,10 +105,16 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Source: Bulbapedia -- Magnet Rise: "makes the user immune to Ground-type moves"
   if (pokemon.volatileStatuses.has("magnet-rise")) return false;
 
-  // Air Balloon grants levitation (Gen 5 item, consumed on hit)
-  // Source: Showdown data/items.ts -- Air Balloon: onImmunity removes Ground immunity
+  // Air Balloon grants levitation ONLY when item effects are not suppressed.
+  // Klutz ability and Embargo volatile both suppress held-item effects.
+  // Source: Showdown sim/pokemon.ts -- isGrounded: checks item suppression
+  //   before treating Air Balloon as levitating
   // Source: Bulbapedia -- Air Balloon: "makes the holder immune to Ground-type moves"
-  if (pokemon.pokemon.heldItem === "air-balloon") return false;
+  // Source: Bulbapedia -- Klutz: "The held item has no effect" (suppresses items)
+  // Source: Bulbapedia -- Embargo: "The target cannot use its held item" (suppresses items)
+  const itemsSuppressed =
+    pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo" as VolatileStatus);
+  if (pokemon.pokemon.heldItem === "air-balloon" && !itemsSuppressed) return false;
 
   return true;
 }

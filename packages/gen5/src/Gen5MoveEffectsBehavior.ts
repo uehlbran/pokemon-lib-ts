@@ -248,6 +248,16 @@ function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
  *   Note: stickyweb did not exist in Gen 5 (introduced Gen 6)
  */
 function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
+  // Rapid Spin uses onAfterHit in Showdown, which only fires when the move
+  // successfully deals damage. On type immunity (e.g., Normal vs Ghost), the move
+  // deals 0 damage and the effect must not trigger.
+  // Source: Showdown data/moves.ts -- rapidspin: onAfterHit (not onHit)
+  //   onAfterHit fires only when damage > 0; immunity causes the move to fail before
+  //   this callback executes.
+  if (ctx.damage <= 0) {
+    return makeResult({ messages: [] });
+  }
+
   const messages: string[] = [];
 
   // Clear Leech Seed from the user

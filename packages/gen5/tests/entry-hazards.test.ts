@@ -147,6 +147,38 @@ describe("Gen5 isGen5Grounded", () => {
     const pokemon = makeActivePokemon({ types: ["flying"], volatiles });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
+
+  it("given a Flying-type Pokemon with Ingrain, when checking grounding, then IS grounded", () => {
+    // Source: Bulbapedia -- Ingrain: "The user is affected by hazards on the ground,
+    //   even if it is a Flying-type or has the Levitate ability."
+    // Source: Showdown sim/pokemon.ts -- isGrounded checks 'ingrain' volatile before
+    //   Flying/Levitate checks
+    const volatiles = new Map([["ingrain", { turnsLeft: -1 }]]);
+    const pokemon = makeActivePokemon({ types: ["flying"], volatiles });
+    expect(isGen5Grounded(pokemon, false)).toBe(true);
+  });
+
+  it("given a Levitate Pokemon with Ingrain, when checking grounding, then IS grounded", () => {
+    // Source: Bulbapedia -- Ingrain: "even if it ... has the Levitate ability"
+    const volatiles = new Map([["ingrain", { turnsLeft: -1 }]]);
+    const pokemon = makeActivePokemon({ ability: "levitate", volatiles });
+    expect(isGen5Grounded(pokemon, false)).toBe(true);
+  });
+
+  it("given an Air Balloon holder with Klutz, when checking grounding, then IS grounded (item suppressed)", () => {
+    // Source: Bulbapedia -- Klutz: "The held item has no effect" — suppresses Air Balloon levitation
+    // Source: Showdown sim/pokemon.ts -- isGrounded: suppresses item effect when Klutz active
+    const pokemon = makeActivePokemon({ heldItem: "air-balloon", ability: "klutz" });
+    expect(isGen5Grounded(pokemon, false)).toBe(true);
+  });
+
+  it("given an Air Balloon holder under Embargo, when checking grounding, then IS grounded (item suppressed)", () => {
+    // Source: Bulbapedia -- Embargo: "The target cannot use its held item" — suppresses Air Balloon
+    // Source: Showdown sim/pokemon.ts -- isGrounded: suppresses item effect under Embargo volatile
+    const volatiles = new Map([["embargo", { turnsLeft: 5 }]]);
+    const pokemon = makeActivePokemon({ heldItem: "air-balloon", volatiles });
+    expect(isGen5Grounded(pokemon, false)).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -499,6 +531,7 @@ describe("Gen5 Rapid Spin (via handleGen5BehaviorMove)", () => {
 
   function makeRapidSpinContext(overrides: {
     attackerVolatiles?: Map<string, { turnsLeft: number }>;
+    damage?: number;
   }) {
     const attacker = makeActivePokemon({
       types: ["normal"],
@@ -509,6 +542,9 @@ describe("Gen5 Rapid Spin (via handleGen5BehaviorMove)", () => {
       move: { id: "rapid-spin" },
       attacker,
       defender,
+      // Default damage > 0 so Rapid Spin's onAfterHit effect fires (as it would on a
+      // successful hit). Tests for the immunity path explicitly pass damage: 0.
+      damage: overrides.damage ?? 10,
       state: makeState(),
     } as unknown as MoveEffectContext;
   }
@@ -563,6 +599,16 @@ describe("Gen5 Rapid Spin (via handleGen5BehaviorMove)", () => {
     expect(result).not.toBeNull();
     expect(result!.clearSideHazards).toBe("attacker");
   });
+
+  it("given type immunity (damage = 0), when Rapid Spin is used, then does NOT clear hazards", () => {
+    // Source: Showdown data/moves.ts -- rapidspin.onAfterHit fires only when the move
+    //   deals damage; type immunity (e.g., Normal vs Ghost) prevents onAfterHit from
+    //   running, so hazards must NOT be cleared on a 0-damage hit.
+    const ctx = makeRapidSpinContext({ damage: 0 });
+    const result = handleGen5BehaviorMove(ctx);
+    expect(result).not.toBeNull();
+    expect(result!.clearSideHazards).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -586,7 +632,12 @@ describe("Gen5Ruleset.applyEntryHazards", () => {
   });
 
   it("given no state provided to applyEntryHazards, then returns zero-result", () => {
-    // Source: defensive coding -- BattleState is optional in the interface
+    // Source: GenerationRuleset interface (packages/battle/src/ruleset/GenerationRuleset.ts)
+    //   applyEntryHazards(pokemon, side, state?: BattleState): EntryHazardResult
+    //   `state` is optional; callers that do not yet have a BattleState (e.g. preview)
+    //   receive a safe zero-result rather than throwing. This mirrors the same guard in
+    //   Gen 4 (Gen4Ruleset.applyEntryHazards) and is the contract established by the
+    //   interface signature.
     const ruleset = new Gen5Ruleset();
     const pokemon = makeActivePokemon({ maxHp: 200 });
     const side = makeSide([{ type: "stealth-rock", layers: 1 }]);
