@@ -11,7 +11,7 @@
  */
 
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
+import type { MoveData } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -82,7 +82,7 @@ function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
     accuracy: null,
     pp: 10,
     priority: 0,
-    target: "normal" as MoveTarget,
+    target: "adjacent-foe",
     flags: {
       contact: false,
       sound: false,
@@ -431,11 +431,8 @@ describe("Gen6Ruleset.executeMoveEffect — powder immunity integration", () => 
     const result = ruleset.executeMoveEffect(ctx);
 
     // Not blocked -- falls through to BaseRuleset default (no immunity message)
-    expect(result.messages).not.toContain("It doesn't affect");
-    // No immunity message means the move should proceed normally
-    expect(result.messages.length === 0 || !result.messages[0]?.includes("doesn't affect")).toBe(
-      true,
-    );
+    const hasImmunityMessage = result.messages.some((m) => m.includes("doesn't affect"));
+    expect(hasImmunityMessage).toBe(false);
   });
 
   it("given Grass-type defender and powder move with no nickname, when blocked, then uses speciesId in message", async () => {
