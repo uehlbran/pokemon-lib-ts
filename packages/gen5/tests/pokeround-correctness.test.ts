@@ -61,4 +61,12 @@ describe("pokeRound correctness (Showdown modify() parity)", () => {
     // Boundary: 14336 % 4096 = 14336 - 3*4096 = 14336 - 12288 = 2048 (exact boundary)
     expect(pokeRound(7, 2048)).toBe(3);
   });
+
+  it("given value=1 and modifier=2048, when applying pokeRound, then returns 0 (small value boundary case)", () => {
+    // Source: Showdown sim/battle.ts modify() — regression counterexample for off-by-one fix
+    // 1 * 2048 = 2048; floor((2048 + 2047) / 4096) = floor(4095 / 4096) = floor(0.9997...) = 0
+    // Bug returned 1: floor((2048 + 2048) / 4096) = floor(4096 / 4096) = 1.0
+    // This is the minimal exact-boundary case: 2048 % 4096 = 2048 exactly — off-by-one flips 0 → 1
+    expect(pokeRound(1, 2048)).toBe(0);
+  });
 });
