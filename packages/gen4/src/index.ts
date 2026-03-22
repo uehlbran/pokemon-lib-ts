@@ -1,5 +1,11 @@
 // @pokemon-lib-ts/gen4 -- Gen4Ruleset + complete Gen 4 data
 
+export type {
+  AbilityContext,
+  AbilityResult,
+  ItemContext,
+  ItemResult,
+} from "@pokemon-lib-ts/battle";
 export { createGen4DataManager } from "./data";
 export { applyGen4Ability, PLATE_TO_TYPE } from "./Gen4Abilities";
 export {
