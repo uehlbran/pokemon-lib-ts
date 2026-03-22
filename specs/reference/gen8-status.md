@@ -150,4 +150,4 @@ Test files: `abilities-damage.test.ts`, `abilities-dispatcher.test.ts`, `abiliti
 | #709 | feat/gen8-wave7-move-effects | Wave 7: move effects (Rapid Spin buff, Defog, Obstruct, Steel Beam, etc.) |
 | #712 | feat/gen8-wave8-dynamax | Wave 8: Dynamax/Gigantamax gimmick (HP scaling, Max Moves, 32 G-Max moves) |
 | #717 | feat/gen8-wave9-integration | Wave 9: integration tests + coverage polish (1,142 tests, 82.27% branch) |
-| TBD | fix/gen5-8-bughunt | Deep bughunt: applyAbility routing (C1), getEndOfTurnOrder (C2), capLethalDamage (C3), canBypassProtect delegation, Dynamax revert fixes, closes #732 #733 #734 #735 #736 #739 #740 #741 #742 #746 #747 |
+| #752 | fix/gen5-8-bughunt | Deep bughunt: applyAbility routing (C1), getEndOfTurnOrder (C2), capLethalDamage (C3), canBypassProtect delegation, Dynamax revert fixes, closes #732 #733 #734 #735 #736 #739 #740 #741 #742 #746 #747 |

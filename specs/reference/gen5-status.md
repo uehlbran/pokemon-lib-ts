@@ -121,6 +121,7 @@ Additional fixes merged to main alongside:
 
 - PR #607: Wish delayed heal via `wishSet` field in engine (closes #540)
 - PR #632: Type resist berries — moved to damage calc, added Magic Room suppression (Gen5+Gen6)
+- PR #752: Deep bughunt — Protect formula (`rng.chance(1/2**32)` for denom ≥ 256), Sheer Force whitelist (`secret-power`, `relic-song`), canBypassProtect required method (closes #732)
 
 ## OPEN BUGS
 

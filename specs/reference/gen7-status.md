@@ -110,6 +110,10 @@ None tracked.
 
 ---
 
+## Additional Fixes
+
+- PR #752: Deep bughunt — EoT order adds `magic-room-countdown`, `wonder-room-countdown`, `gravity-countdown`, `slow-start-countdown`; Z-Move through Protect deals 0.25x via `hitThroughProtect`; Disguise `capLethalDamage` marks `disguise-broken` volatile; canBypassProtect delegation (closes #735 #736 #739 #741)
+
 ## PR History
 
 | PR | Branch | What was merged |
