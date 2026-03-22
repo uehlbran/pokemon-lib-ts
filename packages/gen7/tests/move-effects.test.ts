@@ -1,7 +1,7 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   calculateSpikyShieldDamage,
   executeGen7MoveEffect,
@@ -13,6 +13,7 @@ import {
   isBlockedBySpikyShield,
   isGen7GrassPowderBlocked,
 } from "../src/Gen7MoveEffects";
+import { Gen7Ruleset } from "../src/Gen7Ruleset";
 
 // ---------------------------------------------------------------------------
 // Test Helpers
