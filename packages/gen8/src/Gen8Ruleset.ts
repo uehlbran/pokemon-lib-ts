@@ -1,22 +1,27 @@
 import type {
+  ActivePokemon,
   BattleGimmick,
   BattleGimmickType,
+  BattleState,
   CritContext,
   DamageContext,
   DamageResult,
   ExpContext,
+  TerrainEffectResult,
 } from "@pokemon-lib-ts/battle";
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   DataManager,
   EntryHazardType,
   PokemonType,
+  PrimaryStatus,
   SeededRandom,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
 import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 import { calculateGen8Damage } from "./Gen8DamageCalc.js";
+import { applyGen8TerrainEffects, checkGen8TerrainStatusImmunity } from "./Gen8Terrain.js";
 import { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
 
 /**
@@ -109,6 +114,38 @@ export class Gen8Ruleset extends BaseRuleset {
    */
   hasTerrain(): boolean {
     return true;
+  }
+
+  /**
+   * Gen 8 terrain end-of-turn effects.
+   *
+   * Currently handles Grassy Terrain healing (1/16 max HP for grounded Pokemon).
+   *
+   * Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal at EoT for grounded Pokemon
+   * Source: Showdown data/conditions.ts -- grassyterrain.onResidual
+   */
+  override applyTerrainEffects(state: BattleState): TerrainEffectResult[] {
+    return applyGen8TerrainEffects(state);
+  }
+
+  /**
+   * Check if a primary status condition can be inflicted on a target,
+   * considering active terrain effects.
+   *
+   * - Electric Terrain: grounded Pokemon cannot fall asleep
+   * - Misty Terrain: grounded Pokemon cannot gain any primary status condition
+   *
+   * Source: Bulbapedia "Electric Terrain" Gen 8 -- "Grounded Pokemon cannot fall asleep."
+   * Source: Bulbapedia "Misty Terrain" Gen 8 -- "Grounded Pokemon are protected from
+   *   status conditions."
+   * Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
+   */
+  checkTerrainStatusImmunity(
+    status: PrimaryStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): { immune: boolean; message?: string } {
+    return checkGen8TerrainStatusImmunity(status, target, state);
   }
 
   // --- Confusion ---
