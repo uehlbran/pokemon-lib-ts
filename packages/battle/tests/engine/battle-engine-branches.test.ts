@@ -417,6 +417,44 @@ describe("BattleEngine — branch coverage", () => {
     });
   });
 
+  describe("sleep-counter startTime storage", () => {
+    it("given self-inflicted sleep via Rest (turnsLeft=2), when applyPrimaryStatus runs, then sleep-counter stores startTime=2", () => {
+      // Source: Showdown data/mods/gen5/conditions.ts -- slp.onSwitchIn reads effectState.startTime
+      // startTime must be stored at infliction so Gen 5 can reset turnsLeft on switch-in.
+      // Arrange
+      const ruleset = new MockRuleset();
+      ruleset.executeMoveEffect = () => ({
+        statusInflicted: null,
+        volatileInflicted: null,
+        statChanges: [],
+        recoilDamage: 0,
+        healAmount: 0,
+        switchOut: false,
+        messages: [],
+        selfStatusInflicted: "sleep" as const,
+        selfVolatileData: { turnsLeft: 2 },
+      });
+
+      const { engine } = createEngine({ ruleset, seed: 42 });
+      engine.start();
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert — attacker (Charizard, side 0) self-inflicted sleep with turnsLeft=2
+      const attacker = engine.getActive(0);
+      expect(attacker?.pokemon.status).toBe("sleep");
+      const sleepCounter = attacker?.volatileStatuses.get("sleep-counter");
+      expect(sleepCounter).toBeDefined();
+      expect(sleepCounter!.turnsLeft).toBe(2);
+      // The key assertion: startTime must equal the turnsLeft value at infliction time
+      // Source: Showdown data/mods/gen5/conditions.ts — slp.onSwitchIn uses effectState.startTime
+      const startTime = (sleepCounter!.data as Record<string, unknown>)?.startTime;
+      expect(startTime).toBe(2);
+    });
+  });
+
   describe("freeze status handling", () => {
     it("given a frozen pokemon, when freeze thaw fails, then it cannot act", () => {
       // Arrange — use a ruleset where freeze never thaws
