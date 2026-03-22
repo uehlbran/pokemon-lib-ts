@@ -524,6 +524,12 @@ function isRemovableItem(item: string, _defenderSpeciesId: number): boolean {
 
   if (MEGA_STONE_SUFFIX_ITEMS.has(item)) return false;
 
+  // Eviolite ends with "ite" but is NOT a Mega Stone -- it is a standard removable item.
+  // Must be checked before the suffix heuristic to avoid false positives.
+  // Source: Showdown data/items.ts -- Eviolite has no megaStone/megaEvolves property
+  // Fix: GitHub #610
+  if (item === "eviolite") return true;
+
   // Check for mega stone naming pattern: ends with "-ite" or specific known mega stones
   // Source: Showdown data/items.ts -- mega stones are identified by megaStone/megaEvolves property
   // In practice, mega stones end in "ite" (e.g., "venusaurite", "charizardite-x")
@@ -624,14 +630,16 @@ export function calculateGen6Damage(
 
   // Type-boost items (Charcoal, etc.) and Plates (incl. Pixie Plate): 4915/4096 base power
   // Source: Showdown data/items.ts -- onBasePower with chainModify([4915, 4096])
+  // Uses pokeRound (not Math.floor) to match Showdown's chainModify behavior.
+  // Fix: GitHub #611
   if (!attackerHasKlutz && !gemConsumed && attackerItem) {
     const typeBoostItemType = TYPE_BOOST_ITEMS[attackerItem];
     const plateItemType = PLATE_ITEMS[attackerItem];
     if (typeBoostItemType === effectiveMoveType) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
     if (plateItemType === effectiveMoveType) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
   }
 
@@ -768,21 +776,21 @@ export function calculateGen6Damage(
       attacker.pokemon.speciesId === 483 &&
       (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
     ) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "lustrous-orb" &&
       attacker.pokemon.speciesId === 484 &&
       (effectiveMoveType === "water" || effectiveMoveType === "dragon")
     ) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "griseous-orb" &&
       attacker.pokemon.speciesId === 487 &&
       (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
     ) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
   }
 
