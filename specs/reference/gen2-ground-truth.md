@@ -222,8 +222,9 @@ Same as Gen 1: `threshold = floor(moveAccuracy * accStageMultiplier / evaStageMu
 ### OHKO Moves
 
 - Fail if user's level < target's level (changed from Speed comparison in Gen 1)
-- Base accuracy: 30%
-- Accuracy increases by 1% per level the user is above the target
+- Base accuracy: 30 (raw 0-255 byte; 30/256 ≈ 11.7% hit rate at equal levels)
+- Accuracy increases by 2 units per level the user is above the target — `add a` in decomp doubles the level difference
+- Source: pret/pokecrystal engine/battle/effect_commands.asm:5440 (BattleCommand_OHKO)
 - Not affected by accuracy/evasion stage modifiers
 
 ---
@@ -468,7 +469,7 @@ Source: pret/pokecrystal — Struggle recoil uses the user's max HP divided by 4
 
 Gen 2 (GSC) uses a **two-phase** end-of-turn system. The single-pass view previously documented here was incorrect — pokecrystal has two distinct routines.
 
-Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage and HandleBetweenTurnEffects
+Source: pret/pokecrystal engine/battle/core.asm:250-296 (HandleBetweenTurnEffects) and core.asm:1005-1122 (ResidualDamage)
 
 ### Phase 1 — ResidualDamage (runs per-Pokemon AFTER EACH ATTACK)
 
@@ -484,13 +485,19 @@ This phase fires after each individual attack resolves, not once at the end of b
 ### Phase 2 — HandleBetweenTurnEffects (runs ONCE after both Pokemon have acted)
 
 ```
-1. Future Attack activation (Doom Desire / Future Sight — not present in Gen 2 but reserved)
-2. Sandstorm damage (1/8 max HP for non-Rock/Ground/Steel)
-3. Bind/trapping damage (1/16 max HP per turn)
-4. Perish Song countdown (decrement, faint at 0)
-5. Leftovers recovery (1/16 max HP)
-6. Screen countdowns (Reflect, Light Screen — decrement turn counter)
-7. Weather turn decrement
+1. Future Attack activation (HandleFutureSight)
+2. Weather damage — Sandstorm: 1/8 max HP for non-Rock/Ground/Steel (HandleWeather)
+3. Weather turn decrement (HandleWeather, same call as step 2)
+4. Bind/trapping damage — 1/16 max HP per turn (HandleWrap)
+5. Perish Song countdown — decrement, faint at 0 (HandlePerishSong)
+6. Leftovers recovery — 1/16 max HP (HandleLeftovers)
+7. Mystery Berry — restores PP (HandleMysteryberry)
+8. End-of-turn defrost check — 25/256 thaw chance (HandleDefrost)
+9. Safeguard countdown (HandleSafeguard)
+10. Screen countdowns — Reflect, Light Screen (HandleScreens)
+11. Stat-boosting held items (HandleStatBoostingHeldItems)
+12. Healing held items (HandleHealingItems)
+13. Encore countdown (HandleEncore)
 ```
 
 ### Important Notes

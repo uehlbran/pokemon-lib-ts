@@ -58,7 +58,7 @@ export interface StatCalculator {
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock;
 }
 
-/** Damage formula and damage breakdown. */
+/** Damage formula, breakdown, and Struggle damage/recoil (mid-turn, not end-of-turn). */
 export interface DamageSystem {
   /**
    * Calculate damage for a move.
@@ -66,6 +66,24 @@ export interface DamageSystem {
    * in modifier order, rounding, and which factors apply.
    */
   calculateDamage(context: DamageContext): DamageResult;
+  /**
+   * Calculate Struggle base damage dealt to the defender.
+   * Gen 1: Normal-type physical damage (50 BP, Ghost immune — type chart applies).
+   * Gen 2+: Typeless damage (50 BP physical, type chart does NOT apply, Ghost takes full damage).
+   * @param state - Required for Gen 1 (passed to calculateDamage for Normal-type chart lookup);
+   *   Gen 2+ compute damage inline without consulting state.
+   * @returns damage amount (non-negative integer)
+   */
+  calculateStruggleDamage(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): number;
+  /**
+   * Calculate Struggle recoil damage.
+   * Gen 1: 1/2 of damage dealt. Gen 2-3: 1/4 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
+   */
+  calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
 
   /**
    * Whether future attacks (Future Sight, Doom Desire) recalculate damage at hit time.
@@ -402,7 +420,7 @@ export interface CatchSystem {
 /**
  * End-of-turn damage sources and multi-turn mechanics.
  *
- * Covers: leech seed, curse, nightmare, struggle recoil, bind, perish song, protect, multi-hit.
+ * Covers: leech seed, curse, nightmare, bind, perish song, protect, multi-hit.
  */
 export interface EndOfTurnSystem {
   /**
@@ -420,24 +438,6 @@ export interface EndOfTurnSystem {
    * Gen 2+: 1/4 max HP while asleep. Gen 1: N/A.
    */
   calculateNightmareDamage(pokemon: ActivePokemon): number;
-  /**
-   * Calculate Struggle base damage dealt to the defender.
-   * Gen 1: Normal-type physical damage (50 BP, Ghost immune — type chart applies).
-   * Gen 2+: Typeless damage (50 BP physical, type chart does NOT apply, Ghost takes full damage).
-   * @param state - Required for Gen 1 (passed to calculateDamage for Normal-type chart lookup);
-   *   Gen 2+ compute damage inline without consulting state.
-   * @returns damage amount (non-negative integer)
-   */
-  calculateStruggleDamage(
-    attacker: ActivePokemon,
-    defender: ActivePokemon,
-    state: BattleState,
-  ): number;
-  /**
-   * Calculate Struggle recoil damage.
-   * Gen 1: 1/2 of damage dealt. Gen 2-3: 1/4 of damage dealt. Gen 4+: 1/4 of attacker's max HP.
-   */
-  calculateStruggleRecoil(attacker: ActivePokemon, damageDealt: number): number;
   /**
    * Roll the number of hits for a multi-hit move.
    * Gen 1-4: [2,2,2,3,3,3,4,5] weighted (roughly 37.5/37.5/12.5/12.5%).
