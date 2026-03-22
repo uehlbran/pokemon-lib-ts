@@ -46,12 +46,24 @@ export function createActivePokemon(
     isMega && pokemon.megaTypes ? ([...pokemon.megaTypes] as PokemonType[]) : types;
   const resolvedAbility = isMega && pokemon.megaAbility ? pokemon.megaAbility : pokemon.ability;
 
+  // If this Pokemon previously Terastallized (terastallized flag set on the PokemonInstance),
+  // restore Tera state. Like Mega Evolution, Terastallization is permanent for the rest of
+  // the battle and must persist through switches.
+  // Source: Gen 9 game mechanic — Terastallization persists for the entire battle.
+  // Source: Showdown sim/pokemon.ts — forme/tera state restored on sendOut.
+  const isTerastallized = !!pokemon.terastallized;
+  const teraType = isTerastallized ? (pokemon.teraType ?? null) : null;
+  const teraResolvedTypes =
+    isTerastallized && pokemon.teraTypes
+      ? ([...pokemon.teraTypes] as PokemonType[])
+      : resolvedTypes;
+
   return {
     pokemon,
     teamSlot,
     statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: resolvedTypes,
+    types: teraResolvedTypes,
     ability: resolvedAbility,
     suppressedAbility: null,
     itemKnockedOff: false,
@@ -68,9 +80,9 @@ export function createActivePokemon(
     isMega,
     isDynamaxed: false,
     dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
+    isTerastallized,
+    teraType,
+    stellarBoostedTypes: isTerastallized ? [...(pokemon.stellarBoostedTypes ?? [])] : [],
     forcedMove: null,
   };
 }

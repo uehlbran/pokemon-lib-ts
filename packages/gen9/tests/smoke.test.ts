@@ -34,11 +34,21 @@ describe("Gen9 smoke tests", () => {
     expect(ruleset.shouldExecutePursuitPreSwitch()).toBe(false);
   });
 
-  it("given Gen9Ruleset, when checking getBattleGimmick for 'tera', then returns null (stub)", () => {
+  it("given Gen9Ruleset, when checking getBattleGimmick for 'tera', then returns Gen9Terastallization", () => {
     // Source: Terastallization is the Gen 9 battle gimmick
-    // Currently a stub -- will be implemented in Wave 2
+    // Source: Showdown data/mods/gen9 -- only Tera is available
     const ruleset = new Gen9Ruleset();
-    expect(ruleset.getBattleGimmick("tera")).toBeNull();
+    const gimmick = ruleset.getBattleGimmick("tera");
+    expect(gimmick).not.toBeNull();
+    expect(gimmick!.name).toBe("Terastallization");
+  });
+
+  it("given Gen9Ruleset, when checking getBattleGimmick for 'mega'/'zmove'/'dynamax', then returns null", () => {
+    // Source: Showdown data/mods/gen9 -- Mega, Z-Moves, Dynamax all removed in Gen 9
+    const ruleset = new Gen9Ruleset();
+    expect(ruleset.getBattleGimmick("mega")).toBeNull();
+    expect(ruleset.getBattleGimmick("zmove")).toBeNull();
+    expect(ruleset.getBattleGimmick("dynamax")).toBeNull();
   });
 
   it("given Gen9Ruleset, when checking getCritMultiplier, then returns 1.5", () => {

@@ -4,7 +4,7 @@
  * Covers:
  *   - getAvailableTypes (18 types including Fairy)
  *   - shouldExecutePursuitPreSwitch (false, Pursuit removed in Gen 8+)
- *   - getBattleGimmick (null for mega/zmove/dynamax; null for tera as stub)
+ *   - getBattleGimmick (null for mega/zmove/dynamax; Gen9Terastallization for tera)
  *   - rollConfusionSelfHit / getConfusionSelfHitChance (33% in Gen 7+)
  *   - hasTerrain (true, Gen 6+ feature)
  *   - canHitSemiInvulnerable (move bypass checks)
@@ -17,6 +17,7 @@
 import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
+import { Gen9Terastallization } from "../src/Gen9Terastallization";
 
 const ruleset = new Gen9Ruleset(new DataManager());
 
@@ -75,7 +76,7 @@ describe("Gen9Ruleset -- shouldExecutePursuitPreSwitch", () => {
 });
 
 // ===========================================================================
-// Battle gimmick -- No Mega, Z-Move, or Dynamax in Gen 9; Tera is Wave 2 stub
+// Battle gimmick -- No Mega, Z-Move, or Dynamax in Gen 9; Terastallization (Wave 2)
 // ===========================================================================
 
 describe("Gen9Ruleset -- getBattleGimmick", () => {
@@ -97,10 +98,12 @@ describe("Gen9Ruleset -- getBattleGimmick", () => {
     expect(ruleset.getBattleGimmick("dynamax")).toBeNull();
   });
 
-  it("given getBattleGimmick('tera'), then returns null (stub for Wave 2)", () => {
-    // Source: Bulbapedia -- Terastallization is the Gen 9 battle gimmick
-    // Currently a stub -- Wave 2 will implement the full Terastallization gimmick
-    expect(ruleset.getBattleGimmick("tera")).toBeNull();
+  it("given getBattleGimmick('tera'), then returns Gen9Terastallization instance (Wave 2)", () => {
+    // Source: Bulbapedia -- Terastallization is the Gen 9 battle gimmick (Scarlet/Violet)
+    // Source: Showdown data/mods/gen9 -- Gen9Terastallization implements BattleGimmick
+    const gimmick = ruleset.getBattleGimmick("tera");
+    expect(gimmick).not.toBeNull();
+    expect(gimmick).toBeInstanceOf(Gen9Terastallization);
   });
 });
 
