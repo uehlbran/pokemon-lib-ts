@@ -36,6 +36,8 @@ export {
   handleGen5DamageCalcAbility,
   handleGen5DamageImmunityAbility,
   hasSheerForceEligibleEffect,
+  isSheerForceEligibleMove,
+  isSheerForceWhitelistedMove,
   sheerForceSuppressesLifeOrb,
   sturdyBlocksOHKO,
 } from "./Gen5AbilitiesDamage";

@@ -57,6 +57,30 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
 // ---------------------------------------------------------------------------
 
 /**
+ * Moves whose Sheer Force-eligible secondaries cannot be represented in our
+ * MoveEffect union because Showdown stores them as custom `onHit` functions.
+ * These moves must be whitelisted explicitly so Sheer Force activates for them.
+ *
+ * Source: Showdown data/moves.ts -- triattack: secondary.onHit randomly picks
+ *   from burn/paralysis/freeze with 20% chance
+ * Source: Showdown data/abilities.ts -- sheerforce activates when move.secondaries
+ *   exists (triattack has secondaries with chance: 20)
+ */
+const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([
+  "tri-attack", // 20% burn/paralysis/freeze; custom onHit in Showdown, effect=null in our data
+]);
+
+/**
+ * Check if a move is on the Sheer Force whitelist -- i.e., it has a
+ * Sheer Force-eligible secondary that our MoveEffect union cannot represent.
+ *
+ * Source: Showdown data/moves.ts -- triattack secondary.onHit
+ */
+export function isSheerForceWhitelistedMove(moveId: string): boolean {
+  return SHEER_FORCE_MOVE_WHITELIST.has(moveId);
+}
+
+/**
  * Check if a move has secondary effects that Sheer Force would suppress.
  *
  * Sheer Force suppresses any effect in Showdown's `move.secondary`/`move.secondaries`
@@ -75,6 +99,11 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  *
  * The `fromSecondary` field on StatChangeEffect distinguishes these: effects from
  * secondary.self.boosts have `fromSecondary: true`, while primary self-effects do not.
+ *
+ * NOTE: This function only inspects the MoveEffect structure. Moves whose secondaries
+ * are stored as custom onHit functions in Showdown (e.g., Tri Attack) will have
+ * effect=null and return false here. Use `isSheerForceEligibleMove()` to combine
+ * both the effect-based check and the whitelist check.
  */
 export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
   if (!effect) return false;
@@ -110,6 +139,21 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
     default:
       return false;
   }
+}
+
+/**
+ * Combined check: is a move eligible for Sheer Force based on either its
+ * MoveEffect structure OR the move-ID whitelist?
+ *
+ * Use this instead of `hasSheerForceEligibleEffect()` alone whenever a move ID
+ * is available, to catch moves like Tri Attack whose secondaries are not
+ * representable in our MoveEffect union.
+ *
+ * Source: Showdown data/abilities.ts -- sheerforce: onModifyMove deletes
+ *   move.secondaries; onBasePower checks move.hasSheerForce
+ */
+export function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): boolean {
+  return hasSheerForceEligibleEffect(effect) || isSheerForceWhitelistedMove(moveId);
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +236,7 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       //   onModifyMove: deletes move.secondaries, sets move.hasSheerForce = true
       //   onBasePower: if move.hasSheerForce, chainModify([5325, 4096])
       if (!ctx.move) return NO_ACTIVATION;
-      if (!hasSheerForceEligibleEffect(ctx.move.effect)) return NO_ACTIVATION;
+      if (!isSheerForceEligibleMove(ctx.move.effect, ctx.move.id)) return NO_ACTIVATION;
 
       return {
         activated: true,
@@ -513,12 +557,19 @@ export function handleGen5DamageImmunityAbility(ctx: AbilityContext): AbilityRes
  *
  * This is a pure utility function for the damage calc to call directly.
  *
+ * @param moveId - Optional move ID for whitelist check (e.g., "tri-attack" has an
+ *   onHit secondary that our MoveEffect union cannot represent)
+ *
  * Source: Showdown data/abilities.ts -- sheerforce onBasePower
  *   chainModify([5325, 4096])
  */
-export function getSheerForceMultiplier(abilityId: string, effect: MoveEffect | null): number {
+export function getSheerForceMultiplier(
+  abilityId: string,
+  effect: MoveEffect | null,
+  moveId?: string,
+): number {
   if (abilityId !== "sheer-force") return 1;
-  if (!hasSheerForceEligibleEffect(effect)) return 1;
+  if (!isSheerForceEligibleMove(effect, moveId ?? "")) return 1;
   // Source: Showdown data/abilities.ts -- Sheer Force: 5325/4096 = ~1.3x
   return 5325 / 4096;
 }
@@ -527,12 +578,18 @@ export function getSheerForceMultiplier(abilityId: string, effect: MoveEffect | 
  * Check whether Sheer Force suppresses Life Orb recoil for this move.
  * When Sheer Force activates, Life Orb's 10% recoil is suppressed.
  *
+ * @param moveId - Optional move ID for whitelist check (e.g., "tri-attack")
+ *
  * Source: Showdown scripts.ts -- if move.hasSheerForce && source.hasAbility('sheerforce'),
  *   skip Life Orb recoil
  */
-export function sheerForceSuppressesLifeOrb(abilityId: string, effect: MoveEffect | null): boolean {
+export function sheerForceSuppressesLifeOrb(
+  abilityId: string,
+  effect: MoveEffect | null,
+  moveId?: string,
+): boolean {
   if (abilityId !== "sheer-force") return false;
-  return hasSheerForceEligibleEffect(effect);
+  return isSheerForceEligibleMove(effect, moveId ?? "");
 }
 
 /**
