@@ -659,6 +659,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return bound.turnsLeft > 0;
   }
 
+  onSwitchIn(_pokemon: ActivePokemon, _state: BattleState): void {
+    // Default: no-op. Override in gen-specific rulesets that need switch-in hooks.
+    // Gen 5 overrides this to reset the sleep counter on switch-in.
+  }
+
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
     // Default Gen 3+ behavior: clear all volatile statuses on switch-out.
     // Gen 1-2 override this to handle generation-specific persistence rules.

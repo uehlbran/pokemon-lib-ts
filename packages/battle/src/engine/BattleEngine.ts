@@ -280,9 +280,54 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Process when all pending switches are submitted
     if (this.pendingSwitches.size === this.sidesNeedingSwitch.size) {
-      for (const [switchSide, slot] of this.pendingSwitches) {
-        this.sendOut(this.state.sides[switchSide], slot);
+      const isDoubleSwitch = this.pendingSwitches.size > 1;
+
+      if (isDoubleSwitch) {
+        // Phase 1: Send out all replacement Pokemon without ability triggers.
+        // When both sides faint simultaneously, we must get both replacements on
+        // the field before firing switch-in abilities, so each ability correctly
+        // targets the opponent's new Pokemon (not the fainted one).
+        // Source: Showdown sim/battle.ts — simultaneous switches send out first, abilities second
+        for (const [switchSide, slot] of this.pendingSwitches) {
+          this.sendOut(this.state.sides[switchSide], slot, true);
+        }
+
+        // Phase 2: Fire switch-in abilities in speed order (faster first).
+        if (this.ruleset.hasAbilities()) {
+          const entries: Array<{ side: 0 | 1; pokemon: ActivePokemon }> = [];
+          for (const [switchSide] of this.pendingSwitches) {
+            const active = this.state.sides[switchSide].active[0];
+            if (active && active.pokemon.currentHp > 0) {
+              entries.push({ side: switchSide, pokemon: active });
+            }
+          }
+          // Sort by speed (faster goes first)
+          entries.sort((a, b) => {
+            const speedA = a.pokemon.pokemon.calculatedStats?.speed ?? 0;
+            const speedB = b.pokemon.pokemon.calculatedStats?.speed ?? 0;
+            return speedB - speedA;
+          });
+          for (const entry of entries) {
+            const opponent = this.getOpponentActive(entry.side);
+            if (opponent) {
+              const abilityResult = this.ruleset.applyAbility("on-switch-in", {
+                pokemon: entry.pokemon,
+                opponent,
+                state: this.state,
+                rng: this.state.rng,
+                trigger: "on-switch-in",
+              });
+              this.processAbilityResult(abilityResult, entry.pokemon, opponent, entry.side);
+            }
+          }
+        }
+      } else {
+        // Single switch: normal path (sendOut handles abilities internally)
+        for (const [switchSide, slot] of this.pendingSwitches) {
+          this.sendOut(this.state.sides[switchSide], slot);
+        }
       }
+
       this.pendingSwitches.clear();
       this.sidesNeedingSwitch.clear();
 
@@ -679,6 +724,10 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Delegate gen-specific switch-in hooks (e.g., Gen 5 sleep counter reset).
+    // Called after hazards but before abilities, so the Pokemon's state is up-to-date.
+    this.ruleset.onSwitchIn(active, this.state);
+
     // Apply on-switch-in abilities for the newly sent-out Pokemon
     // Source: pret/pokeemerald src/battle_util.c AbilityBattleEffects — switch-in abilities
     // must have their results processed
@@ -1035,6 +1084,8 @@ export class BattleEngine implements BattleEventEmitter {
             pokemon: getPokemonName(actor),
             move: moveData.id,
           });
+          // Delegate miss-related effects to the ruleset (explosion self-faint, etc.)
+          this.ruleset.onMoveMiss(actor, moveData, this.state);
           actor.lastMoveUsed = moveData.id;
           actor.movedThisTurn = true;
           return;
@@ -1236,15 +1287,40 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       // Held item: on-damage-taken trigger for defender
+      // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks (Absorb Bulb, Cell Battery, etc.)
       if (this.ruleset.hasHeldItems() && damage > 0) {
         const defItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
           pokemon: defender,
           state: this.state,
           rng: this.state.rng,
           damage,
+          move: effectiveMoveData,
         });
         if (defItemResult.activated) {
-          this.processItemResult(defItemResult, defender, defenderSide as 0 | 1);
+          this.processItemResult(defItemResult, defender, actor, defenderSide as 0 | 1);
+        }
+      }
+
+      // Held item: on-contact trigger for defender (Rocky Helmet, etc.)
+      // Source: Showdown sim/battle-actions.ts — onDamagingHit contact item hooks
+      if (
+        this.ruleset.hasHeldItems() &&
+        damage > 0 &&
+        effectiveMoveData.flags.contact &&
+        !hitSubstitute
+      ) {
+        if (defender.pokemon.currentHp > 0) {
+          const contactItemResult = this.ruleset.applyHeldItem("on-contact", {
+            pokemon: defender,
+            opponent: actor,
+            state: this.state,
+            rng: this.state.rng,
+            damage,
+            move: effectiveMoveData,
+          });
+          if (contactItemResult.activated) {
+            this.processItemResult(contactItemResult, defender, actor, defenderSide as 0 | 1);
+          }
         }
       }
 
@@ -1492,6 +1568,8 @@ export class BattleEngine implements BattleEventEmitter {
           pokemon: getPokemonName(actor),
           move: moveId,
         });
+        // Delegate miss-related effects to the ruleset (explosion self-faint, etc.)
+        this.ruleset.onMoveMiss(actor, moveData, this.state);
         return;
       }
     }
@@ -4048,8 +4126,22 @@ export class BattleEngine implements BattleEventEmitter {
   private processItemResult(
     result: import("../context").ItemResult,
     pokemon: ActivePokemon,
-    side: 0 | 1,
+    opponentOrSide: ActivePokemon | (0 | 1),
+    sideParam?: 0 | 1,
   ): void {
+    // Support two call signatures:
+    //   processItemResult(result, pokemon, side)             — no opponent needed
+    //   processItemResult(result, pokemon, opponent, side)   — opponent available for targeted effects
+    let side: 0 | 1;
+    let opponent: ActivePokemon | null;
+    if (typeof opponentOrSide === "number") {
+      side = opponentOrSide as 0 | 1;
+      opponent = null;
+    } else {
+      side = sideParam as 0 | 1;
+      opponent = opponentOrSide;
+    }
+
     for (const effect of result.effects) {
       switch (effect.type) {
         case "heal": {
@@ -4093,9 +4185,9 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "flinch": {
-          const opponent = this.getOpponentActive(side);
-          if (opponent) {
-            opponent.volatileStatuses.set("flinch", { turnsLeft: 1 });
+          const flinchTarget = opponent ?? this.getOpponentActive(side);
+          if (flinchTarget) {
+            flinchTarget.volatileStatuses.set("flinch", { turnsLeft: 1 });
           }
           break;
         }
@@ -4123,21 +4215,77 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "self-damage": {
-          const amount = effect.value as number;
-          const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
-          pokemon.pokemon.currentHp = Math.max(0, pokemon.pokemon.currentHp - amount);
+        case "inflict-status": {
+          // Typed variant: status field is a PrimaryStatus (Toxic Orb, Flame Orb)
+          // Source: Showdown data/items.ts -- Toxic Orb / Flame Orb onResidual
+          if (!pokemon.pokemon.status) {
+            this.applyPrimaryStatus(pokemon, effect.status, side);
+          }
+          break;
+        }
+        case "chip-damage": {
+          // Typed variant: chip damage with explicit target (Life Orb, Black Sludge, Sticky Barb, Rocky Helmet, Jaboca/Rowap Berry)
+          // Source: Showdown data/items.ts -- various item onResidual / onDamagingHit
+          const chipAmount = effect.value;
+          const damagedPokemon = effect.target === "opponent" && opponent ? opponent : pokemon;
+          const damagedSide: 0 | 1 =
+            effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+          const maxHpChip =
+            damagedPokemon.pokemon.calculatedStats?.hp ?? damagedPokemon.pokemon.currentHp;
+          damagedPokemon.pokemon.currentHp = Math.max(
+            0,
+            damagedPokemon.pokemon.currentHp - chipAmount,
+          );
           this.emit({
             type: "damage",
-            side,
-            pokemon: getPokemonName(pokemon),
+            side: damagedSide,
+            pokemon: getPokemonName(damagedPokemon),
+            amount: chipAmount,
+            currentHp: damagedPokemon.pokemon.currentHp,
+            maxHp: maxHpChip,
+            source: "held-item",
+          });
+          break;
+        }
+        case "stat-boost": {
+          // +1 stage boost to the specified stat for the holder
+          // Source: Showdown -- stat pinch berries, Absorb Bulb, Cell Battery onEat/onDamagingHit
+          const stat = effect.value as string;
+          const stages = pokemon.statStages as Record<string, number>;
+          if (stat in stages) {
+            stages[stat] = Math.min(6, (stages[stat] ?? 0) + 1);
+          }
+          break;
+        }
+        case "self-damage": {
+          const amount = effect.value as number;
+          // Respect effect.target: 'opponent' means damage the attacker (e.g., Rocky Helmet, Jaboca Berry)
+          // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks damage the source
+          const damagedPokemon = effect.target === "opponent" && opponent ? opponent : pokemon;
+          const damagedSide: 0 | 1 =
+            effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+          const maxHp =
+            damagedPokemon.pokemon.calculatedStats?.hp ?? damagedPokemon.pokemon.currentHp;
+          damagedPokemon.pokemon.currentHp = Math.max(0, damagedPokemon.pokemon.currentHp - amount);
+          this.emit({
+            type: "damage",
+            side: damagedSide,
+            pokemon: getPokemonName(damagedPokemon),
             amount,
-            currentHp: pokemon.pokemon.currentHp,
+            currentHp: damagedPokemon.pokemon.currentHp,
             maxHp,
             source: "held-item",
           });
           break;
         }
+        case "none":
+        case "damage-boost":
+        case "speed-boost":
+        case "status-prevention":
+          // These effect types carry no immediate engine action here.
+          // 'none' is used for force-switch and other engine-deferred behaviors.
+          // 'damage-boost', 'speed-boost', 'status-prevention' are applied inline in item handlers.
+          break;
       }
     }
     for (const msg of result.messages) {
