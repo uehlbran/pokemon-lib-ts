@@ -352,6 +352,68 @@ export function calculateGen2Damage(
     dynamicPower = getFuryCutterPower(attacker);
   }
 
+  // Magnitude: random power based on magnitude level 4-10.
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm MagnitudeEffect
+  // Magnitudes 4-10, probabilities on 0-255 scale:
+  //   4: 13/256 (~5%), 5: 25/256 (~10%), 6: 51/256 (~20%),
+  //   7: 77/256 (~30%), 8: 51/256 (~20%), 9: 25/256 (~10%), 10: 14/256 (~5%)
+  // Moving the roll here (not in the effect handler) ensures the power is used
+  // as a BASE POWER in the standard damage formula, not as a flat HP amount.
+  if (move.id === "magnitude") {
+    const magRoll = rng.int(0, 255);
+    if (magRoll < 13) {
+      dynamicPower = 10;
+    } else if (magRoll < 38) {
+      dynamicPower = 30;
+    } else if (magRoll < 89) {
+      dynamicPower = 50;
+    } else if (magRoll < 166) {
+      dynamicPower = 70;
+    } else if (magRoll < 217) {
+      dynamicPower = 90;
+    } else if (magRoll < 242) {
+      dynamicPower = 110;
+    } else {
+      dynamicPower = 150;
+    }
+    // Note: magnitude level for the "Magnitude N!" message is not available here.
+    // The effect handler emits a generic message; per-level message tracking
+    // requires engine support (or storing level in volatile state).
+  }
+
+  // Present: randomly deals 40/80/120 base power or heals the target for 1/4 max HP.
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm PresentEffect
+  // Roll 0-255: 0-101 (40%) -> power 40; 102-177 (30%) -> power 80;
+  //             178-203 (10%) -> power 120; 204-255 (20%) -> heal 1/4 HP
+  // The roll is done here so 40/80/120 are used as BASE POWER in the standard formula.
+  // For the heal case (20%): dynamicPower is set to -1 as a sentinel; the check below
+  // returns 0 damage. The actual HP restoration requires engine support
+  // (MoveEffectResult.healDefender) — tracked in issue #526.
+  if (move.id === "present") {
+    const presentRoll = rng.int(0, 255);
+    if (presentRoll < 102) {
+      dynamicPower = 40;
+    } else if (presentRoll < 178) {
+      dynamicPower = 80;
+    } else if (presentRoll < 204) {
+      dynamicPower = 120;
+    } else {
+      // Heal case (204-255 = 52/256 ≈ 20.3%): no damage dealt.
+      // Present heal (1/4 max HP to defender) is not applied — see issue #526.
+      dynamicPower = -1;
+    }
+  }
+
+  // Sentinel -1 means "this move produced no damage" (e.g., Present heal case)
+  if (dynamicPower === -1) {
+    return {
+      damage: 0,
+      effectiveness: 1,
+      isCrit: false,
+      randomFactor: 1,
+    };
+  }
+
   // Status moves do no damage
   if (move.category === "status" || dynamicPower === null || dynamicPower === 0) {
     return {

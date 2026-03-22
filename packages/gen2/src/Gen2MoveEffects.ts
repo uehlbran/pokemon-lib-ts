@@ -14,7 +14,7 @@
  * Source: pret/pokecrystal engine/battle/effect_commands.asm
  */
 
-import type { MoveEffectContext } from "@pokemon-lib-ts/battle";
+import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
   EntryHazardType,
@@ -36,55 +36,18 @@ import { canInflictGen2Status } from "./Gen2Status";
 /**
  * Mutable internal result type used during effect processing.
  * Returned as the readonly MoveEffectResult interface.
+ *
+ * Uses a mapped type to strip `readonly` from MoveEffectResult — this ensures
+ * MutableResult stays structurally in sync if MoveEffectResult gains new fields.
+ * The array fields are widened to mutable arrays so handlers can call `.push()`.
  */
-export type MutableResult = {
-  statusInflicted: PrimaryStatus | null;
-  volatileInflicted: VolatileStatus | null;
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
-  recoilDamage: number;
-  healAmount: number;
-  switchOut: boolean;
-  batonPass?: boolean;
-  forcedSwitch?: boolean;
+export type MutableResult = Omit<
+  { -readonly [K in keyof MoveEffectResult]: MoveEffectResult[K] },
+  "messages" | "statChanges" | "volatilesToClear"
+> & {
   messages: string[];
-  weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
-  hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
+  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
   volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-  clearSideHazards?: "attacker" | "defender";
-  itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
-  selfFaint?: boolean;
-  customDamage?: {
-    target: "attacker" | "defender";
-    amount: number;
-    source: string;
-  } | null;
-  screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
-  noRecharge?: boolean;
-  statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
-  selfStatusInflicted?: PrimaryStatus | null;
-  selfVolatileInflicted?: VolatileStatus | null;
-  selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-  volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-  futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;
-  forcedMoveSet?: {
-    moveIndex: number;
-    moveId: string;
-    volatileStatus: VolatileStatus;
-  } | null;
-  statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
-  screensCleared?: "attacker" | "defender" | "both" | null;
-  statusCured?: { target: "attacker" | "defender" | "both" } | null;
-  typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
-  /**
-   * Number of additional hits beyond the first for multi-hit moves.
-   * E.g., multiHitCount=2 means 2 more hits after the initial one, for 3 total.
-   */
-  multiHitCount?: number | null;
-  /**
-   * Move ID to execute immediately after this move resolves (Sleep Talk, Metronome).
-   * No PP is deducted for the recursive move.
-   */
-  recursiveMove?: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -562,7 +525,8 @@ export function handleCustomEffect(
       // Source: pret/pokecrystal engine/battle/effect_commands.asm SleepTalkEffect
       // NOTE: The engine currently blocks sleeping Pokemon in canExecuteMove before
       // executeMoveEffect runs. For Sleep Talk to function in full engine integration,
-      // the engine needs a sleep-bypass mechanism (see issue filed for this).
+      // the engine needs a sleep-bypass mechanism.
+      // See issue #524 for the sleep-bypass mechanic needed to make Sleep Talk work end-to-end.
       // This handler implements the correct selection logic.
       if (attacker.pokemon.status !== "sleep") {
         result.messages.push("But it failed!");
@@ -613,51 +577,14 @@ export function handleCustomEffect(
     // Present (#219)
     // =========================================================================
     case "present": {
-      // Present: randomly deals 40/80/120 damage or heals the target for 1/4 max HP.
+      // Present: randomly deals 40/80/120 BASE POWER or heals the target for 1/4 max HP.
       // Source: pret/pokecrystal engine/battle/effect_commands.asm PresentEffect
-      // Roll 0-255: 0-101 (40%) -> power 40; 102-177 (30%) -> power 80;
-      //             178-203 (10%) -> power 120; 204-255 (20%) -> heal 1/4 HP
-      // Note: using 0-255 scale matches the cartridge RNG.
-      // Since Present has power: null in move data, the engine skips normal damage calc.
-      // We use customDamage to signal the power outcome to the engine.
-      const presentRoll = context.rng.int(0, 255);
-      if (presentRoll < 102) {
-        // 40 power damage — 102/256 = ~39.8%
-        result.customDamage = {
-          target: "defender",
-          amount: 40,
-          source: "present-power",
-        };
-      } else if (presentRoll < 178) {
-        // 80 power damage — 76/256 = ~29.7%
-        result.customDamage = {
-          target: "defender",
-          amount: 80,
-          source: "present-power",
-        };
-      } else if (presentRoll < 204) {
-        // 120 power damage — 26/256 = ~10.2%
-        result.customDamage = {
-          target: "defender",
-          amount: 120,
-          source: "present-power",
-        };
-      } else {
-        // Heal the target for 1/4 max HP — 52/256 = ~20.3%
-        // Source: pret/pokecrystal — Present heal applies to the TARGET, not the user
-        // TODO: Proper Present heal requires engine support for "heal defender" field
-        // on MoveEffectResult. For now, we store amount=0 and the heal message.
-        const defMaxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
-        const healAmt = Math.max(1, Math.floor(defMaxHp / 4));
-        result.customDamage = {
-          target: "defender",
-          amount: 0,
-          source: "present-heal",
-        };
-        result.messages.push(
-          `${defender.pokemon.nickname ?? "The foe"} regained ${healAmt} HP from Present!`,
-        );
-      }
+      // The RNG roll and base power determination are handled in calculateGen2Damage
+      // (using a dynamicPower override) so the damage formula applies correctly.
+      // The heal case (20%) produces 0 damage from calculateGen2Damage.
+      // Applying the heal to the defender requires MoveEffectResult.healDefender support
+      // in the engine — tracked in issue #526. Until then, the heal branch is rolled
+      // correctly but not applied.
       break;
     }
 
@@ -667,42 +594,11 @@ export function handleCustomEffect(
     case "magnitude": {
       // Magnitude: random power based on magnitude level 4-10.
       // Source: pret/pokecrystal engine/battle/effect_commands.asm MagnitudeEffect
-      // Magnitudes 4-10, probabilities on 0-255 scale:
-      //   4: 13/256 (~5%), 5: 25/256 (~10%), 6: 51/256 (~20%),
-      //   7: 77/256 (~30%), 8: 51/256 (~20%), 9: 25/256 (~10%), 10: 14/256 (~5%)
-      // Since Magnitude has power: null in move data, the engine skips normal damage calc.
-      // We signal the effective power via customDamage.
-      const magRoll = context.rng.int(0, 255);
-      let magnitudeLevel: number;
-      let magnitudePower: number;
-      if (magRoll < 13) {
-        magnitudeLevel = 4;
-        magnitudePower = 10;
-      } else if (magRoll < 38) {
-        magnitudeLevel = 5;
-        magnitudePower = 30;
-      } else if (magRoll < 89) {
-        magnitudeLevel = 6;
-        magnitudePower = 50;
-      } else if (magRoll < 166) {
-        magnitudeLevel = 7;
-        magnitudePower = 70;
-      } else if (magRoll < 217) {
-        magnitudeLevel = 8;
-        magnitudePower = 90;
-      } else if (magRoll < 242) {
-        magnitudeLevel = 9;
-        magnitudePower = 110;
-      } else {
-        magnitudeLevel = 10;
-        magnitudePower = 150;
-      }
-      result.customDamage = {
-        target: "defender",
-        amount: magnitudePower,
-        source: "magnitude",
-      };
-      result.messages.push(`Magnitude ${magnitudeLevel}!`);
+      // The RNG roll and base power determination are handled in calculateGen2Damage
+      // (using a dynamicPower override) so the damage formula applies correctly.
+      // Note: the specific magnitude level (4-10) for the "Magnitude N!" message is
+      // not accessible from the effect handler; a generic message is emitted below.
+      result.messages.push("A tremor shook the area!");
       break;
     }
 
@@ -732,11 +628,19 @@ export function handleCustomEffect(
       // Power: 30 * 2^(turn-1), doubled again if Defense Curl was used
       // On miss or after 5 turns, the move ends.
       // The engine uses forcedMoveSet to lock the user into the move.
+      //
+      // Counter design: damage calc reads the volatile BEFORE the handler runs.
+      // - Turn 1: no volatile → count=0 → power 30. Handler stores count=1.
+      // - Turn 2: volatile.count=1 → power 60. Handler stores count=2.
+      // - Turn 3-5: similarly, power 120/240/480.
       const rolloutState = attacker.volatileStatuses.get("rollout");
-      const rolloutCount = rolloutState ? ((rolloutState.data?.count as number) ?? 0) + 1 : 0;
+      // currentCount is what damage calc already used this turn (0 on first use)
+      const currentCount = rolloutState ? ((rolloutState.data?.count as number) ?? 0) : 0;
+      // nextCount is what damage calc should read on the NEXT turn
+      const nextCount = currentCount + 1;
 
-      if (rolloutCount < 4) {
-        // Lock into Rollout for the next turn
+      if (nextCount <= 4) {
+        // Lock into Rollout for the next turn (turns 1-4; turn 5 is the last — no lock needed)
         const moveIdx = attacker.pokemon.moves.findIndex((m) => m.moveId === "rollout");
         if (moveIdx >= 0) {
           result.forcedMoveSet = {
@@ -747,7 +651,7 @@ export function handleCustomEffect(
           result.selfVolatileInflicted = "rollout";
           result.selfVolatileData = {
             turnsLeft: 1,
-            data: { count: rolloutCount },
+            data: { count: nextCount },
           };
         }
       }
@@ -764,14 +668,22 @@ export function handleCustomEffect(
       // Power: 10 * 2^min(consecutiveUses, 4) -> 10, 20, 40, 80, 160
       // Resets on miss or when a different move is used.
       // The consecutive counter is tracked via a volatile status.
+      //
+      // Counter design: damage calc reads the volatile BEFORE the handler runs.
+      // - Use 1: no volatile → count=0 → power 10. Handler stores count=1.
+      // - Use 2: volatile.count=1 → power 20. Handler stores count=2.
+      // - Use 3-5: power 40/80/160 (capped at count=4).
       const furyCutterState = attacker.volatileStatuses.get("fury-cutter");
-      const currentCount = furyCutterState ? ((furyCutterState.data?.count as number) ?? 0) + 1 : 0;
+      // currentCount is what damage calc already used this turn (0 on first use)
+      const fcCurrentCount = furyCutterState ? ((furyCutterState.data?.count as number) ?? 0) : 0;
+      // nextCount is what damage calc should read on the NEXT use (capped at 4 for power 160)
+      const fcNextCount = Math.min(fcCurrentCount + 1, 4);
 
-      // Update the volatile with the new count (capped at 4 for power 160)
+      // Update the volatile with the next count
       result.selfVolatileInflicted = "fury-cutter";
       result.selfVolatileData = {
         turnsLeft: -1, // No expiry — resets on miss or different move
-        data: { count: Math.min(currentCount, 4) },
+        data: { count: fcNextCount },
       };
       // Power escalation is handled in Gen2DamageCalc.ts via the fury-cutter volatile.
       break;
