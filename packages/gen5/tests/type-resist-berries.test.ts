@@ -439,6 +439,61 @@ describe("Gen 5 type resist berry -- breakdown itemMultiplier", () => {
 });
 
 // ===========================================================================
+// Magic Room suppresses resist berries
+// ===========================================================================
+
+describe("Gen 5 type resist berries -- Magic Room suppression", () => {
+  it("given Grass-type defender with Occa Berry vs SE Fire move under Magic Room, when damage calculated, then berry does NOT activate and full SE damage applies", () => {
+    // Source: Showdown data/moves.ts -- Magic Room: "For 5 turns, held items have no effect"
+    // Source: Bulbapedia -- Magic Room: "Nullifies the effect of each Pokémon's held item"
+    // Without Magic Room the same setup gives 37 (halved). Under Magic Room: full 74.
+    const attacker = makeActive({ types: ["normal"], attack: 100 });
+    const defender = makeActive({
+      types: ["grass"],
+      defense: 100,
+      heldItem: "occa-berry",
+    });
+    const fireMove = makeMove({ type: "fire", power: 80, category: "physical" });
+    const magicRoomState = {
+      ...makeState(),
+      magicRoom: { active: true, turnsLeft: 3 },
+    } as unknown as BattleState;
+
+    const result = calculateGen5Damage(
+      makeDamageContext({ attacker, defender, move: fireMove, state: magicRoomState }),
+      typeChart,
+    );
+
+    // Berry NOT consumed — Magic Room suppresses it
+    expect(defender.pokemon.heldItem).toBe("occa-berry");
+    // Full SE damage: 37 base * 2x Fire vs Grass = 74
+    expect(result.damage).toBe(74);
+  });
+
+  it("given Grass-type defender with Yache Berry vs SE Ice move when Magic Room is inactive, when damage calculated, then berry activates normally", () => {
+    // Source: Showdown data/moves.ts -- Magic Room only suppresses when active
+    // With Magic Room inactive the berry should still halve damage.
+    const attacker = makeActive({ types: ["normal"], attack: 100 });
+    const defender = makeActive({
+      types: ["grass"],
+      defense: 100,
+      heldItem: "yache-berry",
+    });
+    const iceMove = makeMove({ type: "ice", power: 80, category: "physical" });
+
+    const result = calculateGen5Damage(
+      makeDamageContext({ attacker, defender, move: iceMove }),
+      typeChart,
+    );
+
+    // Berry consumed — Magic Room is not active
+    expect(defender.pokemon.heldItem).toBeNull();
+    // Halved SE damage: 37 base * 2x Ice vs Grass = 74 -> pokeRound(74, 2048) = 37
+    expect(result.damage).toBe(37);
+  });
+});
+
+// ===========================================================================
 // Table completeness
 // ===========================================================================
 

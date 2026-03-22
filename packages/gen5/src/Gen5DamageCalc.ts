@@ -1055,14 +1055,16 @@ export function calculateGen5Damage(
 
   // Type-resist berries: halve SE damage of the matching type (consumed).
   // Chilan Berry (Normal) activates on any Normal-type hit (no SE requirement).
-  // Klutz or Embargo suppresses the berry.
+  // Klutz, Embargo, or Magic Room suppresses the berry.
   // Source: Showdown data/items.ts -- type-resist berries onSourceModifyDamage
   // Source: Bulbapedia -- type-resist berries: "Weakens a supereffective [type]-type move"
+  // Source: Showdown data/moves.ts -- Magic Room: "Items have no effect" (suppresses berries)
   let typeResistBerryConsumed: string | null = null;
   const defenderItem = defender.pokemon.heldItem;
   const defenderHasKlutz = defender.ability === "klutz";
   const defenderHasEmbargo = defender.volatileStatuses.has("embargo");
-  if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo) {
+  const magicRoomActive = context.state?.magicRoom?.active ?? false;
+  if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo && !magicRoomActive) {
     const resistType = TYPE_RESIST_BERRIES[defenderItem];
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE

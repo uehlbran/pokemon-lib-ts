@@ -319,6 +319,63 @@ describe("Gen 6 Roseli Berry -- halves Fairy-type SE damage", () => {
 });
 
 // ===========================================================================
+// Magic Room suppresses resist berries (Gen 6)
+// ===========================================================================
+
+describe("Gen 6 type resist berries -- Magic Room suppression", () => {
+  it("given Dragon-type defender with Roseli Berry vs SE Fairy move under Magic Room, when damage calculated, then berry does NOT activate and full SE damage applies", () => {
+    // Source: Showdown data/moves.ts -- Magic Room: "For 5 turns, held items have no effect"
+    // Source: Bulbapedia -- Magic Room: "Nullifies the effect of each Pokémon's held item"
+    // Without Magic Room the same setup gives 37 (halved). Under Magic Room: full 74.
+    // Attacker is Normal-type to avoid STAB on Fairy move.
+    const attacker = makeActive({ types: ["normal"], spAttack: 100 });
+    const defender = makeActive({
+      types: ["dragon"],
+      spDefense: 100,
+      heldItem: "roseli-berry",
+    });
+    const fairyMove = makeMove({ type: "fairy", power: 80, category: "special" });
+    const magicRoomState = {
+      ...makeState(),
+      magicRoom: { active: true, turnsLeft: 3 },
+    } as unknown as BattleState;
+
+    const result = calculateGen6Damage(
+      makeDamageContext({ attacker, defender, move: fairyMove, state: magicRoomState }),
+      typeChart,
+    );
+
+    // Berry NOT consumed — Magic Room suppresses it
+    expect(defender.pokemon.heldItem).toBe("roseli-berry");
+    // Full SE damage: Fairy vs Dragon = 2x: 74
+    expect(result.damage).toBe(74);
+  });
+
+  it("given Dragon-type defender with Roseli Berry vs SE Fairy move when Magic Room is inactive, when damage calculated, then berry activates normally", () => {
+    // Source: Showdown data/moves.ts -- Magic Room only suppresses when active
+    // Without Magic Room the berry should halve SE damage as expected.
+    // Attacker is Normal-type to avoid STAB on Fairy move.
+    const attacker = makeActive({ types: ["normal"], spAttack: 100 });
+    const defender = makeActive({
+      types: ["dragon"],
+      spDefense: 100,
+      heldItem: "roseli-berry",
+    });
+    const fairyMove = makeMove({ type: "fairy", power: 80, category: "special" });
+
+    const result = calculateGen6Damage(
+      makeDamageContext({ attacker, defender, move: fairyMove }),
+      typeChart,
+    );
+
+    // Berry consumed — Magic Room not active
+    expect(defender.pokemon.heldItem).toBeNull();
+    // Halved SE damage: Fairy vs Dragon = 2x: 74 -> pokeRound(74, 2048) = 37
+    expect(result.damage).toBe(37);
+  });
+});
+
+// ===========================================================================
 // Table completeness
 // ===========================================================================
 
