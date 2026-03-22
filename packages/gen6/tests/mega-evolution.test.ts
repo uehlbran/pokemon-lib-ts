@@ -229,6 +229,8 @@ describe("getMegaEvolutionData", () => {
   });
 
   it("given venusaurite, when calling getMegaEvolutionData, then returns correct form data", () => {
+    // Source: Bulbapedia — Mega Venusaur uses Venusaurite; mega form name "mega-venusaur"
+    // https://bulbapedia.bulbagarden.net/wiki/Mega_Evolution
     const result = getMegaEvolutionData("venusaurite");
     expect(result).not.toBeNull();
     expect(result!.form).toBe("mega-venusaur");
@@ -286,6 +288,20 @@ describe("Gen6MegaEvolution -- canUse()", () => {
     // Source: Bulbapedia "Mega Evolution" — requires holding a Mega Stone
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({ heldItem: null, isMega: false });
+    const side = makeSide({ gimmickUsed: false });
+    const state = makeState();
+
+    expect(gimmick.canUse(pokemon, side, state)).toBe(false);
+  });
+
+  it("given Charizard holding Venusaurite, when calling canUse, then returns false", () => {
+    // Source: Game mechanic — Mega Stones only work for their specific species.
+    // Venusaurite belongs to Venusaur (species #003); Charizard is species #006.
+    // A Charizard cannot use Venusaurite.
+    // Source: Showdown sim/battle.ts — formeChange only permitted when species matches stone
+    const gimmick = new Gen6MegaEvolution();
+    // makeActivePokemon defaults speciesId: 6 (Charizard); venusaurite.baseSpeciesId = 3 (Venusaur)
+    const pokemon = makeActivePokemon({ heldItem: "venusaurite", isMega: false });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 

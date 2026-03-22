@@ -182,6 +182,13 @@ export interface MegaEvolutionData {
 
   /** Ability in Mega form */
   readonly ability: string;
+
+  /**
+   * Species ID that this Mega Stone belongs to.
+   * Used to validate stone-species compatibility in canUse().
+   * Source: Game mechanic — each Mega Stone is specific to one species.
+   */
+  readonly baseSpeciesId: number;
 }
 
 export interface GigantamaxData {

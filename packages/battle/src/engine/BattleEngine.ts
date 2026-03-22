@@ -1038,6 +1038,26 @@ export class BattleEngine implements BattleEventEmitter {
         for (const event of gimmickEvents) {
           this.emit(event);
         }
+        // After mega evolution, trigger on-switch-in ability effects for the new mega ability.
+        // Abilities like Drought, Intimidate, and Trace are entry-style abilities that should
+        // fire whenever the Pokemon's ability changes to one that has a switch-in trigger.
+        // Source: Showdown sim/battle-actions.ts — runMegaEvo calls pokemon.setAbility() which
+        //   triggers ability on-start effects (equivalent to on-switch-in in our model).
+        // Source: Bulbapedia "Mega Evolution" — "If the Mega Evolved Pokémon's Ability has
+        //   an on-entry effect, it activates after Mega Evolution."
+        if (this.ruleset.hasAbilities() && actor.pokemon.currentHp > 0 && actor.isMega) {
+          const opponent = this.getOpponentActive(action.side);
+          if (opponent) {
+            const megaAbilityResult = this.ruleset.applyAbility("on-switch-in", {
+              pokemon: actor,
+              opponent,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-switch-in",
+            });
+            this.processAbilityResult(megaAbilityResult, actor, opponent, action.side);
+          }
+        }
       }
     }
 
