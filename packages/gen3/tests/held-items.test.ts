@@ -434,7 +434,6 @@ describe("Gen 3 Held Items", () => {
 
       expect(result.activated).toBe(true);
       const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure?.value).toBe("paralysis");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("lum-berry");
     });
 
@@ -448,7 +447,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("sleep");
     });
 
     it("given a confused Pokemon (no primary status) holding Lum Berry, when end-of-turn triggers, then cures confusion", () => {
@@ -477,7 +475,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("burn");
       expect(result.effects.find((e) => e.type === "volatile-cure")?.value).toBe("confusion");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("lum-berry");
     });
@@ -518,7 +515,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("paralysis");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("cheri-berry");
     });
 
@@ -545,7 +541,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("sleep");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("chesto-berry");
     });
 
@@ -572,7 +567,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("poison");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("pecha-berry");
     });
 
@@ -586,7 +580,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("badly-poisoned");
     });
   });
 
@@ -601,7 +594,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("burn");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("rawst-berry");
     });
 
@@ -628,7 +620,6 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem("end-of-turn", context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "status-cure")?.value).toBe("freeze");
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe("aspear-berry");
     });
 

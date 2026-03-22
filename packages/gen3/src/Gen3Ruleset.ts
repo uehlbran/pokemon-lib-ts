@@ -396,6 +396,7 @@ export class Gen3Ruleset extends BaseRuleset {
       context.defeatedLevel,
       context.isTrainerBattle,
       context.participantCount,
+      context.hasLuckyEgg,
     );
   }
 

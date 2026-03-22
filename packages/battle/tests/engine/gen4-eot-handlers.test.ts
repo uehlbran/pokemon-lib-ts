@@ -5,7 +5,7 @@
  * in feat/gen4-battle-types-eot:
  *  - tailwindSet / trickRoomSet move effect results → correct state fields
  *  - weather-healing, speed-boost, shed-skin, poison-heal, bad-dreams → applyAbility("on-turn-end")
- *  - toxic-orb-activation / flame-orb-activation → applyHeldItem("end-of-turn") → status-inflict
+ *  - toxic-orb-activation / flame-orb-activation → applyHeldItem("end-of-turn") → inflict-status
  *  - aqua-ring, ingrain → 1/16 max HP heal per turn
  *  - wish → heal activates when turnsLeft reaches 0
  *
@@ -426,7 +426,7 @@ describe("toxic-orb-activation EoT slot", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "status-inflict", value: "badly-poisoned" }],
+      effects: [{ type: "inflict-status", target: "self", status: "badly-poisoned" }],
       messages: [],
     });
 
@@ -478,7 +478,7 @@ describe("flame-orb-activation EoT slot", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["flame-orb-activation"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "status-inflict", value: "burn" }],
+      effects: [{ type: "inflict-status", target: "self", status: "burn" }],
       messages: [],
     });
 
@@ -713,14 +713,14 @@ describe("processAbilityResult — chip-damage effect type", () => {
   });
 });
 
-describe("processItemResult — status-inflict and self-damage effect types", () => {
-  it("given an item result with status-inflict effect, when processed, then Pokemon status is set and status-inflict event is emitted", () => {
+describe("processItemResult — inflict-status and chip-damage effect types", () => {
+  it("given an item result with inflict-status effect, when processed, then Pokemon status is set and status-inflict event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Toxic Orb / Flame Orb inflict status via item effects
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "status-inflict", value: "poison" }],
+      effects: [{ type: "inflict-status", target: "self", status: "poison" }],
       messages: [],
     });
 
@@ -735,13 +735,13 @@ describe("processItemResult — status-inflict and self-damage effect types", ()
     expect(statusInflictEvents.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("given an item result with self-damage effect, when processed, then Pokemon HP decreases and damage event is emitted with source 'held-item'", () => {
+  it("given an item result with chip-damage effect, when processed, then Pokemon HP decreases and damage event is emitted with source 'held-item'", () => {
     // Source: Pokemon Showdown Gen 4 mod — Black Sludge damages non-Poison types
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["black-sludge"];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "self-damage", value: 10 }],
+      effects: [{ type: "chip-damage", target: "self", value: 10 }],
       messages: [],
     });
 
@@ -908,9 +908,12 @@ describe("Gen 5+ EoT handler stubs", () => {
     expect(eotAbilityCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("given harvest and pickup in the EoT order with inactive ability results, when processEndOfTurn runs, then the engine does not throw", () => {
+  it("given harvest and pickup in the EoT order with inactive ability results, when processEndOfTurn runs, then the engine does not throw and deduplicates ability calls", () => {
     // Source: Showdown sim/abilities.ts — Harvest and Pickup trigger at residual phase
+    // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ENDTURN fires once per Pokemon
     // Verifies these stubs don't crash the engine when no gen implements them yet.
+    // Bug #484 fix: each Pokemon's on-turn-end ability fires at most once per turn,
+    // so harvest fires for both sides (2 calls) and pickup is skipped (already fired).
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["harvest", "pickup"];
     ruleset.setAbilityResult({ activated: false, effects: [], messages: [] });
@@ -923,9 +926,10 @@ describe("Gen 5+ EoT handler stubs", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Should have called applyAbility for each side for each effect (2 effects x 2 sides = 4)
+    // With dedup fix: applyAbility fires once per active Pokemon (2 sides = 2 calls),
+    // not once per EoT case per side (which was the old buggy behavior of 4 calls).
     const eotAbilityCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
-    expect(eotAbilityCalls.length).toBeGreaterThanOrEqual(4);
+    expect(eotAbilityCalls.length).toBe(2);
   });
 
   it("given grassy-terrain-heal in the EoT order with no active grassy terrain, when processEndOfTurn runs, then the engine does not throw and skips terrain processing", () => {

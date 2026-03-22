@@ -19,7 +19,6 @@ import {
   calculateShakeChecks,
   DataManager,
   getStatStageMultiplier,
-  STATUS_CATCH_MODIFIERS,
 } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
@@ -698,6 +697,27 @@ export abstract class BaseRuleset implements GenerationRuleset {
    *   Each of 4 shake checks passes if rng(0,65535) < b
    *   4 passes = caught; display shakes = min(failedCheck, 3)
    */
+  /**
+   * Returns the status catch rate modifier table for this generation.
+   * Default is Gen 3-4 (2.0x for sleep/freeze).
+   * Gen 5+ rulesets should override to use 2.5x for sleep/freeze.
+   *
+   * Source: pret/pokeemerald src/battle_script_commands.c — sleep/freeze: odds *= 2
+   * Source: Bulbapedia — Catch rate: Gen 5+ changed sleep/freeze to 2.5x
+   */
+  protected getStatusCatchModifiers(): Record<PrimaryStatus, number> {
+    // Gen 3-4 values inlined to avoid cross-package build-order dependency
+    // Source: pret/pokeemerald src/battle_script_commands.c — sleep/freeze: odds *= 2
+    return {
+      sleep: 2.0,
+      freeze: 2.0,
+      paralysis: 1.5,
+      burn: 1.5,
+      poison: 1.5,
+      "badly-poisoned": 1.5,
+    };
+  }
+
   rollCatchAttempt(
     catchRate: number,
     maxHp: number,
@@ -706,7 +726,8 @@ export abstract class BaseRuleset implements GenerationRuleset {
     ballModifier: number,
     rng: SeededRandom,
   ): CatchResult {
-    const statusModifier = status ? (STATUS_CATCH_MODIFIERS[status] ?? 1) : 1;
+    const modifiers = this.getStatusCatchModifiers();
+    const statusModifier = status ? (modifiers[status] ?? 1) : 1;
     const modifiedRate = calculateModifiedCatchRate(
       maxHp,
       currentHp,

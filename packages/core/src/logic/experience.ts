@@ -91,19 +91,37 @@ export function calculateExpGain(
 /**
  * Classic (Gen 1-4) EXP formula -- provided for gen plugins.
  *
+ * Source: pret/pokeemerald src/battle_script_commands.c — Cmd_getexp
+ *   Integer truncation is applied at each step independently,
+ *   matching the decomp's sequential divide-then-multiply pattern.
  * Source: Bulbapedia — Experience (https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula)
- * Source: pret/pokeemerald src/battle_script_commands.c — Cmd_getexp (Gen 3 variant with /7 divisor)
  *
- *   EXP = (b * L_d / 7) * (1 / s) * t
+ *   EXP = floor(floor(floor(b * L_d / 7) / s) * t) * e
  *
  * Simpler -- no level scaling, stronger Pokemon don't get reduced EXP.
+ *
+ * @param baseExpYield - Defeated species' base EXP yield
+ * @param defeatedLevel - Level of the defeated Pokemon
+ * @param isTrainerBattle - Whether this is a trainer battle (1.5x multiplier)
+ * @param participantCount - Number of Pokemon that participated
+ * @param hasLuckyEgg - Whether the gaining Pokemon holds Lucky Egg (1.5x multiplier, Gen 2+)
+ * @returns EXP gained (always at least 1)
  */
 export function calculateExpGainClassic(
   baseExpYield: number,
   defeatedLevel: number,
   isTrainerBattle: boolean,
   participantCount = 1,
+  hasLuckyEgg = false,
 ): number {
+  // Source: pret/pokeemerald src/battle_script_commands.c — each step independently truncated
   const t = isTrainerBattle ? 1.5 : 1.0;
-  return Math.max(1, Math.floor(((baseExpYield * defeatedLevel) / 7 / participantCount) * t));
+  let exp = Math.floor((baseExpYield * defeatedLevel) / 7);
+  exp = Math.floor(exp / participantCount);
+  exp = Math.floor(exp * t);
+  // Source: pret/pokeemerald — Lucky Egg 1.5x multiplier applied after trainer bonus
+  if (hasLuckyEgg) {
+    exp = Math.floor(exp * 1.5);
+  }
+  return Math.max(1, exp);
 }

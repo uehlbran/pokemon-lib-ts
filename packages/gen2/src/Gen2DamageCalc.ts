@@ -253,13 +253,13 @@ function getItemModifier(attacker: ActivePokemon, moveType: PokemonType): number
  * Calculate damage for a move in Gen 2.
  *
  * Formula per pret/pokecrystal BattleCommand_DamageCalc (effect_commands.asm:2900-3129):
- *   1. baseDamage = floor(floor(floor((2*L/5)+2) * P * A) / D) / 50)  — no +2 yet
- *   2. Item modifier (type-boost items at 1.1x) — line 2983 (BEFORE crit)
- *   3. Crit: * 2 — line 3023 (AFTER items)
- *   4. Clamp: max(1, min(997, baseDamage))
- *   5. + 2
+ *   1. Crit doubles level: effectiveLevel = isCrit ? level*2 : level
+ *      baseDamage = floor(floor(floor((2*effectiveLevel/5)+2) * P * A) / D) / 50)
+ *   2. Item modifier (type-boost items at 1.1x) — line 2983
+ *   3. Clamp: max(1, min(997, baseDamage))
+ *   4. + 2
+ *   5. STAB: += floor(damage / 2) — per BattleCommand_Stab:1251+
  *   6. Weather: water+rain/fire+sun → floor(* 1.5); opposite → floor(/ 2) — BattleCommand_Stab:1270
- *   7. STAB: += floor(damage / 2) — AFTER weather per BattleCommand_Stab:1251+
  *   8. Type effectiveness (sequential, floor each type separately)
  *   9. Random: floor(damage * rng.int(217,255) / 255)
  *   10. Minimum 1
@@ -368,22 +368,17 @@ export function calculateGen2Damage(
   }
 
   // Step 1: Base damage (no +2 yet)
-  // floor(floor((floor(2*Level/5)+2) * Power * A) / D) / 50)
-  const levelFactor = Math.floor((2 * level) / 5) + 2;
+  // Source: pret/pokecrystal — critical hit doubles the level in the damage formula
+  const effectiveLevel = isCrit ? level * 2 : level;
+  const levelFactor = Math.floor((2 * effectiveLevel) / 5) + 2;
   let baseDamage = Math.floor(Math.floor(levelFactor * power * attack) / effectiveDefense);
   baseDamage = Math.floor(baseDamage / 50);
 
-  // Step 2: Item modifier (type-boosting items at 1.1x) — BEFORE crit
-  // Source: pret/pokecrystal engine/battle/effect_commands.asm:2983 — items applied before crit
+  // Step 2: Item modifier (type-boosting items at 1.1x)
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm:2983 — items applied in modifier chain
   const itemMod = getItemModifier(attacker, effectiveMoveType);
   if (itemMod !== 1) {
     baseDamage = Math.floor(baseDamage * itemMod);
-  }
-
-  // Step 3: Critical hit doubles damage in Gen 2 — AFTER items
-  // Source: pret/pokecrystal engine/battle/effect_commands.asm:3023 — crit applied after items
-  if (isCrit) {
-    baseDamage = Math.floor(baseDamage * 2);
   }
 
   // Step 4: Clamp to [1, 997]
@@ -392,19 +387,19 @@ export function calculateGen2Damage(
   // Step 5: Add the +2 constant
   baseDamage += 2;
 
-  // Step 6: Weather modifier — BEFORE STAB
-  // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1270 — weather before STAB
+  // Step 5: STAB — applied BEFORE weather
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1251 (STAB runs first)
+  const stabMod = getStabModifier(effectiveMoveType, attacker.types);
+  if (stabMod > 1) {
+    baseDamage = Math.floor(baseDamage * stabMod);
+  }
+
+  // Step 6: Weather modifier — applied AFTER STAB
+  // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1270 (weather runs second)
   const weather = state.weather?.type ?? null;
   const weatherMod = weather ? getWeatherDamageModifier(effectiveMoveType, weather) : 1;
   if (weatherMod !== 1) {
     baseDamage = Math.floor(baseDamage * weatherMod);
-  }
-
-  // Step 7: STAB — AFTER weather
-  // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Stab:1251+
-  const stabMod = getStabModifier(effectiveMoveType, attacker.types);
-  if (stabMod > 1) {
-    baseDamage = Math.floor(baseDamage * stabMod);
   }
 
   // Step 8: Type effectiveness — applied sequentially with floor per type

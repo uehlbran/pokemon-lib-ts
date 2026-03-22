@@ -407,6 +407,12 @@ export interface AbilityResult {
 export interface ItemContext {
   /** The Pokémon holding the item */
   readonly pokemon: ActivePokemon;
+  /**
+   * The opposing Pokémon, if relevant to the trigger.
+   * Present for on-contact and on-damage-taken triggers (e.g., Rocky Helmet, Sticky Barb transfer)
+   * so item handlers can deal damage to the attacker or read the attacker's properties.
+   */
+  readonly opponent?: ActivePokemon;
   /** Current full battle state */
   readonly state: BattleState;
   /** PRNG instance for any item rolls */
@@ -431,17 +437,67 @@ export type ItemEffectType =
   | "volatile-cure"
   | "status-inflict"
   | "self-damage"
+  | "chip-damage"
+  | "inflict-status"
   | "none";
 
-/** A single effect produced by an item trigger. */
-export interface ItemEffect {
-  /** Effect category — discriminant for the switch in processItemResult */
-  readonly type: ItemEffectType;
-  /** Payload for effects that carry numeric or string data (e.g., heal amount, volatile name) */
-  readonly value?: number | string;
-  /** Which entity the effect applies to (informational — engine derives target from context) */
-  readonly target?: "self" | "opponent" | "field";
-}
+/**
+ * A single effect produced by an item trigger — proper discriminated union on `type`.
+ *
+ * Preferred variants for new code:
+ * - `chip-damage`: Life Orb recoil, Black Sludge damage, Sticky Barb, Rocky Helmet — value is HP amount
+ * - `inflict-status`: Toxic Orb, Flame Orb — status field is the PrimaryStatus to inflict
+ *
+ * Legacy variants kept for backward compatibility (Gen 3–4 items):
+ * - `self-damage`: generic damage to a target (value: number); prefer `chip-damage` in new code
+ * - `status-inflict`: status via value field (value: PrimaryStatus string); prefer `inflict-status` in new code
+ */
+export type ItemEffect =
+  | { readonly type: "heal"; readonly target: "self" | "opponent"; readonly value: number }
+  | { readonly type: "status-cure"; readonly target: "self" | "opponent" }
+  | { readonly type: "consume"; readonly target: "self" | "opponent"; readonly value: string }
+  | { readonly type: "survive"; readonly target: "self"; readonly value: number }
+  | { readonly type: "flinch"; readonly target: "self" | "opponent" }
+  | { readonly type: "volatile-cure"; readonly target: "self" | "opponent"; readonly value: string }
+  | {
+      readonly type: "stat-boost";
+      readonly target: "self" | "opponent";
+      readonly value: string;
+      readonly stages?: number;
+    }
+  | { readonly type: "damage-boost"; readonly target: "self" | "opponent"; readonly value: number }
+  | { readonly type: "status-prevention"; readonly target: "self" | "opponent" }
+  | { readonly type: "speed-boost"; readonly target: "self" | "opponent"; readonly value: number }
+  | {
+      /** Chip damage to a target (Life Orb recoil, Black Sludge, Sticky Barb, Rocky Helmet). */
+      readonly type: "chip-damage";
+      readonly target: "self" | "opponent";
+      /** HP to subtract from the target (always positive). */
+      readonly value: number;
+    }
+  | {
+      /** Inflict a primary status condition on a target (Toxic Orb, Flame Orb). */
+      readonly type: "inflict-status";
+      readonly target: "self" | "opponent";
+      readonly status: PrimaryStatus;
+    }
+  | {
+      /** @deprecated Use `chip-damage` instead. Kept for Gen 3–4 backward compatibility. */
+      readonly type: "self-damage";
+      readonly target: "self" | "opponent";
+      readonly value: number;
+    }
+  | {
+      /** @deprecated Use `inflict-status` instead. Kept for Gen 3–4 backward compatibility. */
+      readonly type: "status-inflict";
+      readonly target?: "self" | "opponent";
+      readonly value: PrimaryStatus;
+    }
+  | {
+      readonly type: "none";
+      readonly target?: "self" | "opponent" | "field";
+      readonly value?: number | string;
+    };
 
 /**
  * Result of a held item trigger.

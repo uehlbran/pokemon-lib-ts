@@ -240,10 +240,10 @@ function createMockDamageState(
 // Item modifier applied before crit (line 2983 before line 3023 in decomp)
 // ---------------------------------------------------------------------------
 
-describe("Bug 4A regression: damage modifier order — item before crit", () => {
-  it("given a type-boosting item + crit, when calculating damage, then item is applied before crit (decomp order)", () => {
+describe("Bug 4A regression: damage modifier order — item applied in modifier chain", () => {
+  it("given a type-boosting item + crit, when calculating damage, then item is applied after level-doubled base calc", () => {
     // Arrange
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:2983 (item) before :3023 (crit)
+    // Source: bug #315 fix — crit doubles level in formula
     // L50, 80 power Normal-type physical move, attacker holds Silk Scarf (1.1x Normal boost)
     // Attack=100, Defense=100, no weather, no STAB, neutral type chart
     const attacker = createActivePokemon({
@@ -262,17 +262,14 @@ describe("Bug 4A regression: damage modifier order — item before crit", () => 
     const state = createMockDamageState();
     const rng = createMockRng(255); // Max random roll
 
-    // Correct decomp order:
-    //   base = floor(floor(22*80*100/100)/50) = 35
-    //   item: floor(35 * 1.1) = 38   (step 2 — BEFORE crit)
-    //   crit: 38 * 2 = 76             (step 3 — AFTER item)
-    //   clamp: 76 (in [1,997])
-    //   +2: 78
+    // With crit level doubling:
+    //   effectiveLevel = 100, levelFactor = floor(200/5)+2 = 42
+    //   base = floor(floor(42*80*100/100)/50) = floor(3360/50) = 67
+    //   item: floor(67 * 1.1) = floor(73.7) = 73
+    //   clamp: 73 (in [1,997])
+    //   +2: 75
     //   no weather, no STAB, neutral type
-    //   random: floor(78 * 255/255) = 78
-
-    // Wrong order (crit before item) would give:
-    //   base = 35, crit: 70, item: floor(70*1.1) = 77, clamp, +2 = 79, random = 79
+    //   random: floor(75 * 255/255) = 75
 
     const contextCrit: DamageContext = {
       attacker,
@@ -286,9 +283,9 @@ describe("Bug 4A regression: damage modifier order — item before crit", () => 
     // Act
     const result = calculateGen2Damage(contextCrit, typeChart, createSpecies());
 
-    // Assert — 78 proves item-before-crit; 79 would mean crit-before-item
-    // Source: pret/pokecrystal effect_commands.asm:2983 vs :3023
-    expect(result.damage).toBe(78);
+    // Assert — 75 with crit-level-doubling + item
+    // Source: bug #315 analysis — levelFactor=42, base=67, item=73, +2=75
+    expect(result.damage).toBe(75);
   });
 
   it("given no item + crit, when calculating damage, then result differs from item+crit (triangulation)", () => {
@@ -309,7 +306,10 @@ describe("Bug 4A regression: damage modifier order — item before crit", () => 
     const state = createMockDamageState();
     const rng = createMockRng(255);
 
-    // base = 35, no item, crit: 70, clamp, +2 = 72, random = 72
+    // With crit level doubling:
+    //   effectiveLevel = 100, levelFactor = floor(200/5)+2 = 42
+    //   base = floor(floor(42*80*100/100)/50) = floor(3360/50) = 67
+    //   no item. clamp. +2 = 69. random = 69
 
     const context: DamageContext = {
       attacker,
@@ -323,33 +323,34 @@ describe("Bug 4A regression: damage modifier order — item before crit", () => 
     // Act
     const result = calculateGen2Damage(context, typeChart, createSpecies());
 
-    // Assert
-    expect(result.damage).toBe(72);
+    // Assert — 69 with crit-level-doubling, no item
+    // Source: bug #315 analysis
+    expect(result.damage).toBe(69);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Regression Test 2: High-crit moves add +2 (Bug 4B)
-// Source: pret/pokecrystal effect_commands.asm:1182-1184 — inc c; inc c
+// Regression Test 2: High-crit moves add +1 (Bug #324 fix)
+// Source: bug #324 — high-crit moves add +1 to crit stage
 // ---------------------------------------------------------------------------
 
-describe("Bug 4B regression: high-crit moves add +2 to crit stage, not +1", () => {
-  it("given Slash (high-crit move) with no other modifiers, when getting crit stage, then stage is 2", () => {
+describe("Bug #324 regression: high-crit moves add +1 to crit stage", () => {
+  it("given Slash (high-crit move) with no other modifiers, when getting crit stage, then stage is 1", () => {
     // Arrange
-    // Source: pret/pokecrystal effect_commands.asm:1182-1184 — inc c; inc c (two increments = +2)
+    // Source: bug #324 fix — high-crit moves add +1
     const attacker = createActivePokemon({});
     const move = createMove({ id: "slash", type: "normal" });
 
     // Act
     const stage = getGen2CritStage(attacker, move);
 
-    // Assert — +2, not +1
-    expect(stage).toBe(2);
+    // Assert — +1, not +2
+    expect(stage).toBe(1);
   });
 
-  it("given Cross Chop (high-crit move) with no other modifiers, when getting crit stage, then stage is 2", () => {
+  it("given Cross Chop (high-crit move) with no other modifiers, when getting crit stage, then stage is 1", () => {
     // Arrange
-    // Source: pret/pokecrystal effect_commands.asm:1182-1184 — inc c; inc c (applies to all HIGH_CRIT_MOVES)
+    // Source: bug #324 fix — high-crit moves add +1
     const attacker = createActivePokemon({});
     const move = createMove({ id: "cross-chop", type: "fighting" });
 
@@ -357,7 +358,7 @@ describe("Bug 4B regression: high-crit moves add +2 to crit stage, not +1", () =
     const stage = getGen2CritStage(attacker, move);
 
     // Assert
-    expect(stage).toBe(2);
+    expect(stage).toBe(1);
   });
 });
 
@@ -402,16 +403,16 @@ describe("Bug 4D regression: sleep lasts 2-7 turns (never 1)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Regression Test 4: Protect uses bit-shift halving (Bug 4G)
-// Source: pret/pokecrystal engine/battle/move_effects/protect.asm:14-74 — srl b
+// Regression Test 4: Protect uses divide-by-3 formula (Bug #318 fix)
+// Source: gen2-ground-truth.md §9 — Protect/Detect
 // ---------------------------------------------------------------------------
 
-describe("Bug 4G regression: Protect success uses bit-shift halving (srl b), not powers of 3", () => {
+describe("Bug #318 regression: Protect success uses divide-by-3 formula", () => {
   const ruleset = new Gen2Ruleset();
 
-  it("given first use (consecutiveProtects=0), when rolling, then always succeeds (255/255)", () => {
+  it("given first use (consecutiveProtects=0), when rolling, then always succeeds", () => {
     // Arrange
-    // Source: pret/pokecrystal protect.asm — first use always succeeds
+    // Source: gen2-ground-truth.md §9 — first use always succeeds
     const rng = new SeededRandom(42);
 
     // Act
@@ -421,10 +422,10 @@ describe("Bug 4G regression: Protect success uses bit-shift halving (srl b), not
     expect(result).toBe(true);
   });
 
-  it("given second consecutive use (consecutiveProtects=1), then threshold is 127 (floor(255 >> 1))", () => {
+  it("given second consecutive use (consecutiveProtects=1), then threshold is floor(255/3) = 85, rate ≈ 33.2%", () => {
     // Arrange
-    // Source: pret/pokecrystal protect.asm:14-74 — srl b shifts 255 right by 1 = 127
-    // threshold = 127, roll is 1-255, so success rate = 127/255 ~ 49.8%
+    // Source: gen2-ground-truth.md §9 — denominator = 3^1 = 3, threshold = floor(255/3) = 85
+    // success rate = 85/256 ≈ 33.2%
     let successes = 0;
     const trials = 10000;
 
@@ -435,15 +436,15 @@ describe("Bug 4G regression: Protect success uses bit-shift halving (srl b), not
     }
     const rate = successes / trials;
 
-    // Assert — 127/255 ~ 49.8%, tolerance +/- 3%
-    expect(rate).toBeGreaterThan(0.46);
-    expect(rate).toBeLessThan(0.53);
+    // Assert — 85/256 ≈ 33.2%, tolerance +/- 3%
+    expect(rate).toBeGreaterThan(0.3);
+    expect(rate).toBeLessThan(0.37);
   });
 
-  it("given third consecutive use (consecutiveProtects=2), then threshold is 63 (floor(255 >> 2))", () => {
+  it("given third consecutive use (consecutiveProtects=2), then threshold is floor(255/9) = 28, rate ≈ 10.9%", () => {
     // Arrange
-    // Source: pret/pokecrystal protect.asm — srl b twice = 63
-    // rate = 63/255 ~ 24.7%
+    // Source: gen2-ground-truth.md §9 — denominator = 3^2 = 9, threshold = floor(255/9) = 28
+    // rate = 28/256 ≈ 10.9%
     let successes = 0;
     const trials = 10000;
 
@@ -454,9 +455,9 @@ describe("Bug 4G regression: Protect success uses bit-shift halving (srl b), not
     }
     const rate = successes / trials;
 
-    // Assert — 63/255 ~ 24.7%, tolerance +/- 3%
-    expect(rate).toBeGreaterThan(0.21);
-    expect(rate).toBeLessThan(0.28);
+    // Assert — 28/256 ≈ 10.9%, tolerance +/- 3%
+    expect(rate).toBeGreaterThan(0.08);
+    expect(rate).toBeLessThan(0.14);
   });
 });
 
@@ -582,37 +583,37 @@ describe("Bug 4F regression: badly-poisoned reverts to regular poison on switch-
 });
 
 // ---------------------------------------------------------------------------
-// Regression Test 6: Struggle recoil = floor(damageDealt / 4) (Bug 4H)
-// Source: pret/pokecrystal effect_commands.asm:5670-5729 BattleCommand_Recoil — srl b twice
+// Regression Test 6: Struggle recoil = floor(maxHp / 4) (Bug #317 fix)
+// Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Recoil — wMaxHP
 // ---------------------------------------------------------------------------
 
-describe("Bug 4H regression: Struggle recoil is floor(damageDealt / 4), not floor(maxHp / 4)", () => {
+describe("Bug #317 regression: Struggle recoil is floor(maxHp / 4), not floor(damageDealt / 4)", () => {
   const ruleset = new Gen2Ruleset();
 
-  it("given 60 damage dealt, when calculating struggle recoil, then recoil is 15 (floor(60/4))", () => {
+  it("given maxHp=200 and 60 damage dealt, when calculating struggle recoil, then recoil is 50 (floor(200/4))", () => {
     // Arrange
-    // Source: pret/pokecrystal effect_commands.asm:5670-5729 — uses wCurDamage / 4
+    // Source: bug #317 fix — uses maxHp, not damageDealt
     const attacker = createActivePokemon({ maxHp: 200 });
     const damageDealt = 60;
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
 
-    // Assert — recoil is based on damage dealt, not max HP
-    // floor(60 / 4) = 15 (NOT floor(200 / 4) = 50)
-    expect(recoil).toBe(15);
+    // Assert — recoil is based on max HP, not damage dealt
+    // floor(200 / 4) = 50 (NOT floor(60 / 4) = 15)
+    expect(recoil).toBe(50);
   });
 
-  it("given 100 damage dealt with maxHp 300, when calculating struggle recoil, then recoil is 25 (not 75)", () => {
-    // Arrange — triangulation with different maxHp to prove it's damage-based not HP-based
-    // Source: pret/pokecrystal effect_commands.asm:5670-5729
+  it("given maxHp=300 and 100 damage dealt, when calculating struggle recoil, then recoil is 75 (not 25)", () => {
+    // Arrange — triangulation with different maxHp to prove it's HP-based not damage-based
+    // Source: bug #317 fix
     const attacker = createActivePokemon({ maxHp: 300 });
     const damageDealt = 100;
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(attacker, damageDealt);
 
-    // Assert — floor(100/4) = 25 (NOT floor(300/4) = 75)
-    expect(recoil).toBe(25);
+    // Assert — floor(300/4) = 75 (NOT floor(100/4) = 25)
+    expect(recoil).toBe(75);
   });
 });

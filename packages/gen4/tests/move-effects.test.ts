@@ -1266,10 +1266,11 @@ describe("Gen 4 executeMoveEffect — Weather-Dependent Healing (Moonlight/Synth
 // ─── Pain Split ─────────────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Pain Split", () => {
-  it("given attacker at 50 HP and defender at 150 HP, when Pain Split used, then both are set to average (100) via direct mutation", () => {
-    // Source: Showdown Gen 4 — Pain Split sets both to floor((a + b) / 2)
-    // Source: Bulbapedia — "each have their HP set to the average of the two"
+  it("given attacker at 50 HP and defender at 150 HP, when Pain Split used, then attacker heals via healAmount and defender damaged via customDamage", () => {
+    // Source: Showdown Gen 4 -- Pain Split sets both to floor((a + b) / 2)
+    // Source: Bulbapedia -- "each have their HP set to the average of the two"
     // Average = floor((50 + 150) / 2) = 100
+    // Attacker gains 50 (100 - 50), defender loses 50 (150 - 100)
     const attacker = createActivePokemon({
       types: ["ghost"],
       maxHp: 200,
@@ -1286,16 +1287,21 @@ describe("Gen 4 executeMoveEffect — Pain Split", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    // Both Pokemon's HP is directly mutated to the average
-    expect(attacker.pokemon.currentHp).toBe(100);
-    expect(defender.pokemon.currentHp).toBe(100);
+    // Attacker heals via healAmount (engine applies this)
+    expect(result.healAmount).toBe(50);
+    // Defender damaged via customDamage (engine applies this)
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 50,
+      source: "pain-split",
+    });
     expect(result.messages).toContain("The battlers shared their pain!");
   });
 
-  it("given attacker at 150 HP and defender at 50 HP, when Pain Split used, then both are set to average (100) via direct mutation", () => {
-    // Source: Showdown Gen 4 — Pain Split sets both to floor((a + b) / 2)
+  it("given attacker at 150 HP and defender at 50 HP, when Pain Split used, then attacker damaged via recoilDamage and defender HP is updated", () => {
+    // Source: Showdown Gen 4 -- Pain Split sets both to floor((a + b) / 2)
     // Average = floor((150 + 50) / 2) = 100
-    // Now correctly heals the defender (was a known bug before direct mutation fix)
+    // Attacker loses 50 (150 - 100), defender gains 50 (100 - 50)
     const attacker = createActivePokemon({
       types: ["ghost"],
       maxHp: 200,
@@ -1312,8 +1318,9 @@ describe("Gen 4 executeMoveEffect — Pain Split", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    // Both Pokemon's HP is directly mutated to the average
-    expect(attacker.pokemon.currentHp).toBe(100);
+    // Attacker loses HP via recoilDamage (engine applies this)
+    expect(result.recoilDamage).toBe(50);
+    // Defender gains HP (direct mutation -- no defenderHealAmount field exists)
     expect(defender.pokemon.currentHp).toBe(100);
     expect(result.messages).toContain("The battlers shared their pain!");
   });

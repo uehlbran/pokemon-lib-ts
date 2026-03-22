@@ -337,12 +337,10 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     expect(result).toBe(1);
   });
 
-  it("given Lucky Egg holder (hasLuckyEgg=true), when calculateExpGain, then returns same value as hasLuckyEgg=false", () => {
-    // Source: pret/pokeplatinum — calculateExpGainClassic does not accept hasLuckyEgg parameter
-    // Lucky Egg support is NOT implemented in Gen 4's calculateExpGain (delegates to classic formula
-    // which has no Lucky Egg parameter). The result is the same whether hasLuckyEgg is true or false.
-    // See packages/core/src/logic/experience.ts calculateExpGainClassic — no Lucky Egg param.
-    // TODO: Lucky Egg EXP boost is unimplemented in Gen 4 — see issue #426
+  it("given Lucky Egg holder (hasLuckyEgg=true), when calculateExpGain, then returns 1.5x the base EXP", () => {
+    // Source: pret/pokeemerald — Lucky Egg applies a 1.5x multiplier after trainer bonus
+    //   Without Lucky Egg: floor(62 * 50 / 7) = floor(442.857) = 442
+    //   With Lucky Egg: floor(442 * 1.5) = floor(663) = 663
     const ruleset = makeRuleset();
     const dm = createGen4DataManager();
     const abra = dm.getSpeciesByName("abra")!;
@@ -369,9 +367,8 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
       affectionBonus: false,
     });
 
-    // Both return 442 — Lucky Egg is not yet implemented in Gen 4
     expect(withoutLuckyEgg).toBe(442);
-    expect(withLuckyEgg).toBe(442);
+    expect(withLuckyEgg).toBe(663);
   });
 });
 
