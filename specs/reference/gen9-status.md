@@ -1,7 +1,7 @@
 # Gen 9 Implementation Status
 
 **Last updated:** 2026-03-22
-**Overall estimate:** ~15% complete (Waves 0-2)
+**Overall estimate:** ~85% complete (Waves 0-8A merged)
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/10-gen9.md`
 **Primary source:** Pokemon Showdown (no Gen 9 disassembly)
@@ -13,14 +13,14 @@
 | Wave | Name | Status |
 |------|------|--------|
 | 0 | Package Scaffold + Data + Battle Changes | Merged (PR #715) |
-| 1 | Core Mechanic Overrides | Not Started |
-| 2 | Terastallization BattleGimmick | In Progress |
-| 3 | Damage Calculation | Not Started |
-| 4 | Weather System (Snow) | Not Started |
-| 5 | Terrain + Entry Hazards | Not Started |
-| 6 | Abilities (Damage) | Not Started |
-| 7 | Held Items | Not Started |
-| 8A | Abilities (Stat/Switch/New) | Not Started |
+| 1 | Core Mechanic Overrides | Merged (PR #716) |
+| 2 | Terastallization BattleGimmick | Merged (PR #718) |
+| 3 | Damage Calculation | Merged (PR #722) |
+| 4 | Weather System (Snow) | Merged (PR #721) |
+| 5 | Terrain + Entry Hazards | Merged (PR #721) |
+| 6 | Abilities (Damage) | Merged (PR #727) |
+| 7 | Held Items | Merged (PR #720) |
+| 8A | Abilities (Stat/Switch/New) | Merged (PR #729) |
 | 8B | Move Effects | Not Started |
 | 9 | Integration + Polish | Not Started |
 
@@ -31,6 +31,13 @@
 | Wave | PR | Description |
 |------|-----|-------------|
 | 0 | #715 | Package scaffold, data files, type chart, crit calc, smoke tests |
+| 1 | #716 | Core ruleset overrides (accuracy, STAB, speed tie, crits, etc.) |
+| 2 | #718 | Gen9Terastallization gimmick + calculateTeraStab + 44 tests |
+| 3 | #722 | Gen9DamageCalc + Tera STAB integration |
+| 4+5 | #721 | Snow weather (Gen9Weather.ts), terrain system (Gen9Terrain.ts), entry hazards (Gen9EntryHazards.ts) — Heavy-Duty Boots, Sticky Web Contrary, Klutz/Embargo suppression |
+| 6 | #727 | Damage-modifying abilities — Sheer Force, Multiscale, Fluffy, Sturdy OHKO block, Life Orb suppression, etc. |
+| 7 | #720 | Held items + Booster Energy — Gen9Items.ts, choice items, berries, terrain extenders |
+| 8A | #729 | New Gen 9 abilities — Protosynthesis, Quark Drive, Toxic Chain, Good as Gold, Mycelium Might, Embody Aspect, etc. |
 
 ---
 
@@ -38,7 +45,8 @@
 
 | Item | Branch | Notes |
 |------|--------|-------|
-| Wave 2 Terastallization | feat/gen9-wave2-terastallization | PR #718 — Gen9Terastallization gimmick + calculateTeraStab + 44 tests |
+| Wave 8B | Not started | Move effects wave |
+| Wave 9 | Not started | Integration + polish |
 
 ---
 
@@ -51,12 +59,20 @@
 | Z-Moves | Removed in Gen 9 |
 | Doubles mechanics | Engine doesn't support doubles |
 | Sky Drop / Pledge moves | Same engine-level deferral as Gen 6-8 |
+| Psychic Terrain priority block engine wiring | checkPsychicTerrainPriorityBlock() helper exists but not wired into engine move execution path |
+| Misty Terrain confusion immunity engine wiring | checkMistyTerrainConfusionImmunity() helper exists but engine applies volatiles unconditionally |
 
 ---
 
 ## Test Coverage
 
 Wave 0: 56 tests (smoke, data-loading, type-chart)
+Wave 1: ~30 tests (ruleset overrides)
 Wave 2: 44 tests (canUse, activate, modifyMove, calculateTeraStab, persistence)
-Current total: 100 tests
+Wave 3: ~50 tests (damage calc, Tera STAB integration)
+Wave 4+5: ~120 tests (weather, terrain, entry hazards, Contrary Sticky Web, Klutz/Embargo suppression)
+Wave 6: ~80 tests (damage-modifying abilities)
+Wave 7: ~60 tests (held items, Booster Energy)
+Wave 8A: ~100 tests (Protosynthesis, Quark Drive, Toxic Chain, Good as Gold, etc.)
+Current total: ~540 tests
 Target: ~985 tests at 100% complete
