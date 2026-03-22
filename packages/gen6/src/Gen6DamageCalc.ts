@@ -10,6 +10,8 @@ import {
   getStatStageMultiplier,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
+import { isGen6Grounded } from "./Gen6EntryHazards.js";
+import { getTerrainDamageModifier } from "./Gen6Terrain.js";
 
 // ---- pokeRound: the 4096-based rounding function ----
 
@@ -794,11 +796,35 @@ export function calculateGen6Damage(
     }
   }
 
-  // Terrain modifiers (Gen 6+) -- placeholder for Wave 7
-  // Electric Terrain: 1.5x for Electric moves when attacker is grounded
-  // Grassy Terrain: 1.5x for Grass moves when attacker is grounded; 0.5x for Earthquake/Bulldoze/Magnitude
-  // Misty Terrain: 0.5x for Dragon moves when defender is grounded
-  // TODO Wave 7: wire terrain check here using state.terrain
+  // Terrain power modifiers (Gen 6+)
+  // Source: Bulbapedia "Electric Terrain" Gen 6 -- 1.5x Electric for grounded attacker
+  // Source: Bulbapedia "Grassy Terrain" Gen 6 -- 1.5x Grass for grounded attacker
+  // Source: Bulbapedia "Misty Terrain" Gen 6 -- 0.5x Dragon vs grounded defender
+  // Source: Showdown data/conditions.ts -- terrain onBasePower handlers
+  if (context.state?.terrain) {
+    const terrainGravity = context.state.gravity?.active ?? false;
+    const attackerGrounded = isGen6Grounded(attacker, terrainGravity);
+    const defenderGrounded = isGen6Grounded(defender, terrainGravity);
+
+    const terrainMod = getTerrainDamageModifier(
+      context.state.terrain.type,
+      effectiveMoveType,
+      move.id,
+      attackerGrounded,
+      defenderGrounded,
+    );
+
+    if (terrainMod.powerModifier !== null) {
+      power = pokeRound(power, terrainMod.powerModifier);
+    }
+
+    // Grassy Terrain halves Earthquake/Bulldoze/Magnitude damage vs grounded target
+    // Source: Showdown data/conditions.ts -- grassyterrain.onModifyDamage
+    // This is a separate halving applied to base power, not stacked with the Grass boost
+    if (terrainMod.grassyGroundHalved) {
+      power = Math.floor(power / 2);
+    }
+  }
 
   // ---- Ability type immunities ----
 

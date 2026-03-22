@@ -12,6 +12,12 @@ export {
   isGen6Grounded,
 } from "./Gen6EntryHazards.js";
 export { Gen6Ruleset } from "./Gen6Ruleset.js";
+export type { TerrainDamageModifier } from "./Gen6Terrain.js";
+export {
+  applyGen6TerrainEffects,
+  canInflictStatusWithTerrain,
+  getTerrainDamageModifier,
+} from "./Gen6Terrain.js";
 export { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
 export {
   ABILITY_WEATHER_TURNS,
