@@ -2496,7 +2496,7 @@ export class BattleEngine implements BattleEventEmitter {
       });
     }
 
-    // Healing
+    // Healing (attacker)
     if (result.healAmount > 0) {
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       const oldHp = attacker.pokemon.currentHp;
@@ -2510,6 +2510,26 @@ export class BattleEngine implements BattleEventEmitter {
           amount: healed,
           currentHp: attacker.pokemon.currentHp,
           maxHp,
+          source: "move-effect",
+        });
+      }
+    }
+
+    // Healing (defender) — e.g., Heal Pulse heals the target, not the user
+    // Source: Showdown data/moves.ts -- healPulse: { target: 'normal', heal: [1, 2] }
+    if (result.defenderHealAmount && result.defenderHealAmount > 0) {
+      const defMaxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+      const defOldHp = defender.pokemon.currentHp;
+      defender.pokemon.currentHp = Math.min(defMaxHp, defOldHp + result.defenderHealAmount);
+      const defHealed = defender.pokemon.currentHp - defOldHp;
+      if (defHealed > 0) {
+        this.emit({
+          type: "heal",
+          side: defenderSide,
+          pokemon: getPokemonName(defender),
+          amount: defHealed,
+          currentHp: defender.pokemon.currentHp,
+          maxHp: defMaxHp,
           source: "move-effect",
         });
       }
@@ -2882,6 +2902,42 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // teamStatusCure — cure status for ALL Pokemon on the specified side's team (including bench)
+    // Used by Aromatherapy and Heal Bell which cure the entire party.
+    // Source: Bulbapedia -- "Aromatherapy cures the status conditions of all Pokemon on the user's team"
+    // Source: Showdown data/moves.ts -- aromatherapy: { target: 'allyTeam' }
+    if (result.teamStatusCure) {
+      const cureSideIndex = result.teamStatusCure.side === "attacker" ? attackerSide : defenderSide;
+      const cureSide = this.state.sides[cureSideIndex];
+
+      // Cure the entire team (bench Pokemon stored in side.team)
+      for (const teamMember of cureSide.team) {
+        if (teamMember.status) {
+          const curedStatus = teamMember.status;
+          teamMember.status = null;
+          this.emit({
+            type: "status-cure",
+            side: cureSideIndex,
+            pokemon: teamMember.nickname ?? String(teamMember.speciesId),
+            status: curedStatus,
+          });
+        }
+      }
+
+      // Also cure the active Pokemon (may not be in team array directly)
+      const activePokemon = cureSide.active[0];
+      if (activePokemon?.pokemon.status) {
+        const curedStatus = activePokemon.pokemon.status;
+        activePokemon.pokemon.status = null;
+        this.emit({
+          type: "status-cure",
+          side: cureSideIndex,
+          pokemon: getPokemonName(activePokemon),
+          status: curedStatus,
+        });
+      }
+    }
+
     // selfStatusInflicted — apply a status condition to the ATTACKER
     if (result.selfStatusInflicted && !attacker.pokemon.status) {
       // Use selfVolatileData.turnsLeft if provided (e.g., Rest's fixed 2-turn sleep)
@@ -2914,6 +2970,21 @@ export class BattleEngine implements BattleEventEmitter {
       this.emit({
         type: "message",
         text: `${getPokemonName(typeTarget)}'s type changed!`,
+      });
+    }
+
+    // abilityChange — change the active ability of the attacker or defender
+    // Used by Entrainment (replaces target's ability with user's ability)
+    // Source: Showdown data/moves.ts -- entrainment: target.setAbility(source.ability)
+    if (result.abilityChange) {
+      const abilityTarget = result.abilityChange.target === "attacker" ? attacker : defender;
+      const abilityTargetSide =
+        result.abilityChange.target === "attacker" ? attackerSide : defenderSide;
+      const oldAbility = abilityTarget.ability;
+      abilityTarget.ability = result.abilityChange.ability;
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(abilityTarget)}'s ability changed from ${oldAbility} to ${result.abilityChange.ability}!`,
       });
     }
 

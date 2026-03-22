@@ -237,14 +237,20 @@ describe("isBerry", () => {
   });
 
   it("given null, when checked, then returns false", () => {
+    // Guard clause: falsy itemId always returns false (no valid item to check)
+    // Source: isBerry implementation -- `if (!itemId) return false`
     expect(isBerry(null)).toBe(false);
   });
 
   it("given undefined, when checked, then returns false", () => {
+    // Guard clause: falsy itemId always returns false (no valid item to check)
+    // Source: isBerry implementation -- `if (!itemId) return false`
     expect(isBerry(undefined)).toBe(false);
   });
 
   it("given empty string, when checked, then returns false", () => {
+    // Guard clause: empty string is falsy, so returns false (no valid item to check)
+    // Source: isBerry implementation -- `if (!itemId) return false`
     expect(isBerry("")).toBe(false);
   });
 });
@@ -265,7 +271,7 @@ describe("Heal Pulse", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.healAmount).toBe(100);
+    expect(result!.defenderHealAmount).toBe(100);
   });
 
   it("given a target with 201 max HP, when Heal Pulse is used, then heals 101 HP (ceil rounds up)", () => {
@@ -279,7 +285,7 @@ describe("Heal Pulse", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.healAmount).toBe(101);
+    expect(result!.defenderHealAmount).toBe(101);
   });
 
   it("given a target with 1 max HP (Shedinja), when Heal Pulse is used, then heals 1 HP", () => {
@@ -292,7 +298,7 @@ describe("Heal Pulse", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.healAmount).toBe(1);
+    expect(result!.defenderHealAmount).toBe(1);
   });
 });
 
@@ -310,13 +316,13 @@ describe("Aromatherapy", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.statusCuredOnly).toEqual({ target: "attacker" });
+    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
     expect(result!.messages).toContain("A soothing aroma wafted through the area!");
   });
 
   it("given Aromatherapy result, when checking, then does NOT reset stat stages", () => {
     // Source: Showdown gen5/moves.ts -- aromatherapy only cures status, no stat reset
-    // statusCuredOnly (not statusCured) means no stat reset
+    // teamStatusCure (not statusCured) means no stat reset -- just cures team status
     const ctx = makeContext({
       move: makeMove({ id: "aromatherapy", category: "status", power: null }),
     });
@@ -324,8 +330,8 @@ describe("Aromatherapy", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    // statusCuredOnly cures status without resetting stat stages
-    expect(result!.statusCuredOnly).not.toBeNull();
+    // teamStatusCure cures entire team status without resetting stat stages
+    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
     // statStagesReset should not be set
     expect(result!.statStagesReset).toBeUndefined();
   });
@@ -345,7 +351,7 @@ describe("Heal Bell", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.statusCuredOnly).toEqual({ target: "attacker" });
+    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
     expect(result!.messages).toContain("A bell chimed!");
   });
 
@@ -358,7 +364,8 @@ describe("Heal Bell", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.statusCuredOnly).not.toBeNull();
+    // teamStatusCure cures entire team status without resetting stat stages
+    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
     expect(result!.statStagesReset).toBeUndefined();
   });
 });
@@ -561,8 +568,9 @@ describe("Bestow", () => {
 // ===========================================================================
 
 describe("Entrainment", () => {
-  it("given user has Intimidate and target has Overgrow, when Entrainment is used, then succeeds", () => {
-    // Source: Showdown data/moves.ts entrainment -- ability change succeeds
+  it("given user has Intimidate and target has Overgrow, when Entrainment is used, then changes target ability to Intimidate", () => {
+    // Source: Showdown data/moves.ts entrainment -- target.setAbility(source.ability)
+    // Source: Bulbapedia -- "Entrainment changes the target's Ability to match the user's"
     const ctx = makeContext({
       attacker: makeActive({ ability: "intimidate" }),
       defender: makeActive({ ability: "overgrow", nickname: "Serperior" }),
@@ -572,6 +580,8 @@ describe("Entrainment", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
+    // Verify the abilityChange field instructs the engine to change the defender's ability
+    expect(result!.abilityChange).toEqual({ target: "defender", ability: "intimidate" });
     expect(result!.messages[0]).toContain("intimidate");
   });
 
@@ -747,7 +757,7 @@ describe("handleGen5StatusMove dispatch", () => {
 
     expect(result).not.toBeNull();
     // 300 * 0.5 = 150, ceil(150) = 150
-    expect(result!.healAmount).toBe(150);
+    expect(result!.defenderHealAmount).toBe(150);
   });
 });
 
@@ -769,7 +779,7 @@ describe("executeGen5MoveEffect integration", () => {
 
     expect(result).not.toBeNull();
     // 400 * 0.5 = 200, ceil(200) = 200
-    expect(result!.healAmount).toBe(200);
+    expect(result!.defenderHealAmount).toBe(200);
   });
 
   it("given an unrecognized move, when dispatched through master dispatcher, then returns null", () => {

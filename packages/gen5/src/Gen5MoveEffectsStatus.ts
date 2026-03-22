@@ -15,12 +15,7 @@
  * Source: references/pokemon-showdown/data/moves.ts (base definitions)
  */
 
-import type {
-  ActivePokemon,
-  BattleState,
-  MoveEffectContext,
-  MoveEffectResult,
-} from "@pokemon-lib-ts/battle";
+import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
@@ -122,10 +117,13 @@ function makeResult(
 function handleHealPulse(ctx: MoveEffectContext): MoveEffectResult {
   const targetMaxHp = ctx.defender.pokemon.calculatedStats?.hp ?? ctx.defender.pokemon.currentHp;
   // Source: Showdown gen5/moves.ts healpulse -- Math.ceil(target.baseMaxhp * 0.5)
+  // Source: Bulbapedia -- "Heal Pulse restores up to half of the target's maximum HP"
+  // Uses defenderHealAmount (not healAmount) because Heal Pulse heals the TARGET, not the user.
+  // Source: Showdown data/moves.ts -- healPulse: { target: 'normal', heal: [1, 2] }
   const healAmount = Math.ceil(targetMaxHp * 0.5);
 
   return makeResult({
-    healAmount,
+    defenderHealAmount: healAmount,
     messages: [],
   });
 }
@@ -146,11 +144,13 @@ function handleHealPulse(ctx: MoveEffectContext): MoveEffectResult {
  * Note: No Soundproof check -- cures all allies unconditionally.
  */
 function handleAromatherapy(_ctx: MoveEffectContext): MoveEffectResult {
-  // statusCuredOnly cures status without resetting stat stages
-  // In Gen 5, this affects the entire team (both = attacker side)
+  // Aromatherapy cures status for the ENTIRE TEAM (all benched allies too),
+  // not just the active Pokemon. Uses teamStatusCure (not statusCuredOnly).
   // Source: Showdown gen5/moves.ts -- cures ALL allies, no ability check
+  // Source: Bulbapedia -- "Aromatherapy cures the status conditions of all Pokemon on the user's team"
+  // Source: Showdown data/moves.ts -- aromatherapy: { target: 'allyTeam' }
   return makeResult({
-    statusCuredOnly: { target: "attacker" },
+    teamStatusCure: { side: "attacker" },
     messages: ["A soothing aroma wafted through the area!"],
   });
 }
@@ -171,9 +171,13 @@ function handleAromatherapy(_ctx: MoveEffectContext): MoveEffectResult {
  * Note: No Soundproof check -- cures all allies unconditionally.
  */
 function handleHealBell(_ctx: MoveEffectContext): MoveEffectResult {
+  // Heal Bell cures status for the ENTIRE TEAM (all benched allies too),
+  // not just the active Pokemon. Uses teamStatusCure (not statusCuredOnly).
   // Source: Showdown gen5/moves.ts -- cures ALL allies, no ability check
+  // Source: Bulbapedia -- "Heal Bell cures the status conditions of all Pokemon in the user's party"
+  // Source: Showdown data/moves.ts -- healbell: { target: 'allyTeam' }
   return makeResult({
-    statusCuredOnly: { target: "attacker" },
+    teamStatusCure: { side: "attacker" },
     messages: ["A bell chimed!"],
   });
 }
@@ -335,9 +339,11 @@ function handleEntrainment(ctx: MoveEffectContext): MoveEffectResult {
     });
   }
 
-  // Success: signal ability change via message. The engine handles the actual
-  // ability mutation. We signal it via a message that the engine can parse.
+  // Success: replace target's ability with source's ability.
+  // Source: Showdown data/moves.ts entrainment -- target.setAbility(source.ability)
+  // Source: Bulbapedia -- "Entrainment changes the target's Ability to match the user's"
   return makeResult({
+    abilityChange: { target: "defender", ability: sourceAbility },
     messages: [`${ctx.defender.pokemon.nickname ?? "The target"} acquired ${sourceAbility}!`],
   });
 }
@@ -362,51 +368,14 @@ function handleEntrainment(ctx: MoveEffectContext): MoveEffectResult {
  * Since our architecture processes moves one at a time in the effect handler,
  * we check turn history for a prior Round usage by an ally.
  */
-function handleRound(ctx: MoveEffectContext): MoveEffectResult {
-  // Check if an ally used Round earlier this turn.
-  // In singles, there are no allies, so Round doubling doesn't apply.
-  // We still handle the check for correctness in doubles format.
-  const _allyUsedRound = checkAllyUsedRound(ctx.state, ctx.attacker);
-
-  // Round's base power doubling is handled in the damage calc (basePowerCallback),
-  // not in the effect handler. The effect handler only needs to return a normal result.
+function handleRound(_ctx: MoveEffectContext): MoveEffectResult {
+  // Round's base power doubling is handled in Gen5DamageCalc.calculateGen5Damage(),
+  // not in the effect handler. The damage calc checks if an ally used Round this turn
+  // and doubles the base power accordingly.
+  // Source: Showdown data/moves.ts -- round.basePowerCallback
   return makeResult({
     messages: [],
   });
-}
-
-/**
- * Check if an ally on the same side used Round earlier this turn.
- *
- * Source: Showdown data/moves.ts round.onTry -- checks queue for ally Round actions
- */
-function checkAllyUsedRound(state: BattleState, attacker: ActivePokemon): boolean {
-  // Find the attacker's side
-  const attackerSideIndex = findSideIndex(state, attacker);
-  if (attackerSideIndex === -1) return false;
-
-  const side = state.sides[attackerSideIndex];
-  if (!side) return false;
-
-  // Check if any OTHER active Pokemon on the same side used Round this turn
-  for (const active of side.active) {
-    if (!active || active === attacker) continue;
-    if (active.lastMoveUsed === "round" && active.movedThisTurn) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Find which side index (0 or 1) the given Pokemon belongs to.
- */
-function findSideIndex(state: BattleState, pokemon: ActivePokemon): number {
-  for (let i = 0; i < state.sides.length; i++) {
-    const side = state.sides[i];
-    if (side?.active.includes(pokemon)) return i;
-  }
-  return -1;
 }
 
 // ---------------------------------------------------------------------------

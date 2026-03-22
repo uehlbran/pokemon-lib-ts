@@ -581,6 +581,32 @@ export function calculateGen5Damage(
     power = power * 2;
   }
 
+  // Round (NEW in Gen 5): doubles power when an ally used Round earlier this turn
+  // Source: Showdown data/moves.ts -- round.basePowerCallback:
+  //   if (move.sourceEffect === 'round') return move.basePower * 2
+  // In our architecture, we check the ally's lastMoveUsed + movedThisTurn flags.
+  if (move.id === "round") {
+    const attackerSideIndex = context.state.sides.findIndex((s) =>
+      s.active.some((a) => a === attacker),
+    );
+    if (attackerSideIndex !== -1) {
+      const side = context.state.sides[attackerSideIndex];
+      if (side) {
+        for (const active of side.active) {
+          if (
+            active &&
+            active !== attacker &&
+            active.lastMoveUsed === "round" &&
+            active.movedThisTurn
+          ) {
+            power = power * 2;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   // Rivalry: gender-dependent power modifier
   // Source: Showdown data/abilities.ts -- Rivalry
   if (attackerAbility === "rivalry") {
