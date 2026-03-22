@@ -6,6 +6,6 @@ When doing research or exploration involving many files:
 - Prefer targeted searches (grep for a specific symbol) over broad directory reads
 
 When doing implementation spanning multiple files:
-- Prefer the task system; if needed, create a scratch `PROGRESS.md` to track done vs. remaining
+- Prefer the task system; if needed, write a scratch `PROGRESS.md` locally — but never `git add` it (it is in `.gitignore`)
 - Commit working code frequently rather than accumulating many uncommitted changes
 - If a task needs 15+ file reads to complete, stop and return findings so the caller can split the work
