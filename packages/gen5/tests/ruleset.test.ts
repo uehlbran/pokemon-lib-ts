@@ -401,7 +401,7 @@ describe("Gen5 status damage abilities", () => {
   });
 
   it("given pokemon with no relevant ability and burn status with 200 max HP, when applyStatusDamage called, then returns 25 (floor(200/8))", () => {
-    // Source: Gen 5 burn damage = 1/8 max HP
+    // Source: Showdown sim/battle-actions.ts -- Gen < 7 burn damage = maxhp/8
     // floor(200/8) = 25
     const pokemon = makeActivePokemon({
       maxHp: 200,
@@ -413,7 +413,7 @@ describe("Gen5 status damage abilities", () => {
   });
 
   it("given pokemon with no relevant ability and burn status with 160 max HP, when applyStatusDamage called, then returns 20 (floor(160/8))", () => {
-    // Source: Gen 5 burn damage = 1/8 max HP
+    // Source: Showdown sim/battle-actions.ts -- Gen < 7 burn damage = maxhp/8
     // Triangulation: floor(160/8) = 20
     const pokemon = makeActivePokemon({
       maxHp: 160,
