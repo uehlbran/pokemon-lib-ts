@@ -3457,7 +3457,8 @@ describe("Gen 7 Aurora Veil screen damage reduction", () => {
     // Source: Showdown sim/battle-actions.ts -- screens reduce damage by 0.5x in singles
     // Source: Bulbapedia "Aurora Veil" -- halves damage from physical and special moves
     // Derivation: power=80, attack=100, defense=100, level=50, seed=42
-    //   base = floor((floor(2*50/5+2)*80*100/100)/50)+2 = floor(22*80/50)+2 = 36
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   baseDamage = floor(floor(22*80*100/100)/50) + 2 = floor(1760/50) + 2 = 37
     //   after random roll (seed 42): 34; with Aurora Veil: floor(34/2) = 17
     const attacker = makeActive({ attack: 100 });
     const defender = makeActive({ defense: 100 });
@@ -3490,7 +3491,9 @@ describe("Gen 7 Aurora Veil screen damage reduction", () => {
     // Source: Showdown sim/battle-actions.ts -- Aurora Veil halves both physical and special
     // Source: Bulbapedia "Aurora Veil" -- halves damage from both categories
     // Derivation: power=80, spAttack=100, spDefense=100, level=50, seed=42
-    //   base = floor((floor(2*50/5+2)*80*100/100)/50)+2 = 36; after roll: 34; halved: 17
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   baseDamage = floor(floor(22*80*100/100)/50) + 2 = floor(1760/50) + 2 = 37
+    //   after random roll (seed 42): 34; with Aurora Veil: floor(34/2) = 17
     const attacker = makeActive({ spAttack: 100 });
     const defender = makeActive({ spDefense: 100 });
     const stateNoScreen = makeStateWithDefenderScreen(null, attacker, defender);
