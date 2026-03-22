@@ -262,10 +262,9 @@ describe("Gen 8 Entry Hazards", () => {
   });
 
   describe("G-Max Steelsurge", () => {
-    it("given a Fire-type with 200 HP (Steel neutral vs Fire = 1x), when applying G-Max Steelsurge, then deals 25 damage (floor(200 * 1 / 8))", () => {
+    it("given a Fire-type with 200 HP (Steel resisted by Fire = 0.5x), when applying G-Max Steelsurge, then deals 12 damage (floor(200 * 0.5 / 8))", () => {
       // Source: Showdown data/moves.ts line 7475 -- gmaxsteelsurge: Steel-type Stealth Rock
-      // Steel vs Fire = 1x (Steel is not super effective against Fire, and Fire resists Steel -- 0.5x)
-      // Actually: Steel is NOT effective vs Fire. Steel vs Fire = 0.5x
+      // Steel vs Fire = 0.5x (Fire resists Steel)
       // floor(200 * 0.5 / 8) = floor(12.5) = 12
       const mon = makeActivePokemon({ types: ["fire"], maxHp: 200 });
       const result = applyGen8GMaxSteelsurge(mon, GEN8_TYPE_CHART);
