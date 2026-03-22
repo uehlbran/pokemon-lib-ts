@@ -436,7 +436,8 @@ describe("Regenerator", () => {
     const result = handleGen6SwitchAbility("on-switch-out", ctx);
     expect(result.activated).toBe(true);
     const healEffect = result.effects.find((e) => e.effectType === "heal");
-    expect(healEffect?.value).toBeGreaterThanOrEqual(1);
+    // Math.max(1, Math.floor(1 / 3)) = Math.max(1, 0) = 1
+    expect(healEffect?.value).toBe(1);
   });
 });
 
