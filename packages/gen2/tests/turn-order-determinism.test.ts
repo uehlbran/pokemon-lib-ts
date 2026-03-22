@@ -61,6 +61,7 @@ function createTurnOrderActive(
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   };
 }
 

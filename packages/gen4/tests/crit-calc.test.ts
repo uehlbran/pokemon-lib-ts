@@ -175,6 +175,7 @@ function makeActiveWithAbility(ability: string): ActivePokemon {
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   } as ActivePokemon;
 }
 
@@ -243,6 +244,7 @@ function makeCritActive(overrides: { ability?: string; heldItem?: string | null 
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   } as ActivePokemon;
 }
 

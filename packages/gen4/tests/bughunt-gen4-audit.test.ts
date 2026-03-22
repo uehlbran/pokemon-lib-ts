@@ -136,6 +136,7 @@ function createActivePokemon(opts: {
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   } as ActivePokemon;
 }
 
@@ -272,6 +273,7 @@ function createItemContext(opts: {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
     } as ActivePokemon,
     damage: opts.damage ?? 0,
     state: createNullState(),

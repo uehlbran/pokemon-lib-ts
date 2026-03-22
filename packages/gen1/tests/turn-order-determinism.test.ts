@@ -54,6 +54,7 @@ function createTurnOrderActive(speed: number, moveId = "tackle", status: string 
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   };
 }
 

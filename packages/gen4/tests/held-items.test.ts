@@ -117,6 +117,7 @@ function makeContext(opts: {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
     },
     state: {
       weather: null,

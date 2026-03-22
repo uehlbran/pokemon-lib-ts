@@ -116,6 +116,13 @@ export interface ActivePokemon {
   /** Active Tera Type after terastallization, or `null` if not terastallized (Gen 9) */
   teraType: PokemonType | null;
   /**
+   * Types that have already received the one-time Stellar Tera boost for this Pokemon.
+   * Stellar Tera Type gives 2x STAB boost the first time each type is used; subsequent
+   * uses of that type revert to standard STAB. Tracked per Pokemon, persists while Tera
+   * is active (Gen 9).
+   */
+  stellarBoostedTypes: PokemonType[];
+  /**
    * Forced move for the next turn (two-turn moves like Fly, Dig, SolarBeam).
    * When set, the engine overrides the submitted action with this move on the next turn.
    * Cleared after the forced move executes.

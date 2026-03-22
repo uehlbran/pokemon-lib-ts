@@ -103,6 +103,7 @@ function makeActive(overrides: {
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     suppressedAbility: null,
     forcedMove: null,
   } as ActivePokemon;

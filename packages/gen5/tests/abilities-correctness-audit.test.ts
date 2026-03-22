@@ -145,6 +145,7 @@ function makeActivePokemon(overrides: {
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     forcedMove: null,
   } as ActivePokemon;
 }
@@ -972,6 +973,7 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
           dynamaxTurnsLeft: 0,
           isTerastallized: false,
           teraType: null,
+          stellarBoostedTypes: [],
           forcedMove: null,
         }) as ActivePokemon;
 
@@ -1139,6 +1141,7 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
           dynamaxTurnsLeft: 0,
           isTerastallized: false,
           teraType: null,
+          stellarBoostedTypes: [],
           forcedMove: null,
         }) as ActivePokemon;
 
@@ -1422,6 +1425,7 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
           dynamaxTurnsLeft: 0,
           isTerastallized: false,
           teraType: null,
+          stellarBoostedTypes: [],
           forcedMove: null,
         }) as ActivePokemon;
 

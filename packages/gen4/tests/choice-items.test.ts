@@ -130,6 +130,7 @@ function createActivePokemon(opts: {
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
   } as ActivePokemon;
 }
 
@@ -471,6 +472,7 @@ describe("Gen 4 Choice Scarf speed modifier", () => {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
     } as ActivePokemon;
 
     const activeFast: ActivePokemon = {
@@ -502,6 +504,7 @@ describe("Gen 4 Choice Scarf speed modifier", () => {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
     } as ActivePokemon;
 
     const state = {
@@ -663,6 +666,7 @@ describe("Gen 4 Choice Scarf speed modifier", () => {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
     } as ActivePokemon;
 
     const activeMedium: ActivePokemon = {
@@ -694,6 +698,7 @@ describe("Gen 4 Choice Scarf speed modifier", () => {
       dynamaxTurnsLeft: 0,
       isTerastallized: false,
       teraType: null,
+      stellarBoostedTypes: [],
     } as ActivePokemon;
 
     const state = {

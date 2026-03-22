@@ -338,6 +338,7 @@ describe("Gen 1 Critical Hit", () => {
         dynamaxTurnsLeft: 0,
         isTerastallized: false,
         teraType: null,
+        stellarBoostedTypes: [],
       }) as ActivePokemon;
 
     const move: MoveData = {

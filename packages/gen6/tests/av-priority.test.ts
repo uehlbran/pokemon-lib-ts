@@ -75,6 +75,7 @@ function makeActive(
     dynamaxTurnsLeft: 0,
     isTerastallized: false,
     teraType: null,
+    stellarBoostedTypes: [],
     forcedMove: null,
     suppressedAbility: null,
   } as unknown as ActivePokemon;
