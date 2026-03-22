@@ -82,6 +82,15 @@ export {
   TYPE_RESIST_BERRIES,
 } from "./Gen8DamageCalc.js";
 export {
+  applyGen8EntryHazards,
+  applyGen8GMaxSteelsurge,
+  applyGen8SpikesHazard,
+  applyGen8StealthRock,
+  applyGen8StickyWeb,
+  applyGen8ToxicSpikes,
+  hasHeavyDutyBoots,
+} from "./Gen8EntryHazards.js";
+export {
   AURORA_VEIL_DEFAULT_TURNS,
   AURORA_VEIL_LIGHT_CLAY_TURNS,
   calculateClangorousSoulCost,
@@ -120,3 +129,12 @@ export {
   TERRAIN_EXTENDED_TURNS,
 } from "./Gen8Terrain.js";
 export { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
+export {
+  ABILITY_WEATHER_TURNS,
+  applyGen8WeatherEffects,
+  getWeatherDuration,
+  HAIL_IMMUNE_TYPES,
+  isGen8WeatherImmune,
+  SANDSTORM_IMMUNE_TYPES,
+  WEATHER_ROCK_EXTENSION,
+} from "./Gen8Weather.js";

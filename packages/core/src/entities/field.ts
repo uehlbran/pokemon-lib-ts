@@ -2,7 +2,8 @@ export type EntryHazardType =
   | "stealth-rock" // Gen 4+
   | "spikes" // Gen 2+
   | "toxic-spikes" // Gen 4+
-  | "sticky-web"; // Gen 6+
+  | "sticky-web" // Gen 6+
+  | "gmax-steelsurge"; // Gen 8 (G-Max Steelsurge, Copperajah)
 
 export type ScreenType = "reflect" | "light-screen" | "aurora-veil" | "safeguard";
 
@@ -12,4 +13,5 @@ export const HAZARD_MAX_LAYERS: Record<EntryHazardType, number> = {
   spikes: 3,
   "toxic-spikes": 2,
   "sticky-web": 1,
+  "gmax-steelsurge": 1,
 } as const;
