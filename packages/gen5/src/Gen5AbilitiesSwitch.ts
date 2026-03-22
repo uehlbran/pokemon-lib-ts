@@ -531,6 +531,19 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (!other.pokemon.heldItem) return NO_EFFECT;
       const stolenItem = other.pokemon.heldItem;
       const oppName = getOpponentName(ctx);
+
+      // Direct mutation: AbilityResult has no itemTransfer field, so we mutate
+      // the Pokemon objects directly (same pattern as Knock Off in Gen5MoveEffectsBehavior).
+      ctx.pokemon.pokemon.heldItem = stolenItem;
+      other.pokemon.heldItem = null;
+
+      // Unburden: if the victim (attacker) has Unburden, set the volatile.
+      // Source: Showdown data/abilities.ts — Unburden activates when item is lost by any means.
+      // Source: Bulbapedia — Unburden: "Doubles Speed when held item is used or lost."
+      if (other.ability === "unburden" && !other.volatileStatuses.has("unburden")) {
+        other.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      }
+
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
