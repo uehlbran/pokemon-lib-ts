@@ -23,6 +23,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
+import { calculateGen6Damage } from "./Gen6DamageCalc.js";
 import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
 import { applyGen6WeatherEffects } from "./Gen6Weather.js";
@@ -117,110 +118,24 @@ export class Gen6Ruleset extends BaseRuleset {
   // --- Damage Calculation ---
 
   /**
-   * Gen 6 damage formula (stub implementation for Wave 0).
+   * Gen 6 damage formula.
    *
-   * Uses the standard Gen 3+ damage formula with type effectiveness and STAB.
-   * Full Gen 6-specific modifiers (abilities, items, terrain, etc.) will be
-   * implemented in Wave 3.
+   * Full implementation with all Gen 6-specific modifiers:
+   * - Crit multiplier 1.5x (was 2.0x in Gen 5)
+   * - Gem boost 1.3x (was 1.5x in Gen 5)
+   * - Knock Off 1.5x base power boost when target has removable item
+   * - Facade bypasses burn penalty
+   * - Assault Vest, Fur Coat, Pixie Plate
+   * - Fairy type effectiveness (via type chart)
    *
    * Source: Showdown sim/battle-actions.ts -- Gen 6 damage formula
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
    */
   calculateDamage(context: DamageContext): DamageResult {
-    const { attacker, defender, move, rng, isCrit } = context;
-
-    // Status moves deal 0 damage
-    if (move.category === "status") {
-      return { damage: 0, effectiveness: 1, isCrit: false, randomFactor: 1 };
-    }
-
-    const level = attacker.pokemon.level;
-    const isPhysical = move.category === "physical";
-
-    // Stat lookups
-    const atkStat = isPhysical
-      ? (attacker.pokemon.calculatedStats?.attack ?? 100)
-      : (attacker.pokemon.calculatedStats?.spAttack ?? 100);
-    const defStat = isPhysical
-      ? (defender.pokemon.calculatedStats?.defense ?? 100)
-      : (defender.pokemon.calculatedStats?.spDefense ?? 100);
-
-    // Apply stat stages (crit ignores unfavorable stages)
-    // Source: Showdown sim/battle-actions.ts -- crit ignores negative atk stages and positive def stages
-    const atkStage = isPhysical ? attacker.statStages.attack : attacker.statStages.spAttack;
-    const defStage = isPhysical ? defender.statStages.defense : defender.statStages.spDefense;
-
-    const effectiveAtkStage = isCrit ? Math.max(0, atkStage) : atkStage;
-    const effectiveDefStage = isCrit ? Math.min(0, defStage) : defStage;
-
-    const effectiveAtk = Math.max(
-      1,
-      Math.floor(atkStat * getStatStageMultiplier(effectiveAtkStage)),
+    return calculateGen6Damage(
+      context,
+      this.getTypeChart() as Record<string, Record<string, number>>,
     );
-    const effectiveDef = Math.max(
-      1,
-      Math.floor(defStat * getStatStageMultiplier(effectiveDefStage)),
-    );
-
-    const power = move.power ?? 0;
-    if (power === 0) {
-      return { damage: 0, effectiveness: 1, isCrit: false, randomFactor: 1 };
-    }
-
-    // Base damage formula: floor((2*Level/5 + 2) * Power * Atk/Def / 50) + 2
-    // Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
-    const levelFactor = Math.floor((2 * level) / 5) + 2;
-    let baseDamage =
-      Math.floor(Math.floor((levelFactor * power * effectiveAtk) / effectiveDef) / 50) + 2;
-
-    // Critical hit: 1.5x in Gen 6+
-    // Source: Showdown sim/battle-actions.ts -- Gen 6+ crit multiplier is 1.5x
-    const critMultiplier = isCrit ? this.getCritMultiplier() : 1;
-    if (isCrit) {
-      baseDamage = Math.floor(baseDamage * critMultiplier);
-    }
-
-    // Random factor: 85-100% (0.85 to 1.0)
-    // Source: Showdown sim/battle-actions.ts -- random roll 85-100
-    const randomRoll = rng.int(85, 100);
-    const randomFactor = randomRoll / 100;
-    baseDamage = Math.floor((baseDamage * randomRoll) / 100);
-
-    // STAB: 1.5x if the move type matches one of the attacker's types
-    // Source: Showdown sim/battle-actions.ts -- STAB calculation
-    const moveType = move.type as PokemonType;
-    const attackerTypes = attacker.types ?? [];
-    if (attackerTypes.includes(moveType)) {
-      baseDamage = Math.floor(baseDamage * 1.5);
-    }
-
-    // Type effectiveness
-    // Source: Type chart data from references/pokemon-showdown/data/typechart.ts
-    const typeChart = this.getTypeChart() as Record<string, Record<string, number>>;
-    let effectiveness = 1;
-    const defenderTypes = defender.types ?? [];
-    for (const defType of defenderTypes) {
-      const multiplier = typeChart[moveType]?.[defType] ?? 1;
-      effectiveness *= multiplier;
-    }
-    baseDamage = Math.floor(baseDamage * effectiveness);
-
-    // Burn halves physical damage (unless attacker has Guts)
-    // Source: Showdown sim/battle-actions.ts -- burn physical attack penalty
-    if (isPhysical && attacker.pokemon.status === "burn" && attacker.ability !== "guts") {
-      baseDamage = Math.floor(baseDamage / 2);
-    }
-
-    const finalDamage = Math.max(effectiveness > 0 ? 1 : 0, baseDamage);
-
-    return {
-      damage: finalDamage,
-      effectiveness,
-      isCrit,
-      randomFactor,
-      effectiveType: moveType,
-      effectiveCategory: move.category as "physical" | "special",
-    };
   }
 
   /**
