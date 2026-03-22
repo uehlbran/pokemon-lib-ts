@@ -117,17 +117,20 @@
 
 ## Test Coverage
 
-26 test files, **1,142 tests** (as of Wave 9 — PR #717).
+27 test files, **1,193 tests** (as of bughunt PR — `fix/gen5-8-bughunt`).
 **Branch coverage: 82.27%** (threshold: 80%).
 Statement: 87.05% | Functions: 87.87% | Lines: 87.05%
 
-Test files: `abilities-damage.test.ts`, `abilities-dispatcher.test.ts`, `abilities-stat.test.ts`, `abilities-switch.test.ts`, `coverage-gaps.test.ts`, `coverage-gaps-2.test.ts`, `coverage-gaps-3.test.ts`, `coverage-gaps-4.test.ts`, `coverage-gaps-5.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dynamax.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `gmax-moves.test.ts`, `integration.test.ts`, `items.test.ts`, `max-moves.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`
+Test files: `abilities-damage.test.ts`, `abilities-dispatcher.test.ts`, `abilities-routing.test.ts`, `abilities-stat.test.ts`, `abilities-switch.test.ts`, `coverage-gaps.test.ts`, `coverage-gaps-2.test.ts`, `coverage-gaps-3.test.ts`, `coverage-gaps-4.test.ts`, `coverage-gaps-5.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dynamax.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `gmax-moves.test.ts`, `integration.test.ts`, `items.test.ts`, `max-moves.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`
 
 ---
 
 ## OPEN BUGS
 
-None tracked.
+| Issue | Description |
+|-------|-------------|
+| #687 | Gen 7/8 Disguise: `capLethalDamage` only fires on lethal hits — non-lethal attacks bypass Disguise. Needs engine-level `interceptDamage` hook. |
+| #725 | Focus Sash/Band not wired to `capLethalDamage` hook in Gen 7/8 (item trigger only fires post-damage) |
 
 ---
 
@@ -147,3 +150,4 @@ None tracked.
 | #709 | feat/gen8-wave7-move-effects | Wave 7: move effects (Rapid Spin buff, Defog, Obstruct, Steel Beam, etc.) |
 | #712 | feat/gen8-wave8-dynamax | Wave 8: Dynamax/Gigantamax gimmick (HP scaling, Max Moves, 32 G-Max moves) |
 | #717 | feat/gen8-wave9-integration | Wave 9: integration tests + coverage polish (1,142 tests, 82.27% branch) |
+| TBD | fix/gen5-8-bughunt | Deep bughunt: applyAbility routing (C1), getEndOfTurnOrder (C2), capLethalDamage (C3), canBypassProtect delegation, Dynamax revert fixes, closes #732 #733 #734 #735 #736 #739 #740 #741 #742 #746 #747 |

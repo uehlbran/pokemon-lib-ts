@@ -238,10 +238,10 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 | gen2 | 100% | 757 | 0 | All engine-level bugs closed |
 | gen3 | 98% | 860 | 1 (#141 Plus/Minus — doubles) | Flash Fire fixed PR #591 |
 | gen4 | 100% | 1,216 | 0 | All 24 audit bugs + 4 new bugs closed |
-| gen5 | 100% | 1,164 | 0 | Sky Drop/Pledge doubles deferred |
-| gen6 | 100% | 1,069 | 0 | All 10 waves merged, 82.6% branch coverage |
-| gen7 | 75% | 811 | 0 | Waves 0–7B merged; Z-Move gimmick in progress |
-| gen8 | 100% | 1,142 | 0 | All 10 waves merged, 82.27% branch coverage |
+| gen5 | 100% | 1,165 | 0 | Sky Drop/Pledge doubles deferred |
+| gen6 | 100% | 1,079 | 0 | All 10 waves merged, 82.6% branch coverage |
+| gen7 | 100% | 1,116 | 2 | #687 Disguise non-lethal, #725 Focus Sash capLethalDamage |
+| gen8 | 100% | 1,193 | 2 | #687 Disguise non-lethal, #725 Focus Sash capLethalDamage |
 
 Full per-gen details: `specs/reference/genN-status.md`
 Ground-truth mechanical reference: `specs/reference/genN-ground-truth.md`
