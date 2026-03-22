@@ -1,7 +1,8 @@
-import type { ItemContext } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { applyGen4HeldItem } from "../src/Gen4Items";
+import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
 /**
  * Gen 4 Held Item Tests
@@ -657,13 +658,16 @@ describe("applyGen4HeldItem end-of-turn — status-curing berries", () => {
 });
 
 // ---------------------------------------------------------------------------
-// on-damage-taken: Focus Band (10% chance to survive)
+// on-damage-taken: Focus Band
+// Focus Band is handled by Gen4Ruleset.capLethalDamage (pre-damage hook), NOT here.
+// This prevents double-rolling the 10% chance when a single lethal hit fires both hooks.
+// Source: Showdown sim/battle-actions.ts -- Focus Band onDamage (pre-damage priority)
 // ---------------------------------------------------------------------------
 
-describe("applyGen4HeldItem on-damage-taken -- Focus Band", () => {
-  it("given Focus Band and RNG succeeds (10% chance), when KO hit is taken, then survives at 1 HP (not consumed)", () => {
-    // Source: Showdown Gen 4 mod -- Focus Band 10% activation (same as Gen 3)
-    // Focus Band is NOT consumed after activation (reusable)
+describe("applyGen4HeldItem on-damage-taken -- Focus Band (not handled here)", () => {
+  it("given Focus Band and lethal damage, when on-damage-taken triggers, then does NOT activate (handled by capLethalDamage instead)", () => {
+    // Focus Band was moved to capLethalDamage to prevent double-rolling.
+    // on-damage-taken must return NO_ACTIVATION for Focus Band.
     const ctx = makeContext({
       heldItem: "focus-band",
       maxHp: 160,
@@ -673,39 +677,77 @@ describe("applyGen4HeldItem on-damage-taken -- Focus Band", () => {
     });
     const result = applyGen4HeldItem("on-damage-taken", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "survive", value: 1 });
-    // Focus Band is NOT consumed (no "consume" effect)
-    expect(result.effects.length).toBe(1);
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// capLethalDamage: Focus Band (10% chance to survive — authoritative handler)
+// ---------------------------------------------------------------------------
+
+describe("Gen4Ruleset.capLethalDamage -- Focus Band", () => {
+  function makeCapContext(opts: {
+    heldItem?: string | null;
+    currentHp: number;
+    maxHp: number;
+    rngChance?: boolean;
+  }): { defender: ActivePokemon; state: BattleState } {
+    const instance = makePokemonInstance({
+      heldItem: opts.heldItem ?? null,
+      currentHp: opts.currentHp,
+      maxHp: opts.maxHp,
+    });
+    const defender = {
+      pokemon: instance,
+      types: [],
+      ability: "",
+      volatileStatuses: new Map(),
+    } as unknown as ActivePokemon;
+    const state = {
+      rng: {
+        chance: (_p: number) => opts.rngChance ?? false,
+        int: () => 0,
+        next: () => 0,
+        pick: <T>(arr: readonly T[]) => arr[0],
+        shuffle: <T>(arr: readonly T[]) => [...arr],
+        getState: () => 0,
+        setState: () => {},
+      },
+    } as unknown as BattleState;
+    return { defender, state };
+  }
+
+  it("given Focus Band at reduced HP and RNG succeeds, when lethal damage is dealt, then survives with exactly 1 HP remaining (currentHp - 1 = damage capped)", () => {
+    // Source: Showdown Gen 4 mod -- Focus Band 10% activation
+    // Fix: damage should be currentHp - 1 to leave exactly 1 HP, not maxHp - 1
+    // Verification: currentHp=50, maxHp=160, damage=200 -> capped damage = 49 (leaves 1 HP)
+    const { defender, state } = makeCapContext({
+      heldItem: "focus-band",
+      currentHp: 50,
+      maxHp: 160,
+      rngChance: true,
+    });
+    const ruleset = new Gen4Ruleset();
+    const result = ruleset.capLethalDamage(200, defender, defender, {} as MoveData, state);
+
+    expect(result.survived).toBe(true);
+    expect(result.damage).toBe(49); // currentHp - 1 = 50 - 1 = 49; HP after = 50 - 49 = 1
     expect(result.messages[0]).toContain("Focus Band");
   });
 
-  it("given Focus Band and RNG fails, when KO hit is taken, then does not activate", () => {
+  it("given Focus Band and RNG fails, when lethal damage is dealt, then does not survive", () => {
     // Source: Showdown Gen 4 mod -- Focus Band 10% chance, fails when RNG says no
-    const ctx = makeContext({
+    const { defender, state } = makeCapContext({
       heldItem: "focus-band",
-      maxHp: 160,
-      currentHp: 50,
-      damage: 200,
+      currentHp: 100,
+      maxHp: 100,
       rngChance: false,
     });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const ruleset = new Gen4Ruleset();
+    const result = ruleset.capLethalDamage(100, defender, defender, {} as MoveData, state);
 
-    expect(result.activated).toBe(false);
-  });
-
-  it("given Focus Band, when non-KO hit is taken, then does not activate", () => {
-    // Source: Showdown Gen 4 mod -- Focus Band only triggers on would-be KO hits
-    const ctx = makeContext({
-      heldItem: "focus-band",
-      maxHp: 160,
-      currentHp: 100,
-      damage: 20,
-      rngChance: true,
-    });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
-
-    expect(result.activated).toBe(false);
+    expect(result.survived).toBe(false);
+    expect(result.damage).toBe(100); // Original lethal damage unchanged
   });
 });
 

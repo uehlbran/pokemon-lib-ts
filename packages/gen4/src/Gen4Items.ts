@@ -518,20 +518,10 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Focus Band: 10% chance to survive with 1 HP (NOT consumed — reusable)
-    // Source: Showdown Gen 4 mod — Focus Band 10% activation (same as Gen 3)
-    case "focus-band": {
-      if (currentHp - damage <= 0) {
-        if (context.rng.chance(0.1)) {
-          return {
-            activated: true,
-            effects: [{ type: "survive", target: "self", value: 1 }],
-            messages: [`${pokemonName} hung on using its Focus Band!`],
-          };
-        }
-      }
-      return NO_ACTIVATION;
-    }
+    // Focus Band is handled by Gen4Ruleset.capLethalDamage (pre-damage hook).
+    // It is NOT handled here (post-damage) to avoid double-rolling the 10% chance
+    // on a single lethal hit. capLethalDamage is the authoritative handler.
+    // Source: Showdown sim/battle-actions.ts — Focus Band onDamage (pre-damage priority)
 
     // Sitrus Berry: Also activates when HP drops to <= 50% after damage (Gen 4: 1/4 max HP)
     // CHANGED from Gen 3 (was flat 30 HP) — Gen 4 uses percentage-based healing

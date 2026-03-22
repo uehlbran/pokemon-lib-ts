@@ -179,10 +179,11 @@ export class Gen4Ruleset extends BaseRuleset {
 
     // Focus Band: 10% chance to survive at 1 HP, NOT consumed
     // Source: Showdown Gen 4 mod -- Focus Band 10% activation
+    // Fix: use currentHp - 1 (not maxHp - 1) to leave exactly 1 HP regardless of current HP
     if (heldItem === "focus-band" && damage >= defender.pokemon.currentHp) {
       if (state.rng.chance(0.1)) {
         return {
-          damage: maxHp - 1,
+          damage: defender.pokemon.currentHp - 1,
           survived: true,
           messages: [`${name} hung on using its Focus Band!`],
         };

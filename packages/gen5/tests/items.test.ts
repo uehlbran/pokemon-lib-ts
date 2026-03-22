@@ -3,6 +3,7 @@ import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { applyGen5HeldItem, getPinchBerryThreshold } from "../src/Gen5Items";
+import { Gen5Ruleset } from "../src/Gen5Ruleset";
 
 // ---------------------------------------------------------------------------
 // Helper factories (mirrors damage-calc.test.ts pattern)
@@ -683,34 +684,59 @@ describe("Gen 5 Items -- Focus Sash", () => {
 // Focus Band
 // ---------------------------------------------------------------------------
 
-describe("Gen 5 Items -- Focus Band", () => {
-  it("given a Pokemon holding Focus Band taking a KO hit with lucky RNG, when on-damage-taken triggers, then it survives (10% chance, not consumed)", () => {
-    // Source: Showdown data/items.ts -- Focus Band 10% activation
-    // Using a seed that produces a value < 0.1 for the first call
-    // We loop seeds to find one where chance(0.1) returns true
-    let luckyResult: ReturnType<typeof applyGen5HeldItem> | undefined;
-    for (let seed = 0; seed < 1000; seed++) {
-      const pokemon = makeActive({ heldItem: "focus-band", hp: 100, currentHp: 100 });
-      const ctx = makeItemContext({ pokemon, damage: 150, seed });
-      const r = applyGen5HeldItem("on-damage-taken", ctx);
-      if (r.activated) {
-        luckyResult = r;
-        break;
-      }
-    }
-    expect(luckyResult).toBeDefined();
-    expect(luckyResult!.activated).toBe(true);
-    expect(luckyResult!.effects).toEqual([{ type: "survive", target: "self", value: 1 }]);
-    // Focus Band is NOT consumed
-    expect(luckyResult!.effects.some((e) => e.type === "consume")).toBe(false);
+// Focus Band is handled by Gen5Ruleset.capLethalDamage (pre-damage hook), NOT on-damage-taken.
+// This prevents double-rolling the 10% chance on a single lethal hit.
+// Source: Showdown sim/battle-actions.ts -- Focus Band onDamage (pre-damage priority)
+describe("Gen 5 Items -- Focus Band (not handled in on-damage-taken)", () => {
+  it("given a Pokemon holding Focus Band and lethal damage, when on-damage-taken triggers, then it does NOT activate (handled by capLethalDamage instead)", () => {
+    // Focus Band moved to capLethalDamage to avoid double-rolling.
+    const pokemon = makeActive({ heldItem: "focus-band", hp: 100, currentHp: 100 });
+    const ctx = makeItemContext({ pokemon, damage: 150, seed: 0 });
+    const result = applyGen5HeldItem("on-damage-taken", ctx);
+    expect(result.activated).toBe(false);
   });
 
-  it("given a Pokemon taking a non-KO hit, when Focus Band is checked, then it does not activate", () => {
+  it("given a Pokemon taking a non-KO hit, when Focus Band is checked via on-damage-taken, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Focus Band: only applies when damage would be lethal
     const pokemon = makeActive({ heldItem: "focus-band", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(false);
+  });
+});
+
+describe("Gen5Ruleset.capLethalDamage -- Focus Band (authoritative handler)", () => {
+  it("given Focus Band at reduced HP and lucky RNG, when lethal damage is dealt, then survives with damage capped to currentHp - 1", () => {
+    // Source: Showdown data/items.ts -- Focus Band 10% activation
+    // Fix: damage capped to currentHp - 1 (not maxHp - 1) to leave exactly 1 HP
+    // Verification: currentHp=60, maxHp=200, damage=300 -> capped damage = 59 (leaves 1 HP)
+    let luckyResult: { damage: number; survived: boolean; messages: string[] } | undefined;
+    const ruleset = new Gen5Ruleset();
+    for (let seed = 0; seed < 1000; seed++) {
+      const defender = makeActive({ heldItem: "focus-band", hp: 200, currentHp: 60 });
+      const state = { ...makeState(), rng: new SeededRandom(seed) } as unknown as BattleState;
+      const result = ruleset.capLethalDamage(300, defender, defender, makeMove(), state);
+      if (result.survived) {
+        luckyResult = result;
+        break;
+      }
+    }
+    expect(luckyResult).toBeDefined();
+    expect(luckyResult!.survived).toBe(true);
+    expect(luckyResult!.damage).toBe(59); // currentHp - 1 = 60 - 1 = 59; HP after = 60 - 59 = 1
+    expect(luckyResult!.messages[0]).toContain("Focus Band");
+  });
+
+  it("given Focus Band and unlucky RNG, when lethal damage is dealt, then does not survive", () => {
+    // Source: Showdown data/items.ts -- Focus Band 10% chance; most seeds fail
+    // Find a seed where ALL 200 rolls fail (highly likely for a single seed at 10% chance)
+    const ruleset = new Gen5Ruleset();
+    const defender = makeActive({ heldItem: "focus-band", hp: 100, currentHp: 100 });
+    // SeededRandom seed=42 consistently fails the 10% check
+    const state = { ...makeState(), rng: new SeededRandom(42) } as unknown as BattleState;
+    const result = ruleset.capLethalDamage(100, defender, defender, makeMove(), state);
+    expect(result.survived).toBe(false);
+    expect(result.damage).toBe(100); // Original lethal damage unchanged
   });
 });
 

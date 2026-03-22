@@ -552,20 +552,10 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Focus Band: 10% chance to survive with 1 HP (NOT consumed -- reusable)
-    // Source: Showdown data/items.ts -- Focus Band 10% activation
-    case "focus-band": {
-      if (currentHp - damage <= 0) {
-        if (context.rng.chance(0.1)) {
-          return {
-            activated: true,
-            effects: [{ type: "survive", target: "self", value: 1 }],
-            messages: [`${pokemonName} hung on using its Focus Band!`],
-          };
-        }
-      }
-      return NO_ACTIVATION;
-    }
+    // Focus Band is handled by Gen5Ruleset.capLethalDamage (pre-damage hook).
+    // It is NOT handled here (post-damage) to avoid double-rolling the 10% chance
+    // on a single lethal hit. capLethalDamage is the authoritative handler.
+    // Source: Showdown sim/battle-actions.ts — Focus Band onDamage (pre-damage priority)
 
     // Sitrus Berry: Also activates when HP drops to <= 50% after damage
     // Source: Showdown data/items.ts -- Sitrus Berry onUpdate post-damage check

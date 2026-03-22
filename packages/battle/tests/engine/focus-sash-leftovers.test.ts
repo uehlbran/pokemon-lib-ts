@@ -9,7 +9,7 @@
  *   before HP subtraction (like Sturdy).
  * Source: Showdown data/items.ts -- Leftovers heals 1/16 max HP once per turn.
  */
-import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import type { MoveData } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EndOfTurnEffect, ItemContext, ItemResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
