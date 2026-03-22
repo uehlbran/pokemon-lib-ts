@@ -672,7 +672,9 @@ describe("Surge abilities", () => {
       // Source: Showdown data/abilities.ts -- electricsurge:
       //   onStart: this.field.setTerrain('electricterrain')
       // Source: Bulbapedia "Electric Surge" -- "sets Electric Terrain when the Pokemon enters battle"
-      // Default duration: 5 turns
+      // Duration 5 turns:
+      //   Source: Showdown data/conditions.ts -- terrain duration: 5
+      //   Source: Bulbapedia "Terrain" -- default terrain duration is 5 turns
       const pokemon = makeActive({
         ability: "electric-surge",
         speciesId: 785,
@@ -696,6 +698,9 @@ describe("Surge abilities", () => {
       // Source: Showdown data/abilities.ts -- grassysurge:
       //   onStart: this.field.setTerrain('grassyterrain')
       // Source: Bulbapedia "Grassy Surge" -- "sets Grassy Terrain when the Pokemon enters battle"
+      // Duration 5 turns:
+      //   Source: Showdown data/conditions.ts -- terrain duration: 5
+      //   Source: Bulbapedia "Terrain" -- default terrain duration is 5 turns
       const pokemon = makeActive({
         ability: "grassy-surge",
         speciesId: 787,
@@ -718,6 +723,9 @@ describe("Surge abilities", () => {
       // Source: Showdown data/abilities.ts -- psychicsurge:
       //   onStart: this.field.setTerrain('psychicterrain')
       // Source: Bulbapedia "Psychic Surge" -- "sets Psychic Terrain when the Pokemon enters battle"
+      // Duration 5 turns:
+      //   Source: Showdown data/conditions.ts -- terrain duration: 5
+      //   Source: Bulbapedia "Terrain" -- default terrain duration is 5 turns
       const pokemon = makeActive({
         ability: "psychic-surge",
         speciesId: 786,
@@ -740,6 +748,9 @@ describe("Surge abilities", () => {
       // Source: Showdown data/abilities.ts -- mistysurge:
       //   onStart: this.field.setTerrain('mistyterrain')
       // Source: Bulbapedia "Misty Surge" -- "sets Misty Terrain when the Pokemon enters battle"
+      // Duration 5 turns:
+      //   Source: Showdown data/conditions.ts -- terrain duration: 5
+      //   Source: Bulbapedia "Terrain" -- default terrain duration is 5 turns
       const pokemon = makeActive({
         ability: "misty-surge",
         speciesId: 788,
@@ -760,6 +771,7 @@ describe("Surge abilities", () => {
   describe("via Gen7Ruleset.applyAbility", () => {
     it("given a Pokemon with Electric Surge on switch-in trigger, when calling ruleset.applyAbility, then sets Electric Terrain", () => {
       // Source: Showdown data/abilities.ts -- electricsurge triggers on switch-in
+      // Duration 5 turns: Source: Showdown data/conditions.ts -- terrain duration: 5
       const ruleset = new Gen7Ruleset();
       const pokemon = makeActive({
         ability: "electric-surge",
