@@ -49,6 +49,7 @@ import {
   getOrichalcumPulseAtkModifier,
   getSupremeOverlordModifier,
 } from "./Gen9AbilitiesDamage.js";
+import { getLastRespectsPower, getRageFistPower } from "./Gen9MoveEffects.js";
 import { calculateTeraStab } from "./Gen9Terastallization.js";
 
 // ---- pokeRound: the 4096-based rounding function ----
@@ -831,6 +832,24 @@ export function calculateGen9Damage(
 
   const level = attacker.pokemon.level;
   let power = move.power;
+
+  // Rage Fist: base power scales with times the user has been attacked (min 50, max 350)
+  // Source: Showdown data/moves.ts -- rage-fist basePowerCallback: 50 + 50 * timesAttacked, cap 350
+  if (move.id === "rage-fist") {
+    power = getRageFistPower(attacker.pokemon.timesAttacked ?? 0);
+  }
+
+  // Last Respects: base power scales with number of fainted allies (50 + 50 per fainted, no cap)
+  // Source: Showdown data/moves.ts -- last-respects basePowerCallback: 50 + 50 * faintCount
+  if (move.id === "last-respects") {
+    const attackerSideIndex = context.state.sides.findIndex((s) =>
+      s.active.some((a) => a === attacker),
+    );
+    const faintCount =
+      attackerSideIndex !== -1 ? (context.state.sides[attackerSideIndex]?.faintCount ?? 0) : 0;
+    power = getLastRespectsPower(faintCount);
+  }
+
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
   const weather = context.state.weather?.type ?? null;

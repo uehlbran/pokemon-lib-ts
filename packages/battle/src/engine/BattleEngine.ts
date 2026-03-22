@@ -3301,6 +3301,21 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Voluntary self-switch (Shed Tail, Baton Pass without batonPass flag).
+    // switchOut=true with forcedSwitch NOT set means the ATTACKER wants to switch itself out.
+    // We add the attacker's side to sidesNeedingSwitch so the engine prompts a switch at
+    // the start of the next turn (same mechanism used for fainted-Pokemon switch prompts).
+    // Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' triggers attacker switch
+    if (result.switchOut && !result.forcedSwitch) {
+      const attackerSideState = this.state.sides[attackerSide];
+      const hasAlive = attackerSideState.team.some(
+        (p, idx) => p.currentHp > 0 && idx !== (attackerSideState.active[0]?.teamSlot ?? -1),
+      );
+      if (hasAlive) {
+        this.sidesNeedingSwitch.add(attackerSide);
+      }
+    }
+
     // Forced switch (phazing: Whirlwind, Roar) — the DEFENDER is forced out.
     // switchOut=true + forcedSwitch=true means the defender must switch to a random
     // valid party member. If no valid targets exist, the move effectively fails.
@@ -3428,6 +3443,9 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         case "bind":
           this.processBindDamage();
+          break;
+        case "salt-cure":
+          this.processSaltCureEoT();
           break;
         case "defrost":
           this.processDefrost();
@@ -4480,7 +4498,10 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private needsSwitchPrompt(): boolean {
-    this.sidesNeedingSwitch.clear();
+    // Do NOT clear sidesNeedingSwitch here — self-switch moves (Shed Tail, Baton Pass, U-turn)
+    // add their side during processEffectResult and that entry must be preserved through
+    // the EoT phase. Only add additional sides for Pokemon that fainted during this turn.
+    // Source: Showdown sim/battle.ts -- selfSwitch and fainted switches both go to switch-prompt
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (active && active.pokemon.currentHp <= 0) {
@@ -5121,6 +5142,29 @@ export class BattleEngine implements BattleEventEmitter {
   private processNightmare(): void {
     for (let i = 0; i < this.state.sides.length; i++) {
       this.processNightmareForSide(i as 0 | 1);
+    }
+  }
+
+  private processSaltCureEoT(): void {
+    // Salt Cure residual damage: 1/8 max HP per turn (1/4 for Water/Steel types).
+    // Delegated to the gen ruleset's processSaltCureDamage() (optional — Gen 9 only).
+    // Source: Showdown data/moves.ts -- Salt Cure onResidualOrder: 13
+    if (!this.ruleset.processSaltCureDamage) return;
+    for (const side of this.state.sides) {
+      const active = side.active[0];
+      if (!active || active.pokemon.currentHp <= 0) continue;
+      const damage = this.ruleset.processSaltCureDamage(active);
+      if (damage <= 0) continue;
+      const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
+      this.emit({
+        type: "damage",
+        side: side.index,
+        pokemon: getPokemonName(active),
+        amount: damage,
+        currentHp: active.pokemon.currentHp,
+        maxHp,
+        source: "salt-cure",
+      });
     }
   }
 

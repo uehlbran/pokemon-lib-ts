@@ -459,6 +459,9 @@ describe("Gen9 Revival Blessing -- findRevivalTarget", () => {
   });
 
   it("given no fainted members, when finding target, then returns -1", () => {
+    // Source: Array.prototype.findIndex returns -1 when no element satisfies the predicate.
+    // findRevivalTarget calls side.team.findIndex(p => p.currentHp <= 0), so when all
+    // team members are alive (currentHp > 0), the result is -1.
     const side = makeSide({
       team: [makePokemonInstance({ currentHp: 100 })],
     });
