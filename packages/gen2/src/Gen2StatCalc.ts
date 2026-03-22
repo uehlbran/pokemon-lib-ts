@@ -103,9 +103,10 @@ export function calculateGen2Stats(
       pokemon.evs.spAttack,
       pokemon.level,
     ),
+    // Gen 2 unified Special DV — same DV for both SpAtk and SpDef. Source: pret/pokecrystal
     spDefense: calculateGen2Stat(
       species.baseStats.spDefense,
-      pokemon.ivs.spDefense,
+      pokemon.ivs.spAttack,
       pokemon.evs.spDefense,
       pokemon.level,
     ),

@@ -550,6 +550,79 @@ describe("Gen2StatCalc", () => {
     });
   });
 
+  describe("Bug #487 regression: SpDef uses unified Special DV (ivs.spAttack), not ivs.spDefense", () => {
+    it("given ivs.spAttack=15 and ivs.spDefense=5, when calculating SpDef, then uses DV=15 (unified Special DV)", () => {
+      // Arrange
+      // Source: pret/pokecrystal — Gen 2 uses a single Special DV for both SpAtk and SpDef.
+      // The DV is stored in ivs.spAttack. ivs.spDefense is NOT used.
+      // Bug #487: code was using ivs.spDefense, which is wrong.
+      const pokemon = createTestPokemon({
+        level: 100,
+        ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 5, speed: 15 },
+        evs: {
+          hp: 65535,
+          attack: 65535,
+          defense: 65535,
+          spAttack: 65535,
+          spDefense: 65535,
+          speed: 65535,
+        },
+      });
+      // Species with SpDef base = 100
+      const species = createTestSpecies({
+        hp: 100,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 100,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      // SpDef should use DV=15 (from ivs.spAttack), NOT DV=5 (from ivs.spDefense)
+      // With DV=15: SpDef = floor(((100+15)*2+64)*100/100)+5 = (230+64)+5 = 299
+      // With DV=5 (bug): SpDef = floor(((100+5)*2+64)*100/100)+5 = (210+64)+5 = 279
+      // Source: formula derivation — base=100, DV=15, StatExp=65535 → bonus=64, L=100
+      expect(stats.spDefense).toBe(299);
+    });
+
+    it("given ivs.spAttack=0 and ivs.spDefense=15, when calculating SpDef, then uses DV=0 (unified Special DV)", () => {
+      // Arrange
+      // Source: pret/pokecrystal — unified Special DV is in ivs.spAttack
+      // ivs.spDefense=15 should be completely ignored for SpDef calculation
+      const pokemon = createTestPokemon({
+        level: 50,
+        ivs: { hp: 15, attack: 15, defense: 15, spAttack: 0, spDefense: 15, speed: 15 },
+        evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      });
+      const species = createTestSpecies({
+        hp: 80,
+        attack: 80,
+        defense: 80,
+        spAttack: 80,
+        spDefense: 80,
+        speed: 80,
+      });
+
+      // Act
+      const stats = calculateGen2Stats(pokemon, species);
+
+      // Assert
+      // SpDef should use DV=0 (from ivs.spAttack), NOT DV=15 (from ivs.spDefense)
+      // With DV=0: SpDef = floor(((80+0)*2+0)*50/100)+5 = floor(160*50/100)+5 = 80+5 = 85
+      // With DV=15 (bug): SpDef = floor(((80+15)*2+0)*50/100)+5 = floor(190*50/100)+5 = 95+5 = 100
+      // Source: formula derivation — base=80, DV=0, StatExp=0, L=50
+      expect(stats.spDefense).toBe(85);
+      // SpAtk should also use DV=0
+      expect(stats.spAttack).toBe(85);
+      // Both should be equal since they share the same DV and have the same base stat
+      expect(stats.spAttack).toBe(stats.spDefense);
+    });
+  });
+
   describe("Given stat formula properties", () => {
     it("should always return positive integer stats", () => {
       // Arrange

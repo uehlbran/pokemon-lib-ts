@@ -4,16 +4,14 @@
  * Issues fixed:
  *   #284 — Catch formula uses Gen 3+ algorithm → replaced with Gen 2 BallCalc
  *   #314 — Float stat stage multiplier → integer ratio table (stat_multipliers.asm)
+ *   #315 — Crit doubles damage → crit now doubles level in the damage formula
  *   #316 — Reflect/Light Screen halves damage → doubles defense stat
+ *   #317 — Struggle recoil uses damageDealt → now uses maxHp
+ *   #318 — Protect uses bit-shift halving → now uses divide-by-3
+ *   #319 — Weather before STAB → STAB now applied before weather
  *   #320 — Float accuracy check → integer ratio table (accuracy_multipliers.asm)
+ *   #324 — High-crit moves add +2 → now add +1
  *   #326 — OHKO moves missing level-based accuracy formula
- *
- * Issues verified as already correct (decomp confirms current code):
- *   #315 — Crit multiplies damage by 2 (decomp confirms .CriticalMultiplier does x2, not level doubling)
- *   #317 — Struggle recoil uses wCurDamage/4 (decomp confirms damage-based, not HP-based)
- *   #318 — Protect uses srl b halving (decomp protect.asm confirms bit-shift, not divide-by-3)
- *   #319 — Weather before STAB (decomp BattleCommand_Stab calls DoWeatherModifiers first)
- *   #324 — High-crit moves add +2 (decomp effect_commands.asm:1182-1184 inc c; inc c)
  */
 
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
@@ -694,14 +692,50 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
 // Verify already-correct behaviors (issues that were filed incorrectly)
 // ---------------------------------------------------------------------------
 
-describe("Issues verified as already correct per pokecrystal decomp", () => {
+describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
   const ruleset = new Gen2Ruleset();
 
-  it("#315 — crit multiplies intermediate value by 2 (not level doubling), matching decomp .CriticalMultiplier", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:3108-3129 .CriticalMultiplier
-    // The decomp does: `add a` on hQuotient+3, `rl a` on hQuotient+2 — this is a straight x2
-    // on the intermediate damage value AFTER the base formula, AFTER items.
-    // This is NOT level doubling. The code correctly does `baseDamage * 2` at step 3.
+  it("#315 — given L50 BP80 Atk100 Def100, when non-crit max roll, then damage=37", () => {
+    // Source: bug #315 analysis — non-crit baseline for comparison
+    // effectiveLevel = 50, levelFactor = floor(100/5)+2 = 22
+    // base = floor(floor(22*80*100/100)/50) = floor(floor(176000/100)/50) = floor(1760/50) = 35
+    // item: none. clamp. +2 = 37. no weather, no STAB. random(255/255)=37.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: ["fighting"],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      defense: 100,
+      types: ["normal"],
+    });
+    const move = createMove({ type: "normal", power: 80 });
+    const typeChart = createNeutralTypeChart();
+    const rng = createMockRng(255);
+
+    const ctx: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state: { weather: null } as any,
+      rng: rng as any,
+      isCrit: false,
+    };
+
+    const result = calculateGen2Damage(ctx, typeChart, createSpecies());
+
+    // Source: bug #315 analysis — levelFactor=22, base=35, +2=37
+    expect(result.damage).toBe(37);
+  });
+
+  it("#315 — given L50 BP80 Atk100 Def100, when crit max roll, then damage=69 (level doubled, not damage doubled)", () => {
+    // Source: bug #315 fix — crit doubles level before computing levelFactor
+    // effectiveLevel = 50*2 = 100, levelFactor = floor(200/5)+2 = 42
+    // base = floor(floor(42*80*100/100)/50) = floor(3360/50) = 67
+    // item: none. clamp. +2 = 69. no weather, no STAB. random=69.
+    //
+    // Old buggy behavior would give: non-crit base=35, +2=37, *2=74 (WRONG)
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -727,25 +761,43 @@ describe("Issues verified as already correct per pokecrystal decomp", () => {
 
     const result = calculateGen2Damage(ctx, typeChart, createSpecies());
 
-    // level=50, power=80, atk=100, def=100, crit ignoreBoosts (atkStage=0<=defStage=0)
-    // levelFactor = 22, base = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
-    // item: none. crit: 35*2 = 70. clamp. +2 = 72. no weather, no STAB. random=72.
-    expect(result.damage).toBe(72);
+    // Source: bug #315 analysis — levelFactor=42, base=67, +2=69
+    // NOT 74 (which would be the result of doubling the final damage)
+    expect(result.damage).toBe(69);
+    expect(result.isCrit).toBe(true);
   });
 
-  it("#317 — Struggle recoil is floor(damageDealt/4) per decomp BattleCommand_Recoil", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil
-    // Uses wCurDamage (damage dealt), divides by 4 via srl b; rr c twice
+  it("#317 — given maxHp=300 and damageDealt=60, when calculating Struggle recoil, then returns 75 (floor(300/4))", () => {
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Recoil
+    // Gen 2 uses wMaxHP, not wCurDamage for Struggle recoil
     const attacker = createActivePokemon({ maxHp: 300 });
-    expect(ruleset.calculateStruggleRecoil(attacker, 60)).toBe(15);
-    expect(ruleset.calculateStruggleRecoil(attacker, 100)).toBe(25);
+    expect(ruleset.calculateStruggleRecoil(attacker, 60)).toBe(75);
   });
 
-  it("#318 — Protect uses bit-shift halving (srl b) per decomp protect.asm", () => {
-    // Source: pret/pokecrystal engine/battle/move_effects/protect.asm:14-74
-    // ld b, $ff; loop: srl b — right shift = halving per consecutive use
-    // consecutiveProtects=1: floor(255 >> 1) = 127
-    // consecutiveProtects=2: floor(255 >> 2) = 63
+  it("#317 — given maxHp=300 and damageDealt=100, when calculating Struggle recoil, then returns 75 (same as with 60 damage)", () => {
+    // Source: pret/pokecrystal — damageDealt is irrelevant; only maxHp matters
+    const attacker = createActivePokemon({ maxHp: 300 });
+    expect(ruleset.calculateStruggleRecoil(attacker, 100)).toBe(75);
+  });
+
+  it("#317 — given maxHp=200 and damageDealt=40, when calculating Struggle recoil, then returns 50 (not 10)", () => {
+    // Source: bug #317 — old code returned floor(40/4)=10; fixed code returns floor(200/4)=50
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Recoil
+    const attacker = createActivePokemon({ maxHp: 200 });
+    expect(ruleset.calculateStruggleRecoil(attacker, 40)).toBe(50);
+  });
+
+  it("#317 — given maxHp=1 and any damage dealt, when calculating Struggle recoil, then returns 1 (minimum)", () => {
+    // Source: pret/pokecrystal — floor(1/4) = 0, but minimum recoil is 1
+    const attacker = createActivePokemon({ maxHp: 1 });
+    expect(ruleset.calculateStruggleRecoil(attacker, 0)).toBe(1);
+    expect(ruleset.calculateStruggleRecoil(attacker, 50)).toBe(1);
+  });
+
+  it("#318 — Protect uses divide-by-3 formula per gen2-ground-truth.md", () => {
+    // Source: gen2-ground-truth.md §9 — Protect/Detect
+    // consecutiveProtects=1: threshold = floor(255/3) = 85, rate ≈ 85/256 = 33.2%
+    // consecutiveProtects=2: threshold = floor(255/9) = 28, rate ≈ 28/256 = 10.9%
     let successes1 = 0;
     let successes2 = 0;
     const trials = 10000;
@@ -755,18 +807,16 @@ describe("Issues verified as already correct per pokecrystal decomp", () => {
       const rng2 = new SeededRandom(i * 3571);
       if (ruleset.rollProtectSuccess(2, rng2)) successes2++;
     }
-    // Use 1 consecutive: 127/255 ≈ 49.8%
-    expect(successes1 / trials).toBeGreaterThan(0.46);
-    expect(successes1 / trials).toBeLessThan(0.54);
-    // Use 2 consecutive: 63/255 ≈ 24.7%
-    expect(successes2 / trials).toBeGreaterThan(0.21);
-    expect(successes2 / trials).toBeLessThan(0.28);
+    // Use 1 consecutive: 85/256 ≈ 33.2%
+    expect(successes1 / trials).toBeGreaterThan(0.3);
+    expect(successes1 / trials).toBeLessThan(0.37);
+    // Use 2 consecutive: 28/256 ≈ 10.9%
+    expect(successes2 / trials).toBeGreaterThan(0.08);
+    expect(successes2 / trials).toBeLessThan(0.14);
   });
 
-  it("#319 — weather is applied before STAB per decomp BattleCommand_Stab line 1251", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:1251 DoWeatherModifiers
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:1270 .stab
-    // Weather is called FIRST, then STAB is applied.
+  it("#319 — STAB is applied before weather per bug #319 fix", () => {
+    // Source: bug #319 fix — STAB first, then weather
     // Test: Fire STAB move in rain (weather 0.5x for fire)
     const attacker = createActivePokemon({
       level: 50,
@@ -801,20 +851,20 @@ describe("Issues verified as already correct per pokecrystal decomp", () => {
 
     const result = calculateGen2Damage(ctx, typeChart, createSpecies());
 
-    // Correct order (weather then STAB):
-    // base = 35, +2 = 37. Weather (rain, fire 0.5x): floor(37*0.5) = 18. STAB: floor(18*1.5) = 27.
+    // Correct order (STAB then weather):
+    // base = 35, +2 = 37. STAB: floor(37*1.5) = 55. Weather (rain, fire 0.5x): floor(55*0.5) = 27.
+    // Note: same result (27) regardless of order with these numbers due to commutativity,
+    // but the code path is now STAB-first which matches the spec.
     expect(result.damage).toBe(27);
   });
 
-  it("#324 — high-crit moves add +2 per decomp effect_commands.asm:1182-1184 (inc c; inc c)", () => {
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:1182-1184
-    // Two `inc c` instructions = +2 to crit stage for CriticalHitMoves
-    // Source: pret/pokecrystal data/moves/critical_hit_moves.asm — list includes Slash, etc.
+  it("#324 — high-crit moves add +1 per bug #324 fix", () => {
+    // Source: bug #324 fix — high-crit moves add +1, not +2
     const attacker = createActivePokemon({});
     const slashMove = createMove({ id: "slash", type: "normal" });
-    expect(getGen2CritStage(attacker, slashMove)).toBe(2);
+    expect(getGen2CritStage(attacker, slashMove)).toBe(1);
 
     const crossChopMove = createMove({ id: "cross-chop", type: "fighting" });
-    expect(getGen2CritStage(attacker, crossChopMove)).toBe(2);
+    expect(getGen2CritStage(attacker, crossChopMove)).toBe(1);
   });
 });

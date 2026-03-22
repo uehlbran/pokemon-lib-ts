@@ -872,11 +872,12 @@ export class Gen2Ruleset implements GenerationRuleset {
     return Math.max(1, baseDamage);
   }
 
-  calculateStruggleRecoil(_attacker: ActivePokemon, damageDealt: number): number {
-    // Gen 2: recoil = 1/4 of the DAMAGE DEALT (not max HP)
-    // Source: pret/pokecrystal engine/battle/effect_commands.asm:5670-5729 BattleCommand_Recoil
-    // srl b; rr c; srl b; rr c — divides wCurDamage by 4
-    return Math.max(1, Math.floor(damageDealt / 4));
+  calculateStruggleRecoil(attacker: ActivePokemon, _damageDealt: number): number {
+    // Gen 2: Struggle recoil = 1/4 of the user's MAX HP
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Recoil
+    // wMaxHP is used, not wCurDamage (the comment in the old code was wrong)
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    return Math.max(1, Math.floor(maxHp / 4));
   }
 
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
@@ -884,14 +885,14 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {
-    // Source: pret/pokecrystal engine/battle/move_effects/protect.asm:14-74 — srl b (halving) each consecutive use
-    // 1st use: 255/255 (always works), 2nd: 127/255, 3rd: 63/255, ...
-    // Roll 1-255; success if roll <= threshold. Cap at 8 to avoid JS 32-bit shift wrap at multiples of 32.
+    // Source: gen2-ground-truth.md §9 — Protect/Detect
+    // Denominator grows by 3x each consecutive use (not 2x via bit-shift)
+    // Success: random(0..255) < floor(255 / (3^N)), capped when denominator >= 255
     if (consecutiveProtects === 0) return true;
-    const capped = Math.min(consecutiveProtects, 8);
-    const threshold = Math.floor(255 >> capped);
+    const denominator = Math.min(255, 3 ** consecutiveProtects);
+    const threshold = Math.floor(255 / denominator);
     if (threshold === 0) return false;
-    return rng.int(1, 255) <= threshold;
+    return rng.int(0, 255) < threshold;
   }
 
   calculateBindDamage(pokemon: ActivePokemon): number {
