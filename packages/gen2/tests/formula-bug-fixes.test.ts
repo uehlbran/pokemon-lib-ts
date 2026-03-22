@@ -729,13 +729,15 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     expect(result.damage).toBe(37);
   });
 
-  it("#315 — given L50 BP80 Atk100 Def100, when crit max roll, then damage=69 (level doubled, not damage doubled)", () => {
-    // Source: bug #315 fix — crit doubles level before computing levelFactor
-    // effectiveLevel = 50*2 = 100, levelFactor = floor(200/5)+2 = 42
-    // base = floor(floor(42*80*100/100)/50) = floor(3360/50) = 67
-    // item: none. clamp. +2 = 69. no weather, no STAB. random=69.
+  it("#315/#547 — given L50 BP80 Atk100 Def100, when crit max roll, then damage=72 (2x post-formula multiplier)", () => {
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm lines 3108-3129
+    //   .CriticalMultiplier: sla [hl] = shift left = *2 applied to base damage
+    //   Level is NOT doubled (that's Gen 1 behavior, see bug #547)
     //
-    // Old buggy behavior would give: non-crit base=35, +2=37, *2=74 (WRONG)
+    // levelFactor = floor(2*50/5)+2 = 22
+    // base = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
+    // item: none. crit 2x: 35*2=70. clamp: 70. +2=72.
+    // no weather, no STAB. max random → 72.
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -761,9 +763,8 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
 
     const result = calculateGen2Damage(ctx, typeChart, createSpecies());
 
-    // Source: bug #315 analysis — levelFactor=42, base=67, +2=69
-    // NOT 74 (which would be the result of doubling the final damage)
-    expect(result.damage).toBe(69);
+    // Source: pret/pokecrystal — base=35, crit*2=70, +2=72
+    expect(result.damage).toBe(72);
     expect(result.isCrit).toBe(true);
   });
 

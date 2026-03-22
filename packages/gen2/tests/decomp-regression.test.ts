@@ -241,9 +241,10 @@ function createMockDamageState(
 // ---------------------------------------------------------------------------
 
 describe("Bug 4A regression: damage modifier order — item applied in modifier chain", () => {
-  it("given a type-boosting item + crit, when calculating damage, then item is applied after level-doubled base calc", () => {
+  it("given a type-boosting item + crit, when calculating damage, then item is applied before 2x crit multiplier", () => {
     // Arrange
-    // Source: bug #315 fix — crit doubles level in formula
+    // Source: pret/pokecrystal engine/battle/effect_commands.asm lines 2983, 3108-3129
+    //   Item modifier applied first (line 2983), then .CriticalMultiplier (sla = *2)
     // L50, 80 power Normal-type physical move, attacker holds Silk Scarf (1.1x Normal boost)
     // Attack=100, Defense=100, no weather, no STAB, neutral type chart
     const attacker = createActivePokemon({
@@ -262,14 +263,15 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     const state = createMockDamageState();
     const rng = createMockRng(255); // Max random roll
 
-    // With crit level doubling:
-    //   effectiveLevel = 100, levelFactor = floor(200/5)+2 = 42
-    //   base = floor(floor(42*80*100/100)/50) = floor(3360/50) = 67
-    //   item: floor(67 * 1.1) = floor(73.7) = 73
-    //   clamp: 73 (in [1,997])
-    //   +2: 75
+    // With correct Gen 2 crit (2x post-formula multiplier):
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   base = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
+    //   item: floor(35 * 1.1) = floor(38.5) = 38
+    //   crit 2x: 38 * 2 = 76
+    //   clamp: 76 (in [1,997])
+    //   +2: 78
     //   no weather, no STAB, neutral type
-    //   random: floor(75 * 255/255) = 75
+    //   random: floor(78 * 255/255) = 78
 
     const contextCrit: DamageContext = {
       attacker,
@@ -283,9 +285,9 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     // Act
     const result = calculateGen2Damage(contextCrit, typeChart, createSpecies());
 
-    // Assert — 75 with crit-level-doubling + item
-    // Source: bug #315 analysis — levelFactor=42, base=67, item=73, +2=75
-    expect(result.damage).toBe(75);
+    // Assert — 78 with 2x crit multiplier + item
+    // Source: pret/pokecrystal — base=35, item=38, crit*2=76, +2=78
+    expect(result.damage).toBe(78);
   });
 
   it("given no item + crit, when calculating damage, then result differs from item+crit (triangulation)", () => {
@@ -306,10 +308,10 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     const state = createMockDamageState();
     const rng = createMockRng(255);
 
-    // With crit level doubling:
-    //   effectiveLevel = 100, levelFactor = floor(200/5)+2 = 42
-    //   base = floor(floor(42*80*100/100)/50) = floor(3360/50) = 67
-    //   no item. clamp. +2 = 69. random = 69
+    // With correct Gen 2 crit (2x post-formula multiplier):
+    //   levelFactor = floor(2*50/5)+2 = 22
+    //   base = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
+    //   no item. crit 2x: 35*2=70. clamp. +2 = 72. random = 72
 
     const context: DamageContext = {
       attacker,
@@ -323,9 +325,9 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     // Act
     const result = calculateGen2Damage(context, typeChart, createSpecies());
 
-    // Assert — 69 with crit-level-doubling, no item
-    // Source: bug #315 analysis
-    expect(result.damage).toBe(69);
+    // Assert — 72 with 2x crit multiplier, no item
+    // Source: pret/pokecrystal — base=35, crit*2=70, +2=72
+    expect(result.damage).toBe(72);
   });
 });
 
