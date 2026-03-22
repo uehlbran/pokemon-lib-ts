@@ -370,6 +370,71 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     expect(withoutLuckyEgg).toBe(442);
     expect(withLuckyEgg).toBe(663);
   });
+
+  it("given a traded (same-language) Pokemon in Gen 4, when calculateExpGain with isTradedPokemon=true, then returns 1.5x boosted EXP", () => {
+    // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9984
+    //   BattleSystem_PokemonIsOT == FALSE, MON_DATA_LANGUAGE == gGameLanguage → totalExp * 150 / 100
+    // b=64 (Bulbasaur), L_d=30, s=1, t=1.0 (wild):
+    //   step1 = floor(64 * 30 / 7) = floor(1920/7) = 274
+    //   step2 = floor(274 / 1) = 274
+    //   step3 = floor(274 * 1.0) = 274
+    //   traded: floor(274 * 1.5) = 411
+    const ruleset = makeRuleset();
+    const dm = createGen4DataManager();
+    const bulbasaur = dm.getSpeciesByName("bulbasaur")!;
+    expect(bulbasaur.baseExp).toBe(64);
+
+    const notTradedResult = ruleset.calculateExpGain({
+      defeatedSpecies: bulbasaur,
+      defeatedLevel: 30,
+      participantLevel: 25,
+      isTrainerBattle: false,
+      participantCount: 1,
+      hasLuckyEgg: false,
+      hasExpShare: false,
+      affectionBonus: false,
+      isTradedPokemon: false,
+    });
+    const tradedResult = ruleset.calculateExpGain({
+      defeatedSpecies: bulbasaur,
+      defeatedLevel: 30,
+      participantLevel: 25,
+      isTrainerBattle: false,
+      participantCount: 1,
+      hasLuckyEgg: false,
+      hasExpShare: false,
+      affectionBonus: false,
+      isTradedPokemon: true,
+      isInternationalTrade: false,
+    });
+
+    expect(notTradedResult).toBe(274);
+    expect(tradedResult).toBe(411);
+  });
+
+  it("given a traded international Pokemon in Gen 4, when calculateExpGain with isTradedPokemon=true and isInternationalTrade=true, then returns 1.7x boosted EXP", () => {
+    // Source: pret/pokeplatinum src/battle/battle_script.c lines 9981-9982
+    //   BattleSystem_PokemonIsOT == FALSE, MON_DATA_LANGUAGE != gGameLanguage → totalExp * 170 / 100
+    // b=64 (Bulbasaur), L_d=30, s=1, t=1.0 → base=274; floor(274 * 1.7) = floor(465.8) = 465
+    const ruleset = makeRuleset();
+    const dm = createGen4DataManager();
+    const bulbasaur = dm.getSpeciesByName("bulbasaur")!;
+
+    const result = ruleset.calculateExpGain({
+      defeatedSpecies: bulbasaur,
+      defeatedLevel: 30,
+      participantLevel: 25,
+      isTrainerBattle: false,
+      participantCount: 1,
+      hasLuckyEgg: false,
+      hasExpShare: false,
+      affectionBonus: false,
+      isTradedPokemon: true,
+      isInternationalTrade: true,
+    });
+
+    expect(result).toBe(465);
+  });
 });
 
 // ---------------------------------------------------------------------------

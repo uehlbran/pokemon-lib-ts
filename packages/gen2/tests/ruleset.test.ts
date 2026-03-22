@@ -2177,6 +2177,60 @@ describe("Gen2Ruleset", () => {
       // Assert: wild battle gives less than trainer battle
       expect(exp).toBeGreaterThan(0);
     });
+
+    it("given a traded (same-language) Pokemon in Gen 2, when calculateExpGain with isTradedPokemon=true, then returns 1.5x boosted EXP", () => {
+      // Source: pret/pokecrystal — Gen 2 trades give 1.5x EXP to traded Pokemon.
+      // Language is not tracked in Gen 2 box data, so only 1.5x bonus is modeled.
+      // b=64, L_d=30, s=1, t=1.0 (wild):
+      //   step1 = floor(64 * 30 / 7) = floor(1920 / 7) = 274
+      //   step2 = floor(274 / 1)     = 274
+      //   step3 = floor(274 * 1.0)   = 274
+      //   traded: floor(274 * 1.5)   = 411
+      const ruleset = new Gen2Ruleset();
+      const notTradedCtx = {
+        defeatedSpecies: { baseExp: 64 } as unknown as PokemonSpeciesData,
+        defeatedLevel: 30,
+        participantLevel: 25,
+        isTrainerBattle: false,
+        participantCount: 1,
+        hasLuckyEgg: false,
+        hasExpShare: false,
+        affectionBonus: false,
+        isTradedPokemon: false,
+      };
+      const tradedCtx = { ...notTradedCtx, isTradedPokemon: true };
+
+      const notTraded = ruleset.calculateExpGain(notTradedCtx);
+      const traded = ruleset.calculateExpGain(tradedCtx);
+
+      expect(notTraded).toBe(274);
+      expect(traded).toBe(411);
+      expect(traded).toBeGreaterThan(notTraded);
+    });
+
+    it("given a traded Pokemon with isInternationalTrade=true in Gen 2, when calculateExpGain, then still returns 1.5x (no international concept in Gen 2)", () => {
+      // Source: pret/pokecrystal — Gen 2 cartridges have no language field on box data;
+      // isInternationalTrade is ignored and only the 1.5x bonus applies.
+      // b=64, L_d=30, s=1, t=1.0 → base=274; floor(274 * 1.5) = 411
+      const ruleset = new Gen2Ruleset();
+      const context = {
+        defeatedSpecies: { baseExp: 64 } as unknown as PokemonSpeciesData,
+        defeatedLevel: 30,
+        participantLevel: 25,
+        isTrainerBattle: false,
+        participantCount: 1,
+        hasLuckyEgg: false,
+        hasExpShare: false,
+        affectionBonus: false,
+        isTradedPokemon: true,
+        isInternationalTrade: true, // Gen 2 ignores this flag
+      };
+
+      const result = ruleset.calculateExpGain(context);
+
+      // Same as same-language traded: 1.5x only
+      expect(result).toBe(411);
+    });
   });
 
   // --- Validation edge case ---

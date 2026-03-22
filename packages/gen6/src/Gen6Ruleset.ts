@@ -725,6 +725,14 @@ export class Gen6Ruleset extends BaseRuleset {
       exp = Math.floor(exp / context.participantCount);
     }
 
+    // Source: Showdown sim/battle-actions.ts — traded EXP bonus applied after all other multipliers.
+    // Same language → 1.5×, international → 1.7×.
+    // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula (Gen 6 section)
+    if (context.isTradedPokemon) {
+      const tradedMultiplier = context.isInternationalTrade ? 1.7 : 1.5;
+      exp = Math.floor(exp * tradedMultiplier);
+    }
+
     return Math.max(1, exp);
   }
 

@@ -622,12 +622,16 @@ export class Gen4Ruleset extends BaseRuleset {
    * Also: packages/core/src/logic/experience.ts calculateExpGainClassic
    */
   calculateExpGain(context: ExpContext): number {
+    // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9984
+    //   traded EXP bonus: same language → 1.5x, international → 1.7x
     return calculateExpGainClassic(
       context.defeatedSpecies.baseExp,
       context.defeatedLevel,
       context.isTrainerBattle,
       context.participantCount,
       context.hasLuckyEgg,
+      context.isTradedPokemon ?? false,
+      context.isInternationalTrade ?? false,
     );
   }
 

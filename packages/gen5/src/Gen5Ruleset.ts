@@ -677,6 +677,14 @@ export class Gen5Ruleset extends BaseRuleset {
       exp = Math.floor(exp / context.participantCount);
     }
 
+    // Source: Showdown sim/battle-actions.ts — traded EXP bonus applied after all other multipliers.
+    // Same language → 1.5×, international → 1.7×.
+    // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9984 (Gen 4 establishes pattern)
+    if (context.isTradedPokemon) {
+      const tradedMultiplier = context.isInternationalTrade ? 1.7 : 1.5;
+      exp = Math.floor(exp * tradedMultiplier);
+    }
+
     return Math.max(1, exp);
   }
 

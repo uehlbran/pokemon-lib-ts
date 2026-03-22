@@ -105,6 +105,9 @@ export function calculateExpGain(
  * @param isTrainerBattle - Whether this is a trainer battle (1.5x multiplier)
  * @param participantCount - Number of Pokemon that participated
  * @param hasLuckyEgg - Whether the gaining Pokemon holds Lucky Egg (1.5x multiplier, Gen 2+)
+ * @param isTradedPokemon - Whether the gaining Pokemon was obtained via trade (1.5x or 1.7x bonus)
+ * @param isInternationalTrade - Whether the trade was international/different language (1.7x instead of 1.5x)
+ *   Note: Gen 1-2 have no language metadata; pass false here for those gens (only 1.5x applies).
  * @returns EXP gained (always at least 1)
  */
 export function calculateExpGainClassic(
@@ -113,6 +116,8 @@ export function calculateExpGainClassic(
   isTrainerBattle: boolean,
   participantCount = 1,
   hasLuckyEgg = false,
+  isTradedPokemon = false,
+  isInternationalTrade = false,
 ): number {
   // Source: pret/pokeemerald src/battle_script_commands.c — each step independently truncated
   const t = isTrainerBattle ? 1.5 : 1.0;
@@ -122,6 +127,13 @@ export function calculateExpGainClassic(
   // Source: pret/pokeemerald — Lucky Egg 1.5x multiplier applied after trainer bonus
   if (hasLuckyEgg) {
     exp = Math.floor(exp * 1.5);
+  }
+  // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9984
+  //   BattleSystem_PokemonIsOT == FALSE → traded Pokemon receive boosted EXP:
+  //   MON_DATA_LANGUAGE != gGameLanguage → 1.7x (international), else 1.5x (same language)
+  if (isTradedPokemon) {
+    const tradedMultiplier = isInternationalTrade ? 1.7 : 1.5;
+    exp = Math.floor(exp * tradedMultiplier);
   }
   return Math.max(1, exp);
 }

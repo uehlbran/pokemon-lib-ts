@@ -189,3 +189,94 @@ describe("Gen5 EXP formula", () => {
     expect(doubleExp).toBeLessThan(singleExp);
   });
 });
+
+describe("Gen5Ruleset calculateExpGain — traded Pokemon EXP bonus", () => {
+  const ruleset = new Gen5Ruleset();
+
+  it("given a traded (same-language) Pokemon in Gen 5, when calculateExpGain with isTradedPokemon=true, then returns 1.5x boosted EXP", () => {
+    // Source: Showdown sim/battle-actions.ts — traded bonus applied after other multipliers
+    // Gen 5 sqrt formula: baseExp=100, L_d=50, L_p=50
+    //   a=110, b=110; floor(sqrt(110)*110^2)=126905; exp = floor(126905*100/126905)+1 = 101
+    //   traded (same): floor(101 * 1.5) = 151
+    const baseCtx = makeExpContext({
+      defeatedBaseExp: 100,
+      defeatedLevel: 50,
+      participantLevel: 50,
+    });
+    const notTraded = ruleset.calculateExpGain(baseCtx);
+    const traded = ruleset.calculateExpGain({
+      ...baseCtx,
+      isTradedPokemon: true,
+      isInternationalTrade: false,
+    });
+
+    expect(notTraded).toBe(101);
+    expect(traded).toBe(151);
+  });
+
+  it("given a traded international Pokemon in Gen 5, when calculateExpGain with isInternationalTrade=true, then returns 1.7x boosted EXP", () => {
+    // Source: Showdown sim/battle-actions.ts — international trade gives 1.7x (same as Gen 3-4 pattern)
+    // Gen 5 sqrt formula: exp=101 (same as above)
+    //   international: floor(101 * 1.7) = floor(171.7) = 171
+    const baseCtx = makeExpContext({
+      defeatedBaseExp: 100,
+      defeatedLevel: 50,
+      participantLevel: 50,
+    });
+    const result = ruleset.calculateExpGain({
+      ...baseCtx,
+      isTradedPokemon: true,
+      isInternationalTrade: true,
+    });
+
+    expect(result).toBe(171);
+  });
+
+  it("given a different-level same-language traded Pokemon in Gen 5, when calculateExpGain, then applies 1.5x floor correctly", () => {
+    // Source: Showdown sim/battle-actions.ts — traded bonus applied after other multipliers
+    // Gen 5 sqrt formula: baseExp=64, L_d=35, L_p=20
+    //   a = 2*35+10 = 80,  b = 35+20+10 = 65
+    //   floor(sqrt(80)*80^2) = floor(8.944*6400) = 57243
+    //   floor(sqrt(65)*65^2) = floor(8.062*4225) = 34063
+    //   exp = floor(57243 * 64 / 34063) + 1 = floor(107.51) + 1 = 108
+    //   traded (same-language): floor(108 * 1.5) = 162
+    const baseCtx = makeExpContext({
+      defeatedBaseExp: 64,
+      defeatedLevel: 35,
+      participantLevel: 20,
+    });
+    const base = ruleset.calculateExpGain(baseCtx);
+    const traded = ruleset.calculateExpGain({
+      ...baseCtx,
+      isTradedPokemon: true,
+      isInternationalTrade: false,
+    });
+
+    expect(base).toBe(108);
+    expect(traded).toBe(162);
+  });
+
+  it("given a different-level international traded Pokemon in Gen 5, when calculateExpGain, then applies 1.7x floor correctly", () => {
+    // Source: Showdown sim/battle-actions.ts — international trade gives 1.7x
+    // Gen 5 sqrt formula: baseExp=80, L_d=42, L_p=28
+    //   a = 2*42+10 = 94,  b = 42+28+10 = 80
+    //   floor(sqrt(94)*94^2) = floor(9.695*8836) = 85668
+    //   floor(sqrt(80)*80^2) = floor(8.944*6400) = 57243
+    //   exp = floor(85668 * 80 / 57243) + 1 = floor(119.67) + 1 = 120
+    //   international: floor(120 * 1.7) = floor(204) = 204
+    const baseCtx = makeExpContext({
+      defeatedBaseExp: 80,
+      defeatedLevel: 42,
+      participantLevel: 28,
+    });
+    const base = ruleset.calculateExpGain(baseCtx);
+    const traded = ruleset.calculateExpGain({
+      ...baseCtx,
+      isTradedPokemon: true,
+      isInternationalTrade: true,
+    });
+
+    expect(base).toBe(120);
+    expect(traded).toBe(204);
+  });
+});
