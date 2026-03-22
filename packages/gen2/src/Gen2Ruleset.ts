@@ -415,25 +415,120 @@ export class Gen2Ruleset implements GenerationRuleset {
     ) {
       handleCustomEffect(move, result, context, this._presentHealPending);
       this._presentHealPending = false;
-      return result;
+    } else {
+      // Hyper Beam: skip recharge ONLY when the target faints (KO).
+      // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
+      // In Gen 2, Hyper Beam recharge is skipped ONLY on KO — NOT on miss or hitting Substitute.
+      // This differs from Gen 1 where miss also skips recharge.
+      // NOTE: By the time executeMoveEffect is called, the engine has already applied
+      // damage to defender.pokemon.currentHp (clamped to 0 on KO). So a KO is detected
+      // by checking currentHp === 0.
+      if (move.flags?.recharge && defender.pokemon.currentHp === 0) {
+        result.noRecharge = true;
+      }
+
+      if (move.effect) {
+        applyMoveEffect(move.effect, move, result, context);
+      }
     }
 
-    // Hyper Beam: skip recharge ONLY when the target faints (KO).
-    // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
-    // In Gen 2, Hyper Beam recharge is skipped ONLY on KO — NOT on miss or hitting Substitute.
-    // This differs from Gen 1 where miss also skips recharge.
-    // NOTE: By the time executeMoveEffect is called, the engine has already applied
-    // damage to defender.pokemon.currentHp (clamped to 0 on KO). So a KO is detected
-    // by checking currentHp === 0.
-    if (move.flags?.recharge && defender.pokemon.currentHp === 0) {
-      result.noRecharge = true;
-    }
-
-    if (move.effect) {
-      applyMoveEffect(move.effect, move, result, context);
-    }
+    // Compute per-hit damage for multi-hit moves with variable power/stats.
+    // This runs after all effect processing so multiHitCount is already set.
+    this.computePerHitDamage(move, result, context);
 
     return result;
+  }
+
+  /**
+   * Compute per-hit damage for multi-hit moves with variable power or stats.
+   *
+   * - Triple Kick: power escalates 10 → 20 → 30 per hit.
+   *   Source: pret/pokecrystal engine/battle/effect_commands.asm TripleKickEffect
+   *   Source: Bulbapedia — "Power increases by 10 with each successive hit: 10, 20, 30"
+   *
+   * - Beat Up (Gen 2): each hit uses the party member's level and species base Attack
+   *   in a simplified damage formula (no STAB, no weather, no crits, no type effectiveness).
+   *   Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
+   *   Formula per hit: floor(floor(floor(2*Level/5+2) * 10 * BaseAtk / BaseDef) / 50) + 2
+   *   Then apply random factor (217-255)/255.
+   */
+  private computePerHitDamage(
+    move: MoveData,
+    result: MutableResult,
+    context: MoveEffectContext,
+  ): void {
+    if (!result.multiHitCount || result.multiHitCount <= 0) return;
+
+    if (move.id === "triple-kick") {
+      // Triple Kick: recalculate damage for hits 2 and 3 with power 20 and 30.
+      // Hit 1 (power 10) is already calculated by the engine's normal damage flow.
+      // multiHitCount = 2 (2 additional hits).
+      const perHit: number[] = [];
+      for (let hitIdx = 0; hitIdx < result.multiHitCount; hitIdx++) {
+        const hitPower = (hitIdx + 2) * 10; // hit 2 = power 20, hit 3 = power 30
+        // Create a modified move with the escalated power
+        const modifiedMove: MoveData = { ...move, power: hitPower };
+        // Roll crit independently for each additional hit
+        const isCrit = rollGen2Critical(context.attacker, modifiedMove, context.rng);
+        const damageResult = calculateGen2Damage(
+          {
+            attacker: context.attacker,
+            defender: context.defender,
+            move: modifiedMove,
+            state: context.state,
+            rng: context.rng,
+            isCrit,
+          },
+          GEN2_TYPE_CHART,
+          this.dataManager.getSpecies(context.attacker.pokemon.speciesId),
+        );
+        perHit.push(damageResult.damage);
+      }
+      result.perHitDamage = perHit;
+    } else if (move.id === "beat-up") {
+      // Beat Up (Gen 2): each hit uses a party member's level and species base Attack.
+      // The first hit uses the active Pokemon; additional hits use other eligible members.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
+      // The formula is simplified: no STAB, no weather, no type effectiveness, no crits.
+      const actorSideIdx = context.state.sides.findIndex((s) =>
+        s.active?.some((a) => a?.pokemon === context.attacker.pokemon),
+      );
+      const actorSide = context.state.sides[actorSideIdx];
+      if (!actorSide) return;
+
+      // Get the target's species base Defense
+      const defenderSpecies = this.dataManager.getSpecies(context.defender.pokemon.speciesId);
+      const baseDefense = defenderSpecies.baseStats.defense;
+
+      // Find eligible party members (alive, no status) excluding the active Pokemon
+      // (the active Pokemon's hit was already the first hit)
+      const eligibleMembers = actorSide.team.filter(
+        (p) => p.currentHp > 0 && !p.status && p.uid !== context.attacker.pokemon.uid,
+      );
+
+      const perHit: number[] = [];
+      for (const member of eligibleMembers) {
+        const memberSpecies = this.dataManager.getSpecies(member.speciesId);
+        const baseAttack = memberSpecies.baseStats.attack;
+        const level = member.level;
+
+        // Gen 2 Beat Up damage formula (typeless, no modifiers)
+        // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
+        // damage = floor(floor(floor(2*Level/5+2) * 10 * BaseAtk / BaseDef) / 50) + 2
+        const levelFactor = Math.floor((2 * level) / 5) + 2;
+        let dmg = Math.floor(Math.floor(levelFactor * 10 * baseAttack) / baseDefense);
+        dmg = Math.floor(dmg / 50) + 2;
+
+        // Apply random factor (217-255)/255
+        // Source: pret/pokecrystal — standard random factor for Gen 2 damage
+        const roll = context.rng.int(217, 255);
+        dmg = Math.floor((dmg * roll) / 255);
+        dmg = Math.max(1, dmg);
+
+        perHit.push(dmg);
+      }
+      result.perHitDamage = perHit;
+    }
   }
 
   // --- Status Conditions ---

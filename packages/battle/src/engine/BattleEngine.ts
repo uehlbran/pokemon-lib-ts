@@ -1532,8 +1532,13 @@ export class BattleEngine implements BattleEventEmitter {
           if (defender.pokemon.currentHp <= 0 || actor.pokemon.currentHp <= 0) break;
         }
 
-        // Reuse first hit damage (Gen 1: multi-hit repeats the same damage each strike)
-        let hitDamage = firstHitDamage;
+        // Use per-hit damage if provided (Triple Kick, Beat Up); otherwise reuse first hit.
+        // Source: Bulbapedia — Triple Kick power escalates 10/20/30 per hit
+        // Source: pret/pokecrystal BeatUpEffect — each hit uses a different party member
+        let hitDamage =
+          effectResult.perHitDamage && i < effectResult.perHitDamage.length
+            ? (effectResult.perHitDamage[i] ?? firstHitDamage)
+            : firstHitDamage;
         if (hitDamage <= 0) break;
 
         // Apply damage to substitute or Pokemon
