@@ -1021,7 +1021,14 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
     // NEW in Gen 4. Life Orb gives 1.3x damage but deals recoil each time the holder attacks.
     // Source: Bulbapedia — Life Orb: 1.3x damage, deals floor(maxHP/10) recoil per hit
     // Source: Showdown Gen 4 mod — Life Orb recoil trigger
+    //
+    // Magic Guard: prevents the Life Orb recoil chip-damage (the 1.3x boost still applies
+    // because that is handled in calculateGen4Damage, not here).
+    // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
+    // Source: Showdown Gen 4 — Magic Guard prevents Life Orb self-damage
+    // Fix for issue #549: previous code emitted chip-damage even for Magic Guard holders.
     case "life-orb": {
+      if (pokemon.ability === "magic-guard") return NO_ACTIVATION;
       const damageDealt = context.damage ?? 0;
       if (damageDealt > 0) {
         const recoil = Math.max(1, Math.floor(maxHp / 10));
