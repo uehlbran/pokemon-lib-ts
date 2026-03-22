@@ -1289,6 +1289,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
     terrain?: string | null;
     opponentMovedThisTurn?: boolean;
     types?: PokemonType[];
+    attackerFaintCount?: number;
   }): Parameters<typeof handleGen9DamageCalcAbility>[0] {
     const pokemon = makeActive({
       ability: overrides.abilityId,
@@ -1317,9 +1318,18 @@ describe("handleGen9DamageCalcAbility handler", () => {
             flags: overrides.moveFlags,
             effect: overrides.moveEffect,
           });
+    const faintCount = overrides.attackerFaintCount ?? 0;
+    const sides =
+      faintCount > 0
+        ? [
+            { active: [pokemon], faintCount, screens: [] },
+            { active: [opponent], faintCount: 0, screens: [] },
+          ]
+        : undefined;
     const state = makeState({
       weather: overrides.weather ? { type: overrides.weather, turnsLeft: 5, source: "test" } : null,
       terrain: overrides.terrain ? { type: overrides.terrain, turnsLeft: 5, source: "test" } : null,
+      sides,
     });
 
     return {
@@ -1332,8 +1342,17 @@ describe("handleGen9DamageCalcAbility handler", () => {
     };
   }
 
-  it("given Supreme Overlord, when handler called, then activates", () => {
+  it("given Supreme Overlord with 0 fainted allies, when handler called, then does not activate", () => {
+    // Source: Showdown data/abilities.ts:4634-4658 -- supremeoverlord onBasePower
+    // powMod[0] = 4096 (no boost), so handler should return NO_ACTIVATION
     const ctx = makeAbilityContext({ abilityId: "supreme-overlord" });
+    const result = handleGen9DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Supreme Overlord with 2 fainted allies, when handler called, then activates with message", () => {
+    // Source: Showdown data/abilities.ts:4649 -- powMod[2] = 4915 (~20% boost)
+    const ctx = makeAbilityContext({ abilityId: "supreme-overlord", attackerFaintCount: 2 });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
