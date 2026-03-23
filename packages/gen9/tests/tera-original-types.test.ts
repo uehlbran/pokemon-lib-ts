@@ -13,10 +13,13 @@
  * Source: Showdown sim/battle-actions.ts:1770-1785 -- teraOriginalTypes stores pre-Tera typing
  */
 
-import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { calculateGen9Damage } from "../src/Gen9DamageCalc";
 import { Gen9Terastallization } from "../src/Gen9Terastallization";
+import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as terastallization.test.ts)
@@ -216,5 +219,244 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTy
     expect(pokemon.pokemon.teraOriginalTypes).toEqual(["fire", "flying"]);
     // teraTypes: Stellar resolves to originalTypes (same as teraOriginalTypes)
     expect(pokemon.pokemon.teraTypes).toEqual(["fire", "flying"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Damage calc pipeline: teraOriginalTypes drives cross-type STAB
+// ---------------------------------------------------------------------------
+
+/**
+ * Helper factories for damage-calc integration tests.
+ * Re-declared here (scoped to this describe block) to avoid coupling to the
+ * damage-calc.test.ts helpers which are not exported.
+ */
+function makeDmgActive(overrides: {
+  types?: PokemonType[];
+  teraType?: PokemonType;
+  isTerastallized?: boolean;
+  attack?: number;
+  defense?: number;
+  teraOriginalTypes?: PokemonType[];
+}): ActivePokemon {
+  const attack = overrides.attack ?? 100;
+  const defense = overrides.defense ?? 100;
+  return {
+    pokemon: {
+      uid: "dmg-test",
+      speciesId: 130,
+      nickname: null,
+      level: 50,
+      experience: 0,
+      nature: "hardy",
+      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      currentHp: 200,
+      moves: [],
+      ability: "none",
+      abilitySlot: "normal1" as const,
+      heldItem: null,
+      status: null,
+      friendship: 0,
+      gender: "male" as any,
+      isShiny: false,
+      metLocation: "",
+      metLevel: 1,
+      originalTrainer: "",
+      originalTrainerId: 0,
+      pokeball: "poke-ball",
+      teraType: overrides.teraType ?? null,
+      calculatedStats: {
+        hp: 200,
+        attack,
+        defense,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 100,
+      },
+      // Set teraOriginalTypes when provided (as if activate() already ran)
+      teraOriginalTypes: overrides.teraOriginalTypes,
+    },
+    teamSlot: 0,
+    statStages: {
+      attack: 0,
+      defense: 0,
+      spAttack: 0,
+      spDefense: 0,
+      speed: 0,
+      accuracy: 0,
+      evasion: 0,
+    },
+    volatileStatuses: new Map(),
+    types: overrides.types ?? ["normal"],
+    ability: "none",
+    suppressedAbility: null,
+    itemKnockedOff: false,
+    lastMoveUsed: null,
+    lastDamageTaken: 0,
+    lastDamageType: null,
+    lastDamageCategory: null,
+    turnsOnField: 0,
+    movedThisTurn: false,
+    consecutiveProtects: 0,
+    substituteHp: 0,
+    transformed: false,
+    transformedSpecies: null,
+    isMega: false,
+    isDynamaxed: false,
+    dynamaxTurnsLeft: 0,
+    isTerastallized: overrides.isTerastallized ?? false,
+    teraType: overrides.teraType ?? null,
+    stellarBoostedTypes: [],
+    forcedMove: null,
+  } as ActivePokemon;
+}
+
+function makeDmgMove(type: PokemonType, power = 80): MoveData {
+  return {
+    id: `${type}-move`,
+    displayName: `${type} Move`,
+    type,
+    category: "physical",
+    power,
+    accuracy: 100,
+    pp: 10,
+    priority: 0,
+    target: "adjacent-foe",
+    flags: {
+      contact: false,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: true,
+      mirror: true,
+      snatch: false,
+      gravity: false,
+      defrost: false,
+      recharge: false,
+      charge: false,
+      bypassSubstitute: false,
+    },
+    effect: null,
+    description: "",
+    generation: 9,
+    critRatio: 0,
+    hasCrashDamage: false,
+  } as MoveData;
+}
+
+function makeDmgState(): BattleState {
+  return {
+    weather: null,
+    terrain: null,
+    trickRoom: { active: false, turnsLeft: 0 },
+    magicRoom: { active: false, turnsLeft: 0 },
+    wonderRoom: { active: false, turnsLeft: 0 },
+    gravity: { active: false, turnsLeft: 0 },
+    format: "singles",
+    generation: 9,
+    turnNumber: 1,
+    sides: [{}, {}],
+  } as unknown as BattleState;
+}
+
+const dmgTypeChart = GEN9_TYPE_CHART as Record<string, Record<string, number>>;
+
+describe("calculateGen9Damage — teraOriginalTypes cross-type STAB pipeline", () => {
+  const tera = new Gen9Terastallization();
+
+  it("given a Water/Flying Pokemon Tera'd into Fire that uses a Water-type move, when activate() sets teraOriginalTypes, then STAB is 1.5x (original Water type still grants STAB)", () => {
+    // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraOriginalTypes stores pre-Tera
+    // species types; STAB is granted for any type in teraOriginalTypes OR equal to teraType.
+    // Water/Flying Tera'd to Fire: Tera type = Fire, originalTypes = [water, flying].
+    // Water move: matches teraOriginalTypes[0] but NOT teraType -- cross-type STAB = 1.5x.
+    const pokemon = makeDmgActive({
+      types: ["water", "flying"],
+      teraType: "fire",
+    });
+    const side = makeSide(0);
+    const state = makeDmgState();
+
+    // activate() saves ["water", "flying"] into teraOriginalTypes BEFORE updating types to [fire]
+    tera.activate(pokemon, side, state);
+
+    // After activation: types = ["fire"], teraOriginalTypes = ["water", "flying"]
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "flying"]);
+
+    const ctx: DamageContext = {
+      attacker: pokemon,
+      defender: makeDmgActive({ types: ["normal"], defense: 100 }),
+      move: makeDmgMove("water", 80),
+      state,
+      rng: new SeededRandom(42),
+      isCrit: false,
+    };
+
+    const result = calculateGen9Damage(ctx, dmgTypeChart);
+    // Water move vs Water/Flying (now Tera Fire) attacker: original Water type in teraOriginalTypes
+    // grants 1.5x STAB (not 2.0x because teraType=Fire does not also match Water).
+    // Source: Showdown sim/battle-actions.ts:1788-1791 -- Tera != original type = 1.5x cross-STAB
+    expect(result.breakdown!.stabMultiplier).toBe(1.5);
+  });
+
+  it("given a Fire Pokemon Tera'd into Fire that uses a Fire-type move, when activate() sets teraOriginalTypes, then STAB is 2.0x (Tera type and original type both match)", () => {
+    // Source: Showdown sim/battle-actions.ts:1788-1791 -- Tera type === original type → 2.0x STAB
+    // Fire Pokemon Tera'd into Fire: teraOriginalTypes = [fire], teraType = fire.
+    // Fire move matches BOTH teraOriginalTypes and teraType → 2.0x enhanced STAB.
+    const pokemon = makeDmgActive({
+      types: ["fire"],
+      teraType: "fire",
+    });
+    const side = makeSide(0);
+    const state = makeDmgState();
+
+    tera.activate(pokemon, side, state);
+
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["fire"]);
+
+    const ctx: DamageContext = {
+      attacker: pokemon,
+      defender: makeDmgActive({ types: ["normal"], defense: 100 }),
+      move: makeDmgMove("fire", 80),
+      state,
+      rng: new SeededRandom(42),
+      isCrit: false,
+    };
+
+    const result = calculateGen9Damage(ctx, dmgTypeChart);
+    expect(result.breakdown!.stabMultiplier).toBe(2.0);
+  });
+
+  it("given a Water/Flying Pokemon Tera'd into Fire that uses a Fire-type move, when activate() sets teraOriginalTypes, then STAB is 1.5x (Tera type matches only, not original types)", () => {
+    // Source: Showdown sim/battle-actions.ts:1760-1793 -- Tera-only STAB = 1.5x
+    // Water/Flying Tera'd to Fire: teraOriginalTypes = [water, flying], teraType = fire.
+    // Fire move: matches teraType but NOT teraOriginalTypes → standard Tera STAB = 1.5x.
+    const pokemon = makeDmgActive({
+      types: ["water", "flying"],
+      teraType: "fire",
+    });
+    const side = makeSide(0);
+    const state = makeDmgState();
+
+    tera.activate(pokemon, side, state);
+
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "flying"]);
+
+    const ctx: DamageContext = {
+      attacker: pokemon,
+      defender: makeDmgActive({ types: ["normal"], defense: 100 }),
+      move: makeDmgMove("fire", 80),
+      state,
+      rng: new SeededRandom(42),
+      isCrit: false,
+    };
+
+    const result = calculateGen9Damage(ctx, dmgTypeChart);
+    expect(result.breakdown!.stabMultiplier).toBe(1.5);
   });
 });

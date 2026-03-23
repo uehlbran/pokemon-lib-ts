@@ -4,6 +4,7 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
+import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   getStabModifier,
@@ -279,54 +280,6 @@ const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([
 
 function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): boolean {
   return hasSheerForceEligibleEffect(effect) || SHEER_FORCE_WHITELIST.has(moveId);
-}
-
-// ---- Stat Stage Helpers ----
-
-/**
- * Get effective stat stage accounting for Simple, Unaware, and Mold Breaker abilities.
- *
- * Priority order:
- *   1. Unaware on the opponent ignores this Pokemon's stat stages (unless bypassed by Mold Breaker)
- *   2. Simple on this Pokemon doubles stat stages (unless bypassed by opponent's Mold Breaker)
- *   3. Otherwise, return raw stages
- *
- * Source: Showdown sim/battle.ts -- Unaware's onAnyModifyBoost runs before Simple's doubling
- * Source: Showdown data/abilities.ts -- moldbreaker/turboblaze/teravolt bypass Unaware/Simple
- */
-function getEffectiveStatStage(
-  pokemon: ActivePokemon,
-  stat: string,
-  opponent?: ActivePokemon,
-  statContext: "offense" | "defense" = "offense",
-): number {
-  // Mold Breaker / Turboblaze / Teravolt on the attacker bypasses the defender's abilities.
-  // Source: Showdown data/abilities.ts -- moldbreaker/turboblaze/teravolt bypass Unaware/Simple
-  const pokemonHasMoldBreaker =
-    pokemon.ability === "mold-breaker" ||
-    pokemon.ability === "turboblaze" ||
-    pokemon.ability === "teravolt";
-  const opponentHasMoldBreaker =
-    opponent?.ability === "mold-breaker" ||
-    opponent?.ability === "turboblaze" ||
-    opponent?.ability === "teravolt";
-
-  // Unaware takes priority over Simple — if the opponent has Unaware, stages are 0
-  // regardless of whether this Pokemon has Simple.
-  // UNLESS: this Pokemon has Mold Breaker, which bypasses opponent's Unaware.
-  // Source: Showdown sim/battle.ts -- Unaware's onAnyModifyBoost runs before Simple's doubling
-  if (opponent?.ability === "unaware" && !pokemonHasMoldBreaker) return 0;
-
-  const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
-  // Suppress Simple only when computing the DEFENDER's defensive stat and the attacker
-  // (opponent) has Mold Breaker — the Mold Breaker user bypasses the target's ability.
-  // When computing the ATTACKER's offensive stat, the defender's Mold Breaker does NOT
-  // suppress the attacker's own Simple.
-  // Source: Showdown data/abilities.ts -- moldbreaker bypasses target's abilities only
-  if (pokemon.ability === "simple" && !(statContext === "defense" && opponentHasMoldBreaker)) {
-    return Math.max(-6, Math.min(6, raw * 2));
-  }
-  return raw;
 }
 
 // ---- Attack Stat Calculation ----
