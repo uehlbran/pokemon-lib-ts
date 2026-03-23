@@ -10,89 +10,191 @@ export type PrimaryStatus =
   | "sleep"
   | "freeze";
 
+// ---------------------------------------------------------------------------
+// Volatile status sub-groups — semantic categories for type narrowing.
+// The master VolatileStatus union (below) is the union of all sub-types,
+// so existing code that accepts VolatileStatus is unaffected.
+// ---------------------------------------------------------------------------
+
 /**
- * Volatile status conditions — can have multiple at once.
- * These are cleared when the Pokemon switches out or the battle ends.
+ * Semi-invulnerable states — the Pokemon is off-screen during a two-turn move
+ * and can only be hit by specific moves (e.g., Earthquake hits "underground").
  */
-export type VolatileStatus =
+export type SemiInvulnerableVolatile =
+  | "flying" // Fly, Bounce (Gen 2+)
+  | "underground" // Dig (Gen 2+)
+  | "underwater" // Dive (Gen 3+)
+  | "shadow-force-charging"; // Shadow Force / Phantom Force (Gen 4+)
+
+/**
+ * Protection moves — Protect, its variants, and team-wide guards.
+ * All share the "consecutive protect" success-rate decay mechanic.
+ */
+export type ProtectVolatile =
+  | "protect"
+  | "endure"
+  | "quick-guard" // Protects side from priority moves (Gen 5+)
+  | "wide-guard" // Protects side from multi-target moves (Gen 5+)
+  | "kings-shield" // Blocks non-Status; -1 Atk on contact (Gen 6+)
+  | "spiky-shield" // Blocks all; 1/8 HP chip on contact (Gen 6+)
+  | "mat-block" // Team-side, blocks damaging; first turn only (Gen 6+)
+  | "crafty-shield" // Team-side, blocks status moves (Gen 6+)
+  | "baneful-bunker" // Blocks all; poisons contact attackers (Gen 7+)
+  | "obstruct" // Blocks all; -2 Def on contact (Gen 8)
+  | "max-guard" // Dynamax protect; blocks ALL moves (Gen 8)
+  | "silk-trap"; // Blocks all; -1 Speed on contact (Gen 9)
+
+/**
+ * Trapping volatiles — prevent the target (or user) from switching out.
+ */
+export type TrappingVolatile =
+  | "bound" // Bind, Wrap, Fire Spin, etc.
+  | "trapped" // Mean Look, Spider Web (Gen 2+)
+  | "no-retreat" // Gen 8 — user trapped after boosting
+  | "octolock" // Gen 8 — traps + stat drops each turn
+  | "jaw-lock"; // Gen 8 — traps both user and target
+
+/**
+ * Move restriction volatiles — limit which moves the Pokemon can select.
+ */
+export type MoveRestrictionVolatile =
+  | "taunt"
+  | "torment"
+  | "encore"
+  | "disable"
+  | "choice-locked" // Choice item (Band/Specs/Scarf)
+  | "embargo" // Prevents item use (Gen 4+)
+  | "heal-block"; // Prevents healing moves (Gen 4+)
+
+/**
+ * Multi-turn and locked-in move volatiles — the Pokemon is forced to
+ * continue using the same move for multiple turns.
+ */
+export type MultiTurnMoveVolatile =
+  | "thrash-lock" // Thrash / Petal Dance / Outrage forced continuation; data: { moveId: string }
+  | "uproar" // Prevents sleep, lasts 3 turns (Gen 3+)
+  | "rollout" // Escalating power over consecutive turns (Gen 2+)
+  | "rage" // Gen 1 Rage lock-in; data: { moveIndex: number }
+  | "bide" // Gen 1 Bide charging; data: { accumulatedDamage: number }
+  | "fury-cutter"; // Escalating power on consecutive use (Gen 2+)
+
+/**
+ * Charging move volatile — the Pokemon is preparing a two-turn move
+ * but is NOT semi-invulnerable (e.g., SolarBeam, Skull Bash, Sky Attack).
+ */
+export type ChargingMoveVolatile = "charging";
+
+/**
+ * Condition volatiles — afflictions applied to the Pokemon that cause
+ * recurring effects (damage, disruption, forced behavior).
+ */
+export type ConditionVolatile =
   | "confusion"
   | "infatuation"
   | "leech-seed"
   | "curse" // Ghost-type Curse effect
   | "nightmare"
   | "perish-song"
-  | "taunt"
-  | "torment"
-  | "encore"
-  | "disable"
   | "yawn"
-  | "ingrain"
-  | "aqua-ring"
-  | "substitute"
-  | "focus-energy"
-  | "magnet-rise"
-  | "embargo"
-  | "heal-block"
-  | "flinch"
-  | "protect"
-  | "endure"
   | "drowsy" // Gen 9 — from Yawn equivalent
-  | "bound" // Bind, Wrap, Fire Spin, etc.
-  | "trapped" // Mean Look, Spider Web (Gen 2+) — prevents switching
+  | "flinch"
+  | "salt-cure" // Residual 1/8 (1/4 for Water/Steel) damage per turn (Gen 9)
+  | "destiny-bond" // If the user faints, the opponent faints too
+  | "tar-shot"; // Gen 8 — doubles Fire effectiveness
+
+/**
+ * Stat modifier volatiles — affect stat stages or provide defensive buffs.
+ */
+export type StatModifierVolatile =
+  | "focus-energy" // +2 crit stage
+  | "mist" // Protects team from stat-lowering moves (Gen 1+)
+  | "magnet-rise"; // Grants Ground immunity (Gen 4+)
+
+/**
+ * Substitute and barrier volatiles.
+ */
+export type SubstituteVolatile = "substitute" | "shed-tail-sub"; // Shed Tail substitute passed to switch-in (Gen 9)
+
+/**
+ * Healing volatiles — provide passive HP recovery each turn.
+ */
+export type HealingVolatile =
+  | "ingrain" // Heals 1/16 HP per turn + anchors (prevents switching)
+  | "aqua-ring"; // Heals 1/16 HP per turn
+
+/**
+ * Ability-activated volatiles — set by ability triggers to track state
+ * (e.g., Flash Fire boost active, Disguise broken, form change used).
+ */
+export type AbilityVolatile =
+  | "flash-fire" // Fire moves +50% when hit by Fire (Gen 3+)
+  | "slow-start" // Halves Attack and Speed for 5 turns (Gen 4+, Regigigas)
+  | "unburden" // Speed doubled when item consumed/lost (Gen 4+)
+  | "truant-turn" // Alternates acting/loafing each turn (Gen 3+)
+  | "illusion" // Disguised as last party member (Gen 5+, Zoroark)
+  | "disguise-broken" // Mimikyu's Disguise has been broken (Gen 7+)
+  | "power-construct-transformed" // Zygarde transformed to Complete Form (Gen 7+)
+  | "battle-bond-transformed" // Greninja transformed to Ash-Greninja (Gen 7+)
+  | "protosynthesis" // Boosts highest stat in Sun / Booster Energy (Gen 9); data: { boostedStat: string }
+  | "quarkdrive" // Boosts highest stat on Electric Terrain / Booster Energy (Gen 9); data: { boostedStat: string }
+  | "embody-aspect-used" // Ogerpon once-per-battle activation (Gen 9)
+  | "intrepid-sword-used" // Once-per-battle flag (Gen 9 nerf)
+  | "dauntless-shield-used" // Once-per-battle flag (Gen 9 nerf)
+  | "protean-used" // Once-per-switchin flag (Gen 9 nerf)
+  | "harvest-berry"; // Tracks last consumed berry for Harvest (Gen 5+); data: { berryId: string }
+
+/**
+ * Field-effect volatiles — modify move power for all Pokemon on the field.
+ */
+export type FieldEffectVolatile =
+  | "charged" // Charge — doubles next Electric move's power (Gen 3+)
+  | "mud-sport" // Halves Electric move power on field (Gen 3-4)
+  | "water-sport"; // Halves Fire move power on field (Gen 3-4)
+
+/**
+ * Tracking / bookkeeping volatiles — internal counters, one-turn markers,
+ * and transformation data that don't fit other categories.
+ */
+export type TrackingVolatile =
   | "recharge" // Must recharge next turn (Hyper Beam, etc.)
   | "sleep-counter" // Tracks remaining sleep turns
-  | "toxic-counter" // Tracks escalating Toxic damage (N increments each turn)
-  | "no-retreat" // Gen 8
-  | "tar-shot" // Gen 8
-  | "octolock" // Gen 8
-  | "mist" // Gen 1+ — protects the user's team from stat-lowering moves
-  | "just-frozen" // Gen 2 — tracks whether a Pokemon was frozen this turn (cannot thaw same turn, per pokecrystal wPlayerJustGotFrozen)
-  | "destiny-bond" // Destiny Bond — if the user faints from the opponent's move, the opponent faints too
-  | "choice-locked" // Choice item (Band/Specs/Scarf) — locks the user into one move
-  | "flash-fire" // Flash Fire — boosts Fire-type moves by 50% when hit by a Fire move
-  | "flying" // Semi-invulnerable turn of Fly, Bounce (Gen 2+)
-  | "underground" // Semi-invulnerable turn of Dig (Gen 2+)
-  | "underwater" // Semi-invulnerable turn of Dive (Gen 3+)
-  | "shadow-force-charging" // Semi-invulnerable turn of Shadow Force (Gen 4+)
-  | "charging" // Generic charge turn (SolarBeam, Skull Bash, Razor Wind, Sky Attack) — NOT semi-invulnerable
-  | "metronome-count" // Metronome item — tracks consecutive same-move uses (Gen 4+)
-  | "slow-start" // Slow Start — halves Attack and Speed for 5 turns (Gen 4+ Regigigas)
-  | "unburden" // Unburden — Speed doubles when held item is consumed/lost (Gen 4+)
-  | "rage" // Gen 1 Rage lock-in; data: { moveIndex: number }
-  | "rage-miss-lock" // Gen 1 Rage miss loop — once Rage misses, all subsequent uses auto-miss
-  | "bide" // Gen 1 Bide charging; data: { accumulatedDamage: number }
-  | "thrash-lock" // Gen 1 Thrash / Petal Dance forced move; data: { moveId: string }
-  | "mimic-slot" // Gen 1 Mimic — tracks which slot was replaced; data: { slot: number, originalMoveId: string }
-  | "transform-data" // Stores original moves/types/stats for Transform restoration on switch-out
-  | "truant-turn" // Truant — alternates between acting and loafing each turn (Gen 3+)
-  | "quick-guard" // Quick Guard — protects the user's side from priority moves (Gen 5+)
-  | "wide-guard" // Wide Guard — protects the user's side from multi-target moves (Gen 5+)
-  | "uproar" // Uproar — prevents all Pokemon from falling asleep, lasts 3 turns (Gen 3+)
-  | "illusion" // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)
-  | "rollout" // Gen 2+ — tracks consecutive turn count for Rollout escalating power
-  | "fury-cutter" // Gen 2+ — tracks consecutive use count for Fury Cutter escalating power
-  | "harvest-berry" // Tracks the last consumed berry for Harvest ability (Gen 5+); data: { berryId: string }
-  | "kings-shield" // King's Shield — protect variant, blocks non-Status moves with protect flag; -1 Atk on contact (Gen 6+)
-  | "spiky-shield" // Spiky Shield — protect variant, blocks all moves with protect flag; 1/8 HP chip on contact (Gen 6+)
-  | "mat-block" // Mat Block — team-side protect, blocks damaging moves; first turn only (Gen 6+)
-  | "crafty-shield" // Crafty Shield — team-side protect, blocks status moves targeting the side (Gen 6+)
-  | "baneful-bunker" // Baneful Bunker — protect variant, blocks all moves with protect flag; poisons contact attackers (Gen 7+)
-  | "disguise-broken" // Disguise — Mimikyu's Disguise has been broken; takes full damage (Gen 7+)
-  | "power-construct-transformed" // Power Construct — Zygarde has transformed to Complete Form this battle (Gen 7+)
-  | "battle-bond-transformed" // Battle Bond — Greninja has transformed to Ash-Greninja this battle (Gen 7+)
-  | "obstruct" // Obstruct — protect variant, blocks moves with protect flag; -2 Def on contact (Gen 8)
-  | "jaw-lock" // Jaw Lock — traps both user and target (Gen 8)
-  | "max-guard" // Max Guard — Dynamax protect variant; blocks ALL moves including other Max Moves (Gen 8)
-  | "protosynthesis" // Protosynthesis — boosts highest stat in Sun or with Booster Energy (Gen 9); data: { boostedStat: string }
-  | "quarkdrive" // Quark Drive — boosts highest stat on Electric Terrain or with Booster Energy (Gen 9); data: { boostedStat: string }
-  | "embody-aspect-used" // Embody Aspect (Ogerpon) — tracks once-per-battle activation (Gen 9)
-  | "intrepid-sword-used" // Intrepid Sword — once-per-battle flag (Gen 9 nerf)
-  | "dauntless-shield-used" // Dauntless Shield — once-per-battle flag (Gen 9 nerf)
-  | "protean-used" // Protean/Libero — once-per-switchin flag (Gen 9 nerf)
-  | "silk-trap" // Silk Trap — protect variant, blocks moves with protect flag; -1 Speed on contact (Gen 9)
-  | "salt-cure" // Salt Cure — residual 1/8 (1/4 for Water/Steel) damage per turn (Gen 9)
-  | "shed-tail-sub" // Shed Tail — marks the substitute was created by Shed Tail for the switch-in Pokemon (Gen 9)
-  | "charged" // Charge — doubles next Electric move's power (Gen 3+)
-  | "mud-sport" // Mud Sport — halves Electric-type move power for all Pokemon on the field (Gen 3-4)
-  | "water-sport" // Water Sport — halves Fire-type move power for all Pokemon on the field (Gen 3-4)
-  | "hazard-status-source"; // One-turn marker: set when Toxic Spikes inflicts status on switch-in; Synchronize checks this to skip reflection (Gen 5+)
+  | "toxic-counter" // Tracks escalating Toxic damage increments
+  | "metronome-count" // Metronome item consecutive-use tracker (Gen 4+)
+  | "just-frozen" // Gen 2 — frozen-this-turn flag (pokecrystal wPlayerJustGotFrozen)
+  | "rage-miss-lock" // Gen 1 — Rage auto-miss after first miss
+  | "mimic-slot" // Gen 1 Mimic slot tracking; data: { slot: number, originalMoveId: string }
+  | "transform-data" // Stores original moves/types/stats for Transform restoration
+  | "hazard-status-source"; // One-turn marker: Toxic Spikes status source for Synchronize check (Gen 5+)
+
+// ---------------------------------------------------------------------------
+// Master union — the union of ALL sub-types above.
+// Existing code that uses VolatileStatus is unaffected.
+// ---------------------------------------------------------------------------
+
+/**
+ * Volatile status conditions — can have multiple at once.
+ * These are cleared when the Pokemon switches out or the battle ends.
+ *
+ * This is the union of all semantic sub-types:
+ * {@link SemiInvulnerableVolatile}, {@link ProtectVolatile},
+ * {@link TrappingVolatile}, {@link MoveRestrictionVolatile},
+ * {@link MultiTurnMoveVolatile}, {@link ChargingMoveVolatile},
+ * {@link ConditionVolatile}, {@link StatModifierVolatile},
+ * {@link SubstituteVolatile}, {@link HealingVolatile},
+ * {@link AbilityVolatile}, {@link FieldEffectVolatile},
+ * {@link TrackingVolatile}
+ */
+export type VolatileStatus =
+  | SemiInvulnerableVolatile
+  | ProtectVolatile
+  | TrappingVolatile
+  | MoveRestrictionVolatile
+  | MultiTurnMoveVolatile
+  | ChargingMoveVolatile
+  | ConditionVolatile
+  | StatModifierVolatile
+  | SubstituteVolatile
+  | HealingVolatile
+  | AbilityVolatile
+  | FieldEffectVolatile
+  | TrackingVolatile;
