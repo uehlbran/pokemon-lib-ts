@@ -12,11 +12,11 @@ import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   didAllyFaintLastTurn,
-  getAcrobaticsBP,
-  getElectroBallBP,
-  getGyroBallBP,
-  getRetaliateBP,
-  getWeightBasedBP,
+  getAcrobaticsPower,
+  getElectroBallPower,
+  getGyroBallPower,
+  getRetaliatePower,
+  getWeightBasedPower,
   handleGen5CombatMove,
 } from "../src/Gen5MoveEffectsCombat";
 
@@ -290,13 +290,13 @@ describe("Acrobatics", () => {
     // Source: Showdown data/moves.ts -- acrobatics:
     //   basePower: 55, basePowerCallback: if (!pokemon.item) return move.basePower * 2
     //   55 * 2 = 110
-    const bp = getAcrobaticsBP(false);
+    const bp = getAcrobaticsPower(false);
     expect(bp).toBe(110);
   });
 
   it("given a user holding an item, when calculating Acrobatics BP, then returns 55", () => {
     // Source: Showdown data/moves.ts -- acrobatics: basePower: 55 (no doubling with item)
-    const bp = getAcrobaticsBP(true);
+    const bp = getAcrobaticsPower(true);
     expect(bp).toBe(55);
   });
 });
@@ -674,41 +674,41 @@ describe("Electro Ball", () => {
   it("given user is 4x faster than target, when calculating Electro Ball BP, then returns 150", () => {
     // Source: Showdown data/moves.ts -- electroball:
     //   ratio = floor(400/100) = 4; bp = [40,60,80,120,150][4] = 150
-    expect(getElectroBallBP(400, 100)).toBe(150);
+    expect(getElectroBallPower(400, 100)).toBe(150);
   });
 
   it("given user is 2x faster than target, when calculating Electro Ball BP, then returns 80", () => {
     // Source: Showdown data/moves.ts -- electroball:
     //   ratio = floor(200/100) = 2; bp = [40,60,80,120,150][2] = 80
-    expect(getElectroBallBP(200, 100)).toBe(80);
+    expect(getElectroBallPower(200, 100)).toBe(80);
   });
 
   it("given user is 3x faster than target, when calculating Electro Ball BP, then returns 120", () => {
     // Source: Showdown data/moves.ts -- electroball:
     //   ratio = floor(300/100) = 3; bp = [40,60,80,120,150][3] = 120
-    expect(getElectroBallBP(300, 100)).toBe(120);
+    expect(getElectroBallPower(300, 100)).toBe(120);
   });
 
   it("given user speed equals target speed, when calculating Electro Ball BP, then returns 60", () => {
     // Source: Showdown data/moves.ts -- electroball:
     //   ratio = floor(100/100) = 1; bp = [40,60,80,120,150][1] = 60
-    expect(getElectroBallBP(100, 100)).toBe(60);
+    expect(getElectroBallPower(100, 100)).toBe(60);
   });
 
   it("given user is slower than target, when calculating Electro Ball BP, then returns 40", () => {
     // Source: Showdown data/moves.ts -- electroball:
     //   ratio = floor(50/100) = 0; bp = [40,60,80,120,150][0] = 40
-    expect(getElectroBallBP(50, 100)).toBe(40);
+    expect(getElectroBallPower(50, 100)).toBe(40);
   });
 
   it("given target speed is 0, when calculating Electro Ball BP, then returns 40 (edge case)", () => {
     // Source: Showdown data/moves.ts -- ratio would be Infinity, capped to 0 by guard
-    expect(getElectroBallBP(100, 0)).toBe(40);
+    expect(getElectroBallPower(100, 0)).toBe(40);
   });
 
   it("given user is over 4x faster, when calculating Electro Ball BP, then returns 150 (capped)", () => {
     // Source: Showdown data/moves.ts -- Math.min(ratio, 4) caps at index 4
-    expect(getElectroBallBP(1000, 100)).toBe(150);
+    expect(getElectroBallPower(1000, 100)).toBe(150);
   });
 });
 
@@ -720,24 +720,24 @@ describe("Gyro Ball", () => {
   it("given target 200 speed and user 50 speed, when calculating Gyro Ball BP, then returns 101", () => {
     // Source: Showdown data/moves.ts -- gyroball:
     //   power = floor(25 * 200 / 50) + 1 = floor(100) + 1 = 101
-    expect(getGyroBallBP(50, 200)).toBe(101);
+    expect(getGyroBallPower(50, 200)).toBe(101);
   });
 
   it("given target 400 speed and user 50 speed, when calculating Gyro Ball BP, then returns 150 (capped)", () => {
     // Source: Showdown data/moves.ts -- gyroball:
     //   power = floor(25 * 400 / 50) + 1 = floor(200) + 1 = 201 -> capped at 150
-    expect(getGyroBallBP(50, 400)).toBe(150);
+    expect(getGyroBallPower(50, 400)).toBe(150);
   });
 
   it("given target and user same speed, when calculating Gyro Ball BP, then returns 26", () => {
     // Source: Showdown data/moves.ts -- gyroball:
     //   power = floor(25 * 100 / 100) + 1 = 25 + 1 = 26
-    expect(getGyroBallBP(100, 100)).toBe(26);
+    expect(getGyroBallPower(100, 100)).toBe(26);
   });
 
   it("given user speed is 0, when calculating Gyro Ball BP, then returns 1 (edge case)", () => {
     // Source: Showdown data/moves.ts -- division by zero guard
-    expect(getGyroBallBP(0, 100)).toBe(1);
+    expect(getGyroBallPower(0, 100)).toBe(1);
   });
 });
 
@@ -749,32 +749,32 @@ describe("Heat Crash / Heavy Slam", () => {
   it("given user 5x heavier than target, when calculating weight-based BP, then returns 120", () => {
     // Source: Showdown data/moves.ts -- heatcrash/heavyslam:
     //   pokemonWeight >= targetWeight * 5 -> 120
-    expect(getWeightBasedBP(500, 100)).toBe(120);
+    expect(getWeightBasedPower(500, 100)).toBe(120);
   });
 
   it("given user 4x heavier but less than 5x, when calculating weight-based BP, then returns 100", () => {
     // Source: Showdown data/moves.ts -- pokemonWeight >= targetWeight * 4 -> 100
-    expect(getWeightBasedBP(400, 100)).toBe(100);
+    expect(getWeightBasedPower(400, 100)).toBe(100);
   });
 
   it("given user 3x heavier but less than 4x, when calculating weight-based BP, then returns 80", () => {
     // Source: Showdown data/moves.ts -- pokemonWeight >= targetWeight * 3 -> 80
-    expect(getWeightBasedBP(300, 100)).toBe(80);
+    expect(getWeightBasedPower(300, 100)).toBe(80);
   });
 
   it("given user 2x heavier but less than 3x, when calculating weight-based BP, then returns 60", () => {
     // Source: Showdown data/moves.ts -- pokemonWeight >= targetWeight * 2 -> 60
-    expect(getWeightBasedBP(200, 100)).toBe(60);
+    expect(getWeightBasedPower(200, 100)).toBe(60);
   });
 
   it("given user less than 2x heavier, when calculating weight-based BP, then returns 40", () => {
     // Source: Showdown data/moves.ts -- else -> 40
-    expect(getWeightBasedBP(150, 100)).toBe(40);
+    expect(getWeightBasedPower(150, 100)).toBe(40);
   });
 
   it("given target weight is 0, when calculating weight-based BP, then returns 120 (edge case)", () => {
     // Source: Showdown -- 0 weight target would make all ratios true; return maximum
-    expect(getWeightBasedBP(100, 0)).toBe(120);
+    expect(getWeightBasedPower(100, 0)).toBe(120);
   });
 });
 
@@ -787,12 +787,12 @@ describe("Retaliate", () => {
     // Source: Showdown data/moves.ts -- retaliate:
     //   onBasePower: if (pokemon.side.faintedLastTurn) return this.chainModify(2);
     //   70 * 2 = 140
-    expect(getRetaliateBP(true)).toBe(140);
+    expect(getRetaliatePower(true)).toBe(140);
   });
 
   it("given no ally fainted last turn, when calculating Retaliate BP, then returns 70", () => {
     // Source: Showdown data/moves.ts -- retaliate: basePower: 70 (no doubling)
-    expect(getRetaliateBP(false)).toBe(70);
+    expect(getRetaliatePower(false)).toBe(70);
   });
 });
 

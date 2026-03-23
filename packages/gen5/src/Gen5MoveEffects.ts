@@ -40,11 +40,11 @@ export {
 
 export {
   didAllyFaintLastTurn,
-  getAcrobaticsBP,
-  getElectroBallBP,
-  getGyroBallBP,
-  getRetaliateBP,
-  getWeightBasedBP,
+  getAcrobaticsPower,
+  getElectroBallPower,
+  getGyroBallPower,
+  getRetaliatePower,
+  getWeightBasedPower,
   handleGen5CombatMove,
 } from "./Gen5MoveEffectsCombat";
 
