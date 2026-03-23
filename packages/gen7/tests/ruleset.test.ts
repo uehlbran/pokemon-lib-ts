@@ -806,6 +806,18 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
     expect(result.survived).toBe(false);
     expect(result.consumedItem).toBeUndefined();
   });
+
+  it("given Magic Room active on field, when lethal damage dealt to full-HP Pokemon with Focus Sash, then faints (sash suppressed)", () => {
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
+    // Source: Showdown data/items.ts -- Focus Sash is an item effect, suppressed by Magic Room
+    const defender = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 }) as any;
+    const attacker = makeActive();
+    const state = { magicRoom: { active: true, turnsLeft: 3 } } as BattleState;
+    const result = ruleset.capLethalDamage(300, defender, attacker, { id: "tackle" } as any, state);
+    expect(result.damage).toBe(300);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
 });
 
 // ===========================================================================

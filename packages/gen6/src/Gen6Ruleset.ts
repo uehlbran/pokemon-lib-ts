@@ -294,7 +294,7 @@ export class Gen6Ruleset extends BaseRuleset {
     defender: ActivePokemon,
     _attacker: ActivePokemon,
     _move: MoveData,
-    _state: BattleState,
+    state: BattleState,
   ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
@@ -312,8 +312,12 @@ export class Gen6Ruleset extends BaseRuleset {
     // 2. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
     // Source: Showdown data/items.ts -- Focus Sash onDamage
     // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const heldItem = defender.pokemon.heldItem;
-    const itemSuppressed = defender.ability === "klutz" || defender.volatileStatuses.has("embargo");
+    const itemSuppressed =
+      defender.ability === "klutz" ||
+      defender.volatileStatuses.has("embargo") ||
+      (state.magicRoom?.active ?? false);
     if (
       heldItem === "focus-sash" &&
       !itemSuppressed &&
