@@ -387,7 +387,9 @@ describe("Gen 5 Items -- Sitrus Berry", () => {
 
   it("given a Pokemon at 50% HP after taking damage holding Sitrus Berry, when on-damage-taken triggers, then it heals and is consumed", () => {
     // Source: Showdown -- Sitrus Berry also triggers on-damage-taken
-    const pokemon = makeActive({ heldItem: "sitrus-berry", hp: 200, currentHp: 200 });
+    // Note: currentHp is already post-damage (engine subtracts HP before on-damage-taken fires)
+    // 100 <= floor(200/2) = 100, so threshold is met
+    const pokemon = makeActive({ heldItem: "sitrus-berry", hp: 200, currentHp: 100 });
     const ctx = makeItemContext({ pokemon, damage: 100 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -652,16 +654,14 @@ describe("Gen 5 Items -- Sticky Barb", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen 5 Items -- Focus Sash", () => {
-  it("given a full-HP Pokemon holding Focus Sash taking a KO hit, when on-damage-taken triggers, then it survives with 1 HP and is consumed", () => {
-    // Source: Showdown data/items.ts -- Focus Sash onDamagePriority
+  it("given a full-HP Pokemon holding Focus Sash, when on-damage-taken triggers, then it does not activate (handled by capLethalDamage)", () => {
+    // Source: Focus Sash is handled by Gen5Ruleset.capLethalDamage (pre-damage hook).
+    // The on-damage-taken trigger fires AFTER HP subtraction, so currentHp is already
+    // post-damage. Focus Sash cannot detect a KO here because currentHp !== maxHp.
     const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
     const ctx = makeItemContext({ pokemon, damage: 250 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([
-      { type: "survive", target: "self", value: 1 },
-      { type: "consume", target: "self", value: "focus-sash" },
-    ]);
+    expect(result.activated).toBe(false);
   });
 
   it("given a non-full-HP Pokemon holding Focus Sash taking a KO hit, when on-damage-taken triggers, then it does not activate", () => {
@@ -748,8 +748,10 @@ describe("Gen5Ruleset.capLethalDamage -- Focus Band (authoritative handler)", ()
 describe("Gen 5 Items -- Stat pinch berries", () => {
   it("given a Pokemon at 25% HP after damage holding Liechi Berry, when on-damage-taken triggers, then Attack is boosted and consumed", () => {
     // Source: Showdown data/items.ts -- Liechi Berry: +1 Atk at <=25% HP
-    const pokemon = makeActive({ heldItem: "liechi-berry", hp: 200, currentHp: 100 });
-    const ctx = makeItemContext({ pokemon, damage: 51 }); // 100 - 51 = 49 <= floor(200*0.25) = 50
+    // Note: currentHp is already post-damage (engine subtracts HP before on-damage-taken fires)
+    // 49 <= floor(200*0.25) = 50, so threshold is met
+    const pokemon = makeActive({ heldItem: "liechi-berry", hp: 200, currentHp: 49 });
+    const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -760,8 +762,8 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
 
   it("given a Pokemon at 26% HP after damage holding Liechi Berry, when on-damage-taken triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- pinch berries activate at <= 25% HP threshold
-    // 100 - 49 = 51 > floor(200 * 0.25) = 50, so threshold is not met
-    const pokemon = makeActive({ heldItem: "liechi-berry", hp: 200, currentHp: 100 });
+    // Note: currentHp is already post-damage. 51 > floor(200 * 0.25) = 50, so threshold is not met
+    const pokemon = makeActive({ heldItem: "liechi-berry", hp: 200, currentHp: 51 });
     const ctx = makeItemContext({ pokemon, damage: 49 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(false);
@@ -769,13 +771,14 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
 
   it("given a Pokemon with Gluttony holding Liechi Berry at 50% after damage, when on-damage-taken triggers, then it activates early", () => {
     // Source: Bulbapedia -- Gluttony: pinch berries activate at 50% instead of 25%
+    // Note: currentHp is already post-damage. 100 <= floor(200*0.5) = 100, so threshold is met
     const pokemon = makeActive({
       heldItem: "liechi-berry",
       ability: "gluttony",
       hp: 200,
-      currentHp: 200,
+      currentHp: 100,
     });
-    const ctx = makeItemContext({ pokemon, damage: 100 }); // 200 - 100 = 100 <= floor(200*0.5) = 100
+    const ctx = makeItemContext({ pokemon, damage: 100 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
@@ -787,7 +790,8 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
 
   it("given Ganlon Berry activating, then it boosts Defense", () => {
     // Source: Showdown data/items.ts -- Ganlon Berry onEat: boosts: { def: 1 }
-    const pokemon = makeActive({ heldItem: "ganlon-berry", hp: 200, currentHp: 100 });
+    // Note: currentHp is already post-damage. 49 <= floor(200*0.25) = 50
+    const pokemon = makeActive({ heldItem: "ganlon-berry", hp: 200, currentHp: 49 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -800,7 +804,8 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
 
   it("given Salac Berry activating, then it boosts Speed", () => {
     // Source: Showdown data/items.ts -- Salac Berry onEat: boosts: { spe: 1 }
-    const pokemon = makeActive({ heldItem: "salac-berry", hp: 200, currentHp: 100 });
+    // Note: currentHp is already post-damage. 49 <= floor(200*0.25) = 50
+    const pokemon = makeActive({ heldItem: "salac-berry", hp: 200, currentHp: 49 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -813,7 +818,8 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
 
   it("given Petaya Berry activating, then it boosts Sp. Atk", () => {
     // Source: Showdown data/items.ts -- Petaya Berry onEat: boosts: { spa: 1 }
-    const pokemon = makeActive({ heldItem: "petaya-berry", hp: 200, currentHp: 100 });
+    // Note: currentHp is already post-damage. 49 <= floor(200*0.25) = 50
+    const pokemon = makeActive({ heldItem: "petaya-berry", hp: 200, currentHp: 49 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -826,7 +832,8 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
 
   it("given Apicot Berry activating, then it boosts Sp. Def", () => {
     // Source: Showdown data/items.ts -- Apicot Berry onEat: boosts: { spd: 1 }
-    const pokemon = makeActive({ heldItem: "apicot-berry", hp: 200, currentHp: 100 });
+    // Note: currentHp is already post-damage. 49 <= floor(200*0.25) = 50
+    const pokemon = makeActive({ heldItem: "apicot-berry", hp: 200, currentHp: 49 });
     const ctx = makeItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);

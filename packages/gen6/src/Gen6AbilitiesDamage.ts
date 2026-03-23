@@ -322,8 +322,9 @@ export function handleGen6DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     case "sniper": {
       // Sniper: In Gen 6, crits are 1.5x. Sniper adds another 1.5x on top = 2.25x effective.
       // (In Gen 5, crits were 2x, Sniper made them 3x.)
-      // The damage calc applies the numeric value; this signals activation.
       // Source: Showdown data/abilities.ts -- sniper onModifyDamage: if crit, chainModify(1.5)
+      // Only activates when the hit is actually a crit.
+      if (!ctx.isCrit) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -334,6 +335,8 @@ export function handleGen6DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     case "tinted-lens": {
       // Tinted Lens: "Not very effective" moves deal 2x damage.
       // Source: Showdown data/abilities.ts -- tintedlens onModifyDamage
+      // Only activates when the move is not very effective (typeEffectiveness < 1).
+      if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness >= 1) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -475,6 +478,8 @@ export function handleGen6DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     case "filter": {
       // Solid Rock / Filter: 0.75x super-effective damage taken.
       // Source: Showdown data/abilities.ts -- solidrock / filter onSourceModifyDamage
+      // Only activates when the move is super effective (typeEffectiveness > 1).
+      if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness <= 1) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],

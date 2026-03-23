@@ -444,6 +444,10 @@ export interface AbilityContext {
     readonly stages: number;
     readonly source: "self" | "opponent";
   };
+  /** Whether the current hit is a critical hit (used by Sniper gating). */
+  readonly isCrit?: boolean;
+  /** The computed type-effectiveness multiplier (used by Tinted Lens / Solid Rock / Filter gating). */
+  readonly typeEffectiveness?: number;
 }
 
 /**
