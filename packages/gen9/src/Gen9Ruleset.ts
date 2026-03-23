@@ -468,7 +468,8 @@ export class Gen9Ruleset extends BaseRuleset {
     const turnNumber: number | undefined = state.turnNumber;
 
     if (!pokemon.rageFistLastHitTurns) {
-      pokemon.rageFistLastHitTurns = {};
+      // Use null-prototype object to avoid __proto__ key collisions with move IDs.
+      pokemon.rageFistLastHitTurns = Object.create(null) as Record<string, number>;
     }
 
     const lastTurn = pokemon.rageFistLastHitTurns[move.id];

@@ -375,7 +375,9 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
     ruleset.onDamageReceived(defender, 20, move, state);
     ruleset.onDamageReceived(defender, 20, move, state);
 
-    // Should be 1, not 2 — second hit is deduplicated by turn+move tracking
+    // Should be 1, not 2 — second hit is deduplicated by turn+move tracking.
+    // Source: Showdown sim/pokemon.ts — timesAttacked incremented in hitBy() once per move use,
+    // so a 2-hit move in one turn produces timesAttacked=1 (starting from 0).
     expect(defender.pokemon.timesAttacked).toBe(1);
   });
 });
