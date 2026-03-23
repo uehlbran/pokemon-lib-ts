@@ -720,8 +720,8 @@ describe("handleGen5SwitchAbility on-contact -- Rough Skin / Iron Barbs", () => 
 });
 
 describe("handleGen5SwitchAbility on-contact -- Effect Spore", () => {
-  it("given Effect Spore with roll 5 (0-9 range), when contact, then inflicts sleep", () => {
-    // Source: Showdown data/abilities.ts — Effect Spore: roll < 10 = sleep
+  it("given Effect Spore with roll 5 (0-10 range), when contact, then inflicts sleep", () => {
+    // Source: Showdown data/abilities.ts — Effect Spore: roll < 11 = sleep
     // RNG value 0.05 => floor(0.05 * 100) = 5
     const opponent = makeActivePokemon({ ability: "blaze" });
     const ctx = makeContext({
@@ -740,9 +740,10 @@ describe("handleGen5SwitchAbility on-contact -- Effect Spore", () => {
     });
   });
 
-  it("given Effect Spore with roll 15 (10-19 range), when contact, then inflicts paralysis", () => {
-    // Source: Showdown data/abilities.ts — Effect Spore: 10 <= roll < 20 = paralysis
+  it("given Effect Spore with roll 15 (11-20 range), when contact, then inflicts poison", () => {
+    // Source: Showdown data/abilities.ts — Effect Spore: 11 <= roll < 21 = poison
     // RNG value 0.15 => floor(0.15 * 100) = 15
+    // Note: Showdown thresholds are < 11 = sleep, < 21 = poison, < 30 = paralysis
     const opponent = makeActivePokemon({ ability: "blaze" });
     const ctx = makeContext({
       ability: "effect-spore",
@@ -756,7 +757,7 @@ describe("handleGen5SwitchAbility on-contact -- Effect Spore", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "paralysis",
+      status: "poison",
     });
   });
 

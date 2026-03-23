@@ -1,5 +1,5 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 5 switch-in, contact, switch-out, and passive ability handlers.
@@ -45,25 +45,20 @@ function getOpponentName(ctx: AbilityContext): string {
 const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
 
 /**
- * Abilities that cannot be overwritten by Mummy.
- * Source: Showdown data/abilities.ts — { cantsuppress: 1 } flag
+ * Abilities that cannot be overwritten by Mummy or suppressed by Gastro Acid in Gen 5.
+ *
+ * Only Multitype and Zen Mode are truly unsuppressable in Gen 5.
+ * Abilities like Wonder Guard, Truant, etc. CAN be suppressed/overwritten in Gen 5.
+ * Later gens added more unsuppressable abilities (Stance Change in Gen 6, Schooling in
+ * Gen 7, etc.) but those do not apply here.
+ *
+ * Source: Showdown data/abilities.ts — Gen 5: only Multitype and Zen Mode have
+ *   cantsuppress behavior. Other abilities on the Gen 8+ list (stance-change,
+ *   schooling, etc.) were introduced in later generations.
+ * Source: Bulbapedia — Mummy: "Cannot overwrite Multitype" (Gen 5)
+ * Source: Bulbapedia — Zen Mode: "Cannot be suppressed" (Gen 5)
  */
-const UNSUPPRESSABLE_ABILITIES = new Set([
-  "multitype",
-  "stance-change",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "power-construct",
-  "ice-face",
-  "gulp-missile",
-  "as-one-glastrier",
-  "as-one-spectrier",
-  "zen-mode",
-]);
+const UNSUPPRESSABLE_ABILITIES = new Set(["multitype", "zen-mode"]);
 
 // ---------------------------------------------------------------------------
 // Main dispatch
@@ -415,9 +410,11 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
     }
 
     case "effect-spore": {
-      // Source: Showdown data/abilities.ts — Effect Spore: single random(100) roll
-      // 0-9 = sleep, 10-19 = paralysis, 20-29 = poison, 30-99 = nothing
-      // Source: Bulbapedia — Effect Spore: "30% total; 10% sleep, 10% paralysis, 10% poison."
+      // Source: Showdown data/abilities.ts — Effect Spore: single this.random(100) roll
+      //   < 11 = sleep, < 21 = poison, else (< 30) = paralysis
+      //   i.e., sleep=11%, poison=10%, paralysis=9%, total=30%
+      // Note: Bulbapedia says "10% each" but Showdown uses asymmetric thresholds.
+      //   We follow Showdown as primary authority for Gen 5.
       const otherStatus = other.pokemon.status;
       if (otherStatus) return NO_EFFECT;
       // Grass types are immune to Effect Spore in Gen 5+
@@ -426,25 +423,25 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       // Overcoat blocks Effect Spore in Gen 6+, but NOT in Gen 5
       // Source: Showdown data/mods/gen5/abilities.ts — Overcoat only blocks weather, not spore
       const roll = Math.floor(ctx.rng.next() * 100);
-      if (roll < 10) {
+      if (roll < 11) {
         return {
           activated: true,
           effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
           messages: [`${name}'s Effect Spore put the attacker to sleep!`],
         };
       }
-      if (roll < 20) {
+      if (roll < 21) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
-          messages: [`${name}'s Effect Spore paralyzed the attacker!`],
+          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          messages: [`${name}'s Effect Spore poisoned the attacker!`],
         };
       }
       if (roll < 30) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
-          messages: [`${name}'s Effect Spore poisoned the attacker!`],
+          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+          messages: [`${name}'s Effect Spore paralyzed the attacker!`],
         };
       }
       return NO_EFFECT;
@@ -646,12 +643,13 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
   switch (abilityId) {
     case "synchronize": {
       // Synchronize fires when the holder receives burn, paralysis, or poison from an
-      // opponent. It passes the same status back to the source.
+      // opponent's MOVE. It passes the same status back to the source.
       // Does NOT spread sleep or freeze (excluded in Showdown).
+      // Does NOT trigger when poisoned by Toxic Spikes (entry hazard).
       //
       // Source: Showdown data/abilities.ts — Synchronize: onAfterSetStatus
-      //   if (!source || source === target) return;    ← must be opponent-caused
-      //   if (effect.id === 'toxicspikes') return;    ← Toxic Spikes excluded
+      //   if (!source || source === target) return;    <- must be opponent-caused
+      //   if (effect.id === 'toxicspikes') return;    <- Toxic Spikes excluded
       //   if (status.id === 'slp' || status.id === 'frz') return;
       //   source.trySetStatus(status, target, { id: 'synchronize' })
       // Source: Bulbapedia — Synchronize: "Passes burn, paralysis, or poison to the foe."
@@ -660,6 +658,14 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       if (!status) return NO_EFFECT;
       // Only spreads burn, paralysis, poison (not sleep, freeze, badly-poisoned)
       if (status !== "burn" && status !== "paralysis" && status !== "poison") return NO_EFFECT;
+      // Toxic Spikes poison is excluded — the entry hazard code sets a "hazard-status-source"
+      // volatile marker when Toxic Spikes inflicts status.
+      // Source: Showdown data/abilities.ts — Synchronize: if (effect.id === 'toxicspikes') return;
+      if (ctx.pokemon.volatileStatuses.has("hazard-status-source" as VolatileStatus)) {
+        // Remove the marker volatile so it doesn't persist
+        ctx.pokemon.volatileStatuses.delete("hazard-status-source" as VolatileStatus);
+        return NO_EFFECT;
+      }
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       return {
         activated: true,

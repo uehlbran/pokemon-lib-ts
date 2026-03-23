@@ -226,7 +226,7 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 - **Phase 2** (DONE): Gen 2 (second simplest — no abilities, adds held items, weather, Dark/Steel types, Special split). Shipped 0.2.0.
 - **Phase 3** (DONE): Gen 3–6 (sequential — each extends BaseRuleset; abilities system, items system, weather, terrain, Mega Evolution).
 - **Phase 4** (IN PROGRESS): Gen 7 (Z-Moves, Alolan Forms, Tapu terrain abilities, Ultra Burst).
-- **Phase 5+**: Gen 8–9, community-driven.
+- **Phase 5** (DONE): Gen 8 (Dynamax/Gigantamax, Galarian Forms) + Gen 9 (Terastallization, Snow, new abilities/moves).
 
 ## Generation Status
 
@@ -242,6 +242,7 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 | gen6 | 100% | 1,079 | 0 | All 10 waves merged, 82.6% branch coverage |
 | gen7 | 100% | 1,116 | 2 | #687 Disguise non-lethal, #725 Focus Sash capLethalDamage |
 | gen8 | 100% | 1,193 | 2 | #687 Disguise non-lethal, #725 Focus Sash capLethalDamage |
+| gen9 | 100% | 1,031 | 8 | All 10 waves merged, 82.04% branch coverage |
 
 Full per-gen details: `specs/reference/genN-status.md`
 Ground-truth mechanical reference: `specs/reference/genN-ground-truth.md`

@@ -1,10 +1,5 @@
-import type {
-  AbilityContext,
-  AbilityEffect,
-  AbilityResult,
-  BattleState,
-} from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType, ScreenType, TerrainType } from "@pokemon-lib-ts/core";
+import type { AbilityContext, AbilityResult, BattleState } from "@pokemon-lib-ts/battle";
+import type { AbilityTrigger, ScreenType, TerrainType } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 9 switch-in, switch-out, contact, and passive ability handlers.
