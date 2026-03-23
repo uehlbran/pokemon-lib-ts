@@ -206,6 +206,9 @@ function isHealingMove(moveId: string, effectType: string | null): boolean {
     "purify",
     "shore-up",
     "strength-sap",
+    // Gen 8 moves with heal flag — Source: Showdown data/moves.ts
+    "life-dew",
+    "jungle-healing",
   ]);
 
   if (HEALING_MOVES.has(moveId)) return true;

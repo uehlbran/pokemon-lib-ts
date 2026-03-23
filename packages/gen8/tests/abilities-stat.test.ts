@@ -227,6 +227,20 @@ describe("Gen 8 Stat Abilities", () => {
       expect(bonus).toBe(0);
     });
 
+    it("given life-dew, when Triage is active, then returns +3 priority bonus", () => {
+      // Source: Showdown data/moves.ts -- life-dew has heal flag
+      // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
+      const bonus = getTriagePriorityBonus("triage", "life-dew", null);
+      expect(bonus).toBe(3);
+    });
+
+    it("given jungle-healing, when Triage is active, then returns +3 priority bonus", () => {
+      // Source: Showdown data/moves.ts -- jungle-healing has heal flag
+      // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
+      const bonus = getTriagePriorityBonus("triage", "jungle-healing", null);
+      expect(bonus).toBe(3);
+    });
+
     it("given the dispatcher, when Triage user uses healing move, then returns activated:true", () => {
       const ctx = makeCtx({
         ability: "triage",

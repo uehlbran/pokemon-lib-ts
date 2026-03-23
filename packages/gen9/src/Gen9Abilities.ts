@@ -56,6 +56,11 @@ const HEALING_MOVES: ReadonlySet<string> = new Set([
   "purify",
   "shore-up",
   "strength-sap",
+  // Gen 8 moves with heal flag — Source: Showdown data/moves.ts
+  "life-dew",
+  "jungle-healing",
+  // Gen 9 move with heal flag — Source: Showdown data/moves.ts
+  "lunar-blessing",
 ]);
 
 function isHealingMove(moveId: string, effectType: string | null): boolean {
