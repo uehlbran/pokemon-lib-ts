@@ -138,6 +138,7 @@ None. All tracked bugs closed.
 | #738 | #785 | Gen 8 Disguise chip damage (1/8 maxHP) not implemented |
 | #713 | #785 | Choice lock applied during Dynamax (should be suppressed) |
 | #694 | #785 | Gen 8 package.json exports missing ./data entry |
+| #757 | #786 | Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage |
 
 ---
 
@@ -159,3 +160,4 @@ None. All tracked bugs closed.
 | #717 | feat/gen8-wave9-integration | Wave 9: integration tests + coverage polish (1,142 tests, 82.27% branch) |
 | #752 | fix/gen5-8-bughunt | Deep bughunt: applyAbility routing (C1), getEndOfTurnOrder (C2), capLethalDamage (C3), canBypassProtect delegation, Dynamax revert fixes, closes #732 #733 #734 #735 #736 #739 #740 #741 #742 #746 #747 |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Disguise non-lethal + 1/8 chip via capLethalDamage, Choice lock Dynamax suppression, package.json exports (closes #687 #738 #713 #694) |
+| #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |
