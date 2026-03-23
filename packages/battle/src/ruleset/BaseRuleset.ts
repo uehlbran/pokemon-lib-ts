@@ -3,7 +3,7 @@ import type {
   EntryHazardType,
   Generation,
   MoveData,
-  NonHpStat,
+  NatureData,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
@@ -15,6 +15,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   ALL_NATURES,
+  calculateAllStats,
   calculateModifiedCatchRate,
   calculateShakeChecks,
   DataManager,
@@ -63,38 +64,21 @@ export abstract class BaseRuleset implements GenerationRuleset {
   abstract getTypeChart(): TypeChart;
   abstract getAvailableTypes(): readonly PokemonType[];
 
+  /** Hardy nature (— no stat changes). Used as fallback for unknown nature ids. */
+  private static readonly HARDY_NATURE: NatureData = {
+    id: "hardy",
+    displayName: "Hardy",
+    increased: null,
+    decreased: null,
+    likedFlavor: null,
+    dislikedFlavor: null,
+  };
+
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
-    // Gen 3+ stat formula: default implementation
-    const level = pokemon.level;
-    const base = species.baseStats;
-    const ivs = pokemon.ivs;
-    const evs = pokemon.evs;
-
-    const hp =
-      Math.floor(((2 * base.hp + ivs.hp + Math.floor(evs.hp / 4)) * level) / 100) + level + 10;
-
-    const calcStat = (baseStat: number, iv: number, ev: number): number => {
-      return Math.floor(((2 * baseStat + iv + Math.floor(ev / 4)) * level) / 100) + 5;
-    };
-
-    // Apply nature modifier (+10% boosted stat, -10% decreased stat)
-    // Source: Game Freak Gen 3+ formula — floor(stat * 1.1) or floor(stat * 0.9)
-    const nature = ALL_NATURES.find((n) => n.id === pokemon.nature);
-    const applyNature = (stat: number, statKey: NonHpStat): number => {
-      if (!nature || nature.increased === null) return stat;
-      if (nature.increased === statKey) return Math.floor(stat * 1.1);
-      if (nature.decreased === statKey) return Math.floor(stat * 0.9);
-      return stat;
-    };
-
-    return {
-      hp,
-      attack: applyNature(calcStat(base.attack, ivs.attack, evs.attack), "attack"),
-      defense: applyNature(calcStat(base.defense, ivs.defense, evs.defense), "defense"),
-      spAttack: applyNature(calcStat(base.spAttack, ivs.spAttack, evs.spAttack), "spAttack"),
-      spDefense: applyNature(calcStat(base.spDefense, ivs.spDefense, evs.spDefense), "spDefense"),
-      speed: applyNature(calcStat(base.speed, ivs.speed, evs.speed), "speed"),
-    };
+    // Delegate to core calculateAllStats — single source of truth for Gen 3+ stat formula.
+    // Source: pret/pokeemerald src/pokemon.c:2814 CALC_STAT macro + :2851 HP branch
+    const nature = ALL_NATURES.find((n) => n.id === pokemon.nature) ?? BaseRuleset.HARDY_NATURE;
+    return calculateAllStats(pokemon, species, nature);
   }
 
   abstract calculateDamage(context: DamageContext): DamageResult;
