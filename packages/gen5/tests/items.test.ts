@@ -742,6 +742,133 @@ describe("Gen5Ruleset.capLethalDamage -- Focus Band (authoritative handler)", ()
 });
 
 // ---------------------------------------------------------------------------
+// Focus Sash / Focus Band -- Klutz, Embargo, Magic Room suppression (#804)
+// ---------------------------------------------------------------------------
+
+describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
+  it("given a full-HP Pokemon with Klutz holding Focus Sash, when taking lethal damage, then Focus Sash does NOT activate", () => {
+    // Source: Showdown data/abilities.ts -- klutz: suppresses all held item effects for the holder
+    // Source: Showdown data/items.ts -- Focus Sash: not activated when items are suppressed
+    const ruleset = new Gen5Ruleset();
+    const defender = makeActive({
+      heldItem: "focus-sash",
+      ability: "klutz",
+      hp: 200,
+      currentHp: 200,
+    });
+    const state = makeState();
+    const result = ruleset.capLethalDamage(300, defender, defender, makeMove(), state);
+    expect(result.survived).toBe(false);
+    expect(result.damage).toBe(300);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given a full-HP Pokemon under Embargo holding Focus Sash, when taking lethal damage, then Focus Sash does NOT activate", () => {
+    // Source: Showdown data/moves.ts -- embargo: target's item is unusable
+    // Source: Showdown data/items.ts -- Focus Sash: not activated when items are suppressed
+    const ruleset = new Gen5Ruleset();
+    const volatiles = new Map<string, { turnsLeft: number }>([["embargo", { turnsLeft: 5 }]]);
+    const defender = makeActive({
+      heldItem: "focus-sash",
+      hp: 200,
+      currentHp: 200,
+      volatiles,
+    });
+    const state = makeState();
+    const result = ruleset.capLethalDamage(300, defender, defender, makeMove(), state);
+    expect(result.survived).toBe(false);
+    expect(result.damage).toBe(300);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given Magic Room is active and a full-HP Pokemon holds Focus Sash, when taking lethal damage, then Focus Sash does NOT activate", () => {
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all held item effects
+    const ruleset = new Gen5Ruleset();
+    const defender = makeActive({
+      heldItem: "focus-sash",
+      hp: 200,
+      currentHp: 200,
+    });
+    const state = {
+      ...makeState(),
+      magicRoom: { active: true, turnsLeft: 3 },
+    } as unknown as BattleState;
+    const result = ruleset.capLethalDamage(300, defender, defender, makeMove(), state);
+    expect(result.survived).toBe(false);
+    expect(result.damage).toBe(300);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given a Pokemon with Klutz holding Focus Band, when taking lethal damage with lucky RNG, then Focus Band does NOT activate", () => {
+    // Source: Showdown data/abilities.ts -- klutz: suppresses all held item effects for the holder
+    // Source: Showdown data/items.ts -- Focus Band: not activated when items are suppressed
+    const ruleset = new Gen5Ruleset();
+    // Try many seeds to ensure none activates Focus Band under Klutz
+    let anyActivated = false;
+    for (let seed = 0; seed < 200; seed++) {
+      const defender = makeActive({
+        heldItem: "focus-band",
+        ability: "klutz",
+        hp: 100,
+        currentHp: 100,
+      });
+      const state = {
+        ...makeState(),
+        rng: new SeededRandom(seed),
+      } as unknown as BattleState;
+      const result = ruleset.capLethalDamage(200, defender, defender, makeMove(), state);
+      if (result.survived) {
+        anyActivated = true;
+        break;
+      }
+    }
+    expect(anyActivated).toBe(false);
+  });
+
+  it("given a Pokemon under Embargo holding Focus Band, when taking lethal damage with lucky RNG, then Focus Band does NOT activate", () => {
+    // Source: Showdown data/moves.ts -- embargo: target's item is unusable
+    const ruleset = new Gen5Ruleset();
+    let anyActivated = false;
+    for (let seed = 0; seed < 200; seed++) {
+      const volatiles = new Map<string, { turnsLeft: number }>([["embargo", { turnsLeft: 5 }]]);
+      const defender = makeActive({
+        heldItem: "focus-band",
+        hp: 100,
+        currentHp: 100,
+        volatiles,
+      });
+      const state = {
+        ...makeState(),
+        rng: new SeededRandom(seed),
+      } as unknown as BattleState;
+      const result = ruleset.capLethalDamage(200, defender, defender, makeMove(), state);
+      if (result.survived) {
+        anyActivated = true;
+        break;
+      }
+    }
+    expect(anyActivated).toBe(false);
+  });
+
+  it("given no suppression and a full-HP Pokemon with Focus Sash, when taking lethal damage, then Focus Sash still works normally", () => {
+    // Source: Showdown data/items.ts -- Focus Sash: activates when no suppression
+    // Regression: ensure the suppression check doesn't break normal behavior
+    const ruleset = new Gen5Ruleset();
+    const defender = makeActive({
+      heldItem: "focus-sash",
+      hp: 200,
+      currentHp: 200,
+    });
+    const state = makeState();
+    const result = ruleset.capLethalDamage(300, defender, defender, makeMove(), state);
+    expect(result.survived).toBe(true);
+    expect(result.damage).toBe(199); // maxHp - 1 = 200 - 1 = 199
+    expect(result.consumedItem).toBe("focus-sash");
+    expect(result.messages[0]).toContain("Focus Sash");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Stat pinch berries
 // ---------------------------------------------------------------------------
 
