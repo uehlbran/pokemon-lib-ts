@@ -460,15 +460,18 @@ export class Gen9Ruleset extends BaseRuleset {
     // Showdown increments timesAttacked once per move use (not per hit).
     // Source: Showdown sim/pokemon.ts -- timesAttacked incremented in hitBy(),
     //   which is called once per move resolution (not per multi-hit hit).
-    // We track the last (turn number, move id) pair. If the current call has the
-    // same pair as the last increment, it's a subsequent hit of a multi-hit move — skip.
+    // We track the last (turn number, move id) pair via the typed rageFistLastHitTurns
+    // map on PokemonInstance. If the current call has the same turn for this move,
+    // it's a subsequent hit of a multi-hit move — skip.
     // If turnNumber is undefined (e.g., in tests that don't set it), always increment.
     const pokemon = defender.pokemon;
     const turnNumber: number | undefined = state.turnNumber;
-    const lastTurnKey = `_rageFistLastTurn_${move.id}`;
-    const lastTurn = (pokemon as unknown as Record<string, unknown>)[lastTurnKey] as
-      | number
-      | undefined;
+
+    if (!pokemon.rageFistLastHitTurns) {
+      pokemon.rageFistLastHitTurns = {};
+    }
+
+    const lastTurn = pokemon.rageFistLastHitTurns[move.id];
 
     if (turnNumber !== undefined && lastTurn === turnNumber) {
       return; // already incremented this turn for this move (multi-hit dedup)
@@ -476,7 +479,7 @@ export class Gen9Ruleset extends BaseRuleset {
 
     // Record this turn so subsequent hits of the same multi-hit move are skipped
     if (turnNumber !== undefined) {
-      (pokemon as unknown as Record<string, unknown>)[lastTurnKey] = turnNumber;
+      pokemon.rageFistLastHitTurns[move.id] = turnNumber;
     }
 
     pokemon.timesAttacked = (pokemon.timesAttacked ?? 0) + 1;
