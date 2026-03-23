@@ -410,7 +410,8 @@ function getEffectiveStatStage(
   // boosts independently of Simple's doubling. Source: Showdown sim/battle.ts Gen 9+.
   if (opponent?.ability === "unaware" && !pokemonHasMoldBreaker) return 0;
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
-  if (pokemon.ability === "simple" && !opponentHasMoldBreaker) return Math.max(-6, Math.min(6, raw * 2));
+  if (pokemon.ability === "simple" && !opponentHasMoldBreaker)
+    return Math.max(-6, Math.min(6, raw * 2));
   return raw;
 }
 
