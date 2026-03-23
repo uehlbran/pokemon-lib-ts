@@ -378,9 +378,12 @@ function getEffectiveStatStage(
   stat: string,
   opponent?: ActivePokemon,
 ): number {
+  // Unaware takes priority over Simple — if the opponent has Unaware, it sees 0 stages
+  // regardless of any stage-doubling the attacker has. Unaware's onAnyModifyBoost zeroes
+  // boosts independently of Simple's doubling. Source: Showdown sim/battle.ts Gen 7+.
+  if (opponent?.ability === "unaware") return 0;
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
   if (pokemon.ability === "simple") return Math.max(-6, Math.min(6, raw * 2));
-  if (opponent?.ability === "unaware") return 0;
   return raw;
 }
 
