@@ -94,11 +94,17 @@ export interface StickyWebResult {
  * Pokemon using Fly, Bounce, Shadow Force, or Phantom Force are airborne and NOT grounded.
  * Dig and Dive are underground/underwater, NOT airborne -- still grounded for terrain purposes.
  *
+ * These are the actual volatile status IDs applied by the engine during the charge turn:
+ *   - "flying" -- Fly and Bounce both use this volatile (BattleEngine.ts:1191)
+ *   - "shadow-force-charging" -- Shadow Force and Phantom Force both use this volatile
+ *     (BattleEngine.ts:1194, Gen6MoveEffects.ts GEN6_TWO_TURN_VOLATILE_MAP)
+ *
+ * Source: BattleEngine.ts:1190-1194 -- semiInvulnerableVolatiles array
  * Source: Showdown sim/pokemon.ts -- isGrounded: returns false for Pokemon using Fly/Bounce
  * Source: Showdown data/conditions.ts -- terrain conditions check target.isGrounded()
  * Source: Bulbapedia "Semi-invulnerable turn" -- Fly/Bounce elevate the user
  */
-const AIRBORNE_SEMI_INVULNERABLE = new Set(["fly", "bounce", "shadow-force", "phantom-force"]);
+const AIRBORNE_SEMI_INVULNERABLE = new Set(["flying", "shadow-force-charging"]);
 
 export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   // Gravity grounds everything (even semi-invulnerable airborne Pokemon)
