@@ -3834,3 +3834,88 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
     expect(protectResult.damage).toBeLessThan(normalResult.damage * 0.3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unaware vs Simple interaction (regression: #757)
+// ---------------------------------------------------------------------------
+
+describe("Gen 7 damage calc -- Unaware vs Simple interaction (regression: #757)", () => {
+  it("given Simple attacker with +2 Atk stage vs Unaware defender, when calculating damage, then Unaware ignores all stages (same as stage-0 baseline)", () => {
+    // Regression for bug #757: Simple was checked before Unaware, causing Simple to
+    // double +2→+4 before Unaware could zero it out. Unaware must take priority.
+    // Source: Showdown sim/battle.ts -- Unaware's onAnyModifyBoost zeroes boosts
+    // independently of Simple's doubling.
+    //
+    // Derivation (Unaware active → effective stage = 0, stage multiplier = 1.0):
+    //   L50, attack=100, defense=100, power=50, normal-type physical, water vs water (neutral, no STAB)
+    //   levelFactor = floor(2*50/5) + 2 = 22
+    //   step1 = floor(22 * 50 * 100 / 100) = 1100
+    //   baseDamage = floor(1100 / 50) + 2 = 22 + 2 = 24
+    //   random(seed=42) = 94 → floor(24 * 94 / 100) = floor(22.56) = 22
+    const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
+    attacker.statStages.attack = 2;
+    const defender = makeActive({ defense: 100, ability: "unaware", types: ["water"] });
+    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen7Damage(ctx, typeChart);
+    expect(result.damage).toBe(22);
+  });
+
+  it("given Simple attacker with +2 Atk stage vs non-Unaware defender, when calculating damage, then Simple doubles stage to +4", () => {
+    // Source: Showdown sim/battle.ts -- Simple doubles stat stages (capped at ±6).
+    //
+    // Derivation (Simple active, no Unaware → effective stage = +4, multiplier = (2+4)/2 = 3.0):
+    //   effectiveAttack = floor(100 * 3.0) = 300
+    //   L50, defense=100, power=50, normal-type physical, water vs water (neutral, no STAB)
+    //   step1 = floor(22 * 50 * 300 / 100) = 3300
+    //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
+    //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
+    const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
+    attacker.statStages.attack = 2;
+    const defender = makeActive({ defense: 100, ability: "none", types: ["water"] });
+    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen7Damage(ctx, typeChart);
+    expect(result.damage).toBe(63);
+  });
+
+  it("given Turboblaze attacker with +2 Atk stage vs Unaware defender, when calculating damage, then Mold Breaker bypasses Unaware and stages apply", () => {
+    // Mold Breaker/Teravolt/Turboblaze bypass breakable abilities (flags: { breakable: 1 }).
+    // Unaware is breakable, so a Turboblaze attacker ignores Unaware — stages are NOT zeroed.
+    // Source: Showdown sim/battle.ts Gen 7+ — ability.flags.breakable check.
+    //
+    // Derivation (Turboblaze bypasses Unaware → effective stage = +2, multiplier = 4/2 = 2.0):
+    //   effectiveAttack = floor(100 * 2.0) = 200
+    //   L50, defense=100, power=50, normal-type physical, water vs water (neutral, no STAB)
+    //   step1 = floor(22 * 50 * 200 / 100) = 2200
+    //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
+    //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
+    const attacker = makeActive({ attack: 100, ability: "turboblaze", types: ["water"] });
+    attacker.statStages.attack = 2;
+    const defender = makeActive({ defense: 100, ability: "unaware", types: ["water"] });
+    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen7Damage(ctx, typeChart);
+    expect(result.damage).toBe(43);
+  });
+
+  it("given Simple attacker with +2 Atk stage vs Mold Breaker defender, when calculating damage, then defender's Mold Breaker does NOT suppress attacker's Simple — stages still doubled to +4", () => {
+    // The defender's Mold Breaker family only suppresses the *target's* (defender's) abilities
+    // when the Mold Breaker user is attacking. A defending Mold Breaker does NOT suppress the
+    // attacker's Simple. Source: Showdown sim/battle.ts — suppressingAbility(self) is false.
+    //
+    // Derivation (Simple NOT bypassed → effective stage = +4, multiplier = (2+4)/2 = 3.0):
+    //   effectiveAttack = floor(100 * 3.0) = 300
+    //   L50, defense=100, power=50, normal-type physical, water vs water (neutral, no STAB)
+    //   step1 = floor(22 * 50 * 300 / 100) = 3300
+    //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
+    //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
+    const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
+    attacker.statStages.attack = 2;
+    const defender = makeActive({ defense: 100, ability: "mold-breaker", types: ["water"] });
+    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen7Damage(ctx, typeChart);
+    expect(result.damage).toBe(63);
+  });
+});
