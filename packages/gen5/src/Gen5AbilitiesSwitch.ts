@@ -661,9 +661,9 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       // Toxic Spikes poison is excluded — the entry hazard code sets a "hazard-status-source"
       // volatile marker when Toxic Spikes inflicts status.
       // Source: Showdown data/abilities.ts — Synchronize: if (effect.id === 'toxicspikes') return;
-      if (ctx.pokemon.volatileStatuses.has("hazard-status-source" as VolatileStatus)) {
+      if (ctx.pokemon.volatileStatuses.has("hazard-status-source")) {
         // Remove the marker volatile so it doesn't persist
-        ctx.pokemon.volatileStatuses.delete("hazard-status-source" as VolatileStatus);
+        ctx.pokemon.volatileStatuses.delete("hazard-status-source");
         return NO_EFFECT;
       }
       if (ctx.opponent.pokemon.status) return NO_EFFECT;

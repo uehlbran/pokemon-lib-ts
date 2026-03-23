@@ -94,4 +94,5 @@ export type VolatileStatus =
   | "shed-tail-sub" // Shed Tail — marks the substitute was created by Shed Tail for the switch-in Pokemon (Gen 9)
   | "charged" // Charge — doubles next Electric move's power (Gen 3+)
   | "mud-sport" // Mud Sport — halves Electric-type move power for all Pokemon on the field (Gen 3-4)
-  | "water-sport"; // Water Sport — halves Fire-type move power for all Pokemon on the field (Gen 3-4)
+  | "water-sport" // Water Sport — halves Fire-type move power for all Pokemon on the field (Gen 3-4)
+  | "hazard-status-source"; // One-turn marker: set when Toxic Spikes inflicts status on switch-in; Synchronize checks this to skip reflection (Gen 5+)

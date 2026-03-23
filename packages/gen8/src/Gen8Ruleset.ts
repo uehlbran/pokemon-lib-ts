@@ -27,6 +27,7 @@ import type {
   PrimaryStatus,
   SeededRandom,
   TypeChart,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
 import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
@@ -37,7 +38,12 @@ import { calculateGen8Damage } from "./Gen8DamageCalc.js";
 import { Gen8Dynamax } from "./Gen8Dynamax.js";
 import { applyGen8EntryHazards } from "./Gen8EntryHazards.js";
 import { applyGen8HeldItem } from "./Gen8Items.js";
-import { applyGen8TerrainEffects, checkGen8TerrainStatusImmunity } from "./Gen8Terrain.js";
+import {
+  applyGen8TerrainEffects,
+  checkGen8TerrainStatusImmunity,
+  checkMistyTerrainConfusionImmunity,
+  checkPsychicTerrainPriorityBlock,
+} from "./Gen8Terrain.js";
 import { GEN8_TYPE_CHART, GEN8_TYPES } from "./Gen8TypeChart.js";
 import { applyGen8WeatherEffects } from "./Gen8Weather.js";
 
@@ -616,5 +622,37 @@ export class Gen8Ruleset extends BaseRuleset {
    */
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
     return applyGen8HeldItem(trigger, context);
+  }
+
+  // --- Terrain Blocking (Misty Confusion, Psychic Priority) ---
+
+  /**
+   * Misty Terrain prevents confusion for grounded Pokemon (Gen 6+).
+   * Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus: return null for confusion
+   */
+  shouldBlockVolatile(
+    volatile: VolatileStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): boolean {
+    if (volatile === "confusion") {
+      return checkMistyTerrainConfusionImmunity(target, state);
+    }
+    return false;
+  }
+
+  /**
+   * Psychic Terrain blocks priority moves against grounded targets (Gen 7+).
+   * Source: Showdown data/conditions.ts -- psychicterrain.onTryHit: priority > 0 blocked
+   */
+  shouldBlockPriorityMove(
+    _actor: ActivePokemon,
+    move: MoveData,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): boolean {
+    const terrainType = state.terrain?.type ?? null;
+    const movePriority = move.priority ?? 0;
+    return checkPsychicTerrainPriorityBlock(terrainType, movePriority, defender, state);
   }
 }

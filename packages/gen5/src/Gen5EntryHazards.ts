@@ -375,9 +375,7 @@ export function applyGen5EntryHazards(
       // Mark that this status came from an entry hazard, not from an opponent's move.
       // Synchronize should NOT trigger when the status source is Toxic Spikes.
       // Source: Showdown data/abilities.ts — Synchronize: if (effect.id === 'toxicspikes') return;
-      // Note: "hazard-status-source" is not in the VolatileStatus union (Gen 5-specific marker),
-      // so we cast. The Synchronize handler checks for and removes this volatile.
-      switchingIn.volatileStatuses.set("hazard-status-source" as VolatileStatus, {
+      switchingIn.volatileStatuses.set("hazard-status-source", {
         turnsLeft: 1,
       });
     }

@@ -34,7 +34,7 @@ import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
 import { applyGen6Ability } from "./Gen6Abilities.js";
 import { calculateGen6Damage } from "./Gen6DamageCalc.js";
-import { applyGen6EntryHazards } from "./Gen6EntryHazards.js";
+import { applyGen6EntryHazards, isGen6Grounded } from "./Gen6EntryHazards.js";
 import { applyGen6HeldItem } from "./Gen6Items.js";
 import { Gen6MegaEvolution } from "./Gen6MegaEvolution.js";
 import { executeGen6MoveEffect, isGen6GrassPowderBlocked } from "./Gen6MoveEffects.js";
@@ -815,6 +815,28 @@ export class Gen6Ruleset extends BaseRuleset {
    */
   override getBattleGimmick(): BattleGimmick | null {
     return new Gen6MegaEvolution();
+  }
+
+  // --- Terrain Volatile Blocking ---
+
+  /**
+   * Misty Terrain prevents confusion for grounded Pokemon (Gen 6+).
+   *
+   * Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus:
+   *   if (status.id === 'confusion') { return null; }
+   * Source: Bulbapedia "Misty Terrain" -- "prevents confusion"
+   */
+  shouldBlockVolatile(
+    volatile: VolatileStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): boolean {
+    if (volatile === "confusion") {
+      if (!state.terrain || state.terrain.type !== "misty") return false;
+      const gravityActive = state.gravity?.active ?? false;
+      return isGen6Grounded(target, gravityActive);
+    }
+    return false;
   }
 
   // --- Catch Rate ---
