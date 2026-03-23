@@ -325,7 +325,12 @@ describe("handleGen9Ability -- Triage healing move coverage (#803)", () => {
     const ctx = makeContext({
       pokemon: makeActivePokemon({ ability: "triage" }),
       trigger: "on-priority-check",
-      move: { id: "custom-heal-move", category: "status", type: "normal", effect: { type: "heal" } },
+      move: {
+        id: "custom-heal-move",
+        category: "status",
+        type: "normal",
+        effect: { type: "heal" },
+      },
     });
     const result = handleGen9Ability("on-priority-check", ctx);
     expect(result.activated).toBe(true);
