@@ -188,67 +188,67 @@ function buildDefaultTypeChart(): TypeChart {
 const TYPE_CHART = buildDefaultTypeChart();
 
 describe("getTypeMultiplier", () => {
-  it("should return 2.0 for Fire > Grass", () => {
+  it("given a Fire attacker and Grass defender, when calculating type multiplier, then returns 2.0", () => {
     expect(getTypeMultiplier("fire", "grass", TYPE_CHART)).toBe(2.0);
   });
 
-  it("should return 0.5 for Fire > Water", () => {
+  it("given a Fire attacker and Water defender, when calculating type multiplier, then returns 0.5", () => {
     expect(getTypeMultiplier("fire", "water", TYPE_CHART)).toBe(0.5);
   });
 
-  it("should return 0 for Normal > Ghost", () => {
+  it("given a Normal attacker and Ghost defender, when calculating type multiplier, then returns 0", () => {
     expect(getTypeMultiplier("normal", "ghost", TYPE_CHART)).toBe(0);
   });
 
-  it("should return 1.0 for Normal > Normal", () => {
+  it("given a Normal attacker and Normal defender, when calculating type multiplier, then returns 1.0", () => {
     expect(getTypeMultiplier("normal", "normal", TYPE_CHART)).toBe(1.0);
   });
 
-  it("should return 2.0 for Ghost > Psychic", () => {
+  it("given a Ghost attacker and Psychic defender, when calculating type multiplier, then returns 2.0", () => {
     expect(getTypeMultiplier("ghost", "psychic", TYPE_CHART)).toBe(2.0);
   });
 
-  it("should return 0 for Dragon > Fairy", () => {
+  it("given a Dragon attacker and Fairy defender, when calculating type multiplier, then returns 0", () => {
     expect(getTypeMultiplier("dragon", "fairy", TYPE_CHART)).toBe(0);
   });
 
-  it("should return 2.0 for Fairy > Dragon", () => {
+  it("given a Fairy attacker and Dragon defender, when calculating type multiplier, then returns 2.0", () => {
     expect(getTypeMultiplier("fairy", "dragon", TYPE_CHART)).toBe(2.0);
   });
 });
 
 describe("getTypeEffectiveness", () => {
-  it("should return 2.0 for Fire vs single-type Grass", () => {
+  it("given a Fire-type move and single-type Grass defender, when calculating effectiveness, then returns 2.0", () => {
     expect(getTypeEffectiveness("fire", ["grass"], TYPE_CHART)).toBe(2.0);
   });
 
-  it("should return 4.0 for Ice vs Dragon/Flying (double super effective)", () => {
+  it("given an Ice-type move and Dragon/Flying dual-type defender, when calculating effectiveness, then returns 4.0", () => {
     expect(getTypeEffectiveness("ice", ["dragon", "flying"], TYPE_CHART)).toBe(4.0);
   });
 
-  it("should return 0 for Normal vs Ghost (any dual type with Ghost)", () => {
+  it("given a Normal-type move and Ghost-type defender, when calculating effectiveness, then returns 0 regardless of second type", () => {
     expect(getTypeEffectiveness("normal", ["ghost"], TYPE_CHART)).toBe(0);
     expect(getTypeEffectiveness("normal", ["ghost", "poison"], TYPE_CHART)).toBe(0);
   });
 
-  it("should return 0.25 for Fire vs Water/Dragon (double resisted)", () => {
+  it("given a Fire-type move and Water/Dragon dual-type defender, when calculating effectiveness, then returns 0.25", () => {
     expect(getTypeEffectiveness("fire", ["water", "dragon"], TYPE_CHART)).toBe(0.25);
   });
 
-  it("should return 1.0 for neutral matchups", () => {
+  it("given a Normal-type move and Normal-type defender, when calculating effectiveness, then returns 1.0", () => {
     expect(getTypeEffectiveness("normal", ["normal"], TYPE_CHART)).toBe(1.0);
   });
 
-  it("should return 1.0 for a super-effective and resisted combination", () => {
+  it("given a Fire-type move and Grass/Water dual-type defender, when calculating effectiveness, then returns 1.0", () => {
     // Fire vs Grass/Water: 2.0 * 0.5 = 1.0
     expect(getTypeEffectiveness("fire", ["grass", "water"], TYPE_CHART)).toBe(1.0);
   });
 
-  it("should handle single-type defenders", () => {
+  it("given a Water-type move and single-type Fire defender, when calculating effectiveness, then returns 2.0", () => {
     expect(getTypeEffectiveness("water", ["fire"], TYPE_CHART)).toBe(2.0);
   });
 
-  it("should return valid effectiveness values", () => {
+  it("given any attack type and any single or dual-type defender, when calculating effectiveness, then returns a valid multiplier from the set {0, 0.25, 0.5, 1, 2, 4}", () => {
     const validValues = new Set([0, 0.25, 0.5, 1, 2, 4]);
     for (const atkType of ALL_TYPES) {
       for (const def1 of ALL_TYPES) {
@@ -268,27 +268,27 @@ describe("getTypeEffectiveness", () => {
 });
 
 describe("classifyEffectiveness", () => {
-  it("should classify 0 as immune", () => {
+  it("given a multiplier of 0, when classifying effectiveness, then returns 'immune'", () => {
     expect(classifyEffectiveness(0)).toBe("immune");
   });
 
-  it("should classify 0.25 as double-resisted", () => {
+  it("given a multiplier of 0.25, when classifying effectiveness, then returns 'double-resisted'", () => {
     expect(classifyEffectiveness(0.25)).toBe("double-resisted");
   });
 
-  it("should classify 0.5 as resisted", () => {
+  it("given a multiplier of 0.5, when classifying effectiveness, then returns 'resisted'", () => {
     expect(classifyEffectiveness(0.5)).toBe("resisted");
   });
 
-  it("should classify 1 as neutral", () => {
+  it("given a multiplier of 1, when classifying effectiveness, then returns 'neutral'", () => {
     expect(classifyEffectiveness(1)).toBe("neutral");
   });
 
-  it("should classify 2 as super-effective", () => {
+  it("given a multiplier of 2, when classifying effectiveness, then returns 'super-effective'", () => {
     expect(classifyEffectiveness(2)).toBe("super-effective");
   });
 
-  it("should classify 4 as double-super", () => {
+  it("given a multiplier of 4, when classifying effectiveness, then returns 'double-super'", () => {
     expect(classifyEffectiveness(4)).toBe("double-super");
   });
 });
