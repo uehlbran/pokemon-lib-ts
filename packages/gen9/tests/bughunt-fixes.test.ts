@@ -504,6 +504,99 @@ describe("Bug #725: Focus Sash prevents lethal hits via capLethalDamage", () => 
 });
 
 // ---------------------------------------------------------------------------
+// #804 — Focus Sash does not respect Klutz/Embargo/Magic Room item suppression
+// ---------------------------------------------------------------------------
+
+describe("Bug #804: Focus Sash respects item suppression (Klutz, Embargo, Magic Room)", () => {
+  it("given a full-HP Pokemon with Klutz holding Focus Sash, when taking lethal damage, then Focus Sash does NOT activate", () => {
+    // Source: Showdown data/abilities.ts -- klutz: suppresses all held item effects for the holder
+    // Source: Showdown data/items.ts -- Focus Sash: not activated when items are suppressed
+    const ruleset = new Gen9Ruleset();
+    const defender = makeActivePokemon({
+      heldItem: "focus-sash",
+      ability: "klutz",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Alakazam",
+    });
+    const attacker = makeActivePokemon({});
+    const move = makeMove("earthquake");
+    const state = makeState();
+
+    const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
+
+    expect(result.damage).toBe(500);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given a full-HP Pokemon under Embargo holding Focus Sash, when taking lethal damage, then Focus Sash does NOT activate", () => {
+    // Source: Showdown data/moves.ts -- embargo: target's item is unusable
+    // Source: Showdown data/items.ts -- Focus Sash: not activated when items are suppressed
+    const ruleset = new Gen9Ruleset();
+    const defender = makeActivePokemon({
+      heldItem: "focus-sash",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Gardevoir",
+      volatileStatuses: new Map([["embargo", { turnsLeft: 5 }]]),
+    });
+    const attacker = makeActivePokemon({});
+    const move = makeMove("shadow-ball");
+    const state = makeState();
+
+    const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
+
+    expect(result.damage).toBe(500);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given Magic Room is active and a full-HP Pokemon holds Focus Sash, when taking lethal damage, then Focus Sash does NOT activate", () => {
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all held item effects
+    const ruleset = new Gen9Ruleset();
+    const defender = makeActivePokemon({
+      heldItem: "focus-sash",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Espeon",
+    });
+    const attacker = makeActivePokemon({});
+    const move = makeMove("dark-pulse");
+    const state = makeState();
+    (state as any).magicRoom = { active: true, turnsLeft: 3 };
+
+    const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
+
+    expect(result.damage).toBe(500);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given no suppression and a full-HP Pokemon with Focus Sash, when taking lethal damage, then Focus Sash still works normally", () => {
+    // Source: Showdown data/items.ts -- Focus Sash: activates when no suppression
+    // Regression: ensure the suppression check doesn't break normal behavior
+    const ruleset = new Gen9Ruleset();
+    const defender = makeActivePokemon({
+      heldItem: "focus-sash",
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Shedinja",
+    });
+    const attacker = makeActivePokemon({});
+    const move = makeMove("fire-blast");
+    const state = makeState();
+
+    const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
+
+    expect(result.damage).toBe(199); // 200 - 1
+    expect(result.survived).toBe(true);
+    expect(result.consumedItem).toBe("focus-sash");
+    expect(result.messages[0]).toContain("Focus Sash");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // #726 — Lansat Berry grants crit stages
 // ---------------------------------------------------------------------------
 
