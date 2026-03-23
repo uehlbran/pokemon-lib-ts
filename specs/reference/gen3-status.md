@@ -127,7 +127,7 @@ Weather-damage → future-attack → wish → weather-healing → leftovers → 
 | Item | Issue | Reason |
 |------|-------|--------|
 | Choice Band move lock | #690 | Engine move-locking system needed |
-| Cloud Nine / Air Lock | #691 | Weather suppression system needed |
+| Cloud Nine / Air Lock | #691 CLOSED, #792 open | Implemented in gen3 + gen4 (issue #691 CLOSED). Gen5-9 still missing — see #792 |
 | Forecast (Castform) | #692 | Form change mechanism needed (engine hook exists; Forecast logic added PR #489 but form change pending) |
 | Spread move penalty | (doubles initiative) | Doubles only |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Charge (doubled Electric power), Mud Sport (halve Electric), Water Sport (halve Fire) (closes #706 #705) |

@@ -206,6 +206,9 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTy
     // teraOriginalTypes stores original types; teraTypes mirrors originalTypes for Stellar
     const pokemon = makeActive({
       types: ["fire", "flying"],
+      // "stellar" is a valid Gen 9 Tera type but is not in the PokemonType union
+      // (it has no type chart entry and is Gen 9-specific). Cast mirrors the
+      // Gen9Terastallization.ts pattern — same rationale as (teraType as string) checks there.
       teraType: "stellar" as PokemonType,
     });
     const side = makeSide();

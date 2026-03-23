@@ -173,9 +173,8 @@ describe("#684 — Gen6 Phantom Force Power Herb check", () => {
 
     expect(result).not.toBeNull();
     // Power Herb NOT consumed
-    expect(result!.attackerItemConsumed).toBeFalsy();
-    // Charge turn proceeds normally — forcedMoveSet should be set
-    expect(result!.forcedMoveSet).toBeDefined();
+    expect(result!.attackerItemConsumed).toBeUndefined();
+    // Charge turn proceeds normally — forcedMoveSet is set with expected fields
     expect(result!.forcedMoveSet!.moveId).toBe("phantom-force");
     expect(result!.forcedMoveSet!.volatileStatus).toBe("shadow-force-charging");
     // Message should be the normal charge message, not Power Herb
@@ -198,9 +197,8 @@ describe("#684 — Gen6 Phantom Force Power Herb check", () => {
 
     expect(result).not.toBeNull();
     // Power Herb NOT consumed
-    expect(result!.attackerItemConsumed).toBeFalsy();
-    // Charge turn proceeds normally
-    expect(result!.forcedMoveSet).toBeDefined();
+    expect(result!.attackerItemConsumed).toBeUndefined();
+    // Charge turn proceeds normally — forcedMoveSet is set with expected move
     expect(result!.forcedMoveSet!.moveId).toBe("phantom-force");
   });
 
@@ -217,8 +215,7 @@ describe("#684 — Gen6 Phantom Force Power Herb check", () => {
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.attackerItemConsumed).toBeFalsy();
-    expect(result!.forcedMoveSet).toBeDefined();
+    expect(result!.attackerItemConsumed).toBeUndefined();
     expect(result!.forcedMoveSet!.moveId).toBe("phantom-force");
     expect(result!.forcedMoveSet!.volatileStatus).toBe("shadow-force-charging");
     expect(result!.messages[0]).toContain("vanished");

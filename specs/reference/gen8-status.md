@@ -117,7 +117,7 @@
 
 ## Test Coverage
 
-27 test files, **1,193 tests** (as of bughunt PR — `fix/gen5-8-bughunt`).
+28 test files, **1,208 tests** (as of PR #786 — `fix/remaining-issues-684-756-757`).
 **Branch coverage: 82.27%** (threshold: 80%).
 Statement: 87.05% | Functions: 87.87% | Lines: 87.05%
 

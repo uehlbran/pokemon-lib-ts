@@ -43,7 +43,7 @@
 - [x] Integration tests + 82.6% branch coverage — Wave 10 (PR #638)
 
 ## Test count
-- 793 → 1069 tests (276 added in Wave 10)
+- 793 → 1069 tests (276 added in Wave 10) → 1,135 tests (as of PR #786)
 - Branch coverage: 68.24% → 82.61%
 
 ## Bug Fixes (merged alongside waves)

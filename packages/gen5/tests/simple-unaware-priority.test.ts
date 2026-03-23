@@ -280,12 +280,18 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
     );
 
     // Simple at +2 (effective +4, 3.0x) should deal more than non-Simple at +2 (2.0x).
-    // With 100 attack, 100 defense, power 50, level 50:
-    // Base damage ≈ floor(floor(floor(2*50/5+2) * 50 * atk/def) / 50 + 2)
-    //            ≈ floor(floor(22 * 50 * 1) / 50 + 2) = floor(22 + 2) = 24 (before roll)
-    // With 3.0x multiplier (Simple +4): floor(100 * 3.0) = 300 effective attack
-    // With 2.0x multiplier (Normal +2): floor(100 * 2.0) = 200 effective attack
-    expect(resultSimple.damage).toBeGreaterThan(resultNormal.damage);
+    // Attacker is Normal type using Normal move → STAB applies via pokeRound(n, 6144).
+    // pokeRound formula: floor((n * 6144 + 2047) / 4096)
+    // Source: Showdown sim/battle.ts line 2344 — tr((tr(n*m)+2048-1)/4096)
+    //
+    // Mulberry32(99999) → roll=100:
+    // Simple +4 (3.0x): A=300, base=floor(floor(22*50*300/100)/50)+2=68,
+    //   STAB: floor((68*6144+2047)/4096)=floor(419839/4096)=102
+    // Normal +2 (2.0x): A=200, base=floor(floor(22*50*200/100)/50)+2=46,
+    //   STAB: floor((46*6144+2047)/4096)=floor(284671/4096)=69
+    // Source: Gen5 damage formula -- floor(floor(floor(2*L/5+2)*P*A/D)/50)+2, then STAB pokeRound
+    expect(resultSimple.damage).toBe(102);
+    expect(resultNormal.damage).toBe(69);
   });
 
   it("given attacker has Mold Breaker with +2 atk stages and defender has Unaware, when calculating damage, then Mold Breaker bypasses Unaware (stages apply)", () => {
@@ -424,10 +430,18 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
       typeChart,
     );
 
-    // With Mold Breaker: defender has +2 def (2.0x), lower defense = MORE damage
-    // Without Mold Breaker: defender has +4 def (3.0x from Simple), higher defense = LESS damage
-    // So Mold Breaker should produce MORE damage than without it.
-    expect(resultMoldBreaker.damage).toBeGreaterThan(resultNoBreaker.damage);
+    // Attacker (Mold Breaker) is Normal type using Normal move → STAB via pokeRound(n, 6144).
+    // pokeRound formula: floor((n * 6144 + 2047) / 4096)
+    // Source: Showdown sim/battle.ts line 2344 — tr((tr(n*m)+2048-1)/4096)
+    //
+    // Mulberry32(99999) → roll=100:
+    // Mold Breaker: def=200 (+2, Simple bypassed), base=floor(floor(22*50*100/200)/50)+2=13,
+    //   STAB: floor((13*6144+2047)/4096)=floor(81919/4096)=19
+    // No Breaker: def=300 (+4 from Simple, not bypassed), base=floor(floor(22*50*100/300)/50)+2=9,
+    //   STAB: floor((9*6144+2047)/4096)=floor(57343/4096)=13
+    // Source: Gen5 damage formula + STAB pokeRound
+    expect(resultMoldBreaker.damage).toBe(19);
+    expect(resultNoBreaker.damage).toBe(13);
   });
 
   it("given attacker has Unaware and defender has Mold Breaker with +2 def stages, when calculating defense stat stage, then Unaware zeros defender's stages (defender MB cannot bypass attacker's Unaware)", () => {

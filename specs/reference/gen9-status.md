@@ -51,8 +51,6 @@
 | Z-Moves | Removed in Gen 9 |
 | Doubles mechanics | Engine doesn't support doubles |
 | Sky Drop / Pledge moves | Same engine-level deferral as Gen 6-8 |
-| Psychic Terrain priority block engine wiring | checkPsychicTerrainPriorityBlock() helper exists but not wired into engine move execution path |
-| Misty Terrain confusion immunity engine wiring | checkMistyTerrainConfusionImmunity() helper exists but engine applies volatiles unconditionally |
 
 ---
 
@@ -71,7 +69,7 @@
 | 8B | ~74 | Move effects (Population Bomb, Salt Cure, Shed Tail, etc.) |
 | 9 | 35 | Integration tests (cross-mechanic, determinism, Tera+damage) |
 
-**Total: 1,031 tests**
+**Total: 1,053 tests**
 
 Coverage (v8):
 - Statements: 91.56%
