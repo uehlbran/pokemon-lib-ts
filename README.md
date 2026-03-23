@@ -40,7 +40,7 @@ Modular TypeScript libraries for building Pokemon battle simulators, fan games, 
 
 ## Architecture
 
-```
+```text
 core  <-  battle  <-  gen1  <-  your app
                   <-  gen2  <-  your app
                   ...
