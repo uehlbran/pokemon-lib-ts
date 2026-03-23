@@ -247,6 +247,21 @@ function handlePhantomForce(ctx: MoveEffectContext): MoveEffectResult | null {
     return null;
   }
 
+  // Power Herb: skip charge turn, consume the item immediately.
+  // Klutz and Embargo suppress item effects — Power Herb is ineffective.
+  // Source: Showdown data/items.ts -- powerherb: onTryMove skips charge, item consumed
+  // Source: Showdown data/abilities.ts -- klutz: item has no effect
+  const itemSuppressed = attacker.ability === "klutz" || attacker.volatileStatuses.has("embargo");
+  if (attacker.pokemon.heldItem === "power-herb" && !itemSuppressed) {
+    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+    const base = createBaseResult();
+    return {
+      ...base,
+      attackerItemConsumed: true,
+      messages: [`${attackerName} became fully charged due to its Power Herb!`],
+    };
+  }
+
   // First turn: charge -- set the semi-invulnerable volatile and force the move next turn.
   const volatile = GEN6_TWO_TURN_VOLATILE_MAP[move.id];
   if (!volatile) return null;

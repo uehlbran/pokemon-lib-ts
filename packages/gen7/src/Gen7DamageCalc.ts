@@ -369,9 +369,15 @@ function getTerrainDamageModifier(
 // ---- Stat Stage Helpers ----
 
 /**
- * Get effective stat stage accounting for Simple and Unaware abilities.
+ * Get effective stat stage accounting for Simple, Unaware, and Mold Breaker abilities.
  *
- * Source: Showdown sim/battle.ts -- Simple doubles stat stages; Unaware ignores them
+ * Priority order:
+ *   1. Unaware on the opponent ignores this Pokemon's stat stages (unless bypassed by Mold Breaker)
+ *   2. Simple on this Pokemon doubles stat stages (unless bypassed by opponent's Mold Breaker)
+ *   3. Otherwise, return raw stages
+ *
+ * Source: Showdown sim/battle.ts -- Unaware's onAnyModifyBoost runs before Simple's doubling
+ * Source: Showdown data/abilities.ts -- moldbreaker/turboblaze/teravolt bypass Unaware/Simple
  */
 function getEffectiveStatStage(
   pokemon: ActivePokemon,
