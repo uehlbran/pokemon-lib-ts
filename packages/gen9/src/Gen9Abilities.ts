@@ -23,6 +23,108 @@ import { handleGen9SwitchAbility } from "./Gen9AbilitiesSwitch.js";
 const NO_ACTIVATION: AbilityResult = { activated: false, effects: [], messages: [] };
 
 // ---------------------------------------------------------------------------
+// Carry-forward on-priority-check abilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Healing moves for Triage priority boost.
+ * Source: Showdown data/abilities.ts -- triage: move.flags.heal
+ */
+const HEALING_MOVES: ReadonlySet<string> = new Set([
+  "absorb",
+  "drain-punch",
+  "draining-kiss",
+  "giga-drain",
+  "horn-leech",
+  "leech-life",
+  "mega-drain",
+  "oblivion-wing",
+  "parabolic-charge",
+  "heal-order",
+  "heal-pulse",
+  "milk-drink",
+  "moonlight",
+  "morning-sun",
+  "recover",
+  "rest",
+  "roost",
+  "slack-off",
+  "soft-boiled",
+  "synthesis",
+  "wish",
+  "floral-healing",
+  "purify",
+  "shore-up",
+  "strength-sap",
+]);
+
+function isHealingMove(moveId: string, effectType: string | null): boolean {
+  if (HEALING_MOVES.has(moveId)) return true;
+  if (effectType === "drain") return true;
+  return false;
+}
+
+/**
+ * Handle carry-forward on-priority-check abilities for Gen 9.
+ *
+ * These abilities have identical behavior to Gen 8:
+ *   - Prankster: +1 priority to status moves
+ *   - Gale Wings: +1 priority to Flying-type moves at full HP (Gen 7+ nerf)
+ *   - Triage: +3 priority to healing moves
+ *
+ * Source: Showdown data/abilities.ts -- Prankster, Gale Wings, Triage onModifyPriority
+ */
+function handleCarryForwardPriorityCheck(ctx: AbilityContext): AbilityResult {
+  const abilityId = ctx.pokemon.ability;
+  if (!ctx.move) return NO_ACTIVATION;
+
+  const getName = () => ctx.pokemon.pokemon.nickname ?? String(ctx.pokemon.pokemon.speciesId);
+
+  switch (abilityId) {
+    case "prankster": {
+      // +1 priority to status moves
+      // Source: Showdown data/abilities.ts -- move.category === 'Status'
+      if (ctx.move.category !== "status") return NO_ACTIVATION;
+      return {
+        activated: true,
+        effects: [],
+        messages: [`${getName()}'s Prankster boosted the move's priority!`],
+        priorityBoost: 1,
+      };
+    }
+
+    case "gale-wings": {
+      // +1 priority to Flying moves at full HP (Gen 7+ nerf)
+      // Source: Showdown data/abilities.ts -- requires pokemon.hp === pokemon.maxhp
+      if (ctx.move.type !== "flying") return NO_ACTIVATION;
+      const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
+      if (ctx.pokemon.pokemon.currentHp < maxHp) return NO_ACTIVATION;
+      return {
+        activated: true,
+        effects: [],
+        messages: [`${getName()}'s Gale Wings boosted the move's priority!`],
+        priorityBoost: 1,
+      };
+    }
+
+    case "triage": {
+      // +3 priority to healing moves
+      // Source: Showdown data/abilities.ts -- triage: onModifyPriority +3
+      if (!isHealingMove(ctx.move.id, ctx.move.effect?.type ?? null)) return NO_ACTIVATION;
+      return {
+        activated: true,
+        effects: [],
+        messages: [`${getName()}'s Triage boosted the move's priority!`],
+        priorityBoost: 3,
+      };
+    }
+
+    default:
+      return NO_ACTIVATION;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Abilities handled by Gen9AbilitiesNew (precedence check)
 // ---------------------------------------------------------------------------
 
@@ -76,7 +178,7 @@ export function handleGen9Ability(trigger: AbilityTrigger, context: AbilityConte
     if (result.activated) return result;
   }
 
-  // 3. Carry-forward switch/contact/passive abilities
+  // 3. Carry-forward abilities by trigger
   switch (trigger) {
     case "on-switch-in":
     case "on-switch-out":
@@ -84,6 +186,11 @@ export function handleGen9Ability(trigger: AbilityTrigger, context: AbilityConte
     case "on-status-inflicted":
     case "on-turn-end":
       return handleGen9SwitchAbility(trigger, context);
+
+    // Carry-forward priority abilities (Prankster, Gale Wings, Triage)
+    // Source: Showdown data/abilities.ts -- onModifyPriority handlers
+    case "on-priority-check":
+      return handleCarryForwardPriorityCheck(context);
 
     default:
       return NO_ACTIVATION;

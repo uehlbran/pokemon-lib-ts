@@ -545,6 +545,21 @@ export interface AbilityResult {
   readonly messages: readonly string[];
   /** Set to `true` when an ability blocks the move entirely (e.g., Truant skips a turn) */
   readonly movePrevented?: boolean;
+  /**
+   * Priority boost returned by `on-priority-check` triggers.
+   * Used by `resolveTurnOrder` to adjust move priority.
+   *
+   * - Prankster: +1 (status moves)
+   * - Gale Wings: +1 (Flying-type moves; Gen 7+ requires full HP)
+   * - Triage: +3 (healing moves)
+   * - Quick Draw: treated as "go first" within bracket (not a numeric boost)
+   *
+   * Absent or 0 means no priority modification.
+   *
+   * Source: Showdown sim/battle.ts -- getActionSpeed computes effective priority
+   *   including ability boosts (onModifyPriority / onFractionalPriority)
+   */
+  readonly priorityBoost?: number;
 }
 
 /**

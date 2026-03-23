@@ -215,15 +215,31 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
         let priorityA = 0;
         let priorityB = 0;
+        let moveDataA: MoveData | undefined;
+        let moveDataB: MoveData | undefined;
         try {
-          priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
+          moveDataA = this.dataManager.getMove(moveSlotA.moveId);
+          priorityA = moveDataA.priority;
         } catch {
           /* default 0 */
         }
         try {
-          priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
+          moveDataB = this.dataManager.getMove(moveSlotB.moveId);
+          priorityB = moveDataB.priority;
         } catch {
           /* default 0 */
+        }
+
+        // Ability-based priority boosts (Prankster, Gale Wings, Triage, etc.)
+        // Source: Showdown sim/battle.ts -- getActionSpeed computes effective priority
+        //   including ability boosts via onModifyPriority
+        if (this.hasAbilities()) {
+          if (activeA.ability && moveDataA) {
+            priorityA += this.getAbilityPriorityBoost(activeA, moveDataA, state);
+          }
+          if (activeB.ability && moveDataB) {
+            priorityB += this.getAbilityPriorityBoost(activeB, moveDataB, state);
+          }
         }
 
         if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
@@ -270,6 +286,32 @@ export abstract class BaseRuleset implements GenerationRuleset {
     _rng: SeededRandom,
   ): Set<number> {
     return new Set();
+  }
+
+  /**
+   * Calculate the ability-based priority boost for a Pokemon's move.
+   *
+   * Calls `applyAbility("on-priority-check", ...)` and returns the `priorityBoost`
+   * from the result. Subclasses can override for gen-specific behavior.
+   *
+   * Default behavior: returns `result.priorityBoost` if the ability activated, else 0.
+   *
+   * Source: Showdown sim/battle.ts -- getActionSpeed calls onModifyPriority
+   */
+  protected getAbilityPriorityBoost(
+    active: ActivePokemon,
+    moveData: MoveData,
+    state: BattleState,
+  ): number {
+    const result = this.applyAbility("on-priority-check", {
+      pokemon: active,
+      state,
+      rng: state.rng,
+      trigger: "on-priority-check",
+      move: moveData,
+    });
+    if (!result.activated) return 0;
+    return result.priorityBoost ?? 0;
   }
 
   doesMoveHit(context: AccuracyContext): boolean {

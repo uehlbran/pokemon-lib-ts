@@ -598,12 +598,9 @@ export class Gen7Ruleset extends BaseRuleset {
 
     if (!result.activated) return 0;
 
-    // Triage: +3 priority for healing moves
-    // Source: Showdown data/abilities.ts -- triage: onModifyPriority +3
-    if (active.ability === "triage") return 3;
-
-    // Prankster / Gale Wings: +1
-    return 1;
+    // Use priorityBoost from result (Prankster: +1, Gale Wings: +1, Triage: +3)
+    // Source: Showdown data/abilities.ts -- onModifyPriority handlers
+    return result.priorityBoost ?? 0;
   }
 
   /**

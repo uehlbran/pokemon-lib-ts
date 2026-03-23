@@ -125,6 +125,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
     activated: true,
     effects: [],
     messages: [`${name}'s Prankster boosted the move's priority!`],
+    priorityBoost: 1,
   };
 }
 

@@ -123,6 +123,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
         activated: true,
         effects: [],
         messages: [`${name}'s Prankster boosted the move's priority!`],
+        priorityBoost: 1,
       };
     }
 
@@ -141,6 +142,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
         activated: true,
         effects: [],
         messages: [`${name}'s Gale Wings boosted the move's priority!`],
+        priorityBoost: 1,
       };
     }
 
@@ -155,6 +157,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
         activated: true,
         effects: [],
         messages: [`${name}'s Triage boosted the move's priority!`],
+        priorityBoost: 3,
       };
     }
 

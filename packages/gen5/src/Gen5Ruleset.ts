@@ -589,7 +589,7 @@ export class Gen5Ruleset extends BaseRuleset {
             move: moveDataA,
           });
           if (resultA.activated) {
-            priorityA += 1;
+            priorityA += resultA.priorityBoost ?? 1;
           }
         }
         if (activeB.ability && moveDataB) {
@@ -601,7 +601,7 @@ export class Gen5Ruleset extends BaseRuleset {
             move: moveDataB,
           });
           if (resultB.activated) {
-            priorityB += 1;
+            priorityB += resultB.priorityBoost ?? 1;
           }
         }
 
