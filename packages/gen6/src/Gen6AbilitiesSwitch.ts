@@ -1,5 +1,5 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, MoveData, PokemonType } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 6 switch-in, contact, switch-out, and passive ability handlers.
@@ -55,58 +55,18 @@ function getOpponentName(ctx: AbilityContext): string {
 const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
 
 /**
- * Abilities that cannot be overwritten by Mummy.
+ * Abilities that cannot be overwritten by Mummy in Gen 6.
+ * Gen 6 only has three unsuppressable abilities: Multitype, Stance Change, and Zen Mode.
+ * Later gens added more (Schooling, Disguise, RKS System, etc.) but those don't exist in Gen 6.
+ *
+ * Source: Showdown data/mods/gen6/abilities.ts — cantsuppress flag for Gen 6
  * Source: Showdown data/abilities.ts — { cantsuppress: 1 } flag
  */
-const UNSUPPRESSABLE_ABILITIES = new Set([
-  "multitype",
-  "stance-change",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "power-construct",
-  "ice-face",
-  "gulp-missile",
-  "as-one-glastrier",
-  "as-one-spectrier",
-  "zen-mode",
-]);
+const UNSUPPRESSABLE_ABILITIES = new Set(["multitype", "stance-change", "zen-mode"]);
 
-/**
- * Moves blocked by Bulletproof (ball/bomb moves).
- * Source: Showdown data/abilities.ts — bulletproof: move.flags.bullet
- * Source: Bulbapedia -- Bulletproof: "Protects from ball and bomb moves."
- */
-const BULLETPROOF_BLOCKED_MOVES = new Set([
-  "acid-spray",
-  "aura-sphere",
-  "barrage",
-  "brine",
-  "bullet-seed",
-  "cannonball",
-  "egg-bomb",
-  "electro-ball",
-  "energy-ball",
-  "focus-blast",
-  "gyro-ball",
-  "ice-ball",
-  "magnet-bomb",
-  "mist-ball",
-  "mud-bomb",
-  "octazooka",
-  "pollen-puff",
-  "pyro-ball",
-  "rock-blast",
-  "rock-wrecker",
-  "seed-bomb",
-  "shadow-ball",
-  "sludge-bomb",
-  "weather-ball",
-  "zap-cannon",
-]);
+// Bulletproof uses the move.flags.bullet flag (see handler and isBulletproofBlocked).
+// Source: Showdown data/abilities.ts — bulletproof: `move.flags['bullet']`
+// Source: Bulbapedia -- Bulletproof: "Protects from ball and bomb moves."
 
 /**
  * Move IDs that Aroma Veil blocks (mental interference moves).
@@ -886,7 +846,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
       //   blocks moves with the "bullet" flag (ball/bomb moves)
       // Source: Bulbapedia — Bulletproof: "Protects the Pokemon from some ball and bomb moves."
       if (!ctx.move) return NO_EFFECT;
-      if (!BULLETPROOF_BLOCKED_MOVES.has(ctx.move.id)) return NO_EFFECT;
+      if (!ctx.move.flags?.bullet) return NO_EFFECT;
       const name = getName(ctx);
       return {
         activated: true,
@@ -899,18 +859,10 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Sweet Veil (Gen 6 new):
       //   prevents sleep status on self and allies
       // Source: Bulbapedia — Sweet Veil: "Prevents the Pokemon and its allies from falling asleep."
-      // For passive-immunity, this blocks sleep-inducing moves on the holder.
-      const moveId = ctx.move?.id;
-      const sleepMoves = new Set([
-        "sleep-powder",
-        "spore",
-        "hypnosis",
-        "lovely-kiss",
-        "sing",
-        "grasswhistle",
-        "yawn",
-      ]);
-      if (!moveId || !sleepMoves.has(moveId)) return NO_EFFECT;
+      // For passive-immunity, this blocks any move that would inflict sleep.
+      // Uses effect-based detection instead of a hardcoded move list.
+      if (!ctx.move) return NO_EFFECT;
+      if (!moveInflictsSleep(ctx.move)) return NO_EFFECT;
       const name = getName(ctx);
       return {
         activated: true,
@@ -1032,6 +984,46 @@ export function isAromaVeilBlocked(moveId: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Sweet Veil helper: detect sleep-inflicting moves by effect
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns whether a move would inflict sleep on the target, based on its effect data.
+ * Checks for:
+ *   - status-guaranteed with status === "sleep"
+ *   - status-chance with status === "sleep"
+ *   - volatile-status with status === "yawn" (Yawn causes sleep next turn)
+ *   - multi effects containing any of the above
+ *
+ * Source: Showdown data/abilities.ts -- sweetveil: checks for sleep status infliction
+ * Source: Bulbapedia "Sweet Veil" -- "Prevents the Pokemon and its allies from falling asleep."
+ */
+function moveInflictsSleep(move: MoveData): boolean {
+  const effect = move.effect;
+  if (!effect) return false;
+  return effectCausesSleep(effect);
+}
+
+/**
+ * Recursively checks whether a MoveEffect inflicts sleep.
+ */
+function effectCausesSleep(effect: NonNullable<MoveData["effect"]>): boolean {
+  switch (effect.type) {
+    case "status-guaranteed":
+      return effect.status === "sleep";
+    case "status-chance":
+      return effect.status === "sleep";
+    case "volatile-status":
+      // Yawn causes sleep the following turn
+      return effect.status === "yawn";
+    case "multi":
+      return effect.effects.some((e) => effectCausesSleep(e));
+    default:
+      return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Trapping ability checks (exported for engine use)
 // ---------------------------------------------------------------------------
 
@@ -1086,9 +1078,15 @@ export const VICTORY_STAR_ACCURACY_MULTIPLIER = 4506 / 4096;
 
 /**
  * Returns whether a move is blocked by Bulletproof.
+ * Uses the move.flags.bullet flag instead of a hardcoded move list.
  *
- * Source: Showdown data/abilities.ts — bulletproof: move.flags.bullet
+ * Source: Showdown data/abilities.ts — bulletproof: move.flags['bullet']
+ * Source: Bulbapedia "Bulletproof" -- "Protects from ball and bomb moves."
  */
-export function isBulletproofBlocked(moveId: string): boolean {
-  return BULLETPROOF_BLOCKED_MOVES.has(moveId);
+export function isBulletproofBlocked(
+  abilityId: string,
+  moveFlags: Record<string, boolean>,
+): boolean {
+  if (abilityId !== "bulletproof") return false;
+  return !!moveFlags.bullet;
 }

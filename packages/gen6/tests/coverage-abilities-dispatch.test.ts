@@ -665,6 +665,87 @@ describe("handleGen6StatAbility — branch coverage", () => {
     expect(result.activated).toBe(false);
   });
 
+  // --- Stance Change (bug #675) ---
+
+  it("given Stance Change (Aegislash, speciesId 681) using Shadow Ball, when on-before-move, then transforms to Blade Forme", () => {
+    // Source: Showdown data/abilities.ts -- stancechange: attacking moves switch to Blade Forme
+    // Source: Bulbapedia "Stance Change" -- "Aegislash changes to Blade Forme when using an attacking move"
+    // Bug #675: Previously handleBeforeMove only handled Protean; Stance Change was missing.
+    const pokemon = makePokemon({
+      ability: "stance-change",
+      speciesId: 681,
+    });
+    const ctx = {
+      pokemon,
+      state: makeState(),
+      rng: makeState().rng,
+      trigger: "on-before-move",
+      move: makeMove("ghost", { id: "shadow-ball", category: "special" }),
+    } as unknown as AbilityContext;
+    const result = handleGen6StatAbility(ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("volatile-inflict");
+    expect(result.effects[0]?.volatile).toBe("stance-change-blade");
+    expect(result.messages[0]).toContain("Blade Forme");
+  });
+
+  it("given Stance Change (Aegislash) already in Blade Forme using King's Shield, when on-before-move, then transforms to Shield Forme", () => {
+    // Source: Showdown data/abilities.ts -- stancechange: King's Shield reverts to Shield Forme
+    // Source: Bulbapedia "Stance Change" -- "reverts to Shield Forme when using King's Shield"
+    const pokemon = makePokemon({
+      ability: "stance-change",
+      speciesId: 681,
+    });
+    pokemon.volatileStatuses.set("stance-change-blade", { turnsLeft: -1 } as never);
+    const ctx = {
+      pokemon,
+      state: makeState(),
+      rng: makeState().rng,
+      trigger: "on-before-move",
+      move: makeMove("steel", { id: "kings-shield", category: "status" }),
+    } as unknown as AbilityContext;
+    const result = handleGen6StatAbility(ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]?.effectType).toBe("volatile-remove");
+    expect(result.effects[0]?.volatile).toBe("stance-change-blade");
+    expect(result.messages[0]).toContain("Shield Forme");
+  });
+
+  it("given Stance Change (Aegislash) in Shield Forme using status move (not King's Shield), when on-before-move, then does not activate", () => {
+    // Source: Showdown data/abilities.ts -- stancechange: status moves other than King's Shield
+    // do not trigger Stance Change when in Shield Forme
+    const pokemon = makePokemon({
+      ability: "stance-change",
+      speciesId: 681,
+    });
+    const ctx = {
+      pokemon,
+      state: makeState(),
+      rng: makeState().rng,
+      trigger: "on-before-move",
+      move: makeMove("normal", { id: "protect", category: "status" }),
+    } as unknown as AbilityContext;
+    const result = handleGen6StatAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Stance Change on non-Aegislash (wrong speciesId), when on-before-move with attack, then does not activate", () => {
+    // Source: Showdown data/abilities.ts -- stancechange only applies to Aegislash (speciesId 681)
+    const pokemon = makePokemon({
+      ability: "stance-change",
+      speciesId: 25, // Pikachu, not Aegislash
+    });
+    const ctx = {
+      pokemon,
+      state: makeState(),
+      rng: makeState().rng,
+      trigger: "on-before-move",
+      move: makeMove("electric", { id: "thunderbolt", category: "special" }),
+    } as unknown as AbilityContext;
+    const result = handleGen6StatAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
   it("given Steadfast with non-steadfast ability, when on-flinch, then does not activate", () => {
     // Source: Showdown -- only Steadfast responds to flinch
     const ctx = makeCtx({

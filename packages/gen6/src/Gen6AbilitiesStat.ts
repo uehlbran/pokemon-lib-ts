@@ -147,26 +147,79 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
  * Source: Showdown data/abilities.ts -- protean: onPrepareHit
  */
 function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult {
-  if (abilityId !== "protean") return INACTIVE;
-  if (!ctx.move) return INACTIVE;
+  switch (abilityId) {
+    case "protean": {
+      if (!ctx.move) return INACTIVE;
 
-  const moveType = ctx.move.type;
-  // Only activates if the Pokemon's types do not already include the move's type
-  // Source: Showdown data/abilities.ts -- protean: if type matches, no change
-  if (ctx.pokemon.types.includes(moveType)) return INACTIVE;
+      const moveType = ctx.move.type;
+      // Only activates if the Pokemon's types do not already include the move's type
+      // Source: Showdown data/abilities.ts -- protean: if type matches, no change
+      if (ctx.pokemon.types.includes(moveType)) return INACTIVE;
 
-  const name = getName(ctx);
-  return {
-    activated: true,
-    effects: [
-      {
-        effectType: "type-change",
-        target: "self",
-        types: [moveType],
-      },
-    ],
-    messages: [`${name}'s Protean changed its type to ${moveType}!`],
-  };
+      const name = getName(ctx);
+      return {
+        activated: true,
+        effects: [
+          {
+            effectType: "type-change",
+            target: "self",
+            types: [moveType],
+          },
+        ],
+        messages: [`${name}'s Protean changed its type to ${moveType}!`],
+      };
+    }
+
+    case "stance-change": {
+      // Source: Showdown data/abilities.ts -- stancechange onBeforeMove:
+      //   If using King's Shield and in Blade Forme => change to Shield Forme
+      //   If using a damaging move and in Shield Forme => change to Blade Forme
+      // Source: Bulbapedia "Stance Change" -- "Changes from Shield Forme to Blade Forme
+      //   before using an attack move and from Blade Forme to Shield Forme when using
+      //   King's Shield."
+      // Only Aegislash (species 681) has Stance Change
+      if (ctx.pokemon.pokemon.speciesId !== 681) return INACTIVE;
+      if (!ctx.move) return INACTIVE;
+
+      const name = getName(ctx);
+      const isBladeForm = ctx.pokemon.volatileStatuses.has("stance-change-blade" as never);
+
+      if (ctx.move.id === "kings-shield" && isBladeForm) {
+        // Blade -> Shield: remove blade volatile
+        return {
+          activated: true,
+          effects: [
+            {
+              effectType: "volatile-remove",
+              target: "self",
+              volatile: "stance-change-blade" as never,
+            },
+          ],
+          messages: [`${name} changed to Shield Forme!`],
+        };
+      }
+
+      if (ctx.move.category !== "status" && !isBladeForm) {
+        // Shield -> Blade: add blade volatile
+        return {
+          activated: true,
+          effects: [
+            {
+              effectType: "volatile-inflict",
+              target: "self",
+              volatile: "stance-change-blade" as never,
+            },
+          ],
+          messages: [`${name} changed to Blade Forme!`],
+        };
+      }
+
+      return INACTIVE;
+    }
+
+    default:
+      return INACTIVE;
+  }
 }
 
 // ---------------------------------------------------------------------------

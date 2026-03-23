@@ -148,7 +148,9 @@ function handleHarvest(ctx: AbilityContext): AbilityResult {
 
   const berryId = harvestData.data.berryId as string;
 
-  const isSunny = ctx.state.weather?.type === "sun";
+  // Source: Showdown data/abilities.ts -- harvest: `this.field.isWeather(['sunnyday', 'desolateland'])`
+  // Both regular sun and harsh sun (Desolate Land) guarantee Harvest activation.
+  const isSunny = ctx.state.weather?.type === "sun" || ctx.state.weather?.type === "harsh-sun";
   if (!isSunny) {
     const roll = ctx.rng.next();
     if (roll >= HARVEST_BASE_PROBABILITY) return NO_EFFECT;

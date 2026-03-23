@@ -330,6 +330,27 @@ describe("Harvest (on-turn-end)", () => {
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(false);
   });
+
+  it("given Harvest in harsh-sun (Desolate Land) with consumed berry, when on-turn-end, then always restores berry", () => {
+    // Source: Showdown data/abilities.ts -- harvest: `this.field.isWeather(['sunnyday', 'desolateland'])`
+    // Both regular sun and harsh sun (Desolate Land) guarantee Harvest activation.
+    // Bug #673: Previously only checked for "sun", missing "harsh-sun".
+    const harvestVolatiles = new Map([
+      ["harvest-berry", { turnsLeft: -1, data: { berryId: "lum-berry" } }],
+    ]);
+    const ctx = makeContext({
+      ability: "harvest",
+      trigger: "on-turn-end",
+      heldItem: null,
+      volatiles: harvestVolatiles,
+      weather: { type: "harsh-sun" },
+      rngNext: 0.9, // Would fail 50% roll, but harsh-sun makes it 100%
+    });
+    const result = handleGen6RemainingAbility(ctx);
+    expect(result.activated).toBe(true);
+    const itemEffect = result.effects.find((e) => e.effectType === "item-restore");
+    expect(itemEffect?.item).toBe("lum-berry");
+  });
 });
 
 // ===========================================================================
