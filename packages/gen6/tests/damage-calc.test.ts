@@ -237,11 +237,12 @@ describe("Gen 6 base damage formula", () => {
     // base = floor(floor(42 * 80 * 200 / 150) / 50) + 2 = floor(floor(448000/150)/50) + 2
     //       = floor(floor(2986.67)/50) + 2 = floor(2986/50) + 2 = floor(59.72) + 2 = 59 + 2 = 61
     // With max random roll (100): 61
-    // Using non-STAB, neutral effectiveness, no other modifiers
+    // Using non-STAB, super-effective (fighting vs normal = 2x), no other modifiers
+    // Source: Gen 6 type chart — Fighting → Normal = 2x (Bulbapedia: https://bulbapedia.bulbagarden.net/wiki/Type)
     const ctx = makeDamageContext({
       attacker: makeActive({ level: 100, attack: 200, types: ["normal"] }),
       defender: makeActive({ level: 100, defense: 150, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fighting" }), // neutral vs normal -> nope, fighting SE vs normal!
+      move: makeMove({ power: 80, type: "fighting" }), // fighting is SE vs normal
     });
     const result = calculateGen6Damage(ctx, typeChart);
     // Fighting vs Normal is SE (2x)
