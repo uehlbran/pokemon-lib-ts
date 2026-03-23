@@ -188,31 +188,31 @@ function buildDefaultTypeChart(): TypeChart {
 const TYPE_CHART = buildDefaultTypeChart();
 
 describe("getTypeMultiplier", () => {
-  it("given a Fire attacker and Grass defender, when calculating type multiplier, then returns 2.0", () => {
+  it("given a Fire-type attacker and Grass-type defender, when calculating type multiplier, then returns 2.0", () => {
     expect(getTypeMultiplier("fire", "grass", TYPE_CHART)).toBe(2.0);
   });
 
-  it("given a Fire attacker and Water defender, when calculating type multiplier, then returns 0.5", () => {
+  it("given a Fire-type attacker and Water-type defender, when calculating type multiplier, then returns 0.5", () => {
     expect(getTypeMultiplier("fire", "water", TYPE_CHART)).toBe(0.5);
   });
 
-  it("given a Normal attacker and Ghost defender, when calculating type multiplier, then returns 0", () => {
+  it("given a Normal-type attacker and Ghost-type defender, when calculating type multiplier, then returns 0", () => {
     expect(getTypeMultiplier("normal", "ghost", TYPE_CHART)).toBe(0);
   });
 
-  it("given a Normal attacker and Normal defender, when calculating type multiplier, then returns 1.0", () => {
+  it("given a Normal-type attacker and Normal-type defender, when calculating type multiplier, then returns 1.0", () => {
     expect(getTypeMultiplier("normal", "normal", TYPE_CHART)).toBe(1.0);
   });
 
-  it("given a Ghost attacker and Psychic defender, when calculating type multiplier, then returns 2.0", () => {
+  it("given a Ghost-type attacker and Psychic-type defender, when calculating type multiplier, then returns 2.0", () => {
     expect(getTypeMultiplier("ghost", "psychic", TYPE_CHART)).toBe(2.0);
   });
 
-  it("given a Dragon attacker and Fairy defender, when calculating type multiplier, then returns 0", () => {
+  it("given a Dragon-type attacker and Fairy-type defender, when calculating type multiplier, then returns 0", () => {
     expect(getTypeMultiplier("dragon", "fairy", TYPE_CHART)).toBe(0);
   });
 
-  it("given a Fairy attacker and Dragon defender, when calculating type multiplier, then returns 2.0", () => {
+  it("given a Fairy-type attacker and Dragon-type defender, when calculating type multiplier, then returns 2.0", () => {
     expect(getTypeMultiplier("fairy", "dragon", TYPE_CHART)).toBe(2.0);
   });
 });
