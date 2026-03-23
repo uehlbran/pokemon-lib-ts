@@ -849,6 +849,54 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       return true;
     }
 
+    // --- Charge ---
+    case "charge": {
+      // Charge: doubles the power of the user's next Electric-type move.
+      // Also raises SpDef by 1 stage in Gen 3 (unlike later gens where it's just the power boost).
+      // The "charged" volatile is consumed on the next Electric move via the damage calc.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHARGE
+      // Source: Bulbapedia "Charge" — "If the user uses an Electric-type move on the next turn,
+      //   its power will be doubled. In Generation III, it also raises the user's Special Defense."
+      if (attacker.volatileStatuses.has("charged")) {
+        result.messages.push("But it failed!");
+        return true;
+      }
+      result.selfVolatileInflicted = "charged";
+      result.selfVolatileData = { turnsLeft: 2 }; // Lasts until end of next turn
+      result.statChanges.push({ target: "attacker", stat: "spDefense", stages: 1 });
+      result.messages.push(`${attackerName} began charging power!`);
+      return true;
+    }
+
+    // --- Mud Sport ---
+    case "mud-sport": {
+      // Mud Sport: halves Electric-type move power for all Pokemon on the field.
+      // In Gen 3-4, this is a field-wide effect stored as a volatile on the user.
+      // The damage calc checks any active Pokemon for this volatile.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_MUD_SPORT
+      // Source: Bulbapedia "Mud Sport" — "Reduces the power of Electric-type moves by half"
+      // Source: Showdown data/moves.ts -- mudsport: volatileStatus: 'mudsport' (Gen 3-4)
+      result.selfVolatileInflicted = "mud-sport";
+      result.messages.push("Electricity's power was weakened!");
+      return true;
+    }
+
+    // --- Water Sport ---
+    case "water-sport": {
+      // Water Sport: halves Fire-type move power for all Pokemon on the field.
+      // In Gen 3-4, this is a field-wide effect stored as a volatile on the user.
+      // The damage calc checks any active Pokemon for this volatile.
+      //
+      // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_WATER_SPORT
+      // Source: Bulbapedia "Water Sport" — "Reduces the power of Fire-type moves by half"
+      // Source: Showdown data/moves.ts -- watersport: volatileStatus: 'watersport' (Gen 3-4)
+      result.selfVolatileInflicted = "water-sport";
+      result.messages.push("Fire's power was weakened!");
+      return true;
+    }
+
     // --- Ingrain ---
     case "ingrain": {
       // Ingrain: user roots itself, gaining 1/16 HP recovery per turn.

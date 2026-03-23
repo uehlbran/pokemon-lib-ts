@@ -388,6 +388,16 @@ export interface MoveEffectResult {
    */
   readonly shedTail?: boolean;
   /**
+   * When `true`, the engine re-rolls accuracy before each additional hit in the
+   * multi-hit loop. If a hit misses, the loop stops immediately.
+   *
+   * Used for Population Bomb (Gen 9), which is a 10-hit move where EACH hit
+   * independently checks accuracy (unlike normal multi-hit moves that check once).
+   *
+   * Source: Showdown data/moves.ts:14112-14126 -- populationbomb: multiaccuracy: true
+   */
+  readonly checkPerHitAccuracy?: boolean;
+  /**
    * When `true`, the engine will consume the attacker's held item after processing this
    * move effect — sets heldItem to null and emits an `item-consumed` event.
    *

@@ -351,6 +351,44 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     }
   }
 
+  // --- Charge: doubles Electric-type move power if the attacker used Charge last turn ---
+  // The "charged" volatile is set by the Charge move and consumed here after boosting.
+  // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHARGE doubles electric power
+  // Source: Bulbapedia "Charge" — "doubles the power of the next Electric-type move"
+  if (effectiveMoveType === "electric" && attacker.volatileStatuses.has("charged")) {
+    power = power * 2;
+    // Consume the charged volatile after use
+    attacker.volatileStatuses.delete("charged");
+  }
+
+  // --- Mud Sport: halves Electric-type move power if any active Pokemon has it ---
+  // In Gen 3-4, Mud Sport is stored as a volatile on the user. If ANY active Pokemon
+  // on the field has the volatile, Electric moves are halved.
+  // Source: pret/pokeemerald src/battle_util.c — Mud Sport checks both sides
+  // Source: Showdown data/moves.ts -- mudsport: volatileStatus halves Electric power
+  if (effectiveMoveType === "electric" && context.state.sides) {
+    const hasMudSport = context.state.sides.some((side) =>
+      side.active.some((a) => a?.volatileStatuses.has("mud-sport")),
+    );
+    if (hasMudSport) {
+      power = Math.floor(power / 2);
+    }
+  }
+
+  // --- Water Sport: halves Fire-type move power if any active Pokemon has it ---
+  // In Gen 3-4, Water Sport is stored as a volatile on the user. If ANY active Pokemon
+  // on the field has the volatile, Fire moves are halved.
+  // Source: pret/pokeemerald src/battle_util.c — Water Sport checks both sides
+  // Source: Showdown data/moves.ts -- watersport: volatileStatus halves Fire power
+  if (effectiveMoveType === "fire" && context.state.sides) {
+    const hasWaterSport = context.state.sides.some((side) =>
+      side.active.some((a) => a?.volatileStatuses.has("water-sport")),
+    );
+    if (hasWaterSport) {
+      power = Math.floor(power / 2);
+    }
+  }
+
   // --- Defender ability type immunities ---
   // These abilities grant full immunity to specific move types.
   // They are checked BEFORE the damage formula runs, and return 0 damage with effectiveness 0.

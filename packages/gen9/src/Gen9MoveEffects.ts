@@ -61,10 +61,10 @@ function createBaseResult(): MoveEffectResult {
 export function handlePopulationBomb(_ctx: MoveEffectContext): MoveEffectResult {
   // Population Bomb always hits exactly 10 times (min === max === 10 in move data).
   // multiHitCount is the number of ADDITIONAL hits beyond the first, so 10 total = 9 extra.
-  // Per-hit accuracy (multiaccuracy: true) is handled by the engine's multi-hit loop.
+  // Each hit independently checks accuracy (multiaccuracy: true).
   //
   // Source: Showdown data/moves.ts:14112-14126 -- multihit: 10, multiaccuracy: true
-  return { ...createBaseResult(), multiHitCount: 9 };
+  return { ...createBaseResult(), multiHitCount: 9, checkPerHitAccuracy: true };
 }
 
 // ---------------------------------------------------------------------------

@@ -156,37 +156,56 @@ const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
 // ─── Simple / Unaware Stat Stage Helper ───────────────────────────────────
 
 /**
- * Get the effective stat stage for a Pokemon, accounting for Simple and Unaware.
+ * Get the effective stat stage for a Pokemon, accounting for Simple, Unaware,
+ * and Mold Breaker bypass.
  *
  * - Simple: doubles the effective stat stage (clamped to [-6, +6])
  * - Unaware (on opponent): ignores the Pokemon's stat stages (returns 0)
+ * - Mold Breaker: when present on the opponent, bypasses this Pokemon's Simple;
+ *   when present on this Pokemon, bypasses the opponent's Unaware.
  *
  * Source: Showdown sim/battle.ts — Simple doubles stat stages in Gen 4
  * Source: Bulbapedia — Simple: "Doubles the effects of stat stage changes"
  * Source: Bulbapedia — Unaware: "Ignores stat stage changes of the opposing Pokemon
  *   when calculating damage"
+ * Source: Showdown data/abilities.ts — moldbreaker: ignores target's abilities
+ *   including Simple and Unaware
+ * Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this Ability
+ *   are unaffected by the target's Ability."
  *
  * @param pokemon - The Pokemon whose stat stage is being read
  * @param stat - The stat key to read (attack, defense, spAttack, spDefense, speed, etc.)
- * @param opponent - The opposing Pokemon (for Unaware check)
- * @returns The effective stat stage after Simple/Unaware adjustments
+ * @param opponent - The opposing Pokemon (for Unaware/Mold Breaker check)
+ * @returns The effective stat stage after Simple/Unaware/Mold Breaker adjustments
  */
 function getEffectiveStatStage(
   pokemon: ActivePokemon,
   stat: string,
   opponent?: ActivePokemon,
 ): number {
+  // Mold Breaker on the attacker bypasses the defender's abilities.
+  // When `pokemon` has Mold Breaker, `opponent`'s Unaware is bypassed.
+  // When `opponent` has Mold Breaker, `pokemon`'s Simple is bypassed.
+  const pokemonHasMoldBreaker = pokemon.ability === "mold-breaker";
+  const opponentHasMoldBreaker = opponent?.ability === "mold-breaker";
+
   // Unaware: opponent ignores this Pokemon's stat stages entirely.
   // Unaware takes priority over Simple — if the opponent has Unaware,
   // it sees 0 stages regardless of Simple doubling.
+  // UNLESS: this Pokemon has Mold Breaker, which bypasses opponent's Unaware.
   // Source: Showdown Gen 4 — Unaware's onAnyModifyBoost sets boosts to 0,
   //   which runs independently of and overrides Simple's doubling
-  if (opponent?.ability === "unaware") return 0;
+  // Source: Showdown data/abilities.ts — Mold Breaker bypasses Unaware
+  if (opponent?.ability === "unaware" && !pokemonHasMoldBreaker) return 0;
 
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
   // Simple: double the stage, clamped to [-6, +6]
+  // UNLESS: opponent has Mold Breaker, which bypasses this Pokemon's Simple.
   // Source: Showdown Gen 4 — Simple doubles stat stage
-  if (pokemon.ability === "simple") return Math.max(-6, Math.min(6, raw * 2));
+  // Source: Showdown data/abilities.ts — Mold Breaker bypasses Simple
+  if (pokemon.ability === "simple" && !opponentHasMoldBreaker) {
+    return Math.max(-6, Math.min(6, raw * 2));
+  }
   return raw;
 }
 

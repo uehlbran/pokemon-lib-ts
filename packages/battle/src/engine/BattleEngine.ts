@@ -1649,6 +1649,30 @@ export class BattleEngine implements BattleEventEmitter {
         // Stop if substitute was broken (Gen 1: multi-hit ends when sub breaks)
         if (brokeSubstitute) break;
 
+        // Per-hit accuracy check (Population Bomb: multiaccuracy: true).
+        // When checkPerHitAccuracy is set, re-roll accuracy before each additional hit.
+        // If the hit misses, the multi-hit loop stops immediately.
+        // Source: Showdown data/moves.ts -- populationbomb: multiaccuracy: true
+        if (effectResult.checkPerHitAccuracy) {
+          if (
+            !this.ruleset.doesMoveHit({
+              attacker: actor,
+              defender,
+              move: effectiveMoveData,
+              state: this.state,
+              rng: this.state.rng,
+            })
+          ) {
+            this.emit({
+              type: "move-miss",
+              side: action.side,
+              pokemon: getPokemonName(actor),
+              move: effectiveMoveData.id,
+            });
+            break;
+          }
+        }
+
         // Process per-attack residuals (Gen 1: poison/burn/leech after each hit)
         // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed
         const postAttackResiduals = this.ruleset.getPostAttackResidualOrder();

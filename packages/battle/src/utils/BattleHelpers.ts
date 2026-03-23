@@ -58,6 +58,12 @@ export function createActivePokemon(
       ? ([...pokemon.teraTypes] as PokemonType[])
       : resolvedTypes;
 
+  // Reset timesAttacked at battle start. This counter tracks how many times a
+  // Pokemon has been hit (for Rage Fist) and persists through switches within a
+  // battle, but must reset between battles when PokemonInstance objects are reused.
+  // Source: Showdown sim/pokemon.ts — timesAttacked is per-battle state, initialized to 0
+  pokemon.timesAttacked = 0;
+
   return {
     pokemon,
     teamSlot,
