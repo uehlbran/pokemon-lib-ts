@@ -627,3 +627,92 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     expect(result.messages[0]).toContain("Disguise was busted");
   });
 });
+
+// ===========================================================================
+// capLethalDamage — Focus Sash (#784)
+// ===========================================================================
+
+describe("Gen 8 capLethalDamage — Focus Sash (#784)", () => {
+  const ruleset = new Gen8Ruleset();
+
+  it("given Pokemon at full HP holding Focus Sash, when lethal damage is dealt, then survives at 1 HP and consumedItem is set", () => {
+    // Source: Showdown data/items.ts -- Focus Sash: "If holder has full HP, will survive an attack that would KO it with 1 HP"
+    // Source: Bulbapedia -- Focus Sash: "If the holder has full HP, it will survive a hit that would KO it with 1 HP"
+    const defender = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
+    const attacker = makeActive({});
+    const move = makeMove({ category: "physical", power: 200 });
+    const state = makeState();
+
+    const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
+    expect(result.damage).toBe(199);
+    expect(result.survived).toBe(true);
+    expect(result.consumedItem).toBe("focus-sash");
+    expect(result.messages[0]).toContain("Focus Sash");
+  });
+
+  it("given Pokemon NOT at full HP holding Focus Sash, when lethal damage is dealt, then Focus Sash does not activate", () => {
+    // Source: Showdown data/items.ts -- Focus Sash requires full HP (currentHp === maxHp)
+    const defender = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 150 });
+    const attacker = makeActive({});
+    const move = makeMove({ category: "physical", power: 200 });
+    const state = makeState();
+
+    const result = ruleset.capLethalDamage!(200, defender, attacker, move, state);
+    expect(result.damage).toBe(200);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given Pokemon at full HP holding Focus Sash with Klutz, when lethal damage is dealt, then Focus Sash is suppressed", () => {
+    // Source: Showdown data/abilities.ts -- klutz: "This Pokemon's held item has no effect"
+    // Klutz suppresses item activation, so Focus Sash does not trigger
+    const defender = makeActive({
+      ability: "klutz",
+      heldItem: "focus-sash",
+      hp: 200,
+      currentHp: 200,
+    });
+    const attacker = makeActive({});
+    const move = makeMove({ category: "physical", power: 200 });
+    const state = makeState();
+
+    const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
+    expect(result.damage).toBe(300);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given Pokemon at full HP holding Focus Sash under Embargo, when lethal damage is dealt, then Focus Sash is suppressed", () => {
+    // Source: Showdown data/moves.ts -- embargo: "target's held item has no effect"
+    // Embargo volatile status suppresses item activation
+    const defender = makeActive({
+      heldItem: "focus-sash",
+      hp: 200,
+      currentHp: 200,
+      volatiles: new Map([["embargo", { turnsLeft: 5 }]]),
+    });
+    const attacker = makeActive({});
+    const move = makeMove({ category: "physical", power: 200 });
+    const state = makeState();
+
+    const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
+    expect(result.damage).toBe(300);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
+
+  it("given Magic Room active on field, when lethal damage dealt to full-HP Pokemon with Focus Sash, then faints (sash suppressed)", () => {
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
+    // Source: Showdown data/items.ts -- Focus Sash is an item effect, suppressed by Magic Room
+    const defender = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
+    const attacker = makeActive({});
+    const move = makeMove({ category: "physical", power: 200 });
+    const state = makeState();
+    state.magicRoom = { active: true, turnsLeft: 3 };
+
+    const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
+    expect(result.damage).toBe(300);
+    expect(result.survived).toBe(false);
+    expect(result.consumedItem).toBeUndefined();
+  });
+});

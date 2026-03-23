@@ -351,27 +351,33 @@ export class Gen7Ruleset extends BaseRuleset {
   }
 
   /**
-   * Cap lethal damage for Sturdy (Gen 5+) and Disguise (Gen 7).
+   * Cap lethal damage for Disguise (Gen 7), Sturdy, and Focus Sash.
    *
-   * Sturdy: survive any hit from full HP at 1 HP.
-   * Disguise: block first hit entirely (Gen 7: no chip damage on break).
+   * Disguise: block first hit entirely (Gen 7: no chip damage on break). Priority 1.
+   * Sturdy: survive any hit from full HP at 1 HP. Priority -30.
+   * Focus Sash: survive any hit from full HP at 1 HP (item, consumed). Priority -100.
+   *
+   * Focus Sash is suppressed by Klutz (ability) and Embargo (volatile).
+   * Source: Showdown data/abilities.ts -- klutz: item has no effect
+   * Source: Showdown data/moves.ts -- embargo: target's item is unusable
    *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
    * Source: Showdown data/abilities.ts -- disguise: onDamage (priority 1)
-   * Source: Bulbapedia -- Sturdy (Ability), Disguise (Ability)
+   * Source: Showdown data/items.ts -- Focus Sash: onDamage at full HP
+   * Source: Bulbapedia -- Sturdy (Ability), Disguise (Ability), Focus Sash
    */
   capLethalDamage(
     damage: number,
     defender: ActivePokemon,
     _attacker: ActivePokemon,
     move: MoveData,
-    _state: BattleState,
-  ): { damage: number; survived: boolean; messages: string[] } {
+    state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
     const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
 
-    // Disguise: block damage entirely if Disguise hasn't broken
+    // 1. Disguise: block damage entirely if Disguise hasn't broken
     // Disguise checks BEFORE Sturdy (higher priority in Showdown: priority 1 vs -30)
     // Gen 7: NO chip damage on Disguise break
     // Source: Showdown data/abilities.ts -- disguise onDamage priority 1
@@ -390,7 +396,7 @@ export class Gen7Ruleset extends BaseRuleset {
       };
     }
 
-    // Sturdy: if at full HP and damage would KO, cap at maxHp - 1
+    // 2. Sturdy (ability) -- priority -30
     if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
       return {
         damage: maxHp - 1,
@@ -398,6 +404,30 @@ export class Gen7Ruleset extends BaseRuleset {
         messages: [`${name} held on thanks to Sturdy!`],
       };
     }
+
+    // 3. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
+    // Source: Showdown data/items.ts -- Focus Sash onDamage
+    // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
+    const heldItem = defender.pokemon.heldItem;
+    const itemSuppressed =
+      defender.ability === "klutz" ||
+      defender.volatileStatuses.has("embargo") ||
+      (state.magicRoom?.active ?? false);
+    if (
+      heldItem === "focus-sash" &&
+      !itemSuppressed &&
+      currentHp === maxHp &&
+      damage >= currentHp
+    ) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on with its Focus Sash!`],
+        consumedItem: "focus-sash",
+      };
+    }
+
     return { damage, survived: false, messages: [] };
   }
 

@@ -793,21 +793,16 @@ describe("applyGen8HeldItem", () => {
   });
 
   describe("on-damage-taken triggers", () => {
-    // Source: Showdown data/items.ts -- Focus Sash: survive KO from full HP
-    it("given Focus Sash holder at full HP taking lethal damage, when applying item, then survives with 1 HP", () => {
+    // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook).
+    // See: Gen8Ruleset.capLethalDamage and GitHub issue #784
+    it("given Focus Sash holder at full HP taking lethal damage, when on-damage-taken fires, then does NOT activate (handled by capLethalDamage now)", () => {
       const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
       const ctx = makeContext({ pokemon, damage: 250 });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
-      expect(result.activated).toBe(true);
-      expect(result.effects[0]).toEqual({ type: "survive", target: "self", value: 1 });
-      expect(result.effects[1]).toEqual({
-        type: "consume",
-        target: "self",
-        value: "focus-sash",
-      });
+      expect(result.activated).toBe(false);
     });
 
-    it("given Focus Sash holder NOT at full HP taking lethal damage, when applying item, then does not activate", () => {
+    it("given Focus Sash holder NOT at full HP taking lethal damage, when on-damage-taken fires, then does not activate", () => {
       const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 150 });
       const ctx = makeContext({ pokemon, damage: 200 });
       const result = applyGen8HeldItem("on-damage-taken", ctx);

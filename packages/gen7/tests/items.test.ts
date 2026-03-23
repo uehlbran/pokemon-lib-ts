@@ -505,19 +505,15 @@ describe("End-of-Turn Items", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("On-Damage-Taken Items", () => {
-  describe("Focus Sash", () => {
-    it("given a full-HP Pokemon holding Focus Sash taking a KO hit, when on-damage-taken fires, then survives at 1 HP and item is consumed", () => {
-      // Source: Showdown data/items.ts -- Focus Sash: survive at 1 HP from full HP
+  describe("Focus Sash (moved to capLethalDamage, #784)", () => {
+    it("given a full-HP Pokemon holding Focus Sash taking a KO hit, when on-damage-taken fires, then does NOT activate (handled by capLethalDamage now)", () => {
+      // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook)
+      // because handleOnDamageTaken fires post-damage, making currentHp === maxHp always false.
+      // See: Gen7Ruleset.capLethalDamage and GitHub issue #784
       const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
       const ctx = makeItemContext({ pokemon, damage: 300 });
       const result = applyGen7HeldItem("on-damage-taken", ctx);
-      expect(result.activated).toBe(true);
-      expect(result.effects[0]).toEqual({ type: "survive", target: "self", value: 1 });
-      expect(result.effects[1]).toEqual({
-        type: "consume",
-        target: "self",
-        value: "focus-sash",
-      });
+      expect(result.activated).toBe(false);
     });
 
     it("given a non-full-HP Pokemon holding Focus Sash taking a KO hit, when on-damage-taken fires, then does not activate", () => {

@@ -488,15 +488,21 @@ export class Gen8Ruleset extends BaseRuleset {
   }
 
   /**
-   * Cap lethal damage for Disguise (Gen 8: 1/8 chip) and Sturdy.
+   * Cap lethal damage for Disguise (Gen 8: 1/8 chip), Sturdy, and Focus Sash.
    *
    * Disguise (Gen 8 change): when busted, deals 1/8 max HP chip damage instead
    * of 0 chip (Gen 7). Priority 1 (before Sturdy at -30).
    *
-   * Sturdy: survive any hit from full HP at 1 HP (unchanged from Gen 5+).
+   * Sturdy: survive any hit from full HP at 1 HP (unchanged from Gen 5+). Priority -30.
+   * Focus Sash: survive any hit from full HP at 1 HP (item, consumed). Priority -100.
+   *
+   * Focus Sash is suppressed by Klutz (ability) and Embargo (volatile).
+   * Source: Showdown data/abilities.ts -- klutz: item has no effect
+   * Source: Showdown data/moves.ts -- embargo: target's item is unusable
    *
    * Source: Showdown data/abilities.ts -- disguise: onDamage (priority 1, Gen 8: 1/8 chip)
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
+   * Source: Showdown data/items.ts -- Focus Sash: onDamage at full HP
    * Source: Bulbapedia -- Disguise (Ability), Gen 8: "deals 1/8 of max HP as damage"
    */
   capLethalDamage(
@@ -504,13 +510,13 @@ export class Gen8Ruleset extends BaseRuleset {
     defender: ActivePokemon,
     _attacker: ActivePokemon,
     move: MoveData,
-    _state: BattleState,
-  ): { damage: number; survived: boolean; messages: string[] } {
+    state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
     const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
 
-    // Disguise: block incoming damage, deal 1/8 max HP chip instead (Gen 8 change)
+    // 1. Disguise: block incoming damage, deal 1/8 max HP chip instead (Gen 8 change)
     // Disguise checks BEFORE Sturdy (higher priority in Showdown: priority 1 vs -30)
     // Gen 8: 1/8 max HP chip damage on Disguise break (changed from 0 in Gen 7)
     // Source: Showdown data/abilities.ts -- disguise onDamage, Gen 8: Math.ceil(maxhp / 8)
@@ -530,13 +536,36 @@ export class Gen8Ruleset extends BaseRuleset {
       };
     }
 
-    // Sturdy: if at full HP and damage would KO, cap at maxHp - 1
+    // 2. Sturdy: if at full HP and damage would KO, cap at maxHp - 1
     // Source: Showdown data/abilities.ts -- sturdy onDamage (priority -30)
     if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
       return {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on thanks to Sturdy!`],
+      };
+    }
+
+    // 3. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
+    // Source: Showdown data/items.ts -- Focus Sash onDamage
+    // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
+    const heldItem = defender.pokemon.heldItem;
+    const itemSuppressed =
+      defender.ability === "klutz" ||
+      defender.volatileStatuses.has("embargo") ||
+      (state.magicRoom?.active ?? false);
+    if (
+      heldItem === "focus-sash" &&
+      !itemSuppressed &&
+      currentHp === maxHp &&
+      damage >= currentHp
+    ) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on with its Focus Sash!`],
+        consumedItem: "focus-sash",
       };
     }
 

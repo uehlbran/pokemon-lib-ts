@@ -773,9 +773,10 @@ describe("Gen8Items coverage gaps", () => {
   // Focus Sash: not at full HP -> does NOT activate
   // -----------------------------------------------------------------------
 
-  describe("Focus Sash edge cases", () => {
+  describe("Focus Sash edge cases (moved to capLethalDamage, #784)", () => {
     it("given Focus Sash holder NOT at full HP taking lethal damage, when on-damage-taken triggers, then sash does NOT activate", () => {
-      // Source: Showdown data/items.ts -- Focus Sash: requires currentHp === maxHp
+      // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook).
+      // See: Gen8Ruleset.capLethalDamage and GitHub issue #784
       const pokemon = makeActive({
         hp: 200,
         currentHp: 150, // Not full HP
@@ -788,7 +789,8 @@ describe("Gen8Items coverage gaps", () => {
     });
 
     it("given Focus Sash holder at full HP taking non-lethal damage, when on-damage-taken triggers, then sash does NOT activate", () => {
-      // Source: Showdown data/items.ts -- Focus Sash: requires damage >= currentHp
+      // Focus Sash case removed from on-damage-taken; now handled by capLethalDamage pre-damage hook.
+      // Even when at full HP with non-lethal damage, the item handler no longer has a case for focus-sash.
       const pokemon = makeActive({
         hp: 200,
         currentHp: 200,

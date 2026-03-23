@@ -276,31 +276,62 @@ export class Gen6Ruleset extends BaseRuleset {
   }
 
   /**
-   * Cap lethal damage for Sturdy (Gen 5+): survive any hit from full HP at 1 HP.
+   * Cap lethal damage for Sturdy and Focus Sash.
+   *
+   * Priority: Sturdy (priority -30) fires first, then Focus Sash (priority -100).
+   * If Sturdy caps the damage, Focus Sash won't fire (damage < currentHp after cap).
+   *
+   * Focus Sash is suppressed by Klutz (ability) and Embargo (volatile).
+   * Source: Showdown data/abilities.ts -- klutz: item has no effect
+   * Source: Showdown data/moves.ts -- embargo: target's item is unusable
    *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
-   *   "If this Pokemon is at full HP, it survives attacks that would KO it with 1 HP."
-   * Source: Bulbapedia -- Sturdy (Ability)
+   * Source: Showdown data/items.ts -- Focus Sash: onDamage at full HP
+   * Source: Bulbapedia -- Sturdy (Ability), Focus Sash
    */
   capLethalDamage(
     damage: number,
     defender: ActivePokemon,
     _attacker: ActivePokemon,
     _move: MoveData,
-    _state: BattleState,
-  ): { damage: number; survived: boolean; messages: string[] } {
+    state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
+    const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
 
-    // Sturdy: if at full HP and damage would KO, cap at maxHp - 1
+    // 1. Sturdy (ability) -- priority -30, fires first
     if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
-      const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
       return {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on thanks to Sturdy!`],
       };
     }
+
+    // 2. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
+    // Source: Showdown data/items.ts -- Focus Sash onDamage
+    // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
+    const heldItem = defender.pokemon.heldItem;
+    const itemSuppressed =
+      defender.ability === "klutz" ||
+      defender.volatileStatuses.has("embargo") ||
+      (state.magicRoom?.active ?? false);
+    if (
+      heldItem === "focus-sash" &&
+      !itemSuppressed &&
+      currentHp === maxHp &&
+      damage >= currentHp
+    ) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on with its Focus Sash!`],
+        consumedItem: "focus-sash",
+      };
+    }
+
     return { damage, survived: false, messages: [] };
   }
 
