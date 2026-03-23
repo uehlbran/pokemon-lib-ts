@@ -134,7 +134,6 @@ export {
   createActivePokemon,
   createDefaultStatStages,
   createPokemonSnapshot,
-  createTestPokemon,
   getEffectiveStatStage,
   getPokemonName,
 } from "./utils";
