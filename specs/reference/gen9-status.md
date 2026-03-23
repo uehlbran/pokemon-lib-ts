@@ -51,8 +51,6 @@
 | Z-Moves | Removed in Gen 9 |
 | Doubles mechanics | Engine doesn't support doubles |
 | Sky Drop / Pledge moves | Same engine-level deferral as Gen 6-8 |
-| Psychic Terrain priority block engine wiring | checkPsychicTerrainPriorityBlock() helper exists but not wired into engine move execution path |
-| Misty Terrain confusion immunity engine wiring | checkMistyTerrainConfusionImmunity() helper exists but engine applies volatiles unconditionally |
 
 ---
 
@@ -71,7 +69,7 @@
 | 8B | ~74 | Move effects (Population Bomb, Salt Cure, Shed Tail, etc.) |
 | 9 | 35 | Integration tests (cross-mechanic, determinism, Tera+damage) |
 
-**Total: 1,031 tests**
+**Total: 1,053 tests**
 
 Coverage (v8):
 - Statements: 91.56%
@@ -97,6 +95,7 @@ None. All tracked bugs closed.
 | #725 | #785 | LOW | Focus Sash wired to capLethalDamage (survives lethal at 1 HP, consumes item) |
 | #726 | #785 | LOW | Lansat Berry sets focus-energy volatile for crit-rate boost |
 | #731 | #785 | LOW | Sturdy wired to capLethalDamage (full HP only — blocks OHKO) |
+| #757 | #786 | MEDIUM | Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage |
 
 
 ---
@@ -108,3 +107,4 @@ None. All tracked bugs closed.
 | #728 | feat/gen9-wave8b | Wave 8B: move effects (Population Bomb, Salt Cure, Shed Tail stubs, etc.) |
 | #753 | feat/gen9-wave9 | Wave 9: integration tests + 100% completion docs |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: timesAttacked reset, Shed Tail transfer, Population Bomb multiaccuracy, Sturdy/Focus Sash capLethalDamage, Misty/Psychic terrain, Lansat Berry (closes #749 #750 #751 #723 #724 #725 #726 #731) |
+| #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |

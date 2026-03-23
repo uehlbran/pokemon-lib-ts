@@ -292,26 +292,30 @@ describe("Bug #704: Mold Breaker bypasses Simple and Unaware in getEffectiveStat
   });
 
   describe("Mold Breaker defender vs Simple attacker", () => {
-    it("given defender with Mold Breaker, when attacker has Simple at +1 Attack, then Attack stages are NOT doubled", () => {
-      // Source: Showdown data/abilities.ts — Mold Breaker bypasses Simple
-      // Source: Bulbapedia — Mold Breaker ignores opponent's abilities
+    it("given defender with Mold Breaker, when attacker has Simple at +1 Attack, then Attack stages ARE doubled (defender MB only active when it attacks)", () => {
+      // Mold Breaker only suppresses the TARGET's abilities when the Mold Breaker holder
+      // is USING A MOVE. When defending (being attacked), the flag is not set, so the
+      // attacker's Simple is NOT suppressed by the defender's Mold Breaker.
+      // Source: Showdown sim/battle.ts -- moldBreaker flag only set during move execution
+      // Source: Showdown data/abilities.ts -- moldbreaker: "Prevents the target's ability from affecting battle mechanics"
       //
       // Strategy: Compare Simple +1 vs Mold Breaker defender
-      //   against no-ability +1 vs normal defender.
-      //   Mold Breaker should suppress Simple's doubling, so damage matches raw +1.
+      //   against no-ability +2 vs normal defender.
+      //   Defender's Mold Breaker does NOT suppress Simple → damage matches doubled +2.
       const simpleAttacker = createActivePokemon({
         ability: "simple",
         attack: 100,
-        statStages: { attack: 1 },
+        statStages: { attack: 1 }, // Simple doubles this to effective +2
       });
       const moldBreakerDefender = createActivePokemon({
         ability: "mold-breaker",
         defense: 100,
       });
 
-      const normalAttacker = createActivePokemon({
+      // Control: attacker with +2 stages (no Simple), normal defender
+      const doubledAttacker = createActivePokemon({
         attack: 100,
-        statStages: { attack: 1 }, // Just +1, not doubled
+        statStages: { attack: 2 }, // Explicit +2 without Simple
       });
       const normalDefender = createActivePokemon({
         defense: 100,
@@ -328,17 +332,17 @@ describe("Bug #704: Mold Breaker bypasses Simple and Unaware in getEffectiveStat
         GEN4_TYPE_CHART,
       );
 
-      const normalResult = calculateGen4Damage(
+      const doubledResult = calculateGen4Damage(
         createDamageContext({
-          attacker: normalAttacker,
+          attacker: doubledAttacker,
           defender: normalDefender,
           move,
         }),
         GEN4_TYPE_CHART,
       );
 
-      // Mold Breaker bypasses Simple — damage should match raw +1 (not doubled to +2)
-      expect(moldBreakerResult.damage).toBe(normalResult.damage);
+      // Defender's Mold Breaker does NOT suppress attacker's Simple — stages are doubled
+      expect(moldBreakerResult.damage).toBe(doubledResult.damage);
     });
 
     it("given defender WITHOUT Mold Breaker, when attacker has Simple at +1 Attack, then Attack stages ARE doubled", () => {

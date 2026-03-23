@@ -49,7 +49,7 @@
 ### End-of-Turn Effects (38 handlers implemented)
 weather-damage, weather-countdown, terrain-countdown, status-damage, screen-countdown, tailwind-countdown, trick-room-countdown, leftovers, leech-seed, perish-song, curse, nightmare, bind, defrost, safeguard-countdown, mystery-berry, stat-boosting-items, healing-items, encore-countdown, weather-healing, shed-skin, poison-heal, bad-dreams, speed-boost, slow-start-countdown, toxic-orb-activation, flame-orb-activation, black-sludge, aqua-ring, ingrain, wish, future-attack, taunt-countdown, disable-countdown, gravity-countdown, yawn-countdown, heal-block-countdown, embargo-countdown, magnet-rise-countdown
 
-Gen 5+ stubs (no real implementation yet): moody, harvest, pickup, grassy-terrain-heal — added PR #236
+Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rulesets): pickup — added PR #236, still a stub (overworld mechanic)
 
 ### Volatile Status Management
 - ~30+ volatile types tracked via Map on ActivePokemon
@@ -98,9 +98,7 @@ None — all previously stubbed items are now implemented.
 | Doubles/Triples/Rotation formats | Massive separate initiative; BattleFormat type exists |
 | Greedy AI controller | Spec'd but deferred; RandomAI is sufficient for current gens |
 | Minimax AI controller | Spec'd but deferred |
-| EXP gain in engine | **DONE** — PR #280 merged. Participation tracker, awardExpForFaint, ExpGainEvent, LevelUpEvent, level-up stat recalc |
-| Poke Ball catch mechanics | **DONE** — PR #281 merged. CatchSystem interface, CatchResult, BaseRuleset.rollCatchAttempt, executeCatchAttempt, wild-only guard |
-| moody / harvest / pickup / grassy-terrain-heal | Gen 5+ effects; stubs added PR #236 |
+| pickup | Gen 5+ effect (overworld mechanic, negligible singles battle impact); stub in engine |
 
 ---
 

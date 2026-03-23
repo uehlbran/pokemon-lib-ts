@@ -43,7 +43,7 @@
 - [x] Integration tests + 82.6% branch coverage — Wave 10 (PR #638)
 
 ## Test count
-- 793 → 1069 tests (276 added in Wave 10)
+- 793 → 1069 tests (276 added in Wave 10) → 1,135 tests (as of PR #786)
 - Branch coverage: 68.24% → 82.61%
 
 ## Bug Fixes (merged alongside waves)
@@ -59,6 +59,7 @@
 - PR #636: Type param to getBattleGimmick() for Gen 7 disambiguation
 - PR #752: Deep bughunt — EoT order adds `magic-room-countdown`, `wonder-room-countdown`, `gravity-countdown`, `slow-start-countdown`; Sheer Force whitelist adds `secret-power`, `relic-song` (closes #733 #734 #740)
 - #785: Bughunt wave 2 — pokeRound fixes, Flash Fire/pinch stat modifiers, Flower Gift Atk, Reckless hasCrashDamage, Stance Change, Harvest harsh-sun, UNSUPPRESSABLE trim, Bulletproof flag, Sweet Veil effect, semi-invulnerable grounded, activated:false guards (closes #663 #662 #660 #659 #654 #652 #648 #675 #673 #672 #670 #668 #667 #665 #664 #658 #656 #651)
+- PR #786: Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage (closes #757)
 
 ## OPEN BUGS
 
@@ -86,6 +87,7 @@ None. All tracked bugs closed.
 | #658 | #785 | Solid Rock/Filter return activated:true even when move is not super effective |
 | #656 | #785 | Tinted Lens returns activated:true even when move is not "not very effective" |
 | #651 | #785 | Sniper returns activated:true even when move is not a critical hit |
+| #757 | #786 | Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage |
 
 ## Deferred (engine-level, same as Gen 5)
 - Sky Drop: needs engine-level two-turn volatile target tracking

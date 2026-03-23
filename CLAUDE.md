@@ -238,10 +238,10 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 | gen2 | 100% | 757 | 0 | All engine-level bugs closed |
 | gen3 | 100% | 847 | 1 (#141 Plus/Minus — doubles) | Charge/Mud Sport/Water Sport fixed |
 | gen4 | 100% | 1,225 | 0 | Mold Breaker stat bypass fixed |
-| gen5 | 100% | 1,215 | 0 | pokeRound fixes, stat modifiers, activated:false guards |
-| gen6 | 100% | 1,126 | 0 | pokeRound fixes, stat modifiers, Stance Change, semi-invulnerable grounded |
+| gen5 | 100% | 1,225 | 0 | pokeRound fixes, stat modifiers, activated:false guards |
+| gen6 | 100% | 1,135 | 0 | pokeRound fixes, stat modifiers, Stance Change, semi-invulnerable grounded |
 | gen7 | 100% | 1,144 | 0 | Disguise non-lethal, Beast Boost/Moxie, Rayquaza mega, pinch berries |
-| gen8 | 100% | 1,204 | 0 | Disguise non-lethal + chip, Choice lock Dynamax, exports fixed |
+| gen8 | 100% | 1,208 | 0 | Disguise non-lethal + chip, Choice lock Dynamax, exports fixed |
 | gen9 | 100% | 1,053 | 0 | All 8 tracked bugs closed (terrain, Focus Sash, Sturdy, Shed Tail, etc.) |
 
 Full per-gen details: `specs/reference/genN-status.md`

@@ -40,6 +40,7 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
+import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChart, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   getStabModifier,
@@ -392,41 +393,6 @@ function getTerrainDamageModifier(
   return { powerModifier, grassyGroundHalved };
 }
 
-// ---- Stat Stage Helpers ----
-
-/**
- * Get effective stat stage accounting for Simple and Unaware abilities.
- *
- * Source: Showdown sim/battle.ts -- Simple doubles stat stages; Unaware ignores them
- */
-function getEffectiveStatStage(
-  pokemon: ActivePokemon,
-  stat: string,
-  opponent?: ActivePokemon,
-  attacker?: ActivePokemon,
-): number {
-  // Mold Breaker (Turboblaze/Teravolt) suppresses only the *target's* breakable abilities;
-  // the active attacker's own abilities are never suppressed (suppressingAbility is always
-  // false for self). Source: Showdown sim/battle.ts Gen 8+ — suppressingAbility
-  const attackerHasMoldBreaker =
-    attacker?.ability === "mold-breaker" ||
-    attacker?.ability === "teravolt" ||
-    attacker?.ability === "turboblaze";
-  // Unaware takes priority: opponent sees 0 stages. Bypassed only when the ATTACKER has
-  // Mold Breaker AND the Unaware holder is the target (opponent !== attacker) — the
-  // attacker's own Unaware is never suppressed by Mold Breaker.
-  // Source: Showdown sim/battle.ts Gen 8+
-  if (opponent?.ability === "unaware" && !(attackerHasMoldBreaker && opponent !== attacker))
-    return 0;
-  const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
-  // Simple doubles the stage (±6 cap). Bypassed only when the ATTACKER has Mold Breaker
-  // AND the Simple holder is the target (pokemon !== attacker).
-  // Source: Showdown sim/battle.ts Gen 8+
-  if (pokemon.ability === "simple" && !(attackerHasMoldBreaker && pokemon !== attacker))
-    return Math.max(-6, Math.min(6, raw * 2));
-  return raw;
-}
-
 // ---- Attack Stat Calculation ----
 
 /**
@@ -561,7 +527,7 @@ function getAttackStat(
   // Apply stat stages (with Simple/Unaware adjustments)
   // Body Press uses defense stat stages
   const stageKey = isBodyPress ? "defense" : isPhysical ? "attack" : "spAttack";
-  const stage = getEffectiveStatStage(attacker, stageKey, defender, attacker);
+  const stage = getEffectiveStatStage(attacker, stageKey, defender);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
   // Source: Showdown -- crit ignores negative attack stages
@@ -659,7 +625,7 @@ function getDefenseStat(
 
   // Stat stages
   const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, attacker);
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, "defense");
 
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }

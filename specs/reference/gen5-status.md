@@ -161,6 +161,7 @@ None. All tracked bugs closed as of 2026-03-22.
 | #651 | #785 | Sniper returns activated:true even when move is not a critical hit |
 | #655 | #785 | Dead Focus Sash code in handleOnDamageTaken (moved to capLethalDamage in earlier PR) |
 | #647 | #785 | Berry double-subtract: residual HP recalculated instead of using post-damage currentHp |
+| #757 | #786 | Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage |
 
 ---
 
@@ -200,3 +201,4 @@ None. All tracked bugs closed as of 2026-03-22.
 | #596 | fix/gen5-harvest-berry-tracking-580 | Harvest berry volatile in engine + VolatileStatus type (closes #580) |
 | #752 | fix/gen5-8-bughunt | Deep bughunt: Protect formula, Sheer Force whitelist, canBypassProtect delegation (closes #732) |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: pokeRound fixes, Reckless hasCrashDamage, Solar Power/Flower Gift stat modifiers, Magic Guard Toxic Spikes, UNSUPPRESSABLE trim, Effect Spore threshold, Synchronize hazard skip, activated:false guards, Focus Sash dead code, berry double-subtract (closes #643 #653 #641 #640 #650 #649 #657 #661 #646 #658 #656 #651 #655 #647) |
+| #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |

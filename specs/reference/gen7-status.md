@@ -1,7 +1,7 @@
 # Gen7 Implementation Status
 
 **Last updated:** 2026-03-22
-**Overall estimate:** ~75% complete (Waves 0–7B merged; Z-Move gimmick in progress)
+**Overall estimate:** 100% complete (all waves merged — PR #703 final)
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/08-gen7.md`
 **Primary source:** Pokemon Showdown (no complete Gen 7 disassembly)
@@ -21,8 +21,9 @@
 | 6 | Z-Crystal ID + Held Items + Terrain Extender | ✅ Done (PR #680) |
 | 7A | Damage-Modifying + Stat/Priority Abilities | ✅ Done |
 | 7B | Switch/Contact Ability Handlers + New Abilities | ✅ Done (PR #685) |
-| 8 | Z-Move Gimmick (full activation pipeline) | 🔄 In Progress |
-| 9+ | Ultra Burst (Necrozma), remaining moves | ⬜ Not Started |
+| 8 | Z-Move Gimmick (full activation pipeline) | ✅ Done (PR #698) |
+| 9 | Mega Evolution Gimmick | ✅ Done (PR #699) |
+| 10 | Integration Tests + Docs | ✅ Done (PR #703) |
 
 ---
 
@@ -43,6 +44,8 @@
 - `packages/gen7/src/Gen7AbilitiesSwitch.ts` — switch/contact ability handlers
 - `packages/gen7/src/Gen7AbilitiesNew.ts` — new Gen 7 abilities (Fluffy, Queenly Majesty, etc.)
 - `packages/gen7/src/index.ts` — package exports
+- `packages/gen7/src/Gen7ZMove.ts` — Z-Move BattleGimmick (Z-Crystal resolution, power table, status Z-Moves, species Z-Crystals)
+- `packages/gen7/src/Gen7MegaEvolution.ts` — Mega Evolution BattleGimmick (dual gimmick tracking, type/stat/ability change on activation)
 - `packages/gen7/data/abilities.json`, `items.json`, `moves.json`, `natures.json`, `pokemon.json`, `type-chart.json` — all data files complete
 
 ### Core Mechanic Overrides (Wave 1 — PR #666)
@@ -75,13 +78,25 @@
 - **7A** — Damage-modifying (Fluffy, Tinted Lens, Filter, etc.), stat/priority (Triage, Dazzling, Queenly Majesty)
 - **7B** — Switch/contact triggers, new Gen 7 abilities
 
----
+### Z-Move Gimmick (Wave 8 — PR #698)
+- `Gen7ZMove.ts` — full `BattleGimmick` implementation (449 lines)
+- Z-Move power table (all thresholds from Showdown)
+- All 18 type-specific Z-Move names mapped (e.g., Inferno Overdrive, Hydro Vortex, etc.)
+- All 18 species-specific Z-Crystals mapped (Pikanium Z through Eevium Z)
+- Species-specific Z-Move power values (Catastropika: 210, 10,000,000 Volt Thunderbolt: 195, etc.)
+- Status Z-Move handling (applies ×1 HP heal or +3 stat boost)
+- One-per-battle enforcement; Z-Crystal + holder validation
 
-## IN PROGRESS
+### Mega Evolution Gimmick (Wave 9 — PR #699)
+- `Gen7MegaEvolution.ts` — full `BattleGimmick` implementation (~820 lines)
+- Dual gimmick tracking: Z-Move and Mega Evolution coexist (one of each, Z-Move used first)
+- One-per-team-per-battle enforcement
+- Type, stat, and ability change on activation
+- Rayquaza Mega: Dragon Ascent required (no Mega Stone needed)
 
-| Item | Branch | Notes |
-|------|--------|-------|
-| Z-Move gimmick activation | feat/gen7-wave8-zmove | `BattleGimmick.modifyMove()` pipeline wired (engine); Z-Move power/type resolution in progress |
+### Integration + Polish (Wave 10 — PR #703)
+- Coverage gap tests, gimmick reset fix (cross-battle leak prevention)
+- Dual gimmick tests (`dual-gimmick.test.ts`)
 
 ---
 
@@ -89,18 +104,17 @@
 
 | Item | Reason |
 |------|--------|
-| Ultra Burst (Necrozma) | Distinct gimmick from Z-Moves; after Z-Move wave |
-| Alolan Form type changes | Form-change mechanism needed in engine |
-| Spectral Thief / Photon Geyser / Sunsteel Strike / Moongeist beam | Move effects not yet implemented |
+| Ultra Burst (Necrozma) | Distinct gimmick from Z-Moves; not yet implemented — see #788 |
+| Spectral Thief / Photon Geyser / Sunsteel Strike / Moongeist Beam | Move effects not yet implemented — see #789 |
 | Doubles mechanics | Doubles initiative — engine doesn't support doubles |
 
 ---
 
 ## Test Coverage
 
-18 test files, 811 tests (as of 2026-03-22).
+25 test files, 1,144 tests (as of 2026-03-22).
 
-Test files: `abilities-damage.test.ts`, `abilities-nerfs.test.ts`, `abilities-new.test.ts`, `abilities-switch-contact.test.ts`, `aurora-veil.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `items.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`
+Test files: `abilities-damage.test.ts`, `abilities-nerfs.test.ts`, `abilities-new.test.ts`, `abilities-switch-contact.test.ts`, `aurora-veil.test.ts`, `bugfix-phase2.test.ts`, `coverage-gaps.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dual-gimmick.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `integration.test.ts`, `items.test.ts`, `mega-evolution.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`, `z-move.test.ts`, `z-move-status.test.ts`
 
 ---
 
@@ -114,6 +128,7 @@ None. All tracked bugs closed.
 
 - PR #752: Deep bughunt — EoT order adds `magic-room-countdown`, `wonder-room-countdown`, `gravity-countdown`, `slow-start-countdown`; Z-Move through Protect deals 0.25x via `hitThroughProtect`; Disguise `capLethalDamage` marks `disguise-broken` volatile; canBypassProtect delegation (closes #735 #736 #739 #741)
 - #785: Bughunt wave 2 — Rayquaza mega (Dragon Ascent), Disguise non-lethal via expanded capLethalDamage, Beast Boost/Moxie on-after-move-used, pinch berries EoT, Focus Sash capLethalDamage (closes #701 #687 #688 #683 #725)
+- PR #786: Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage (closes #757)
 
 ## PR History
 
@@ -127,5 +142,9 @@ None. All tracked bugs closed.
 | #680 | feat/gen7-wave6 | Wave 6: Z-Crystal identification, Terrain Extender, full held item system |
 | (untracked) | feat/gen7-wave7a | Wave 7A: damage-modifying and stat/priority ability handlers |
 | #685 | feat/gen7-wave7b | Wave 7B: switch/contact ability handlers and new Gen 7 abilities |
+| #698 | feat/gen7-wave8-zmove | Wave 8: Z-Move BattleGimmick (Gen7ZMove.ts — full activation pipeline, power table, species Z-Crystals) |
+| #699 | feat/gen7-wave9-mega | Wave 9: Mega Evolution BattleGimmick (Gen7MegaEvolution.ts — dual gimmick tracking, type/stat/ability change) |
+| #703 | feat/gen7-wave10 | Wave 10: Integration tests, dual-gimmick tests, coverage gaps, gimmick reset fix |
 | #752 | fix/gen5-8-bughunt | Deep bughunt: EoT countdowns, Z-Move 0.25x through Protect, Disguise volatile, canBypassProtect (closes #735 #736 #739 #741) |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Rayquaza mega, Disguise non-lethal, Beast Boost/Moxie, pinch berries EoT, Focus Sash (closes #701 #687 #688 #683 #725) |
+| #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |

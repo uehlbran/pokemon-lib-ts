@@ -40,6 +40,7 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
+import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChart, VolatileStatus } from "@pokemon-lib-ts/core";
 import { getStatStageMultiplier, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import {
@@ -383,41 +384,6 @@ function getTerrainDamageModifier(
   return { powerModifier, grassyGroundHalved };
 }
 
-// ---- Stat Stage Helpers ----
-
-/**
- * Get effective stat stage accounting for Simple and Unaware abilities.
- *
- * Source: Showdown sim/battle.ts -- Simple doubles stat stages; Unaware ignores them
- */
-function getEffectiveStatStage(
-  pokemon: ActivePokemon,
-  stat: string,
-  opponent?: ActivePokemon,
-  attacker?: ActivePokemon,
-): number {
-  // Mold Breaker (Turboblaze/Teravolt) suppresses only the *target's* breakable abilities;
-  // the active attacker's own abilities are never suppressed (suppressingAbility is always
-  // false for self). Source: Showdown sim/battle.ts Gen 9+ — suppressingAbility
-  const attackerHasMoldBreaker =
-    attacker?.ability === "mold-breaker" ||
-    attacker?.ability === "teravolt" ||
-    attacker?.ability === "turboblaze";
-  // Unaware takes priority: opponent sees 0 stages. Bypassed only when the ATTACKER has
-  // Mold Breaker AND the Unaware holder is the target (opponent !== attacker) — the
-  // attacker's own Unaware is never suppressed by Mold Breaker.
-  // Source: Showdown sim/battle.ts Gen 9+
-  if (opponent?.ability === "unaware" && !(attackerHasMoldBreaker && opponent !== attacker))
-    return 0;
-  const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
-  // Simple doubles the stage (±6 cap). Bypassed only when the ATTACKER has Mold Breaker
-  // AND the Simple holder is the target (pokemon !== attacker).
-  // Source: Showdown sim/battle.ts Gen 9+
-  if (pokemon.ability === "simple" && !(attackerHasMoldBreaker && pokemon !== attacker))
-    return Math.max(-6, Math.min(6, raw * 2));
-  return raw;
-}
-
 // ---- Attack Stat Calculation ----
 
 /**
@@ -562,7 +528,7 @@ function getAttackStat(
   // Apply stat stages (with Simple/Unaware adjustments)
   // Body Press uses defense stat stages
   const stageKey = isBodyPress ? "defense" : isPhysical ? "attack" : "spAttack";
-  const stage = getEffectiveStatStage(attacker, stageKey, defender, attacker);
+  const stage = getEffectiveStatStage(attacker, stageKey, defender);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
   // Source: Showdown -- crit ignores negative attack stages
@@ -673,7 +639,7 @@ function getDefenseStat(
 
   // Stat stages
   const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, attacker);
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, "defense");
 
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }
@@ -774,48 +740,16 @@ const GEN9_ATE_MODIFIER = 4915; // 1.2x in 4096-based math
  * Source: Showdown sim/pokemon.ts -- getTypes(false, true) returns base types
  */
 function getOriginalTypes(pokemon: ActivePokemon): PokemonType[] {
-  // If not terastallized, current types ARE the original types
   if (!pokemon.isTerastallized) {
     return [...pokemon.types];
   }
-  // For Terastallized Pokemon, we need to reconstruct original types.
-  // The base species types can be derived from the calculatedStats context.
-  // Since we store teraTypes on PokemonInstance for defensive typing,
-  // and the original types are lost after Tera, we need to find them.
-
-  // Best approach: check if the pokemon instance has stored original types.
-  // The engine or test helpers should set this up.
-  // Fallback: if Tera type matches a current type, use current types
-  // (this is imperfect but handles the common case).
-
-  // In practice, the Gen9Terastallization.activate() replaces pokemon.types
-  // with [teraType]. But the STAB calculation in calculateTeraStab needs
-  // the original types. We need to get them from somewhere.
-
-  // The PokemonInstance doesn't directly store pre-Tera types,
-  // but we can infer: before Tera, types were the species types.
-  // Since we don't have species data here, we rely on the test/engine
-  // to pass appropriate data.
-
-  // For Stellar Tera: pokemon.types was NOT changed (stays original).
-  // For non-Stellar Tera: pokemon.types was changed to [teraType].
-
-  // If Stellar, current types ARE the original types
-  if ((pokemon.teraType as string) === "stellar") {
-    return [...pokemon.types];
+  // teraOriginalTypes holds pre-Tera species types for all Tera variants.
+  // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraTypes stores original species types
+  if (pokemon.pokemon.teraOriginalTypes && pokemon.pokemon.teraOriginalTypes.length > 0) {
+    return [...pokemon.pokemon.teraOriginalTypes];
   }
-
-  // For non-Stellar Tera'd Pokemon, use the pre-Tera types stored on PokemonInstance.
-  // Gen9Terastallization.activate() sets pokemon.pokemon.teraTypes to the original
-  // defensive types before changing pokemon.types to [teraType].
-  // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraTypes stores pre-Tera typing
-  if (pokemon.pokemon.teraTypes && pokemon.pokemon.teraTypes.length > 0) {
-    return [...pokemon.pokemon.teraTypes];
-  }
-
-  // Fallback: return current types (which for Tera'd Pokemon would be [teraType]).
-  // This path is hit only if teraTypes was never populated (e.g., test scaffolding
-  // that terastallizes without calling activate()).
+  // Fallback: return current types (hit only if teraOriginalTypes was not set,
+  // e.g., test scaffolding that terastallizes without calling activate()).
   return [...pokemon.types];
 }
 

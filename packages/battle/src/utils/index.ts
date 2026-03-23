@@ -5,3 +5,4 @@ export {
   createTestPokemon,
   getPokemonName,
 } from "./BattleHelpers";
+export { getEffectiveStatStage } from "./statStageHelpers";

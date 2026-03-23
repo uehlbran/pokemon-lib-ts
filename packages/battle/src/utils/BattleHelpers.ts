@@ -53,16 +53,16 @@ export function createActivePokemon(
   // Source: Showdown sim/pokemon.ts — forme/tera state restored on sendOut.
   const isTerastallized = !!pokemon.terastallized;
   const teraType = isTerastallized ? (pokemon.teraType ?? null) : null;
-  const teraResolvedTypes =
-    isTerastallized && pokemon.teraTypes
+  // Restore defensive typing for Tera'd Pokemon.
+  // Gen9Terastallization.activate() stores resolved defensive types in teraTypes:
+  //   - Non-Stellar: [teraType]  (single Tera type is the defensive type)
+  //   - Stellar: originalTypes   (Stellar retains original defensive types)
+  // Engine reads teraTypes directly — no gen-specific Stellar awareness needed here.
+  // Source: Showdown sim/pokemon.ts -- defensive types restored on sendOut
+  const teraResolvedTypes: PokemonType[] =
+    isTerastallized && pokemon.teraTypes && pokemon.teraTypes.length > 0
       ? ([...pokemon.teraTypes] as PokemonType[])
       : resolvedTypes;
-
-  // Reset timesAttacked at battle start. This counter tracks how many times a
-  // Pokemon has been hit (for Rage Fist) and persists through switches within a
-  // battle, but must reset between battles when PokemonInstance objects are reused.
-  // Source: Showdown sim/pokemon.ts — timesAttacked is per-battle state, initialized to 0
-  pokemon.timesAttacked = 0;
 
   return {
     pokemon,

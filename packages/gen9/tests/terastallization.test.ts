@@ -291,6 +291,7 @@ describe("Gen9Terastallization activate()", () => {
 
   it("given activate is called, then persistence fields are set on PokemonInstance for switch survival", () => {
     // Source: Gen 9 game mechanic -- Tera persists through switches
+    // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraTypes stores pre-Tera typing
     const pokemon = makeActive({ teraType: "water", types: ["water", "flying"] });
     const side = makeSide();
     const state = makeState();
@@ -298,7 +299,7 @@ describe("Gen9Terastallization activate()", () => {
     tera.activate(pokemon, side, state);
 
     expect(pokemon.pokemon.terastallized).toBe(true);
-    expect(pokemon.pokemon.teraTypes).toEqual(["water"]); // Persisted defensive types
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "flying"]); // Pre-Tera types for STAB calc
   });
 
   it("given activate is called on side 1, when emitting event, then event has correct side index", () => {
