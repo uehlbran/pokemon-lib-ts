@@ -236,13 +236,13 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 | battle | 100% (singles) | 546 | 0 | Doubles/Triples deferred |
 | gen1 | 100% | 800 | 1 (#530 badge glitch — enhancement) | All move handlers done |
 | gen2 | 100% | 757 | 0 | All engine-level bugs closed |
-| gen3 | 98% | 860 | 1 (#141 Plus/Minus — doubles) | Flash Fire fixed PR #591 |
-| gen4 | 100% | 1,216 | 0 | All 24 audit bugs + 4 new bugs closed |
-| gen5 | 100% | 1,165 | 0 | Sky Drop/Pledge doubles deferred |
-| gen6 | 100% | 1,079 | 0 | All 10 waves merged, 82.6% branch coverage |
-| gen7 | 100% | 1,116 | 2 | #687 Disguise non-lethal, #725 Focus Sash capLethalDamage |
-| gen8 | 100% | 1,193 | 2 | #687 Disguise non-lethal, #725 Focus Sash capLethalDamage |
-| gen9 | 100% | 1,031 | 8 | All 10 waves merged, 82.04% branch coverage |
+| gen3 | 100% | 847 | 1 (#141 Plus/Minus — doubles) | Charge/Mud Sport/Water Sport fixed |
+| gen4 | 100% | 1,225 | 0 | Mold Breaker stat bypass fixed |
+| gen5 | 100% | 1,215 | 0 | pokeRound fixes, stat modifiers, activated:false guards |
+| gen6 | 100% | 1,126 | 0 | pokeRound fixes, stat modifiers, Stance Change, semi-invulnerable grounded |
+| gen7 | 100% | 1,144 | 0 | Disguise non-lethal, Beast Boost/Moxie, Rayquaza mega, pinch berries |
+| gen8 | 100% | 1,204 | 0 | Disguise non-lethal + chip, Choice lock Dynamax, exports fixed |
+| gen9 | 100% | 1,053 | 0 | All 8 tracked bugs closed (terrain, Focus Sash, Sturdy, Shed Tail, etc.) |
 
 Full per-gen details: `specs/reference/genN-status.md`
 Ground-truth mechanical reference: `specs/reference/genN-ground-truth.md`

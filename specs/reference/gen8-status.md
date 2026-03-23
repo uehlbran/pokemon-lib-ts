@@ -127,10 +127,17 @@ Test files: `abilities-damage.test.ts`, `abilities-dispatcher.test.ts`, `abiliti
 
 ## OPEN BUGS
 
-| Issue | Description |
-|-------|-------------|
-| #687 | Gen 7/8 Disguise: `capLethalDamage` only fires on lethal hits — non-lethal attacks bypass Disguise. Needs engine-level `interceptDamage` hook. |
-| #725 | Focus Sash/Band not wired to `capLethalDamage` hook in Gen 7/8 (item trigger only fires post-damage) |
+None. All tracked bugs closed.
+
+## CLOSED BUGS
+
+| Issue | Fixed In | Summary |
+|-------|----------|---------|
+| #687 | TBD | Gen 8 Disguise: non-lethal hits bypassed Disguise; now intercepted via expanded capLethalDamage with 1/8 maxHP chip |
+| #725 | TBD | Focus Sash not wired to capLethalDamage; now handled in Gen9Ruleset |
+| #738 | TBD | Gen 8 Disguise chip damage (1/8 maxHP) not implemented |
+| #713 | TBD | Choice lock applied during Dynamax (should be suppressed) |
+| #694 | TBD | Gen 8 package.json exports missing ./data entry |
 
 ---
 
@@ -151,3 +158,4 @@ Test files: `abilities-damage.test.ts`, `abilities-dispatcher.test.ts`, `abiliti
 | #712 | feat/gen8-wave8-dynamax | Wave 8: Dynamax/Gigantamax gimmick (HP scaling, Max Moves, 32 G-Max moves) |
 | #717 | feat/gen8-wave9-integration | Wave 9: integration tests + coverage polish (1,142 tests, 82.27% branch) |
 | #752 | fix/gen5-8-bughunt | Deep bughunt: applyAbility routing (C1), getEndOfTurnOrder (C2), capLethalDamage (C3), canBypassProtect delegation, Dynamax revert fixes, closes #732 #733 #734 #735 #736 #739 #740 #741 #742 #746 #747 |
+| TBD | fix/gen5-8-bughunt-status | Bughunt wave 2: Disguise non-lethal + 1/8 chip via capLethalDamage, Choice lock Dynamax suppression, package.json exports (closes #687 #738 #713 #694) |

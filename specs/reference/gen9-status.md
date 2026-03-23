@@ -83,15 +83,28 @@ Coverage (v8):
 
 ## Open Bugs
 
-8 open bugs as of 2026-03-22:
+None. All tracked bugs closed.
 
-| Issue | Description | Severity |
-|-------|-------------|----------|
-| #749 | Population Bomb multi-accuracy (each hit independent, not single roll) | MEDIUM |
-| #750 | Shed Tail substitute transfer mechanics (sub HP on switch) | MEDIUM |
-| #751 | timesAttacked counter not resetting on switch-out for Rage Fist | LOW |
-| #723 | Psychic Terrain priority block not fully implemented | MEDIUM |
-| #724 | Misty Terrain confusion immunity not fully implemented | MEDIUM |
-| #725 | Focus Sash capLethalDamage interaction (shared with gen7/gen8) | LOW |
-| #726 | Lansat Berry crit-rate boost not implemented | LOW |
-| #731 | Sturdy capLethalDamage interaction (shared with gen7/gen8) | LOW |
+## Closed Bugs
+
+| Issue | Fixed In | Severity | Summary |
+|-------|----------|----------|---------|
+| #749 | TBD | MEDIUM | Population Bomb multi-accuracy — each hit now re-rolls accuracy (checkPerHitAccuracy) |
+| #750 | TBD | MEDIUM | Shed Tail substitute transfer on switch-in via shed-tail-sub volatile |
+| #751 | TBD | LOW | timesAttacked not reset on switch-out for Rage Fist |
+| #723 | TBD | MEDIUM | Psychic Terrain priority block implemented via shouldBlockPriorityMove ruleset hook |
+| #724 | TBD | MEDIUM | Misty Terrain confusion immunity via shouldBlockVolatile ruleset hook |
+| #725 | TBD | LOW | Focus Sash wired to capLethalDamage (survives lethal at 1 HP, consumes item) |
+| #726 | TBD | LOW | Lansat Berry sets focus-energy volatile for crit-rate boost |
+| #731 | TBD | LOW | Sturdy wired to capLethalDamage (full HP only — blocks OHKO) |
+
+
+---
+
+## PR History (partial — bughunt additions)
+
+| PR | Branch | What was merged |
+|----|--------|-----------------|
+| #728 | feat/gen9-wave8b | Wave 8B: move effects (Population Bomb, Salt Cure, Shed Tail stubs, etc.) |
+| #753 | feat/gen9-wave9 | Wave 9: integration tests + 100% completion docs |
+| TBD | fix/gen5-8-bughunt-status | Bughunt wave 2: timesAttacked reset, Shed Tail transfer, Population Bomb multiaccuracy, Sturdy/Focus Sash capLethalDamage, Misty/Psychic terrain, Lansat Berry (closes #749 #750 #751 #723 #724 #725 #726 #731) |
