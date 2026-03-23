@@ -142,6 +142,11 @@ export class Gen5Ruleset extends BaseRuleset {
    * Priority: Sturdy fires first (priority -30), then Focus Sash/Band (priority -10).
    * If Sturdy caps the damage, Focus Sash won't fire (damage < currentHp after cap).
    *
+   * Focus Sash and Focus Band are suppressed by Klutz (ability), Embargo (volatile),
+   * and Magic Room (field condition).
+   * Source: Showdown data/abilities.ts -- klutz: item has no effect
+   * Source: Showdown data/moves.ts -- embargo: target's item is unusable
+   *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
    * Source: Showdown data/items.ts -- Focus Sash: onDamage; Focus Band: onDamage
    * Source: Bulbapedia -- Focus Sash, Focus Band, Sturdy (Ability)
@@ -165,9 +170,15 @@ export class Gen5Ruleset extends BaseRuleset {
     // 2. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
     // Source: Showdown data/items.ts -- Focus Sash onDamage
     // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const heldItem = defender.pokemon.heldItem;
+    const itemSuppressed =
+      defender.ability === "klutz" ||
+      defender.volatileStatuses.has("embargo") ||
+      (state.magicRoom?.active ?? false);
     if (
       heldItem === "focus-sash" &&
+      !itemSuppressed &&
       defender.pokemon.currentHp === maxHp &&
       damage >= defender.pokemon.currentHp
     ) {
@@ -182,7 +193,7 @@ export class Gen5Ruleset extends BaseRuleset {
     // 3. Focus Band (item) -- 10% chance to survive at 1 HP, NOT consumed
     // Source: Showdown data/items.ts -- Focus Band 10% activation
     // Fix: use currentHp - 1 (not maxHp - 1) to leave exactly 1 HP regardless of current HP
-    if (heldItem === "focus-band" && damage >= defender.pokemon.currentHp) {
+    if (heldItem === "focus-band" && !itemSuppressed && damage >= defender.pokemon.currentHp) {
       if (state.rng.chance(0.1)) {
         return {
           damage: defender.pokemon.currentHp - 1,
