@@ -40,7 +40,7 @@ import { Gen6MegaEvolution } from "./Gen6MegaEvolution.js";
 import { executeGen6MoveEffect, isGen6GrassPowderBlocked } from "./Gen6MoveEffects.js";
 import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "./Gen6TypeChart.js";
-import { applyGen6WeatherEffects } from "./Gen6Weather.js";
+import { applyGen6WeatherEffects, isWeatherSuppressedOnFieldGen6 } from "./Gen6Weather.js";
 
 /**
  * Gen 6 (X/Y/Omega Ruby/Alpha Sapphire) ruleset.
@@ -538,8 +538,10 @@ export class Gen6Ruleset extends BaseRuleset {
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
-    // Set weather context for getEffectiveSpeed to read
-    this._currentWeather = state.weather?.type ?? null;
+    // Cloud Nine / Air Lock suppress weather for speed-doubling abilities too.
+    // Source: Showdown sim/battle.ts — suppressingWeather() gates weather-dependent speed
+    const rawWeather = state.weather?.type ?? null;
+    this._currentWeather = rawWeather && isWeatherSuppressedOnFieldGen6(state) ? null : rawWeather;
 
     // Pre-roll Quick Claw activations
     const quickClawActivated = this.getQuickClawActivated(actions, state, rng);

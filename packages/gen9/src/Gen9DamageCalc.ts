@@ -52,6 +52,7 @@ import {
 } from "./Gen9AbilitiesDamage.js";
 import { getLastRespectsPower, getRageFistPower } from "./Gen9MoveEffects.js";
 import { calculateTeraStab } from "./Gen9Terastallization.js";
+import { isWeatherSuppressedGen9 } from "./Gen9Weather.js";
 
 // ---- pokeRound: the 4096-based rounding function ----
 
@@ -803,7 +804,10 @@ export function calculateGen9Damage(
 
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
-  const weather = context.state.weather?.type ?? null;
+  // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
+  // Source: Showdown sim/battle.ts — suppressingWeather() gates all weather-based damage modifiers
+  const rawWeather = context.state.weather?.type ?? null;
+  const weather = isWeatherSuppressedGen9(attacker, defender) ? null : rawWeather;
 
   // -ate abilities + Normalize: type-changing abilities
   // Source: Showdown data/abilities.ts -- aerilate/pixilate/refrigerate/galvanize: onModifyTypePriority -1

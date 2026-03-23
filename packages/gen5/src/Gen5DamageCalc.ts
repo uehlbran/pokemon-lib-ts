@@ -12,6 +12,7 @@ import {
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
 import { isSheerForceEligibleMove } from "./Gen5AbilitiesDamage";
+import { isWeatherSuppressedGen5 } from "./Gen5Weather";
 
 // ---- Type-Resist Berries ----
 
@@ -527,7 +528,10 @@ export function calculateGen5Damage(
   let power = move.power;
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
-  const weather = context.state.weather?.type ?? null;
+  // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
+  // Source: Showdown sim/battle.ts — suppressingWeather() gates all weather-based damage modifiers
+  const rawWeather = context.state.weather?.type ?? null;
+  const weather = isWeatherSuppressedGen5(attacker, defender) ? null : rawWeather;
 
   // Normalize: all moves become Normal type
   // Source: Showdown data/abilities.ts -- Normalize

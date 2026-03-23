@@ -54,7 +54,7 @@ import {
   isSurgeAbility,
 } from "./Gen7Terrain.js";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
-import { applyGen7WeatherEffects } from "./Gen7Weather.js";
+import { applyGen7WeatherEffects, isWeatherSuppressedOnFieldGen7 } from "./Gen7Weather.js";
 import { Gen7ZMove } from "./Gen7ZMove.js";
 
 /**
@@ -664,8 +664,10 @@ export class Gen7Ruleset extends BaseRuleset {
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
-    // Set weather and terrain context for getEffectiveSpeed to read
-    this._currentWeather = state.weather?.type ?? null;
+    // Cloud Nine / Air Lock suppress weather for speed-doubling abilities too.
+    // Source: Showdown sim/battle.ts — suppressingWeather() gates weather-dependent speed
+    const rawWeather = state.weather?.type ?? null;
+    this._currentWeather = rawWeather && isWeatherSuppressedOnFieldGen7(state) ? null : rawWeather;
     this._currentTerrain = state.terrain?.type ?? null;
 
     // Pre-roll Quick Claw activations

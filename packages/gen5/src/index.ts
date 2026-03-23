@@ -79,5 +79,7 @@ export {
   applyGen5WeatherEffects,
   HAIL_IMMUNE_TYPES,
   isGen5WeatherImmune,
+  isWeatherSuppressedGen5,
+  isWeatherSuppressedOnFieldGen5,
   SANDSTORM_IMMUNE_TYPES,
 } from "./Gen5Weather";

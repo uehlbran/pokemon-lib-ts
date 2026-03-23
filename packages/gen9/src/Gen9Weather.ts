@@ -20,8 +20,52 @@
  * Source: Bulbapedia -- Weather conditions page, Snow replaces Hail in Gen 9
  */
 
-import type { BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+
+// ─── Cloud Nine / Air Lock Weather Suppression ─────────────────────────────
+
+/**
+ * Abilities that suppress weather effects for all Pokemon on the field.
+ *
+ * Source: Showdown sim/battle.ts — suppressingWeather() checks for Cloud Nine and Air Lock
+ * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
+ */
+const WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set(["cloud-nine", "air-lock"]);
+
+/**
+ * Check if either the attacker or defender has Cloud Nine / Air Lock,
+ * which suppresses all weather effects for damage calc purposes.
+ *
+ * Source: Showdown sim/battle.ts — suppressingWeather() scans all active Pokemon
+ * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
+ */
+export function isWeatherSuppressedGen9(
+  pokemon: ActivePokemon | undefined,
+  opponent: ActivePokemon | undefined,
+): boolean {
+  if (pokemon && WEATHER_SUPPRESSING_ABILITIES.has(pokemon.ability)) return true;
+  if (opponent && WEATHER_SUPPRESSING_ABILITIES.has(opponent.ability)) return true;
+  return false;
+}
+
+/**
+ * Check if any active Pokemon on the field suppresses weather.
+ *
+ * Used for end-of-turn weather chip damage and speed calculations.
+ *
+ * Source: Showdown sim/battle.ts — suppressingWeather() checks all active Pokemon
+ */
+export function isWeatherSuppressedOnFieldGen9(state: {
+  sides: { active: ({ ability: string } | null)[] }[];
+}): boolean {
+  for (const side of state.sides) {
+    for (const active of side.active) {
+      if (active && WEATHER_SUPPRESSING_ABILITIES.has(active.ability)) return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Gen 9 weather duration constants.
@@ -132,6 +176,10 @@ export function applyGen9WeatherEffects(state: BattleState): WeatherEffectResult
   // Only sandstorm deals chip damage in Gen 9
   // Snow (which replaced hail) has NO chip damage -- this is the key Gen 9 change
   if (weatherType !== "sand") return results;
+
+  // Cloud Nine / Air Lock suppresses all weather effects including chip damage
+  // Source: Showdown sim/battle.ts — suppressingWeather() gates weather residual damage
+  if (isWeatherSuppressedOnFieldGen9(state)) return results;
 
   // Process each side
   for (const side of state.sides) {
