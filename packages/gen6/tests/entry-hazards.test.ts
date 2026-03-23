@@ -237,14 +237,16 @@ describe("Gen6 isGen6Grounded", () => {
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
 
-  it("given a Pokemon using Dig (semi-invulnerable underground), when checking grounding, then IS grounded", () => {
-    // Source: Showdown sim/pokemon.ts -- isGrounded: dig does NOT make the user airborne
+  it("given a Pokemon with 'underground' volatile (Dig charge turn), when checking grounding, then IS grounded because underground is not airborne", () => {
+    // Source: BattleEngine.ts:1192 -- Dig sets "underground" volatile (not "dig")
+    // Source: Showdown sim/pokemon.ts -- isGrounded: underground does NOT make the user airborne
     // Source: Bulbapedia "Dig" -- "The user burrows underground" (still on the ground)
     // Bug #664: Only airborne semi-invulnerable states (Fly, Bounce, Shadow Force, Phantom Force)
     // should unground; Dig/Dive stay grounded.
-    const volatiles = new Map([["dig", { turnsLeft: 1 }]]);
+    // Verifies "underground" is NOT in AIRBORNE_SEMI_INVULNERABLE.
+    const volatiles = new Map([["underground", { turnsLeft: 1 }]]);
     const pokemon = makeActivePokemon({ types: ["normal"], volatiles });
-    expect(isGen6Grounded(pokemon, true)).toBe(true);
+    expect(isGen6Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a Pokemon with 'shadow-force-charging' volatile (Shadow Force charge turn), when checking grounding, then is NOT grounded", () => {
