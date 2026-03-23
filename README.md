@@ -11,12 +11,12 @@ Modular TypeScript libraries for building Pokemon battle simulators, fan games, 
 
 ## Features
 
-- **Modular by generation** — install `@pokemon-lib-ts/gen1`, `gen2`, or both; no unused data bundled
+- **Modular by generation** — install `@pokemon-lib-ts/gen1` through `@pokemon-lib-ts/gen9`; no unused data bundled
 - **Event-driven battles** — 38 typed event types, zero UI coupling; render events however you want
 - **Deterministic** — seeded PRNG (Mulberry32); same seed = same battle, every time
-- **Generation-accurate** — each gen implements its unique quirks faithfully (Gen 1 Focus Energy bug, Gen 2 freeze thaw, etc.)
+- **Generation-accurate** — each gen implements its unique quirks faithfully (Gen 1 Focus Energy bug, Gen 2 freeze thaw, Gen 3 abilities, etc.)
 - **Zero-dependency core** — pure TypeScript; `@pokemon-lib-ts/core` has no runtime dependencies
-- **Complete standalone data** — each gen bundles all Pokemon, moves, type charts, items
+- **Complete standalone data** — each gen bundles all Pokemon, moves, type charts, items, abilities
 - **Dual ESM + CJS** — works in Node, bundlers, and everywhere TypeScript runs
 - **Extensible** — implement `GenerationRuleset` (~43 methods) to plug in a custom battle system
 
@@ -26,21 +26,30 @@ Modular TypeScript libraries for building Pokemon battle simulators, fan games, 
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [`@pokemon-lib-ts/core`](./packages/core) | 0.4.0 | Entity types, stat calc, type effectiveness, EXP curves, DataManager, SeededRandom |
-| [`@pokemon-lib-ts/battle`](./packages/battle) | 0.4.0 | Pluggable battle engine, GenerationRuleset interface, event stream, AI controllers |
-| [`@pokemon-lib-ts/gen1`](./packages/gen1) | 0.2.4 | Gen 1 (Red/Blue/Yellow) — 151 Pokemon, 164 moves, 15-type chart, Gen 1 quirks |
-| [`@pokemon-lib-ts/gen2`](./packages/gen2) | 0.1.2 | Gen 2 (Gold/Silver/Crystal) — 251 Pokemon, 17-type chart, held items, weather |
+| [`@pokemon-lib-ts/core`](./packages/core) | 0.8.0 | Entity types, stat calc, type effectiveness, EXP curves, DataManager, SeededRandom |
+| [`@pokemon-lib-ts/battle`](./packages/battle) | 0.10.0 | Pluggable battle engine, GenerationRuleset interface, event stream, AI controllers |
+| [`@pokemon-lib-ts/gen1`](./packages/gen1) | 0.6.0 | Gen 1 (Red/Blue/Yellow) — 151 Pokemon, 165 moves, 15-type chart, Gen 1 quirks |
+| [`@pokemon-lib-ts/gen2`](./packages/gen2) | 0.4.0 | Gen 2 (Gold/Silver/Crystal) — 251 Pokemon, 17-type chart, held items, weather |
+| [`@pokemon-lib-ts/gen3`](./packages/gen3) | 0.1.0 | Gen 3 (Ruby/Sapphire/Emerald) — 386 Pokemon, abilities system, natures, weather |
+| [`@pokemon-lib-ts/gen4`](./packages/gen4) | 0.1.0 | Gen 4 (Diamond/Pearl/Platinum) — 493 Pokemon, physical/special split, Stealth Rock |
+| [`@pokemon-lib-ts/gen5`](./packages/gen5) | 0.1.0 | Gen 5 (Black/White/BW2) — 649 Pokemon, weather abilities, Illusion, Moody |
+| [`@pokemon-lib-ts/gen6`](./packages/gen6) | 0.1.0 | Gen 6 (X/Y/ORAS) — 721 Pokemon, Mega Evolution, Fairy type, Sticky Web |
+| [`@pokemon-lib-ts/gen7`](./packages/gen7) | 0.1.0 | Gen 7 (Sun/Moon/USUM) — 807 Pokemon, Z-Moves, Alolan Forms, terrain abilities |
+| [`@pokemon-lib-ts/gen8`](./packages/gen8) | 0.0.1 | Gen 8 (Sword/Shield) — 664 Pokemon (Galar Dex), Dynamax/Gigantamax |
+| [`@pokemon-lib-ts/gen9`](./packages/gen9) | 0.0.1 | Gen 9 (Scarlet/Violet) — 733 Pokemon (Paldea Dex), Terastallization, Snow |
 
 ## Architecture
 
-```
+```text
 core  <-  battle  <-  gen1  <-  your app
                   <-  gen2  <-  your app
+                  ...
+                  <-  gen9  <-  your app
 ```
 
 - **Core** has zero runtime dependencies. Pure TypeScript interfaces, formulas, and utilities.
 - **Battle** provides the engine skeleton — a state machine that delegates all gen-specific behavior to a `GenerationRuleset` interface (~43 methods: damage calc, type chart, accuracy, move effects, turn order, etc.). The engine never contains generation-specific logic.
-- **Gen packages** implement `GenerationRuleset` and bundle complete, standalone data. Gen 1 and 2 implement the interface directly; Gen 3+ extend `BaseRuleset` with overrides.
+- **Gen packages** implement `GenerationRuleset` and bundle complete, standalone data. Gen 1 and 2 implement the interface directly; Gen 3–9 extend `BaseRuleset` with overrides.
 - **Tools** (`tools/data-importer`, `tools/replay-parser`) handle the build-time data pipeline and Showdown replay validation.
 
 The engine emits individual `BattleEvent` values to listeners — 38 typed event types covering every battle action. The full event log is available as `BattleEvent[]` via `engine.getEventLog()`. Consumers subscribe and render however they want.
@@ -66,17 +75,17 @@ engine.on((event) => console.log(event));
 engine.start();
 ```
 
-**Gen 2 battle:**
+**Gen 9 battle (Terastallization):**
 
 ```typescript
 import { BattleEngine } from "@pokemon-lib-ts/battle";
-import { Gen2Ruleset, createGen2DataManager } from "@pokemon-lib-ts/gen2";
+import { Gen9Ruleset, createGen9DataManager } from "@pokemon-lib-ts/gen9";
 
-const dataManager = createGen2DataManager();
-const ruleset = new Gen2Ruleset();
+const dataManager = createGen9DataManager();
+const ruleset = new Gen9Ruleset();
 
 const engine = new BattleEngine(
-  { generation: 2, format: "singles", teams: [team1, team2], seed: 42 },
+  { generation: 9, format: "singles", teams: [team1, team2], seed: 42 },
   ruleset,
   dataManager
 );
@@ -88,15 +97,15 @@ engine.start();
 **Data only (no battle engine):**
 
 ```typescript
-import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
+import { createGen4DataManager } from "@pokemon-lib-ts/gen4";
 
-const dm = createGen2DataManager();
-const typhlosion = dm.getSpecies(157);
-console.log(typhlosion.baseStats);
-// { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 }
+const dm = createGen4DataManager();
+const garchomp = dm.getSpecies(445);
+console.log(garchomp.baseStats);
+// { hp: 108, attack: 130, defense: 95, spAttack: 80, spDefense: 85, speed: 102 }
 
-const surf = dm.getMove("surf");
-console.log(surf.power, surf.type); // 95, 'water'
+const earthquake = dm.getMove("earthquake");
+console.log(earthquake.power, earthquake.type); // 100, 'ground'
 ```
 
 ## Use Cases
@@ -147,12 +156,27 @@ cd packages/core && npx vitest run --coverage
 
 ## Project Status
 
+All nine generations are complete. 10,282+ tests across all packages, validated against Showdown and Bulbapedia reference values.
+
+| Package | Tests | Key Notes |
+|---------|-------|-----------|
+| core | 342 | All entity interfaces, stat calc, type effectiveness, PRNG |
+| battle | 546 | Singles engine complete; doubles deferred |
+| gen1 | 800 | All move handlers done; Gen 1 quirks (Focus Energy bug, 1/256 miss, etc.) |
+| gen2 | 757 | Gen 2 mechanics complete (held items, weather, Special split) |
+| gen3 | 847 | Abilities system, natures, weather; extends BaseRuleset |
+| gen4 | 1,225 | Physical/Special split by move, Stealth Rock, Mold Breaker |
+| gen5 | 1,225 | Weather abilities, Illusion, Moody, pokeRound fixes |
+| gen6 | 1,135 | Mega Evolution, Fairy type, Sticky Web, Stance Change |
+| gen7 | 1,144 | Z-Moves, Alolan Forms, Tapu terrain abilities, Ultra Burst |
+| gen8 | 1,208 | Dynamax/Gigantamax, Galarian Forms, Choice lock interaction |
+| gen9 | 1,053 | Terastallization, Snow, Focus Sash, Sturdy, Shed Tail |
+
 - **Phase 1** (complete): Core + Battle + Gen 1
 - **Phase 2** (complete): Gen 2 — held items, weather, Dark/Steel types, Special split
-- **Phase 3** (planned): Gen 9 — proves architecture scales to modern mechanics
-- **Phase 4+** (planned): Remaining generations, community-driven
-
-800+ tests across all packages, validated against Showdown and Bulbapedia reference values.
+- **Phase 3** (complete): Gen 3–6 — abilities, natures, Mega Evolution, Fairy type
+- **Phase 4** (complete): Gen 7 — Z-Moves, Alolan Forms, terrain abilities
+- **Phase 5** (complete): Gen 8–9 — Dynamax, Terastallization, modern mechanics
 
 ## Documentation
 

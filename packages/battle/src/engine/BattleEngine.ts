@@ -150,6 +150,8 @@ export class BattleEngine implements BattleEventEmitter {
         // within a battle but must reset when PokemonInstance objects are reused.
         // Source: Showdown sim/pokemon.ts — timesAttacked is per-battle state, initialized to 0
         pokemon.timesAttacked = 0;
+        // Use null-prototype object to avoid __proto__ key collisions with move IDs.
+        pokemon.rageFistLastHitTurns = Object.create(null) as Record<string, number>;
       }
     }
 

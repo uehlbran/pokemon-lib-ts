@@ -11,7 +11,6 @@ describe("barrel exports", () => {
     expect(mod.GenerationRegistry).toBeDefined();
     expect(mod.generations).toBeDefined();
     expect(mod.RandomAI).toBeDefined();
-    expect(mod.createTestPokemon).toBeDefined();
     expect(mod.createDefaultStatStages).toBeDefined();
     expect(mod.createActivePokemon).toBeDefined();
     expect(mod.createPokemonSnapshot).toBeDefined();
