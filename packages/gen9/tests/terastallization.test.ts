@@ -1,7 +1,8 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import { createActivePokemon, createTestPokemon } from "@pokemon-lib-ts/battle";
+import { createActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createTestPokemon } from "../../battle/src/utils";
 import { calculateTeraStab, Gen9Terastallization } from "../src/Gen9Terastallization";
 
 // ---------------------------------------------------------------------------
