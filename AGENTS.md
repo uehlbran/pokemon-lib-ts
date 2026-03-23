@@ -26,6 +26,11 @@ Agents must read repo instructions before acting, not after making a mistake.
   [`.claude/rules/issue-linking.md`](/home/uehlbran/projects/pokemon-lib-ts/.worktrees/chore-package-boundary-ci-guards/.claude/rules/issue-linking.md),
   [`.claude/rules/issue-closing-syntax.md`](/home/uehlbran/projects/pokemon-lib-ts/.worktrees/chore-package-boundary-ci-guards/.claude/rules/issue-closing-syntax.md),
   and the repo PR template.
+- After creating a PR: re-read
+  [`.claude/rules/pr-comment-handling.md`](/home/uehlbran/projects/pokemon-lib-ts/.worktrees/chore-package-boundary-ci-guards/.claude/rules/pr-comment-handling.md)
+  and babysit the PR until merge. Review comments must be acknowledged, validated against the
+  current code, and either fixed, replied to with rationale, or converted into a follow-up issue
+  if genuinely out of scope.
 - Do not rely on memory for repo workflow. Re-open the relevant file before the governed action.
 
 ## Required Workflow
@@ -59,4 +64,3 @@ specific file:
 1. Nearest subtree `CLAUDE.md`
 2. Root `CLAUDE.md`
 3. This file
-

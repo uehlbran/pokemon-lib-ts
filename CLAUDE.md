@@ -172,6 +172,10 @@ Agents must read repo instructions before acting, not after making a mistake.
   `.claude/rules/issue-linking.md`.
 - Before creating or editing a PR: re-read `.claude/rules/issue-linking.md`,
   `.claude/rules/issue-closing-syntax.md`, and the repo PR template.
+- After creating a PR: re-read `.claude/rules/pr-comment-handling.md` and babysit the PR until
+  merge. Review comments must be acknowledged, validated against the current code, and either
+  fixed, replied to with rationale, or converted into a follow-up issue if they are real and out
+  of scope.
 - Do not rely on memory for repo workflow. Re-open the relevant instruction file before the
   governed action.
 
