@@ -5,12 +5,14 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
     "./data": {
-      "import": "./data/index.js",
-      "require": "./data/index.cjs"
+      "types": "./dist/data/index.d.ts",
+      "import": "./dist/data/index.js",
+      "require": "./dist/data/index.cjs"
     }
   },
   "main": "./dist/index.cjs",

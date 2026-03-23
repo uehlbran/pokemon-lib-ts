@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "ci:package-boundaries": "tsx scripts/verify-package-boundaries.ts",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "npx @biomejs/biome check --write .",
