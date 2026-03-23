@@ -242,9 +242,10 @@ function getEffectiveStatStage(
  */
 function getAttackStat(
   attacker: ActivePokemon,
-  _moveType: PokemonType,
+  moveType: PokemonType,
   isPhysical: boolean,
   isCrit: boolean,
+  weather: string | null,
   defender?: ActivePokemon,
 ): number {
   const statKey = isPhysical ? "attack" : "spAttack";
@@ -322,12 +323,36 @@ function getAttackStat(
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
-  // Solar Power: 1.5x SpAtk in Harsh Sunlight
-  // Source: Showdown data/abilities.ts -- Solar Power
-  // Note: weather is not passed to this function; handled in main calc if needed.
+  // Solar Power: 1.5x SpAtk in sun/harsh-sun
+  // Source: Showdown data/abilities.ts — solar-power: onModifySpA returns chainModify(1.5)
+  if (!isPhysical && ability === "solar-power" && (weather === "sun" || weather === "harsh-sun")) {
+    rawStat = Math.floor((rawStat * 150) / 100);
+  }
 
-  // Flower Gift: 1.5x Attack in Harsh Sunlight
-  // Source: Showdown data/abilities.ts -- Flower Gift
+  // Flower Gift: 1.5x Atk in sun/harsh-sun
+  // Source: Showdown data/abilities.ts — flower-gift: onModifyAtk returns chainModify(1.5)
+  if (isPhysical && ability === "flower-gift" && (weather === "sun" || weather === "harsh-sun")) {
+    rawStat = Math.floor((rawStat * 150) / 100);
+  }
+
+  // Flash Fire: 1.5x attack stat for Fire-type moves when Flash Fire is active
+  // Source: Showdown data/abilities.ts — flash-fire: onModifyAtk/onModifySpA chainModify(1.5)
+  // This is a stat modifier (not base power), per Showdown's implementation
+  if (moveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+    rawStat = Math.floor((rawStat * 150) / 100);
+  }
+
+  // Pinch abilities (Overgrow/Blaze/Torrent/Swarm): 1.5x attack stat when HP <= floor(maxHP/3)
+  // Source: Showdown data/abilities.ts — blaze/overgrow/torrent/swarm: onModifyAtk/onModifySpA
+  // These are stat modifiers (not base power), per Showdown's implementation
+  const pinchAbilityType = PINCH_ABILITY_TYPES[ability];
+  if (pinchAbilityType && moveType === pinchAbilityType) {
+    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+    const threshold = Math.floor(maxHp / 3);
+    if (attacker.pokemon.currentHp <= threshold) {
+      rawStat = Math.floor((rawStat * 150) / 100);
+    }
+  }
 
   // Slow Start: halve Attack for the first 5 turns
   // Source: Showdown data/abilities.ts -- Slow Start
@@ -562,29 +587,19 @@ export function calculateGen5Damage(
     const typeBoostItemType = TYPE_BOOST_ITEMS[attackerItem];
     const plateItemType = PLATE_ITEMS[attackerItem];
     if (typeBoostItemType === effectiveMoveType) {
-      power = Math.floor((power * 4915) / 4096);
+      // Source: Showdown data/items.ts — chainModify([4915, 4096]) uses pokeRound, not integer division
+      power = pokeRound(power, 4915);
     }
     if (plateItemType === effectiveMoveType) {
-      power = Math.floor((power * 4915) / 4096);
+      // Source: Showdown data/items.ts — chainModify([4915, 4096]) uses pokeRound, not integer division
+      power = pokeRound(power, 4915);
     }
   }
 
-  // Pinch abilities: 1.5x power when HP <= floor(maxHP/3)
-  // Source: Showdown -- pinch ability check
-  const pinchType = PINCH_ABILITY_TYPES[attackerAbility];
-  if (pinchType && effectiveMoveType === pinchType) {
-    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-    const threshold = Math.floor(maxHp / 3);
-    if (attacker.pokemon.currentHp <= threshold) {
-      power = Math.floor(power * 1.5);
-    }
-  }
-
-  // Flash Fire volatile: 1.5x power for Fire moves
-  // Source: Showdown data/abilities.ts -- Flash Fire
-  if (effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
-    power = Math.floor(power * 1.5);
-  }
+  // Pinch abilities (Overgrow/Blaze/Torrent/Swarm) and Flash Fire are now handled
+  // as stat modifiers in getAttackStat(), not as base-power modifiers.
+  // Source: Showdown data/abilities.ts — blaze/overgrow/torrent/swarm use onModifyAtk/onModifySpA
+  // Source: Showdown data/abilities.ts — flash-fire uses onModifyAtk/onModifySpA
 
   // Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin
   // Source: Showdown data/abilities.ts -- Dry Skin (priority 17)
@@ -593,25 +608,29 @@ export function calculateGen5Damage(
     attackerAbility === "teravolt" ||
     attackerAbility === "turboblaze";
   if (!moldBreaker && defenderAbility === "dry-skin" && effectiveMoveType === "fire") {
-    power = Math.floor(power * 1.25);
+    // Source: Showdown data/abilities.ts — dry-skin: chainModify(1.25) = 5120/4096
+    power = pokeRound(power, 5120);
   }
 
   // Technician: 1.5x power for moves with base power <= 60
   // Source: Showdown data/abilities.ts -- Technician (priority 30)
   if (attackerAbility === "technician" && power <= 60) {
-    power = Math.floor(power * 1.5);
+    // Source: Showdown data/abilities.ts — technician: chainModify(1.5) = 6144/4096
+    power = pokeRound(power, 6144);
   }
 
   // Iron Fist: 1.2x power for punching moves
   // Source: Showdown data/abilities.ts -- Iron Fist
   if (attackerAbility === "iron-fist" && move.flags.punch) {
-    power = Math.floor(power * 1.2);
+    // Source: Showdown data/abilities.ts — iron-fist: chainModify(1.2) = 4915/4096
+    power = pokeRound(power, 4915);
   }
 
-  // Reckless: 1.2x power for moves with recoil
-  // Source: Showdown data/abilities.ts -- Reckless
-  if (attackerAbility === "reckless" && hasRecoilEffect(move.effect)) {
-    power = Math.floor(power * 1.2);
+  // Reckless: 1.2x power for moves with recoil or crash damage
+  // Source: Showdown data/abilities.ts — Reckless: if (move.recoil || move.hasCrashDamage)
+  if (attackerAbility === "reckless" && (hasRecoilEffect(move.effect) || move.hasCrashDamage)) {
+    // Source: Showdown data/abilities.ts — reckless: chainModify(1.2) = 4915/4096
+    power = pokeRound(power, 4915);
   }
 
   // Sheer Force (NEW in Gen 5): 1.3x (5325/4096) power for moves with secondary effects.
@@ -691,36 +710,38 @@ export function calculateGen5Damage(
       defenderGender !== "genderless"
     ) {
       if (attackerGender === defenderGender) {
-        power = Math.floor(power * 1.25);
+        // Source: Showdown data/abilities.ts — rivalry: chainModify(1.25) = 5120/4096
+        power = pokeRound(power, 5120);
       } else {
-        power = Math.floor(power * 0.75);
+        // Source: Showdown data/abilities.ts — rivalry: chainModify(0.75) = 3072/4096
+        power = pokeRound(power, 3072);
       }
     }
   }
 
   // Adamant Orb / Lustrous Orb / Griseous Orb (Gen 5 includes all three)
-  // Source: Showdown data/items.ts
+  // Source: Showdown data/items.ts — chainModify([4915, 4096]) uses pokeRound
   if (!attackerHasKlutz && attackerItem) {
     if (
       attackerItem === "adamant-orb" &&
       attacker.pokemon.speciesId === 483 &&
       (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
     ) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "lustrous-orb" &&
       attacker.pokemon.speciesId === 484 &&
       (effectiveMoveType === "water" || effectiveMoveType === "dragon")
     ) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "griseous-orb" &&
       attacker.pokemon.speciesId === 487 &&
       (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
     ) {
-      power = Math.floor((power * 4915) / 4096);
+      power = pokeRound(power, 4915);
     }
   }
 
@@ -759,7 +780,7 @@ export function calculateGen5Damage(
   const isPhysical = move.category === "physical";
 
   // Get effective stats
-  let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, defender);
+  let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, weather, defender);
   // Chip Away / Sacred Sword: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword: { ignoreDefensive: true }
   const IGNORE_DEFENSE_STAGE_MOVES: ReadonlySet<string> = new Set(["chip-away", "sacred-sword"]);
