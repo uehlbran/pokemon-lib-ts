@@ -1573,4 +1573,50 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     );
     expect(result.damage).toBe(63);
   });
+
+  it("given Teravolt attacker with +2 Atk stage vs Unaware defender, when calculating damage, then Mold Breaker bypasses Unaware and stages apply", () => {
+    // Mold Breaker/Teravolt/Turboblaze bypass breakable abilities (flags: { breakable: 1 }).
+    // Unaware is breakable, so a Teravolt attacker ignores Unaware — stages are NOT zeroed.
+    // Source: Showdown sim/battle.ts Gen 5+ — ability.flags.breakable check.
+    //
+    // Derivation (Teravolt bypasses Unaware → effective stage = +2, multiplier = 4/2 = 2.0):
+    //   effectiveAttack = floor(100 * 2.0) = 200
+    //   L50, defense=100, power=50, normal-type physical, water vs water (neutral, no STAB)
+    //   step1 = floor(22 * 50 * 200 / 100) = 2200
+    //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
+    //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
+    const attacker = makeActive({ attack: 100, ability: "teravolt", types: ["water"] });
+    attacker.statStages.attack = 2;
+    const defender = makeActive({ defense: 100, ability: "unaware", types: ["water"] });
+    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen5Damage(
+      ctx,
+      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+    );
+    expect(result.damage).toBe(43);
+  });
+
+  it("given Simple attacker with +2 Atk stage vs Turboblaze defender, when calculating damage, then Mold Breaker bypasses Simple and stages are not doubled", () => {
+    // Mold Breaker/Teravolt/Turboblaze bypass breakable abilities (flags: { breakable: 1 }).
+    // Simple is breakable, so a Turboblaze defender ignores the attacker's Simple doubling.
+    // Source: Showdown sim/battle.ts Gen 5+ — ability.flags.breakable check.
+    //
+    // Derivation (Turboblaze bypasses Simple → effective stage = +2, NOT +4, multiplier = 2.0):
+    //   effectiveAttack = floor(100 * 2.0) = 200
+    //   L50, defense=100, power=50, normal-type physical, water vs water (neutral, no STAB)
+    //   step1 = floor(22 * 50 * 200 / 100) = 2200
+    //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
+    //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
+    const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
+    attacker.statStages.attack = 2;
+    const defender = makeActive({ defense: 100, ability: "turboblaze", types: ["water"] });
+    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const result = calculateGen5Damage(
+      ctx,
+      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+    );
+    expect(result.damage).toBe(43);
+  });
 });
