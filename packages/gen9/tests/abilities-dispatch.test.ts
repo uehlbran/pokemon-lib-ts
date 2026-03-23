@@ -274,3 +274,66 @@ describe("handleGen9Ability -- routing", () => {
     expect(result.effects[1]).toEqual(expect.objectContaining({ stat: "speed", stages: 1 }));
   });
 });
+
+// ---------------------------------------------------------------------------
+// Triage priority boost -- newly added healing moves (#803)
+// ---------------------------------------------------------------------------
+
+describe("handleGen9Ability -- Triage healing move coverage (#803)", () => {
+  it("given Triage user with life-dew, when checking priority, then returns activated with +3 boost", () => {
+    // Source: Showdown data/moves.ts -- life-dew has heal flag
+    // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
+    const ctx = makeContext({
+      pokemon: makeActivePokemon({ ability: "triage" }),
+      trigger: "on-priority-check",
+      move: { id: "life-dew", category: "status", type: "water", effect: null },
+    });
+    const result = handleGen9Ability("on-priority-check", ctx);
+    expect(result.activated).toBe(true);
+    expect(result.priorityBoost).toBe(3);
+  });
+
+  it("given Triage user with jungle-healing, when checking priority, then returns activated with +3 boost", () => {
+    // Source: Showdown data/moves.ts -- jungle-healing has heal flag
+    // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
+    const ctx = makeContext({
+      pokemon: makeActivePokemon({ ability: "triage" }),
+      trigger: "on-priority-check",
+      move: { id: "jungle-healing", category: "status", type: "grass", effect: null },
+    });
+    const result = handleGen9Ability("on-priority-check", ctx);
+    expect(result.activated).toBe(true);
+    expect(result.priorityBoost).toBe(3);
+  });
+
+  it("given Triage user with lunar-blessing, when checking priority, then returns activated with +3 boost", () => {
+    // Source: Showdown data/moves.ts -- lunar-blessing has heal flag
+    // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
+    const ctx = makeContext({
+      pokemon: makeActivePokemon({ ability: "triage" }),
+      trigger: "on-priority-check",
+      move: { id: "lunar-blessing", category: "status", type: "psychic", effect: null },
+    });
+    const result = handleGen9Ability("on-priority-check", ctx);
+    expect(result.activated).toBe(true);
+    expect(result.priorityBoost).toBe(3);
+  });
+
+  it("given Triage user with non-allowlisted move that has effectType heal, when checking priority, then returns activated with +3 boost", () => {
+    // Source: Showdown data/abilities.ts -- triage: move.flags.heal check
+    // Verifies the effectType "heal" fallback for future moves not yet in the HEALING_MOVES allowlist
+    const ctx = makeContext({
+      pokemon: makeActivePokemon({ ability: "triage" }),
+      trigger: "on-priority-check",
+      move: {
+        id: "custom-heal-move",
+        category: "status",
+        type: "normal",
+        effect: { type: "heal" },
+      },
+    });
+    const result = handleGen9Ability("on-priority-check", ctx);
+    expect(result.activated).toBe(true);
+    expect(result.priorityBoost).toBe(3);
+  });
+});

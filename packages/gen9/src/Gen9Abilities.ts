@@ -56,11 +56,21 @@ const HEALING_MOVES: ReadonlySet<string> = new Set([
   "purify",
   "shore-up",
   "strength-sap",
+  // Gen 8 moves with heal flag — Source: Showdown data/moves.ts
+  "life-dew",
+  "jungle-healing",
+  // Gen 9 move with heal flag — Source: Showdown data/moves.ts
+  "lunar-blessing",
 ]);
 
 function isHealingMove(moveId: string, effectType: string | null): boolean {
   if (HEALING_MOVES.has(moveId)) return true;
   if (effectType === "drain") return true;
+  // Fallback: treat any move with effectType "heal" as a healing move.
+  // This future-proofs against moves added to game data that have the heal flag
+  // but are not yet in the HEALING_MOVES allowlist.
+  // Source: Showdown data/abilities.ts -- triage: move.flags.heal check
+  if (effectType === "heal") return true;
   return false;
 }
 
