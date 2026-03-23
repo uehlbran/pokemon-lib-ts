@@ -225,12 +225,27 @@ function getEffectiveStatStage(
   stat: string,
   opponent?: ActivePokemon,
 ): number {
+  // Mold Breaker (and Gen5+ variants Turboblaze/Teravolt) bypass the opponent's abilities.
+  // When `pokemon` has Mold Breaker, `opponent`'s Unaware is bypassed.
+  // When `opponent` has Mold Breaker, `pokemon`'s Simple is bypassed.
+  // Source: Showdown sim/battle-actions.ts -- Mold Breaker bypasses breakable abilities
+  // Source: Showdown data/abilities.ts -- Unaware/Simple both have flags: { breakable: 1 }
+  const pokemonHasMoldBreaker =
+    pokemon.ability === "mold-breaker" ||
+    pokemon.ability === "teravolt" ||
+    pokemon.ability === "turboblaze";
+  const opponentHasMoldBreaker =
+    opponent?.ability === "mold-breaker" ||
+    opponent?.ability === "teravolt" ||
+    opponent?.ability === "turboblaze";
+
   // Unaware takes priority over Simple — if the opponent has Unaware, it sees 0 stages
   // regardless of any stage-doubling the attacker has. Unaware's onAnyModifyBoost zeroes
-  // boosts independently of Simple's doubling. Source: Showdown sim/battle.ts Gen 5+.
-  if (opponent?.ability === "unaware") return 0;
+  // boosts independently of Simple's doubling. Bypassed by Mold Breaker/Teravolt/Turboblaze.
+  // Source: Showdown sim/battle-actions.ts Gen 5+
+  if (opponent?.ability === "unaware" && !pokemonHasMoldBreaker) return 0;
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
-  if (pokemon.ability === "simple") return Math.max(-6, Math.min(6, raw * 2));
+  if (pokemon.ability === "simple" && !opponentHasMoldBreaker) return Math.max(-6, Math.min(6, raw * 2));
   return raw;
 }
 
