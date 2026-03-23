@@ -241,6 +241,13 @@ describe("Gen 8 Stat Abilities", () => {
       expect(bonus).toBe(3);
     });
 
+    it("given non-allowlisted move with effectType heal, when Triage is active, then returns +3 priority bonus", () => {
+      // Source: Showdown data/abilities.ts -- triage: move.flags.heal check
+      // Verifies the effectType "heal" fallback for future moves not yet in the HEALING_MOVES allowlist
+      const bonus = getTriagePriorityBonus("triage", "custom-heal-move", "heal");
+      expect(bonus).toBe(3);
+    });
+
     it("given the dispatcher, when Triage user uses healing move, then returns activated:true", () => {
       const ctx = makeCtx({
         ability: "triage",

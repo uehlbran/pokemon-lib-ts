@@ -318,4 +318,17 @@ describe("handleGen9Ability -- Triage healing move coverage (#803)", () => {
     expect(result.activated).toBe(true);
     expect(result.priorityBoost).toBe(3);
   });
+
+  it("given Triage user with non-allowlisted move that has effectType heal, when checking priority, then returns activated with +3 boost", () => {
+    // Source: Showdown data/abilities.ts -- triage: move.flags.heal check
+    // Verifies the effectType "heal" fallback for future moves not yet in the HEALING_MOVES allowlist
+    const ctx = makeContext({
+      pokemon: makeActivePokemon({ ability: "triage" }),
+      trigger: "on-priority-check",
+      move: { id: "custom-heal-move", category: "status", type: "normal", effect: { type: "heal" } },
+    });
+    const result = handleGen9Ability("on-priority-check", ctx);
+    expect(result.activated).toBe(true);
+    expect(result.priorityBoost).toBe(3);
+  });
 });
