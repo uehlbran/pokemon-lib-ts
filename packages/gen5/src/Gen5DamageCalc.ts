@@ -228,9 +228,6 @@ function getEffectiveStatStage(
   // Mold Breaker (and Gen5+ variants Turboblaze/Teravolt) bypass the opponent's abilities.
   // When `pokemon` has Mold Breaker, `opponent`'s Unaware is bypassed.
   // When `opponent` has Mold Breaker, `pokemon`'s Simple is bypassed.
-  // Mold Breaker (and Gen5+ variants Turboblaze/Teravolt) bypass the opponent's abilities.
-  // When `pokemon` has Mold Breaker, `opponent`'s Unaware is bypassed.
-  // When `opponent` has Mold Breaker, `pokemon`'s Simple is bypassed.
   // Source: Showdown sim/battle.ts Gen 5+ -- Unaware/Simple both have flags: { breakable: 1 }
   const pokemonHasMoldBreaker =
     pokemon.ability === "mold-breaker" ||
