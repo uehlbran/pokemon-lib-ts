@@ -633,6 +633,12 @@ export class Gen9Ruleset extends BaseRuleset {
    * Sturdy: at full HP, survive any hit with 1 HP remaining.
    * Focus Sash: at full HP, survive any hit with 1 HP remaining (item consumed).
    *
+   * Focus Sash is suppressed by Klutz (ability), Embargo (volatile),
+   * and Magic Room (field condition).
+   * Source: Showdown data/abilities.ts -- klutz: item has no effect
+   * Source: Showdown data/moves.ts -- embargo: target's item is unusable
+   * Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
+   *
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
    * Source: Showdown data/items.ts -- focussash: onDamage at full HP
    */
@@ -641,7 +647,7 @@ export class Gen9Ruleset extends BaseRuleset {
     defender: ActivePokemon,
     _attacker: ActivePokemon,
     _move: MoveData,
-    _state: BattleState,
+    state: BattleState,
   ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
@@ -659,7 +665,17 @@ export class Gen9Ruleset extends BaseRuleset {
 
     // Focus Sash: survive with 1 HP if at full health and damage would KO (consumed)
     // Source: Showdown data/items.ts -- focussash: onDamage at full HP
-    if (defender.pokemon.heldItem === "focus-sash" && currentHp === maxHp && damage >= currentHp) {
+    // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
+    const itemSuppressed =
+      defender.ability === "klutz" ||
+      defender.volatileStatuses.has("embargo") ||
+      (state.magicRoom?.active ?? false);
+    if (
+      defender.pokemon.heldItem === "focus-sash" &&
+      !itemSuppressed &&
+      currentHp === maxHp &&
+      damage >= currentHp
+    ) {
       return {
         damage: maxHp - 1,
         survived: true,

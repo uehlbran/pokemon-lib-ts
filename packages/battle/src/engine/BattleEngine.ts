@@ -29,6 +29,47 @@ import {
 const SLEEP_USABLE_MOVES: ReadonlySet<string> = new Set(["sleep-talk", "snore"]);
 
 /**
+ * Struggle move data used when a Pokemon has no usable moves.
+ * Extracted as a module constant to avoid reconstructing the object every turn.
+ * Source: pokered — Struggle is a Normal/Physical move with 50 power, 100% accuracy,
+ * and contact flag. Generation field is set to 1 (earliest gen) since the engine
+ * passes this to the ruleset which handles gen-specific Struggle behavior.
+ */
+const STRUGGLE_MOVE_DATA: MoveData = {
+  id: "struggle",
+  displayName: "Struggle",
+  type: "normal",
+  category: "physical",
+  power: 50,
+  accuracy: 100,
+  pp: 1,
+  priority: 0,
+  target: "adjacent-foe",
+  flags: {
+    contact: true,
+    sound: false,
+    bullet: false,
+    pulse: false,
+    punch: false,
+    bite: false,
+    wind: false,
+    slicing: false,
+    powder: false,
+    protect: false,
+    mirror: false,
+    snatch: false,
+    gravity: false,
+    defrost: false,
+    recharge: false,
+    charge: false,
+    bypassSubstitute: false,
+  },
+  effect: null,
+  description: "Struggle",
+  generation: 1,
+};
+
+/**
  * The core battle engine. Manages the battle state machine, delegates
  * generation-specific behavior to the provided ruleset, and emits
  * a stream of BattleEvents for UI/logging consumers.
@@ -2315,45 +2356,11 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Source: pokered — Struggle goes through the normal accuracy check (including 1/256 miss bug).
     // Gen 1 Struggle has 100% accuracy but is still subject to accuracy/evasion modifiers.
-    // Build a minimal Struggle MoveData for the accuracy check.
-    const struggleMoveData: import("@pokemon-lib-ts/core").MoveData = {
-      id: "struggle",
-      displayName: "Struggle",
-      type: "normal",
-      category: "physical",
-      power: 50,
-      accuracy: 100,
-      pp: 1,
-      priority: 0,
-      target: "adjacent-foe",
-      flags: {
-        contact: true,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: false,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-      effect: null,
-      description: "Struggle",
-      generation: 1,
-    };
     if (
       !this.ruleset.doesMoveHit({
         attacker: actor,
         defender,
-        move: struggleMoveData,
+        move: STRUGGLE_MOVE_DATA,
         state: this.state,
         rng: this.state.rng,
       })
