@@ -117,6 +117,8 @@ Weather-damage → future-attack → wish → weather-healing → leftovers → 
 | Issue | Severity | Fixed In | Summary |
 |-------|----------|----------|---------|
 | #550 | MEDIUM | PR #591 | Flash Fire boost applied to attack stat (pre-formula) instead of base damage (post-formula) |
+| #706 | MEDIUM | #785 | Charge move not implemented — should double Electric power next turn via "charged" volatile |
+| #705 | MEDIUM | #785 | Mud Sport / Water Sport not implemented — should halve Fire/Electric power |
 
 ---
 
@@ -128,3 +130,4 @@ Weather-damage → future-attack → wish → weather-healing → leftovers → 
 | Cloud Nine / Air Lock | #691 | Weather suppression system needed |
 | Forecast (Castform) | #692 | Form change mechanism needed (engine hook exists; Forecast logic added PR #489 but form change pending) |
 | Spread move penalty | (doubles initiative) | Doubles only |
+| #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Charge (doubled Electric power), Mud Sport (halve Electric), Water Sport (halve Fire) (closes #706 #705) |

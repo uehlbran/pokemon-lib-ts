@@ -83,7 +83,13 @@ export {
   isZCrystal,
   TERRAIN_EXTENDER_ITEM_ID,
 } from "./Gen7Items.js";
-export { Gen7MegaEvolution, getMegaEvolutionData, MEGA_STONE_DATA } from "./Gen7MegaEvolution.js";
+export {
+  canRayquazaMegaEvolve,
+  Gen7MegaEvolution,
+  getMegaEvolutionData,
+  MEGA_RAYQUAZA_DATA,
+  MEGA_STONE_DATA,
+} from "./Gen7MegaEvolution.js";
 export {
   AURORA_VEIL_DEFAULT_TURNS,
   AURORA_VEIL_LIGHT_CLAY_TURNS,

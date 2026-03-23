@@ -387,6 +387,31 @@ export interface MoveEffectResult {
    * Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' is distinct from 'copyvolatile'
    */
   readonly shedTail?: boolean;
+  /**
+   * When `true`, the engine re-rolls accuracy before each additional hit in the
+   * multi-hit loop. If a hit misses, the loop stops immediately.
+   *
+   * Used for Population Bomb (Gen 9), which is a 10-hit move where EACH hit
+   * independently checks accuracy (unlike normal multi-hit moves that check once).
+   *
+   * Source: Showdown data/moves.ts:14112-14126 -- populationbomb: multiaccuracy: true
+   */
+  readonly checkPerHitAccuracy?: boolean;
+  /**
+   * When `true`, the engine will consume the attacker's held item after processing this
+   * move effect — sets heldItem to null and emits an `item-consumed` event.
+   *
+   * Used for moves that consume the user's item as part of their effect: Power Herb
+   * (skips charge turn), Natural Gift (berry consumed), Fling (item thrown at target).
+   *
+   * The item is read from `attacker.pokemon.heldItem` at the time processEffectResult
+   * runs, so move handlers should NOT set heldItem to null themselves — let the engine
+   * do it via this flag.
+   *
+   * Source: Showdown data/moves.ts — naturalGift, fling, and powerherb all consume
+   *   the user's item as part of the move's onTryMove / onAfterMove lifecycle.
+   */
+  readonly attackerItemConsumed?: boolean;
 }
 
 /**
@@ -419,6 +444,10 @@ export interface AbilityContext {
     readonly stages: number;
     readonly source: "self" | "opponent";
   };
+  /** Whether the current hit is a critical hit (used by Sniper gating). */
+  readonly isCrit?: boolean;
+  /** The computed type-effectiveness multiplier (used by Tinted Lens / Solid Rock / Filter gating). */
+  readonly typeEffectiveness?: number;
 }
 
 /**

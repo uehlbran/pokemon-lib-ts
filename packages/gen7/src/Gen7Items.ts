@@ -346,6 +346,13 @@ export function applyGen7HeldItem(trigger: string, context: ItemContext): ItemRe
     case "on-hit":
       result = handleOnHit(item, context);
       break;
+    case "stat-boost-between-turns":
+      // Stat-pinch berries activate at end of turn when HP drops to <= 25%
+      // from residual damage (weather, status, etc.)
+      // Source: Showdown data/items.ts -- pinch berries: onEat (check in onResidual)
+      // Source: Bulbapedia -- stat-pinch berries activate at end of turn if HP <= 25%
+      result = handleStatBoostBetweenTurns(item, context);
+      break;
     default:
       result = NO_ACTIVATION;
       break;
@@ -1128,6 +1135,60 @@ function handleOnContact(item: string, context: ItemContext): ItemResult {
  *
  * Source: Showdown data/items.ts -- on-hit triggers
  */
+
+// ---------------------------------------------------------------------------
+// stat-boost-between-turns
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle stat-boost berry triggers between turns.
+ *
+ * Stat-pinch berries (Liechi, Ganlon, Salac, Petaya, Apicot) activate when HP
+ * drops to <= 25% (or <= 50% for Gluttony) from residual damage between turns
+ * (weather chip, poison tick, burn tick, etc.).
+ *
+ * Source: Showdown data/items.ts -- liechi/ganlon/salac/petaya/apicot: onEat triggers
+ * Source: Bulbapedia -- stat-boosting berries: "Raises [stat] by one stage when
+ *   the holder's HP drops to 1/4 or below."
+ */
+function handleStatBoostBetweenTurns(item: string, context: ItemContext): ItemResult {
+  const pokemon = context.pokemon;
+  const currentHp = pokemon.pokemon.currentHp;
+  const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
+  const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+
+  // Only alive Pokemon can consume berries
+  if (currentHp <= 0) return NO_ACTIVATION;
+
+  // Map of stat-pinch berries to their stat boost
+  // Source: Showdown data/items.ts -- liechi-berry raises attack, ganlon-berry raises defense, etc.
+  const STAT_PINCH_BERRIES: Record<string, { stat: string; displayStat: string }> = {
+    "liechi-berry": { stat: "attack", displayStat: "Attack" },
+    "ganlon-berry": { stat: "defense", displayStat: "Defense" },
+    "salac-berry": { stat: "speed", displayStat: "Speed" },
+    "petaya-berry": { stat: "spAttack", displayStat: "Sp. Atk" },
+    "apicot-berry": { stat: "spDefense", displayStat: "Sp. Def" },
+  };
+
+  const berryData = STAT_PINCH_BERRIES[item];
+  if (!berryData) return NO_ACTIVATION;
+
+  const threshold = getPinchBerryThreshold(pokemon, 0.25);
+  if (currentHp <= Math.floor(maxHp * threshold)) {
+    return {
+      activated: true,
+      effects: [
+        { type: "stat-boost", target: "self", value: berryData.stat },
+        { type: "consume", target: "self", value: item },
+      ],
+      messages: [
+        `${pokemonName}'s ${item.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} raised its ${berryData.displayStat}!`,
+      ],
+    };
+  }
+  return NO_ACTIVATION;
+}
+
 function handleOnHit(item: string, context: ItemContext): ItemResult {
   const pokemon = context.pokemon;
   const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;

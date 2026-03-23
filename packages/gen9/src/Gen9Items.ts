@@ -1296,18 +1296,20 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Lansat Berry: +1 crit stage at <= 25% HP (consumed)
-    // Source: Showdown data/items.ts -- Lansat Berry onUpdate
-    // Source: Bulbapedia "Lansat Berry" -- raises critical-hit ratio by one stage
+    // Lansat Berry: +2 crit stages at <= 25% HP (consumed).
+    // Identical effect to Focus Energy — sets the "focus-energy" volatile.
+    // Source: Showdown data/items.ts -- lansatberry onEat: source.addVolatile('focusenergy')
+    // Source: Showdown data/conditions.ts -- focusenergy: onModifyCritRatio: critRatio + 2
+    // Source: Bulbapedia "Lansat Berry" -- raises critical-hit ratio by 2 stages
     case "lansat-berry": {
       const threshold = getPinchBerryThreshold(pokemon, 0.25);
       if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
+        // Set focus-energy volatile to grant +2 crit stages, matching Showdown behavior.
+        // The rollCritical in BaseRuleset checks for this volatile and adds +2 stages.
+        pokemon.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
         return {
           activated: true,
-          effects: [
-            { type: "stat-boost", target: "self", value: "critRatio" },
-            { type: "consume", target: "self", value: "lansat-berry" },
-          ],
+          effects: [{ type: "consume", target: "self", value: "lansat-berry" }],
           messages: [`${pokemonName}'s Lansat Berry raised its critical-hit ratio!`],
         };
       }

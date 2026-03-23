@@ -188,6 +188,7 @@ function makeMove(
     displayName?: string;
     category?: "physical" | "special" | "status";
     flags?: Record<string, boolean>;
+    effect?: { type: string; [key: string]: unknown } | null;
   } = {},
 ): MoveData {
   return {
@@ -203,6 +204,7 @@ function makeMove(
     target: "single",
     generation: 6,
     flags: opts.flags ?? { contact: true },
+    effect: opts.effect ?? null,
     effectChance: null,
     secondaryEffects: [],
   } as unknown as MoveData;
@@ -587,6 +589,28 @@ describe("Mummy (on-contact)", () => {
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(false);
   });
+
+  it("given Mummy, when attacker has Wonder Guard, then DOES overwrite (Wonder Guard is suppressable in Gen 6)", () => {
+    // Source: Showdown data/mods/gen6/abilities.ts -- Gen 6 UNSUPPRESSABLE only includes
+    // multitype, stance-change, zen-mode. Wonder Guard is NOT unsuppressable.
+    // Bug #672: Previously UNSUPPRESSABLE_ABILITIES included Gen 7+ abilities like
+    // wonder-guard, shields-down, power-construct, etc. which don't apply in Gen 6.
+    const attacker = makeActivePokemon({ ability: "wonder-guard" });
+    const ctx = makeContext({ ability: "mummy", trigger: "on-contact", opponent: attacker });
+    const result = handleGen6SwitchAbility("on-contact", ctx);
+    expect(result.activated).toBe(true);
+    const abilityEffect = result.effects.find((e) => e.effectType === "ability-change");
+    expect(abilityEffect?.newAbility).toBe("mummy");
+  });
+
+  it("given Mummy, when attacker has Stance Change, then does NOT overwrite (unsuppressable in Gen 6)", () => {
+    // Source: Showdown data/mods/gen6/abilities.ts -- stance-change: cantsuppress: 1
+    // Stance Change IS in the Gen 6 unsuppressable set.
+    const attacker = makeActivePokemon({ ability: "stance-change" });
+    const ctx = makeContext({ ability: "mummy", trigger: "on-contact", opponent: attacker });
+    const result = handleGen6SwitchAbility("on-contact", ctx);
+    expect(result.activated).toBe(false);
+  });
 });
 
 // ===========================================================================
@@ -763,10 +787,10 @@ describe("Overcoat (Gen 6: blocks powder moves)", () => {
 // ===========================================================================
 
 describe("Bulletproof (Gen 6 new)", () => {
-  it("given Bulletproof, when hit by Shadow Ball, then blocks it", () => {
+  it("given Bulletproof, when hit by Shadow Ball (bullet flag), then blocks it", () => {
     // Source: Showdown data/abilities.ts -- bulletproof: blocks moves with bullet flag
     // Source: Bulbapedia "Bulletproof" -- "Protects the Pokemon from some ball and bomb moves."
-    const shadowBall = makeMove("ghost", { id: "shadow-ball" });
+    const shadowBall = makeMove("ghost", { id: "shadow-ball", flags: { bullet: true } });
     const ctx = makeContext({
       ability: "bulletproof",
       trigger: "passive-immunity",
@@ -790,14 +814,19 @@ describe("Bulletproof (Gen 6 new)", () => {
 });
 
 describe("isBulletproofBlocked utility", () => {
-  it("given Shadow Ball, then isBulletproofBlocked returns true", () => {
-    // Source: Showdown data/abilities.ts -- bullet flag on shadow-ball
-    expect(isBulletproofBlocked("shadow-ball")).toBe(true);
+  it("given bulletproof ability and move with bullet flag, then returns true", () => {
+    // Source: Showdown data/abilities.ts -- bulletproof checks move.flags.bullet
+    expect(isBulletproofBlocked("bulletproof", { bullet: true })).toBe(true);
   });
 
-  it("given Flamethrower, then isBulletproofBlocked returns false", () => {
-    // Source: Showdown data/abilities.ts -- flamethrower has no bullet flag
-    expect(isBulletproofBlocked("flamethrower")).toBe(false);
+  it("given bulletproof ability and move without bullet flag, then returns false", () => {
+    // Source: Showdown data/abilities.ts -- no bullet flag = not blocked
+    expect(isBulletproofBlocked("bulletproof", {})).toBe(false);
+  });
+
+  it("given non-bulletproof ability and move with bullet flag, then returns false", () => {
+    // Source: Showdown data/abilities.ts -- only bulletproof blocks bullet moves
+    expect(isBulletproofBlocked("blaze", { bullet: true })).toBe(false);
   });
 });
 
@@ -806,10 +835,14 @@ describe("isBulletproofBlocked utility", () => {
 // ===========================================================================
 
 describe("Sweet Veil (Gen 6 new)", () => {
-  it("given Sweet Veil, when targeted by Sleep Powder, then blocks sleep", () => {
+  it("given Sweet Veil, when targeted by Sleep Powder (sleep effect), then blocks sleep", () => {
     // Source: Showdown data/abilities.ts -- sweetveil: prevents sleep on holder and allies
     // Source: Bulbapedia "Sweet Veil" -- "Prevents the Pokemon and its allies from falling asleep."
-    const sleepPowder = makeMove("grass", { id: "sleep-powder" });
+    const sleepPowder = makeMove("grass", {
+      id: "sleep-powder",
+      category: "status",
+      effect: { type: "status-guaranteed", status: "sleep" },
+    });
     const ctx = makeContext({
       ability: "sweet-veil",
       trigger: "passive-immunity",
@@ -819,13 +852,52 @@ describe("Sweet Veil (Gen 6 new)", () => {
     expect(result.activated).toBe(true);
   });
 
-  it("given Sweet Veil, when targeted by Spore, then also blocks sleep", () => {
+  it("given Sweet Veil, when targeted by Spore (sleep effect), then also blocks sleep", () => {
     // Source: Bulbapedia "Sweet Veil" -- blocks all sleep-inducing moves
-    const spore = makeMove("grass", { id: "spore" });
+    const spore = makeMove("grass", {
+      id: "spore",
+      category: "status",
+      effect: { type: "status-guaranteed", status: "sleep" },
+    });
     const ctx = makeContext({
       ability: "sweet-veil",
       trigger: "passive-immunity",
       move: spore,
+    });
+    const result = handleGen6SwitchAbility("passive-immunity", ctx);
+    expect(result.activated).toBe(true);
+  });
+
+  it("given Sweet Veil, when targeted by Thunder Wave (paralyze, not sleep), then does NOT block", () => {
+    // Source: Showdown data/abilities.ts -- Sweet Veil only blocks sleep
+    // Bug #668: Previously checked hardcoded move IDs. Now checks move.effect for sleep status.
+    // A non-sleep status move should not trigger Sweet Veil.
+    const thunderWave = makeMove("electric", {
+      id: "thunder-wave",
+      category: "status",
+      effect: { type: "status-guaranteed", status: "paralysis" },
+    });
+    const ctx = makeContext({
+      ability: "sweet-veil",
+      trigger: "passive-immunity",
+      move: thunderWave,
+    });
+    const result = handleGen6SwitchAbility("passive-immunity", ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Sweet Veil, when targeted by Yawn (volatile sleep), then blocks it", () => {
+    // Source: Showdown data/abilities.ts -- Sweet Veil prevents all forms of sleep, including Yawn
+    // Source: Bulbapedia "Sweet Veil" -- prevents sleep; Yawn leads to sleep so it's blocked
+    const yawn = makeMove("normal", {
+      id: "yawn",
+      category: "status",
+      effect: { type: "volatile-status", status: "yawn" },
+    });
+    const ctx = makeContext({
+      ability: "sweet-veil",
+      trigger: "passive-immunity",
+      move: yawn,
     });
     const result = handleGen6SwitchAbility("passive-immunity", ctx);
     expect(result.activated).toBe(true);

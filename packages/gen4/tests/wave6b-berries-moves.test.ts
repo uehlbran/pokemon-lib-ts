@@ -350,7 +350,7 @@ describe("Natural Gift", () => {
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.customDamage).toBeUndefined();
-    expect(result.itemConsumed).toBe(true);
+    expect(result.attackerItemConsumed).toBe(true);
     expect(result.messages).toContain("Ambipom used Natural Gift! (fire / 60 BP)");
   });
 
@@ -371,7 +371,7 @@ describe("Natural Gift", () => {
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.customDamage).toBeUndefined();
-    expect(result.itemConsumed).toBe(true);
+    expect(result.attackerItemConsumed).toBe(true);
     expect(result.messages).toContain("Garchomp used Natural Gift! (ice / 60 BP)");
   });
 
@@ -487,7 +487,7 @@ describe("Fling", () => {
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.customDamage).toBeUndefined();
-    expect(result.itemConsumed).toBe(true);
+    expect(result.attackerItemConsumed).toBe(true);
     expect(result.messages).toContain("Weavile flung its iron-ball!");
   });
 
@@ -508,7 +508,7 @@ describe("Fling", () => {
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.customDamage).toBeUndefined();
-    expect(result.itemConsumed).toBe(true);
+    expect(result.attackerItemConsumed).toBe(true);
     expect(result.messages).toContain("Ambipom flung its sitrus-berry!");
   });
 

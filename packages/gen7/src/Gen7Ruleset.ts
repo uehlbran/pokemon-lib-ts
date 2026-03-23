@@ -48,6 +48,8 @@ import { executeGen7MoveEffect, isGen7GrassPowderBlocked } from "./Gen7MoveEffec
 import {
   applyGen7TerrainEffects,
   checkGen7TerrainStatusImmunity,
+  checkMistyTerrainConfusionImmunity,
+  checkPsychicTerrainPriorityBlock,
   handleSurgeAbility,
   isSurgeAbility,
 } from "./Gen7Terrain.js";
@@ -946,6 +948,38 @@ export class Gen7Ruleset extends BaseRuleset {
     if (type === "zmove") return this._zMove;
     if (type === "mega") return this._mega;
     return null;
+  }
+
+  // --- Terrain Blocking (Misty Confusion, Psychic Priority) ---
+
+  /**
+   * Misty Terrain prevents confusion for grounded Pokemon (Gen 6+).
+   * Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus: return null for confusion
+   */
+  shouldBlockVolatile(
+    volatile: VolatileStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): boolean {
+    if (volatile === "confusion") {
+      return checkMistyTerrainConfusionImmunity(target, state);
+    }
+    return false;
+  }
+
+  /**
+   * Psychic Terrain blocks priority moves against grounded targets (Gen 7+).
+   * Source: Showdown data/conditions.ts -- psychicterrain.onTryHit: priority > 0 blocked
+   */
+  shouldBlockPriorityMove(
+    _actor: ActivePokemon,
+    move: MoveData,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): boolean {
+    const terrainType = state.terrain?.type ?? null;
+    const movePriority = move.priority ?? 0;
+    return checkPsychicTerrainPriorityBlock(terrainType, movePriority, defender, state);
   }
 
   // --- Catch Rate ---

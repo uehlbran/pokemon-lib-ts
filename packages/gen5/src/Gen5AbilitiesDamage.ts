@@ -20,15 +20,14 @@ import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
  * activates and what metadata to return. The actual numeric application happens
  * in the damage calc pipeline.
  *
- * Activation pattern note: abilities split into two categories:
- *   - Gated activation: ability checks a specific condition here (e.g., Technician
- *     checks base power <= 60, Analytic checks whether the user moved last). If the
- *     condition is not met, returns NO_ACTIVATION.
- *   - Context-deferred activation: ability always returns activated: true because the
- *     numeric effect depends on context only the damage calculator has. Examples:
- *     Sniper (needs to know if the hit was a crit) and Tinted Lens (needs the computed
- *     type-effectiveness value). These handlers signal "this ability is present and may
- *     apply"; the damage calc applies the actual multiplier when the condition is met.
+ * Activation pattern: all abilities use gated activation — they check a specific
+ * condition here and return NO_ACTIVATION if the condition is not met. Examples:
+ *   - Technician checks base power <= 60
+ *   - Sniper checks ctx.isCrit
+ *   - Tinted Lens checks ctx.typeEffectiveness < 1
+ *   - Solid Rock / Filter checks ctx.typeEffectiveness > 1
+ * The damage calc passes isCrit and typeEffectiveness via AbilityContext so that
+ * these handlers can gate properly.
  *
  * Source: references/pokemon-showdown/data/abilities.ts
  * Source: references/pokemon-showdown/data/mods/gen5/abilities.ts
@@ -413,11 +412,11 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     case "sniper": {
       // Sniper: 3x crit multiplier instead of 2x.
-      // The actual crit multiplier is applied in the damage formula.
       // Source: Showdown data/abilities.ts -- sniper
       //   onModifyDamage: if crit, chainModify(1.5) -- applied on TOP of the 2x crit,
       //   so the effective crit multiplier is 2x * 1.5x = 3x
-      // This activation check is informational; the damage calc handles the numeric value.
+      // Only activates when the hit is actually a crit.
+      if (!ctx.isCrit) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -429,7 +428,8 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Tinted Lens: "Not very effective" moves deal 2x damage (making them neutral).
       // Source: Showdown data/abilities.ts -- tintedlens
       //   onModifyDamage: if typeMod < 0 (not very effective), chainModify(2)
-      // The actual doubling is applied in the damage formula after type effectiveness.
+      // Only activates when the move is not very effective (typeEffectiveness < 1).
+      if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness >= 1) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -458,9 +458,8 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Solid Rock / Filter: 0.75x super-effective damage taken.
       // Source: Showdown data/abilities.ts -- solidrock / filter
       //   onSourceModifyDamage: if typeMod > 0, chainModify(0.75)
-      // Activation requires the move to be super effective, which is checked by the caller.
-      // We return activated: true unconditionally as a signal; the damage calc checks
-      // effectiveness and applies the 0.75x only when SE.
+      // Only activates when the move is super effective (typeEffectiveness > 1).
+      if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness <= 1) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],

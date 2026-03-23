@@ -1138,8 +1138,13 @@ export class BattleEngine implements BattleEventEmitter {
     //   which fires before the accuracy roll.
     // Fix for #538: previously applied only at the end of executeMove, after the
     //   accuracy check — misses bypassed the lock entirely.
+    // Dynamax suppresses Choice lock — Dynamaxed Pokemon can use any Max Move
+    // freely without being locked. The lock is deferred until Dynamax ends.
+    // Source: Showdown data/conditions.ts -- dynamax: prevents choice lock during dynamax
+    // Source: Bulbapedia "Dynamax" -- "Choice items do not lock the user into a single move"
     if (
       this.ruleset.hasHeldItems() &&
+      !actor.isDynamaxed &&
       !actor.volatileStatuses.has("choice-locked") &&
       actor.pokemon.heldItem &&
       (actor.pokemon.heldItem === "choice-band" ||
@@ -1345,7 +1350,7 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // Wide Guard check (Gen 5+): blocks spread moves (all-adjacent, all-adjacent-foes)
+    // Wide Guard check (Gen 5+): blocks spread moves (all-adjacent, all-adjacent-foes).
     // Source: Showdown wideguard condition — blocks if move.target is allAdjacent or allAdjacentFoes
     if (defender.volatileStatuses.has("wide-guard") && moveData.flags.protect) {
       const moveTarget = moveData.target ?? "";
@@ -1353,6 +1358,28 @@ export class BattleEngine implements BattleEventEmitter {
         this.emit({
           type: "message",
           text: `Wide Guard protected ${getPokemonName(defender)}!`,
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+    }
+
+    // Terrain priority block (Gen 7+: Psychic Terrain blocks priority moves)
+    // Source: Showdown data/conditions.ts -- psychicterrain.onTryHit:
+    //   if (target.isGrounded() && move.priority > 0) { return false; }
+    if (this.ruleset.shouldBlockPriorityMove) {
+      const naturalPriority: number = effectiveMoveData.priority ?? 0;
+      if (
+        naturalPriority > 0 &&
+        this.ruleset.shouldBlockPriorityMove(actor, effectiveMoveData, defender, this.state)
+      ) {
+        this.emit({
+          type: "move-fail",
+          side: action.side,
+          pokemon: getPokemonName(actor),
+          move: effectiveMoveData.id,
+          reason: "blocked by terrain",
         });
         actor.lastMoveUsed = moveData.id;
         actor.movedThisTurn = true;
@@ -1461,10 +1488,12 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
       } else {
-        // Pre-damage survival check: allows abilities (Sturdy) and items (Focus Sash,
-        // Focus Band) to cap lethal damage before HP subtraction.
+        // Pre-damage interception: allows abilities (Disguise) and items (Focus Sash,
+        // Sturdy) to modify damage before HP subtraction. Called for ALL damage (not
+        // just lethal) so Disguise can absorb non-lethal hits.
         // Source: Showdown sim/battle-actions.ts — onDamage handlers run before HP reduction
-        if (damage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+        // Source: Showdown data/abilities.ts -- disguise: onDamage priority 1 (all hits)
+        if (this.ruleset.capLethalDamage) {
           const survivalResult = this.ruleset.capLethalDamage(
             damage,
             defender,
@@ -1625,6 +1654,30 @@ export class BattleEngine implements BattleEventEmitter {
         // Stop if substitute was broken (Gen 1: multi-hit ends when sub breaks)
         if (brokeSubstitute) break;
 
+        // Per-hit accuracy check (Population Bomb: multiaccuracy: true).
+        // When checkPerHitAccuracy is set, re-roll accuracy before each additional hit.
+        // If the hit misses, the multi-hit loop stops immediately.
+        // Source: Showdown data/moves.ts -- populationbomb: multiaccuracy: true
+        if (effectResult.checkPerHitAccuracy) {
+          if (
+            !this.ruleset.doesMoveHit({
+              attacker: actor,
+              defender,
+              move: effectiveMoveData,
+              state: this.state,
+              rng: this.state.rng,
+            })
+          ) {
+            this.emit({
+              type: "move-miss",
+              side: action.side,
+              pokemon: getPokemonName(actor),
+              move: effectiveMoveData.id,
+            });
+            break;
+          }
+        }
+
         // Process per-attack residuals (Gen 1: poison/burn/leech after each hit)
         // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed
         const postAttackResiduals = this.ruleset.getPostAttackResidualOrder();
@@ -1661,11 +1714,12 @@ export class BattleEngine implements BattleEventEmitter {
             });
           }
         } else {
-          // Pre-damage survival check for multi-hit hits 2+.
+          // Pre-damage interception for multi-hit hits 2+. Called for ALL damage
+          // (not just lethal) so Disguise can absorb non-lethal hits on later strikes.
           // Source: Showdown sim/battle-actions.ts — onDamage handlers run before
           //   each hit's HP subtraction, not just the first.
           // Fix for #539: previously only hit 1 called capLethalDamage.
-          if (hitDamage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+          if (this.ruleset.capLethalDamage) {
             const survivalResult = this.ruleset.capLethalDamage(
               hitDamage,
               defender,
@@ -1676,6 +1730,15 @@ export class BattleEngine implements BattleEventEmitter {
             hitDamage = survivalResult.damage;
             for (const msg of survivalResult.messages) {
               this.emit({ type: "message", text: msg });
+            }
+            if (survivalResult.consumedItem) {
+              defender.pokemon.heldItem = null;
+              this.emit({
+                type: "item-consumed",
+                side: defenderSide as 0 | 1,
+                pokemon: getPokemonName(defender),
+                item: survivalResult.consumedItem,
+              });
             }
           }
           defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - hitDamage);
@@ -1753,6 +1816,24 @@ export class BattleEngine implements BattleEventEmitter {
 
     actor.lastMoveUsed = moveData.id;
     actor.movedThisTurn = true;
+
+    // KO-based ability triggers: Moxie, Beast Boost, Battle Bond.
+    // Fires AFTER the full move resolves (damage + effects) if the defender fainted.
+    // Source: Showdown sim/battle-actions.ts — onSourceAfterFaint
+    // Source: Showdown data/abilities.ts -- moxie.onSourceAfterFaint, beastboost.onSourceAfterFaint
+    if (this.ruleset.hasAbilities() && defender.pokemon.currentHp <= 0) {
+      const afterMoveResult = this.ruleset.applyAbility("on-after-move-used", {
+        pokemon: actor,
+        opponent: defender,
+        state: this.state,
+        rng: this.state.rng,
+        trigger: "on-after-move-used",
+        move: effectiveMoveData,
+      });
+      if (afterMoveResult.activated) {
+        this.processAbilityResult(afterMoveResult, actor, defender, action.side);
+      }
+    }
   }
 
   /**
@@ -1851,11 +1932,11 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
       } else {
-        // Pre-damage survival check: allows abilities (Sturdy) to cap lethal damage.
-        // Mirrors the same check in the main executeMove path.
+        // Pre-damage interception: allows abilities (Disguise, Sturdy) and items
+        // (Focus Sash) to modify damage before HP subtraction. Called for ALL damage.
         // Source: Showdown sim/battle-actions.ts — onDamage handlers run before HP reduction
         // Fix for #531: executeMoveById previously bypassed this check.
-        if (damage >= defender.pokemon.currentHp && this.ruleset.capLethalDamage) {
+        if (this.ruleset.capLethalDamage) {
           const survivalResult = this.ruleset.capLethalDamage(
             damage,
             defender,
@@ -1866,6 +1947,15 @@ export class BattleEngine implements BattleEventEmitter {
           damage = survivalResult.damage;
           for (const msg of survivalResult.messages) {
             this.emit({ type: "message", text: msg });
+          }
+          if (survivalResult.consumedItem) {
+            defender.pokemon.heldItem = null;
+            this.emit({
+              type: "item-consumed",
+              side: defenderSide,
+              pokemon: getPokemonName(defender),
+              item: survivalResult.consumedItem,
+            });
           }
         }
         defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
@@ -2727,18 +2817,22 @@ export class BattleEngine implements BattleEventEmitter {
       this.applyPrimaryStatus(defender, result.statusInflicted, defenderSide);
     }
 
-    // Volatile status infliction — use volatileData for turnsLeft if provided
+    // Volatile status infliction — use volatileData for turnsLeft if provided.
+    // Terrain immunity check (e.g., Misty Terrain blocks confusion on grounded Pokemon).
+    // Source: Showdown data/conditions.ts -- mistyterrain.onTryAddVolatile
     if (result.volatileInflicted && !defender.volatileStatuses.has(result.volatileInflicted)) {
-      defender.volatileStatuses.set(result.volatileInflicted, {
-        turnsLeft: result.volatileData?.turnsLeft ?? -1,
-        data: result.volatileData?.data,
-      });
-      this.emit({
-        type: "volatile-start",
-        side: defenderSide,
-        pokemon: getPokemonName(defender),
-        volatile: result.volatileInflicted,
-      });
+      if (!this.ruleset.shouldBlockVolatile?.(result.volatileInflicted, defender, this.state)) {
+        defender.volatileStatuses.set(result.volatileInflicted, {
+          turnsLeft: result.volatileData?.turnsLeft ?? -1,
+          data: result.volatileData?.data,
+        });
+        this.emit({
+          type: "volatile-start",
+          side: defenderSide,
+          pokemon: getPokemonName(defender),
+          volatile: result.volatileInflicted,
+        });
+      }
     }
 
     // Stat changes
@@ -2807,6 +2901,23 @@ export class BattleEngine implements BattleEventEmitter {
           currentHp: defender.pokemon.currentHp,
           maxHp: defMaxHp,
           source: "move-effect",
+        });
+      }
+    }
+
+    // Attacker item consumption (Power Herb, Natural Gift, Fling, etc.)
+    // The move effect sets attackerItemConsumed: true; the engine handles the actual
+    // removal so it can emit the item-consumed event with the correct item name.
+    // Source: Showdown data/moves.ts -- naturalGift, fling, powerherb consume user's item
+    if (result.attackerItemConsumed) {
+      const consumedItemId = attacker.pokemon.heldItem;
+      if (consumedItemId) {
+        attacker.pokemon.heldItem = null;
+        this.emit({
+          type: "item-consumed",
+          side: attackerSide,
+          pokemon: getPokemonName(attacker),
+          item: consumedItemId,
         });
       }
     }
@@ -4927,22 +5038,26 @@ export class BattleEngine implements BattleEventEmitter {
           const target = effect.target === "self" ? pokemon : opponent;
           const targetSide = effect.target === "self" ? pokemonSide : opponentSide;
           if (!target.volatileStatuses.has(effect.volatile)) {
-            // Use turnsLeft from effect data if provided (e.g., Slow Start sets turnsLeft: 5),
-            // otherwise default to -1 (permanent until explicitly removed).
-            // Strip turnsLeft from the data payload to avoid storing it in two places —
-            // the top-level counter is the single source of truth for the EoT decrement.
-            const { turnsLeft: explicitTurnsLeft, ...volatileData } = effect.data ?? {};
-            const turnsLeft = typeof explicitTurnsLeft === "number" ? explicitTurnsLeft : -1;
-            target.volatileStatuses.set(effect.volatile, {
-              turnsLeft,
-              ...(Object.keys(volatileData).length > 0 ? { data: volatileData } : {}),
-            });
-            this.emit({
-              type: "volatile-start",
-              side: targetSide,
-              pokemon: getPokemonName(target),
-              volatile: effect.volatile,
-            });
+            // Terrain immunity check (e.g., Misty Terrain blocks confusion on grounded Pokemon).
+            // Source: Showdown data/conditions.ts -- mistyterrain.onTryAddVolatile
+            if (!this.ruleset.shouldBlockVolatile?.(effect.volatile, target, this.state)) {
+              // Use turnsLeft from effect data if provided (e.g., Slow Start sets turnsLeft: 5),
+              // otherwise default to -1 (permanent until explicitly removed).
+              // Strip turnsLeft from the data payload to avoid storing it in two places —
+              // the top-level counter is the single source of truth for the EoT decrement.
+              const { turnsLeft: explicitTurnsLeft, ...volatileData } = effect.data ?? {};
+              const turnsLeft = typeof explicitTurnsLeft === "number" ? explicitTurnsLeft : -1;
+              target.volatileStatuses.set(effect.volatile, {
+                turnsLeft,
+                ...(Object.keys(volatileData).length > 0 ? { data: volatileData } : {}),
+              });
+              this.emit({
+                type: "volatile-start",
+                side: targetSide,
+                pokemon: getPokemonName(target),
+                volatile: effect.volatile,
+              });
+            }
           }
           break;
         }

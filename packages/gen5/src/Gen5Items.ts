@@ -536,32 +536,21 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
-    // Focus Sash: Survive with 1 HP if at full HP and damage would KO (consumed, single-use)
-    // Source: Showdown data/items.ts -- Focus Sash onDamagePriority
-    case "focus-sash": {
-      if (currentHp === maxHp && currentHp - damage <= 0) {
-        return {
-          activated: true,
-          effects: [
-            { type: "survive", target: "self", value: 1 },
-            { type: "consume", target: "self", value: "focus-sash" },
-          ],
-          messages: [`${pokemonName} held on with its Focus Sash!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
+    // Focus Sash is handled by Gen5Ruleset.capLethalDamage (pre-damage hook).
+    // It is NOT handled here (post-damage) because currentHp is already post-damage,
+    // so currentHp === maxHp is always false when damage > 0.
+    // Source: Showdown data/items.ts -- Focus Sash onDamagePriority (pre-damage)
 
     // Focus Band is handled by Gen5Ruleset.capLethalDamage (pre-damage hook).
     // It is NOT handled here (post-damage) to avoid double-rolling the 10% chance
     // on a single lethal hit. capLethalDamage is the authoritative handler.
     // Source: Showdown sim/battle-actions.ts — Focus Band onDamage (pre-damage priority)
 
-    // Sitrus Berry: Also activates when HP drops to <= 50% after damage
+    // Sitrus Berry: Activates when HP drops to <= 50% after damage.
+    // Note: currentHp is already post-damage (HP subtraction happens before this trigger).
     // Source: Showdown data/items.ts -- Sitrus Berry onUpdate post-damage check
     case "sitrus-berry": {
-      const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp / 2)) {
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp / 2)) {
         const healAmount = Math.max(1, Math.floor(maxHp / 4));
         return {
           activated: true,
@@ -575,11 +564,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       return NO_ACTIVATION;
     }
 
-    // Oran Berry: Also activates when HP drops to <= 50% after damage
+    // Oran Berry: Activates when HP drops to <= 50% after damage.
+    // Note: currentHp is already post-damage.
     // Source: Showdown data/items.ts -- Oran Berry post-damage check
     case "oran-berry": {
-      const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp / 2)) {
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp / 2)) {
         return {
           activated: true,
           effects: [
@@ -596,8 +585,8 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Source: Showdown data/items.ts -- stat pinch berries onUpdate trigger
     case "liechi-berry": {
       const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+      // Note: currentHp is already post-damage (HP subtraction happens before this trigger).
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
         return {
           activated: true,
           effects: [
@@ -612,8 +601,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     case "ganlon-berry": {
       const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
         return {
           activated: true,
           effects: [
@@ -628,8 +616,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     case "salac-berry": {
       const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
         return {
           activated: true,
           effects: [
@@ -644,8 +631,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     case "petaya-berry": {
       const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
         return {
           activated: true,
           effects: [
@@ -660,8 +646,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     case "apicot-berry": {
       const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      const hpAfterDamage = currentHp - damage;
-      if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp * threshold)) {
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
         return {
           activated: true,
           effects: [

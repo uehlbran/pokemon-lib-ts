@@ -199,6 +199,8 @@ function makeCtx(overrides: {
   speciesId?: number;
   gender?: "male" | "female" | "genderless";
   statChange?: { stages: number; source: string; stat?: string };
+  isCrit?: boolean;
+  typeEffectiveness?: number;
 }): AbilityContext {
   const pokemon = makePokemon({
     ability: overrides.ability,
@@ -219,6 +221,8 @@ function makeCtx(overrides: {
     trigger: overrides.trigger,
     move: overrides.move,
     statChange: overrides.statChange,
+    isCrit: overrides.isCrit,
+    typeEffectiveness: overrides.typeEffectiveness,
   } as unknown as AbilityContext;
 }
 
@@ -657,7 +661,11 @@ describe("handleGen6SwitchAbility — passive-immunity", () => {
     const ctx = makeCtx({
       ability: "sweet-veil",
       trigger: "passive-immunity",
-      move: makeMove("normal", { id: "spore", category: "status" }),
+      move: makeMove("normal", {
+        id: "spore",
+        category: "status",
+        effect: { type: "status-guaranteed", status: "sleep" },
+      }),
     });
     const result = handleGen6SwitchAbility("passive-immunity", ctx);
     expect(result.activated).toBe(true);
@@ -1156,24 +1164,48 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given Sniper, when on-damage-calc, then always activates (signals crit boost)", () => {
-    // Source: Showdown data/abilities.ts -- Sniper: always active for damage calc
+  it("given Sniper on a crit, when on-damage-calc, then activates", () => {
+    // Source: Showdown data/abilities.ts -- Sniper: if crit, chainModify(1.5)
     const ctx = makeCtx({
       ability: "sniper",
       trigger: "on-damage-calc",
+      isCrit: true,
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
   });
 
-  it("given Tinted Lens, when on-damage-calc, then always activates", () => {
-    // Source: Showdown data/abilities.ts -- Tinted Lens: 2x NVE
+  it("given Sniper on a non-crit, when on-damage-calc, then does not activate", () => {
+    // Source: Showdown -- Sniper only fires on crits
+    const ctx = makeCtx({
+      ability: "sniper",
+      trigger: "on-damage-calc",
+      isCrit: false,
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Tinted Lens with NVE move, when on-damage-calc, then activates", () => {
+    // Source: Showdown data/abilities.ts -- Tinted Lens: if typeMod < 0, chainModify(2)
     const ctx = makeCtx({
       ability: "tinted-lens",
       trigger: "on-damage-calc",
+      typeEffectiveness: 0.5,
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
+  });
+
+  it("given Tinted Lens with neutral move, when on-damage-calc, then does not activate", () => {
+    // Source: Showdown -- Tinted Lens only fires for NVE (typeMod < 0)
+    const ctx = makeCtx({
+      ability: "tinted-lens",
+      trigger: "on-damage-calc",
+      typeEffectiveness: 1,
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
   });
 
   it("given Hustle + special move, when on-damage-calc, then does not activate", () => {
@@ -1182,6 +1214,58 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
       ability: "hustle",
       trigger: "on-damage-calc",
       move: makeMove("fire", { category: "special" }),
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// Solid Rock / Filter gating tests
+// ===========================================================================
+
+describe("Solid Rock / Filter gating", () => {
+  it("given Solid Rock + SE move, when on-damage-calc, then activates", () => {
+    // Source: Showdown data/abilities.ts -- solidrock: chainModify(0.75) when typeMod > 0
+    const ctx = makeCtx({
+      ability: "solid-rock",
+      trigger: "on-damage-calc",
+      typeEffectiveness: 2,
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0].effectType).toBe("damage-reduction");
+  });
+
+  it("given Filter + 4x SE move, when on-damage-calc, then activates", () => {
+    // Source: Showdown data/abilities.ts -- filter is identical to solidrock
+    const ctx = makeCtx({
+      ability: "filter",
+      trigger: "on-damage-calc",
+      typeEffectiveness: 4,
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects[0].effectType).toBe("damage-reduction");
+  });
+
+  it("given Solid Rock + neutral move, when on-damage-calc, then does not activate", () => {
+    // Source: Showdown -- Solid Rock only activates for SE (typeMod > 0)
+    const ctx = makeCtx({
+      ability: "solid-rock",
+      trigger: "on-damage-calc",
+      typeEffectiveness: 1,
+    });
+    const result = handleGen6DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Filter + NVE move, when on-damage-calc, then does not activate", () => {
+    // Source: Showdown -- Filter only activates for SE
+    const ctx = makeCtx({
+      ability: "filter",
+      trigger: "on-damage-calc",
+      typeEffectiveness: 0.5,
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);

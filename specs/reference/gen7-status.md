@@ -106,13 +106,14 @@ Test files: `abilities-damage.test.ts`, `abilities-nerfs.test.ts`, `abilities-ne
 
 ## OPEN BUGS
 
-None tracked.
+None. All tracked bugs closed.
 
 ---
 
 ## ADDITIONAL FIXES
 
 - PR #752: Deep bughunt — EoT order adds `magic-room-countdown`, `wonder-room-countdown`, `gravity-countdown`, `slow-start-countdown`; Z-Move through Protect deals 0.25x via `hitThroughProtect`; Disguise `capLethalDamage` marks `disguise-broken` volatile; canBypassProtect delegation (closes #735 #736 #739 #741)
+- #785: Bughunt wave 2 — Rayquaza mega (Dragon Ascent), Disguise non-lethal via expanded capLethalDamage, Beast Boost/Moxie on-after-move-used, pinch berries EoT, Focus Sash capLethalDamage (closes #701 #687 #688 #683 #725)
 
 ## PR History
 
@@ -127,3 +128,4 @@ None tracked.
 | (untracked) | feat/gen7-wave7a | Wave 7A: damage-modifying and stat/priority ability handlers |
 | #685 | feat/gen7-wave7b | Wave 7B: switch/contact ability handlers and new Gen 7 abilities |
 | #752 | fix/gen5-8-bughunt | Deep bughunt: EoT countdowns, Z-Move 0.25x through Protect, Disguise volatile, canBypassProtect (closes #735 #736 #739 #741) |
+| #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Rayquaza mega, Disguise non-lethal, Beast Boost/Moxie, pinch berries EoT, Focus Sash (closes #701 #687 #688 #683 #725) |

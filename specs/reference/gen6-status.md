@@ -58,9 +58,34 @@
 - PR #635: Traded Pokemon EXP bonus (1.5x same-language, 1.7x international)
 - PR #636: Type param to getBattleGimmick() for Gen 7 disambiguation
 - PR #752: Deep bughunt — EoT order adds `magic-room-countdown`, `wonder-room-countdown`, `gravity-countdown`, `slow-start-countdown`; Sheer Force whitelist adds `secret-power`, `relic-song` (closes #733 #734 #740)
+- #785: Bughunt wave 2 — pokeRound fixes, Flash Fire/pinch stat modifiers, Flower Gift Atk, Reckless hasCrashDamage, Stance Change, Harvest harsh-sun, UNSUPPRESSABLE trim, Bulletproof flag, Sweet Veil effect, semi-invulnerable grounded, activated:false guards (closes #663 #662 #660 #659 #654 #652 #648 #675 #673 #672 #670 #668 #667 #665 #664 #658 #656 #651)
 
 ## OPEN BUGS
-None. Issue #627 (Prankster/Gale Wings turn order) closed 2026-03-22 — was already fixed in PR #631 + #637.
+
+None. All tracked bugs closed.
+
+## CLOSED BUGS
+
+| Issue | Fixed In | Summary |
+|-------|----------|---------|
+| #663 | #785 | Iron Fist/Technician use Math.floor instead of pokeRound |
+| #662 | #785 | Dry Skin fire multiplier uses Math.floor instead of pokeRound |
+| #660 | #785 | Flash Fire applied as base-power modifier instead of stat modifier |
+| #659 | #785 | Pinch abilities (Hustle, Rivalry) applied as base-power instead of stat modifier |
+| #654 | #785 | Reckless uses Math.floor instead of pokeRound |
+| #652 | #785 | Flower Gift Atk boost not applied in sun/harsh-sun |
+| #648 | #785 | Reckless does not apply to moves with crash damage (hasCrashDamage) |
+| #675 | #785 | Stance Change not implemented (Shield→Blade on attack, Blade→Shield on King's Shield) |
+| #673 | #785 | Harvest only checks weather === "sun", not "harsh-sun" |
+| #672 | #785 | UNSUPPRESSABLE_ABILITIES includes abilities that are suppressable in Gen 6 |
+| #670 | #785 | Bulletproof uses hardcoded move list instead of move.flags.bullet |
+| #668 | #785 | Sweet Veil blocks sleep using hardcoded move list instead of effect-based check |
+| #667 | #785 | Pokemon using Fly are treated as grounded (should be non-grounded/semi-invulnerable) |
+| #665 | #785 | Pokemon using Bounce are treated as grounded |
+| #664 | #785 | Pokemon using Shadow Force/Phantom Force are treated as grounded |
+| #658 | #785 | Solid Rock/Filter return activated:true even when move is not super effective |
+| #656 | #785 | Tinted Lens returns activated:true even when move is not "not very effective" |
+| #651 | #785 | Sniper returns activated:true even when move is not a critical hit |
 
 ## Deferred (engine-level, same as Gen 5)
 - Sky Drop: needs engine-level two-turn volatile target tracking

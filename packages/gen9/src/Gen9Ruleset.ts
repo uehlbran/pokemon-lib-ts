@@ -40,7 +40,12 @@ import { applyGen9EntryHazards } from "./Gen9EntryHazards.js";
 import { applyGen9HeldItem } from "./Gen9Items.js";
 import { calculateSaltCureDamage, executeGen9MoveEffect } from "./Gen9MoveEffects.js";
 import { Gen9Terastallization } from "./Gen9Terastallization.js";
-import { applyGen9TerrainEffects, checkGen9TerrainStatusImmunity } from "./Gen9Terrain.js";
+import {
+  applyGen9TerrainEffects,
+  checkGen9TerrainStatusImmunity,
+  checkMistyTerrainConfusionImmunity,
+  checkPsychicTerrainPriorityBlock,
+} from "./Gen9Terrain.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 import { applyGen9WeatherEffects } from "./Gen9Weather.js";
 
@@ -553,5 +558,153 @@ export class Gen9Ruleset extends BaseRuleset {
 
     active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
     return damage;
+  }
+
+  // --- Shed Tail Sub Transfer ---
+
+  /**
+   * Pending Shed Tail substitute HP to transfer to the next switch-in.
+   * Stored per side index (0 or 1). Cleared after transfer.
+   */
+  private _pendingShedTailSub: Map<number, number> = new Map();
+
+  /**
+   * Gen 9 switch-out handler.
+   *
+   * Before clearing volatiles (base behavior), check for Shed Tail sub transfer.
+   * If the outgoing pokemon has the "shed-tail-sub" volatile, save the substitute HP
+   * so the incoming pokemon receives it.
+   *
+   * Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' passes substitute
+   * Source: Showdown data/conditions.ts -- substitute.onStart for shed tail switch-in
+   */
+  override onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
+    // Check for pending shed tail substitute before volatiles are cleared
+    const shedTailData = pokemon.volatileStatuses.get("shed-tail-sub");
+    if (shedTailData?.data?.substituteHp) {
+      // Determine which side this pokemon is on
+      const sideIndex = state.sides.findIndex((side) =>
+        side.active.some((a) => a?.pokemon === pokemon.pokemon),
+      );
+      if (sideIndex >= 0) {
+        this._pendingShedTailSub.set(sideIndex, shedTailData.data.substituteHp as number);
+      }
+    }
+
+    // Delegate to base (clears all volatiles)
+    super.onSwitchOut(pokemon, state);
+  }
+
+  /**
+   * Gen 9 switch-in handler.
+   *
+   * If there is a pending Shed Tail substitute for this side, apply it to the incoming
+   * pokemon as a Substitute volatile.
+   *
+   * Source: Showdown data/moves.ts -- shedtail selfSwitch passes sub to incoming
+   * Source: Showdown sim/pokemon.ts -- incoming pokemon receives substitute from shed tail
+   */
+  override onSwitchIn(pokemon: ActivePokemon, state: BattleState): void {
+    super.onSwitchIn(pokemon, state);
+
+    // Check for pending Shed Tail sub transfer
+    const sideIndex = state.sides.findIndex((side) =>
+      side.active.some((a) => a?.pokemon === pokemon.pokemon),
+    );
+    if (sideIndex >= 0 && this._pendingShedTailSub.has(sideIndex)) {
+      const subHp = this._pendingShedTailSub.get(sideIndex) ?? 0;
+      this._pendingShedTailSub.delete(sideIndex);
+
+      // Apply the substitute to the incoming pokemon
+      pokemon.substituteHp = subHp;
+      pokemon.volatileStatuses.set("substitute", { turnsLeft: -1 });
+    }
+  }
+
+  // --- Damage Interception (Sturdy, Focus Sash) ---
+
+  /**
+   * Gen 9 capLethalDamage: intercepts damage for Sturdy and Focus Sash.
+   *
+   * Sturdy: at full HP, survive any hit with 1 HP remaining.
+   * Focus Sash: at full HP, survive any hit with 1 HP remaining (item consumed).
+   *
+   * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
+   * Source: Showdown data/items.ts -- focussash: onDamage at full HP
+   */
+  capLethalDamage(
+    damage: number,
+    defender: ActivePokemon,
+    _attacker: ActivePokemon,
+    _move: MoveData,
+    _state: BattleState,
+  ): { damage: number; survived: boolean; messages: string[]; consumedItem?: string } {
+    const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
+    const currentHp = defender.pokemon.currentHp;
+    const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+
+    // Sturdy: survive with 1 HP if at full health and damage would KO
+    // Source: Showdown data/abilities.ts -- sturdy: onTryHit at full HP
+    if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on thanks to Sturdy!`],
+      };
+    }
+
+    // Focus Sash: survive with 1 HP if at full health and damage would KO (consumed)
+    // Source: Showdown data/items.ts -- focussash: onDamage at full HP
+    if (defender.pokemon.heldItem === "focus-sash" && currentHp === maxHp && damage >= currentHp) {
+      return {
+        damage: maxHp - 1,
+        survived: true,
+        messages: [`${name} held on using its Focus Sash!`],
+        consumedItem: "focus-sash",
+      };
+    }
+
+    return { damage, survived: false, messages: [] };
+  }
+
+  // --- Terrain Volatile Blocking (Misty Terrain → Confusion) ---
+
+  /**
+   * Block confusion for grounded Pokemon during Misty Terrain.
+   *
+   * Source: Showdown data/conditions.ts -- mistyterrain.onTryAddVolatile:
+   *   if (status.id === 'confusion') return null
+   * Source: Bulbapedia "Misty Terrain" -- "prevents confusion"
+   */
+  shouldBlockVolatile(
+    volatile: VolatileStatus,
+    target: ActivePokemon,
+    state: BattleState,
+  ): boolean {
+    if (volatile === "confusion") {
+      return checkMistyTerrainConfusionImmunity(target, state);
+    }
+    return false;
+  }
+
+  // --- Terrain Priority Blocking (Psychic Terrain → Priority Moves) ---
+
+  /**
+   * Block priority moves targeting grounded defenders during Psychic Terrain.
+   *
+   * Source: Showdown data/conditions.ts -- psychicterrain.onTryHit:
+   *   if (target.isGrounded() && move.priority > 0) return false
+   * Source: Bulbapedia "Psychic Terrain" -- "Grounded Pokemon are protected from
+   *   moves with increased priority."
+   */
+  shouldBlockPriorityMove(
+    _actor: ActivePokemon,
+    move: MoveData,
+    defender: ActivePokemon,
+    state: BattleState,
+  ): boolean {
+    const terrainType = state.terrain?.type ?? null;
+    const movePriority = move.priority ?? 0;
+    return checkPsychicTerrainPriorityBlock(terrainType, movePriority, defender, state);
   }
 }
