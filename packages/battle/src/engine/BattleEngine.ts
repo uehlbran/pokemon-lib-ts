@@ -104,6 +104,11 @@ export class BattleEngine implements BattleEventEmitter {
         }
         pokemon.calculatedStats = this.ruleset.calculateStats(pokemon, species);
         pokemon.currentHp = pokemon.calculatedStats.hp;
+        // Reset per-battle counters at battle initialization (NOT on switch-in).
+        // timesAttacked tracks hits received for Rage Fist — persists through switches
+        // within a battle but must reset when PokemonInstance objects are reused.
+        // Source: Showdown sim/pokemon.ts — timesAttacked is per-battle state, initialized to 0
+        pokemon.timesAttacked = 0;
       }
     }
 

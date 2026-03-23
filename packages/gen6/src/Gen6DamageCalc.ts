@@ -298,27 +298,34 @@ function getEffectiveStatStage(
   pokemon: ActivePokemon,
   stat: string,
   opponent?: ActivePokemon,
-  attacker?: ActivePokemon,
+  statContext: "offense" | "defense" = "offense",
 ): number {
-  // Mold Breaker (Turboblaze/Teravolt) suppresses only the *target's* breakable abilities;
-  // the active attacker's own abilities are never suppressed (suppressingAbility is always
-  // false for self). Source: Showdown sim/battle.ts Gen 6+ — suppressingAbility
-  const attackerHasMoldBreaker =
-    attacker?.ability === "mold-breaker" ||
-    attacker?.ability === "teravolt" ||
-    attacker?.ability === "turboblaze";
-  // Unaware takes priority: opponent sees 0 stages. Bypassed only when the ATTACKER has
-  // Mold Breaker AND the Unaware holder is the target (opponent !== attacker) — the
-  // attacker's own Unaware is never suppressed by Mold Breaker.
-  // Source: Showdown sim/battle.ts Gen 6+
-  if (opponent?.ability === "unaware" && !(attackerHasMoldBreaker && opponent !== attacker))
-    return 0;
+  // Mold Breaker / Turboblaze / Teravolt on the attacker bypasses the defender's abilities.
+  // Source: Showdown data/abilities.ts -- moldbreaker/turboblaze/teravolt bypass Unaware/Simple
+  const pokemonHasMoldBreaker =
+    pokemon.ability === "mold-breaker" ||
+    pokemon.ability === "turboblaze" ||
+    pokemon.ability === "teravolt";
+  const opponentHasMoldBreaker =
+    opponent?.ability === "mold-breaker" ||
+    opponent?.ability === "turboblaze" ||
+    opponent?.ability === "teravolt";
+
+  // Unaware takes priority over Simple — if the opponent has Unaware, stages are 0
+  // regardless of whether this Pokemon has Simple.
+  // UNLESS: this Pokemon has Mold Breaker, which bypasses opponent's Unaware.
+  // Source: Showdown sim/battle.ts -- Unaware's onAnyModifyBoost runs before Simple's doubling
+  if (opponent?.ability === "unaware" && !pokemonHasMoldBreaker) return 0;
+
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
-  // Simple doubles the stage (±6 cap). Bypassed only when the ATTACKER has Mold Breaker
-  // AND the Simple holder is the target (pokemon !== attacker).
-  // Source: Showdown sim/battle.ts Gen 6+
-  if (pokemon.ability === "simple" && !(attackerHasMoldBreaker && pokemon !== attacker))
+  // Suppress Simple only when computing the DEFENDER's defensive stat and the attacker
+  // (opponent) has Mold Breaker — the Mold Breaker user bypasses the target's ability.
+  // When computing the ATTACKER's offensive stat, the defender's Mold Breaker does NOT
+  // suppress the attacker's own Simple.
+  // Source: Showdown data/abilities.ts -- moldbreaker bypasses target's abilities only
+  if (pokemon.ability === "simple" && !(statContext === "defense" && opponentHasMoldBreaker)) {
     return Math.max(-6, Math.min(6, raw * 2));
+  }
   return raw;
 }
 
@@ -456,7 +463,7 @@ function getAttackStat(
 
   // Apply stat stages (with Simple/Unaware adjustments)
   const statKey2 = isPhysical ? "attack" : "spAttack";
-  const stage = getEffectiveStatStage(attacker, statKey2, defender, attacker);
+  const stage = getEffectiveStatStage(attacker, statKey2, defender);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
   // Source: Showdown -- crit ignores negative attack stages
@@ -562,7 +569,7 @@ function getDefenseStat(
 
   // Stat stages
   const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, attacker);
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, "defense");
 
   // Chip Away / Sacred Sword: ignore all defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword: { ignoreDefensive: true }

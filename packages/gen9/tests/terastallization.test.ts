@@ -299,7 +299,7 @@ describe("Gen9Terastallization activate()", () => {
     tera.activate(pokemon, side, state);
 
     expect(pokemon.pokemon.terastallized).toBe(true);
-    expect(pokemon.pokemon.teraTypes).toEqual(["water", "flying"]); // Pre-Tera types for STAB calc
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "flying"]); // Pre-Tera types for STAB calc
   });
 
   it("given activate is called on side 1, when emitting event, then event has correct side index", () => {

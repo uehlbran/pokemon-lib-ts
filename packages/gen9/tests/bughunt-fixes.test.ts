@@ -217,21 +217,22 @@ function makeState(overrides?: {
 // ---------------------------------------------------------------------------
 
 describe("Bug #751: timesAttacked counter reset between battles", () => {
-  it("given a PokemonInstance with timesAttacked=5, when createActivePokemon is called, then timesAttacked is reset to 0", () => {
-    // Source: Showdown sim/pokemon.ts — timesAttacked is per-battle state, initialized to 0
+  it("given a PokemonInstance with timesAttacked=5, when createActivePokemon is called for a mid-battle switch-in, then timesAttacked is NOT reset (preserves Rage Fist counter)", () => {
+    // Source: Showdown sim/pokemon.ts — timesAttacked is preserved across switches within a battle;
+    // reset only happens in BattleEngine constructor at battle start, not on every switch-in
     const pokemon = createTestPokemon(25, 50);
     pokemon.timesAttacked = 5;
 
     createActivePokemon(pokemon, 0, ["electric"]);
 
-    expect(pokemon.timesAttacked).toBe(0);
+    expect(pokemon.timesAttacked).toBe(5);
   });
 
-  it("given a PokemonInstance with timesAttacked undefined, when createActivePokemon is called, then timesAttacked is set to 0", () => {
-    // Source: Showdown sim/pokemon.ts — timesAttacked initialized to 0 at battle start
+  it("given a PokemonInstance with timesAttacked=0, when createActivePokemon is called, then timesAttacked remains 0", () => {
+    // Source: Showdown sim/pokemon.ts — createActivePokemon does not modify timesAttacked;
+    // BattleEngine constructor sets it to 0 at battle start for all team members
     const pokemon = createTestPokemon(25, 50);
-    // timesAttacked is optional, may be undefined
-    delete (pokemon as any).timesAttacked;
+    pokemon.timesAttacked = 0;
 
     createActivePokemon(pokemon, 0, ["electric"]);
 

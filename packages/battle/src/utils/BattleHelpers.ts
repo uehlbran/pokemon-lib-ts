@@ -53,31 +53,16 @@ export function createActivePokemon(
   // Source: Showdown sim/pokemon.ts — forme/tera state restored on sendOut.
   const isTerastallized = !!pokemon.terastallized;
   const teraType = isTerastallized ? (pokemon.teraType ?? null) : null;
-  // Restore defensive typing for Tera'd Pokemon:
-  //   - Non-Stellar Tera: defensive type is [teraType] (single type)
-  //   - Stellar Tera: defensive types are the original pre-Tera types (stored in teraTypes)
-  //   - Not Tera'd: use resolvedTypes (from species or mega)
-  // Note: pokemon.teraTypes stores ORIGINAL pre-Tera types (for STAB calc in getOriginalTypes).
-  // Source: Showdown sim/pokemon.ts -- Stellar retains original defensive types; non-Stellar is single Tera type
-  let teraResolvedTypes: PokemonType[];
-  if (isTerastallized && teraType) {
-    const isStellar = (teraType as string) === "stellar";
-    if (isStellar && pokemon.teraTypes) {
-      // Stellar: original types are the defensive types
-      teraResolvedTypes = [...pokemon.teraTypes] as PokemonType[];
-    } else {
-      // Non-Stellar: single Tera type is the defensive type
-      teraResolvedTypes = [teraType as PokemonType];
-    }
-  } else {
-    teraResolvedTypes = resolvedTypes;
-  }
-
-  // Reset timesAttacked at battle start. This counter tracks how many times a
-  // Pokemon has been hit (for Rage Fist) and persists through switches within a
-  // battle, but must reset between battles when PokemonInstance objects are reused.
-  // Source: Showdown sim/pokemon.ts — timesAttacked is per-battle state, initialized to 0
-  pokemon.timesAttacked = 0;
+  // Restore defensive typing for Tera'd Pokemon.
+  // Gen9Terastallization.activate() stores resolved defensive types in teraTypes:
+  //   - Non-Stellar: [teraType]  (single Tera type is the defensive type)
+  //   - Stellar: originalTypes   (Stellar retains original defensive types)
+  // Engine reads teraTypes directly — no gen-specific Stellar awareness needed here.
+  // Source: Showdown sim/pokemon.ts -- defensive types restored on sendOut
+  const teraResolvedTypes: PokemonType[] =
+    isTerastallized && pokemon.teraTypes && pokemon.teraTypes.length > 0
+      ? ([...pokemon.teraTypes] as PokemonType[])
+      : resolvedTypes;
 
   return {
     pokemon,

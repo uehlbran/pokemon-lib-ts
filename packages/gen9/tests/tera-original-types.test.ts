@@ -1,12 +1,16 @@
 /**
  * Tests for #756: Gen9 Terastallization stores post-Tera types instead of pre-Tera.
  *
- * The activate() method must save original (pre-Tera) types into pokemon.pokemon.teraTypes
+ * The activate() method must save original (pre-Tera) types into pokemon.pokemon.teraOriginalTypes
  * BEFORE changing pokemon.types to [teraType]. This is used by getOriginalTypes() for
  * STAB calculations.
  *
- * Source: Showdown sim/battle.ts -- teraTypes stores original species types
- * Source: Showdown sim/battle-actions.ts:1770-1785 -- teraTypes stores pre-Tera typing
+ * Field semantics:
+ *   teraOriginalTypes — stores pre-Tera species types (always, regardless of Stellar)
+ *   teraTypes         — stores resolved defensive types (non-Stellar: [teraType], Stellar: originalTypes)
+ *
+ * Source: Showdown sim/battle.ts -- teraOriginalTypes stores original species types
+ * Source: Showdown sim/battle-actions.ts:1770-1785 -- teraOriginalTypes stores pre-Tera typing
  */
 
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
@@ -129,15 +133,15 @@ function makeState(): BattleState {
 }
 
 // ---------------------------------------------------------------------------
-// #756: teraTypes must store pre-Tera types
+// #756: teraOriginalTypes must store pre-Tera types; teraTypes stores defensive types
 // ---------------------------------------------------------------------------
 
-describe("#756 — Gen9 Terastallization stores pre-Tera types in teraTypes", () => {
+describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTypes", () => {
   const tera = new Gen9Terastallization();
 
-  it("given a Water/Ground Pokemon Terastallizes into Fire, when getOriginalTypes is checked via teraTypes, then returns [water, ground] (pre-Tera types)", () => {
-    // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraTypes stores pre-Tera typing
-    // Before fix: teraTypes was set AFTER changing pokemon.types, so it stored [fire] instead.
+  it("given a Water/Ground Pokemon Terastallizes into Fire, when getOriginalTypes is checked via teraOriginalTypes, then returns [water, ground] (pre-Tera types)", () => {
+    // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraOriginalTypes stores pre-Tera typing
+    // Before fix: teraOriginalTypes was set AFTER changing pokemon.types, so it stored [fire] instead.
     const pokemon = makeActive({
       types: ["water", "ground"],
       teraType: "fire",
@@ -149,12 +153,14 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraTypes", ()
 
     // After activation: pokemon.types should be [fire] (defensive type change)
     expect(pokemon.types).toEqual(["fire"]);
-    // But teraTypes should be the ORIGINAL pre-Tera types
-    expect(pokemon.pokemon.teraTypes).toEqual(["water", "ground"]);
+    // teraOriginalTypes stores the ORIGINAL pre-Tera types
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "ground"]);
+    // teraTypes stores the resolved defensive type (non-Stellar: [teraType])
+    expect(pokemon.pokemon.teraTypes).toEqual(["fire"]);
   });
 
-  it("given a pure Fire Pokemon Terastallizes into Dragon, when getOriginalTypes is checked via teraTypes, then returns [fire] (pre-Tera type)", () => {
-    // Source: Showdown sim/battle-actions.ts -- teraTypes stores original species types
+  it("given a pure Fire Pokemon Terastallizes into Dragon, when getOriginalTypes is checked via teraOriginalTypes, then returns [fire] (pre-Tera type)", () => {
+    // Source: Showdown sim/battle-actions.ts -- teraOriginalTypes stores original species types
     const pokemon = makeActive({
       types: ["fire"],
       teraType: "dragon",
@@ -166,11 +172,13 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraTypes", ()
 
     // Defensive type changes to [dragon]
     expect(pokemon.types).toEqual(["dragon"]);
-    // teraTypes stores pre-Tera [fire]
-    expect(pokemon.pokemon.teraTypes).toEqual(["fire"]);
+    // teraOriginalTypes stores pre-Tera [fire]
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["fire"]);
+    // teraTypes stores the resolved defensive type (non-Stellar: [teraType])
+    expect(pokemon.pokemon.teraTypes).toEqual(["dragon"]);
   });
 
-  it("given a Grass/Poison Pokemon Terastallizes into Grass (same type), when getOriginalTypes is checked, then teraTypes is [grass, poison] (not just [grass])", () => {
+  it("given a Grass/Poison Pokemon Terastallizes into Grass (same type), when getOriginalTypes is checked, then teraOriginalTypes is [grass, poison] (not just [grass])", () => {
     // Source: Showdown sim/battle.ts -- even when Tera type matches one of the original types,
     // the original dual typing must be preserved for STAB calc.
     const pokemon = makeActive({
@@ -184,13 +192,15 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraTypes", ()
 
     // Defensive type: single Tera type
     expect(pokemon.types).toEqual(["grass"]);
-    // teraTypes: original dual types preserved
-    expect(pokemon.pokemon.teraTypes).toEqual(["grass", "poison"]);
+    // teraOriginalTypes: original dual types preserved
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["grass", "poison"]);
+    // teraTypes stores the resolved defensive type (non-Stellar: [teraType])
+    expect(pokemon.pokemon.teraTypes).toEqual(["grass"]);
   });
 
-  it("given a Fire/Flying Pokemon Terastallizes into Stellar, when getOriginalTypes is checked, then teraTypes is [fire, flying] and pokemon.types is unchanged", () => {
+  it("given a Fire/Flying Pokemon Terastallizes into Stellar, when getOriginalTypes is checked, then teraOriginalTypes is [fire, flying] and pokemon.types is unchanged", () => {
     // Source: Showdown sim/pokemon.ts -- Stellar Tera retains original defensive types
-    // teraTypes should still store original types (they happen to match pokemon.types for Stellar)
+    // teraOriginalTypes stores original types; teraTypes mirrors originalTypes for Stellar
     const pokemon = makeActive({
       types: ["fire", "flying"],
       teraType: "stellar" as PokemonType,
@@ -202,7 +212,9 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraTypes", ()
 
     // Stellar: types unchanged
     expect(pokemon.types).toEqual(["fire", "flying"]);
-    // teraTypes: original types captured before the (non-)change
+    // teraOriginalTypes: original types captured before the (non-)change
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["fire", "flying"]);
+    // teraTypes: Stellar resolves to originalTypes (same as teraOriginalTypes)
     expect(pokemon.pokemon.teraTypes).toEqual(["fire", "flying"]);
   });
 });

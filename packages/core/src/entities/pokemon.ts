@@ -135,6 +135,15 @@ export interface PokemonInstance {
   teraTypes?: PokemonType[];
 
   /**
+   * Original pre-Terastallization types, stored for cross-type STAB calculation.
+   * Unlike teraTypes (which holds resolved defensive types), this always holds the
+   * pre-Tera species types regardless of Tera variant.
+   * Set by Gen9Terastallization.activate(). Absent on non-Tera'd Pokemon.
+   * Source: Showdown sim/battle-actions.ts — teraTypes stores original species types
+   */
+  teraOriginalTypes?: PokemonType[];
+
+  /**
    * Types that have already received the one-time Stellar Tera boost.
    * Persisted on PokemonInstance so it survives switches.
    * Source: Showdown sim/battle-actions.ts:1770-1785 — stellarBoostedTypes tracking
