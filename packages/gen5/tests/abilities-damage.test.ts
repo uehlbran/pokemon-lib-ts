@@ -171,6 +171,8 @@ function makeAbilityContext(overrides: {
   move?: MoveData;
   state?: BattleState;
   damage?: number;
+  isCrit?: boolean;
+  typeEffectiveness?: number;
 }): AbilityContext {
   return {
     pokemon: overrides.pokemon ?? makeActive({}),
@@ -180,6 +182,8 @@ function makeAbilityContext(overrides: {
     trigger: "on-damage-calc",
     move: overrides.move ?? makeMove({}),
     damage: overrides.damage,
+    isCrit: overrides.isCrit,
+    typeEffectiveness: overrides.typeEffectiveness,
   };
 }
 
@@ -593,20 +597,43 @@ describe("sturdyBlocksOHKO", () => {
 // ===========================================================================
 
 describe("Tinted Lens", () => {
-  it("given Tinted Lens attacker, when checking damage calc, then activates", () => {
-    // Source: Showdown data/abilities.ts -- tintedlens: if typeMod < 0, chainModify(2)
-    // Tinted Lens always activates in the dispatch; the damage calc checks effectiveness
+  it("given Tinted Lens attacker with NVE move, when checking damage calc, then activates", () => {
+    // Source: Showdown data/abilities.ts -- tintedlens: if typeMod < 0 (NVE), chainModify(2)
     const pokemon = makeActive({ ability: "tinted-lens" });
-    const ctx = makeAbilityContext({ pokemon });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 0.5 });
     const result = handleGen5DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
+  });
+
+  it("given Tinted Lens attacker with double-resisted move, when checking damage calc, then activates", () => {
+    // Source: Showdown -- typeMod < 0 includes 0.25x (double NVE)
+    const pokemon = makeActive({ ability: "tinted-lens" });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 0.25 });
+    const result = handleGen5DamageCalcAbility(ctx);
+    expect(result.activated).toBe(true);
+  });
+
+  it("given Tinted Lens attacker with neutral move, when checking damage calc, then does not activate", () => {
+    // Source: Showdown -- Tinted Lens only activates when NVE (typeMod < 0)
+    const pokemon = makeActive({ ability: "tinted-lens" });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 1 });
+    const result = handleGen5DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Tinted Lens attacker with SE move, when checking damage calc, then does not activate", () => {
+    // Source: Showdown -- SE moves don't trigger Tinted Lens
+    const pokemon = makeActive({ ability: "tinted-lens" });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 2 });
+    const result = handleGen5DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
   });
 
   it("given non-Tinted-Lens attacker, when checking damage calc, then does not activate for tinted-lens", () => {
     // Source: Only Tinted Lens triggers this effect
     const pokemon = makeActive({ ability: "blaze" });
     const move = makeMove({ type: "fire", power: 90 });
-    const ctx = makeAbilityContext({ pokemon, move });
+    const ctx = makeAbilityContext({ pokemon, move, typeEffectiveness: 0.5 });
     const result = handleGen5DamageCalcAbility(ctx);
     // Blaze only activates at low HP with matching type
     expect(result.activated).toBe(false);
@@ -618,22 +645,38 @@ describe("Tinted Lens", () => {
 // ===========================================================================
 
 describe("Solid Rock / Filter", () => {
-  it("given Solid Rock defender, when checking damage calc, then activates with damage-reduction", () => {
-    // Source: Showdown data/abilities.ts -- solidrock: chainModify(0.75) when SE
+  it("given Solid Rock defender with SE move, when checking damage calc, then activates with damage-reduction", () => {
+    // Source: Showdown data/abilities.ts -- solidrock: chainModify(0.75) when SE (typeMod > 0)
     const pokemon = makeActive({ ability: "solid-rock" });
-    const ctx = makeAbilityContext({ pokemon });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 2 });
     const result = handleGen5DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0].effectType).toBe("damage-reduction");
   });
 
-  it("given Filter defender, when checking damage calc, then activates with damage-reduction", () => {
-    // Source: Showdown data/abilities.ts -- filter is identical to solidrock
+  it("given Filter defender with 4x SE move, when checking damage calc, then activates with damage-reduction", () => {
+    // Source: Showdown data/abilities.ts -- filter is identical to solidrock; 4x SE qualifies
     const pokemon = makeActive({ ability: "filter" });
-    const ctx = makeAbilityContext({ pokemon });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 4 });
     const result = handleGen5DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0].effectType).toBe("damage-reduction");
+  });
+
+  it("given Solid Rock defender with neutral move, when checking damage calc, then does not activate", () => {
+    // Source: Showdown -- Solid Rock only activates for SE (typeMod > 0, i.e. effectiveness > 1)
+    const pokemon = makeActive({ ability: "solid-rock" });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 1 });
+    const result = handleGen5DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Filter defender with NVE move, when checking damage calc, then does not activate", () => {
+    // Source: Showdown -- Filter only activates for SE
+    const pokemon = makeActive({ ability: "filter" });
+    const ctx = makeAbilityContext({ pokemon, typeEffectiveness: 0.5 });
+    const result = handleGen5DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
   });
 });
 
@@ -642,18 +685,34 @@ describe("Solid Rock / Filter", () => {
 // ===========================================================================
 
 describe("Sniper", () => {
-  it("given Sniper attacker, when checking damage calc, then activates", () => {
+  it("given Sniper attacker on a crit, when checking damage calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- sniper: if crit, chainModify(1.5) on top of 2x
+    const pokemon = makeActive({ ability: "sniper" });
+    const ctx = makeAbilityContext({ pokemon, isCrit: true });
+    const result = handleGen5DamageCalcAbility(ctx);
+    expect(result.activated).toBe(true);
+  });
+
+  it("given Sniper attacker on a non-crit, when checking damage calc, then does not activate", () => {
+    // Source: Showdown -- Sniper only triggers when the hit is a crit
+    const pokemon = makeActive({ ability: "sniper" });
+    const ctx = makeAbilityContext({ pokemon, isCrit: false });
+    const result = handleGen5DamageCalcAbility(ctx);
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Sniper attacker with no isCrit context, when checking damage calc, then does not activate", () => {
+    // Source: Showdown -- isCrit defaults to falsy; Sniper should not activate
     const pokemon = makeActive({ ability: "sniper" });
     const ctx = makeAbilityContext({ pokemon });
     const result = handleGen5DamageCalcAbility(ctx);
-    expect(result.activated).toBe(true);
+    expect(result.activated).toBe(false);
   });
 
   it("given non-Sniper attacker, when checking for sniper, then does not activate as sniper", () => {
     // Source: Only Sniper triggers the 3x crit multiplier
     const pokemon = makeActive({ ability: "none" });
-    const ctx = makeAbilityContext({ pokemon });
+    const ctx = makeAbilityContext({ pokemon, isCrit: true });
     const result = handleGen5DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
   });
