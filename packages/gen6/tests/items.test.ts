@@ -782,9 +782,11 @@ describe("Gen 6 Items -- Black Sludge", () => {
 // Focus Sash
 // ---------------------------------------------------------------------------
 
-describe("Gen 6 Items -- Focus Sash", () => {
-  it("given a Pokemon at full HP holding Focus Sash, when damage would KO, then survives at 1 HP and sash is consumed", () => {
-    // Source: Showdown data/items.ts -- Focus Sash: survive a lethal hit from full HP with 1 HP
+describe("Gen 6 Items -- Focus Sash (moved to capLethalDamage, #784)", () => {
+  it("given a Pokemon at full HP holding Focus Sash, when on-damage-taken triggers, then does NOT activate (handled by capLethalDamage now)", () => {
+    // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook)
+    // because handleOnDamageTaken fires post-damage, making currentHp === maxHp always false.
+    // See: Gen6Ruleset.capLethalDamage and GitHub issue #784
     const pokemon = makeActive({
       heldItem: "focus-sash",
       hp: 200,
@@ -796,14 +798,10 @@ describe("Gen 6 Items -- Focus Sash", () => {
       move: makeMove({}),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([
-      { type: "survive", target: "self", value: 1 },
-      { type: "consume", target: "self", value: "focus-sash" },
-    ]);
+    expect(result.activated).toBe(false);
   });
 
-  it("given a Pokemon NOT at full HP holding Focus Sash, when damage would KO, then Focus Sash does NOT activate", () => {
+  it("given a Pokemon NOT at full HP holding Focus Sash, when on-damage-taken triggers, then does NOT activate", () => {
     // Source: Showdown data/items.ts -- Focus Sash requires full HP
     const pokemon = makeActive({
       heldItem: "focus-sash",
@@ -894,18 +892,20 @@ describe("Gen 6 Items -- getPinchBerryThreshold", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen 6 Items -- Unburden volatile on consume", () => {
-  it("given a Pokemon with Unburden holding Focus Sash, when Focus Sash is consumed, then 'unburden' volatile is set", () => {
+  it("given a Pokemon with Unburden holding Sitrus Berry, when Sitrus Berry is consumed on damage, then 'unburden' volatile is set", () => {
     // Source: Bulbapedia -- Unburden: doubles Speed when held item is consumed
     // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem
+    // Note: Focus Sash was moved to capLethalDamage (#784), so we use Sitrus Berry instead
+    // to validate that Unburden still triggers on item consumption in on-damage-taken.
     const pokemon = makeActive({
-      heldItem: "focus-sash",
+      heldItem: "sitrus-berry",
       ability: "unburden",
       hp: 200,
-      currentHp: 200,
+      currentHp: 80, // <= 50% of 200 HP, triggers Sitrus Berry
     });
     const ctx = makeItemContext({
       pokemon,
-      damage: 250,
+      damage: 50,
       move: makeMove({}),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);

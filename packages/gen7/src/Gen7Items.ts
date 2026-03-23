@@ -726,21 +726,10 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
-    // Focus Sash: Survive with 1 HP if at full HP and damage would KO (consumed, single-use)
-    // Source: Showdown data/items.ts -- Focus Sash onDamagePriority
-    case "focus-sash": {
-      if (currentHp === maxHp && currentHp - damage <= 0) {
-        return {
-          activated: true,
-          effects: [
-            { type: "survive", target: "self", value: 1 },
-            { type: "consume", target: "self", value: "focus-sash" },
-          ],
-          messages: [`${pokemonName} held on with its Focus Sash!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
+    // Focus Sash is handled by Gen7Ruleset.capLethalDamage (pre-damage hook).
+    // It is NOT handled here (post-damage) because currentHp is already post-damage,
+    // so currentHp === maxHp is always false when damage > 0.
+    // Source: Showdown data/items.ts -- Focus Sash onDamagePriority (pre-damage)
 
     // Sitrus Berry: activates when HP drops to <= 50% after damage.
     // Source: Showdown data/items.ts -- Sitrus Berry onUpdate post-damage check

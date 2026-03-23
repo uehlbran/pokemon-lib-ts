@@ -400,16 +400,14 @@ describe("Gen 6 Items -- Oran Berry end-of-turn", () => {
 // On-damage-taken items
 // ===========================================================================
 
-describe("Gen 6 Items -- Focus Sash", () => {
-  it("given Focus Sash at full HP with lethal damage, when on-damage-taken triggers, then survives at 1 HP", () => {
-    // Source: Showdown data/items.ts -- Focus Sash: survive with 1 HP if at full and would KO
+describe("Gen 6 Items -- Focus Sash (moved to capLethalDamage, #784)", () => {
+  it("given Focus Sash at full HP with lethal damage, when on-damage-taken triggers, then does NOT activate (handled by capLethalDamage now)", () => {
+    // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook)
+    // because handleOnDamageTaken fires post-damage, making currentHp === maxHp always false.
+    // See: Gen6Ruleset.capLethalDamage and GitHub issue #784
     const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
     const result = applyGen6HeldItem("on-damage-taken", makeItemContext({ pokemon, damage: 300 }));
-    expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([
-      { type: "survive", target: "self", value: 1 },
-      { type: "consume", target: "self", value: "focus-sash" },
-    ]);
+    expect(result.activated).toBe(false);
   });
 
   it("given Focus Sash NOT at full HP with lethal damage, when on-damage-taken triggers, then does NOT activate", () => {
