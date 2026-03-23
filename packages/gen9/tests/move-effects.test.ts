@@ -347,8 +347,7 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
 
     ruleset.onDamageReceived(defender, 50, move, state);
 
-    const pokemon = defender.pokemon as unknown as Record<string, unknown>;
-    expect(pokemon.timesAttacked).toBe(1);
+    expect(defender.pokemon.timesAttacked).toBe(1);
   });
 
   it("given a Pokemon with 3 timesAttacked, when hit again, then timesAttacked increments to 4", () => {
@@ -360,8 +359,7 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
 
     ruleset.onDamageReceived(defender, 50, move, state);
 
-    const pokemon = defender.pokemon as unknown as Record<string, unknown>;
-    expect(pokemon.timesAttacked).toBe(4);
+    expect(defender.pokemon.timesAttacked).toBe(4);
   });
 
   it("given a multi-hit move on turn 2, when onDamageReceived called twice same turn, then timesAttacked only increments once", () => {
@@ -377,9 +375,10 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
     ruleset.onDamageReceived(defender, 20, move, state);
     ruleset.onDamageReceived(defender, 20, move, state);
 
-    const pokemon = defender.pokemon as unknown as Record<string, unknown>;
-    // Should be 1, not 2 — second hit is deduplicated by turn+move tracking
-    expect(pokemon.timesAttacked).toBe(1);
+    // Should be 1, not 2 — second hit is deduplicated by turn+move tracking.
+    // Source: Showdown sim/pokemon.ts — timesAttacked incremented in hitBy() once per move use,
+    // so a 2-hit move in one turn produces timesAttacked=1 (starting from 0).
+    expect(defender.pokemon.timesAttacked).toBe(1);
   });
 });
 

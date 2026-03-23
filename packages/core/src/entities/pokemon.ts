@@ -171,6 +171,15 @@ export interface PokemonInstance {
    * Source: Showdown data/moves.ts:15127 — Math.min(350, 50 + 50 * pokemon.timesAttacked)
    */
   timesAttacked?: number;
+
+  /**
+   * Maps move IDs to the turn number on which they last incremented `timesAttacked`.
+   * Used to deduplicate multi-hit moves: if the same move hits multiple times on the
+   * same turn, `timesAttacked` should only increment once.
+   * Persists through switches alongside `timesAttacked`.
+   * Source: Showdown sim/pokemon.ts — timesAttacked incremented once per move use, not per hit.
+   */
+  rageFistLastHitTurns?: Record<string, number>;
 }
 
 /** Options for creating a new PokemonInstance */
