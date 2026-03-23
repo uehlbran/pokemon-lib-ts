@@ -162,7 +162,7 @@ When implementing a gen-specific mechanic, check the ground-truth reference firs
 
 ## AI Agent Guidelines
 
-## Mandatory Instruction Discipline
+### Mandatory Instruction Discipline
 
 Agents must read repo instructions before acting, not after making a mistake.
 
