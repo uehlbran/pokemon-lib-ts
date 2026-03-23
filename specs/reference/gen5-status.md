@@ -147,20 +147,20 @@ None. All tracked bugs closed as of 2026-03-22.
 | #583 | PR #592 | Healer cannot cure allies (AbilityEffect missing target:"ally") |
 | #584 | PR #590 | Tri Attack not boosted by Sheer Force (complex secondary / effect=null) |
 | #732 | PR #752 | Protect sequential-use probability formula wrong for denom ≥ 256; Sheer Force whitelist missing secret-power/relic-song; canBypassProtect not a required method |
-| #643 | TBD | Type-boost items/Plates use Math.floor instead of pokeRound |
-| #653 | TBD | Iron Fist, Dry Skin, Rivalry, Technician use Math.floor instead of pokeRound |
-| #641 | TBD | Reckless does not apply to moves with crash damage (hasCrashDamage) |
-| #640 | TBD | Solar Power and Flower Gift not applied as stat modifiers in sun/harsh-sun |
-| #650 | TBD | Magic Guard early-return skips Poison-type Toxic Spikes absorption |
-| #649 | TBD | UNSUPPRESSABLE_ABILITIES includes abilities that are suppressable in Gen 5 |
-| #657 | TBD | Effect Spore sleep threshold uses roll < 10 (10%) instead of roll < 11 (11%) |
-| #661 | TBD | Synchronize triggers when status came from Toxic Spikes (should be skipped) |
-| #646 | TBD | Gen5Ruleset JSDoc comment says Protect uses 1/(3^N) — correct formula is 1/(2^N) |
-| #658 | TBD | Solid Rock/Filter return activated:true even when move is not super effective |
-| #656 | TBD | Tinted Lens returns activated:true even when move is not "not very effective" |
-| #651 | TBD | Sniper returns activated:true even when move is not a critical hit |
-| #655 | TBD | Dead Focus Sash code in handleOnDamageTaken (moved to capLethalDamage in earlier PR) |
-| #647 | TBD | Berry double-subtract: residual HP recalculated instead of using post-damage currentHp |
+| #643 | #785 | Type-boost items/Plates use Math.floor instead of pokeRound |
+| #653 | #785 | Iron Fist, Dry Skin, Rivalry, Technician use Math.floor instead of pokeRound |
+| #641 | #785 | Reckless does not apply to moves with crash damage (hasCrashDamage) |
+| #640 | #785 | Solar Power and Flower Gift not applied as stat modifiers in sun/harsh-sun |
+| #650 | #785 | Magic Guard early-return skips Poison-type Toxic Spikes absorption |
+| #649 | #785 | UNSUPPRESSABLE_ABILITIES includes abilities that are suppressable in Gen 5 |
+| #657 | #785 | Effect Spore sleep threshold uses roll < 10 (10%) instead of roll < 11 (11%) |
+| #661 | #785 | Synchronize triggers when status came from Toxic Spikes (should be skipped) |
+| #646 | #785 | Gen5Ruleset JSDoc comment says Protect uses 1/(3^N) — correct formula is 1/(2^N) |
+| #658 | #785 | Solid Rock/Filter return activated:true even when move is not super effective |
+| #656 | #785 | Tinted Lens returns activated:true even when move is not "not very effective" |
+| #651 | #785 | Sniper returns activated:true even when move is not a critical hit |
+| #655 | #785 | Dead Focus Sash code in handleOnDamageTaken (moved to capLethalDamage in earlier PR) |
+| #647 | #785 | Berry double-subtract: residual HP recalculated instead of using post-damage currentHp |
 
 ---
 
@@ -199,4 +199,4 @@ None. All tracked bugs closed as of 2026-03-22.
 | #595 | fix/gen5-ability-change-moves-579 | Simple Beam/Worry Seed/Gastro Acid/Role Play/Skill Swap (closes #579) |
 | #596 | fix/gen5-harvest-berry-tracking-580 | Harvest berry volatile in engine + VolatileStatus type (closes #580) |
 | #752 | fix/gen5-8-bughunt | Deep bughunt: Protect formula, Sheer Force whitelist, canBypassProtect delegation (closes #732) |
-| TBD | fix/gen5-8-bughunt-status | Bughunt wave 2: pokeRound fixes, Reckless hasCrashDamage, Solar Power/Flower Gift stat modifiers, Magic Guard Toxic Spikes, UNSUPPRESSABLE trim, Effect Spore threshold, Synchronize hazard skip, activated:false guards, Focus Sash dead code, berry double-subtract (closes #643 #653 #641 #640 #650 #649 #657 #661 #646 #658 #656 #651 #655 #647) |
+| #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: pokeRound fixes, Reckless hasCrashDamage, Solar Power/Flower Gift stat modifiers, Magic Guard Toxic Spikes, UNSUPPRESSABLE trim, Effect Spore threshold, Synchronize hazard skip, activated:false guards, Focus Sash dead code, berry double-subtract (closes #643 #653 #641 #640 #650 #649 #657 #661 #646 #658 #656 #651 #655 #647) |

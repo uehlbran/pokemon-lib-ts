@@ -102,7 +102,7 @@ None. All bugs closed as of 2026-03-22.
 | #540 | HIGH | PR #607 | Wish has no mechanism to schedule heal — `wishSet` field added to engine |
 | #551 | HIGH | PR #604 | on-damage-taken item context uses post-damage currentHp — Focus Sash activation fixed |
 | #554 | LOW | (merged) | Gen4Ruleset class comment claims rollSleepTurns is 1-5 turns but implementation returns 1-4 |
-| #704 | MEDIUM | TBD | Mold Breaker does not bypass defender's Simple/Unaware in getEffectiveStatStage |
+| #704 | MEDIUM | #785 | Mold Breaker does not bypass defender's Simple/Unaware in getEffectiveStatStage |
 
 ---
 
@@ -130,4 +130,4 @@ None. All bugs closed as of 2026-03-22.
 | #509 | fix/gen3,gen4 | Truant EoT toggle, Orb damage breakdown, Pain Split event stream |
 | #522 | fix/gen4 | Sticky Barb contact transfer triggers Unburden volatile |
 | #523 | fix/gen4 | Re-export AbilityContext/ItemContext types; resolve #61, #121, #454, #488 |
-| TBD | fix/gen5-8-bughunt-status | Bughunt wave 2: Mold Breaker bypasses Simple/Unaware in stat stage calc (closes #704) |
+| #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Mold Breaker bypasses Simple/Unaware in stat stage calc (closes #704) |
