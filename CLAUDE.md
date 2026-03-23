@@ -162,6 +162,19 @@ When implementing a gen-specific mechanic, check the ground-truth reference firs
 
 ## AI Agent Guidelines
 
+## Mandatory Instruction Discipline
+
+Agents must read repo instructions before acting, not after making a mistake.
+
+- Before editing repo files: read this file, any relevant subtree `CLAUDE.md`, and the specific
+  workflow rule that governs the action.
+- Before filing or editing GitHub issues: re-read `.claude/rules/bug-filing.md` and
+  `.claude/rules/issue-linking.md`.
+- Before creating or editing a PR: re-read `.claude/rules/issue-linking.md`,
+  `.claude/rules/issue-closing-syntax.md`, and the repo PR template.
+- Do not rely on memory for repo workflow. Re-open the relevant instruction file before the
+  governed action.
+
 ### Before changing formulas or mechanics
 
 1. Check `specs/reference/genN-ground-truth.md` for the gen you're working on. If it exists, it is the authoritative source — do not deviate without a comment explaining why.
