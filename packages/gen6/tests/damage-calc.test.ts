@@ -1000,23 +1000,23 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     expect(result.damage).toBe(43);
   });
 
-  it("given Simple attacker with +2 Atk stage vs Teravolt defender, when calculating damage, then Mold Breaker bypasses Simple and stages are not doubled", () => {
-    // Mold Breaker/Teravolt/Turboblaze bypass breakable abilities (flags: { breakable: 1 }).
-    // Simple is breakable, so a Teravolt defender ignores the attacker's Simple doubling.
-    // Source: Showdown sim/battle.ts Gen 6+ — ability.flags.breakable check.
+  it("given Simple attacker with +2 Atk stage vs Teravolt defender, when calculating damage, then defender's Mold Breaker does NOT suppress attacker's Simple — stages still doubled to +4", () => {
+    // The defender's Mold Breaker family only suppresses the *target's* (defender's) abilities
+    // when the Mold Breaker user is attacking. A defending Teravolt does NOT suppress the
+    // attacker's Simple. Source: Showdown sim/battle.ts — suppressingAbility(self) is false.
     //
-    // Derivation (Teravolt bypasses Simple → effective stage = +2, NOT +4, multiplier = 2.0):
-    //   effectiveAttack = floor(100 * 2.0) = 200
+    // Derivation (Simple NOT bypassed → effective stage = +4, multiplier = (2+4)/2 = 3.0):
+    //   effectiveAttack = floor(100 * 3.0) = 300
     //   L50, defense=100, power=50, normal-type physical, water vs water (neutral, no STAB)
-    //   step1 = floor(22 * 50 * 200 / 100) = 2200
-    //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
-    //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
+    //   step1 = floor(22 * 50 * 300 / 100) = 3300
+    //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
+    //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
     const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
     attacker.statStages.attack = 2;
     const defender = makeActive({ defense: 100, ability: "teravolt", types: ["water"] });
     const move = makeMove({ type: "normal", category: "physical", power: 50 });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
-    expect(result.damage).toBe(43);
+    expect(result.damage).toBe(63);
   });
 });

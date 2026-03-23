@@ -292,23 +292,26 @@ function getEffectiveStatStage(
   pokemon: ActivePokemon,
   stat: string,
   opponent?: ActivePokemon,
+  attacker?: ActivePokemon,
 ): number {
-  // Mold Breaker and its equivalents bypass both Unaware and Simple (both are breakable).
-  // Source: Showdown sim/battle.ts Gen 6+.
-  const pokemonHasMoldBreaker =
-    pokemon.ability === "mold-breaker" ||
-    pokemon.ability === "teravolt" ||
-    pokemon.ability === "turboblaze";
-  const opponentHasMoldBreaker =
-    opponent?.ability === "mold-breaker" ||
-    opponent?.ability === "teravolt" ||
-    opponent?.ability === "turboblaze";
-  // Unaware takes priority over Simple — if the opponent has Unaware, it sees 0 stages
-  // regardless of any stage-doubling the attacker has. Unaware's onAnyModifyBoost zeroes
-  // boosts independently of Simple's doubling. Source: Showdown sim/battle.ts Gen 6+.
-  if (opponent?.ability === "unaware" && !pokemonHasMoldBreaker) return 0;
+  // Mold Breaker (Turboblaze/Teravolt) suppresses only the *target's* breakable abilities;
+  // the active attacker's own abilities are never suppressed (suppressingAbility is always
+  // false for self). Source: Showdown sim/battle.ts Gen 6+ — suppressingAbility
+  const attackerHasMoldBreaker =
+    attacker?.ability === "mold-breaker" ||
+    attacker?.ability === "teravolt" ||
+    attacker?.ability === "turboblaze";
+  // Unaware takes priority: opponent sees 0 stages. Bypassed only when the ATTACKER has
+  // Mold Breaker AND the Unaware holder is the target (opponent !== attacker) — the
+  // attacker's own Unaware is never suppressed by Mold Breaker.
+  // Source: Showdown sim/battle.ts Gen 6+
+  if (opponent?.ability === "unaware" && !(attackerHasMoldBreaker && opponent !== attacker))
+    return 0;
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
-  if (pokemon.ability === "simple" && !opponentHasMoldBreaker)
+  // Simple doubles the stage (±6 cap). Bypassed only when the ATTACKER has Mold Breaker
+  // AND the Simple holder is the target (pokemon !== attacker).
+  // Source: Showdown sim/battle.ts Gen 6+
+  if (pokemon.ability === "simple" && !(attackerHasMoldBreaker && pokemon !== attacker))
     return Math.max(-6, Math.min(6, raw * 2));
   return raw;
 }
@@ -447,7 +450,7 @@ function getAttackStat(
 
   // Apply stat stages (with Simple/Unaware adjustments)
   const statKey2 = isPhysical ? "attack" : "spAttack";
-  const stage = getEffectiveStatStage(attacker, statKey2, defender);
+  const stage = getEffectiveStatStage(attacker, statKey2, defender, attacker);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
   // Source: Showdown -- crit ignores negative attack stages
@@ -553,7 +556,7 @@ function getDefenseStat(
 
   // Stat stages
   const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker);
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, attacker);
 
   // Chip Away / Sacred Sword: ignore all defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword: { ignoreDefensive: true }
