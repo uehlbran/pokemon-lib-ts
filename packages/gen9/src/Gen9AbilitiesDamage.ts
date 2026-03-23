@@ -293,7 +293,11 @@ export function getAteAbilityOverride(
 // ---------------------------------------------------------------------------
 
 /**
- * Handle Gen 9 Protean/Libero type change.
+ * Apply Gen 9 Protean/Libero type change (direct state mutation).
+ *
+ * This function directly mutates the ActivePokemon's type and volatile statuses.
+ * For the AbilityResult-returning trigger handler, see {@link handleProteanGen9}
+ * in Gen9AbilitiesNew.ts.
  *
  * Gen 9 nerf: Protean/Libero only changes the user's type ONCE per switchin.
  * In Gen 6-8, it changed type before every attacking move.
@@ -304,7 +308,7 @@ export function getAteAbilityOverride(
  *   onPrepareHit: if (this.effectState.protean) return;
  *   this.effectState.protean = true;
  */
-export function handleGen9ProteanTypeChange(
+export function applyProteanTypeChangeGen9(
   pokemon: ActivePokemon,
   moveType: PokemonType,
   sideIndex: 0 | 1,
@@ -340,7 +344,11 @@ export function handleGen9ProteanTypeChange(
 // ---------------------------------------------------------------------------
 
 /**
- * Handle Gen 9 Intrepid Sword on switch-in.
+ * Apply Gen 9 Intrepid Sword on switch-in (direct state mutation).
+ *
+ * This function directly mutates the PokemonInstance's swordBoost flag.
+ * For the AbilityResult-returning trigger handler, see {@link handleIntrepidSwordGen9}
+ * in Gen9AbilitiesNew.ts.
  *
  * Gen 9 nerf: only activates on the FIRST switchin of the entire battle.
  * In Gen 8, it activated on every switchin.
@@ -351,7 +359,7 @@ export function handleGen9ProteanTypeChange(
  *
  * @returns true if the ability activated (Atk should be boosted by +1)
  */
-export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
+export function applyIntrepidSwordGen9(pokemon: ActivePokemon): boolean {
   if (pokemon.ability !== "intrepid-sword") return false;
 
   // Check if already used this battle — persisted on PokemonInstance so it survives switches.
@@ -365,7 +373,11 @@ export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
 }
 
 /**
- * Handle Gen 9 Dauntless Shield on switch-in.
+ * Apply Gen 9 Dauntless Shield on switch-in (direct state mutation).
+ *
+ * This function directly mutates the PokemonInstance's shieldBoost flag.
+ * For the AbilityResult-returning trigger handler, see {@link handleDauntlessShieldGen9}
+ * in Gen9AbilitiesNew.ts.
  *
  * Gen 9 nerf: only activates on the FIRST switchin of the entire battle.
  * In Gen 8, it activated on every switchin.
@@ -376,7 +388,7 @@ export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
  *
  * @returns true if the ability activated (Def should be boosted by +1)
  */
-export function handleGen9DauntlessShield(pokemon: ActivePokemon): boolean {
+export function applyDauntlessShieldGen9(pokemon: ActivePokemon): boolean {
   if (pokemon.ability !== "dauntless-shield") return false;
 
   // Check if already used this battle — persisted on PokemonInstance so it survives switches.

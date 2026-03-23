@@ -3,6 +3,9 @@
 export { createGen9DataManager } from "./data/index.js";
 export { handleGen9Ability } from "./Gen9Abilities.js";
 export {
+  applyDauntlessShieldGen9,
+  applyIntrepidSwordGen9,
+  applyProteanTypeChangeGen9,
   getAteAbilityOverride,
   getFluffyModifier,
   getFurCoatMultiplier,
@@ -18,9 +21,6 @@ export {
   getToughClawsMultiplier,
   handleGen9DamageCalcAbility,
   handleGen9DamageImmunityAbility,
-  handleGen9DauntlessShield,
-  handleGen9IntrepidSword,
-  handleGen9ProteanTypeChange,
   hasSheerForceEligibleEffect,
   isParentalBondEligible,
   isSheerForceEligibleMove,

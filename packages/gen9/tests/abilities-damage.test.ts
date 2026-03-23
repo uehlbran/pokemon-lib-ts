@@ -23,6 +23,9 @@ import type { MoveData, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyDauntlessShieldGen9,
+  applyIntrepidSwordGen9,
+  applyProteanTypeChangeGen9,
   getAteAbilityOverride,
   getFluffyModifier,
   getFurCoatMultiplier,
@@ -38,9 +41,6 @@ import {
   getToughClawsMultiplier,
   handleGen9DamageCalcAbility,
   handleGen9DamageImmunityAbility,
-  handleGen9DauntlessShield,
-  handleGen9IntrepidSword,
-  handleGen9ProteanTypeChange,
   hasSheerForceEligibleEffect,
   isParentalBondEligible,
   isSheerForceEligibleMove,
@@ -567,7 +567,7 @@ describe("Protean / Libero (Gen 9 nerf)", () => {
   it("given Protean Pokemon using Fire move for first time this switchin, when handling type change, then type changes to Fire", () => {
     // Source: Showdown data/abilities.ts -- protean: onPrepareHit
     const pokemon = makeActive({ ability: "protean", types: ["water"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "fire", 0);
+    const events = applyProteanTypeChangeGen9(pokemon, "fire", 0);
 
     expect(events.length).toBe(1);
     expect(events[0].types).toEqual(["fire"]);
@@ -581,7 +581,7 @@ describe("Protean / Libero (Gen 9 nerf)", () => {
     // Simulate first use
     pokemon.volatileStatuses.set("protean-used" as VolatileStatus, { turnsLeft: -1 });
 
-    const events = handleGen9ProteanTypeChange(pokemon, "water", 0);
+    const events = applyProteanTypeChangeGen9(pokemon, "water", 0);
 
     expect(events.length).toBe(0);
     expect(pokemon.types).toEqual(["fire"]); // unchanged
@@ -590,7 +590,7 @@ describe("Protean / Libero (Gen 9 nerf)", () => {
   it("given Libero Pokemon using Grass move, when handling type change, then type changes to Grass", () => {
     // Source: Showdown data/abilities.ts -- libero: same logic as protean
     const pokemon = makeActive({ ability: "libero", types: ["fire"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "grass", 1);
+    const events = applyProteanTypeChangeGen9(pokemon, "grass", 1);
 
     expect(events.length).toBe(1);
     expect(events[0].types).toEqual(["grass"]);
@@ -600,7 +600,7 @@ describe("Protean / Libero (Gen 9 nerf)", () => {
   it("given Protean Pokemon already that type, when handling type change, then no event (already correct type)", () => {
     // Source: Showdown data/abilities.ts -- protean: source.getTypes().join() !== type check
     const pokemon = makeActive({ ability: "protean", types: ["fire"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "fire", 0);
+    const events = applyProteanTypeChangeGen9(pokemon, "fire", 0);
 
     expect(events.length).toBe(0);
     // protean-used is NOT set if no change happened
@@ -609,7 +609,7 @@ describe("Protean / Libero (Gen 9 nerf)", () => {
 
   it("given non-Protean/Libero Pokemon, when handling type change, then no effect", () => {
     const pokemon = makeActive({ ability: "blaze", types: ["fire"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "water", 0);
+    const events = applyProteanTypeChangeGen9(pokemon, "water", 0);
 
     expect(events.length).toBe(0);
     expect(pokemon.types).toEqual(["fire"]);
@@ -624,7 +624,7 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
   it("given fresh switch-in with Intrepid Sword, when ability triggers, then returns true (should boost Atk +1)", () => {
     // Source: Showdown data/abilities.ts -- intrepidsword: onStart: if (pokemon.swordBoost) return; pokemon.swordBoost = true;
     const pokemon = makeActive({ ability: "intrepid-sword" });
-    const result = handleGen9IntrepidSword(pokemon);
+    const result = applyIntrepidSwordGen9(pokemon);
 
     expect(result).toBe(true);
     // Flag stored on PokemonInstance (persists through switches), not volatileStatuses
@@ -636,14 +636,14 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
     // Persistent flag on PokemonInstance prevents re-activation even after switch-out/in
     const pokemon = makeActive({ ability: "intrepid-sword" });
     pokemon.pokemon.swordBoost = true;
-    const result = handleGen9IntrepidSword(pokemon);
+    const result = applyIntrepidSwordGen9(pokemon);
 
     expect(result).toBe(false);
   });
 
   it("given non-Intrepid Sword ability, when ability check runs, then returns false", () => {
     const pokemon = makeActive({ ability: "blaze" });
-    const result = handleGen9IntrepidSword(pokemon);
+    const result = applyIntrepidSwordGen9(pokemon);
 
     expect(result).toBe(false);
   });
@@ -652,14 +652,14 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
     // Source: Showdown data/abilities.ts -- swordBoost stored on pokemon (PokemonInstance), not as volatile
     // This verifies the flag persists through switch-out (BaseRuleset.onSwitchOut clears volatileStatuses).
     const pokemon = makeActive({ ability: "intrepid-sword" });
-    handleGen9IntrepidSword(pokemon);
+    applyIntrepidSwordGen9(pokemon);
     expect(pokemon.pokemon.swordBoost).toBe(true);
 
     // Simulate switch-out: clear volatile statuses (as BaseRuleset.onSwitchOut does)
     pokemon.volatileStatuses.clear();
 
     // swordBoost should still block re-activation — it lives on PokemonInstance
-    const result = handleGen9IntrepidSword(pokemon);
+    const result = applyIntrepidSwordGen9(pokemon);
     expect(result).toBe(false);
   });
 });
@@ -672,7 +672,7 @@ describe("Dauntless Shield (Gen 9 nerf)", () => {
   it("given fresh switch-in with Dauntless Shield, when ability triggers, then returns true (should boost Def +1)", () => {
     // Source: Showdown data/abilities.ts -- dauntlessshield: onStart: if (pokemon.shieldBoost) return; pokemon.shieldBoost = true;
     const pokemon = makeActive({ ability: "dauntless-shield" });
-    const result = handleGen9DauntlessShield(pokemon);
+    const result = applyDauntlessShieldGen9(pokemon);
 
     expect(result).toBe(true);
     // Flag stored on PokemonInstance (persists through switches), not volatileStatuses
@@ -684,14 +684,14 @@ describe("Dauntless Shield (Gen 9 nerf)", () => {
     // Persistent flag on PokemonInstance prevents re-activation even after switch-out/in
     const pokemon = makeActive({ ability: "dauntless-shield" });
     pokemon.pokemon.shieldBoost = true;
-    const result = handleGen9DauntlessShield(pokemon);
+    const result = applyDauntlessShieldGen9(pokemon);
 
     expect(result).toBe(false);
   });
 
   it("given non-Dauntless Shield ability, when ability check runs, then returns false", () => {
     const pokemon = makeActive({ ability: "blaze" });
-    const result = handleGen9DauntlessShield(pokemon);
+    const result = applyDauntlessShieldGen9(pokemon);
 
     expect(result).toBe(false);
   });
@@ -700,14 +700,14 @@ describe("Dauntless Shield (Gen 9 nerf)", () => {
     // Source: Showdown data/abilities.ts -- shieldBoost stored on pokemon (PokemonInstance), not as volatile
     // This verifies the flag persists through switch-out (BaseRuleset.onSwitchOut clears volatileStatuses).
     const pokemon = makeActive({ ability: "dauntless-shield" });
-    handleGen9DauntlessShield(pokemon);
+    applyDauntlessShieldGen9(pokemon);
     expect(pokemon.pokemon.shieldBoost).toBe(true);
 
     // Simulate switch-out: clear volatile statuses (as BaseRuleset.onSwitchOut does)
     pokemon.volatileStatuses.clear();
 
     // shieldBoost should still block re-activation — it lives on PokemonInstance
-    const result = handleGen9DauntlessShield(pokemon);
+    const result = applyDauntlessShieldGen9(pokemon);
     expect(result).toBe(false);
   });
 });
