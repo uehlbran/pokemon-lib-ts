@@ -182,6 +182,7 @@ function getEffectiveStatStage(
   pokemon: ActivePokemon,
   stat: string,
   opponent?: ActivePokemon,
+  statContext: "offense" | "defense" = "offense",
 ): number {
   // Mold Breaker on the attacker bypasses the defender's abilities.
   // When `pokemon` has Mold Breaker, `opponent`'s Unaware is bypassed.
@@ -192,18 +193,24 @@ function getEffectiveStatStage(
   // Unaware: opponent ignores this Pokemon's stat stages entirely.
   // Unaware takes priority over Simple — if the opponent has Unaware,
   // it sees 0 stages regardless of Simple doubling.
-  // UNLESS: this Pokemon has Mold Breaker, which bypasses opponent's Unaware.
+  // In offense context: pokemon (attacker) can bypass opponent's (defender's) Unaware
+  //   with Mold Breaker.
+  // In defense context: the defender's Mold Breaker cannot prevent the attacker's
+  //   Unaware — Unaware always applies when reading the defense stat.
   // Source: Showdown Gen 4 — Unaware's onAnyModifyBoost sets boosts to 0,
   //   which runs independently of and overrides Simple's doubling
   // Source: Showdown data/abilities.ts — Mold Breaker bypasses Unaware
-  if (opponent?.ability === "unaware" && !pokemonHasMoldBreaker) return 0;
+  if (opponent?.ability === "unaware" && !(statContext === "offense" && pokemonHasMoldBreaker)) {
+    return 0;
+  }
 
   const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
   // Simple: double the stage, clamped to [-6, +6]
-  // UNLESS: opponent has Mold Breaker, which bypasses this Pokemon's Simple.
+  // In defense context: opponent (attacker) with Mold Breaker bypasses this Pokemon's Simple.
+  // In offense context: opponent's (defender's) Mold Breaker cannot suppress the attacker's Simple.
   // Source: Showdown Gen 4 — Simple doubles stat stage
   // Source: Showdown data/abilities.ts — Mold Breaker bypasses Simple
-  if (pokemon.ability === "simple" && !opponentHasMoldBreaker) {
+  if (pokemon.ability === "simple" && !(statContext === "defense" && opponentHasMoldBreaker)) {
     return Math.max(-6, Math.min(6, raw * 2));
   }
   return raw;
@@ -511,7 +518,7 @@ function getDefenseStat(
 
   // Get the appropriate stat stage (with Simple/Unaware adjustments)
   const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker);
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, "defense");
 
   // On crit: ignore positive defense stages (use 0 instead), keep negative
   // Source: Showdown sim/battle.ts — crit ignores positive def stages

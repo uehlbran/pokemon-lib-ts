@@ -11,6 +11,7 @@
  */
 
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
+import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -427,5 +428,24 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
     // Without Mold Breaker: defender has +4 def (3.0x from Simple), higher defense = LESS damage
     // So Mold Breaker should produce MORE damage than without it.
     expect(resultMoldBreaker.damage).toBeGreaterThan(resultNoBreaker.damage);
+  });
+
+  it("given attacker has Unaware and defender has Mold Breaker with +2 def stages, when calculating defense stat stage, then Unaware zeros defender's stages (defender MB cannot bypass attacker's Unaware)", () => {
+    // Source: Showdown data/abilities.ts -- moldbreaker isBreaking only suppresses target's abilities
+    // when attacking. Mold Breaker on the DEFENDER cannot prevent the ATTACKER's Unaware from
+    // zeroing the defender's own defense stages. Only the attacker's ability side matters here.
+    const attacker = makeActive({
+      ability: "unaware",
+    });
+    const defender = makeActive({
+      ability: "mold-breaker",
+      statStages: { defense: 2 },
+    });
+
+    // getEffectiveStatStage(pokemon, stat, opponent, role) — defender is "pokemon", attacker is "opponent" in defense context
+    const stage = getEffectiveStatStage(defender, "defense", attacker, "defense");
+
+    // Unaware on the attacker ignores the defender's +2 defense stages regardless of defender's Mold Breaker.
+    expect(stage).toBe(0);
   });
 });
