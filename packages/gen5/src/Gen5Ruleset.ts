@@ -37,7 +37,7 @@ import { applyGen5HeldItem } from "./Gen5Items";
 import { shouldReflectMoveGen5 } from "./Gen5MagicBounce";
 import { executeGen5MoveEffect } from "./Gen5MoveEffects";
 import { GEN5_TYPE_CHART, GEN5_TYPES } from "./Gen5TypeChart";
-import { applyGen5WeatherEffects } from "./Gen5Weather";
+import { applyGen5WeatherEffects, isWeatherSuppressedOnFieldGen5 } from "./Gen5Weather";
 
 /**
  * Gen 5 (Black/White/Black2/White2) ruleset.
@@ -532,7 +532,10 @@ export class Gen5Ruleset extends BaseRuleset {
     state: BattleState,
     rng: SeededRandom,
   ): BattleAction[] {
-    this._currentWeather = state.weather?.type ?? null;
+    // Cloud Nine / Air Lock suppress weather for speed-doubling abilities too.
+    // Source: Showdown sim/battle.ts — suppressingWeather() gates weather-dependent speed
+    const rawWeather = state.weather?.type ?? null;
+    this._currentWeather = rawWeather && isWeatherSuppressedOnFieldGen5(state) ? null : rawWeather;
 
     const tagged = actions.map((action, idx) => ({ action, idx, tiebreak: rng.next() }));
     const trickRoomActive = state.trickRoom.active;

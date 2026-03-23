@@ -121,6 +121,8 @@ export {
   applyGen7WeatherEffects,
   HAIL_IMMUNE_TYPES,
   isGen7WeatherImmune,
+  isWeatherSuppressedGen7,
+  isWeatherSuppressedOnFieldGen7,
   SANDSTORM_IMMUNE_TYPES,
   WEATHER_ROCK_EXTENSION,
 } from "./Gen7Weather.js";

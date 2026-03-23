@@ -47,6 +47,7 @@ import {
   getStatStageMultiplier,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
+import { isWeatherSuppressedGen8 } from "./Gen8Weather.js";
 
 // ---- pokeRound: the 4096-based rounding function ----
 
@@ -736,7 +737,10 @@ export function calculateGen8Damage(
   let power = move.power;
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
-  const weather = context.state.weather?.type ?? null;
+  // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
+  // Source: Showdown sim/battle.ts — suppressingWeather() gates all weather-based damage modifiers
+  const rawWeather = context.state.weather?.type ?? null;
+  const weather = isWeatherSuppressedGen8(attacker, defender) ? null : rawWeather;
 
   // -ate abilities + Normalize + Galvanize: type-changing abilities
   // Source: Showdown data/abilities.ts -- aerilate/pixilate/refrigerate/galvanize: onModifyTypePriority -1

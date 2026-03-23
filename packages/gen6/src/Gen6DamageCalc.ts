@@ -13,6 +13,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { isGen6Grounded } from "./Gen6EntryHazards.js";
 import { getTerrainDamageModifier } from "./Gen6Terrain.js";
+import { isWeatherSuppressedGen6 } from "./Gen6Weather.js";
 
 // ---- Type-Resist Berries ----
 
@@ -634,7 +635,10 @@ export function calculateGen6Damage(
   let power = move.power;
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
-  const weather = context.state.weather?.type ?? null;
+  // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
+  // Source: Showdown sim/battle.ts — suppressingWeather() gates all weather-based damage modifiers
+  const rawWeather = context.state.weather?.type ?? null;
+  const weather = isWeatherSuppressedGen6(attacker, defender) ? null : rawWeather;
 
   // -ate abilities + Normalize: type-changing abilities
   // Order: -ate abilities (Normal -> their type), then Normalize (all -> Normal)

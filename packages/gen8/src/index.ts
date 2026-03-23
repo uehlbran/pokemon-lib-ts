@@ -182,6 +182,8 @@ export {
   applyGen8WeatherEffects,
   HAIL_IMMUNE_TYPES,
   isGen8WeatherImmune,
+  isWeatherSuppressedGen8,
+  isWeatherSuppressedOnFieldGen8,
   SANDSTORM_IMMUNE_TYPES,
   WEATHER_ROCK_EXTENSION,
 } from "./Gen8Weather.js";

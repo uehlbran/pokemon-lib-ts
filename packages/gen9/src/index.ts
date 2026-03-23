@@ -147,6 +147,8 @@ export {
   ABILITY_WEATHER_TURNS,
   applyGen9WeatherEffects,
   isGen9WeatherImmune,
+  isWeatherSuppressedGen9,
+  isWeatherSuppressedOnFieldGen9,
   SANDSTORM_IMMUNE_TYPES,
   WEATHER_ROCK_EXTENSION,
 } from "./Gen9Weather.js";
