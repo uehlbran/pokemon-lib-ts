@@ -16,8 +16,13 @@ Gen 9 (Scarlet/Violet) battle mechanics and complete Pokemon data.
 
 ## Installation
 
+These packages are not yet published to npm. Clone the monorepo and build from the root:
+
 ```bash
-npm install @pokemon-lib-ts/gen9 @pokemon-lib-ts/battle @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage
@@ -32,7 +37,7 @@ const koraidon = dm.getSpecies(1007);
 console.log(koraidon.baseStats);
 // { hp: 100, attack: 135, defense: 115, spAttack: 85, spDefense: 100, speed: 135 }
 
-const collisionCourse = dm.getMove("collisioncourse");
+const collisionCourse = dm.getMove("collision-course");
 console.log(collisionCourse.power, collisionCourse.type); // 100, 'fighting'
 
 // Create a Gen 9 battle

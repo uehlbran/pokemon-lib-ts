@@ -15,8 +15,13 @@ Gen 5 (Black/White/Black 2/White 2) battle mechanics and complete Pokemon data.
 
 ## Installation
 
+These packages are not yet published to npm. Clone the monorepo and build from the root:
+
 ```bash
-npm install @pokemon-lib-ts/gen5 @pokemon-lib-ts/battle @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage

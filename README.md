@@ -156,7 +156,7 @@ cd packages/core && npx vitest run --coverage
 
 ## Project Status
 
-All nine generations are complete. 10,000+ tests across all packages, validated against Showdown and Bulbapedia reference values.
+All nine generations are complete. 10,282+ tests across all packages, validated against Showdown and Bulbapedia reference values.
 
 | Package | Tests | Key Notes |
 |---------|-------|-----------|

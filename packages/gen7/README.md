@@ -17,8 +17,13 @@ Gen 7 (Sun/Moon/Ultra Sun/Ultra Moon) battle mechanics and complete Pokemon data
 
 ## Installation
 
+These packages are not yet published to npm. Clone the monorepo and build from the root:
+
 ```bash
-npm install @pokemon-lib-ts/gen7 @pokemon-lib-ts/battle @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage
@@ -33,7 +38,7 @@ const mimikyu = dm.getSpecies(778);
 console.log(mimikyu.baseStats);
 // { hp: 55, attack: 90, defense: 80, spAttack: 50, spDefense: 105, speed: 96 }
 
-const playRough = dm.getMove("playrough");
+const playRough = dm.getMove("play-rough");
 console.log(playRough.power, playRough.type); // 90, 'fairy'
 
 // Create a Gen 7 battle

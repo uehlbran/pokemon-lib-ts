@@ -16,8 +16,13 @@ Gen 8 (Sword/Shield) battle mechanics and complete Pokemon data.
 
 ## Installation
 
+These packages are not yet published to npm. Clone the monorepo and build from the root:
+
 ```bash
-npm install @pokemon-lib-ts/gen8 @pokemon-lib-ts/battle @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage
@@ -32,8 +37,8 @@ const cinderace = dm.getSpecies(815);
 console.log(cinderace.baseStats);
 // { hp: 80, attack: 116, defense: 75, spAttack: 65, spDefense: 75, speed: 119 }
 
-const pyroball = dm.getMove("pyroball");
-console.log(pyroball.power, pyroball.type); // 120, 'fire'
+const pyroBall = dm.getMove("pyro-ball");
+console.log(pyroBall.power, pyroBall.type); // 120, 'fire'
 
 // Create a Gen 8 battle
 const ruleset = new Gen8Ruleset();

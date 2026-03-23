@@ -15,8 +15,13 @@ Gen 4 (Diamond/Pearl/Platinum/HeartGold/SoulSilver) battle mechanics and complet
 
 ## Installation
 
+These packages are not yet published to npm. Clone the monorepo and build from the root:
+
 ```bash
-npm install @pokemon-lib-ts/gen4 @pokemon-lib-ts/battle @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage
@@ -34,8 +39,8 @@ console.log(garchomp.baseStats);
 const earthquake = dm.getMove("earthquake");
 console.log(earthquake.power, earthquake.category); // 100, 'physical'
 
-const shadowball = dm.getMove("shadowball");
-console.log(shadowball.power, shadowball.category); // 80, 'special'
+const shadowBall = dm.getMove("shadow-ball");
+console.log(shadowBall.power, shadowBall.category); // 80, 'special'
 
 // Create a Gen 4 battle
 const ruleset = new Gen4Ruleset();
