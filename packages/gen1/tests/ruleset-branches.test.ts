@@ -1514,6 +1514,25 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     expect(ordered[0]).toEqual(move0);
   });
 
+  it("given an injected data manager throws a non-lookup error, when resolving turn order, then the original loader error is preserved", () => {
+    const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
+    const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
+    const sharedDataManager = {
+      getMove: (_moveId: string) => {
+        throw new Error("custom loader exploded");
+      },
+    } as DataManager;
+    const rulesetWithSharedData = new Gen1Ruleset({ dataManager: sharedDataManager });
+    const state = makeBattleState({
+      side0Active: makeActivePokemon(),
+      side1Active: makeActivePokemon(),
+    });
+
+    expect(() =>
+      rulesetWithSharedData.resolveTurnOrder([move0, move1], state, new SeededRandom(42)),
+    ).toThrow(/custom loader exploded/i);
+  });
+
   it("given a Pokemon with no calculatedStats, when resolving turn order, then uses default speed of 100", () => {
     // Arrange
     const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };

@@ -270,8 +270,14 @@ export class Gen1Ruleset implements GenerationRuleset {
   private getMovePriorityOrThrow(moveId: string): number {
     try {
       return this.dataManager.getMove(moveId).priority;
-    } catch {
-      throw new Error(`Gen1Ruleset.resolveTurnOrder: move data not found for move ID "${moveId}"`);
+    } catch (error) {
+      if (error instanceof Error && /not found/i.test(error.message)) {
+        throw new Error(
+          `Gen1Ruleset.resolveTurnOrder: move data not found for move ID "${moveId}"`,
+        );
+      }
+
+      throw error;
     }
   }
 
