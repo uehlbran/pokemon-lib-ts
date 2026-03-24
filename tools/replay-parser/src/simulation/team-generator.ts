@@ -1,4 +1,5 @@
 import type { DataManager, PokemonInstance, SeededRandom } from "@pokemon-lib-ts/core";
+import { NEUTRAL_NATURES } from "@pokemon-lib-ts/core";
 import type { TeamGeneratorOptions } from "./types.js";
 
 const DEFAULT_OPTIONS: TeamGeneratorOptions = {
@@ -133,7 +134,7 @@ export function generateRandomTeam(
       gender = rng.int(1, 100) <= species.genderRatio ? "male" : "female";
     }
 
-    const nature = rng.pick(ALL_NATURES);
+    const nature = generation <= 2 ? rng.pick(NEUTRAL_NATURES) : rng.pick(ALL_NATURES);
 
     const pokemon: PokemonInstance = {
       uid: nextUid(),
