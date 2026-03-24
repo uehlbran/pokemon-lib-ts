@@ -8,7 +8,7 @@ import { MockRuleset } from "../helpers/mock-ruleset";
  * a contract test — if the interface grows, this test must be updated.
  */
 describe("GenerationRuleset interface verification", () => {
-  // List of all ~25 methods + 2 readonly properties defined in GenerationRuleset
+  // List of the required GenerationRuleset members (61 methods + 2 readonly properties)
   const expectedMembers = [
     // Properties
     "generation",
@@ -20,6 +20,9 @@ describe("GenerationRuleset interface verification", () => {
     "calculateStats",
     // Damage
     "calculateDamage",
+    "calculateStruggleDamage",
+    "calculateStruggleRecoil",
+    "canBypassProtect",
     // Critical hits
     "getCritRateTable",
     "getCritMultiplier",
@@ -29,6 +32,10 @@ describe("GenerationRuleset interface verification", () => {
     // Move execution
     "doesMoveHit",
     "executeMoveEffect",
+    "canHitSemiInvulnerable",
+    "getPPCost",
+    "onMoveMiss",
+    "onDamageReceived",
     // Status conditions
     "applyStatusDamage",
     "checkFreezeThaw",
@@ -36,6 +43,10 @@ describe("GenerationRuleset interface verification", () => {
     "checkFullParalysis",
     "rollConfusionSelfHit",
     "processSleepTurn",
+    "getConfusionSelfHitChance",
+    "calculateConfusionDamage",
+    "processConfusionTurn",
+    "confusionSelfHitTargetsOpponentSub",
     // Abilities
     "hasAbilities",
     "applyAbility",
@@ -52,14 +63,37 @@ describe("GenerationRuleset interface verification", () => {
     "getAvailableHazards",
     "applyEntryHazards",
     "getMaxHazardLayers",
+    // Switching
+    "canSwitch",
+    "shouldExecutePursuitPreSwitch",
+    "onSwitchOut",
+    "onSwitchIn",
+    // Flee/catch
+    "rollFleeSuccess",
+    "rollCatchAttempt",
+    // End-of-turn
+    "calculateLeechSeedDrain",
+    "calculateCurseDamage",
+    "calculateNightmareDamage",
+    "rollMultiHitCount",
+    "rollProtectSuccess",
+    "calculateBindDamage",
+    "processBoundTurn",
+    "processPerishSong",
+    "getEndOfTurnOrder",
+    "getPostAttackResidualOrder",
+    "processEndOfTurnDefrost",
     // EXP
     "calculateExpGain",
     // Battle gimmick
     "getBattleGimmick",
     // Validation
     "validatePokemon",
-    // End-of-turn
-    "getEndOfTurnOrder",
+    // Bag items
+    "canUseBagItems",
+    "applyBagItem",
+    // EXP recipient selection
+    "getExpRecipients",
   ];
 
   it("given the GenerationRuleset interface, when MockRuleset implements it, then all expected members are present", () => {
@@ -75,9 +109,9 @@ describe("GenerationRuleset interface verification", () => {
     }
   });
 
-  it("given the GenerationRuleset interface, when counting all members, then there are at least 25 method/property entries", () => {
-    // Assert — the interface has 25 properties and methods per spec
-    expect(expectedMembers.length).toBeGreaterThanOrEqual(25);
+  it("given the GenerationRuleset interface, when counting all members, then there are 63 required method/property entries", () => {
+    // Assert — the interface currently has 61 required methods and 2 readonly properties.
+    expect(expectedMembers.length).toBe(63);
   });
 
   describe("return types are specific (no any)", () => {
