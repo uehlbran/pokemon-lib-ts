@@ -133,6 +133,22 @@ describe("Gen 7 gimmick state serialization", () => {
     expect(gimmick.serializeState()).toEqual({ usedBySide: [0] });
   });
 
+  it("given malformed serialized Z-Move state, when restoreState is called, then it ignores the payload and leaves usage available", () => {
+    const gimmick = new Gen7ZMove();
+    const pokemon = createActivePokemon({
+      speciesId: 25,
+      heldItem: "electrium-z",
+      moveId: "thunderbolt",
+    });
+    const side = createSide(0);
+    const state = createState();
+
+    expect(() => gimmick.restoreState({ usedBySide: ["invalid"] })).not.toThrow();
+
+    expect(gimmick.canUse(pokemon, side, state)).toBe(true);
+    expect(gimmick.serializeState()).toEqual({ usedBySide: [] });
+  });
+
   it("given a serialized used-side list for Mega Evolution, when restoreState is called, then the same side cannot mega evolve again", () => {
     const gimmick = new Gen7MegaEvolution();
     const pokemon = createActivePokemon({
@@ -146,5 +162,20 @@ describe("Gen 7 gimmick state serialization", () => {
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
     expect(gimmick.serializeState()).toEqual({ usedBySide: [0] });
+  });
+
+  it("given malformed serialized Mega Evolution state, when restoreState is called, then it ignores the payload and leaves usage available", () => {
+    const gimmick = new Gen7MegaEvolution();
+    const pokemon = createActivePokemon({
+      speciesId: 6,
+      heldItem: "charizardite-x",
+    });
+    const side = createSide(0);
+    const state = createState();
+
+    expect(() => gimmick.restoreState({ usedBySide: ["invalid"] })).not.toThrow();
+
+    expect(gimmick.canUse(pokemon, side, state)).toBe(true);
+    expect(gimmick.serializeState()).toEqual({ usedBySide: [] });
   });
 });
