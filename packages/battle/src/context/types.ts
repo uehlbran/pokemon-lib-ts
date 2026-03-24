@@ -856,7 +856,7 @@ export type EndOfTurnEffect =
 export interface BattleConfig {
   /** Game generation (1–9); determines which ruleset mechanics apply */
   readonly generation: Generation;
-  /** Battle format (`"singles"`, `"doubles"`, `"triples"`, or `"rotation"`) */
+  /** Battle format; BattleEngine currently only supports `"singles"` */
   readonly format: BattleFormat;
   /** Both sides' teams as arrays of `PokemonInstance`; index 0 is player, index 1 is opponent */
   readonly teams: readonly [PokemonInstance[], PokemonInstance[]];

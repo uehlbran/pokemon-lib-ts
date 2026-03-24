@@ -104,6 +104,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
       seed: overrides?.seed ?? 12345,
     };
 
+    ruleset.setGenerationForTest(config.generation);
     const engine = new BattleEngine(config, ruleset, dataManager);
     engine.on((e) => events.push(e));
 
@@ -194,6 +195,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
       seed: 99999,
     };
 
+    ruleset.setGenerationForTest(config.generation);
     const engine = new BattleEngine(config, ruleset, dataManager);
     engine.on((e) => events.push(e));
 
@@ -278,6 +280,7 @@ describe("Bug #494 — Uproar wake condition", () => {
       seed: overrides?.seed ?? 12345,
     };
 
+    ruleset.setGenerationForTest(config.generation);
     const engine = new BattleEngine(config, ruleset, dataManager);
     engine.on((e) => events.push(e));
 
@@ -449,6 +452,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
       seed: 42,
     };
 
+    ruleset.setGenerationForTest(config.generation);
     const engine = new BattleEngine(config, ruleset, dataManager);
     engine.on((e) => events.push(e));
 

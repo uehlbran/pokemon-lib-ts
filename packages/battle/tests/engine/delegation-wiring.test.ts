@@ -77,6 +77,7 @@ function createEngine(opts: {
     seed: 12345,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -92,7 +93,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
       const { engine, events } = createEngine({ eotOrder: ["leech-seed"] });
       engine.start();
 
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       blastoise?.volatileStatuses.set("leech-seed", { turnsLeft: 99 });
 
       // Act
@@ -119,7 +120,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
       const { engine, events } = createEngine({ eotOrder: ["curse"] });
       engine.start();
 
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       blastoise?.volatileStatuses.set("curse", { turnsLeft: 99 });
 
       // Act
@@ -146,7 +147,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
       const { engine, events } = createEngine({ eotOrder: ["nightmare"] });
       engine.start();
 
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       if (blastoise) {
         blastoise.pokemon.status = "sleep";
         // sleep-counter keeps processSleepTurn from immediately waking the pokemon

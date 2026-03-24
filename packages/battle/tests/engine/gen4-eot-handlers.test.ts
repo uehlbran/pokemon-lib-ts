@@ -82,6 +82,7 @@ function createEngine(opts?: {
     seed: opts?.seed ?? 12345,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -274,8 +275,8 @@ describe("weather-healing EoT slot", () => {
     engine.start();
 
     // Set both pokemon to partial HP so heal can show
-    const active0 = engine.getActive(0);
-    const active1 = engine.getActive(1);
+    const active0 = engine.state.sides[0].active[0];
+    const active1 = engine.state.sides[1].active[0];
     if (active0) active0.pokemon.currentHp = 100;
     if (active1) active1.pokemon.currentHp = 100;
 
@@ -337,7 +338,7 @@ describe("shed-skin EoT slot", () => {
     engine.start();
 
     // Give the pokemon a status to cure
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) active0.pokemon.status = "burn";
 
     events.length = 0;
@@ -367,7 +368,7 @@ describe("poison-heal EoT slot", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) active0.pokemon.currentHp = 100;
 
     events.length = 0;
@@ -400,7 +401,7 @@ describe("bad-dreams EoT slot", () => {
     engine.start();
 
     // Give opponent a sleeping status
-    const active1 = engine.getActive(1);
+    const active1 = engine.state.sides[1].active[0];
     if (active1) active1.pokemon.status = "sleep";
 
     events.length = 0;
@@ -466,7 +467,7 @@ describe("toxic-orb-activation EoT slot", () => {
     expect(statusInflictEvents.length).toBeGreaterThanOrEqual(1);
 
     // The pokemon's status should be set
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0?.pokemon.status).toBe("badly-poisoned");
   });
 });
@@ -523,7 +524,7 @@ describe("aqua-ring EoT slot", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) {
       active0.pokemon.currentHp = 100;
       active0.volatileStatuses.set("aqua-ring", { turnsLeft: -1 });
@@ -558,7 +559,7 @@ describe("aqua-ring EoT slot", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     // Read the actual maxHp after engine recalculates stats (MockRuleset formula gives 153 for Charizard L50)
     const maxHp = active0?.pokemon.calculatedStats?.hp ?? 153;
     const expectedHeal = Math.max(1, Math.floor(maxHp / 16));
@@ -594,7 +595,7 @@ describe("ingrain EoT slot", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) {
       active0.pokemon.currentHp = 80;
       active0.volatileStatuses.set("ingrain", { turnsLeft: -1 });
@@ -630,7 +631,7 @@ describe("wish EoT slot", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) active0.pokemon.currentHp = 60;
 
     // Set up wish on side 0
@@ -692,7 +693,7 @@ describe("processAbilityResult — heal effect type", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) active0.pokemon.currentHp = 80;
 
     events.length = 0;
@@ -828,7 +829,7 @@ describe("slow-start-countdown EoT slot", () => {
     engine.start();
 
     // Set up the slow-start volatile on side 0's active Pokemon
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) {
       active0.ability = "slow-start";
       active0.volatileStatuses.set("slow-start", { turnsLeft: 5 });
@@ -867,7 +868,7 @@ describe("slow-start-countdown EoT slot", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) {
       active0.ability = "slow-start";
       active0.volatileStatuses.set("slow-start", { turnsLeft: 2 });
@@ -898,7 +899,7 @@ describe("slow-start-countdown EoT slot", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     if (active0) {
       // Ability was changed (e.g., by Skill Swap) but volatile remains
       active0.ability = "pressure";

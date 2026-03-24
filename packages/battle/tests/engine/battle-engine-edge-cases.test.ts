@@ -129,8 +129,8 @@ describe("BattleEngine — edge cases", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      engine.getActive(0)!.pokemon.currentHp = 5;
-      engine.getActive(1)!.pokemon.currentHp = 5;
+      engine.state.sides[0].active[0]!.pokemon.currentHp = 5;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 5;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -184,8 +184,8 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Set HP low enough that struggle + recoil will KO
-      engine.getActive(0)!.pokemon.currentHp = 10;
-      engine.getActive(1)!.pokemon.currentHp = 10;
+      engine.state.sides[0].active[0]!.pokemon.currentHp = 10;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 10;
 
       // Act
       engine.submitAction(0, { type: "struggle", side: 0 });
@@ -248,8 +248,8 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — even though the move missed, lastMoveUsed should be set
-      const active0 = engine.getActive(0);
-      const active1 = engine.getActive(1);
+      const active0 = engine.state.sides[0].active[0];
+      const active1 = engine.state.sides[1].active[0];
       expect(active0?.lastMoveUsed).toBe("tackle");
       expect(active1?.lastMoveUsed).toBe("tackle");
     });
@@ -266,8 +266,72 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — movedThisTurn is reset at end of turn for next turn
-      expect(engine.getActive(0)?.movedThisTurn).toBe(false);
-      expect(engine.getActive(1)?.movedThisTurn).toBe(false);
+      expect(engine.state.sides[0].active[0]?.movedThisTurn).toBe(false);
+      expect(engine.state.sides[1].active[0]?.movedThisTurn).toBe(false);
+    });
+  });
+
+  describe("public battle accessors return snapshots", () => {
+    it("given a caller mutates the object returned by getActive, when reading the engine again, then the live active state is unchanged", () => {
+      // Arrange
+      const { engine } = createEngine();
+      engine.start();
+
+      // Act
+      const active = engine.getActive(0);
+      expect(active).not.toBeNull();
+      const initialHp = active!.pokemon.currentHp;
+      active!.pokemon.currentHp = 1;
+      active!.statStages.attack = 6;
+
+      // Assert
+      expect(engine.getActive(0)?.pokemon.currentHp).toBe(initialHp);
+      expect(engine.getActive(0)?.statStages.attack).toBe(0);
+    });
+
+    it("given a caller mutates the array returned by getTeam, when reading the engine again, then the live team state is unchanged", () => {
+      // Arrange
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 130,
+          },
+          currentHp: 120,
+        }),
+      ];
+
+      const { engine } = createEngine({ team1 });
+      engine.start();
+
+      // Act
+      const team = engine.getTeam(0);
+      const initialHp = team[1]!.currentHp;
+      team[1]!.currentHp = 0;
+
+      // Assert
+      expect(engine.getTeam(0)[1]?.currentHp).toBe(initialHp);
     });
   });
 
@@ -340,10 +404,10 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Set both to very low HP and inflict burn — they'll take damage at end of turn
-      engine.getActive(0)!.pokemon.currentHp = 1;
-      engine.getActive(0)!.pokemon.status = "burn";
-      engine.getActive(1)!.pokemon.currentHp = 1;
-      engine.getActive(1)!.pokemon.status = "burn";
+      engine.state.sides[0].active[0]!.pokemon.currentHp = 1;
+      engine.state.sides[0].active[0]!.pokemon.status = "burn";
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.status = "burn";
 
       // Both miss so no mid-turn faint — faint happens from burn at end of turn
       const ruleset = new MockRuleset();
@@ -351,10 +415,10 @@ describe("BattleEngine — edge cases", () => {
       // Reconstruct with no-hit ruleset
       const { engine: engine2 } = createEngine({ team1, team2, ruleset });
       engine2.start();
-      engine2.getActive(0)!.pokemon.currentHp = 1;
-      engine2.getActive(0)!.pokemon.status = "burn";
-      engine2.getActive(1)!.pokemon.currentHp = 1;
-      engine2.getActive(1)!.pokemon.status = "burn";
+      engine2.state.sides[0].active[0]!.pokemon.currentHp = 1;
+      engine2.state.sides[0].active[0]!.pokemon.status = "burn";
+      engine2.state.sides[1].active[0]!.pokemon.currentHp = 1;
+      engine2.state.sides[1].active[0]!.pokemon.status = "burn";
 
       // Act
       engine2.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -366,55 +430,6 @@ describe("BattleEngine — edge cases", () => {
       // when both teams still have alive mons, switch-prompt is used.
       const phase = engine2.getPhase();
       expect(["switch-prompt", "battle-end"]).toContain(phase);
-    });
-  });
-
-  describe("submitSwitch error — side does not need switch", () => {
-    it("given a side in switch-prompt that doesn't need to switch, when submitSwitch is called for that side, then it throws", () => {
-      // Arrange — force only side 1 to need a switch
-      const team2 = [
-        createTestPokemon(9, 50, {
-          uid: "blastoise-1",
-          nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 80,
-          },
-          currentHp: 1,
-        }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-2",
-          nickname: "Pikachu2",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 120,
-            attack: 80,
-            defense: 60,
-            spAttack: 80,
-            spDefense: 80,
-            speed: 130,
-          },
-          currentHp: 120,
-        }),
-      ];
-
-      const { engine } = createEngine({ team2 });
-      engine.start();
-      engine.getActive(1)!.pokemon.currentHp = 1;
-
-      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
-
-      // Should now be in switch-prompt for side 1
-      expect(engine.getPhase()).toBe("switch-prompt");
-
-      // Act & Assert — side 0 doesn't need to switch
-      expect(() => engine.submitSwitch(0, 0)).toThrow("Side 0 does not need to switch");
     });
   });
 
@@ -452,7 +467,7 @@ describe("BattleEngine — edge cases", () => {
       // Arrange
       const { engine, events } = createEngine();
       engine.start();
-      engine.getActive(1)!.pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -500,16 +515,16 @@ describe("BattleEngine — edge cases", () => {
 
       const { engine } = createEngine({ ruleset });
       engine.start();
-      const initialHp0 = engine.getActive(0)?.pokemon.currentHp;
-      const initialHp1 = engine.getActive(1)?.pokemon.currentHp;
+      const initialHp0 = engine.state.sides[0].active[0]?.pokemon.currentHp;
+      const initialHp1 = engine.state.sides[1].active[0]?.pokemon.currentHp;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — both miss, no damage
-      expect(engine.getActive(0)?.pokemon.currentHp).toBe(initialHp0);
-      expect(engine.getActive(1)?.pokemon.currentHp).toBe(initialHp1);
+      expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBe(initialHp0);
+      expect(engine.state.sides[1].active[0]?.pokemon.currentHp).toBe(initialHp1);
     });
 
     it("given a custom ruleset with patched turn order, when actions are submitted, then the engine uses the ruleset's order", () => {
@@ -560,7 +575,7 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — stat stages should persist (this is intentional, stat stages last until switch)
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       expect(blastoise?.statStages.attack).toBeLessThan(0);
 
       // Play turn 2
@@ -568,7 +583,7 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Stat stages should compound
-      expect(engine.getActive(1)?.statStages.attack).toBeLessThan(-1);
+      expect(engine.state.sides[1].active[0]?.statStages.attack).toBeLessThan(-1);
     });
 
     it("given two complete turns, when checking turn number after each, then turn number increments predictably", () => {
@@ -612,7 +627,7 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      expect(engine.getActive(0)?.statStages.attack).toBe(6);
+      expect(engine.state.sides[0].active[0]?.statStages.attack).toBe(6);
     });
 
     it("given a move that would push stat stages below -6, when effect is processed, then stage is clamped at -6", () => {
@@ -637,7 +652,7 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      expect(engine.getActive(1)?.statStages.defense).toBe(-6);
+      expect(engine.state.sides[1].active[0]?.statStages.defense).toBe(-6);
     });
   });
 
@@ -649,7 +664,7 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Remove side 1's active pokemon by KOing in a previous step
-      engine.getActive(1)!.pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       // KO defender with regular move first, then side 0 also struggles
       // Can't test directly since turn resolution handles both at once
@@ -708,14 +723,14 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Pre-inflict burn on Blastoise
-      engine.getActive(1)!.pokemon.status = "burn";
+      engine.state.sides[1].active[0]!.pokemon.status = "burn";
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — the existing burn should not be overwritten by poison
-      expect(engine.getActive(1)?.pokemon.status).toBe("burn");
+      expect(engine.state.sides[1].active[0]?.pokemon.status).toBe("burn");
       // No status-inflict event for Blastoise (already has burn)
       const statusEvents = events.filter(
         (e) => e.type === "status-inflict" && "pokemon" in e && e.pokemon === "Blastoise",
@@ -743,7 +758,7 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Pre-inflict confusion on Blastoise
-      engine.getActive(1)?.volatileStatuses.set("confusion", { turnsLeft: 3 });
+      engine.state.sides[1].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 3 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -794,7 +809,7 @@ describe("BattleEngine — edge cases", () => {
       // So Charizard heals before being damaged -> no heal emitted
       // or after being damaged -> heal emitted
       // Either way, HP should not exceed 200
-      expect(engine.getActive(0)?.pokemon.currentHp).toBeLessThanOrEqual(200);
+      expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBeLessThanOrEqual(200);
     });
   });
 
@@ -836,9 +851,9 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Add volatile statuses to Charizard
-      engine.getActive(0)?.volatileStatuses.set("confusion", { turnsLeft: 3 });
+      engine.state.sides[0].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 3 });
       // Modify stat stages
-      engine.getActive(0)!.statStages.attack = 3;
+      engine.state.sides[0].active[0]!.statStages.attack = 3;
 
       // Act — switch out Charizard
       engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
@@ -846,7 +861,7 @@ describe("BattleEngine — edge cases", () => {
 
       // Assert — Charizard's stat stages and volatiles should be cleared
       // The team slot 0's Pokemon data persists, but volatiles were on the ActivePokemon
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       expect(active?.pokemon.uid).toBe("pikachu-1");
       // The old active's volatiles were cleared during executeSwitch
     });
@@ -901,7 +916,7 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Faint Pikachu after start (constructor recalculates stats/HP)
-      (engine.getTeam(0)[1] as PokemonInstance).currentHp = 0;
+      engine.state.sides[0].team[1]!.currentHp = 0;
 
       // Act
       const switches = engine.getAvailableSwitches(0);

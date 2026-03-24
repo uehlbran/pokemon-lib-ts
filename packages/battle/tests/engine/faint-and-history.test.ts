@@ -91,6 +91,28 @@ describe("BattleEngine — faint deduplication (#78)", () => {
     expect(faintEvents).toHaveLength(1);
   });
 
+  it("given a pokemon at 0 HP, when checkMidTurnFaints is called, then it emits faint without switch-out", () => {
+    // Arrange
+    const { engine, events } = createEngine();
+    engine.start();
+
+    const side0 = engine.state.sides[0];
+    const active = side0.active[0];
+    if (!active) throw new Error("No active pokemon on side 0");
+    active.pokemon.currentHp = 0;
+
+    const engineAny = engine as any;
+
+    // Act
+    engineAny.checkMidTurnFaints();
+
+    // Assert
+    const faintEvents = events.filter((e) => e.type === "faint" && e.side === 0);
+    const switchOutEvents = events.filter((e) => e.type === "switch-out" && e.side === 0);
+    expect(faintEvents).toHaveLength(1);
+    expect(switchOutEvents).toHaveLength(0);
+  });
+
   it("given a pokemon at 0 HP, when checkMidTurnFaints is called twice, then faintCount is incremented only once", () => {
     // Arrange
     const { engine } = createEngine();
@@ -268,5 +290,32 @@ describe("BattleEngine — per-turn event history (#84)", () => {
     expect(battleStartEvents).toHaveLength(0);
 
     void eventsBeforeTurn;
+  });
+});
+
+// -----------------------------------------------------------------------
+// Bug #868 — Turn history records rewritten actions instead of submitted choices
+// -----------------------------------------------------------------------
+describe("BattleEngine — turn history submitted actions (#868)", () => {
+  it("given a submitted move that is rewritten into recharge, when the turn is recorded, then turn history keeps the submitted move", () => {
+    const ruleset = new MockRuleset();
+    const { engine } = createEngine({ ruleset });
+    engine.start();
+
+    const active = engine.state.sides[0].active[0];
+    if (!active) {
+      throw new Error("No active pokemon on side 0");
+    }
+
+    active.volatileStatuses.set("recharge", { turnsLeft: 1 });
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.state.turnHistory).toHaveLength(1);
+    expect(engine.state.turnHistory[0]?.actions).toEqual([
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ]);
   });
 });

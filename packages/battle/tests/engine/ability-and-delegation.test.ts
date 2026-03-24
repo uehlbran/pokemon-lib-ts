@@ -113,6 +113,7 @@ function createAbilityEngine(opts?: {
     seed: 12345,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -165,6 +166,7 @@ function createDelegationEngine() {
     seed: 12345,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -204,7 +206,7 @@ describe("Bug 2A: switch-in ability processing", () => {
       engine.start();
 
       // Assert
-      const opponent = engine.getActive(1);
+      const opponent = engine.state.sides[1].active[0];
       expect(opponent).not.toBeNull();
       // Intimidate lowers attack by 1 stage: 0 + (-1) = -1
       expect(opponent!.statStages.attack).toBe(-1);
@@ -249,7 +251,7 @@ describe("Bug 2A: switch-in ability processing", () => {
       engine.start();
 
       // Assert
-      const side0Active = engine.getActive(0);
+      const side0Active = engine.state.sides[0].active[0];
       expect(side0Active).not.toBeNull();
       expect(side0Active!.statStages.attack).toBe(-1);
     });
@@ -367,8 +369,8 @@ describe("Bug 2A: switch-in ability processing", () => {
       // Assert — faster pokemon (side 1, speed 100) triggers before slower (side 0, speed 50)
       // Both have "intimidate" so we can't distinguish by ability name,
       // but both should be lowered by -1 each from the other's Intimidate
-      const side0 = engine.getActive(0);
-      const side1 = engine.getActive(1);
+      const side0 = engine.state.sides[0].active[0];
+      const side1 = engine.state.sides[1].active[0];
       expect(side0!.statStages.attack).toBe(-1);
       expect(side1!.statStages.attack).toBe(-1);
       // Both abilities should have been called
@@ -385,7 +387,7 @@ describe("Bug 2B: confusion turn processing delegated to ruleset", () => {
     const { engine, ruleset, events } = createDelegationEngine();
     engine.start();
 
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set confusion with 3 turns remaining
     charizard!.volatileStatuses.set("confusion", { turnsLeft: 3 });
@@ -410,7 +412,7 @@ describe("Bug 2B: confusion turn processing delegated to ruleset", () => {
     const { engine, events } = createDelegationEngine();
     engine.start();
 
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set confusion with 1 turn remaining — will end after processConfusionTurn decrements
     charizard!.volatileStatuses.set("confusion", { turnsLeft: 1 });
@@ -438,7 +440,7 @@ describe("Bug 2C: bound turn processing delegated to ruleset", () => {
     const { engine, ruleset, events } = createDelegationEngine();
     engine.start();
 
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set bound with 3 turns remaining (will still be bound after decrement)
     charizard!.volatileStatuses.set("bound", { turnsLeft: 3 });
@@ -461,7 +463,7 @@ describe("Bug 2C: bound turn processing delegated to ruleset", () => {
     const { engine, events } = createDelegationEngine();
     engine.start();
 
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set bound with 1 turn remaining — will end after processBoundTurn decrements
     charizard!.volatileStatuses.set("bound", { turnsLeft: 1 });

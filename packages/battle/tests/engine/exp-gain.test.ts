@@ -61,7 +61,7 @@ function createAndStartExpTestEngine(overrides?: {
   // After start(), the engine has recalculated stats. Now set the opponent's HP to 1
   // so that MockRuleset's fixed 10-damage attack causes a faint on the next move.
   if (!overrides?.skipFaintSetup) {
-    const blastoiseActive = engine.getActive(1);
+    const blastoiseActive = engine.state.sides[1].active[0];
     if (blastoiseActive) {
       blastoiseActive.pokemon.currentHp = 1;
     }
@@ -223,10 +223,10 @@ describe("BattleEngine - EXP gain on faint", () => {
 
       // Set Charizard's HP to 10 (exactly one hit = faint) and Blastoise's HP to 20
       // (survives round 1, faints round 2). Done after start() to override recalculated stats.
-      const charizardActive = engine.getActive(0)!;
+      const charizardActive = engine.state.sides[0].active[0]!;
       charizardActive.pokemon.currentHp = 10;
 
-      const blastoiseActive = engine.getActive(1)!;
+      const blastoiseActive = engine.state.sides[1].active[0]!;
       blastoiseActive.pokemon.currentHp = 20;
 
       // Act: Round 1 — Charizard (speed 120) hits Blastoise (20→10 HP);
@@ -324,7 +324,7 @@ describe("BattleEngine - EXP gain on faint", () => {
 
       // Verify Charizard's HP is at its calculated max before the faint
       // Source: MockRuleset calcHp at level 50 = 153 (see formula above)
-      const charizardBefore = engine.getActive(0);
+      const charizardBefore = engine.state.sides[0].active[0];
       expect(charizardBefore?.pokemon.currentHp).toBe(153);
 
       // Act
@@ -337,7 +337,7 @@ describe("BattleEngine - EXP gain on faint", () => {
 
       // Source: MockRuleset calcHp at level 51 = 156; started at 153 (full HP)
       // After level-up: currentHp = min(153 + (156-153), 156) = min(156, 156) = 156
-      const charizardAfter = engine.getActive(0);
+      const charizardAfter = engine.state.sides[0].active[0];
       expect(charizardAfter?.pokemon.currentHp).toBe(156);
       expect(charizardAfter?.pokemon.calculatedStats?.hp).toBe(156);
     });

@@ -85,6 +85,7 @@ function createEngine(overrides?: {
     seed: overrides?.seed ?? 42,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -176,7 +177,7 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
 
       // After engine.start() the constructor already recalculated HP to 154.
       // Blastoise is at full HP (154). Give it Sturdy ability.
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.ability = "sturdy";
 
@@ -216,7 +217,7 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
       engine.start();
 
       // Blastoise at 50 HP (NOT full HP) — Sturdy won't trigger on hit 1.
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.ability = "sturdy";
       defender!.pokemon.currentHp = 50; // below full HP (154)
@@ -290,7 +291,7 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
       const { engine } = createEngine({ ruleset, team1 });
       engine.start();
 
-      const actor = engine.getActive(0);
+      const actor = engine.state.sides[0].active[0];
       expect(actor).not.toBeNull();
       expect(actor!.volatileStatuses.has("choice-locked")).toBe(false);
 
@@ -330,7 +331,7 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
       const { engine } = createEngine({ ruleset, team1 });
       engine.start();
 
-      const actor = engine.getActive(0);
+      const actor = engine.state.sides[0].active[0];
       expect(actor).not.toBeNull();
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -367,7 +368,7 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
       const { engine } = createEngine({ ruleset, team1 });
       engine.start();
 
-      const actor = engine.getActive(0);
+      const actor = engine.state.sides[0].active[0];
       expect(actor).not.toBeNull();
       // Pre-apply choice lock
       actor!.volatileStatuses.set("choice-locked", {
@@ -477,7 +478,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       engine.start();
 
       // Blastoise at full HP (154, recalculated by engine constructor)
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.ability = "sturdy";
       ruleset.capLethalDamageInvocations.length = 0; // reset after start()
@@ -509,7 +510,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       const { engine } = createEngine({ ruleset });
       engine.start();
 
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.ability = "sturdy";
       ruleset.capLethalDamageInvocations.length = 0;
@@ -542,7 +543,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.ability = "torrent"; // no Sturdy
       ruleset.capLethalDamageInvocations.length = 0;
@@ -683,7 +684,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       const { engine } = createEngine({ ruleset, team2: team2NonContact });
       engine.start();
 
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.substituteHp = 50;
       defender!.volatileStatuses.set("substitute", { turnsLeft: -1 });
@@ -708,7 +709,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       const { engine, events } = createEngine({ ruleset, team2: team2NonContact });
       engine.start();
 
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.substituteHp = 50;
       defender!.volatileStatuses.set("substitute", { turnsLeft: -1 });
@@ -753,7 +754,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       const { engine } = createEngine({ ruleset, team1: team1NonContact, team2: team2NonContact });
       engine.start();
 
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       // No substitute needed — test pure non-contact behavior
       defender!.substituteHp = 0;
@@ -825,7 +826,7 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
 
       // Force Charizard to 1 HP (below engine-calculated 153, which is fine —
       // the constructor sets HP=153, then we manually lower it here).
-      const actor = engine.getActive(0);
+      const actor = engine.state.sides[0].active[0];
       expect(actor).not.toBeNull();
       actor!.pokemon.currentHp = 1;
 
@@ -889,8 +890,8 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
       engine.start();
 
       // Both at 1 HP
-      const actor0 = engine.getActive(0);
-      const actor1 = engine.getActive(1);
+      const actor0 = engine.state.sides[0].active[0];
+      const actor1 = engine.state.sides[1].active[0];
       actor0!.pokemon.currentHp = 1;
       actor1!.pokemon.currentHp = 1;
       events.length = 0;

@@ -82,6 +82,7 @@ function createTestEngine() {
     seed: 42,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((event) => events.push(event));
 
@@ -107,7 +108,7 @@ describe("On-flinch ability dispatch", () => {
     engine.start();
 
     // Set flinch volatile on the slower Pokemon (side 0's Charizard)
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     active0!.volatileStatuses.set("flinch", { turnsLeft: 1 });
 
     // Act — both sides use tackle; side 0 is slower, will try to move but flinch
@@ -121,7 +122,7 @@ describe("On-flinch ability dispatch", () => {
 
     // Verify Speed boost was applied
     // Source: Bulbapedia — Steadfast raises Speed by 1 stage
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard!.statStages.speed).toBe(1);
 
     // Verify the flinch message was emitted
@@ -155,7 +156,7 @@ describe("On-flinch ability dispatch", () => {
     expect(flinchTriggers.length).toBe(0);
 
     // Speed should remain at default (0)
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard!.statStages.speed).toBe(0);
   });
 });

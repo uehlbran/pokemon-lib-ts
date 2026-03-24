@@ -98,6 +98,7 @@ function createTestEngine(opts?: {
     seed: 42,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -187,7 +188,7 @@ describe("on-contact ability hook", () => {
     engine.start();
 
     // Set up Blastoise with a substitute
-    const blastoise = engine.getActive(1);
+    const blastoise = engine.state.sides[1].active[0];
     expect(blastoise).not.toBeNull();
     blastoise!.substituteHp = 50;
     blastoise!.volatileStatuses.set("substitute", { turnsLeft: -1 });
@@ -220,7 +221,7 @@ describe("on-contact ability hook", () => {
     engine.start();
     // Confirm Blastoise has 5 HP (set via the createTestPokemon currentHp override)
     // Note: createTestPokemon might recalculate stats; check actual HP
-    const blastoise = engine.getActive(1);
+    const blastoise = engine.state.sides[1].active[0];
     expect(blastoise).not.toBeNull();
     // Force HP down to 5 to ensure the KO
     blastoise!.pokemon.currentHp = 5;
@@ -288,7 +289,7 @@ describe("passive-immunity ability hook", () => {
     expect(immunityTriggers.length).toBeGreaterThanOrEqual(1);
 
     // Assert: attacker's lastMoveUsed should be set (early-return path sets it)
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // After both move executions, charizard should have lastMoveUsed = "tackle"
     expect(charizard!.lastMoveUsed).toBe("tackle");
@@ -457,7 +458,7 @@ describe("processAbilityResult: status-inflict effect", () => {
     engine.start();
 
     // Give Charizard burn before the turn
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     charizard!.pokemon.status = "burn";
 
@@ -505,7 +506,7 @@ describe("processAbilityResult: companion volatile initialization after status i
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Charizard (side 0) gets badly-poisoned when attacking Blastoise (on-contact fires for defender Blastoise, targeting opponent=Charizard)
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     expect(charizard!.pokemon.status).toBe("badly-poisoned");
     expect(charizard!.volatileStatuses.has("toxic-counter")).toBe(true);
@@ -544,7 +545,7 @@ describe("processAbilityResult: companion volatile initialization after status i
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Charizard gets sleep when it attacks Blastoise (on-contact fires for Blastoise, targeting Charizard)
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     expect(charizard!.pokemon.status).toBe("sleep");
     expect(charizard!.volatileStatuses.has("sleep-counter")).toBe(true);
@@ -591,7 +592,7 @@ describe("processAbilityResult: companion volatile initialization after status i
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Charizard gets frozen when it attacks Blastoise
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     expect(charizard!.pokemon.status).toBe("freeze");
     expect(charizard!.volatileStatuses.has("just-frozen")).toBe(true);
@@ -663,7 +664,7 @@ describe("processAbilityResult: volatile-inflict effect", () => {
     engine.start();
 
     // Give Charizard infatuation before the turn
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     charizard!.volatileStatuses.set("infatuation", { turnsLeft: -1 });
 
@@ -908,7 +909,7 @@ describe("getPPCost integration", () => {
     events.length = 0;
 
     // Get Charizard's PP before the move
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     const ppBefore = charizard!.pokemon.moves[0]!.currentPP;
     // Source: initial PP is 35 (set in createTestEngine)
@@ -934,7 +935,7 @@ describe("getPPCost integration", () => {
     engine.start();
     events.length = 0;
 
-    const charizard = engine.getActive(0);
+    const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     const ppBefore = charizard!.pokemon.moves[0]!.currentPP;
     // Source: initial PP is 35 (set in createTestEngine)

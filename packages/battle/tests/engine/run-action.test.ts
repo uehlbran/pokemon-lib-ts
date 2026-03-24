@@ -231,6 +231,18 @@ describe("RunAction flee mechanic", () => {
     });
   });
 
+  describe("run side validation", () => {
+    it("given a wild battle, when side 1 submits a RunAction, then submitAction throws instead of silently ignoring it", () => {
+      const { engine } = createWildBattleEngine();
+      engine.start();
+
+      // Source: BattleEngine.submitAction run-side validation guard.
+      expect(() => engine.submitAction(1, { type: "run", side: 1 })).toThrow(
+        "RunAction is only valid for side 0",
+      );
+    });
+  });
+
   describe("flee attempts counter", () => {
     it("given a wild battle, when flee attempted twice, then fleeAttempts increments to 2", () => {
       // Arrange

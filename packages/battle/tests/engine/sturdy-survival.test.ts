@@ -107,6 +107,7 @@ function createSturdyEngine(overrides?: {
     seed: overrides?.seed ?? 42,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -120,7 +121,7 @@ describe("Bug #500 — Sturdy survival via capLethalDamage", () => {
     engine.start();
 
     // Set defender's ability to "sturdy"
-    const defender = engine.getActive(1);
+    const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
     defender!.ability = "sturdy";
 
@@ -148,7 +149,7 @@ describe("Bug #500 — Sturdy survival via capLethalDamage", () => {
     engine.start();
 
     // Set defender's ability to "sturdy" but reduce HP below max
-    const defender = engine.getActive(1);
+    const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
     defender!.ability = "sturdy";
     defender!.pokemon.currentHp = 150; // Not at full HP (max is 200)
@@ -177,7 +178,7 @@ describe("Bug #500 — Sturdy survival via capLethalDamage", () => {
     engine.start();
 
     // Defender has a non-Sturdy ability
-    const defender = engine.getActive(1);
+    const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
     defender!.ability = "torrent"; // Not sturdy
 

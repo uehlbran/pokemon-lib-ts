@@ -138,7 +138,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine } = createEngine({ team1 });
 
       // Assert — stats are populated from species data
-      const pokemon = engine.getTeam(0)[0] as PokemonInstance;
+      const pokemon = engine.state.sides[0].team[0] as PokemonInstance;
       expect(pokemon.calculatedStats).toBeDefined();
       expect(pokemon.calculatedStats?.hp).toBeGreaterThan(0);
     });
@@ -209,7 +209,7 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Set protect on Blastoise
-      engine.getActive(1)?.volatileStatuses.set("protect", { turnsLeft: 1 });
+      engine.state.sides[1].active[0]?.volatileStatuses.set("protect", { turnsLeft: 1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -230,7 +230,7 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Give Blastoise a substitute
-      const blastoise1 = engine.getActive(1);
+      const blastoise1 = engine.state.sides[1].active[0];
       if (!blastoise1) throw new Error("Expected active pokemon on side 1");
       blastoise1.substituteHp = 50;
       blastoise1.volatileStatuses.set("substitute", { turnsLeft: -1 });
@@ -251,7 +251,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      const blastoise2 = engine.getActive(1);
+      const blastoise2 = engine.state.sides[1].active[0];
       if (!blastoise2) throw new Error("Expected active pokemon on side 1");
       blastoise2.substituteHp = 5;
       blastoise2.volatileStatuses.set("substitute", { turnsLeft: -1 });
@@ -265,7 +265,7 @@ describe("BattleEngine — branch coverage", () => {
         (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "substitute",
       );
       expect(subEnd).toBeDefined();
-      expect(engine.getActive(1)?.substituteHp).toBe(0);
+      expect(engine.state.sides[1].active[0]?.substituteHp).toBe(0);
     });
   });
 
@@ -322,7 +322,7 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Disable tackle
-      engine.getActive(0)?.volatileStatuses.set("disable", {
+      engine.state.sides[0].active[0]?.volatileStatuses.set("disable", {
         turnsLeft: 3,
         data: { moveId: "tackle" },
       });
@@ -371,9 +371,9 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Put Blastoise to sleep with turns remaining
-      engine.getActive(1)!.pokemon.status = "sleep";
+      engine.state.sides[1].active[0]!.pokemon.status = "sleep";
       // Use a volatile to track sleep turns (the engine checks for this)
-      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set(
+      (engine.state.sides[1].active[0]!.volatileStatuses as Map<string, VolatileStatusState>).set(
         "sleep-counter",
         {
           turnsLeft: 3,
@@ -396,8 +396,8 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      engine.getActive(1)!.pokemon.status = "sleep";
-      (engine.getActive(1)!.volatileStatuses as Map<string, VolatileStatusState>).set(
+      engine.state.sides[1].active[0]!.pokemon.status = "sleep";
+      (engine.state.sides[1].active[0]!.volatileStatuses as Map<string, VolatileStatusState>).set(
         "sleep-counter",
         {
           turnsLeft: 0,
@@ -413,7 +413,7 @@ describe("BattleEngine — branch coverage", () => {
         (e) => e.type === "status-cure" && "status" in e && e.status === "sleep",
       );
       expect(cureEvent).toBeDefined();
-      expect(engine.getActive(1)?.pokemon.status).toBeNull();
+      expect(engine.state.sides[1].active[0]?.pokemon.status).toBeNull();
     });
   });
 
@@ -443,7 +443,7 @@ describe("BattleEngine — branch coverage", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — attacker (Charizard, side 0) self-inflicted sleep with turnsLeft=2
-      const attacker = engine.getActive(0);
+      const attacker = engine.state.sides[0].active[0];
       expect(attacker?.pokemon.status).toBe("sleep");
       const sleepCounter = attacker?.volatileStatuses.get("sleep-counter");
       expect(sleepCounter).toBeDefined();
@@ -464,7 +464,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      engine.getActive(1)!.pokemon.status = "freeze";
+      engine.state.sides[1].active[0]!.pokemon.status = "freeze";
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -485,7 +485,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      engine.getActive(1)!.pokemon.status = "freeze";
+      engine.state.sides[1].active[0]!.pokemon.status = "freeze";
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -524,7 +524,7 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Freeze side 0 (Charizard)
-      engine.getActive(0)!.pokemon.status = "freeze";
+      engine.state.sides[0].active[0]!.pokemon.status = "freeze";
 
       // Act — Charizard uses flame-wheel (defrost move), opponent uses tackle
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -537,7 +537,7 @@ describe("BattleEngine — branch coverage", () => {
       expect(cureEvent).toBeDefined();
 
       // Charizard must no longer be frozen
-      expect(engine.getActive(0)?.pokemon.status).toBeNull();
+      expect(engine.state.sides[0].active[0]?.pokemon.status).toBeNull();
     });
   });
 
@@ -551,7 +551,7 @@ describe("BattleEngine — branch coverage", () => {
         engine.start();
 
         // Blastoise is confused with many turns
-        engine.getActive(1)?.volatileStatuses.set("confusion", { turnsLeft: 5 });
+        engine.state.sides[1].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 5 });
 
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
         engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -580,7 +580,7 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      engine.getActive(1)?.volatileStatuses.set("confusion", { turnsLeft: 0 });
+      engine.state.sides[1].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 0 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -616,7 +616,7 @@ describe("BattleEngine — branch coverage", () => {
 
       const { engine, events } = createEngine({ team2 });
       engine.start();
-      engine.getActive(1)!.pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

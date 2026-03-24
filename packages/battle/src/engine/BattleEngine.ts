@@ -106,7 +106,118 @@ export class BattleEngine implements BattleEventEmitter {
   // Source: Game mechanic — EXP is split among all pokemon that participated in a battle.
   private readonly participantTracker: Map<string, Set<string>> = new Map();
 
+  private static assertRulesetGenerationMatches(
+    source: "BattleEngine" | "BattleEngine.deserialize",
+    battleGeneration: number,
+    ruleset: GenerationRuleset,
+  ): void {
+    if (ruleset.generation !== battleGeneration) {
+      throw new Error(
+        `${source}: ruleset generation ${ruleset.generation} does not match battle generation ${battleGeneration}`,
+      );
+    }
+  }
+
+  private static assertSinglesOnlyFormat(
+    source: "BattleEngine" | "BattleEngine.deserialize",
+    format: BattleState["format"],
+  ): void {
+    if (format !== "singles") {
+      throw new Error(`${source}: battle format "${format}" is not supported`);
+    }
+  }
+
+  private static inferSwitchPromptSides(state: BattleState): Set<0 | 1> {
+    const inferredSides = new Set<0 | 1>();
+
+    for (const side of [0, 1] as const) {
+      const active = state.sides[side]?.active[0];
+      if (active && active.pokemon.currentHp <= 0) {
+        inferredSides.add(side);
+      }
+    }
+
+    return inferredSides;
+  }
+
+  private static sanitizePendingSwitches(
+    state: BattleState,
+    rawPendingSwitches: unknown,
+  ): Map<0 | 1, number> {
+    if (!(rawPendingSwitches instanceof Map)) {
+      return new Map();
+    }
+
+    const sanitizedPendingSwitches = new Map<0 | 1, number>();
+
+    for (const [rawSide, rawTeamSlot] of rawPendingSwitches) {
+      if ((rawSide !== 0 && rawSide !== 1) || !Number.isInteger(rawTeamSlot)) {
+        continue;
+      }
+
+      const sideState = state.sides[rawSide];
+      if (!sideState) {
+        continue;
+      }
+
+      if (rawTeamSlot < 0 || rawTeamSlot >= sideState.team.length) {
+        continue;
+      }
+
+      sanitizedPendingSwitches.set(rawSide, rawTeamSlot);
+    }
+
+    return sanitizedPendingSwitches;
+  }
+
+  private static sanitizeSidesNeedingSwitch(rawSidesNeedingSwitch: unknown): Set<0 | 1> {
+    if (!(rawSidesNeedingSwitch instanceof Set)) {
+      return new Set();
+    }
+
+    const sanitizedSidesNeedingSwitch = new Set<0 | 1>();
+
+    for (const rawSide of rawSidesNeedingSwitch) {
+      if (rawSide === 0 || rawSide === 1) {
+        sanitizedSidesNeedingSwitch.add(rawSide);
+      }
+    }
+
+    return sanitizedSidesNeedingSwitch;
+  }
+
+  private static restoreSwitchPromptState(
+    state: BattleState,
+    rawPendingSwitches: unknown,
+    rawSidesNeedingSwitch: unknown,
+  ): {
+    pendingSwitches: Map<0 | 1, number>;
+    sidesNeedingSwitch: Set<0 | 1>;
+  } {
+    if (state.phase !== "switch-prompt") {
+      return {
+        pendingSwitches: new Map(),
+        sidesNeedingSwitch: new Set(),
+      };
+    }
+
+    const pendingSwitches = BattleEngine.sanitizePendingSwitches(state, rawPendingSwitches);
+    const sidesNeedingSwitch = BattleEngine.sanitizeSidesNeedingSwitch(rawSidesNeedingSwitch);
+
+    for (const side of BattleEngine.inferSwitchPromptSides(state)) {
+      sidesNeedingSwitch.add(side);
+    }
+
+    for (const side of pendingSwitches.keys()) {
+      sidesNeedingSwitch.add(side);
+    }
+
+    return { pendingSwitches, sidesNeedingSwitch };
+  }
+
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
+    BattleEngine.assertRulesetGenerationMatches("BattleEngine", config.generation, ruleset);
+    BattleEngine.assertSinglesOnlyFormat("BattleEngine", config.format);
     this.ruleset = ruleset;
     this.dataManager = dataManager;
 
@@ -320,6 +431,51 @@ export class BattleEngine implements BattleEventEmitter {
       throw new Error("Battle has ended");
     }
 
+    if (side !== action.side) {
+      throw new Error(`Submitted side ${side} does not match action.side ${action.side}`);
+    }
+
+    if (
+      action.type === "move" &&
+      (action.targetSide !== undefined || action.targetSlot !== undefined)
+    ) {
+      throw new Error(
+        "BattleEngine: move targetSide/targetSlot are not supported in singles battles",
+      );
+    }
+
+    if (action.type === "move" && !Number.isInteger(action.moveIndex)) {
+      throw new Error("MoveAction requires an integer moveIndex");
+    }
+
+    if (action.type === "move") {
+      const activePokemon = this.getActiveMutable(side);
+
+      if (!activePokemon) {
+        throw new Error(`Side ${side} has no active Pokemon to execute MoveAction`);
+      }
+
+      if (action.moveIndex < 0 || action.moveIndex >= activePokemon.pokemon.moves.length) {
+        throw new Error(`MoveAction moveIndex ${action.moveIndex} is out of range`);
+      }
+    }
+
+    if (action.type === "switch") {
+      const activePokemon = this.getActive(side);
+      if (!activePokemon) {
+        throw new Error(`Side ${side} has no active Pokemon to execute SwitchAction`);
+      }
+
+      // Voluntary switch requests must stay aligned with getAvailableSwitches().
+      if (!this.getAvailableSwitches(side).includes(action.switchTo)) {
+        throw new Error(`Invalid switch slot ${action.switchTo}`);
+      }
+    }
+
+    if (action.type === "run" && (side !== 0 || action.side !== 0)) {
+      throw new Error("RunAction is only valid for side 0");
+    }
+
     this.pendingActions.set(side, action);
 
     // When both sides have submitted, resolve the turn
@@ -348,6 +504,21 @@ export class BattleEngine implements BattleEventEmitter {
 
     if (!this.sidesNeedingSwitch.has(side)) {
       throw new Error(`Side ${side} does not need to switch`);
+    }
+
+    const sideState = this.state.sides[side];
+    const candidate = sideState.team[teamSlot];
+    if (!candidate) {
+      throw new Error(`Invalid switch slot ${teamSlot}`);
+    }
+
+    const active = sideState.active[0];
+    if (active?.teamSlot === teamSlot) {
+      throw new Error(`Team slot ${teamSlot} is already active`);
+    }
+
+    if (candidate.currentHp <= 0) {
+      throw new Error(`Team slot ${teamSlot} has fainted`);
     }
 
     this.pendingSwitches.set(side, teamSlot);
@@ -608,25 +779,37 @@ export class BattleEngine implements BattleEventEmitter {
 
   // --- State Inspection ---
 
-  /** Get a read-only view of the battle state */
+  /**
+   * Get the live battle state object.
+   *
+   * The engine mutates this state in place during battle resolution. Consumers that
+   * need an immutable snapshot should clone or serialize the returned value.
+   */
   getState(): Readonly<BattleState> {
     return this.state;
   }
 
   /** Get the active pokemon for a side */
   getActive(side: 0 | 1): ActivePokemon | null {
-    return this.state.sides[side].active[0] ?? null;
+    const active = this.getActiveMutable(side);
+    return active ? structuredClone(active) : null;
   }
 
   /** Get the team for a side */
   getTeam(side: 0 | 1): readonly import("@pokemon-lib-ts/core").PokemonInstance[] {
-    return this.state.sides[side].team;
+    return structuredClone(this.state.sides[side].team);
+  }
+
+  private getActiveMutable(side: 0 | 1): ActivePokemon | null {
+    return this.state.sides[side].active[0] ?? null;
   }
 
   // --- Serialization ---
 
   /** Serialize battle state for save/load or network transmission */
   serialize(): string {
+    this.assertSerializablePhase();
+
     // participantTracker is an engine-private field (not in BattleState), so we must
     // include it separately. Convert Map<string, Set<string>> → plain object for JSON.
     // Source: bug fix — tracker was silently dropped on serialize/deserialize round-trips,
@@ -636,7 +819,16 @@ export class BattleEngine implements BattleEventEmitter {
     );
 
     return JSON.stringify(
-      { state: this.state, participantTracker: participantTrackerObj },
+      {
+        state: this.state,
+        participantTracker: participantTrackerObj,
+        pendingActions: this.pendingActions,
+        // Source: bug fix — getEventLog() promises the ordered log of all events
+        // emitted since start(), so save/load must preserve the emitted history.
+        eventLog: this.eventLog,
+        pendingSwitches: this.pendingSwitches,
+        sidesNeedingSwitch: this.sidesNeedingSwitch,
+      },
       (_key, value) => {
         if (value instanceof Map) {
           return { __type: "Map", entries: [...value.entries()] };
@@ -674,7 +866,27 @@ export class BattleEngine implements BattleEventEmitter {
         return rng;
       }
       return value;
-    }) as { state: BattleState; participantTracker?: Record<string, string[]> };
+    }) as {
+      state: BattleState;
+      participantTracker?: Record<string, string[]>;
+      pendingActions?: Map<0 | 1, BattleAction>;
+      eventLog?: BattleEvent[];
+      pendingSwitches?: unknown;
+      sidesNeedingSwitch?: unknown;
+    };
+
+    BattleEngine.assertRulesetGenerationMatches(
+      "BattleEngine.deserialize",
+      parsed.state.generation,
+      ruleset,
+    );
+    BattleEngine.assertSinglesOnlyFormat("BattleEngine.deserialize", parsed.state.format);
+
+    const restoredSwitchPromptState = BattleEngine.restoreSwitchPromptState(
+      parsed.state,
+      parsed.pendingSwitches,
+      parsed.sidesNeedingSwitch,
+    );
 
     // Create the engine instance without running the constructor.
     // This avoids: (1) stat recalculation, (2) HP reset to max,
@@ -696,11 +908,26 @@ export class BattleEngine implements BattleEventEmitter {
       ruleset: { value: ruleset, writable: false, enumerable: false, configurable: false },
       dataManager: { value: dataManager, writable: false, enumerable: false, configurable: false },
       listeners: { value: new Set(), writable: true, enumerable: false, configurable: false },
-      eventLog: { value: [], writable: true, enumerable: false, configurable: false },
-      pendingActions: { value: new Map(), writable: true, enumerable: false, configurable: false },
-      pendingSwitches: { value: new Map(), writable: true, enumerable: false, configurable: false },
+      eventLog: {
+        value: parsed.eventLog ?? [],
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
+      pendingActions: {
+        value: parsed.pendingActions ?? new Map(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
+      pendingSwitches: {
+        value: restoredSwitchPromptState.pendingSwitches,
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
       sidesNeedingSwitch: {
-        value: new Set(),
+        value: restoredSwitchPromptState.sidesNeedingSwitch,
         writable: true,
         enumerable: false,
         configurable: false,
@@ -732,6 +959,24 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     return engine;
+  }
+
+  private assertSerializablePhase(): void {
+    const stableCheckpointPhases: ReadonlySet<BattlePhase> = new Set([
+      "battle-start",
+      "action-select",
+      "switch-prompt",
+      "battle-end",
+    ]);
+
+    if (stableCheckpointPhases.has(this.state.phase)) {
+      return;
+    }
+
+    throw new Error(
+      `BattleEngine.serialize cannot save during phase ${this.state.phase}; ` +
+        `save only from stable checkpoint phases`,
+    );
   }
 
   // --- Private Methods ---
@@ -870,11 +1115,12 @@ export class BattleEngine implements BattleEventEmitter {
     const action1 = this.pendingActions.get(1);
     if (!action0 || !action1) return;
     const actions = [action0, action1];
+    const submittedActions = actions.map((action) => ({ ...action })) as BattleAction[];
     this.pendingActions.clear();
 
     // Enforce recharge volatile: override submitted action for recharging Pokemon
     for (let side = 0 as 0 | 1; side <= 1; side = (side + 1) as 0 | 1) {
-      const active = this.getActive(side);
+      const active = this.getActiveMutable(side);
       if (active && active.pokemon.currentHp > 0 && active.volatileStatuses.has("recharge")) {
         active.volatileStatuses.delete("recharge");
         actions[side] = { type: "recharge", side };
@@ -884,7 +1130,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Enforce forced move (two-turn moves): override submitted action
     // Source: Showdown — two-turn moves force the second-turn action
     for (let side = 0 as 0 | 1; side <= 1; side = (side + 1) as 0 | 1) {
-      const active = this.getActive(side);
+      const active = this.getActiveMutable(side);
       if (active && active.pokemon.currentHp > 0 && active.forcedMove) {
         actions[side] = { type: "move", side, moveIndex: active.forcedMove.moveIndex };
         active.forcedMove = null;
@@ -925,7 +1171,7 @@ export class BattleEngine implements BattleEventEmitter {
       for (let i = 0; i < orderedActions.length; i++) {
         const action = orderedActions[i];
         if (!action || action.type !== "move") continue;
-        const actor = this.getActive(action.side);
+        const actor = this.getActiveMutable(action.side);
         if (!actor || actor.pokemon.currentHp <= 0) continue;
         const moveSlot = actor.pokemon.moves[action.moveIndex];
         if (!moveSlot) continue;
@@ -949,7 +1195,7 @@ export class BattleEngine implements BattleEventEmitter {
         this.checkMidTurnFaints({ attackerSide: action.side });
         if (this.checkBattleEnd()) {
           this.transitionTo("battle-end");
-          this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+          this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
           return;
         }
 
@@ -962,7 +1208,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Execute each action in order
     for (const action of orderedActions) {
       // Check if the acting pokemon fainted before it could act
-      const actor = this.getActive(action.side);
+      const actor = this.getActiveMutable(action.side);
       if (!actor || actor.pokemon.currentHp <= 0) continue;
 
       // Skip if this side's Pokemon was phased out (Roar/Whirlwind) earlier this turn.
@@ -1003,7 +1249,7 @@ export class BattleEngine implements BattleEventEmitter {
           : undefined;
       this.checkMidTurnFaints(moveSourceForFaint);
       if (this.state.ended) {
-        this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+        this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
         return;
       }
 
@@ -1012,7 +1258,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (action.type === "move" || action.type === "struggle") {
         this.processPostAttackResiduals(action.side);
         if (this.state.ended) {
-          this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+          this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
           return;
         }
       }
@@ -1023,7 +1269,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.processEndOfTurn();
 
     if (this.state.ended) {
-      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
 
@@ -1031,20 +1277,20 @@ export class BattleEngine implements BattleEventEmitter {
     this.transitionTo("faint-check");
     if (this.checkBattleEnd()) {
       this.transitionTo("battle-end");
-      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
 
     // If any pokemon need replacement, prompt for switch
     if (this.needsSwitchPrompt()) {
       this.transitionTo("switch-prompt");
-      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
 
     // Record turn history — slice from turnStartIndex to capture only events
     // emitted during this turn (fixes #84 — slice(-50) captured cross-turn events).
-    this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+    this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
 
     // Reset per-turn tracking for next turn
     for (const side of this.state.sides) {
@@ -1250,7 +1496,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Find the target
     const defenderSide = action.side === 0 ? 1 : 0;
-    const defender = this.getActive(defenderSide as 0 | 1);
+    const defender = this.getActiveMutable(defenderSide as 0 | 1);
     if (!defender) {
       this.emit({
         type: "move-fail",
@@ -2344,7 +2590,7 @@ export class BattleEngine implements BattleEventEmitter {
 
   private executeStruggle(action: import("../events").StruggleAction, actor: ActivePokemon): void {
     const defenderSide = action.side === 0 ? 1 : 0;
-    const defender = this.getActive(defenderSide as 0 | 1);
+    const defender = this.getActiveMutable(defenderSide as 0 | 1);
 
     this.emit({
       type: "move-start",
@@ -2611,7 +2857,7 @@ export class BattleEngine implements BattleEventEmitter {
             // Source: pokered — Gen 1 cartridge bug: confusion self-hit damages
             // the opponent's Substitute if one is active.
             const opponentSide = side === 0 ? 1 : 0;
-            const opponent = this.getActive(opponentSide as 0 | 1);
+            const opponent = this.getActiveMutable(opponentSide as 0 | 1);
             if (
               this.ruleset.confusionSelfHitTargetsOpponentSub() &&
               opponent &&
@@ -2804,7 +3050,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: pret/pokeemerald — ABILITY_SYNCHRONIZE fires when status is inflicted
     if (this.ruleset.hasAbilities()) {
       const opponentSideIdx = (side === 0 ? 1 : 0) as 0 | 1;
-      const opponent = this.getActive(opponentSideIdx);
+      const opponent = this.getActiveMutable(opponentSideIdx);
       if (opponent && opponent.pokemon.currentHp > 0) {
         const statusInflictedResult = this.ruleset.applyAbility("on-status-inflicted", {
           pokemon: target,
@@ -4267,7 +4513,7 @@ export class BattleEngine implements BattleEventEmitter {
           if (this.state.terrain?.type === "grassy") {
             const terrainResults = this.ruleset.applyTerrainEffects(this.state);
             for (const result of terrainResults) {
-              const active = this.getActive(result.side);
+              const active = this.getActiveMutable(result.side);
               if (active && active.pokemon.currentHp > 0) {
                 const healAmount = result.healAmount ?? 0;
                 if (healAmount > 0) {
@@ -4317,7 +4563,7 @@ export class BattleEngine implements BattleEventEmitter {
     const results = this.ruleset.applyWeatherEffects(this.state);
     for (const result of results) {
       if (result.damage > 0) {
-        const active = this.getActive(result.side);
+        const active = this.getActiveMutable(result.side);
         if (active) {
           active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - result.damage);
           this.emit({
@@ -4695,7 +4941,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown sim — Sucker Punch succeeds when target is using Struggle
     if (defenderAction.type === "struggle") return { id: "struggle", category: "physical" };
     if (defenderAction.type !== "move") return null;
-    const defenderActive = this.getActive(defenderSide);
+    const defenderActive = this.getActiveMutable(defenderSide);
     if (!defenderActive) return null;
     const moveSlot = defenderActive.pokemon.moves[defenderAction.moveIndex];
     if (!moveSlot) return null;
@@ -5192,7 +5438,7 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     const opponentSide = sideIndex === 0 ? 1 : 0;
-    const opponent = this.getActive(opponentSide);
+    const opponent = this.getActiveMutable(opponentSide);
     if (opponent && opponent.pokemon.currentHp > 0) {
       const oppMaxHp = opponent.pokemon.calculatedStats?.hp ?? opponent.pokemon.currentHp;
       const oldHp = opponent.pokemon.currentHp;
