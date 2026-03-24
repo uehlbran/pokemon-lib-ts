@@ -9,6 +9,7 @@ import type {
   PrimaryStatus,
   SeededRandom,
   StatBlock,
+  TwoTurnMoveVolatile,
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
@@ -33,8 +34,9 @@ import type {
   ValidationResult,
   WeatherEffectResult,
 } from "../context";
-import type { BattleAction } from "../events";
-import type { ActivePokemon, BattleSide, BattleState } from "../state";
+import type { BattleAction } from "../events/BattleAction";
+import type { ActivePokemon, BattleSide } from "../state/BattleSide";
+import type { BattleState } from "../state/BattleState";
 
 // ─── Sub-interfaces (ISP: Interface Segregation Principle) ───────────────────
 // Consumers that only need one aspect of the ruleset can type-narrow to the
@@ -224,14 +226,16 @@ export interface MoveSystem {
   /**
    * Check whether a move can hit a target in a semi-invulnerable state.
    * E.g., Thunder/Hurricane can hit "flying", Earthquake can hit "underground",
-   * Surf can hit "underwater". Returns false by default — most moves miss.
+   * Surf can hit "underwater". The generic `"charging"` marker may also be passed
+   * for two-turn moves that remain targetable; implementations should return true.
+   * Returns false by default — most moves miss.
    *
    * Gen 1 has no two-turn semi-invulnerable moves in the Gen 3+ sense
    * (Fly/Dig exist but engine handles them differently), so Gen 1 returns false.
    *
    * Source: Showdown sim/battle-actions.ts — semi-invulnerable immunity checks
    */
-  canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean;
+  canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean;
 
   /**
    * Returns the PP cost for using a move against a specific defender.

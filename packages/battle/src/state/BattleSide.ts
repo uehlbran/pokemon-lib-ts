@@ -1,12 +1,14 @@
 import type {
   BattleStat,
   EntryHazardType,
+  Generation,
   MoveCategory,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
   ScreenType,
   VolatileStatus,
+  VolatileStatusByGeneration,
 } from "@pokemon-lib-ts/core";
 
 /**
@@ -145,6 +147,22 @@ export interface ActivePokemon {
    */
   forcedMove: { moveIndex: number; moveId: string } | null;
 }
+
+/**
+ * Generation-aware active-Pokemon view for gen-scoped code that wants compile-time
+ * volatile narrowing instead of the cross-generation compatibility map.
+ */
+export type ActivePokemonFor<G extends Generation> = Omit<ActivePokemon, "volatileStatuses"> & {
+  volatileStatuses: Map<VolatileStatusByGeneration<G>, VolatileStatusState>;
+};
+
+/**
+ * Generation-aware side view whose active slots narrow volatile maps to the
+ * requested generation.
+ */
+export type BattleSideFor<G extends Generation> = Omit<BattleSide, "active"> & {
+  active: (ActivePokemonFor<G> | null)[];
+};
 
 /**
  * Tracks the duration and metadata for a single volatile status on an `ActivePokemon`.
