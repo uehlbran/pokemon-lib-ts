@@ -103,16 +103,23 @@ describe("BaseRuleset", () => {
       const stats = ruleset.calculateStats(pokemon, testSpecies);
 
       // Assert
-      // HP = floor(((2 * 78 + 31 + floor(0/4)) * 50) / 100) + 50 + 10 = floor(9350/100) + 60 = 93 + 60 = 153
+      // Source: Gen 3+ stat formula — HP: floor(((2*base + iv + floor(ev/4)) * L) / 100) + L + 10
+      // HP = floor(((2*78 + 31 + 0) * 50) / 100) + 50 + 10 = floor(9350/100) + 60 = 93 + 60 = 153
       expect(stats.hp).toBe(153);
-      expect(stats.attack).toBeGreaterThan(0);
-      expect(stats.defense).toBeGreaterThan(0);
-      expect(stats.spAttack).toBeGreaterThan(0);
-      expect(stats.spDefense).toBeGreaterThan(0);
-      expect(stats.speed).toBeGreaterThan(0);
+      // Source: Gen 3+ stat formula — non-HP stats, plus Adamant nature (+10% Attack, -10% SpAttack)
+      // Attack = floor(((2*84 + 31 + 0) * 50) / 100) + 5 = 104; floor(104 * 1.1) = 114
+      // Defense = floor(((2*78 + 31 + 0) * 50) / 100) + 5 = 98
+      // SpAttack = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129; floor(129 * 0.9) = 116
+      // SpDefense = floor(((2*85 + 31 + 0) * 50) / 100) + 5 = 105
+      // Speed = floor(((2*100 + 31 + 0) * 50) / 100) + 5 = 120
+      expect(stats.attack).toBe(114);
+      expect(stats.defense).toBe(98);
+      expect(stats.spAttack).toBe(116);
+      expect(stats.spDefense).toBe(105);
+      expect(stats.speed).toBe(120);
     });
 
-    it("given a level 100 pokemon, when calculateStats is called, then stats are higher", () => {
+    it("given a level 100 pokemon, when calculateStats is called, then exact stats are returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 100);
 
@@ -120,8 +127,13 @@ describe("BaseRuleset", () => {
       const stats = ruleset.calculateStats(pokemon, testSpecies);
 
       // Assert
-      expect(stats.hp).toBeGreaterThan(200);
-      expect(stats.speed).toBeGreaterThan(100);
+      // Source: Gen 3+ stat formula with level 100 and Adamant nature
+      expect(stats.hp).toBe(297);
+      expect(stats.attack).toBe(224);
+      expect(stats.defense).toBe(192);
+      expect(stats.spAttack).toBe(228);
+      expect(stats.spDefense).toBe(206);
+      expect(stats.speed).toBe(236);
     });
 
     it("given an unknown nature id, when calculateStats is called, then Hardy fallback behavior is used", () => {
