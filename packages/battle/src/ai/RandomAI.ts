@@ -45,7 +45,7 @@ export class RandomAI implements AIController {
     state: Readonly<BattleState>,
     _ruleset: GenerationRuleset,
     rng: SeededRandom,
-  ): number {
+  ): number | null {
     const sideState = state.sides[side];
     const active = sideState.active[0];
     const activeSlot = active?.teamSlot ?? -1;
@@ -56,8 +56,7 @@ export class RandomAI implements AIController {
       .filter((t) => t.pokemon.currentHp > 0 && t.index !== activeSlot);
 
     if (validTargets.length === 0) {
-      // No valid targets — return first slot as fallback
-      return 0;
+      return null;
     }
 
     return rng.pick(validTargets).index;

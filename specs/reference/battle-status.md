@@ -72,7 +72,7 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
 
 ### AI Controllers
 - `AIController` interface — `chooseAction()`, `chooseSwitchIn()`
-- `RandomAI` — random move (with PP) or Struggle; random valid switch
+- `RandomAI` — random move (with PP) or Struggle; random valid switch, or `null` when no legal replacement exists
 - Tests: 2 files, 758 lines
 
 ### MockRuleset + MockDataManager (test helpers)

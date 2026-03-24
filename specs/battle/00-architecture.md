@@ -1124,7 +1124,7 @@ export interface AIController {
     state: Readonly<BattleState>,
     ruleset: GenerationRuleset,
     rng: SeededRandom,
-  ): number;  // Team slot index
+  ): number | null;  // Team slot index, or null when no legal switch exists
 }
 
 /** Built-in AI tiers */
