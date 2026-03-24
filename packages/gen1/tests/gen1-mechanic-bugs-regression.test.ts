@@ -1005,7 +1005,8 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
     //   SeededRandom(491).next()       = tiebreak for action 1
     //   SeededRandom(491).int(0, 255)  = 255 → MISS (255 >= threshold 255)
     //
-    // Attacker speed=200, defender speed=50 → attacker always goes first regardless of tiebreak.
+    // Weezing is naturally faster than Snorlax in Gen 1, so the attacker acts first
+    // without mutating engine state through the snapshot returned by getActive().
 
     // Arrange
     const config: BattleConfig = {
@@ -1023,42 +1024,20 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
     const engine = new BattleEngine(config, ruleset, dataManager);
     engine.start();
 
-    // Manually set calculatedStats so attacker has speed=200 (goes first) and
-    // defender has speed=50 (goes second). The engine reads calculatedStats for turn order.
-    const attackerActive = engine.getActive(0);
-    const defenderActive = engine.getActive(1);
-    if (!attackerActive || !defenderActive)
-      throw new Error("Setup failed: active pokemon not found");
-
-    // Override stats so speed ordering is deterministic
-    attackerActive.pokemon.calculatedStats = {
-      hp: 200,
-      attack: 100,
-      defense: 80,
-      spAttack: 80,
-      spDefense: 80,
-      speed: 200, // attacker goes first
-    };
-    attackerActive.pokemon.currentHp = 200;
-    defenderActive.pokemon.calculatedStats = {
-      hp: 200,
-      attack: 100,
-      defense: 80,
-      spAttack: 80,
-      spDefense: 80,
-      speed: 50, // defender goes second
-    };
-    defenderActive.pokemon.currentHp = 200;
-
     // Act — submit actions: attacker uses Explosion (move index 0), defender uses Tackle (move index 0)
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
+    const attackerAfterTurn = engine.getActive(0);
+    const defenderAfterTurn = engine.getActive(1);
+    if (!attackerAfterTurn || !defenderAfterTurn)
+      throw new Error("Setup failed: active pokemon not found");
+
     // Assert
     // The attacker must faint (Explosion always faints the user even on miss)
-    expect(attackerActive.pokemon.currentHp).toBe(0);
+    expect(attackerAfterTurn.pokemon.currentHp).toBe(0);
     // The defender must NOT have taken damage (move missed)
-    expect(defenderActive.pokemon.currentHp).toBe(200);
+    expect(defenderAfterTurn.pokemon.currentHp).toBe(defenderAfterTurn.pokemon.calculatedStats?.hp);
 
     // The event log must contain a move-miss event for side 0
     const events = engine.getEventLog();
