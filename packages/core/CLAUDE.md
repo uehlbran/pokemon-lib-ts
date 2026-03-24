@@ -24,6 +24,7 @@ src/
 - **Lowercase string literals** for all entity types: `'fire'`, `'physical'`, `'paralysis'` — never UPPERCASE enums.
 - **Discriminated unions** over class hierarchies for MoveEffect, categories, etc.
 - Interfaces must be **generation-agnostic**. Gen-specific behavior belongs in the gen package's ruleset, not here.
+- Exception: `PokemonInstance` may carry optional per-generation team metadata or persisted cross-switch battle state when the value belongs to the individual Pokemon rather than the ruleset. Examples: `dynamaxLevel`, `teraType`, Mega form restoration data, and once-per-battle flags that must survive switching.
 
 ## Stat Formulas (Quick Reference)
 
