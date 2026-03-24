@@ -702,6 +702,8 @@ export class BattleEngine implements BattleEventEmitter {
 
   /** Serialize battle state for save/load or network transmission */
   serialize(): string {
+    this.assertSerializablePhase();
+
     // participantTracker is an engine-private field (not in BattleState), so we must
     // include it separately. Convert Map<string, Set<string>> → plain object for JSON.
     // Source: bug fix — tracker was silently dropped on serialize/deserialize round-trips,
@@ -714,6 +716,7 @@ export class BattleEngine implements BattleEventEmitter {
       {
         state: this.state,
         participantTracker: participantTrackerObj,
+        pendingActions: this.pendingActions,
         // Source: bug fix — getEventLog() promises the ordered log of all events
         // emitted since start(), so save/load must preserve the emitted history.
         eventLog: this.eventLog,
@@ -758,6 +761,7 @@ export class BattleEngine implements BattleEventEmitter {
     }) as {
       state: BattleState;
       participantTracker?: Record<string, string[]>;
+      pendingActions?: Map<0 | 1, BattleAction>;
       eventLog?: BattleEvent[];
     };
 
@@ -794,7 +798,12 @@ export class BattleEngine implements BattleEventEmitter {
         enumerable: false,
         configurable: false,
       },
-      pendingActions: { value: new Map(), writable: true, enumerable: false, configurable: false },
+      pendingActions: {
+        value: parsed.pendingActions ?? new Map(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
       pendingSwitches: { value: new Map(), writable: true, enumerable: false, configurable: false },
       sidesNeedingSwitch: {
         value: new Set(),
@@ -829,6 +838,24 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     return engine;
+  }
+
+  private assertSerializablePhase(): void {
+    const stableCheckpointPhases: ReadonlySet<BattlePhase> = new Set([
+      "battle-start",
+      "action-select",
+      "switch-prompt",
+      "battle-end",
+    ]);
+
+    if (stableCheckpointPhases.has(this.state.phase)) {
+      return;
+    }
+
+    throw new Error(
+      `BattleEngine.serialize cannot save during phase ${this.state.phase}; ` +
+        `save only from stable checkpoint phases`,
+    );
   }
 
   // --- Private Methods ---
