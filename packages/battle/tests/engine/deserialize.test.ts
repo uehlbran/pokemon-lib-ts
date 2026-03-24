@@ -138,6 +138,29 @@ describe("BattleEngine.deserialize", () => {
     expect(damageEvents.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("given a serialized battle state, when deserialized, then the event log matches the saved battle history", () => {
+    // Arrange — start a battle and execute one turn so the event log contains
+    // both battle-start and turn-resolution events.
+    const ruleset = new MockRuleset();
+    ruleset.setFixedDamage(10);
+    const dataManager = createMockDataManager();
+    const { engine } = createTestEngine({ ruleset, dataManager });
+    engine.start();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const savedEventLog = engine.getEventLog();
+    const serialized = engine.serialize();
+
+    // Act — deserialize the battle state.
+    const restored = BattleEngine.deserialize(serialized, ruleset, dataManager);
+
+    // Assert — the restored engine should preserve the full event log so replay,
+    // undo, and audit consumers still see the same history after load.
+    expect(restored.getEventLog()).toEqual(savedEventLog);
+  });
+
   it("given a serialized state with a specific PRNG state, when deserialized, then PRNG continues from that exact state", () => {
     // Arrange — create two engines with the same seed, advance one by some RNG calls
     const ruleset = new MockRuleset();
