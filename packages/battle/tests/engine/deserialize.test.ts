@@ -1,9 +1,10 @@
 import type { DataManager } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../src/context";
+import type { BattleConfig, BattleGimmick } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent, ExpGainEvent } from "../../src/events";
+import type { BattleGimmickType } from "../../src/ruleset";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -150,6 +151,71 @@ function createSwitchPromptBattleWithBench(): {
   engine.start();
 
   return { dataManager, engine, ruleset };
+}
+
+class SerializableTrackingGimmick implements BattleGimmick {
+  readonly name = "Tracking Z-Move";
+  readonly generations = [7] as const;
+  private readonly usedBySide = new Set<0 | 1>();
+
+  canUseForSide(sideIndex: 0 | 1): boolean {
+    return !this.usedBySide.has(sideIndex);
+  }
+
+  canUse(
+    _pokemon: import("../../src/state").ActivePokemon,
+    side: import("../../src/state").BattleSide,
+  ): boolean {
+    return this.canUseForSide(side.index);
+  }
+
+  activate(
+    _pokemon: import("../../src/state").ActivePokemon,
+    side: import("../../src/state").BattleSide,
+  ): BattleEvent[] {
+    this.usedBySide.add(side.index);
+    return [];
+  }
+
+  reset(): void {
+    this.usedBySide.clear();
+  }
+
+  serializeState(): { usedBySide: Array<0 | 1> } {
+    return { usedBySide: [...this.usedBySide] };
+  }
+
+  restoreState(state: unknown): void {
+    this.usedBySide.clear();
+
+    if (!state || typeof state !== "object" || !("usedBySide" in state)) {
+      return;
+    }
+
+    const usedBySide = (state as { usedBySide?: unknown }).usedBySide;
+    if (!Array.isArray(usedBySide)) {
+      return;
+    }
+
+    for (const sideIndex of usedBySide) {
+      if (sideIndex === 0 || sideIndex === 1) {
+        this.usedBySide.add(sideIndex);
+      }
+    }
+  }
+}
+
+class SerializableTrackingRuleset extends MockRuleset {
+  readonly generation = 7;
+  private readonly gimmick = new SerializableTrackingGimmick();
+
+  override getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
+    return type === "zmove" ? this.gimmick : null;
+  }
+
+  canUseZMove(sideIndex: 0 | 1): boolean {
+    return this.gimmick.canUseForSide(sideIndex);
+  }
 }
 
 describe("BattleEngine.deserialize", () => {
@@ -598,6 +664,49 @@ describe("BattleEngine.deserialize", () => {
     if (!charizardExpEvent) throw new Error("Expected charizard-1 to receive an exp-gain event");
     // Source: MockRuleset.calculateExpGain — floor(239 * 30 / (5 * 1)) = 1434
     expect(charizardExpEvent.amount).toBe(1434);
+  });
+
+  it("given a ruleset gimmick tracks once-per-battle state outside BattleState, when deserialized with a fresh ruleset, then the restored gimmick still blocks reuse", () => {
+    const dataManager = createMockDataManager();
+    const ruleset = new SerializableTrackingRuleset();
+    const engine = new BattleEngine(
+      {
+        generation: 7,
+        format: "singles",
+        teams: [
+          [
+            createTestPokemon(25, 50, {
+              uid: "pikachu-0",
+              nickname: "Pikachu",
+              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            }),
+          ],
+          [
+            createTestPokemon(9, 50, {
+              uid: "blastoise-1",
+              nickname: "Blastoise",
+              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            }),
+          ],
+        ],
+        seed: 12345,
+      },
+      ruleset,
+      dataManager,
+    );
+
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, zMove: true });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const serialized = engine.serialize();
+    const restoredRuleset = new SerializableTrackingRuleset();
+    const restored = BattleEngine.deserialize(serialized, restoredRuleset, dataManager);
+
+    expect(restored.getState().generation).toBe(7);
+    expect(ruleset.canUseZMove(0)).toBe(false);
+    expect(restoredRuleset.canUseZMove(0)).toBe(false);
+    expect(restoredRuleset.canUseZMove(1)).toBe(true);
   });
 
   it("given a deserialized engine, when on() is called, then listeners receive events", () => {
