@@ -1,3 +1,4 @@
+import type { BattleStat } from "@pokemon-lib-ts/core";
 import type { ActivePokemon } from "../state";
 
 /**
@@ -19,7 +20,7 @@ import type { ActivePokemon } from "../state";
  */
 export function getEffectiveStatStage(
   pokemon: ActivePokemon,
-  stat: string,
+  stat: BattleStat,
   opponent?: ActivePokemon,
   statContext: "offense" | "defense" = "offense",
 ): number {
@@ -46,7 +47,11 @@ export function getEffectiveStatStage(
     return 0;
   }
 
-  const raw = (pokemon.statStages as Record<string, number>)[stat] ?? 0;
+  if (!(stat in pokemon.statStages)) {
+    throw new Error(`Unknown battle stat "${stat}"`);
+  }
+
+  const raw = pokemon.statStages[stat] ?? 0;
   // Suppress Simple only when computing the DEFENDER's defensive stat and the attacker
   // (opponent) has Mold Breaker — the Mold Breaker user bypasses the target's ability.
   // When computing the ATTACKER's offensive stat, the defender's Mold Breaker does NOT
