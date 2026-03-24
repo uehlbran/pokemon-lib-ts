@@ -8,12 +8,17 @@
 
 ## DONE
 
-### BattleEngine (`packages/battle/src/engine/BattleEngine.ts` — 5,891 lines)
+### BattleEngine (`packages/battle/src/engine/BattleEngine.ts` — 5,678 lines)
 - Full turn resolution loop (turn-start → action selection → priority sort → turn-resolve → turn-end → faint-check)
 - `start()`, `submitAction()`, `submitSwitch()`, `getAvailableMoves()`, `getAvailableSwitches()`
 - `serialize()`/`deserialize()` — full JSON-safe state serialization
 - Event emitter system (`on`/`off`/`getEventLog`/`emit`)
 - Factory `fromGeneration()` via GenerationRegistry
+
+### End-of-Turn Pipeline Helper (`packages/battle/src/engine/BattleEndOfTurnPipeline.ts` — 646 lines)
+- Extracted residual-effect dispatch order from `BattleEngine`
+- Dedupe for `on-turn-end` ability triggers and held-item routing kept outside the engine core
+- Keeps the residual-processing pipeline isolated without changing public API or turn ordering
 
 ### GenerationRuleset Interface (`packages/battle/src/ruleset/GenerationRuleset.ts` — 753 lines)
 - 15 sub-interfaces (ISP): TypeSystem, StatCalculator, DamageSystem, CriticalHitSystem, TurnOrderSystem, MoveSystem, StatusSystem, AbilitySystem, ItemSystem, WeatherSystem, TerrainSystem, HazardSystem, SwitchSystem, EndOfTurnSystem, ValidationSystem
