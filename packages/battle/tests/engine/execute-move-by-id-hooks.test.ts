@@ -162,6 +162,9 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
   });
 
   it("given a recursive contact move that deals damage, when executeMoveById resolves it, then on-damage-taken and on-contact hooks fire", () => {
+    // Source of truth: executeMove() should remain the parity baseline for recursive move execution.
+    // A successful damaging contact hit reaches defender on-damage-taken/on-contact hooks and attacker
+    // on-hit item hooks (Life Orb / Shell Bell style post-damage effects) in the normal move path.
     const ruleset = new RecursiveHookRuleset({
       recursiveMoveId: "tackle",
       damageByMoveId: {
@@ -176,8 +179,12 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
+    // Source: executeMove() parity contract for recursive moves.
     expect(ruleset.recursiveEffectCalls).toEqual(["tackle"]);
-    expect(ruleset.itemTriggers).toEqual(expect.arrayContaining(["on-damage-taken", "on-contact"]));
+    expect(ruleset.itemTriggers).toEqual(
+      expect.arrayContaining(["on-damage-taken", "on-contact", "on-hit"]),
+    );
+    // Source: executeMove() parity contract for recursive moves.
     expect(ruleset.damageAbilityTriggers).toEqual(
       expect.arrayContaining(["on-damage-taken", "on-contact"]),
     );

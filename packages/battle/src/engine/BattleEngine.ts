@@ -2331,7 +2331,7 @@ export class BattleEngine implements BattleEventEmitter {
         damage, // damage dealt this hit — required by Life Orb / Shell Bell handlers
       });
       if (atkItemResult.activated) {
-        this.processItemResult(atkItemResult, actor, action.side);
+        this.processItemResult(atkItemResult, actor, defender, action.side);
       }
     }
 
@@ -2611,6 +2611,22 @@ export class BattleEngine implements BattleEventEmitter {
     // Depth guard: only recurse once to prevent infinite chains (Metronome -> Metronome is excluded from the pool but defensive check)
     if (effectResult.recursiveMove) {
       this.executeMoveById(effectResult.recursiveMove, actor, actorSide, defender, defenderSide);
+    }
+
+    // Held item: on-hit trigger for attacker
+    // Recursive move execution should preserve the same attacker item hook parity as executeMove().
+    if (this.ruleset.hasHeldItems() && damage > 0) {
+      const atkItemResult = this.ruleset.applyHeldItem("on-hit", {
+        pokemon: actor,
+        opponent: defender,
+        state: this.state,
+        rng: this.state.rng,
+        damage,
+        move: moveData,
+      });
+      if (atkItemResult.activated) {
+        this.processItemResult(atkItemResult, actor, defender, actorSide);
+      }
     }
 
     actor.lastMoveUsed = moveId;
