@@ -7,6 +7,8 @@
 "@pokemon-lib-ts/gen9": patch
 ---
 
+# TypeChart lookup cleanup
+
 Remove stale type-chart casts from Gen 5-9 source code and expose the new
 public `TypeChartLookup` type for damage helpers that accept synthetic chart
 records.
