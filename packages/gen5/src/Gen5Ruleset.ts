@@ -20,12 +20,13 @@ import type {
 import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
+  Gen5TwoTurnMoveVolatile,
   MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
+  TwoTurnMoveVolatile,
   TypeChart,
-  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { applyGen5Ability } from "./Gen5Abilities";
@@ -265,7 +266,8 @@ export class Gen5Ruleset extends BaseRuleset {
    * Source: references/pokemon-showdown/data/mods/gen5/scripts.ts
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Semi-invulnerable_turn
    */
-  override canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+  canHitSemiInvulnerable(moveId: string, volatile: Gen5TwoTurnMoveVolatile): boolean;
+  override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
       case "flying":
         // Source: Showdown Gen 5 -- Hurricane and Smack Down added in Gen 5

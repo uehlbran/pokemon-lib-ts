@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["context/ability-effect.contract.ts"]
+  "include": ["context/*.contract.ts"]
 }

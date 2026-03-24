@@ -1,6 +1,8 @@
 export type {
   ActivePokemon,
+  ActivePokemonFor,
   BattleSide,
+  BattleSideFor,
   EntryHazardState,
   FutureAttackState,
   ScreenState,
@@ -11,6 +13,7 @@ export type {
   BattleFormat,
   BattlePhase,
   BattleState,
+  BattleStateFor,
   TerrainState,
   TurnRecord,
   WeatherState,

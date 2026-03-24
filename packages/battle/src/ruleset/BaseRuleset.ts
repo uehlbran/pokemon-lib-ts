@@ -10,8 +10,8 @@ import type {
   PrimaryStatus,
   SeededRandom,
   StatBlock,
+  TwoTurnMoveVolatile,
   TypeChart,
-  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
   ALL_NATURES,
@@ -346,10 +346,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   /**
    * Default: no moves can hit a semi-invulnerable target.
+   * The caller may still pass the generic `"charging"` marker for two-turn moves
+   * that are targetable; Gen 3+ rulesets override this hook and return true there.
    * Gen 3+ rulesets override to allow specific moves (e.g., Thunder hits flying).
    * Source: Showdown sim/battle-actions.ts — semi-invulnerable immunity checks
    */
-  canHitSemiInvulnerable(_moveId: string, _volatile: VolatileStatus): boolean {
+  canHitSemiInvulnerable(_moveId: string, _volatile: TwoTurnMoveVolatile): boolean {
     return false;
   }
 

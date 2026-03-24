@@ -22,14 +22,15 @@ import {
 import type {
   AbilityTrigger,
   EntryHazardType,
+  Gen3TwoTurnMoveVolatile,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
   StatBlock,
+  TwoTurnMoveVolatile,
   TypeChart,
-  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
   calculateExpGainClassic,
@@ -706,7 +707,8 @@ export class Gen3Ruleset extends BaseRuleset {
    * Source: pret/pokeemerald src/battle_script_commands.c — semi-invulnerable checks
    * Source: Bulbapedia — Two-turn move vulnerability table
    */
-  override canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+  canHitSemiInvulnerable(moveId: string, volatile: Gen3TwoTurnMoveVolatile): boolean;
+  override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
       case "flying":
         // Thunder, Twister, Gust, Sky Uppercut can hit Fly

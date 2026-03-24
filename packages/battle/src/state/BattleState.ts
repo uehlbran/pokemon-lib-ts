@@ -1,6 +1,6 @@
 import type { Generation, SeededRandom, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
 import type { BattleAction, BattleEvent } from "../events";
-import type { BattleSide } from "./BattleSide";
+import type { BattleSide, BattleSideFor } from "./BattleSide";
 
 /**
  * The current phase of the battle state machine.
@@ -113,3 +113,12 @@ export interface BattleState {
   /** The winning side (0 or 1), or `null` if the battle ended in a draw */
   winner: 0 | 1 | null;
 }
+
+/**
+ * Generation-aware battle-state view for code paths that want their side and
+ * active-Pokemon volatile maps narrowed to the current generation.
+ */
+export type BattleStateFor<G extends Generation> = Omit<BattleState, "generation" | "sides"> & {
+  readonly generation: G;
+  sides: [BattleSideFor<G>, BattleSideFor<G>];
+};

@@ -12,14 +12,17 @@ import type {
   SeededRandom,
   TerrainType,
   VolatileStatus,
+  VolatileStatusByGeneration,
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import type { BattleEvent } from "../events";
 import type {
   ActivePokemon,
+  ActivePokemonFor,
   BattleFormat,
   BattleSide,
   BattleState,
+  BattleStateFor,
   TrainerDataRef,
 } from "../state";
 
@@ -432,6 +435,70 @@ export interface MoveEffectResult {
    */
   readonly attackerItemConsumed?: boolean;
 }
+
+export type DamageContextFor<G extends Generation> = Omit<
+  DamageContext,
+  "attacker" | "defender" | "state"
+> & {
+  readonly attacker: ActivePokemonFor<G>;
+  readonly defender: ActivePokemonFor<G>;
+  readonly state: BattleStateFor<G>;
+};
+
+export type CritContextFor<G extends Generation> = Omit<
+  CritContext,
+  "attacker" | "state" | "defender"
+> & {
+  readonly attacker: ActivePokemonFor<G>;
+  readonly state: BattleStateFor<G>;
+  readonly defender?: ActivePokemonFor<G>;
+};
+
+export type AccuracyContextFor<G extends Generation> = Omit<
+  AccuracyContext,
+  "attacker" | "defender" | "state"
+> & {
+  readonly attacker: ActivePokemonFor<G>;
+  readonly defender: ActivePokemonFor<G>;
+  readonly state: BattleStateFor<G>;
+};
+
+export type MoveEffectContextFor<G extends Generation> = Omit<
+  MoveEffectContext,
+  "attacker" | "defender" | "state"
+> & {
+  readonly attacker: ActivePokemonFor<G>;
+  readonly defender: ActivePokemonFor<G>;
+  readonly state: BattleStateFor<G>;
+};
+
+export type MoveEffectResultFor<G extends Generation> = Omit<
+  MoveEffectResult,
+  | "volatileInflicted"
+  | "targetVolatileInflicted"
+  | "volatilesToClear"
+  | "selfVolatileInflicted"
+  | "forcedMoveSet"
+> & {
+  readonly volatileInflicted: VolatileStatusByGeneration<G> | null;
+  readonly targetVolatileInflicted?: {
+    volatile: VolatileStatusByGeneration<G>;
+    turnsLeft?: number;
+    data?: Record<string, unknown>;
+    sourcePokemonUid?: string;
+    blocksAction?: boolean;
+  } | null;
+  readonly volatilesToClear?: ReadonlyArray<{
+    target: "attacker" | "defender";
+    volatile: VolatileStatusByGeneration<G>;
+  }>;
+  readonly selfVolatileInflicted?: VolatileStatusByGeneration<G> | null;
+  readonly forcedMoveSet?: {
+    moveIndex: number;
+    moveId: string;
+    volatileStatus: VolatileStatusByGeneration<G>;
+  } | null;
+};
 
 /**
  * All inputs required when triggering an ability.

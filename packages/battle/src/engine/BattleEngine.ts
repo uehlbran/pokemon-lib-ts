@@ -6,6 +6,7 @@ import type {
   PokemonInstance,
   PokemonSpeciesData,
   PrimaryStatus,
+  SemiInvulnerableVolatile,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { getExpForLevel, getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
@@ -1867,7 +1868,7 @@ export class BattleEngine implements BattleEventEmitter {
     // of a two-turn move. The volatile was applied during the charge turn; it must be
     // removed before damage calculation so the attacker is targetable again.
     // Source: Showdown — semi-invulnerable status cleared at move execution start
-    const semiInvulnerableVolatiles: readonly import("@pokemon-lib-ts/core").VolatileStatus[] = [
+    const semiInvulnerableVolatiles: readonly SemiInvulnerableVolatile[] = [
       "flying",
       "underground",
       "underwater",

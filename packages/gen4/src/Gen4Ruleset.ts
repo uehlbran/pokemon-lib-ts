@@ -22,12 +22,13 @@ import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   EntryHazardType,
+  Gen4TwoTurnMoveVolatile,
   MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
+  TwoTurnMoveVolatile,
   TypeChart,
-  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
   calculateExpGainClassic,
@@ -214,7 +215,8 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: Showdown Gen 4 mod — semi-invulnerable move immunity checks
    * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Semi-invulnerable_turn
    */
-  override canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+  canHitSemiInvulnerable(moveId: string, volatile: Gen4TwoTurnMoveVolatile): boolean;
+  override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
       case "flying":
         return ["gust", "twister", "thunder", "sky-uppercut"].includes(moveId);

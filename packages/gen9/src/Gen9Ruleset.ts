@@ -25,10 +25,12 @@ import type {
   AbilityTrigger,
   DataManager,
   EntryHazardType,
+  Gen9TwoTurnMoveVolatile,
   MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
+  TwoTurnMoveVolatile,
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
@@ -288,7 +290,8 @@ export class Gen9Ruleset extends BaseRuleset {
    * Source: Showdown data/moves.ts -- semi-invulnerable move interactions
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Semi-invulnerable_turn
    */
-  override canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+  canHitSemiInvulnerable(moveId: string, volatile: Gen9TwoTurnMoveVolatile): boolean;
+  override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
       case "flying":
         return [

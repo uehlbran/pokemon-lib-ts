@@ -1,3 +1,5 @@
+import type { Generation } from "./types";
+
 /**
  * Primary status conditions — only one can be active at a time.
  * These persist outside of battle (except badly-poisoned which reverts to poison).
@@ -10,90 +12,327 @@ export type PrimaryStatus =
   | "sleep"
   | "freeze";
 
+const GEN1_VOLATILE_STATUSES = [
+  "confusion",
+  "leech-seed",
+  "disable",
+  "substitute",
+  "focus-energy",
+  "flinch",
+  "bound",
+  "recharge",
+  "mist",
+  "charging",
+  "rage",
+  "rage-miss-lock",
+  "bide",
+  "thrash-lock",
+  "mimic-slot",
+  "transform-data",
+  "toxic-counter",
+] as const;
+
+const GEN2_VOLATILE_STATUS_ADDITIONS = [
+  "infatuation",
+  "curse",
+  "nightmare",
+  "perish-song",
+  "encore",
+  "protect",
+  "endure",
+  "trapped",
+  "sleep-counter",
+  "just-frozen",
+  "destiny-bond",
+  "flying",
+  "underground",
+  "rollout",
+  "fury-cutter",
+] as const;
+
+const GEN3_VOLATILE_STATUS_ADDITIONS = [
+  "taunt",
+  "torment",
+  "yawn",
+  "ingrain",
+  "flash-fire",
+  "underwater",
+  "truant-turn",
+  "uproar",
+  "charged",
+  "mud-sport",
+  "water-sport",
+] as const;
+
+const GEN4_VOLATILE_STATUS_ADDITIONS = [
+  "aqua-ring",
+  "magnet-rise",
+  "embargo",
+  "heal-block",
+  "choice-locked",
+  "shadow-force-charging",
+  "metronome-count",
+  "slow-start",
+  "unburden",
+] as const;
+
+const GEN5_VOLATILE_STATUS_ADDITIONS = [
+  "quick-guard",
+  "wide-guard",
+  "illusion",
+  "harvest-berry",
+  "hazard-status-source",
+] as const;
+
+const GEN6_VOLATILE_STATUS_ADDITIONS = [
+  "kings-shield",
+  "spiky-shield",
+  "mat-block",
+  "crafty-shield",
+] as const;
+
+const GEN7_VOLATILE_STATUS_ADDITIONS = [
+  "baneful-bunker",
+  "disguise-broken",
+  "power-construct-transformed",
+  "battle-bond-transformed",
+] as const;
+
+const GEN8_VOLATILE_STATUS_ADDITIONS = [
+  "no-retreat",
+  "tar-shot",
+  "octolock",
+  "obstruct",
+  "jaw-lock",
+  "max-guard",
+  "ice-face-broken",
+] as const;
+
+const GEN9_VOLATILE_STATUS_ADDITIONS = [
+  "drowsy",
+  "protosynthesis",
+  "quarkdrive",
+  "embody-aspect-used",
+  "intrepid-sword-used",
+  "dauntless-shield-used",
+  "protean-used",
+  "silk-trap",
+  "salt-cure",
+  "shed-tail-sub",
+] as const;
+
+export type Gen1VolatileStatus = (typeof GEN1_VOLATILE_STATUSES)[number];
+export type Gen2VolatileStatus =
+  | Gen1VolatileStatus
+  | (typeof GEN2_VOLATILE_STATUS_ADDITIONS)[number];
+export type Gen3VolatileStatus =
+  | Gen2VolatileStatus
+  | (typeof GEN3_VOLATILE_STATUS_ADDITIONS)[number];
+export type Gen4VolatileStatus =
+  | Gen3VolatileStatus
+  | (typeof GEN4_VOLATILE_STATUS_ADDITIONS)[number];
+export type Gen5VolatileStatus =
+  | Gen4VolatileStatus
+  | (typeof GEN5_VOLATILE_STATUS_ADDITIONS)[number];
+export type Gen6VolatileStatus =
+  | Gen5VolatileStatus
+  | (typeof GEN6_VOLATILE_STATUS_ADDITIONS)[number];
+export type Gen7VolatileStatus =
+  | Gen6VolatileStatus
+  | (typeof GEN7_VOLATILE_STATUS_ADDITIONS)[number];
+export type Gen8VolatileStatus =
+  | Gen7VolatileStatus
+  | (typeof GEN8_VOLATILE_STATUS_ADDITIONS)[number];
+export type Gen9VolatileStatus =
+  | Gen8VolatileStatus
+  | (typeof GEN9_VOLATILE_STATUS_ADDITIONS)[number];
+
 /**
  * Volatile status conditions — can have multiple at once.
- * These are cleared when the Pokemon switches out or the battle ends.
+ * This remains the full compatibility union for battle state maps and public APIs
+ * that intentionally span multiple generations.
  */
-export type VolatileStatus =
-  | "confusion"
-  | "infatuation"
-  | "leech-seed"
-  | "curse" // Ghost-type Curse effect
-  | "nightmare"
-  | "perish-song"
-  | "taunt"
-  | "torment"
-  | "encore"
-  | "disable"
-  | "yawn"
-  | "ingrain"
-  | "aqua-ring"
-  | "substitute"
-  | "focus-energy"
-  | "magnet-rise"
-  | "embargo"
-  | "heal-block"
-  | "flinch"
-  | "protect"
-  | "endure"
-  | "drowsy" // Gen 9 — from Yawn equivalent
-  | "bound" // Bind, Wrap, Fire Spin, etc.
-  | "trapped" // Mean Look, Spider Web (Gen 2+) — prevents switching
-  | "recharge" // Must recharge next turn (Hyper Beam, etc.)
-  | "sleep-counter" // Tracks remaining sleep turns
-  | "toxic-counter" // Tracks escalating Toxic damage (N increments each turn)
-  | "no-retreat" // Gen 8
-  | "tar-shot" // Gen 8
-  | "octolock" // Gen 8
-  | "mist" // Gen 1+ — protects the user's team from stat-lowering moves
-  | "just-frozen" // Gen 2 — tracks whether a Pokemon was frozen this turn (cannot thaw same turn, per pokecrystal wPlayerJustGotFrozen)
-  | "destiny-bond" // Destiny Bond — if the user faints from the opponent's move, the opponent faints too
-  | "choice-locked" // Choice item (Band/Specs/Scarf) — locks the user into one move
-  | "flash-fire" // Flash Fire — boosts Fire-type moves by 50% when hit by a Fire move
-  | "flying" // Semi-invulnerable turn of Fly, Bounce (Gen 2+)
-  | "underground" // Semi-invulnerable turn of Dig (Gen 2+)
-  | "underwater" // Semi-invulnerable turn of Dive (Gen 3+)
-  | "shadow-force-charging" // Semi-invulnerable turn of Shadow Force (Gen 4+)
-  | "charging" // Generic charge turn (SolarBeam, Skull Bash, Razor Wind, Sky Attack) — NOT semi-invulnerable
-  | "metronome-count" // Metronome item — tracks consecutive same-move uses (Gen 4+)
-  | "slow-start" // Slow Start — halves Attack and Speed for 5 turns (Gen 4+ Regigigas)
-  | "unburden" // Unburden — Speed doubles when held item is consumed/lost (Gen 4+)
-  | "rage" // Gen 1 Rage lock-in; data: { moveIndex: number }
-  | "rage-miss-lock" // Gen 1 Rage miss loop — once Rage misses, all subsequent uses auto-miss
-  | "bide" // Gen 1 Bide charging; data: { accumulatedDamage: number }
-  | "thrash-lock" // Gen 1 Thrash / Petal Dance forced move; data: { moveId: string }
-  | "mimic-slot" // Gen 1 Mimic — tracks which slot was replaced; data: { slot: number, originalMoveId: string }
-  | "transform-data" // Stores original moves/types/stats for Transform restoration on switch-out
-  | "truant-turn" // Truant — alternates between acting and loafing each turn (Gen 3+)
-  | "quick-guard" // Quick Guard — protects the user's side from priority moves (Gen 5+)
-  | "wide-guard" // Wide Guard — protects the user's side from multi-target moves (Gen 5+)
-  | "uproar" // Uproar — prevents all Pokemon from falling asleep, lasts 3 turns (Gen 3+)
-  | "illusion" // Illusion — disguises the Pokemon as the last party member (Gen 5+, Zoroark)
-  | "rollout" // Gen 2+ — tracks consecutive turn count for Rollout escalating power
-  | "fury-cutter" // Gen 2+ — tracks consecutive use count for Fury Cutter escalating power
-  | "harvest-berry" // Tracks the last consumed berry for Harvest ability (Gen 5+); data: { berryId: string }
-  | "kings-shield" // King's Shield — protect variant, blocks non-Status moves with protect flag; -1 Atk on contact (Gen 6+)
-  | "spiky-shield" // Spiky Shield — protect variant, blocks all moves with protect flag; 1/8 HP chip on contact (Gen 6+)
-  | "mat-block" // Mat Block — team-side protect, blocks damaging moves; first turn only (Gen 6+)
-  | "crafty-shield" // Crafty Shield — team-side protect, blocks status moves targeting the side (Gen 6+)
-  | "baneful-bunker" // Baneful Bunker — protect variant, blocks all moves with protect flag; poisons contact attackers (Gen 7+)
-  | "disguise-broken" // Disguise — Mimikyu's Disguise has been broken; takes full damage (Gen 7+)
-  | "power-construct-transformed" // Power Construct — Zygarde has transformed to Complete Form this battle (Gen 7+)
-  | "battle-bond-transformed" // Battle Bond — Greninja has transformed to Ash-Greninja this battle (Gen 7+)
-  | "obstruct" // Obstruct — protect variant, blocks moves with protect flag; -2 Def on contact (Gen 8)
-  | "jaw-lock" // Jaw Lock — traps both user and target (Gen 8)
-  | "max-guard" // Max Guard — Dynamax protect variant; blocks ALL moves including other Max Moves (Gen 8)
-  | "ice-face-broken" // Ice Face — Eiscue's first physical-hit shield has been spent (Gen 8)
-  | "protosynthesis" // Protosynthesis — boosts highest stat in Sun or with Booster Energy (Gen 9); data: { boostedStat: string }
-  | "quarkdrive" // Quark Drive — boosts highest stat on Electric Terrain or with Booster Energy (Gen 9); data: { boostedStat: string }
-  | "embody-aspect-used" // Embody Aspect (Ogerpon) — tracks once-per-battle activation (Gen 9)
-  | "intrepid-sword-used" // Intrepid Sword — once-per-battle flag (Gen 9 nerf)
-  | "dauntless-shield-used" // Dauntless Shield — once-per-battle flag (Gen 9 nerf)
-  | "protean-used" // Protean/Libero — once-per-switchin flag (Gen 9 nerf)
-  | "silk-trap" // Silk Trap — protect variant, blocks moves with protect flag; -1 Speed on contact (Gen 9)
-  | "salt-cure" // Salt Cure — residual 1/8 (1/4 for Water/Steel) damage per turn (Gen 9)
-  | "shed-tail-sub" // Shed Tail — marks the substitute was created by Shed Tail for the switch-in Pokemon (Gen 9)
-  | "charged" // Charge — doubles next Electric move's power (Gen 3+)
-  | "mud-sport" // Mud Sport — halves Electric-type move power for all Pokemon on the field (Gen 3-4)
-  | "water-sport" // Water Sport — halves Fire-type move power for all Pokemon on the field (Gen 3-4)
-  | "hazard-status-source"; // One-turn marker: set when Toxic Spikes inflicts status on switch-in; Synchronize checks this to skip reflection (Gen 5+)
+export type VolatileStatus = Gen9VolatileStatus;
+
+/**
+ * Generation-aware volatile union for callers that want compile-time narrowing
+ * instead of the compatibility superset.
+ */
+export type VolatileStatusByGeneration<G extends Generation> = G extends 1
+  ? Gen1VolatileStatus
+  : G extends 2
+    ? Gen2VolatileStatus
+    : G extends 3
+      ? Gen3VolatileStatus
+      : G extends 4
+        ? Gen4VolatileStatus
+        : G extends 5
+          ? Gen5VolatileStatus
+          : G extends 6
+            ? Gen6VolatileStatus
+            : G extends 7
+              ? Gen7VolatileStatus
+              : G extends 8
+                ? Gen8VolatileStatus
+                : Gen9VolatileStatus;
+
+const SEMI_INVULNERABLE_VOLATILES = [
+  "flying",
+  "underground",
+  "underwater",
+  "shadow-force-charging",
+] as const;
+
+export type SemiInvulnerableVolatile = (typeof SEMI_INVULNERABLE_VOLATILES)[number];
+
+export type SemiInvulnerableVolatileByGeneration<G extends Generation> = Extract<
+  VolatileStatusByGeneration<G>,
+  SemiInvulnerableVolatile
+>;
+
+const TWO_TURN_MOVE_VOLATILES = [...SEMI_INVULNERABLE_VOLATILES, "charging"] as const;
+
+/**
+ * Two-turn move target states handled by `canHitSemiInvulnerable()`.
+ * This includes both truly semi-invulnerable positions and the generic
+ * `charging` marker, which remains targetable but shares the same hook.
+ */
+export type TwoTurnMoveVolatile = (typeof TWO_TURN_MOVE_VOLATILES)[number];
+
+export type TwoTurnMoveVolatileByGeneration<G extends Generation> = Extract<
+  VolatileStatusByGeneration<G>,
+  TwoTurnMoveVolatile
+>;
+
+export type Gen3SemiInvulnerableVolatile = SemiInvulnerableVolatileByGeneration<3>;
+export type Gen4SemiInvulnerableVolatile = SemiInvulnerableVolatileByGeneration<4>;
+export type Gen5SemiInvulnerableVolatile = SemiInvulnerableVolatileByGeneration<5>;
+export type Gen6SemiInvulnerableVolatile = SemiInvulnerableVolatileByGeneration<6>;
+export type Gen7SemiInvulnerableVolatile = SemiInvulnerableVolatileByGeneration<7>;
+export type Gen8SemiInvulnerableVolatile = SemiInvulnerableVolatileByGeneration<8>;
+export type Gen9SemiInvulnerableVolatile = SemiInvulnerableVolatileByGeneration<9>;
+export type Gen3TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<3>;
+export type Gen4TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<4>;
+export type Gen5TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<5>;
+export type Gen6TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<6>;
+export type Gen7TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<7>;
+export type Gen8TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<8>;
+export type Gen9TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<9>;
+
+const SWITCH_BLOCKING_VOLATILES = [
+  "trapped",
+  "ingrain",
+  "no-retreat",
+  "octolock",
+  "jaw-lock",
+] as const;
+
+/**
+ * Volatiles that can prevent the affected Pokemon from switching or being phased.
+ * `ingrain` belongs here because the engine treats it as blocking forced switching.
+ */
+export type SwitchBlockingVolatile = (typeof SWITCH_BLOCKING_VOLATILES)[number];
+
+const SEMI_INVULNERABLE_VOLATILE_SET = new Set<VolatileStatus>(SEMI_INVULNERABLE_VOLATILES);
+
+const SWITCH_BLOCKING_VOLATILE_SET = new Set<VolatileStatus>(SWITCH_BLOCKING_VOLATILES);
+
+const GEN1_VOLATILE_STATUS_SET = new Set<VolatileStatus>(GEN1_VOLATILE_STATUSES);
+const GEN2_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+]);
+const GEN3_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+  ...GEN3_VOLATILE_STATUS_ADDITIONS,
+]);
+const GEN4_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+  ...GEN3_VOLATILE_STATUS_ADDITIONS,
+  ...GEN4_VOLATILE_STATUS_ADDITIONS,
+]);
+const GEN5_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+  ...GEN3_VOLATILE_STATUS_ADDITIONS,
+  ...GEN4_VOLATILE_STATUS_ADDITIONS,
+  ...GEN5_VOLATILE_STATUS_ADDITIONS,
+]);
+const GEN6_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+  ...GEN3_VOLATILE_STATUS_ADDITIONS,
+  ...GEN4_VOLATILE_STATUS_ADDITIONS,
+  ...GEN5_VOLATILE_STATUS_ADDITIONS,
+  ...GEN6_VOLATILE_STATUS_ADDITIONS,
+]);
+const GEN7_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+  ...GEN3_VOLATILE_STATUS_ADDITIONS,
+  ...GEN4_VOLATILE_STATUS_ADDITIONS,
+  ...GEN5_VOLATILE_STATUS_ADDITIONS,
+  ...GEN6_VOLATILE_STATUS_ADDITIONS,
+  ...GEN7_VOLATILE_STATUS_ADDITIONS,
+]);
+const GEN8_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+  ...GEN3_VOLATILE_STATUS_ADDITIONS,
+  ...GEN4_VOLATILE_STATUS_ADDITIONS,
+  ...GEN5_VOLATILE_STATUS_ADDITIONS,
+  ...GEN6_VOLATILE_STATUS_ADDITIONS,
+  ...GEN7_VOLATILE_STATUS_ADDITIONS,
+  ...GEN8_VOLATILE_STATUS_ADDITIONS,
+]);
+const GEN9_VOLATILE_STATUS_SET = new Set<VolatileStatus>([
+  ...GEN1_VOLATILE_STATUSES,
+  ...GEN2_VOLATILE_STATUS_ADDITIONS,
+  ...GEN3_VOLATILE_STATUS_ADDITIONS,
+  ...GEN4_VOLATILE_STATUS_ADDITIONS,
+  ...GEN5_VOLATILE_STATUS_ADDITIONS,
+  ...GEN6_VOLATILE_STATUS_ADDITIONS,
+  ...GEN7_VOLATILE_STATUS_ADDITIONS,
+  ...GEN8_VOLATILE_STATUS_ADDITIONS,
+  ...GEN9_VOLATILE_STATUS_ADDITIONS,
+]);
+
+export function isSemiInvulnerableVolatile(
+  volatile: VolatileStatus,
+): volatile is SemiInvulnerableVolatile {
+  return SEMI_INVULNERABLE_VOLATILE_SET.has(volatile);
+}
+
+export function isSwitchBlockingVolatile(
+  volatile: VolatileStatus,
+): volatile is SwitchBlockingVolatile {
+  return SWITCH_BLOCKING_VOLATILE_SET.has(volatile);
+}
+
+export function isVolatileStatusForGeneration<G extends Generation>(
+  generation: G,
+  volatile: VolatileStatus,
+): volatile is VolatileStatusByGeneration<G> {
+  switch (generation) {
+    case 1:
+      return GEN1_VOLATILE_STATUS_SET.has(volatile);
+    case 2:
+      return GEN2_VOLATILE_STATUS_SET.has(volatile);
+    case 3:
+      return GEN3_VOLATILE_STATUS_SET.has(volatile);
+    case 4:
+      return GEN4_VOLATILE_STATUS_SET.has(volatile);
+    case 5:
+      return GEN5_VOLATILE_STATUS_SET.has(volatile);
+    case 6:
+      return GEN6_VOLATILE_STATUS_SET.has(volatile);
+    case 7:
+      return GEN7_VOLATILE_STATUS_SET.has(volatile);
+    case 8:
+      return GEN8_VOLATILE_STATUS_SET.has(volatile);
+    case 9:
+      return GEN9_VOLATILE_STATUS_SET.has(volatile);
+  }
+}

@@ -23,10 +23,12 @@ import { BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   DataManager,
+  Gen6TwoTurnMoveVolatile,
   MoveData,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
+  TwoTurnMoveVolatile,
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
@@ -352,7 +354,8 @@ export class Gen6Ruleset extends BaseRuleset {
    * Source: Showdown data/moves.ts -- thousandarrows: hits targets in the Flying semi-invulnerable state
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Semi-invulnerable_turn
    */
-  override canHitSemiInvulnerable(moveId: string, volatile: VolatileStatus): boolean {
+  canHitSemiInvulnerable(moveId: string, volatile: Gen6TwoTurnMoveVolatile): boolean;
+  override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
       case "flying":
         // Source: Showdown Gen 6 -- Thousand Arrows added in Gen 6
