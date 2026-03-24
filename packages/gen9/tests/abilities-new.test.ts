@@ -9,9 +9,12 @@ import {
   handleDauntlessShieldGen9,
   handleEmbodyAspect,
   handleGen9DauntlessShield,
+  handleGen9DauntlessShieldTrigger,
   handleGen9IntrepidSword,
+  handleGen9IntrepidSwordTrigger,
   handleGen9NewAbility,
   handleGen9Protean,
+  handleGen9ProteanTrigger,
   handleGoodAsGold,
   handleIntrepidSwordGen9,
   handleMyceliumMight,
@@ -698,49 +701,49 @@ describe("isMyceliumMightBypassingAbility", () => {
 // Supreme Overlord
 // ---------------------------------------------------------------------------
 
-describe("getSupremeOverlordMultiplier", () => {
+describe("getSupremeOverlordFloatMultiplier", () => {
   it("given 0 fainted allies, when getting multiplier, then returns 1.0x", () => {
     // Source: Showdown data/abilities.ts:4634-4658
     // "const dominated = [4096, 4506, 4915, 5325, 5734, 6144]"
-    expect(getSupremeOverlordMultiplier(0)).toBe(4096 / 4096);
+    expect(getSupremeOverlordFloatMultiplier(0)).toBe(4096 / 4096);
   });
 
   it("given 1 fainted ally, when getting multiplier, then returns ~1.10x (4506/4096)", () => {
     // Source: Showdown data/abilities.ts:4634-4658
-    expect(getSupremeOverlordMultiplier(1)).toBeCloseTo(4506 / 4096, 10);
+    expect(getSupremeOverlordFloatMultiplier(1)).toBeCloseTo(4506 / 4096, 10);
   });
 
   it("given 2 fainted allies, when getting multiplier, then returns ~1.20x (4915/4096)", () => {
     // Source: Showdown data/abilities.ts:4634-4658
-    expect(getSupremeOverlordMultiplier(2)).toBeCloseTo(4915 / 4096, 10);
+    expect(getSupremeOverlordFloatMultiplier(2)).toBeCloseTo(4915 / 4096, 10);
   });
 
   it("given 3 fainted allies, when getting multiplier, then returns ~1.30x (5325/4096)", () => {
     // Source: Showdown data/abilities.ts:4634-4658
-    expect(getSupremeOverlordMultiplier(3)).toBeCloseTo(5325 / 4096, 10);
+    expect(getSupremeOverlordFloatMultiplier(3)).toBeCloseTo(5325 / 4096, 10);
   });
 
   it("given 4 fainted allies, when getting multiplier, then returns ~1.40x (5734/4096)", () => {
     // Source: Showdown data/abilities.ts:4634-4658
-    expect(getSupremeOverlordMultiplier(4)).toBeCloseTo(5734 / 4096, 10);
+    expect(getSupremeOverlordFloatMultiplier(4)).toBeCloseTo(5734 / 4096, 10);
   });
 
   it("given 5 fainted allies, when getting multiplier, then returns 1.50x (6144/4096)", () => {
     // Source: Showdown data/abilities.ts:4634-4658
-    expect(getSupremeOverlordMultiplier(5)).toBeCloseTo(6144 / 4096, 10);
+    expect(getSupremeOverlordFloatMultiplier(5)).toBeCloseTo(6144 / 4096, 10);
   });
 
   it("given 6 fainted allies (exceeds max), when getting multiplier, then caps at 5 and returns 1.50x", () => {
     // Source: Showdown data/abilities.ts:4634-4658 -- capped at 5
-    expect(getSupremeOverlordMultiplier(6)).toBeCloseTo(6144 / 4096, 10);
+    expect(getSupremeOverlordFloatMultiplier(6)).toBeCloseTo(6144 / 4096, 10);
   });
 
   it("given negative fainted allies, when getting multiplier, then clamps to 0 and returns 1.0x", () => {
-    expect(getSupremeOverlordMultiplier(-1)).toBe(1);
+    expect(getSupremeOverlordFloatMultiplier(-1)).toBe(1);
   });
 
-  it("keeps getSupremeOverlordFloatMultiplier as the canonical alias", () => {
-    expect(getSupremeOverlordFloatMultiplier).toBe(getSupremeOverlordMultiplier);
+  it("keeps getSupremeOverlordMultiplier as a compatibility alias", () => {
+    expect(getSupremeOverlordMultiplier).toBe(getSupremeOverlordFloatMultiplier);
   });
 });
 
@@ -761,15 +764,16 @@ describe("SUPREME_OVERLORD_TABLE", () => {
 // Intrepid Sword (Gen 9 nerf -- once per battle)
 // ---------------------------------------------------------------------------
 
-describe("handleIntrepidSwordGen9", () => {
+describe("handleGen9IntrepidSwordTrigger", () => {
   it("given on-switch-in with no prior usage, when handling, then boosts Attack and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- intrepidsword: once per battle in Gen 9
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
       trigger: "on-switch-in",
     });
-    const result = handleIntrepidSwordGen9(ctx);
+    const result = handleGen9IntrepidSwordTrigger(ctx);
     expect(result.activated).toBe(true);
+    expect(ctx.pokemon.pokemon.swordBoost).toBe(true);
     expect(result.effects).toHaveLength(2);
     expect(result.effects[0]).toEqual(
       expect.objectContaining({
@@ -786,17 +790,16 @@ describe("handleIntrepidSwordGen9", () => {
     );
   });
 
-  it("given already used (volatile set), when handling, then does not activate (once per battle)", () => {
+  it("given already used this battle, when handling, then does not activate", () => {
     // Source: specs/battle/10-gen9.md -- "Intrepid Sword: once per battle (nerfed from Gen 8)"
-    const volatiles = new Map([["intrepid-sword-used", { turnsLeft: -1 }]]);
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
         ability: "intrepid-sword",
-        volatiles: volatiles as any,
       }),
       trigger: "on-switch-in",
     });
-    const result = handleIntrepidSwordGen9(ctx);
+    ctx.pokemon.pokemon.swordBoost = true;
+    const result = handleGen9IntrepidSwordTrigger(ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -805,12 +808,26 @@ describe("handleIntrepidSwordGen9", () => {
       pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
       trigger: "on-contact",
     });
-    const result = handleIntrepidSwordGen9(ctx);
+    const result = handleGen9IntrepidSwordTrigger(ctx);
     expect(result.activated).toBe(false);
   });
 
-  it("keeps handleGen9IntrepidSword as the canonical alias", () => {
-    expect(handleGen9IntrepidSword).toBe(handleIntrepidSwordGen9);
+  it("keeps the legacy aliases wired to the trigger handler", () => {
+    expect(handleGen9IntrepidSword).toBe(handleGen9IntrepidSwordTrigger);
+    expect(handleIntrepidSwordGen9).toBe(handleGen9IntrepidSwordTrigger);
+  });
+
+  it("stays blocked after switch-out clears volatiles because the once-per-battle flag is persistent", () => {
+    const ctx = makeAbilityContext({
+      pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
+      trigger: "on-switch-in",
+    });
+
+    handleGen9IntrepidSwordTrigger(ctx);
+    ctx.pokemon.volatileStatuses.clear();
+
+    const secondResult = handleGen9IntrepidSwordTrigger(ctx);
+    expect(secondResult.activated).toBe(false);
   });
 });
 
@@ -818,15 +835,16 @@ describe("handleIntrepidSwordGen9", () => {
 // Dauntless Shield (Gen 9 nerf -- once per battle)
 // ---------------------------------------------------------------------------
 
-describe("handleDauntlessShieldGen9", () => {
+describe("handleGen9DauntlessShieldTrigger", () => {
   it("given on-switch-in with no prior usage, when handling, then boosts Defense and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- dauntlessshield: once per battle in Gen 9
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
       trigger: "on-switch-in",
     });
-    const result = handleDauntlessShieldGen9(ctx);
+    const result = handleGen9DauntlessShieldTrigger(ctx);
     expect(result.activated).toBe(true);
+    expect(ctx.pokemon.pokemon.shieldBoost).toBe(true);
     expect(result.effects).toHaveLength(2);
     expect(result.effects[0]).toEqual(
       expect.objectContaining({
@@ -843,17 +861,16 @@ describe("handleDauntlessShieldGen9", () => {
     );
   });
 
-  it("given already used (volatile set), when handling, then does not activate (once per battle)", () => {
+  it("given already used this battle, when handling, then does not activate", () => {
     // Source: specs/battle/10-gen9.md -- "Dauntless Shield: once per battle (nerfed from Gen 8)"
-    const volatiles = new Map([["dauntless-shield-used", { turnsLeft: -1 }]]);
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
         ability: "dauntless-shield",
-        volatiles: volatiles as any,
       }),
       trigger: "on-switch-in",
     });
-    const result = handleDauntlessShieldGen9(ctx);
+    ctx.pokemon.pokemon.shieldBoost = true;
+    const result = handleGen9DauntlessShieldTrigger(ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -862,12 +879,26 @@ describe("handleDauntlessShieldGen9", () => {
       pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
       trigger: "on-turn-end",
     });
-    const result = handleDauntlessShieldGen9(ctx);
+    const result = handleGen9DauntlessShieldTrigger(ctx);
     expect(result.activated).toBe(false);
   });
 
-  it("keeps handleGen9DauntlessShield as the canonical alias", () => {
-    expect(handleGen9DauntlessShield).toBe(handleDauntlessShieldGen9);
+  it("keeps the legacy aliases wired to the trigger handler", () => {
+    expect(handleGen9DauntlessShield).toBe(handleGen9DauntlessShieldTrigger);
+    expect(handleDauntlessShieldGen9).toBe(handleGen9DauntlessShieldTrigger);
+  });
+
+  it("stays blocked after switch-out clears volatiles because the once-per-battle flag is persistent", () => {
+    const ctx = makeAbilityContext({
+      pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
+      trigger: "on-switch-in",
+    });
+
+    handleGen9DauntlessShieldTrigger(ctx);
+    ctx.pokemon.volatileStatuses.clear();
+
+    const secondResult = handleGen9DauntlessShieldTrigger(ctx);
+    expect(secondResult.activated).toBe(false);
   });
 });
 
@@ -971,8 +1002,9 @@ describe("handleProteanGen9", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("keeps handleGen9Protean as the canonical alias", () => {
-    expect(handleGen9Protean).toBe(handleProteanGen9);
+  it("keeps the legacy aliases wired to the trigger handler", () => {
+    expect(handleGen9Protean).toBe(handleGen9ProteanTrigger);
+    expect(handleProteanGen9).toBe(handleGen9ProteanTrigger);
   });
 });
 

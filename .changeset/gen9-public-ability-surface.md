@@ -1,11 +1,12 @@
 ---
-"@pokemon-lib-ts/gen9": minor
+"@pokemon-lib-ts/gen9": patch
 ---
 
-Narrow the Gen 9 root public API to a single canonical ability-handler surface.
+Add explicit canonical names to the Gen 9 public API without breaking existing imports.
 
-The package root now exports `handleGen9IntrepidSword`, `handleGen9DauntlessShield`,
-and `handleGen9Protean` instead of exposing both canonical handlers and lower-level
-state-mutation helpers for the same mechanics. The ambiguous floating-point
-`getSupremeOverlordMultiplier` helper is also no longer exported from the package
-root; use `getSupremeOverlordModifier` from the root API for fixed-point damage math.
+The root barrel now exposes explicit `applyGen9*` low-level helpers,
+explicit `handleGen9*Trigger` ability-result handlers, and
+`getSupremeOverlordFloatMultiplier` alongside deprecated compatibility aliases.
+The Intrepid Sword and Dauntless Shield trigger handlers now use persistent
+once-per-battle flags so their behavior matches the low-level helpers after
+switch-out.

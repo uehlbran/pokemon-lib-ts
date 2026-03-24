@@ -314,11 +314,12 @@ export const getSupremeOverlordMultiplier = getSupremeOverlordFloatMultiplier;
  * Source: Showdown data/abilities.ts -- intrepidsword: once per battle in Gen 9
  * Source: specs/battle/10-gen9.md -- "Intrepid Sword: once per battle (nerfed from Gen 8)"
  */
-export function handleGen9IntrepidSword(ctx: AbilityContext): AbilityResult {
+export function handleGen9IntrepidSwordTrigger(ctx: AbilityContext): AbilityResult {
   if (ctx.trigger !== "on-switch-in") return INACTIVE;
 
-  // Once per battle
-  if (ctx.pokemon.volatileStatuses.has("intrepid-sword-used")) return INACTIVE;
+  // Once per battle. Persist on PokemonInstance so the restriction survives switch-out.
+  if (ctx.pokemon.pokemon.swordBoost) return INACTIVE;
+  ctx.pokemon.pokemon.swordBoost = true;
 
   const name = getName(ctx);
   return {
@@ -332,9 +333,14 @@ export function handleGen9IntrepidSword(ctx: AbilityContext): AbilityResult {
 }
 
 /**
- * @deprecated Use handleGen9IntrepidSword for the canonical Gen 9 public handler name.
+ * @deprecated Use handleGen9IntrepidSwordTrigger for the explicit AbilityResult handler.
  */
-export const handleIntrepidSwordGen9 = handleGen9IntrepidSword;
+export const handleGen9IntrepidSword = handleGen9IntrepidSwordTrigger;
+
+/**
+ * @deprecated Use handleGen9IntrepidSwordTrigger for the explicit AbilityResult handler.
+ */
+export const handleIntrepidSwordGen9 = handleGen9IntrepidSwordTrigger;
 
 /**
  * Handle Dauntless Shield in Gen 9 (once per battle, not every switch-in).
@@ -342,11 +348,12 @@ export const handleIntrepidSwordGen9 = handleGen9IntrepidSword;
  * Source: Showdown data/abilities.ts -- dauntlessshield: once per battle in Gen 9
  * Source: specs/battle/10-gen9.md -- "Dauntless Shield: once per battle (nerfed from Gen 8)"
  */
-export function handleGen9DauntlessShield(ctx: AbilityContext): AbilityResult {
+export function handleGen9DauntlessShieldTrigger(ctx: AbilityContext): AbilityResult {
   if (ctx.trigger !== "on-switch-in") return INACTIVE;
 
-  // Once per battle
-  if (ctx.pokemon.volatileStatuses.has("dauntless-shield-used")) return INACTIVE;
+  // Once per battle. Persist on PokemonInstance so the restriction survives switch-out.
+  if (ctx.pokemon.pokemon.shieldBoost) return INACTIVE;
+  ctx.pokemon.pokemon.shieldBoost = true;
 
   const name = getName(ctx);
   return {
@@ -360,9 +367,14 @@ export function handleGen9DauntlessShield(ctx: AbilityContext): AbilityResult {
 }
 
 /**
- * @deprecated Use handleGen9DauntlessShield for the canonical Gen 9 public handler name.
+ * @deprecated Use handleGen9DauntlessShieldTrigger for the explicit AbilityResult handler.
  */
-export const handleDauntlessShieldGen9 = handleGen9DauntlessShield;
+export const handleGen9DauntlessShield = handleGen9DauntlessShieldTrigger;
+
+/**
+ * @deprecated Use handleGen9DauntlessShieldTrigger for the explicit AbilityResult handler.
+ */
+export const handleDauntlessShieldGen9 = handleGen9DauntlessShieldTrigger;
 
 /**
  * Handle Protean/Libero in Gen 9 (once per switch-in, not every move).
@@ -370,7 +382,7 @@ export const handleDauntlessShieldGen9 = handleGen9DauntlessShield;
  * Source: Showdown data/abilities.ts -- protean/libero: once per switchin in Gen 9
  * Source: specs/battle/10-gen9.md -- "Protean/Libero: once per switchin"
  */
-export function handleGen9Protean(ctx: AbilityContext): AbilityResult {
+export function handleGen9ProteanTrigger(ctx: AbilityContext): AbilityResult {
   if (ctx.trigger !== "on-before-move") return INACTIVE;
   if (!ctx.move) return INACTIVE;
 
@@ -395,9 +407,14 @@ export function handleGen9Protean(ctx: AbilityContext): AbilityResult {
 }
 
 /**
- * @deprecated Use handleGen9Protean for the canonical Gen 9 public handler name.
+ * @deprecated Use handleGen9ProteanTrigger for the explicit AbilityResult handler.
  */
-export const handleProteanGen9 = handleGen9Protean;
+export const handleGen9Protean = handleGen9ProteanTrigger;
+
+/**
+ * @deprecated Use handleGen9ProteanTrigger for the explicit AbilityResult handler.
+ */
+export const handleProteanGen9 = handleGen9ProteanTrigger;
 
 // ---------------------------------------------------------------------------
 // Public dispatch
@@ -422,12 +439,12 @@ export function handleGen9NewAbility(ctx: AbilityContext): AbilityResult {
     case "mycelium-might":
       return handleMyceliumMight(ctx);
     case "intrepid-sword":
-      return handleGen9IntrepidSword(ctx);
+      return handleGen9IntrepidSwordTrigger(ctx);
     case "dauntless-shield":
-      return handleGen9DauntlessShield(ctx);
+      return handleGen9DauntlessShieldTrigger(ctx);
     case "protean":
     case "libero":
-      return handleGen9Protean(ctx);
+      return handleGen9ProteanTrigger(ctx);
     default:
       return INACTIVE;
   }
