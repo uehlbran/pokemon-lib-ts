@@ -12,6 +12,7 @@ import type {
 } from "../events";
 import type { BattleGimmickType, GenerationRuleset } from "../ruleset";
 import { generations } from "../ruleset";
+import { cloneGenerationRuleset } from "../ruleset/cloneGenerationRuleset";
 import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";
 import {
   createActivePokemon,
@@ -107,7 +108,10 @@ export class BattleEngine implements BattleEventEmitter {
   private readonly participantTracker: Map<string, Set<string>> = new Map();
 
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
-    this.ruleset = ruleset;
+    // Clone the supplied ruleset so every BattleEngine owns its own mutable
+    // battle-local state. This prevents shared singleton rulesets from leaking
+    // gimmick usage across overlapping battles.
+    this.ruleset = cloneGenerationRuleset(ruleset);
     this.dataManager = dataManager;
 
     this.state = {

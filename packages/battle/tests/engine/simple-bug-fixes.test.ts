@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { BattleConfig, DamageContext, DamageResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
+import type { BattleGimmick, BattleGimmickType } from "../../src/ruleset";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -16,6 +17,36 @@ class SuperEffectiveCritRuleset extends MockRuleset {
       isCrit: context.isCrit,
       randomFactor: 1,
     };
+  }
+}
+
+type TrackingGimmick = BattleGimmick & {
+  usedBySide: Set<0 | 1>;
+};
+
+class TrackingGimmickImpl implements TrackingGimmick {
+  readonly name = "Mega Evolution";
+  readonly generations = [1];
+  readonly usedBySide = new Set<0 | 1>();
+
+  canUse(): boolean {
+    return true;
+  }
+
+  activate(): BattleEvent[] {
+    return [];
+  }
+
+  reset(): void {
+    this.usedBySide.clear();
+  }
+}
+
+class SharedStateRuleset extends MockRuleset {
+  private readonly gimmick: TrackingGimmick = new TrackingGimmickImpl();
+
+  override getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
+    return type === "mega" ? this.gimmick : null;
   }
 }
 
@@ -77,6 +108,33 @@ function createEngine(overrides?: {
 }
 
 describe("BattleEngine — simple bug fixes", () => {
+  // -----------------------------------------------------------------------
+  // Bug #871 — shared ruleset instances leak per-battle gimmick state
+  // -----------------------------------------------------------------------
+  describe("Bug #871: ruleset instance isolation", () => {
+    it("given two engines built from the same ruleset instance, when one battle starts, then the other battle's gimmick state is not cleared", () => {
+      // Arrange — both engines receive the same ruleset object, which must be cloned
+      const sharedRuleset = new SharedStateRuleset();
+      const { engine: engine1 } = createEngine({ ruleset: sharedRuleset });
+      const { engine: engine2 } = createEngine({ ruleset: sharedRuleset });
+
+      const ruleset1 = Reflect.get(engine1, "ruleset") as SharedStateRuleset;
+      const ruleset2 = Reflect.get(engine2, "ruleset") as SharedStateRuleset;
+      const gimmick1 = ruleset1.getBattleGimmick("mega") as TrackingGimmick;
+      const gimmick2 = ruleset2.getBattleGimmick("mega") as TrackingGimmick;
+
+      // Act — battle 1 consumes gimmick state, then battle 2 starts
+      engine1.start();
+      gimmick1.usedBySide.add(0);
+      engine2.start();
+
+      // Assert — battle 2 must not clear battle 1's gimmick state
+      expect(gimmick1).not.toBe(gimmick2);
+      expect(gimmick1.usedBySide.has(0)).toBe(true);
+      expect(gimmick2.usedBySide.has(0)).toBe(false);
+    });
+  });
+
   // -----------------------------------------------------------------------
   // Bug #82 — sendOut() emits wrong slot index
   // -----------------------------------------------------------------------
