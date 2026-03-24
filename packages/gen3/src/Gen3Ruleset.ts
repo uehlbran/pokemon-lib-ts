@@ -34,7 +34,7 @@ import type {
 import {
   calculateExpGainClassic,
   DataManager,
-  gen14MultiHitRoll,
+  gen1to4MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 import {
@@ -60,7 +60,7 @@ import { applyGen3WeatherEffects } from "./Gen3Weather";
  *   - getAvailableHazards — Gen 3 only has Spikes (no Stealth Rock until Gen 4)
  *   - calculateBindDamage — 1/16 max HP (Gen 2-4; Gen 5+ uses 1/8)
  *   - calculateStruggleRecoil — 1/4 damage dealt (Gen 3 RECOIL_25; Gen 4+ uses 1/4 max HP)
- *   - rollMultiHitCount — Gen 1-4 weighted distribution via gen14MultiHitRoll
+ *   - rollMultiHitCount — Gen 1-4 weighted distribution via gen1to4MultiHitRoll
  *   - rollSleepTurns — 2-5 turns (Gen 3-4; Gen 5+ uses 1-3)
  *   - calculateExpGain — classic formula (no level scaling)
  *   - getCritMultiplier — 2.0x (Gen 3-5; Gen 6+ uses 1.5x)
@@ -276,10 +276,10 @@ export class Gen3Ruleset extends BaseRuleset {
    * Gen 5+ uses a different distribution (BaseRuleset default).
    *
    * Source: pret/pokeemerald src/battle_util.c — multi-hit uses 8-entry lookup table
-   * Also: packages/core/src/logic/gen12-shared.ts gen14MultiHitRoll
+   * Also: packages/core/src/logic/gen12-shared.ts gen1to4MultiHitRoll
    */
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
-    return gen14MultiHitRoll(rng);
+    return gen1to4MultiHitRoll(rng);
   }
 
   // --- Status System ---

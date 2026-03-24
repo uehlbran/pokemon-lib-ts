@@ -264,7 +264,7 @@ describe("Gen4Ruleset rollMultiHitCount", () => {
   it("given rollMultiHitCount called 1000 times, then always returns 2, 3, 4, or 5", () => {
     // Source: pret/pokeplatinum — multi-hit uses same 8-entry lookup table as Gen 1-3
     // Distribution: 2 (37.5%), 3 (37.5%), 4 (12.5%), 5 (12.5%)
-    // Source: packages/core/src/logic/gen12-shared.ts gen14MultiHitRoll
+    // Source: packages/core/src/logic/gen12-shared.ts gen1to4MultiHitRoll
     const ruleset = makeRuleset();
     const attacker = makeActivePokemon({});
 
@@ -277,7 +277,7 @@ describe("Gen4Ruleset rollMultiHitCount", () => {
   });
 
   it("given rollMultiHitCount called 1000 times, then never returns 1 or 6+", () => {
-    // Source: pret/pokeplatinum — gen14MultiHitRoll only produces 2, 3, 4, or 5
+    // Source: pret/pokeplatinum — gen1to4MultiHitRoll only produces 2, 3, 4, or 5
     const ruleset = makeRuleset();
     const attacker = makeActivePokemon({});
 

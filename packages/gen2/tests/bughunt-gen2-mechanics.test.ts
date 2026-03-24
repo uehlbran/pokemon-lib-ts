@@ -604,7 +604,7 @@ describe("Gen 2 Focus Energy crit stage is +1 (bug fixed vs Gen 1)", () => {
 describe("Gen 2 paralysis full-para chance", () => {
   it("given a paralyzed Pokemon, when checkFullParalysis is sampled 10000 times, then rate is approximately 63/256 (~24.6%)", () => {
     // Source: pret/pokecrystal engine/battle/core.asm — same 25PERCENT constant (63/256) as Gen 1
-    // Shared via gen12FullParalysisCheck in packages/core/src/logic/gen12-shared.ts
+    // Shared via gen1to2FullParalysisCheck in packages/core/src/logic/gen12-shared.ts
     const rng = new SeededRandom(888);
     const pokemon = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, status: "paralysis" } as PokemonInstance,

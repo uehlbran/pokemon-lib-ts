@@ -28,9 +28,9 @@ export {
 } from "./experience";
 export {
   calculateStatExpContribution,
-  gen12FullParalysisCheck,
-  gen14MultiHitRoll,
-  gen16ConfusionSelfHitRoll,
+  gen1to2FullParalysisCheck,
+  gen1to4MultiHitRoll,
+  gen1to6ConfusionSelfHitRoll,
 } from "./gen12-shared.js";
 export {
   createMoveSlot,
