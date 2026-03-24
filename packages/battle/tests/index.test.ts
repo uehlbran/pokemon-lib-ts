@@ -15,8 +15,8 @@ describe("barrel exports", () => {
     expect(mod.getPokemonName).toBeDefined();
 
     // Assert — internal/test helpers stay off the consumer-facing root API
-    expect(mod.createActivePokemon).toBeUndefined();
-    expect(mod.createDefaultStatStages).toBeUndefined();
-    expect(mod.createTestPokemon).toBeUndefined();
+    expect(Object.hasOwn(mod, "createActivePokemon")).toBe(false);
+    expect(Object.hasOwn(mod, "createDefaultStatStages")).toBe(false);
+    expect(Object.hasOwn(mod, "createTestPokemon")).toBe(false);
   });
 });
