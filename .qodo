@@ -6,3 +6,14 @@ discriminated unions, lowercase string literals (not UPPERCASE enums),
 seeded PRNG (Mulberry32). Biome handles formatting -- don't flag style.
 """
 num_code_suggestions = 3
+
+[pr_code_suggestions]
+suggestions_depth = "selective"
+extra_instructions = """
+- When reporting a CI/typecheck/build failure, do NOT present it as a confirmed bug unless you can point to:
+  (1) the exact file(s) and line range(s) in this PR that cause the failure, and
+  (2) the exact command that would fail (for example `npm run ci:package-boundaries`) and why it fails based on the diff.
+- If the claim depends on generated files or config (for example a temporary tsconfig), explicitly state what in the code generates it and quote the relevant snippet or lines.
+- If the issue may be environment-dependent or TypeScript-version-dependent (for example JSON module resolution), inspect the repo's actual TypeScript version and effective config first. If the diff alone does not prove the failure, present it as "Requires verification" instead of an action-required bug.
+- Prefer minimal, verifiable recommendations. Avoid speculative "add option X" fixes unless the diff proves the option is missing and required.
+"""
