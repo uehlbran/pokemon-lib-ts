@@ -2,7 +2,7 @@ import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { RandomAI } from "../../src/ai/RandomAI";
-import type { BattleConfig } from "../../src/context";
+import type { AvailableMove, BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleState } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
@@ -183,6 +183,25 @@ function createTestState(
   };
 }
 
+function createAvailableMoves(state: BattleState, side: 0 | 1): AvailableMove[] {
+  const active = state.sides[side].active[0];
+  if (!active) {
+    return [];
+  }
+
+  return active.pokemon.moves.map((slot, index) => ({
+    index,
+    moveId: slot.moveId,
+    displayName: slot.moveId,
+    type: "normal",
+    category: "physical",
+    pp: slot.currentPP,
+    maxPp: slot.maxPP,
+    disabled: slot.currentPP <= 0,
+    disabledReason: slot.currentPP <= 0 ? "No PP remaining" : undefined,
+  }));
+}
+
 describe("RandomAI", () => {
   describe("chooseAction", () => {
     it("given an active pokemon with available moves, when chooseAction is called, then a move action is returned", () => {
@@ -193,7 +212,7 @@ describe("RandomAI", () => {
       const rng = new SeededRandom(123);
 
       // Act
-      const action = ai.chooseAction(0, state, ruleset, rng);
+      const action = ai.chooseAction(0, state, ruleset, rng, createAvailableMoves(state, 0));
 
       // Assert
       expect(action.type).toBe("move");
@@ -212,7 +231,7 @@ describe("RandomAI", () => {
       const rng = new SeededRandom(123);
 
       // Act
-      const action = ai.chooseAction(0, state, ruleset, rng);
+      const action = ai.chooseAction(0, state, ruleset, rng, createAvailableMoves(state, 0));
 
       // Assert
       expect(action.type).toBe("struggle");
@@ -227,9 +246,9 @@ describe("RandomAI", () => {
 
       // Act
       const rng1 = new SeededRandom(42);
-      const action1 = ai.chooseAction(0, state, ruleset, rng1);
+      const action1 = ai.chooseAction(0, state, ruleset, rng1, createAvailableMoves(state, 0));
       const rng2 = new SeededRandom(42);
-      const action2 = ai.chooseAction(0, state, ruleset, rng2);
+      const action2 = ai.chooseAction(0, state, ruleset, rng2, createAvailableMoves(state, 0));
 
       // Assert
       expect(action1).toEqual(action2);
@@ -246,7 +265,7 @@ describe("RandomAI", () => {
 
       // Act — call many times
       for (let i = 0; i < 100; i++) {
-        const action = ai.chooseAction(0, state, ruleset, rng);
+        const action = ai.chooseAction(0, state, ruleset, rng, createAvailableMoves(state, 0));
         if (action.type === "move") {
           moveIndices.add(action.moveIndex);
         }
@@ -273,7 +292,7 @@ describe("RandomAI", () => {
       expect(slot).toBe(1); // Only Pikachu is on the bench and alive
     });
 
-    it("given no alive bench pokemon, when chooseSwitchIn is called, then fallback slot is returned", () => {
+    it("given no alive bench pokemon, when chooseSwitchIn is called, then null is returned", () => {
       // Arrange
       const ai = new RandomAI();
       const state = createTestState({ team1Hp: [200, 0] }); // Pikachu fainted
@@ -283,8 +302,7 @@ describe("RandomAI", () => {
       // Act
       const slot = ai.chooseSwitchIn(0, state, ruleset, rng);
 
-      // Assert — no valid targets, returns fallback 0
-      expect(slot).toBe(0);
+      expect(slot).toBeNull();
     });
 
     it("given the same seed, when chooseSwitchIn is called twice, then same result is returned", () => {
@@ -362,8 +380,20 @@ describe("RandomAI", () => {
 
       while (!engine.isEnded() && turns < maxTurns) {
         if (engine.getPhase() === "action-select") {
-          const action0 = ai.chooseAction(0, engine.getState(), ruleset, aiRng);
-          const action1 = ai.chooseAction(1, engine.getState(), ruleset, aiRng);
+          const action0 = ai.chooseAction(
+            0,
+            engine.getState(),
+            ruleset,
+            aiRng,
+            engine.getAvailableMoves(0),
+          );
+          const action1 = ai.chooseAction(
+            1,
+            engine.getState(),
+            ruleset,
+            aiRng,
+            engine.getAvailableMoves(1),
+          );
           engine.submitAction(0, action0);
           engine.submitAction(1, action1);
           turns++;
