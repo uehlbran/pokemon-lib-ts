@@ -3866,6 +3866,27 @@ export class BattleEngine implements BattleEventEmitter {
       );
     }
 
+    const resetStatStages = (pokemon: ActivePokemon, side: 0 | 1) => {
+      // Emit the reset as per-stat deltas so event consumers can observe exactly what changed.
+      for (const [stat, currentStage] of Object.entries(pokemon.statStages) as [
+        keyof ActivePokemon["statStages"],
+        number,
+      ][]) {
+        if (currentStage === 0) {
+          continue;
+        }
+        pokemon.statStages[stat] = 0;
+        this.emit({
+          type: "stat-change",
+          side,
+          pokemon: getPokemonName(pokemon),
+          stat,
+          stages: -currentStage,
+          currentStage: 0,
+        });
+      }
+    };
+
     // Status cure: cures status AND resets stat stages for target(s)
     // statusCuredOnly: cures status WITHOUT resetting stages (e.g. Rest)
     // statStagesReset: resets stages WITHOUT curing status (e.g. Haze attacker side)
@@ -3889,27 +3910,27 @@ export class BattleEngine implements BattleEventEmitter {
           });
         }
         // Reset all stat stages for this target (coupled with status cure)
-        t.statStages = createDefaultStatStages();
+        resetStatStages(t, tSide);
       }
     }
 
     // statStagesReset — reset stat stages without curing status (e.g. Haze attacker side)
     if (result.statStagesReset) {
-      const resetTargets: Array<{ pokemon: ActivePokemon }> = [];
+      const resetTargets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
       if (
         result.statStagesReset.target === "attacker" ||
         result.statStagesReset.target === "both"
       ) {
-        resetTargets.push({ pokemon: attacker });
+        resetTargets.push({ pokemon: attacker, side: attackerSide });
       }
       if (
         result.statStagesReset.target === "defender" ||
         result.statStagesReset.target === "both"
       ) {
-        resetTargets.push({ pokemon: defender });
+        resetTargets.push({ pokemon: defender, side: defenderSide });
       }
-      for (const { pokemon: t } of resetTargets) {
-        t.statStages = createDefaultStatStages();
+      for (const { pokemon: t, side } of resetTargets) {
+        resetStatStages(t, side);
       }
     }
 
