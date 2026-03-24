@@ -1,4 +1,10 @@
-import type { DataManager, ItemData, MoveData, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type {
+  BattleStat,
+  DataManager,
+  ItemData,
+  MoveData,
+  PrimaryStatus,
+} from "@pokemon-lib-ts/core";
 import { getExpForLevel, getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
@@ -5528,11 +5534,21 @@ export class BattleEngine implements BattleEventEmitter {
           // Stage boost to the specified stat for the holder.
           // Uses effect.stages if present (e.g., Weakness Policy = +2), defaulting to +1.
           // Source: Showdown -- stat pinch berries (+1), Weakness Policy (+2) onEat/onDamagingHit
-          const stat = effect.value as string;
+          const stat = effect.value as BattleStat;
           const boostStages = effect.stages ?? 1;
           const statStages = pokemon.statStages as Record<string, number>;
           if (stat in statStages) {
-            statStages[stat] = Math.min(6, (statStages[stat] ?? 0) + boostStages);
+            const currentStage = statStages[stat] ?? 0;
+            const newStage = Math.max(-6, Math.min(6, currentStage + boostStages));
+            statStages[stat] = newStage;
+            this.emit({
+              type: "stat-change",
+              side,
+              pokemon: getPokemonName(pokemon),
+              stat,
+              stages: boostStages,
+              currentStage: newStage,
+            });
           }
           break;
         }
