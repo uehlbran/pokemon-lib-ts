@@ -344,8 +344,8 @@ export class Gen9Ruleset extends BaseRuleset {
    *   Each multiplier is floored separately (sequential rounding).
    *
    * Key Gen 9 difference: EXP Share is always active (same as Gen 8).
-   * However, this is an engine-level concern (the engine always passes
-   * hasExpShare=true for non-participating party members), not a formula change.
+   * The engine routes inactive party members here with hasExpShare=true, and those
+   * recipients receive half of the active participant award.
    *
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Experience#Generation_IX
    * Source: Showdown sim/battle.ts -- Gen 9 EXP formula (same as Gen 7-8)
@@ -379,6 +379,7 @@ export class Gen9Ruleset extends BaseRuleset {
     }
 
     if (context.hasExpShare) {
+      // Source: modern always-on Exp. Share still grants inactive recipients half of the participant award.
       exp = Math.floor(exp / 2);
     }
 

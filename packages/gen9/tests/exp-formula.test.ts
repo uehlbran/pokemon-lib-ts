@@ -240,16 +240,16 @@ describe("Gen9Ruleset -- calculateExpGain traded Pokemon EXP bonus", () => {
 describe("Gen9Ruleset -- EXP Share always active", () => {
   const ruleset = new Gen9Ruleset(new DataManager());
 
-  it("given hasExpShare=true (always on in Gen 9), when calculating EXP, then returns the base formula result", () => {
-    // Source: Bulbapedia Gen IX -- EXP Share is always active, all party members gain EXP
-    // The EXP formula itself is unchanged; hasExpShare affects who receives EXP, not the amount
-    // base = floor((100 * 50) / (5 * 1)) = 1000
+  it("given hasExpShare=true (always on in Gen 9), when calculating EXP, then returns half of the participant award", () => {
+    // Source: modern always-on Exp. Share awards inactive party members half of the participant amount.
+    // participant award = floor((100 * 50) / (5 * 1)) = 1000
+    // inactive party member award = floor(1000 / 2) = 500
     const context = makeExpContext({
       defeatedLevel: 50,
       defeatedSpecies: { baseExp: 100 } as any,
       hasExpShare: true,
     });
-    expect(ruleset.calculateExpGain(context)).toBe(1000);
+    expect(ruleset.calculateExpGain(context)).toBe(500);
   });
 
   it("given single participant, when calculating EXP, then full EXP goes to the battler", () => {
