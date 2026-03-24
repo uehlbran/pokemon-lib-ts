@@ -3,6 +3,8 @@ import type {
   DataManager,
   ItemData,
   MoveData,
+  PokemonInstance,
+  PokemonSpeciesData,
   PrimaryStatus,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
@@ -157,6 +159,18 @@ export class BattleEngine implements BattleEventEmitter {
     if (format !== "singles") {
       throw new Error(`${source}: battle format "${format}" is not supported`);
     }
+  }
+
+  private validateBattlePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData): void {
+    const validation = this.ruleset.validatePokemon(pokemon, species);
+    if (validation.valid) {
+      return;
+    }
+
+    const pokemonName = pokemon.nickname ?? species.displayName;
+    const errorText =
+      validation.errors.length > 0 ? validation.errors.join("; ") : "Unknown validation error";
+    throw new Error(`BattleEngine: pokemon "${pokemonName}" failed validation: ${errorText}`);
   }
 
   private resetBattleGimmicks(): void {
@@ -529,6 +543,7 @@ export class BattleEngine implements BattleEventEmitter {
               `Validate your team before starting a battle.`,
           );
         }
+        this.validateBattlePokemon(pokemon, species);
         pokemon.calculatedStats = this.ruleset.calculateStats(pokemon, species);
         pokemon.currentHp = pokemon.calculatedStats.hp;
         // Reset per-battle counters at battle initialization (NOT on switch-in).

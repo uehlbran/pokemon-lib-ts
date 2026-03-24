@@ -1,4 +1,4 @@
-import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
+import type { DataManager, PokemonInstance, PokemonSpeciesData } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EntryHazardResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
@@ -11,6 +11,26 @@ import { MockRuleset } from "../helpers/mock-ruleset";
 class TrappedSwitchRuleset extends MockRuleset {
   override canSwitch(): boolean {
     return false;
+  }
+}
+
+class ValidatingRuleset extends MockRuleset {
+  readonly validationCalls: Array<{ speciesId: number; pokemonUid: string }> = [];
+  private readonly invalidMessages = new Map<string, string[]>();
+
+  setInvalidPokemon(pokemonUid: string, errors: readonly string[]): void {
+    this.invalidMessages.set(pokemonUid, [...errors]);
+  }
+
+  override validatePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData) {
+    this.validationCalls.push({ speciesId: species.id, pokemonUid: pokemon.uid });
+
+    const errors = this.invalidMessages.get(pokemon.uid);
+    if (errors) {
+      return { valid: false, errors };
+    }
+
+    return { valid: true, errors: [] };
   }
 }
 
@@ -221,6 +241,26 @@ describe("BattleEngine", () => {
 
       expect(() => new BattleEngine(config, new MockRuleset(), dataManager)).toThrow(
         'BattleEngine: battle format "doubles" is not supported',
+      );
+    });
+
+    it("given a battle team, when engine is created, then the ruleset validates each pokemon during setup", () => {
+      const ruleset = new ValidatingRuleset();
+
+      createTestEngine({ ruleset });
+
+      expect(ruleset.validationCalls).toEqual([
+        { speciesId: 6, pokemonUid: "charizard-1" },
+        { speciesId: 9, pokemonUid: "blastoise-1" },
+      ]);
+    });
+
+    it("given an illegal pokemon, when engine is created, then battle setup fails fast with the validation errors", () => {
+      const ruleset = new ValidatingRuleset();
+      ruleset.setInvalidPokemon("charizard-1", ['Move "sketch" is not legal']);
+
+      expect(() => createTestEngine({ ruleset })).toThrow(
+        'BattleEngine: pokemon "Charizard" failed validation: Move "sketch" is not legal',
       );
     });
   });
