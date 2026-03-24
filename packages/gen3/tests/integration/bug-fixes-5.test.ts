@@ -460,10 +460,10 @@ describe("Bug 5B: Quick Claw activation rate is 20%", () => {
     // 13107 / 65536 = 20.00%, so the implementation should pass 0.2 to rng.chance.
     const slowMon = createActivePokemon({ heldItem: "quick-claw", speed: 50 });
     const fastMon = createActivePokemon({ speed: 100 });
-    const state = {
-      sides: [{ active: [slowMon] }, { active: [fastMon] }],
-      trickRoom: { active: false },
-    } as unknown as BattleState;
+    const state = createMinimalBattleState();
+    state.sides[0]!.active = [slowMon];
+    state.sides[1]!.active = [fastMon];
+    state.trickRoom = { active: false, turnsLeft: 0 };
     const actions = [
       { type: "move", side: 0, moveIndex: 0 },
       { type: "move", side: 1, moveIndex: 0 },

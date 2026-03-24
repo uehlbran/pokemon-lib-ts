@@ -7,7 +7,7 @@ import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
-describe("RandomAI integration", () => {
+describe("RandomAI switching", () => {
   it("given a RandomAI controlling both sides, when a pokemon faints and reserve is available, then AI picks a valid switch", () => {
     const ai = new RandomAI();
     const ruleset = new MockRuleset();
