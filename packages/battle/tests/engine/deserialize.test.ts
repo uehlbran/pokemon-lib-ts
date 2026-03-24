@@ -58,6 +58,7 @@ function createTestEngine(overrides?: {
     seed: overrides?.seed ?? 12345,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
@@ -70,7 +71,7 @@ describe("BattleEngine.deserialize", () => {
     const serialized = engine.serialize();
     const mismatchedRuleset = new MockRuleset();
 
-    Object.defineProperty(mismatchedRuleset, "generation", { value: 9 });
+    mismatchedRuleset.setGenerationForTest(9);
 
     expect(() =>
       BattleEngine.deserialize(serialized, mismatchedRuleset, createMockDataManager()),
