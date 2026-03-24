@@ -11,6 +11,7 @@ import type {
   PrimaryStatus,
   SeededRandom,
   TerrainType,
+  TwoTurnMoveVolatileByGeneration,
   VolatileStatus,
   VolatileStatusByGeneration,
   WeatherType,
@@ -494,7 +495,7 @@ export type MoveEffectResultFor<G extends Generation> = Omit<
   readonly forcedMoveSet?: {
     moveIndex: number;
     moveId: string;
-    volatileStatus: VolatileStatusByGeneration<G>;
+    volatileStatus: TwoTurnMoveVolatileByGeneration<G>;
   } | null;
 };
 

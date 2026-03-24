@@ -26,11 +26,13 @@ describe("volatile status generation guards", () => {
 
   it("treats ingrain as a switch-blocking volatile", () => {
     // Provenance:
+    // - Gen 1/2/3/4 rulesets use the "bound" volatile for partial trapping and immobilization.
     // - packages/gen5/src/Gen5EntryHazards.ts and packages/gen6/src/Gen6EntryHazards.ts treat "ingrain"
     //   as a grounding/switch-preventing volatile.
     // - packages/core/src/entities/status.ts: SWITCH_BLOCKING_VOLATILES includes "trapped".
     // - packages/core/src/entities/status.ts: GEN3_VOLATILE_STATUS_ADDITIONS includes "charged", but it
     //   is intentionally absent from SWITCH_BLOCKING_VOLATILES because it is a move-state marker.
+    expect(isSwitchBlockingVolatile("bound")).toBe(true);
     expect(isSwitchBlockingVolatile("ingrain")).toBe(true);
     expect(isSwitchBlockingVolatile("trapped")).toBe(true);
     expect(isSwitchBlockingVolatile("charged")).toBe(false);

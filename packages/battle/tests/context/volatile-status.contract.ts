@@ -21,3 +21,17 @@ void validGen4MoveVolatile;
 // @ts-expect-error Gen 8-only volatile must not be accepted by a Gen 4 move result
 const invalidGen4MoveVolatile: MoveEffectResultFor<4>["volatileInflicted"] = "no-retreat";
 void invalidGen4MoveVolatile;
+
+type Gen4ForcedMoveVolatile = NonNullable<
+  MoveEffectResultFor<4>["forcedMoveSet"]
+>["volatileStatus"];
+
+// Provenance:
+// - packages/core/src/entities/status.ts: TwoTurnMoveVolatile includes the charge-turn marker
+//   "shadow-force-charging" but not unrelated battle-state volatiles like "protect".
+const validGen4ForcedMoveVolatile: Gen4ForcedMoveVolatile = "shadow-force-charging";
+void validGen4ForcedMoveVolatile;
+
+// @ts-expect-error Non-charge volatiles must not be accepted as forced-move markers
+const invalidGen4ForcedMoveVolatile: Gen4ForcedMoveVolatile = "protect";
+void invalidGen4ForcedMoveVolatile;

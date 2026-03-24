@@ -220,6 +220,7 @@ export type Gen8TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<8>;
 export type Gen9TwoTurnMoveVolatile = TwoTurnMoveVolatileByGeneration<9>;
 
 const SWITCH_BLOCKING_VOLATILES = [
+  "bound",
   "trapped",
   "ingrain",
   "no-retreat",
