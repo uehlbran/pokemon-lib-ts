@@ -5459,6 +5459,8 @@ export class BattleEngine implements BattleEventEmitter {
       opponent = opponentOrSide;
     }
 
+    const heldItemId = pokemon.pokemon.heldItem;
+
     for (const effect of result.effects) {
       switch (effect.type) {
         case "heal": {
@@ -5639,6 +5641,21 @@ export class BattleEngine implements BattleEventEmitter {
           break;
       }
     }
+
+    if (
+      result.activated &&
+      heldItemId &&
+      !result.effects.some((effect) => effect.type === "consume")
+    ) {
+      // Non-consuming activations surface as item-activate; consumed items already emit item-consumed.
+      this.emit({
+        type: "item-activate",
+        side,
+        pokemon: getPokemonName(pokemon),
+        item: heldItemId,
+      });
+    }
+
     for (const msg of result.messages) {
       this.emit({ type: "message", text: msg });
     }

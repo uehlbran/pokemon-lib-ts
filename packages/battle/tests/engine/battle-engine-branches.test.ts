@@ -295,6 +295,50 @@ describe("BattleEngine — branch coverage", () => {
     });
   });
 
+  describe("held item activation event", () => {
+    it("given a held item activates without being consumed, when the engine processes the item result, then item-activate is emitted", () => {
+      // Arrange
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          heldItem: "choice-band",
+          currentHp: 200,
+        }),
+      ];
+
+      const ruleset = new MockRuleset();
+      (ruleset as unknown as Record<string, unknown>).hasHeldItems = () => true;
+      (ruleset as unknown as Record<string, unknown>).applyHeldItem = () => ({
+        activated: true,
+        effects: [],
+        messages: [],
+      });
+
+      const { engine, events } = createEngine({ team1, ruleset });
+      engine.start();
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      const activateEvent = events.find((e) => e.type === "item-activate");
+      expect(activateEvent).toEqual(
+        expect.objectContaining({
+          type: "item-activate",
+          side: 0,
+          pokemon: "Charizard",
+          item: "choice-band",
+        }),
+      );
+      const consumedEvent = events.find((e) => e.type === "item-consumed");
+      expect(consumedEvent).toBeUndefined();
+      expect(engine.getActive(0)?.pokemon.heldItem).toBe("choice-band");
+    });
+  });
+
   describe("getAvailableMoves with disabled move", () => {
     it("given a pokemon with a disabled move, when getAvailableMoves is called, then move is marked disabled", () => {
       // Arrange
