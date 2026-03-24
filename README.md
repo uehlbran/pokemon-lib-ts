@@ -156,12 +156,12 @@ cd packages/core && npx vitest run --coverage
 
 ## Project Status
 
-All nine generations are complete. 10,282+ tests across all packages, validated against Showdown and Bulbapedia reference values.
+All nine generations are complete. 10,332+ tests across all packages, validated against Showdown and Bulbapedia reference values.
 
 | Package | Tests | Key Notes |
 |---------|-------|-----------|
 | core | 342 | All entity interfaces, stat calc, type effectiveness, PRNG |
-| battle | 546 | Singles engine complete; doubles deferred |
+| battle | 596 | Singles engine complete; doubles deferred |
 | gen1 | 800 | All move handlers done; Gen 1 quirks (Focus Energy bug, 1/256 miss, etc.) |
 | gen2 | 757 | Gen 2 mechanics complete (held items, weather, Special split) |
 | gen3 | 847 | Abilities system, natures, weather; extends BaseRuleset |

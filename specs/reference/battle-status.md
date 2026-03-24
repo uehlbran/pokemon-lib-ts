@@ -1,6 +1,6 @@
 # Battle Implementation Status
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-24
 **Overall estimate:** ~100% complete for singles battles (EXP gain + catch mechanics merged)
 **Architecture:** Pluggable gen-agnostic engine. Delegates ALL gen-specific behavior to GenerationRuleset. Depends only on @pokemon-lib-ts/core.
 
@@ -8,21 +8,21 @@
 
 ## DONE
 
-### BattleEngine (`packages/battle/src/engine/BattleEngine.ts` — 3,303 lines)
+### BattleEngine (`packages/battle/src/engine/BattleEngine.ts` — 5,891 lines)
 - Full turn resolution loop (turn-start → action selection → priority sort → turn-resolve → turn-end → faint-check)
 - `start()`, `submitAction()`, `submitSwitch()`, `getAvailableMoves()`, `getAvailableSwitches()`
 - `serialize()`/`deserialize()` — full JSON-safe state serialization
 - Event emitter system (`on`/`off`/`getEventLog`/`emit`)
 - Factory `fromGeneration()` via GenerationRegistry
 
-### GenerationRuleset Interface (`packages/battle/src/ruleset/GenerationRuleset.ts` — 413 lines)
+### GenerationRuleset Interface (`packages/battle/src/ruleset/GenerationRuleset.ts` — 753 lines)
 - 15 sub-interfaces (ISP): TypeSystem, StatCalculator, DamageSystem, CriticalHitSystem, TurnOrderSystem, MoveSystem, StatusSystem, AbilitySystem, ItemSystem, WeatherSystem, TerrainSystem, HazardSystem, SwitchSystem, EndOfTurnSystem, ValidationSystem
 - ~40 methods total; fully covers all battle delegation points
 
-### BaseRuleset (`packages/battle/src/ruleset/BaseRuleset.ts` — 627 lines)
+### BaseRuleset (`packages/battle/src/ruleset/BaseRuleset.ts` — 1,027 lines)
 - All Gen 3+ defaults: stat calc, crit (Gen 6+ 1.5×), turn order, accuracy/evasion, status damage, freeze/thaw, sleep/confusion/paralysis, Struggle, multi-hit, Protect diminishing returns, bind, perish song
 - 17-item EoT order, Pursuit pre-switch, switch-out volatile clearing
-- Tests: 4 files, ~2,187 lines
+- Tests: 4 files, 2,780 lines
 
 ### BattleState, BattleSide, ActivePokemon
 - `BattlePhase` (8 phases), `BattleFormat` (4 formats — singles only implemented), `WeatherState`, `TerrainState`, `TurnRecord`
@@ -73,21 +73,21 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
 ### AI Controllers
 - `AIController` interface — `chooseAction()`, `chooseSwitchIn()`
 - `RandomAI` — random move (with PP) or Struggle; random valid switch, or `null` when no legal replacement exists
-- Tests: 2 files, 758 lines
+- Tests: 2 files, 855 lines
 
 ### MockRuleset + MockDataManager (test helpers)
-- `tests/helpers/mock-ruleset.ts` — 394 lines, configurable fixed damage/hit/crit
-- `tests/helpers/mock-data-manager.ts` — 370 lines
+- `tests/helpers/mock-ruleset.ts` — 586 lines, configurable fixed damage/hit/crit
+- `tests/helpers/mock-data-manager.ts` — 519 lines
 
 ### Serialization
 - `serialize()`/`deserialize()` round-trips full battle state including Map/Set/SeededRandom
-- Tests: `deserialize.test.ts` (228 lines)
+- Tests: `deserialize.test.ts` (737 lines)
 
 ---
 
 ## STUBBED
 
-None — all previously stubbed items are now implemented.
+- `pickup` — Gen 5+ effect (overworld mechanic, negligible singles battle impact); still a stub in engine
 
 ---
 
@@ -98,7 +98,6 @@ None — all previously stubbed items are now implemented.
 | Doubles/Triples/Rotation formats | Massive separate initiative; BattleFormat type exists |
 | Greedy AI controller | Spec'd but deferred; RandomAI is sufficient for current gens |
 | Minimax AI controller | Spec'd but deferred |
-| pickup | Gen 5+ effect (overworld mechanic, negligible singles battle impact); stub in engine |
 
 ---
 

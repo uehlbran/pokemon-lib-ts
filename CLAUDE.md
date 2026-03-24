@@ -250,7 +250,7 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 | Package | Status | Tests | Open Bugs | Key Notes |
 |---------|--------|-------|-----------|-----------|
 | core | 100% | 342 | 0 | All entity interfaces, stat calc, type effectiveness, PRNG |
-| battle | 100% (singles) | 546 | 0 | Doubles/Triples deferred |
+| battle | 100% (singles) | 596 | 0 | Doubles/Triples deferred |
 | gen1 | 100% | 800 | 1 (#530 badge glitch — enhancement) | All move handlers done |
 | gen2 | 100% | 757 | 0 | All engine-level bugs closed |
 | gen3 | 100% | 847 | 1 (#141 Plus/Minus — doubles) | Charge/Mud Sport/Water Sport fixed |
