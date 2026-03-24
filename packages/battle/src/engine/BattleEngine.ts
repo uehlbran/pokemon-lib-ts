@@ -319,6 +319,10 @@ export class BattleEngine implements BattleEventEmitter {
       throw new Error("Battle has ended");
     }
 
+    if (side !== action.side) {
+      throw new Error(`Submitted side ${side} does not match action.side ${action.side}`);
+    }
+
     this.pendingActions.set(side, action);
 
     // When both sides have submitted, resolve the turn
