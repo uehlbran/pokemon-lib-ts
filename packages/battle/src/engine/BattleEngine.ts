@@ -5461,6 +5461,12 @@ export class BattleEngine implements BattleEventEmitter {
             });
           }
           pokemon.pokemon.heldItem = null;
+          this.emit({
+            type: "item-consumed",
+            side,
+            pokemon: getPokemonName(pokemon),
+            item: consumedItemId,
+          });
           break;
         }
         case "survive": {
