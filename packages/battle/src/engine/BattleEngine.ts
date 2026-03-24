@@ -219,6 +219,13 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private normalizeCustomDamageAmount(damage: number): number {
+    if (!Number.isFinite(damage)) {
+      return 0;
+    }
+    return Math.max(0, Math.trunc(damage));
+  }
+
   private applyCustomDamage(
     target: ActivePokemon,
     sourcePokemon: ActivePokemon,
@@ -228,8 +235,29 @@ export class BattleEngine implements BattleEventEmitter {
     type?: MoveData["type"] | null,
   ): void {
     const moveData = this.getCustomDamageMoveData(source, type);
-    let damage = amount;
-    const maxHp = target.pokemon.calculatedStats?.hp ?? target.pokemon.currentHp;
+    if (target.pokemon.currentHp <= 0) {
+      return;
+    }
+
+    let damage = this.normalizeCustomDamageAmount(amount);
+
+    if (damage > 0 && target.substituteHp > 0 && !moveData.flags.bypassSubstitute) {
+      target.substituteHp = Math.max(0, target.substituteHp - damage);
+      this.emit({
+        type: "message",
+        text: "The substitute took damage!",
+      });
+      if (target.substituteHp === 0) {
+        target.volatileStatuses.delete("substitute");
+        this.emit({
+          type: "volatile-end",
+          side: targetSide,
+          pokemon: getPokemonName(target),
+          volatile: "substitute",
+        });
+      }
+      return;
+    }
 
     if (this.ruleset.capLethalDamage) {
       const survivalResult = this.ruleset.capLethalDamage(
@@ -239,7 +267,7 @@ export class BattleEngine implements BattleEventEmitter {
         moveData,
         this.state,
       );
-      damage = survivalResult.damage;
+      damage = this.normalizeCustomDamageAmount(survivalResult.damage);
       for (const message of survivalResult.messages) {
         this.emit({ type: "message", text: message });
       }
@@ -254,6 +282,7 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    const maxHp = target.pokemon.calculatedStats?.hp ?? target.pokemon.currentHp;
     target.pokemon.currentHp = Math.max(0, target.pokemon.currentHp - damage);
     target.lastDamageTaken = damage;
     target.lastDamageType = type ?? moveData.type;
