@@ -770,6 +770,9 @@ export function applyGen9HeldItem(trigger: string, context: ItemContext): ItemRe
 
   let result: ItemResult;
   switch (trigger) {
+    case "before-turn-order":
+      result = handleBeforeTurnOrder(item, context);
+      break;
     case "before-move":
       result = handleBeforeMove(item, context);
       break;
@@ -805,6 +808,44 @@ export function applyGen9HeldItem(trigger: string, context: ItemContext): ItemRe
   }
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// before-turn-order
+// ---------------------------------------------------------------------------
+
+function handleBeforeTurnOrder(item: string, context: ItemContext): ItemResult {
+  const { pokemon } = context;
+  const pokemonName = pokemon.pokemon.nickname ?? "The Pokemon";
+  const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+  const currentHp = pokemon.pokemon.currentHp;
+
+  switch (item) {
+    case "quick-claw":
+      if (context.rng.chance(0.2)) {
+        return {
+          activated: true,
+          effects: [],
+          messages: [`${pokemonName}'s Quick Claw let it move first!`],
+        };
+      }
+      return NO_ACTIVATION;
+
+    case "custap-berry": {
+      const threshold = getPinchBerryThreshold(pokemon, 0.25);
+      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
+        return {
+          activated: true,
+          effects: [{ type: "consume", target: "self", value: "custap-berry" }],
+          messages: [`${pokemonName}'s Custap Berry let it move first!`],
+        };
+      }
+      return NO_ACTIVATION;
+    }
+
+    default:
+      return NO_ACTIVATION;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1332,24 +1373,6 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             { type: "consume", target: "self", value: "starf-berry" },
           ],
           messages: [`${pokemonName}'s Starf Berry sharply raised its ${chosenStat}!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    // Custap Berry: gives priority to the holder's next move at <= 25% HP (consumed)
-    // Source: Showdown data/items.ts -- Custap Berry onBeforeTurn
-    // Source: Bulbapedia "Custap Berry" -- lets the holder move first once
-    case "custap-berry": {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            { type: "speed-boost", target: "self", value: 1 },
-            { type: "consume", target: "self", value: "custap-berry" },
-          ],
-          messages: [`${pokemonName}'s Custap Berry let it move first!`],
         };
       }
       return NO_ACTIVATION;

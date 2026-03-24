@@ -392,7 +392,7 @@ export class Gen9Ruleset extends BaseRuleset {
    * Gen 9 held item handler.
    *
    * Delegates to applyGen9HeldItem which handles all item triggers:
-   * before-move, end-of-turn, on-damage-taken, on-contact, on-hit.
+   * before-turn-order, before-move, end-of-turn, on-damage-taken, on-contact, on-hit.
    *
    * Gen 9 changes from Gen 8:
    *   - No Z-Crystals or Mega Stones (already removed in Gen 8)
