@@ -39,6 +39,17 @@ describe("BattleHelpers", () => {
       expect(pokemon.moves[0]?.moveId).toBe("tackle");
     });
 
+    it("given repeated calls with the same species and level, when createTestPokemon is called, then each Pokemon has a unique uid", () => {
+      // Act
+      const firstPokemon = createTestPokemon(6, 50);
+      const secondPokemon = createTestPokemon(6, 50);
+
+      // Assert
+      expect(firstPokemon.uid).not.toBe(secondPokemon.uid);
+      expect(firstPokemon.uid).toMatch(/^test-6-50-\d+$/);
+      expect(secondPokemon.uid).toMatch(/^test-6-50-\d+$/);
+    });
+
     it("given overrides, when createTestPokemon is called, then overrides are applied", () => {
       // Act
       const pokemon = createTestPokemon(25, 30, {
