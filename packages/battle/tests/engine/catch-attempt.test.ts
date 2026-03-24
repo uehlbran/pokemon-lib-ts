@@ -243,8 +243,8 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
 
     function runCatchAttempt(): BattleEvent[] {
       const ruleset = new MockRuleset();
-      // No fixed result — MockRuleset.rollCatchAttempt consumes rng.next() in its default
-      // path, so the outcome (caught/shakes) is driven by the seeded RNG state.
+      // Source: packages/core/src/prng/seeded-random.ts — same seed produces the same
+      // sequence, so the catch outcome is driven by the seeded RNG state.
       const { engine, events } = createWildBattleEngine({ ruleset, seed });
       engine.start();
       engine.submitAction(0, { type: "item", side: 0, itemId: "poke-ball" });
