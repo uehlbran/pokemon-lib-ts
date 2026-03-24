@@ -1,5 +1,5 @@
 import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
@@ -415,11 +415,12 @@ describe("Bug 2A: switch-in ability processing", () => {
 
       ruleset.setGenerationForTest(config.generation);
       const engine = new BattleEngine(config, ruleset, dataManager);
+      vi.spyOn(engine.state.rng, "chance").mockReturnValue(false);
 
       engine.start();
 
-      // Source: SeededRandom(1).chance(0.5) returns false in the current core RNG,
-      // so the tied switch-in order should flip to side 1 before side 0.
+      // Source: In a tied switch-in ability case, battle RNG decides the order.
+      // This test stubs the tie-break roll to false so the later entry wins the flip.
       expect(callOrder).toEqual(["charizard-2", "charizard-1"]);
     });
   });

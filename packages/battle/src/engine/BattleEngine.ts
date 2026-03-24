@@ -176,21 +176,19 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private orderSwitchInAbilityEntries(
-    entries: Array<{ side: 0 | 1; pokemon: ActivePokemon }>,
-  ): Array<{ side: 0 | 1; pokemon: ActivePokemon }> {
-    if (entries.length < 2) {
-      return entries;
-    }
-
+    entries: readonly [
+      { side: 0 | 1; pokemon: ActivePokemon },
+      { side: 0 | 1; pokemon: ActivePokemon },
+    ],
+  ): [{ side: 0 | 1; pokemon: ActivePokemon }, { side: 0 | 1; pokemon: ActivePokemon }] {
     const [firstEntry, secondEntry] = entries;
-    if (!firstEntry || !secondEntry) {
-      return entries;
-    }
 
     const firstSpeed = firstEntry.pokemon.pokemon.calculatedStats?.speed ?? 0;
     const secondSpeed = secondEntry.pokemon.pokemon.calculatedStats?.speed ?? 0;
 
     if (firstSpeed === secondSpeed) {
+      // Source: Battle tie-breaks use the battle RNG when both sides are otherwise tied.
+      // Singles only reaches this helper with the two active switch-in ability holders.
       return this.state.rng.chance(0.5) ? [firstEntry, secondEntry] : [secondEntry, firstEntry];
     }
 

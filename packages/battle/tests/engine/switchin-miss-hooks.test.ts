@@ -514,6 +514,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     ];
 
     const { engine } = createEngine({ ruleset, team1, team2, seed: 1 });
+    vi.spyOn(engine.state.rng, "chance").mockReturnValue(false);
     engine.start();
 
     engine.state.sides[0].active[0]!.pokemon.currentHp = 1;
@@ -531,8 +532,8 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     engine.submitSwitch(0, 1);
     engine.submitSwitch(1, 1);
 
-    // Source: SeededRandom(1).chance(0.5) returns false, so the tied order should
-    // flip to side 1 before side 0 instead of preserving switch submission order.
+    // Source: In a tied replacement switch-in ability case, battle RNG decides the order.
+    // This test stubs the tie-break roll to false so side 1 resolves before side 0.
     expect(abilityOrder).toEqual(["side-1-replacement", "side-0-replacement"]);
   });
 });
