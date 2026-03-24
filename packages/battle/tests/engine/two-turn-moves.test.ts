@@ -73,9 +73,25 @@ function createEngine(overrides?: {
 
 describe("two-turn move engine infrastructure", () => {
   describe("given a Pokemon using a charge move, when the charge turn executes, then forcedMove is set and volatile applied", () => {
-    it("sets forcedMove on the attacker and applies the volatile status from forcedMoveSet", () => {
+    it("sets forcedMove on the attacker, applies the volatile status from forcedMoveSet, and deals no damage", () => {
       // Arrange: configure executeMoveEffect to return forcedMoveSet on the first call
       const ruleset = new MockRuleset();
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "fly", currentPP: 15, maxPP: 15, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+      ];
       let callCount = 0;
       const origExecute = ruleset.executeMoveEffect.bind(ruleset);
       ruleset.executeMoveEffect = (context: MoveEffectContext): MoveEffectResult => {
@@ -91,7 +107,7 @@ describe("two-turn move engine infrastructure", () => {
             messages: [],
             forcedMoveSet: {
               moveIndex: 0,
-              moveId: "tackle",
+              moveId: "fly",
               volatileStatus: "flying" as VolatileStatus,
             },
           };
@@ -99,8 +115,10 @@ describe("two-turn move engine infrastructure", () => {
         return origExecute(context);
       };
 
-      const { engine, events } = createEngine({ ruleset });
+      const { engine, events } = createEngine({ ruleset, team1 });
       engine.start();
+      const defenderStartHp = engine.getActive(1)?.pokemon.currentHp;
+      expect(defenderStartHp).toBeDefined();
 
       // Act: submit moves for both sides
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -109,7 +127,7 @@ describe("two-turn move engine infrastructure", () => {
       // Assert: forcedMove should be set on side 0's active Pokemon
       const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
-      expect(active0!.forcedMove).toEqual({ moveIndex: 0, moveId: "tackle" });
+      expect(active0!.forcedMove).toEqual({ moveIndex: 0, moveId: "fly" });
 
       // Assert: flying volatile should be applied
       expect(active0!.volatileStatuses.has("flying")).toBe(true);
@@ -119,6 +137,91 @@ describe("two-turn move engine infrastructure", () => {
         (e) => e.type === "volatile-start" && "volatile" in e && e.volatile === "flying",
       );
       expect(volatileStartEvents.length).toBe(1);
+
+      // Assert: charge turn does not deal damage before the forced move executes.
+      const defender = engine.getActive(1);
+      expect(defender).not.toBeNull();
+      expect(defender!.pokemon.currentHp).toBe(defenderStartHp);
+      const damageEvents = events.filter(
+        (e) => e.type === "damage" && "pokemon" in e && e.pokemon === "Blastoise",
+      );
+      expect(damageEvents.length).toBe(0);
+    });
+
+    it("clears the charge state and deals damage on the forced follow-up turn", () => {
+      const ruleset = new MockRuleset();
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "fly", currentPP: 15, maxPP: 15, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+      ];
+      let callCount = 0;
+      const origExecute = ruleset.executeMoveEffect.bind(ruleset);
+      ruleset.executeMoveEffect = (context: MoveEffectContext): MoveEffectResult => {
+        callCount++;
+        if (
+          context.attacker.pokemon.uid === "charizard-1" &&
+          context.move.id === "fly" &&
+          !context.attacker.volatileStatuses.has("flying")
+        ) {
+          return {
+            statusInflicted: null,
+            volatileInflicted: null,
+            statChanges: [],
+            recoilDamage: 0,
+            healAmount: 0,
+            switchOut: false,
+            messages: [],
+            forcedMoveSet: {
+              moveIndex: 0,
+              moveId: "fly",
+              volatileStatus: "flying" as VolatileStatus,
+            },
+          };
+        }
+        return origExecute(context);
+      };
+
+      const { engine, events } = createEngine({ ruleset, team1 });
+      engine.start();
+      const defenderStartHp = engine.getActive(1)?.pokemon.currentHp;
+      expect(defenderStartHp).toBeDefined();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const chargingAttacker = engine.getActive(0);
+      expect(chargingAttacker).not.toBeNull();
+      expect(chargingAttacker!.forcedMove).toEqual({ moveIndex: 0, moveId: "fly" });
+      expect(chargingAttacker!.volatileStatuses.has("flying")).toBe(true);
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const resolvedAttacker = engine.getActive(0);
+      const defender = engine.getActive(1);
+      expect(resolvedAttacker).not.toBeNull();
+      expect(defender).not.toBeNull();
+      expect(defender!.pokemon.currentHp).toBe(defenderStartHp! - 10);
+      expect(resolvedAttacker!.forcedMove).toBeNull();
+      expect(resolvedAttacker!.volatileStatuses.has("flying")).toBe(false);
+
+      const volatileStartEvents = events.filter(
+        (e) => e.type === "volatile-start" && "volatile" in e && e.volatile === "flying",
+      );
+      expect(volatileStartEvents.length).toBe(1);
+      expect(callCount).toBe(2);
     });
   });
 

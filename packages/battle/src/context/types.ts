@@ -138,7 +138,9 @@ export interface AccuracyContext {
 
 /**
  * All inputs required when executing a move's secondary effects.
- * Passed to `GenerationRuleset.executeMoveEffect()` after the damage step.
+ * Passed to `GenerationRuleset.executeMoveEffect()` after the damage step for
+ * normal moves, and before accuracy/damage for charge-turn setup handling on
+ * two-turn moves.
  */
 export interface MoveEffectContext {
   /** The Pokémon that used the move */

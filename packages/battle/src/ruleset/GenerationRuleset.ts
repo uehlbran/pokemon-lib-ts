@@ -213,8 +213,10 @@ export interface MoveSystem {
    */
   doesMoveHit(context: AccuracyContext): boolean;
   /**
-   * Execute a move's effect after damage calculation.
-   * Handles secondary effects, stat changes, status infliction.
+   * Execute a move's effect during move resolution.
+   * Usually runs after damage calculation, but charge-turn handlers may be
+   * consulted before accuracy/damage so they can request a forced follow-up move
+   * or consume Power Herb without taking the normal damage path.
    */
   executeMoveEffect(context: MoveEffectContext): MoveEffectResult;
   /**
