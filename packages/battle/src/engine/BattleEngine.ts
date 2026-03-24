@@ -4398,7 +4398,6 @@ export class BattleEngine implements BattleEventEmitter {
         }
         case "moody": {
           // Gen 5+ ability: raises one stat by 2 and lowers another by 1 at EoT.
-          // Stub: delegates to ruleset ability hook. No gen currently returns this effect.
           // Source: Showdown sim/abilities.ts — Moody triggers at residual phase
           for (const side of this.state.sides) {
             const active = side.active[0];
@@ -4422,7 +4421,6 @@ export class BattleEngine implements BattleEventEmitter {
         }
         case "harvest": {
           // Gen 5+ ability: 50% chance to restore a consumed Berry at EoT (100% in sun).
-          // Stub: delegates to ruleset ability hook. No gen currently returns this effect.
           // Source: Showdown sim/abilities.ts — Harvest triggers at residual phase
           for (const side of this.state.sides) {
             const active = side.active[0];

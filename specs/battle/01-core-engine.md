@@ -1,6 +1,6 @@
 <!-- SPEC FRONT-MATTER -->
 <!-- status: IMPLEMENTED -->
-<!-- last-updated: 2026-03-21 -->
+<!-- last-updated: 2026-03-23 -->
 
 # Battle Library — Core Engine
 
@@ -590,6 +590,9 @@ Example arrays:
 - `"tailwind-countdown"` — Tailwind duration countdown
 - `"trick-room-countdown"` — Trick Room duration countdown
 - `"speed-boost"` — Speed Boost ability stat increase (via `applyAbility("on-turn-end")`)
+- `"moody"` — Moody ability random stat changes (via `applyAbility("on-turn-end")`)
+- `"harvest"` — Harvest ability berry restoration (via `applyAbility("on-turn-end")`)
+- `"grassy-terrain-heal"` — Grassy Terrain HP recovery (via `applyTerrainEffects()`)
 - `"bad-dreams"` — Bad Dreams ability damage (via `applyAbility("on-turn-end")`)
 - `"poison-heal"` — Poison Heal ability HP recovery (via `applyAbility("on-turn-end")`)
 - `"weather-healing"` — Rain Dish, Dry Skin, Ice Body (via `applyAbility("on-turn-end")`)
@@ -612,11 +615,8 @@ Example arrays:
 - `"magnet-rise-countdown"` — Magnet Rise volatile countdown
 
 ### NOT YET IMPLEMENTED Effects
-The following effect identifiers have stubs in the engine switch statement that delegate to the ruleset, but no gen ruleset currently returns them:
-- `"moody"` — Moody ability random stat changes (Gen 5+; stub delegates to `applyAbility("on-turn-end")`)
-- `"harvest"` — Harvest ability berry restoration (Gen 5+; stub delegates to `applyAbility("on-turn-end")`)
+The following effect identifier still has a stub in the engine switch statement that delegates to the ruleset, but no gen ruleset currently returns it:
 - `"pickup"` — Pickup ability item collection (Gen 5+; stub delegates to `applyAbility("on-turn-end")`)
-- `"grassy-terrain-heal"` — Grassy Terrain HP recovery (Gen 6+; stub delegates to `applyTerrainEffects()`)
 
 ### IN PROGRESS Features
 - EXP gain on faint — feat/battle-exp-gain (participation tracker, awardExpForFaint, ExpGainEvent, LevelUpEvent)
