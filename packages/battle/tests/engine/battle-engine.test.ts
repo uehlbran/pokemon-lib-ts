@@ -287,6 +287,30 @@ describe("BattleEngine", () => {
       expect(damageEvents.length).toBeGreaterThan(0);
     });
 
+    it("given both sides submit moves, when turn resolves, then event pokemon fields use display names instead of uids", () => {
+      const { engine, events } = createTestEngine();
+      engine.start();
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 10;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const moveStarts = events.filter((e) => e.type === "move-start");
+      const damageEvents = events.filter((e) => e.type === "damage");
+      const faintEvents = events.filter((e) => e.type === "faint");
+      // Provenance: createTestEngine() defaults side 0/1 actives to Charizard/Blastoise in BattleHelpers.
+
+      expect(
+        moveStarts.map((event) => (event.type === "move-start" ? event.pokemon : null)),
+      ).toEqual(["Charizard"]);
+      expect(damageEvents.map((event) => (event.type === "damage" ? event.pokemon : null))).toEqual(
+        ["Blastoise"],
+      );
+      expect(faintEvents.map((event) => (event.type === "faint" ? event.pokemon : null))).toEqual([
+        "Blastoise",
+      ]);
+    });
+
     it("given a mismatched submitAction side and action.side, when submitAction is called, then it throws instead of queueing an inconsistent action", () => {
       const { engine } = createTestEngine();
       engine.start();
@@ -666,6 +690,33 @@ describe("BattleEngine", () => {
 
       // Assert
       expect(switches).toEqual([]);
+    });
+
+    it("given the active pokemon has fainted but a healthy bench remains, when getAvailableSwitches is called, then trap checks are skipped for replacement flow", () => {
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 0,
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          currentHp: 150,
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+      ];
+      const { engine } = createTestEngine({
+        team1,
+        ruleset: new TrappedSwitchRuleset(),
+      });
+      engine.start();
+      engine.state.sides[0].active[0]!.pokemon.currentHp = 0;
+
+      const switches = engine.getAvailableSwitches(0);
+
+      expect(switches).toEqual([1]);
     });
   });
 
@@ -1157,6 +1208,19 @@ describe("BattleEngine", () => {
       const log = engine.getEventLog();
       expect(log.length).toBeGreaterThan(0);
       expect(log[0]?.type).toBe("battle-start");
+    });
+
+    it("given a retrieved event log, when the caller mutates that array, then the engine's backing log is unchanged", () => {
+      const { engine } = createTestEngine();
+      engine.start();
+
+      const log = engine.getEventLog();
+      const originalLength = log.length;
+
+      (log as BattleEvent[]).push({ type: "message", text: "mutated" });
+
+      expect(log.length).toBe(originalLength + 1);
+      expect(engine.getEventLog()).toHaveLength(originalLength);
     });
   });
 

@@ -161,7 +161,7 @@ export interface MoveStartEvent {
   readonly type: "move-start";
   /** Which side the acting Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the acting Pokémon (from `PokemonInstance.id`) */
+  /** Display name of the acting Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** Move ID string (e.g., `"tackle"`, `"fire-blast"`) */
   readonly move: string;
@@ -175,7 +175,7 @@ export interface MoveMissEvent {
   readonly type: "move-miss";
   /** Which side the acting Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the acting Pokémon */
+  /** Display name of the acting Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** Move ID string */
   readonly move: string;
@@ -190,7 +190,7 @@ export interface MoveFailEvent {
   readonly type: "move-fail";
   /** Which side the acting Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the acting Pokémon */
+  /** Display name of the acting Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** Move ID string */
   readonly move: string;
@@ -209,7 +209,7 @@ export interface DamageEvent {
   readonly type: "damage";
   /** Which side the damaged Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the damaged Pokémon */
+  /** Display name of the damaged Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** HP removed (always a positive integer) */
   readonly amount: number;
@@ -230,7 +230,7 @@ export interface HealEvent {
   readonly type: "heal";
   /** Which side the healed Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the healed Pokémon */
+  /** Display name of the healed Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** HP restored (always a positive integer) */
   readonly amount: number;
@@ -251,7 +251,7 @@ export interface FaintEvent {
   readonly type: "faint";
   /** Which side the fainted Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the fainted Pokémon */
+  /** Display name of the fainted Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
 }
 
@@ -289,7 +289,7 @@ export interface StatusInflictEvent {
   readonly type: "status-inflict";
   /** Which side the affected Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the affected Pokémon */
+  /** Display name of the affected Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** The status condition that was applied */
   readonly status: PrimaryStatus;
@@ -305,7 +305,7 @@ export interface StatusCureEvent {
   readonly type: "status-cure";
   /** Which side the cured Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the cured Pokémon */
+  /** Display name of the cured Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** The status condition that was removed */
   readonly status: PrimaryStatus;
@@ -321,7 +321,7 @@ export interface VolatileStartEvent {
   readonly type: "volatile-start";
   /** Which side the affected Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the affected Pokémon */
+  /** Display name of the affected Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** The volatile status that was applied */
   readonly volatile: VolatileStatus;
@@ -336,7 +336,7 @@ export interface VolatileEndEvent {
   readonly type: "volatile-end";
   /** Which side the affected Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the affected Pokémon */
+  /** Display name of the affected Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** The volatile status that ended */
   readonly volatile: VolatileStatus;
@@ -352,7 +352,7 @@ export interface StatChangeEvent {
   readonly type: "stat-change";
   /** Which side the affected Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the affected Pokémon */
+  /** Display name of the affected Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** Which stat changed */
   readonly stat: BattleStat;
@@ -417,7 +417,7 @@ export interface AbilityActivateEvent {
   readonly type: "ability-activate";
   /** Which side the Pokémon with the ability belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the Pokémon whose ability activated */
+  /** Display name of the Pokémon whose ability activated */
   readonly pokemon: string;
   /** Ability ID string (e.g., `"intimidate"`, `"speed-boost"`) */
   readonly ability: string;
@@ -432,7 +432,7 @@ export interface ItemActivateEvent {
   readonly type: "item-activate";
   /** Which side the Pokémon holding the item belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the Pokémon holding the item */
+  /** Display name of the Pokémon holding the item */
   readonly pokemon: string;
   /** Item ID string (e.g., `"choice-band"`, `"leftovers"`) */
   readonly item: string;
@@ -447,7 +447,7 @@ export interface ItemConsumedEvent {
   readonly type: "item-consumed";
   /** Which side the Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the Pokémon that consumed the item */
+  /** Display name of the Pokémon that consumed the item */
   readonly pokemon: string;
   /** Item ID string that was consumed (e.g., `"sitrus-berry"`, `"focus-sash"`) */
   readonly item: string;
@@ -518,7 +518,7 @@ export interface MegaEvolveEvent {
   readonly type: "mega-evolve";
   /** Which side the Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the Pokémon that mega evolved */
+  /** Display name of the Pokémon that mega evolved */
   readonly pokemon: string;
   /** The mega form name (e.g., `"mega-charizard-x"`) */
   readonly form: string;
@@ -533,7 +533,7 @@ export interface DynamaxEvent {
   readonly type: "dynamax";
   /** Which side the Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the Pokémon that dynamaxed */
+  /** Display name of the Pokémon that dynamaxed */
   readonly pokemon: string;
 }
 
@@ -545,7 +545,7 @@ export interface DynamaxEndEvent {
   readonly type: "dynamax-end";
   /** Which side the Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the Pokémon that reverted from Dynamax */
+  /** Display name of the Pokémon that reverted from Dynamax */
   readonly pokemon: string;
 }
 
@@ -559,7 +559,7 @@ export interface TerastallizeEvent {
   readonly type: "terastallize";
   /** Which side the Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the Pokémon that terastallized */
+  /** Display name of the Pokémon that terastallized */
   readonly pokemon: string;
   /** The type the Pokémon changed to via Terastallization */
   readonly teraType: PokemonType;
@@ -575,7 +575,7 @@ export interface ZMoveEvent {
   readonly type: "z-move";
   /** Which side the acting Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the acting Pokémon */
+  /** Display name of the acting Pokémon */
   readonly pokemon: string;
   /** Z-Move name (e.g., `"gigavolt-havoc"`) */
   readonly move: string;
@@ -592,7 +592,7 @@ export interface CatchAttemptEvent {
   readonly type: "catch-attempt";
   /** Ball item ID used (e.g., `"poke-ball"`, `"ultra-ball"`) */
   readonly ball: string;
-  /** Identifier of the wild Pokémon targeted */
+  /** Display name of the wild Pokémon targeted */
   readonly pokemon: string;
   /** Number of ball shakes (0–3) before the outcome was decided */
   readonly shakes: number;
@@ -711,10 +711,11 @@ export type BattleEventListener = (event: BattleEvent) => void;
 
 /**
  * Interface for objects that emit BattleEvents. Implemented by BattleEngine.
- * Consumers use `on`/`off` for real-time updates and `getEventLog` for replay.
+ * Consumers use `on`/`off` for real-time updates and `getEventLog` for replay snapshots.
  */
 export interface BattleEventEmitter {
   on(listener: BattleEventListener): void;
   off(listener: BattleEventListener): void;
+  /** Returns a snapshot copy of the event log, not a live view. */
   getEventLog(): readonly BattleEvent[];
 }
