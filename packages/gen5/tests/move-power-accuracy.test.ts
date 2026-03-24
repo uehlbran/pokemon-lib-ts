@@ -171,7 +171,6 @@ function makeCtx(overrides: {
 describe("Gen 5 move data verification (snapshot)", () => {
   // Load moves.json at module level for all data tests
   // Source: packages/gen5/data/moves.json — generated from Showdown gen5 data
-  // biome-ignore lint/suspicious/noExplicitAny: test helper — loading raw JSON
   const moves: any[] = movesData as any[];
 
   function findMove(id: string) {

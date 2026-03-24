@@ -25,9 +25,7 @@ This repository uses AI-powered code review tools to supplement human review. AI
 
 **What it does:** Structured code review with severity categories (critical/major/minor/suggestion), auto-generated PR description, and improvement suggestions.
 
-**Type:** GitHub Action (`.github/workflows/pr-review.yml`). Best-effort -- soft-fails on rate limit.
-
-**Tier:** Free for open source (75 PRs/month). Teams tier through ~April 2026.
+**Type:** Legacy hosted GitHub Action. Advisory only; the hosted workflow is no longer relied on for verification.
 
 **Configuration:** `.qodo` in repo root.
 
@@ -49,6 +47,11 @@ This repository uses AI-powered code review tools to supplement human review. AI
 
 **Configuration:** `.claude/agents/pokemon-reviewer.md`
 
+### Local Verification (Authoritative)
+
+Run `npm run verify:local` before PRs. This is the source of truth for build, test, typecheck,
+contract checks, package-boundary checks, lint, and changeset validation.
+
 ### Local Pre-PR Review (Required)
 
 Before pushing any PR, run a deep local review using Claude Code:
@@ -63,22 +66,22 @@ This runs three specialized review agents in parallel:
 - **sentinel** -- security vulnerabilities, auth flaws, data exposure
 
 This is the **primary review gate**. It reads full project context including specs and is deeper
-than any remote AI reviewer. Do not skip it — CodeRabbit and Qodo are bonus-only and can be
-rate-limited.
+than any remote AI reviewer. Do not skip it.
 
 ## Full Review Workflow
 
-1. **Local (required):** Run `/review` — falcon + kestrel + sentinel must pass
-2. **Push:** `git pushreview` (pushes + triggers Claude review comment on the PR)
-3. **CI:** Build, test, typecheck, lint must pass (required)
-4. **CodeRabbit:** Auto-posts summary + inline comments (advisory, bonus)
-5. **Qodo PR-Agent:** Auto-posts structured review (advisory, best-effort — may be rate-limited)
+1. **Local verification:** Run `npm run verify:local`
+2. **Local AI review:** Run `/review` — falcon + kestrel + sentinel must pass
+3. **Push:** `git pushreview` (pushes + triggers Claude review comment on the PR)
+4. **CodeRabbit:** Auto-posts summary + inline comments (advisory)
+5. **Qodo PR-Agent:** May still comment, but it is advisory only and not relied on
 6. **Human:** Review feedback, address anything valid, approve and merge
 
 ## Guidelines
 
-1. **`/review` is required** -- Run falcon/kestrel/sentinel locally before every PR. This is not optional.
-2. **AI reviews are advisory** -- Remote reviewers comment but never approve. A human reviewer must approve every PR.
-3. **Don't blindly fix** -- Evaluate AI suggestions critically. They can be wrong.
-4. **Dismiss false positives** -- React with :thumbsdown: or reply explaining why the suggestion doesn't apply.
-5. **Security findings are high priority** -- If an AI flags a security issue, investigate before dismissing.
+1. **`npm run verify:local` is required** -- Run it before every PR.
+2. **`/review` is required** -- Run falcon/kestrel/sentinel locally before every PR.
+3. **AI reviews are advisory** -- Remote reviewers comment but never approve. A human reviewer must approve every PR.
+4. **Don't blindly fix** -- Evaluate AI suggestions critically. They can be wrong.
+5. **Dismiss false positives** -- React with :thumbsdown: or reply explaining why the suggestion doesn't apply.
+6. **Security findings are high priority** -- If an AI flags a security issue, investigate before dismissing.

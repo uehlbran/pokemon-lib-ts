@@ -7,7 +7,6 @@ import type {
 import type {
   EntryHazardType,
   Gender,
-  MoveData,
   PokemonInstance,
   PokemonType,
   VolatileStatus,

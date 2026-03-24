@@ -37,7 +37,7 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 - **Core has zero runtime dependencies.** This is a hard rule. If you need an external library, it doesn't belong in core.
 - **The battle engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
 - **Turn flow**: `turn-start → action selection → priority sort → turn-resolve (accuracy check → move execution → damage/effects → ability triggers) → turn-end → weather/status ticks → faint-check → next turn or game over`
-- **Branch-first (enforced by hook).** Before editing any repo file, run `/start-task <branch-name>`. The `enforce-branch-first.sh` hook blocks Edit/Write until a session branch is declared. See `.claude/rules/branch-first.md`.
+- **Branch-first (enforced by hook).** Before editing any repo file, run `/start-task <branch-name>` to create a fresh task-owned worktree from `origin/main`. The root checkout is not for task work. See `.claude/rules/branch-first.md`.
 
 ## Tech Stack
 
@@ -51,13 +51,27 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 ## Commands
 
 ```bash
+npm run verify:local  # Local verification gate
 npm run build          # Build all packages (turbo)
-npm run test           # Test all packages (turbo)
+npm run test           # Full test suite: fast + medium + slow
+npm run test:fast      # Default fast test path
+npm run test:medium    # Replay validation + cheap simulation confidence checks
+npm run test:slow      # Manual heavy smoke verification
 npm run typecheck      # Type check all packages (turbo)
 npx @biomejs/biome check --write .   # Lint + format
 npx vitest run         # Run tests (from package dir)
 npx vitest run --coverage  # Run with coverage
 ```
+
+### Verification Model
+
+- `npm run test:fast` — default fast test loop while developing.
+- `npm run test:medium` — replay validation plus cheap simulation confidence checks for
+  battle-relevant changes.
+- `npm run test:slow` — manual heavy smoke coverage for broad or confidence-sensitive changes.
+- `npm run test` — all test tiers: fast, medium, then slow.
+- `npm run verify:local` — the local handoff gate. It runs the broader non-test checks plus
+  `test:fast` before commits and PR updates.
 
 ### Biome Tips
 - `npx @biomejs/biome check --changed --since=main .` — lint only changed files (`--since=main` is required; `vcs.defaultBranch` is not set in biome.json so `--changed` alone errors)
@@ -216,7 +230,7 @@ Every PR requires local review before push plus a human approver:
 
 - **`/review` (required)** — runs falcon (correctness), kestrel (architecture), sentinel (security) locally. Must be run before every PR. This is the primary review gate.
 - **CodeRabbit** — inline comments, PR summary, security scan (advisory, bonus). Config: `.coderabbit.yaml`
-- **Qodo PR-Agent** — structured review (advisory, best-effort — may be rate-limited). GitHub Action.
+- **Qodo PR-Agent** — structured review (advisory, best-effort — may be rate-limited). Legacy hosted GitHub Action.
 - **Claude Code** — deep local review via `pokemon-reviewer` subagent. Runs on push via `git pushreview`. Posts findings to PR as comments (advisory).
 - **Human** — final say on architecture and correctness. Human review is a process rule enforced via CLAUDE.md, not a branch protection setting.
 
@@ -312,7 +326,7 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 
 ### Branch Discipline
 
-- **Always branch from latest main**: `git fetch origin main && git checkout -b <branch> origin/main`
+- **Start in a fresh task-owned worktree**: `/start-task <branch>` creates one from `origin/main`. Do not do task work in the root checkout.
 - **Never reuse branch names** for unrelated work — if a branch was used in a prior PR, create a new one
 - **Use descriptive, unique names**: include the scope (e.g., `fix/gen1-crit-calc`, not `fix/gen1-corrections`)
 - **Rebase before PR**: before opening a PR, rebase onto `origin/main` to minimize conflicts
@@ -328,7 +342,13 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 
 ## PR Workflow
 
-- **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally. Do not depend on CodeRabbit/Qodo — they can be rate-limited.
+- **Local verification is authoritative**: run `npm run verify:local` before opening or updating a PR.
+- **Three test tiers**: `test:fast` is the default fast test loop, `test:medium` covers replay
+  validation and cheap simulation checks, `test:slow` is reserved for manual heavy smoke
+  coverage, and `test` runs all three tiers.
+- **`verify:local` is the handoff gate**: it runs the broader non-test checks plus `test:fast`
+  before commits/PR updates.
+- **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally.
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/*/src/` or `packages/*/data/`. Creates a `.changeset/<name>.md` file; does NOT edit `package.json` or `CHANGELOG.md`. See Package Versioning above. Tests, docs, config, and `specs/` changes do not require a changeset.
 - **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. **Before using `Closes: N/A`**, run `gh issue list --state open --search "KEYWORDS"` with at least 2 keyword sets — only use N/A if no matching issue is found. See `.claude/rules/issue-linking.md`. **CRITICAL SYNTAX**: `Closes #50, #80` only closes #50 — each issue needs its own keyword on its own line. See `.claude/rules/issue-closing-syntax.md`.
 - **Always use `/babysit-pr <number>` after creating a PR** — mandatory. This is the ONLY sanctioned way to monitor, address comments, and merge. Do NOT run `gh pr merge` directly — the comment gate hook will block it if review threads haven't been acknowledged.
@@ -348,7 +368,7 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
   - A decision requires trade-offs only the user can weigh
 - **Check PR state before acting**: run `gh pr view <number> --json state` before investigating review comments or doing work on a PR. If `MERGED` or `CLOSED`, stop
 - **Never run `gh pr merge` directly** — use `/babysit-pr <number>` instead. If you must verify merge state after `/babysit-pr` completes, use `gh pr view <number> --json state` — `gh pr merge --auto` produces no output on success
-- **CodeRabbit and Qodo are advisory only** — not required checks. Do not block merge on them. Required checks: `build`, `test`, `typecheck`, `lint`
+- **CodeRabbit and Qodo are advisory only** — do not block merge on them or rely on them as verification. Required local verification is `npm run verify:local`.
 - **`gh pr checks` exit code 8 means pending**, not failure
 - **`gh pr edit` is broken for body edits** — it calls the deprecated GitHub Projects (classic) API and errors even when only updating `--body`. Use `gh api PATCH /repos/{owner}/{repo}/pulls/{number} --field body="..."` instead whenever you need to edit a PR body after creation.
 

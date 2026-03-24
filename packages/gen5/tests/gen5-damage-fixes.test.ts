@@ -2,7 +2,7 @@ import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen5Damage, pokeRound } from "../src/Gen5DamageCalc";
+import { calculateGen5Damage } from "../src/Gen5DamageCalc";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 
 // ---------------------------------------------------------------------------

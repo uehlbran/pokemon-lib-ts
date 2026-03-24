@@ -10,6 +10,8 @@ rather than inventing a parallel workflow.
 2. If you are working inside a subtree that has its own `CLAUDE.md`, read that file before
    editing in that subtree.
 3. Treat `.claude/` as the source of truth for workflow rules, review roles, and task setup.
+4. Start every new task in a fresh task-owned worktree from `origin/main`; the root checkout is
+   not for task work.
 
 ## Mandatory Instruction Discipline
 
@@ -40,10 +42,22 @@ Agents must read repo instructions before acting, not after making a mistake.
   in
   [`.claude/skills/start-task/SKILL.md`](./.claude/skills/start-task/SKILL.md).
 - Do not edit repo files until the session branch requirement has been satisfied.
+- Local verification is authoritative: run `npm run verify:local` before PRs and other
+  handoffs. Use `npm run test:fast` as the default fast test loop, `npm run test:medium` for
+  replay/simulation confidence checks when battle behavior is relevant, and `npm run test:slow`
+  for manual heavy smoke coverage.
 - Respect repo safety guidance in:
   - [`.claude/rules/git-safety.md`](./.claude/rules/git-safety.md)
   - [`.claude/rules/context-management.md`](./.claude/rules/context-management.md)
   - [`.claude/rules/bug-filing.md`](./.claude/rules/bug-filing.md)
+
+## Verification Model
+
+- `npm run test:fast` — default fast test loop while developing.
+- `npm run test:medium` — replay validation plus cheap simulation confidence checks.
+- `npm run test:slow` — manual heavy smoke coverage.
+- `npm run test` — all three test tiers.
+- `npm run verify:local` — broader handoff gate that runs non-test checks plus `test:fast`.
 
 ## Repo-Specific Expectations
 

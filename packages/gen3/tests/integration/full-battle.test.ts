@@ -951,7 +951,10 @@ describe("Gen 3 Ability Immunity Integration", () => {
 // Wave 2: Stability across many seeds
 // ---------------------------------------------------------------------------
 
-describe("Gen 3 Battle Stability", () => {
+const describeGen3Stability =
+  process.env.POKEMON_LIB_TS_SLOW_STABILITY === "1" ? describe : describe.skip;
+
+describeGen3Stability("Gen 3 Battle Stability", () => {
   it("given battles with various ability teams, when run with 10 different seeds, then all complete", () => {
     // Stability test: ensure all ability mechanics work together without crashes
     const seeds = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];

@@ -204,7 +204,10 @@ function makeAbilityContext(overrides: {
     pokemon,
     opponent,
     state: makeState(),
-    rng: { next: () => 0.5, nextInt: (min: number, max: number) => min } as unknown as SeededRandom,
+    rng: {
+      next: () => 0.5,
+      nextInt: (min: number, _max: number) => min,
+    } as unknown as SeededRandom,
     move: overrides.move ?? undefined,
   } as AbilityContext;
 }
@@ -227,7 +230,10 @@ function makeItemContext(overrides: {
   return {
     pokemon,
     state: makeState(),
-    rng: { next: () => 0.5, nextInt: (min: number, max: number) => min } as unknown as SeededRandom,
+    rng: {
+      next: () => 0.5,
+      nextInt: (min: number, _max: number) => min,
+    } as unknown as SeededRandom,
   } as ItemContext;
 }
 
