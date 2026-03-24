@@ -1317,13 +1317,14 @@ describe("handleGen5SwitchAbility passive-immunity -- Dry Skin", () => {
 });
 
 describe("handleGen5SwitchAbility passive-immunity -- Overcoat", () => {
-  it("given Overcoat, when passive check triggered, then grants weather immunity", () => {
-    // Source: Showdown data/mods/gen5/abilities.ts — Overcoat: sandstorm/hail immunity only
+  it("given Overcoat, when passive check triggered, then returns no passive-immunity effect", () => {
+    // Source: Showdown data/mods/gen5/abilities.ts — Overcoat's weather immunity is handled
+    // by the weather module, not the passive-immunity ability hook.
     const ctx = makeContext({ ability: "overcoat", trigger: "passive-immunity" });
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual({ effectType: "weather-immunity", target: "self" });
+    expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
   });
 
   it("given Overcoat, when passive check triggered, then no messages (silent)", () => {
@@ -1336,13 +1337,14 @@ describe("handleGen5SwitchAbility passive-immunity -- Overcoat", () => {
 });
 
 describe("handleGen5SwitchAbility passive-immunity -- Sand Rush", () => {
-  it("given Sand Rush, when passive check triggered, then grants weather immunity", () => {
-    // Source: Showdown data/abilities.ts — Sand Rush: sandstorm immunity
+  it("given Sand Rush, when passive check triggered, then returns no passive-immunity effect", () => {
+    // Source: Showdown data/abilities.ts — Sand Rush's sandstorm immunity is handled by the
+    // weather module, not the passive-immunity ability hook.
     const ctx = makeContext({ ability: "sand-rush", trigger: "passive-immunity" });
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual({ effectType: "weather-immunity", target: "self" });
+    expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
   });
 
   it("given Sand Rush, when passive check triggered, then speed doubling handled elsewhere", () => {
@@ -1350,7 +1352,7 @@ describe("handleGen5SwitchAbility passive-immunity -- Sand Rush", () => {
     const ctx = makeContext({ ability: "sand-rush", trigger: "passive-immunity" });
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
-    // Just confirm it returns weather-immunity, not stat-change
+    // Just confirm it remains a no-op, not a stat-change hook.
     expect(result.effects.every((e) => e.effectType !== "stat-change")).toBe(true);
   });
 });

@@ -5886,10 +5886,10 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         default:
-          // damage-reduction, weather-immunity are intentionally NOT processed
-          // here. They are passive checks handled inline by the ruleset's calculateDamage()
-          // and ability trigger systems — not post-hoc engine effects. This is by design
-          // per the cardinal rule: the engine delegates ALL gen-specific behavior to rulesets.
+          // damage-reduction is intentionally NOT processed here. It is a passive check
+          // handled inline by the ruleset's calculateDamage() and ability trigger systems,
+          // not a post-hoc engine effect. This is by design per the cardinal rule: the
+          // engine delegates ALL gen-specific behavior to rulesets.
           break;
       }
     }
