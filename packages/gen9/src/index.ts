@@ -3,6 +3,9 @@
 export { createGen9DataManager } from "./data/index.js";
 export { handleGen9Ability } from "./Gen9Abilities.js";
 export {
+  applyGen9DauntlessShieldBoost,
+  applyGen9IntrepidSwordBoost,
+  applyGen9ProteanTypeChange,
   getAteAbilityOverride,
   getFluffyModifier,
   getFurCoatMultiplier,
@@ -18,9 +21,6 @@ export {
   getToughClawsMultiplier,
   handleGen9DamageCalcAbility,
   handleGen9DamageImmunityAbility,
-  handleGen9DauntlessShield,
-  handleGen9IntrepidSword,
-  handleGen9ProteanTypeChange,
   hasSheerForceEligibleEffect,
   isParentalBondEligible,
   isSheerForceEligibleMove,
@@ -31,20 +31,18 @@ export {
 export {
   canToxicChainApply,
   EMBODY_ASPECT_BOOSTS,
-  getSupremeOverlordMultiplier,
-  handleDauntlessShieldGen9,
   handleEmbodyAspect,
+  handleGen9DauntlessShieldTrigger,
+  handleGen9IntrepidSwordTrigger,
   handleGen9NewAbility,
+  handleGen9ProteanTrigger,
   handleGoodAsGold,
-  handleIntrepidSwordGen9,
   handleMyceliumMight,
-  handleProteanGen9,
   handleToxicChain,
   hasMyceliumMightPriorityReduction,
   isBlockedByGoodAsGold,
   isEmbodyAspect,
   isMyceliumMightBypassingAbility,
-  SUPREME_OVERLORD_TABLE,
 } from "./Gen9AbilitiesNew.js";
 export type { BoostableStat } from "./Gen9AbilitiesStat.js";
 export {

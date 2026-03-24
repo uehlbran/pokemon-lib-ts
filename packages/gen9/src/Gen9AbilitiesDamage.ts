@@ -304,7 +304,7 @@ export function getAteAbilityOverride(
  *   onPrepareHit: if (this.effectState.protean) return;
  *   this.effectState.protean = true;
  */
-export function handleGen9ProteanTypeChange(
+export function applyGen9ProteanTypeChange(
   pokemon: ActivePokemon,
   moveType: PokemonType,
   sideIndex: 0 | 1,
@@ -335,6 +335,11 @@ export function handleGen9ProteanTypeChange(
   ];
 }
 
+/**
+ * @deprecated Use applyGen9ProteanTypeChange for the explicit low-level mutation helper.
+ */
+export const handleGen9ProteanTypeChange = applyGen9ProteanTypeChange;
+
 // ---------------------------------------------------------------------------
 // Intrepid Sword / Dauntless Shield -- once per battle (Gen 9 nerf)
 // ---------------------------------------------------------------------------
@@ -351,7 +356,7 @@ export function handleGen9ProteanTypeChange(
  *
  * @returns true if the ability activated (Atk should be boosted by +1)
  */
-export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
+export function applyGen9IntrepidSwordBoost(pokemon: ActivePokemon): boolean {
   if (pokemon.ability !== "intrepid-sword") return false;
 
   // Check if already used this battle — persisted on PokemonInstance so it survives switches.
@@ -365,6 +370,11 @@ export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
 }
 
 /**
+ * @deprecated Use applyGen9IntrepidSwordBoost for the explicit low-level mutation helper.
+ */
+export const handleGen9IntrepidSword = applyGen9IntrepidSwordBoost;
+
+/**
  * Handle Gen 9 Dauntless Shield on switch-in.
  *
  * Gen 9 nerf: only activates on the FIRST switchin of the entire battle.
@@ -376,7 +386,7 @@ export function handleGen9IntrepidSword(pokemon: ActivePokemon): boolean {
  *
  * @returns true if the ability activated (Def should be boosted by +1)
  */
-export function handleGen9DauntlessShield(pokemon: ActivePokemon): boolean {
+export function applyGen9DauntlessShieldBoost(pokemon: ActivePokemon): boolean {
   if (pokemon.ability !== "dauntless-shield") return false;
 
   // Check if already used this battle — persisted on PokemonInstance so it survives switches.
@@ -388,6 +398,11 @@ export function handleGen9DauntlessShield(pokemon: ActivePokemon): boolean {
 
   return true;
 }
+
+/**
+ * @deprecated Use applyGen9DauntlessShieldBoost for the explicit low-level mutation helper.
+ */
+export const handleGen9DauntlessShield = applyGen9DauntlessShieldBoost;
 
 // ---------------------------------------------------------------------------
 // Public API: damage-calc abilities handler
