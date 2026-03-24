@@ -9,6 +9,8 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null) 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "")}"
 [ -z "$PROJECT_DIR" ] && exit 0
 
+PRIMARY_WORKTREE=$(git -C "$PROJECT_DIR" worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p' | head -1)
+
 # Allow edits outside the project directory (e.g. memory files in ~/.claude/)
 case "$FILE_PATH" in
   "$PROJECT_DIR"/*) ;;
@@ -25,6 +27,14 @@ case "$FILE_PATH" in
   "$PROJECT_DIR"/.claude/.session-branch) exit 0 ;; # skill writes this
   "$PROJECT_DIR"/.changeset/*) exit 0 ;; # changesets created by /version skill
 esac
+
+if [ -n "$PRIMARY_WORKTREE" ] && [ "$PROJECT_DIR" = "$PRIMARY_WORKTREE" ]; then
+  echo "BLOCKED: The primary checkout is not for task work." >&2
+  echo "" >&2
+  echo "Create a fresh task-owned worktree from origin/main with /start-task <branch-name>." >&2
+  echo "Leave the root checkout untouched; all new work belongs in a dedicated worktree." >&2
+  exit 2
+fi
 
 MARKER="$PROJECT_DIR/.claude/.session-branch"
 if [ ! -f "$MARKER" ]; then

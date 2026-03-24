@@ -3,7 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest run tests --passWithNoTests",
+    "test:integration": "vitest run \"tests/integration/**/*.test.ts\" --passWithNoTests",
+    "test:smoke": "vitest run \"tests/smoke/**/*.test.ts\" --passWithNoTests",
+    "test:e2e": "vitest run \"tests/e2e/**/*.test.ts\" --passWithNoTests",
+    "test:stress": "vitest run \"tests/stress/**/*.test.ts\" --passWithNoTests",
+    "test:all": "npm run test && npm run test:smoke && npm run test:e2e && npm run test:stress",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

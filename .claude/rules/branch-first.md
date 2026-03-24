@@ -1,7 +1,8 @@
 # Branch-First Rule (Enforced by Hook)
 
 Before editing ANY repo file, run `/start-task <branch-name>` to create a
-dedicated branch and register it for this session.
+fresh task-owned worktree from `origin/main` and register it for this session.
+The root checkout is not for task work.
 
 The `enforce-branch-first.sh` hook BLOCKS Edit/Write calls on repo files
 until `/start-task` has been run. This prevents wasted tokens from editing

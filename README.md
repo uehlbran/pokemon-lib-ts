@@ -1,11 +1,9 @@
 # Pokemon Library Monorepo
 
-[![CI](https://github.com/uehlbran/pokemon-lib-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/uehlbran/pokemon-lib-ts/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/uehlbran/pokemon-lib-ts)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-5FA04E?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![CodeRabbit](https://img.shields.io/coderabbit/prs/github/uehlbran/pokemon-lib-ts?label=CodeRabbit&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+)](https://coderabbit.ai)
-[![Qodo Merge](https://img.shields.io/badge/AI%20Review-Qodo%20Merge-5B4FC4?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+)](https://www.qodo.ai/products/qodo-merge/)
 
 Modular TypeScript libraries for building Pokemon battle simulators, fan games, and tools. Each generation ships as its own package with generation-accurate mechanics and complete standalone data — install only the generations you need. The battle engine is event-driven with no UI coupling, and the seeded PRNG makes battles fully deterministic and reproducible. Whether you're building a Phaser game, a Discord bot, a damage calculator, or an ML training environment, this is the foundation.
 
@@ -135,8 +133,15 @@ npm install
 ### Commands
 
 ```bash
+npm run verify:local  # Authoritative local verification
 npm run build          # Build all packages (Turborepo)
-npm run test           # Test all packages
+npm run test           # Unit + integration tests
+npm run test:unit      # Unit tests only
+npm run test:integration  # Integration tests only
+npm run test:smoke     # Smoke tests only
+npm run test:e2e       # E2E tests only
+npm run test:stress    # Stress / soak tests only
+npm run test:all       # Unit + integration + smoke + e2e + stress
 npm run typecheck      # Type check all packages
 npm run lint           # Lint + format (Biome)
 ```
@@ -144,15 +149,43 @@ npm run lint           # Lint + format (Biome)
 ### Running Tests
 
 ```bash
-# All tests
-npx vitest run
+# Default PR/local suite
+npm run test
+
+# By test kind
+npm run test:unit
+npm run test:integration
+npm run test:smoke
+npm run test:e2e
+npm run test:stress
+npm run test:all
 
 # Single package
 cd packages/core && npx vitest run
 
 # With coverage
 cd packages/core && npx vitest run --coverage
+
+# Manual stress / soak verification
+npm run test:stress
 ```
+
+### Verification Model
+
+- `npm run test` — the default suite used by local verification and PR CI. It runs unit plus
+  integration tests, but excludes smoke, e2e, and stress coverage.
+- `npm run test:unit` — runs non-integration, non-smoke, non-e2e, non-stress test files.
+- `npm run test:integration` — runs `integration.test.*` files only.
+- `npm run test:smoke` — runs `smoke.test.*` files only.
+- `npm run test:e2e` — runs `e2e.test.*` files only and passes when none exist yet.
+- `npm run test:stress` — explicit soak/stability/random-loop coverage. Run it for broad,
+  confidence-sensitive, or battle-stability work.
+- `npm run test:all` — runs the full taxonomy: unit, integration, smoke, e2e, then stress.
+- `npm run verify:local` — broader handoff gate, not just tests. It runs workflow/lint/build/
+  typecheck/package-boundary checks plus plain `test`. Use this before commits and PR updates.
+- `replay:*` commands remain targeted tooling. Run them explicitly when replay validation or
+  simulation confidence checks are relevant.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:smoke`.
 
 ## Project Status
 
@@ -187,7 +220,14 @@ All nine generations are complete. 10,332+ tests across all packages, validated 
 
 ## Contributing
 
-Contributions welcome. Work on feature branches off `main`. Biome handles linting and formatting (`npx @biomejs/biome check --write .`). Tests use Vitest with 80% coverage thresholds. PRs are reviewed by CodeRabbit, Qodo PR-Agent, and a human approver.
+Contributions welcome. Start each task in a fresh task-owned worktree from `origin/main`
+with `/start-task <branch-name>`; the root checkout is not for task work. Run
+`npm run verify:local` as the authoritative local handoff gate, use targeted package tests or
+the test-kind scripts while iterating, and reserve `npm run test:stress` for heavy manual soak
+verification. Then run
+`/review` before opening or updating a PR, and `git pushreview` after pushing. PRs get advisory
+CodeRabbit comments and may still get Qodo comments, but local verification is the source of
+truth.
 
 ## Tech Stack
 

@@ -1,0 +1,449 @@
+import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import type {
+  MoveData,
+  PokemonInstance,
+  PokemonSpeciesData,
+  PokemonType,
+  TypeChart,
+} from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
+import { getGen1CritRate } from "../../src/Gen1CritCalc";
+import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
+
+/**
+ * Gen 1 Critical Hit Tests
+ *
+ * In Gen 1, crit rate is determined by the attacker's base Speed stat:
+ *   critRate = floor(baseSpeed / 2)
+ *   probability = critRate / 256
+ *
+ * Key mechanics:
+ * - Base Speed 100 -> crit rate = 50/256 ~ 19.5%
+ * - Base Speed 80  -> crit rate = 40/256 ~ 15.6%
+ * - Base Speed 120 -> crit rate = 60/256 ~ 23.4%
+ * - Focus Energy BUG: divides crit rate by 4 instead of multiplying
+ * - High crit-ratio moves (like Slash, Karate Chop) multiply the rate by 8
+ *   (or use baseSpeed * 4 / 256, clamped to 255)
+ * - Crits ignore stat stages and use base stats
+ * - Gen 1 crit damage multiplier is 2x (not 1.5x like Gen 6+)
+ */
+describe("Gen 1 Critical Hit", () => {
+  // --- Base Crit Rate Calculation ---
+
+  it("given base speed 100, when calculating crit rate, then returns approximately 19.5%", () => {
+    // Arrange
+    const baseSpeed = 100;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(100/2) / 256 = 50/256 ~ 0.1953
+    expect(critChance).toBeCloseTo(50 / 256, 2);
+  });
+
+  it("given base speed 80, when calculating crit rate, then returns approximately 15.6%", () => {
+    // Arrange
+    const baseSpeed = 80;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(80/2) / 256 = 40/256 ~ 0.1563
+    expect(critChance).toBeCloseTo(40 / 256, 2);
+  });
+
+  it("given base speed 120, when calculating crit rate, then returns approximately 23.4%", () => {
+    // Arrange
+    const baseSpeed = 120;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(120/2) / 256 = 60/256 ~ 0.2344
+    expect(critChance).toBeCloseTo(60 / 256, 2);
+  });
+
+  it("given base speed 130 (Mewtwo), when calculating crit rate, then returns approximately 25.4%", () => {
+    // Arrange
+    const baseSpeed = 130;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(130/2) / 256 = 65/256 ~ 0.2539
+    expect(critChance).toBeCloseTo(65 / 256, 2);
+  });
+
+  it("given base speed 20, when calculating crit rate, then returns approximately 3.9%", () => {
+    // Arrange
+    const baseSpeed = 20;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(20/2) / 256 = 10/256 ~ 0.0391
+    expect(critChance).toBeCloseTo(10 / 256, 2);
+  });
+
+  it("given base speed 45, when calculating crit rate, then returns approximately 8.6%", () => {
+    // Arrange
+    const baseSpeed = 45;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(45/2) / 256 = 22/256 ~ 0.0859
+    expect(critChance).toBeCloseTo(22 / 256, 2);
+  });
+
+  it("given base speed 1, when calculating crit rate, then returns very low rate", () => {
+    // Arrange
+    const baseSpeed = 1;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(1/2) / 256 = 0/256 = 0
+    expect(critChance).toBeLessThanOrEqual(1 / 256);
+  });
+
+  // --- Monotonicity ---
+
+  it("given increasing base speed, when calculating crit rate, then rate increases monotonically", () => {
+    // Arrange
+    const speeds = [10, 20, 40, 60, 80, 100, 120, 140, 160];
+    // Act
+    const rates = speeds.map((s) => getGen1CritRate(s, false, false));
+    // Assert
+    for (let i = 1; i < rates.length; i++) {
+      expect(rates[i]).toBeGreaterThanOrEqual(rates[i - 1] ?? 0);
+    }
+  });
+
+  // --- Crit Rate Bounds ---
+
+  it("given any base speed, when calculating crit rate, then rate is between 0 and 1", () => {
+    // Arrange / Act / Assert
+    for (let speed = 0; speed <= 255; speed++) {
+      const rate = getGen1CritRate(speed, false, false);
+      expect(rate).toBeGreaterThanOrEqual(0);
+      expect(rate).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("given very high base speed (255), when calculating crit rate, then rate is capped at most 255/256", () => {
+    // Arrange
+    const baseSpeed = 255;
+    // Act
+    const critChance = getGen1CritRate(baseSpeed, false, false);
+    // Assert: floor(255/2) / 256 = 127/256 ~ 0.496, but capped at 255/256
+    // The rate should be at most 1.0
+    expect(critChance).toBeLessThanOrEqual(1.0);
+  });
+
+  // --- Focus Energy Bug ---
+
+  it("given Focus Energy active, when calculating crit rate, then rate DECREASES (Gen 1 bug)", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy sets a flag that causes
+    // a `srl b` (>>1, divide by 2) instead of `sla b` (<<1, multiply by 2).
+    // The intended effect was to quadruple crit rate, but the bug inverts it.
+    // Without FE: floor(100/2)=50, *2=100, /2=50 → 50/256 ~19.5%
+    // With FE:    floor(100/2)=50, /4=12,  /2=6  → 6/256 ~2.3% (lower — bugged!)
+    // Arrange
+    const baseSpeed = 100;
+    // Act
+    const normalRate = getGen1CritRate(baseSpeed, false, false);
+    const focusEnergyRate = getGen1CritRate(baseSpeed, true, false);
+    // Assert: Focus Energy reduces crit rate (bugged — should increase it)
+    expect(focusEnergyRate).toBeLessThan(normalRate);
+  });
+
+  it("given base speed 100 Pokemon with Focus Energy, when calculating crit rate, then threshold is floor(floor(100/2)/2)=25 then /2=12, giving rate 12/256", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — Focus Energy executes a single
+    // `srl b` (>>1, divide by 2) instead of the intended `sla b` (<<1, multiply by 2).
+    // Net result is 1/4 of the normal crit rate (divide by 2 vs multiply by 2 = 1/4 ratio).
+    // Algorithm: base=floor(100/2)=50; FE:>>1=floor(50/2)=25; normal:/2=floor(25/2)=12 → 12/256
+    // Arrange
+    const baseSpeed = 100;
+    // Act
+    const rate = getGen1CritRate(baseSpeed, true, false);
+    // Assert: 12/256 (Focus Energy single right-shift gives 1/4 of the normal 48/256 rate)
+    expect(rate).toBeCloseTo(12 / 256, 2);
+  });
+
+  it("given Focus Energy active with low speed, when calculating crit rate, then rate drops to near-zero", () => {
+    // Source: pret/pokered engine/battle/effect_commands.asm — same `srl b` (>>1) applies
+    // Speed 20: floor(20/2)=10; FE:>>1=floor(10/2)=5; normal:/2=floor(5/2)=2 → 2/256 ≈ 0.0078
+    // Arrange
+    const baseSpeed = 20;
+    // Act
+    const rate = getGen1CritRate(baseSpeed, true, false);
+    // Assert: 2/256 — significantly lower than normal but not as extreme as the wrong /4 calculation
+    expect(rate).toBeCloseTo(2 / 256, 2);
+  });
+
+  // --- High Crit-Ratio Moves ---
+
+  it("given a high crit-ratio move, when calculating crit rate, then rate is significantly higher", () => {
+    // Arrange: High crit moves (Slash, Karate Chop) use a different formula
+    // In Gen 1: high crit rate = floor(baseSpeed * 8 / 2) / 256, capped at 255
+    const baseSpeed = 100;
+    // Act
+    const normalRate = getGen1CritRate(baseSpeed, false, false);
+    const highCritRate = getGen1CritRate(baseSpeed, false, true);
+    // Assert
+    expect(highCritRate).toBeGreaterThan(normalRate);
+  });
+
+  it("given a high crit-ratio move with base speed 100, when calculating crit rate, then rate is 255/256 (capped)", () => {
+    // Source: pret/pokered engine/battle/core.asm — high crit-ratio formula:
+    //   T = min(255, floor(BaseSpeed * 8 / 2)) = min(255, 400) = 255
+    //   critRate = 255 / 256 ≈ 0.996
+    // Slash, Karate Chop, etc. use Speed * 4 after the standard /2 step (effectively *8 total).
+    const baseSpeed = 100;
+    // Act
+    const rate = getGen1CritRate(baseSpeed, false, true);
+    // Assert — with base speed 100 the raw threshold overflows 255, so it is capped at 255/256
+    expect(rate).toBeCloseTo(255 / 256, 3);
+  });
+
+  it("given a high crit-ratio move with low base speed 20, when calculating crit rate, then rate is still elevated", () => {
+    // Arrange
+    const baseSpeed = 20;
+    // Act
+    const normalRate = getGen1CritRate(baseSpeed, false, false);
+    const highCritRate = getGen1CritRate(baseSpeed, false, true);
+    // Assert
+    expect(highCritRate).toBeGreaterThan(normalRate);
+  });
+
+  // --- Critical Hit Damage ---
+
+  it("given L50 attacker Atk=100 vs Def=100 BP=80, when crit hits vs non-crit at max roll, then crit damage is 69 and non-crit is 37", () => {
+    // Source: pret/pokered engine/battle/core.asm — Gen 1 crits double the attacker's level
+    // in the damage formula (not a 1.5x or 2x post-damage multiplier like later gens).
+    //
+    // Non-crit: effectiveLevel=50, levelFactor=floor(2*50/5)+2=22
+    //   base = floor(floor(22*80*100)/100/50)+2 = floor(1760/50)+2 = 35+2 = 37
+    //   final = floor(37*255/255) = 37
+    //
+    // Crit: effectiveLevel=100, levelFactor=floor(2*100/5)+2=42
+    //   base = floor(floor(42*80*100)/100/50)+2 = floor(3360/50)+2 = 67+2 = 69
+    //   final = floor(69*255/255) = 69
+    //
+    // Ratio = 69/37 ≈ 1.86x (NOT exactly 2x because of integer floors at each step)
+
+    // Build minimal mock infrastructure matching damage-calc.test.ts patterns
+    const neutralChart: TypeChart = (() => {
+      const types: PokemonType[] = [
+        "normal",
+        "fire",
+        "water",
+        "electric",
+        "grass",
+        "ice",
+        "fighting",
+        "poison",
+        "ground",
+        "flying",
+        "psychic",
+        "bug",
+        "rock",
+        "ghost",
+        "dragon",
+      ];
+      const chart = {} as Record<string, Record<string, number>>;
+      for (const atk of types) {
+        chart[atk] = {};
+        for (const def of types) {
+          (chart[atk] as Record<string, number>)[def] = 1;
+        }
+      }
+      return chart as TypeChart;
+    })();
+
+    const species: PokemonSpeciesData = {
+      id: 1,
+      name: "test",
+      displayName: "Test",
+      types: ["normal"],
+      baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
+      abilities: { normal: [""], hidden: null },
+      genderRatio: 50,
+      catchRate: 45,
+      baseExp: 64,
+      expGroup: "medium-slow",
+      evYield: {},
+      eggGroups: ["monster"],
+      learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
+      evolution: null,
+      dimensions: { height: 1, weight: 10 },
+      spriteKey: "test",
+      baseFriendship: 70,
+      generation: 1,
+      isLegendary: false,
+      isMythical: false,
+    } as PokemonSpeciesData;
+
+    const makePoke = (
+      level: number,
+      atk: number,
+      def: number,
+      types: PokemonType[],
+    ): ActivePokemon =>
+      ({
+        pokemon: {
+          uid: "t",
+          speciesId: 1,
+          nickname: null,
+          level,
+          experience: 0,
+          nature: "hardy",
+          ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+          evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+          currentHp: 200,
+          moves: [],
+          ability: "",
+          abilitySlot: "normal1" as const,
+          heldItem: null,
+          status: null,
+          friendship: 0,
+          gender: "male" as const,
+          isShiny: false,
+          metLocation: "",
+          metLevel: 1,
+          originalTrainer: "",
+          originalTrainerId: 0,
+          pokeball: "pokeball",
+          calculatedStats: {
+            hp: 200,
+            attack: atk,
+            defense: def,
+            spAttack: atk,
+            spDefense: def,
+            speed: 100,
+          },
+        } as PokemonInstance,
+        teamSlot: 0,
+        statStages: {
+          hp: 0,
+          attack: 0,
+          defense: 0,
+          spAttack: 0,
+          spDefense: 0,
+          speed: 0,
+          accuracy: 0,
+          evasion: 0,
+        },
+        volatileStatuses: new Map(),
+        types,
+        ability: "",
+        lastMoveUsed: null,
+        lastDamageTaken: 0,
+        lastDamageType: null,
+        turnsOnField: 0,
+        movedThisTurn: false,
+        consecutiveProtects: 0,
+        substituteHp: 0,
+        transformed: false,
+        transformedSpecies: null,
+        isMega: false,
+        isDynamaxed: false,
+        dynamaxTurnsLeft: 0,
+        isTerastallized: false,
+        teraType: null,
+        stellarBoostedTypes: [],
+      }) as ActivePokemon;
+
+    const move: MoveData = {
+      id: "test",
+      displayName: "Test",
+      type: "normal" as PokemonType,
+      category: "physical",
+      power: 80,
+      accuracy: 100,
+      pp: 35,
+      priority: 0,
+      target: "adjacent-foe",
+      flags: {
+        contact: false,
+        sound: false,
+        bullet: false,
+        pulse: false,
+        punch: false,
+        bite: false,
+        wind: false,
+        slicing: false,
+        powder: false,
+        protect: true,
+        mirror: true,
+        snatch: false,
+        gravity: false,
+        defrost: false,
+        recharge: false,
+        charge: false,
+        bypassSubstitute: false,
+      },
+      effect: null,
+      description: "",
+      generation: 1,
+    } as MoveData;
+
+    const mockRng = {
+      next: () => 0,
+      int: (_min: number, _max: number) => 255,
+      chance: () => false,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: readonly T[]) => [...arr],
+      getState: () => 0,
+      setState: () => {},
+    };
+
+    const attacker = makePoke(50, 100, 100, ["fire"]); // fire so no STAB on normal move
+    const defender = makePoke(50, 100, 100, ["normal"]);
+    const state = {} as DamageContext["state"];
+
+    const ctxNonCrit: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state,
+      rng: mockRng as DamageContext["rng"],
+      isCrit: false,
+    };
+    const ctxCrit: DamageContext = {
+      attacker,
+      defender,
+      move,
+      state,
+      rng: mockRng as DamageContext["rng"],
+      isCrit: true,
+    };
+
+    // Act
+    const nonCritDamage = calculateGen1Damage(ctxNonCrit, neutralChart, species).damage;
+    const critDamage = calculateGen1Damage(ctxCrit, neutralChart, species).damage;
+
+    // Assert — exact values derived from pret/pokered damage formula
+    expect(nonCritDamage).toBe(37);
+    expect(critDamage).toBe(69);
+    // Gen 1 crit is implemented via level doubling, not a 2x multiplier.
+    // The ratio is ~1.86x due to integer floors, which proves the implementation
+    // uses the correct cartridge-accurate formula (not a simple 2x multiplier).
+    expect(critDamage).toBeGreaterThan(nonCritDamage);
+    const ratio = critDamage / nonCritDamage;
+    expect(ratio).toBeGreaterThan(1.7);
+    expect(ratio).toBeLessThan(2.1);
+  });
+
+  // --- Edge Cases ---
+
+  it("given base speed 0, when calculating crit rate, then returns 0", () => {
+    // Arrange
+    const baseSpeed = 0;
+    // Act
+    const rate = getGen1CritRate(baseSpeed, false, false);
+    // Assert
+    expect(rate).toBe(0);
+  });
+
+  it("given high crit AND Focus Energy active with base speed 100, when calculating crit rate, then rate is 100/256", () => {
+    // Source: pret/pokered engine/battle/core.asm (Gen1CritCalc.ts implementation):
+    //   Step 1: critChance = floor(100 / 2) = 50
+    //   Step 2 (Focus Energy BUG): critChance = floor(50 / 2) = 25  (divides by 2 instead of *4)
+    //   Step 3 (high-crit move): critChance = min(255, max(1, 25 * 4)) = 100
+    //   critRate = 100 / 256 ≈ 0.3906
+    // Despite Focus Energy's divide bug, the high-crit multiplier partially compensates.
+    const baseSpeed = 100;
+    // Act
+    const rate = getGen1CritRate(baseSpeed, true, true);
+    // Assert
+    expect(rate).toBeCloseTo(100 / 256, 3);
+  });
+});

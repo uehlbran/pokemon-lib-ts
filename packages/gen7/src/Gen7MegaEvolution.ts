@@ -31,11 +31,11 @@ import {
   ALL_NATURES,
   calculateStat,
   getNatureModifier,
-  MEGA_STONE_DATA as SHARED_MEGA_STONE_DATA,
   type MegaEvolutionData,
   type MutableStatBlock,
   type NatureData,
   type PokemonType,
+  MEGA_STONE_DATA as SHARED_MEGA_STONE_DATA,
 } from "@pokemon-lib-ts/core";
 
 import { isMegaStone, isZCrystal } from "./Gen7Items.js";

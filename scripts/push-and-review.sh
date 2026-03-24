@@ -50,7 +50,7 @@ fi
 
 echo ""
 echo "=== PR #$PR_NUMBER found. Starting Claude review... ==="
-echo "CodeRabbit and Qodo will also review automatically."
+echo "CodeRabbit may still comment, but local verification remains the source of truth."
 echo ""
 
 # Set up logging

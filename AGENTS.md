@@ -10,6 +10,8 @@ rather than inventing a parallel workflow.
 2. If you are working inside a subtree that has its own `CLAUDE.md`, read that file before
    editing in that subtree.
 3. Treat `.claude/` as the source of truth for workflow rules, review roles, and task setup.
+4. Start every new task in a fresh task-owned worktree from `origin/main`; the root checkout is
+   not for task work.
 
 ## Mandatory Instruction Discipline
 
@@ -40,10 +42,26 @@ Agents must read repo instructions before acting, not after making a mistake.
   in
   [`.claude/skills/start-task/SKILL.md`](./.claude/skills/start-task/SKILL.md).
 - Do not edit repo files until the session branch requirement has been satisfied.
+- Local verification is authoritative: run `npm run verify:local` before PRs and other
+  handoffs. Use targeted package tests or the root test-kind scripts while iterating, and use
+  `npm run test:stress` only for manual soak/stability coverage.
 - Respect repo safety guidance in:
   - [`.claude/rules/git-safety.md`](./.claude/rules/git-safety.md)
   - [`.claude/rules/context-management.md`](./.claude/rules/context-management.md)
   - [`.claude/rules/bug-filing.md`](./.claude/rules/bug-filing.md)
+
+## Verification Model
+
+- `npm run test` — the default unit + integration suite used by `verify:local` and PR CI.
+- `npm run test:unit` — unit tests only.
+- `npm run test:integration` — integration tests only.
+- `npm run test:smoke` — smoke tests only.
+- `npm run test:e2e` — e2e tests only; passes when none exist yet.
+- `npm run test:stress` — stress / soak tests only.
+- `npm run test:all` — full taxonomy suite: unit, integration, smoke, e2e, then stress.
+- `npm run verify:local` — broader handoff gate that runs non-test checks plus plain `test`.
+- `replay:*` commands remain targeted tools and should be run explicitly when relevant.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:smoke`.
 
 ## Repo-Specific Expectations
 

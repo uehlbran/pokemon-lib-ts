@@ -36,8 +36,6 @@ Closes #
 -
 
 ## Checklist
-- [ ] Tests pass (`npm run test`)
-- [ ] Types pass (`npm run typecheck`)
-- [ ] Lint passes (`npm run lint:check`)
-- [ ] Coverage >= 80%
+- [ ] Local verification passes (`npm run verify:local`)
 - [ ] `/review` run locally (falcon + kestrel + sentinel)
+- [ ] `git pushreview` run after pushing the PR
