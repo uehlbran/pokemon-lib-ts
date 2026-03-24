@@ -4680,10 +4680,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
-  private clearScreens(
-    sideIndex: 0 | 1,
-    screenTypesToRemove?: readonly import("@pokemon-lib-ts/core").ScreenType[],
-  ): void {
+  private clearScreens(sideIndex: 0 | 1, screenTypesToRemove?: readonly string[]): void {
     const side = this.state.sides[sideIndex];
     const removedScreens = screenTypesToRemove
       ? side.screens.filter((screen) => screenTypesToRemove.includes(screen.type))
