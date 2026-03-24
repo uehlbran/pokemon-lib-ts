@@ -32,7 +32,11 @@ import type {
 import { createGen8DataManager } from "./data/index.js";
 import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
 import { handleGen8StatAbility } from "./Gen8AbilitiesStat.js";
-import { handleGen8SwitchAbility, shouldMirrorArmorReflect } from "./Gen8AbilitiesSwitch.js";
+import {
+  handleGen8SwitchAbility,
+  isIceFaceActive,
+  shouldMirrorArmorReflect,
+} from "./Gen8AbilitiesSwitch.js";
 import { GEN8_CRIT_MULTIPLIER, GEN8_CRIT_RATE_TABLE } from "./Gen8CritCalc.js";
 import { calculateGen8Damage } from "./Gen8DamageCalc.js";
 import { Gen8Dynamax } from "./Gen8Dynamax.js";
@@ -289,7 +293,7 @@ export class Gen8Ruleset extends BaseRuleset {
    *     Intrepid Sword, Dauntless Shield, etc. (switch handler + stat handler)
    *   - on-switch-out: Regenerator, Natural Cure (switch handler)
    *   - on-contact: Static, Flame Body, Wandering Spirit, Perish Body,
-   *     Gulp Missile, Ice Face, Mummy, etc. (switch handler)
+   *     Gulp Missile, Mummy, etc. (switch handler)
    *   - on-status-inflicted: Synchronize (switch handler)
    *   - on-before-move: Libero, Protean (stat handler)
    *   - on-stat-change: Mirror Armor (special), Defiant, Competitive, Contrary, Simple (stat handler)
@@ -498,6 +502,7 @@ export class Gen8Ruleset extends BaseRuleset {
    * Disguise (Gen 8 change): when busted, deals 1/8 max HP chip damage instead
    * of 0 chip (Gen 7). Priority 1 (before Sturdy at -30).
    *
+   * Ice Face: Eiscue blocks the first physical hit before HP is reduced.
    * Sturdy: survive any hit from full HP at 1 HP (unchanged from Gen 5+). Priority -30.
    * Focus Sash: survive any hit from full HP at 1 HP (item, consumed). Priority -100.
    *
@@ -505,6 +510,7 @@ export class Gen8Ruleset extends BaseRuleset {
    * Source: Showdown data/abilities.ts -- klutz: item has no effect
    * Source: Showdown data/moves.ts -- embargo: target's item is unusable
    *
+   * Source: Showdown data/abilities.ts -- iceface: onDamage (pre-damage block)
    * Source: Showdown data/abilities.ts -- disguise: onDamage (priority 1, Gen 8: 1/8 chip)
    * Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
    * Source: Showdown data/items.ts -- Focus Sash: onDamage at full HP
@@ -521,7 +527,26 @@ export class Gen8Ruleset extends BaseRuleset {
     const currentHp = defender.pokemon.currentHp;
     const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
 
-    // 1. Disguise: block incoming damage, deal 1/8 max HP chip instead (Gen 8 change)
+    // 1. Ice Face: Eiscue blocks the first physical hit before HP is reduced.
+    // Source: Showdown data/abilities.ts -- iceface onDamage returns 0 and marks the form broken.
+    // Source: Bulbapedia "Ice Face" -- blocks the first physical move.
+    if (
+      move.category === "physical" &&
+      isIceFaceActive(
+        defender.pokemon.speciesId,
+        defender.ability,
+        defender.volatileStatuses.has("ice-face-broken" as never),
+      )
+    ) {
+      defender.volatileStatuses.set("ice-face-broken", { turnsLeft: -1 });
+      return {
+        damage: 0,
+        survived: true,
+        messages: [`${name}'s Ice Face absorbed the damage!`],
+      };
+    }
+
+    // 2. Disguise: block incoming damage, deal 1/8 max HP chip instead (Gen 8 change)
     // Disguise checks BEFORE Sturdy (higher priority in Showdown: priority 1 vs -30)
     // Gen 8: 1/8 max HP chip damage on Disguise break (changed from 0 in Gen 7)
     // Source: Showdown data/abilities.ts -- disguise onDamage, Gen 8: Math.ceil(maxhp / 8)
@@ -541,7 +566,7 @@ export class Gen8Ruleset extends BaseRuleset {
       };
     }
 
-    // 2. Sturdy: if at full HP and damage would KO, cap at maxHp - 1
+    // 3. Sturdy: if at full HP and damage would KO, cap at maxHp - 1
     // Source: Showdown data/abilities.ts -- sturdy onDamage (priority -30)
     if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
       return {
@@ -551,7 +576,7 @@ export class Gen8Ruleset extends BaseRuleset {
       };
     }
 
-    // 3. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
+    // 4. Focus Sash (item) -- survive at 1 HP if at full HP, consumed
     // Source: Showdown data/items.ts -- Focus Sash onDamage
     // Source: Bulbapedia -- Focus Sash: "If holder is at full HP, survive with 1 HP"
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
