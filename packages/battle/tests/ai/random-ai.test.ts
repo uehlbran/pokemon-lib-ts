@@ -2,11 +2,9 @@ import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { RandomAI } from "../../src/ai/RandomAI";
-import type { AvailableMove, BattleConfig } from "../../src/context";
-import { BattleEngine } from "../../src/engine";
+import type { AvailableMove } from "../../src/context";
 import type { BattleState } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
-import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
 
 function createTestState(
@@ -319,95 +317,6 @@ describe("RandomAI", () => {
 
       // Assert
       expect(slot1).toBe(slot2);
-    });
-  });
-
-  describe("integration with BattleEngine", () => {
-    it("given a RandomAI, when it drives a full battle, then the battle completes normally", () => {
-      // Arrange
-      const ai = new RandomAI();
-      const ruleset = new MockRuleset();
-      ruleset.setFixedDamage(50); // Higher damage to end battle faster
-      const dataManager = createMockDataManager();
-
-      const team1 = [
-        createTestPokemon(6, 50, {
-          uid: "charizard-1",
-          nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 120,
-          },
-          currentHp: 200,
-        }),
-      ];
-      const team2 = [
-        createTestPokemon(9, 50, {
-          uid: "blastoise-1",
-          nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 80,
-          },
-          currentHp: 200,
-        }),
-      ];
-
-      const config: BattleConfig = {
-        generation: 1,
-        format: "singles",
-        teams: [team1, team2],
-        seed: 42,
-      };
-
-      const engine = new BattleEngine(config, ruleset, dataManager);
-      engine.start();
-
-      // Act — let AI play until battle ends or max turns
-      let turns = 0;
-      const maxTurns = 100;
-      const aiRng = new SeededRandom(42);
-
-      while (!engine.isEnded() && turns < maxTurns) {
-        if (engine.getPhase() === "action-select") {
-          const action0 = ai.chooseAction(
-            0,
-            engine.getState(),
-            ruleset,
-            aiRng,
-            engine.getAvailableMoves(0),
-          );
-          const action1 = ai.chooseAction(
-            1,
-            engine.getState(),
-            ruleset,
-            aiRng,
-            engine.getAvailableMoves(1),
-          );
-          engine.submitAction(0, action0);
-          engine.submitAction(1, action1);
-          turns++;
-        } else if (engine.getPhase() === "switch-prompt") {
-          // No bench pokemon, so this shouldn't happen in this test
-          break;
-        } else {
-          break;
-        }
-      }
-
-      // Assert — battle should have ended within 100 turns
-      expect(engine.isEnded()).toBe(true);
-      expect(engine.getWinner()).not.toBeNull();
     });
   });
 });

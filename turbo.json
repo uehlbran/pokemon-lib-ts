@@ -5,9 +5,13 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "test": {
-      "dependsOn": ["build"]
-    },
+    "test": {},
+    "test:unit": {},
+    "test:integration": {},
+    "test:smoke": {},
+    "test:e2e": {},
+    "test:stress": {},
+    "test:all": {},
     "typecheck": {
       "dependsOn": ["^build"]
     },

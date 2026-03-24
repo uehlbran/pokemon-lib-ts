@@ -43,8 +43,8 @@ Agents must read repo instructions before acting, not after making a mistake.
   [`.claude/skills/start-task/SKILL.md`](./.claude/skills/start-task/SKILL.md).
 - Do not edit repo files until the session branch requirement has been satisfied.
 - Local verification is authoritative: run `npm run verify:local` before PRs and other
-  handoffs. Use targeted package tests while iterating, and use `npm run test:slow` only for
-  manual heavy smoke coverage.
+  handoffs. Use targeted package tests or the root test-kind scripts while iterating, and use
+  `npm run test:stress` only for manual soak/stability coverage.
 - Respect repo safety guidance in:
   - [`.claude/rules/git-safety.md`](./.claude/rules/git-safety.md)
   - [`.claude/rules/context-management.md`](./.claude/rules/context-management.md)
@@ -52,10 +52,16 @@ Agents must read repo instructions before acting, not after making a mistake.
 
 ## Verification Model
 
-- `npm run test` — the real package test suite.
-- `npm run test:slow` — manual heavy smoke coverage.
-- `npm run verify:local` — broader handoff gate that runs non-test checks plus `test`.
+- `npm run test` — the default unit + integration suite used by `verify:local` and PR CI.
+- `npm run test:unit` — unit tests only.
+- `npm run test:integration` — integration tests only.
+- `npm run test:smoke` — smoke tests only.
+- `npm run test:e2e` — e2e tests only; passes when none exist yet.
+- `npm run test:stress` — stress / soak tests only.
+- `npm run test:all` — full taxonomy suite: unit, integration, smoke, e2e, then stress.
+- `npm run verify:local` — broader handoff gate that runs non-test checks plus plain `test`.
 - `replay:*` commands remain targeted tools and should be run explicitly when relevant.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:stress`.
 
 ## Repo-Specific Expectations
 

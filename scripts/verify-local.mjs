@@ -17,7 +17,7 @@ const steps = [
   ["workflow validator tests", ["run", "test:workflow"]],
   ["lint", ["run", "lint:check"]],
   ["build", ["run", "build"]],
-  ["tests", ["run", "test"]],
+  ["tests (unit + integration)", ["run", "test"]],
   ["typecheck", ["run", "typecheck"]],
   ["contract typecheck", ["run", "typecheck:contracts"]],
   ["package boundaries", ["run", "ci:package-boundaries"]],
@@ -36,7 +36,10 @@ if (!existsSync("node_modules")) {
 
 for (const [label, npmArgs] of steps) {
   console.log(`\n==> ${label}`);
-  const result = spawnSync("npm", npmArgs, { stdio: "inherit" });
+  const result = spawnSync("npm", npmArgs, {
+    stdio: "inherit",
+    env: process.env,
+  });
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }

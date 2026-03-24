@@ -135,8 +135,13 @@ npm install
 ```bash
 npm run verify:local  # Authoritative local verification
 npm run build          # Build all packages (Turborepo)
-npm run test           # Full package test suite
-npm run test:slow      # Manual heavy Gen 3 stability smoke verification
+npm run test           # Unit + integration tests
+npm run test:unit      # Unit tests only
+npm run test:integration  # Integration tests only
+npm run test:smoke     # Smoke tests only
+npm run test:e2e       # E2E tests only
+npm run test:stress    # Stress / soak tests only
+npm run test:all       # Unit + integration + smoke + e2e + stress
 npm run typecheck      # Type check all packages
 npm run lint           # Lint + format (Biome)
 ```
@@ -144,8 +149,16 @@ npm run lint           # Lint + format (Biome)
 ### Running Tests
 
 ```bash
-# Full package suite
+# Default PR/local suite
 npm run test
+
+# By test kind
+npm run test:unit
+npm run test:integration
+npm run test:smoke
+npm run test:e2e
+npm run test:stress
+npm run test:all
 
 # Single package
 cd packages/core && npx vitest run
@@ -153,19 +166,26 @@ cd packages/core && npx vitest run
 # With coverage
 cd packages/core && npx vitest run --coverage
 
-# Manual heavy smoke verification
-npm run test:slow
+# Manual stress / soak verification
+npm run test:stress
 ```
 
 ### Verification Model
 
-- `npm run test` — the real package test suite.
-- `npm run test:slow` — explicit extra heavy smoke coverage. Run it for broad, confidence-sensitive,
-  or battle-stability work.
+- `npm run test` — the default suite used by local verification and PR CI. It runs unit plus
+  integration tests, but excludes smoke, e2e, and stress coverage.
+- `npm run test:unit` — runs non-integration, non-smoke, non-e2e, non-stress test files.
+- `npm run test:integration` — runs `integration.test.*` files only.
+- `npm run test:smoke` — runs `smoke.test.*` files only.
+- `npm run test:e2e` — runs `e2e.test.*` files only and passes when none exist yet.
+- `npm run test:stress` — explicit soak/stability/random-loop coverage. Run it for broad,
+  confidence-sensitive, or battle-stability work.
+- `npm run test:all` — runs the full taxonomy: unit, integration, smoke, e2e, then stress.
 - `npm run verify:local` — broader handoff gate, not just tests. It runs workflow/lint/build/
-  typecheck/package-boundary checks plus `test`. Use this before commits and PR updates.
+  typecheck/package-boundary checks plus plain `test`. Use this before commits and PR updates.
 - `replay:*` commands remain targeted tooling. Run them explicitly when replay validation or
   simulation confidence checks are relevant.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:stress`.
 
 ## Project Status
 
@@ -202,8 +222,9 @@ All nine generations are complete. 10,332+ tests across all packages, validated 
 
 Contributions welcome. Start each task in a fresh task-owned worktree from `origin/main`
 with `/start-task <branch-name>`; the root checkout is not for task work. Run
-`npm run verify:local` as the authoritative local handoff gate, use targeted package tests while
-iterating, and reserve `npm run test:slow` for heavy manual smoke verification. Then run
+`npm run verify:local` as the authoritative local handoff gate, use targeted package tests or
+the test-kind scripts while iterating, and reserve `npm run test:stress` for heavy manual soak
+verification. Then run
 `/review` before opening or updating a PR, and `git pushreview` after pushing. PRs get advisory
 CodeRabbit comments and may still get Qodo comments, but local verification is the source of
 truth.

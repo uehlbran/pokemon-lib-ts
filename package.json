@@ -10,7 +10,13 @@
     "build": "turbo run build",
     "ci:package-boundaries": "tsx scripts/verify-package-boundaries.ts",
     "test": "turbo run test",
-    "test:slow": "node scripts/verify-slow.mjs",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "test:smoke": "turbo run test:smoke",
+    "test:e2e": "turbo run test:e2e",
+    "test:stress": "turbo run test:stress",
+    "test:all": "turbo run test:all",
+    "test:slow": "npm run test:stress",
     "test:workflow": "node --test scripts/tests/*.test.mjs",
     "typecheck": "turbo run typecheck",
     "typecheck:contracts": "npm run typecheck:contracts --workspace @pokemon-lib-ts/battle",
@@ -30,7 +36,6 @@
     "replay:validate": "tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/",
     "replay:simulate:gen1": "tsx tools/replay-parser/src/index.ts simulate --gen 1 --battles 250",
     "replay:simulate:gen2": "tsx tools/replay-parser/src/index.ts simulate --gen 2 --battles 100",
-    "smoke:gen3:stability": "node scripts/run-gen3-stability.mjs",
     "replay:report": "tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/ --json"
   },
   "devDependencies": {

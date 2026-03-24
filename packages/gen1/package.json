@@ -23,7 +23,13 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration --passWithNoTests",
+    "test:smoke": "vitest run tests/smoke --passWithNoTests",
+    "test:e2e": "vitest run tests/e2e --passWithNoTests",
+    "test:stress": "vitest run tests/stress --passWithNoTests",
+    "test:all": "npm run test && npm run test:smoke && npm run test:e2e && npm run test:stress",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

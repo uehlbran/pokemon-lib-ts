@@ -53,8 +53,13 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 ```bash
 npm run verify:local  # Local verification gate
 npm run build          # Build all packages (turbo)
-npm run test           # Full package test suite
-npm run test:slow      # Manual heavy smoke verification
+npm run test           # Unit + integration tests
+npm run test:unit      # Unit tests only
+npm run test:integration  # Integration tests only
+npm run test:smoke     # Smoke tests only
+npm run test:e2e       # E2E tests only
+npm run test:stress    # Stress / soak tests only
+npm run test:all       # Unit + integration + smoke + e2e + stress
 npm run typecheck      # Type check all packages (turbo)
 npx @biomejs/biome check --write .   # Lint + format
 npx vitest run         # Run tests (from package dir)
@@ -63,12 +68,20 @@ npx vitest run --coverage  # Run with coverage
 
 ### Verification Model
 
-- `npm run test` — the real package test suite.
-- `npm run test:slow` — manual heavy smoke coverage for broad or confidence-sensitive changes.
+- `npm run test` — the default suite used by local verification and PR CI. It runs unit plus
+  integration tests, excluding smoke, e2e, and stress coverage.
+- `npm run test:unit` — runs non-integration, non-smoke, non-e2e, non-stress test files.
+- `npm run test:integration` — runs `integration.test.*` files only.
+- `npm run test:smoke` — runs `smoke.test.*` files only.
+- `npm run test:e2e` — runs `e2e.test.*` files only and passes when none exist yet.
+- `npm run test:stress` — manual soak/stability/random-loop coverage for broad or
+  confidence-sensitive changes.
+- `npm run test:all` — runs the full taxonomy: unit, integration, smoke, e2e, then stress.
 - `npm run verify:local` — the local handoff gate. It runs the broader non-test checks plus
-  `test` before commits and PR updates.
+  plain `test` before commits and PR updates.
 - `replay:*` commands remain targeted tools. Run them explicitly when replay validation or
   simulation confidence checks are relevant.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:stress`.
 
 ### Biome Tips
 - `npx @biomejs/biome check --changed --since=main .` — lint only changed files (`--since=main` is required; `vcs.defaultBranch` is not set in biome.json so `--changed` alone errors)
@@ -340,8 +353,9 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 ## PR Workflow
 
 - **Local verification is authoritative**: run `npm run verify:local` before opening or updating a PR.
-- **Test commands must be honest**: `npm run test` is the actual package suite, and
-  `npm run test:slow` is extra manual smoke coverage.
+- **Test commands must be honest**: `npm run test` is the default unit + integration suite used
+  in PR CI and `verify:local`, `test:all` is the full taxonomy suite, and `npm run test:stress`
+  is the explicit soak/stability lane.
 - **`verify:local` is the handoff gate**: it runs the broader non-test checks plus `test`
   before commits/PR updates.
 - **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally.
@@ -374,7 +388,7 @@ Before every `git push`, all agents must run the following validation gate:
 
 1. **Biome**: `npx @biomejs/biome check --write .` — auto-fixes formatting/lint. If any files are modified, stage them before pushing.
 2. **Typecheck**: `npm run typecheck` — catches TypeScript errors.
-3. **Tests**: `npm run test` — ensures nothing is broken.
+3. **Tests**: `npm run test` — ensures the default unit + integration suite still passes.
 4. **Status docs**: If the PR touches `packages/*/src/` or `packages/*/data/`, or closes a tracked bug, verify the corresponding `specs/reference/*-status.md` has been updated with the PR number and any bug closures.
 
 If typecheck or tests fail, fix the issue and re-run before pushing. Never push failing code.
