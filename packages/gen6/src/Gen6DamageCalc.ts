@@ -11,6 +11,11 @@ import {
   getStatStageMultiplier,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
+import {
+  BASE_PINCH_ABILITY_TYPES,
+  BASE_PLATE_ITEMS,
+  BASE_TYPE_BOOST_ITEMS,
+} from "../../battle/src/data/index.js";
 import { isGen6Grounded } from "./Gen6EntryHazards.js";
 import { getTerrainDamageModifier } from "./Gen6Terrain.js";
 import { isWeatherSuppressedGen6 } from "./Gen6Weather.js";
@@ -86,25 +91,7 @@ export function pokeRound(value: number, modifier: number): number {
  * Source: Showdown data/items.ts -- Charcoal, Mystic Water, etc. use
  *   onBasePower with chainModify([4915, 4096])
  */
-const TYPE_BOOST_ITEMS: Readonly<Record<string, string>> = {
-  charcoal: "fire",
-  "mystic-water": "water",
-  "miracle-seed": "grass",
-  magnet: "electric",
-  "twisted-spoon": "psychic",
-  "spell-tag": "ghost",
-  "never-melt-ice": "ice",
-  "black-belt": "fighting",
-  "poison-barb": "poison",
-  "soft-sand": "ground",
-  "sharp-beak": "flying",
-  "hard-stone": "rock",
-  "silver-powder": "bug",
-  "dragon-fang": "dragon",
-  "black-glasses": "dark",
-  "metal-coat": "steel",
-  "silk-scarf": "normal",
-};
+const TYPE_BOOST_ITEMS = BASE_TYPE_BOOST_ITEMS;
 
 /**
  * Plate items: ~1.2x (4915/4096) base power increase for moves
@@ -115,23 +102,8 @@ const TYPE_BOOST_ITEMS: Readonly<Record<string, string>> = {
  * Source: Showdown data/items.ts -- Flame Plate etc. use onBasePower with
  *   chainModify([4915, 4096])
  */
-const PLATE_ITEMS: Readonly<Record<string, string>> = {
-  "flame-plate": "fire",
-  "splash-plate": "water",
-  "meadow-plate": "grass",
-  "zap-plate": "electric",
-  "mind-plate": "psychic",
-  "spooky-plate": "ghost",
-  "icicle-plate": "ice",
-  "fist-plate": "fighting",
-  "toxic-plate": "poison",
-  "earth-plate": "ground",
-  "sky-plate": "flying",
-  "stone-plate": "rock",
-  "insect-plate": "bug",
-  "draco-plate": "dragon",
-  "dread-plate": "dark",
-  "iron-plate": "steel",
+const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
+  ...BASE_PLATE_ITEMS,
   // Source: Bulbapedia "Pixie Plate" -- introduced in Gen 6 with Fairy type
   "pixie-plate": "fairy",
 };
@@ -186,12 +158,7 @@ const GEN6_GEM_MODIFIER = 5325; // 1.3x in 4096-based math
  * Source: Showdown sim/battle.ts -- pinch ability check
  * Source: Bulbapedia -- Overgrow / Blaze / Torrent / Swarm
  */
-const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
-  overgrow: "grass",
-  blaze: "fire",
-  torrent: "water",
-  swarm: "bug",
-};
+const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
 
 // ---- Ability Immunity Map ----
 

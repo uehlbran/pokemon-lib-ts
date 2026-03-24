@@ -12,6 +12,11 @@ import {
   getTypeMultiplier,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
+import {
+  BASE_PINCH_ABILITY_TYPES,
+  BASE_PLATE_ITEMS,
+  BASE_TYPE_BOOST_ITEMS,
+} from "../../battle/src/data/index.js";
 import { isWeatherSuppressedGen4 } from "./Gen4Abilities";
 
 // ─── Type-Boosting Items ────────────────────────────────────────────────────
@@ -27,25 +32,7 @@ import { isWeatherSuppressedGen4 } from "./Gen4Abilities";
  *   onBasePower with chainModify([4915, 4096])
  * Source: Bulbapedia — Type-enhancing item (Generation IV)
  */
-const TYPE_BOOST_ITEMS: Readonly<Record<string, string>> = {
-  charcoal: "fire",
-  "mystic-water": "water",
-  "miracle-seed": "grass",
-  magnet: "electric",
-  "twisted-spoon": "psychic",
-  "spell-tag": "ghost",
-  "never-melt-ice": "ice",
-  "black-belt": "fighting",
-  "poison-barb": "poison",
-  "soft-sand": "ground",
-  "sharp-beak": "flying",
-  "hard-stone": "rock",
-  "silver-powder": "bug",
-  "dragon-fang": "dragon",
-  "black-glasses": "dark",
-  "metal-coat": "steel",
-  "silk-scarf": "normal",
-};
+const TYPE_BOOST_ITEMS = BASE_TYPE_BOOST_ITEMS;
 
 /**
  * Plate items introduced in Gen 4: ~1.2x (4915/4096) base power increase for moves
@@ -56,25 +43,7 @@ const TYPE_BOOST_ITEMS: Readonly<Record<string, string>> = {
  * Source: Bulbapedia — Plate (item): "Boosts the power of the holder's
  *   [type]-type moves by 20%."
  */
-const PLATE_ITEMS: Readonly<Record<string, string>> = {
-  "flame-plate": "fire",
-  "splash-plate": "water",
-  "meadow-plate": "grass",
-  "zap-plate": "electric",
-  "mind-plate": "psychic",
-  "spooky-plate": "ghost",
-  "icicle-plate": "ice",
-  "fist-plate": "fighting",
-  "toxic-plate": "poison",
-  "earth-plate": "ground",
-  "sky-plate": "flying",
-  "stone-plate": "rock",
-  "insect-plate": "bug",
-  "draco-plate": "dragon",
-  "dread-plate": "dark",
-  "iron-plate": "steel",
-  // Pixie Plate (fairy) is NOT included — Fairy type was introduced in Gen 6
-};
+const PLATE_ITEMS = BASE_PLATE_ITEMS;
 
 // ─── Pinch Ability Types ────────────────────────────────────────────────────
 
@@ -85,12 +54,7 @@ const PLATE_ITEMS: Readonly<Record<string, string>> = {
  * Source: Showdown sim/battle.ts — Gen 4 damage calc pinch ability check
  * Source: Bulbapedia — Overgrow / Blaze / Torrent / Swarm
  */
-const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
-  overgrow: "grass",
-  blaze: "fire",
-  torrent: "water",
-  swarm: "bug",
-};
+const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
 
 // ─── Type-Resist Berries ─────────────────────────────────────────────────────
 
