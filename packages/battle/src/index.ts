@@ -134,8 +134,6 @@ export type {
 
 // Utils
 export {
-  createActivePokemon,
-  createDefaultStatStages,
   createPokemonSnapshot,
   getEffectiveStatStage,
   getPokemonName,
