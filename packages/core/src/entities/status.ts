@@ -335,4 +335,6 @@ export function isVolatileStatusForGeneration<G extends Generation>(
     case 9:
       return GEN9_VOLATILE_STATUS_SET.has(volatile);
   }
+
+  return false;
 }
