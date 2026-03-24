@@ -8,6 +8,12 @@ import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
 
+class TrappedSwitchRuleset extends MockRuleset {
+  override canSwitch(): boolean {
+    return false;
+  }
+}
+
 function createTestEngine(overrides?: {
   seed?: number;
   team1?: PokemonInstance[];
@@ -277,6 +283,54 @@ describe("BattleEngine", () => {
       // Source: createTestEngine gives the active Pokemon exactly one move, so valid indexes stop at 0.
       expect(() => engine.submitAction(0, { type: "move", side: 0, moveIndex: 99 })).toThrow(
         "MoveAction moveIndex 99 is out of range",
+      );
+    });
+
+    it("given a trapped active pokemon, when submitAction is called with a switch action, then it rejects the illegal switch", () => {
+      const { engine } = createTestEngine({ ruleset: new TrappedSwitchRuleset() });
+      engine.start();
+
+      expect(() => engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 })).toThrow(
+        "Invalid switch slot 1",
+      );
+    });
+
+    it("given a switch action that targets an unavailable team slot, when submitAction is called, then it rejects the invalid switch target", () => {
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 130,
+          },
+          currentHp: 120,
+        }),
+      ];
+      const { engine } = createTestEngine({ team1 });
+      engine.start();
+
+      expect(() => engine.submitAction(0, { type: "switch", side: 0, switchTo: 99 })).toThrow(
+        "Invalid switch slot 99",
       );
     });
 
