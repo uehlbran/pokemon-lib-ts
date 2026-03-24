@@ -26,6 +26,7 @@ import type {
   GenerationRuleset,
 } from "../ruleset";
 import { generations } from "../ruleset";
+import { markGoFirstItemActivated } from "../ruleset/GoFirstItemActivation";
 import type {
   ActivePokemon,
   BattlePhase,
@@ -1454,6 +1455,8 @@ export class BattleEngine implements BattleEventEmitter {
 
     // --- turn-resolve ---
     this.transitionTo("turn-resolve");
+
+    this.prepareGoFirstItemActivations(actions);
 
     // Sort actions by priority / speed / random
     const orderedActions = this.ruleset.resolveTurnOrder(actions, this.state, this.state.rng);
@@ -5378,6 +5381,49 @@ export class BattleEngine implements BattleEventEmitter {
             }
           }
         }
+      }
+    }
+  }
+
+  private prepareGoFirstItemActivations(actions: BattleAction[]): void {
+    if (!this.ruleset.hasHeldItems()) return;
+
+    for (const action of actions) {
+      if (action.type !== "move") continue;
+
+      const active = this.getActiveMutable(action.side);
+      if (!active || active.pokemon.currentHp <= 0 || !active.pokemon.heldItem) continue;
+
+      const moveSlot = active.pokemon.moves[action.moveIndex];
+      if (!moveSlot) continue;
+
+      let moveData: MoveData;
+      try {
+        moveData = this.dataManager.getMove(moveSlot.moveId);
+      } catch {
+        this.emit({
+          type: "engine-warning",
+          message: `Go-first item check skipped because move data for slot ${action.moveIndex} was not found.`,
+        });
+        continue;
+      }
+
+      const opponent = this.getOpponentActive(action.side) ?? undefined;
+      const itemResult = this.ruleset.applyHeldItem("before-turn-order", {
+        pokemon: active,
+        opponent,
+        state: this.state,
+        rng: this.state.rng,
+        move: moveData,
+      });
+
+      if (!itemResult.activated) continue;
+
+      markGoFirstItemActivated(action);
+      if (opponent) {
+        this.processItemResult(itemResult, active, opponent, action.side);
+      } else {
+        this.processItemResult(itemResult, active, action.side);
       }
     }
   }

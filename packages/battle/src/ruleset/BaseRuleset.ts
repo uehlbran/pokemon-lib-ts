@@ -50,6 +50,7 @@ import type {
   ExpRecipientSelectionContext,
   GenerationRuleset,
 } from "./GenerationRuleset";
+import { hasGoFirstItemActivated } from "./GoFirstItemActivation";
 
 /**
  * Abstract base class implementing GenerationRuleset with Gen 6+/7+ defaults.
@@ -269,16 +270,19 @@ export abstract class BaseRuleset implements GenerationRuleset {
    * the tiebreak rng.next() calls, preserving PRNG consumption order.
    *
    * Returns a Set of action indices that have a "go first" item activated.
-   * Default: no items activated (Gen 4+ Quick Claw uses different mechanics).
+   * Default: honor move actions that the engine marked during the pre-turn held-item pass.
+   * Generations with custom pre-roll mechanics can still override this hook.
    *
    * Source: pret/pokeemerald HOLD_EFFECT_QUICK_CLAW — Gen 3 Quick Claw pre-roll
    */
   protected getQuickClawActivated(
-    _actions: BattleAction[],
+    actions: BattleAction[],
     _state: BattleState,
     _rng: SeededRandom,
   ): Set<number> {
-    return new Set();
+    return new Set(
+      actions.flatMap((action, index) => (hasGoFirstItemActivated(action) ? [index] : [])),
+    );
   }
 
   /**

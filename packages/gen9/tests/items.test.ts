@@ -440,6 +440,63 @@ describe("Life Orb", () => {
   });
 });
 
+describe("go-first held items", () => {
+  it("given Custap Berry in pinch range, when before-turn-order triggers, then it activates and consumes", () => {
+    const pokemon = makeActive({ heldItem: "custap-berry", hp: 200, currentHp: 50 });
+    const ctx = makeContext({
+      pokemon,
+      move: { id: "tackle", type: "normal", category: "physical" },
+    });
+
+    const result = applyGen9HeldItem("before-turn-order", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([{ type: "consume", target: "self", value: "custap-berry" }]);
+    expect(result.messages).toEqual(["The Pokemon's Custap Berry let it move first!"]);
+  });
+
+  it("given Custap Berry outside pinch range, when before-turn-order triggers, then it does not activate", () => {
+    const pokemon = makeActive({ heldItem: "custap-berry", hp: 200, currentHp: 51 });
+    const ctx = makeContext({
+      pokemon,
+      move: { id: "tackle", type: "normal", category: "physical" },
+    });
+
+    const result = applyGen9HeldItem("before-turn-order", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+
+  it("given Quick Claw and a successful roll, when before-turn-order triggers, then it activates without consuming", () => {
+    const pokemon = makeActive({ heldItem: "quick-claw" });
+    const ctx = makeContext({
+      pokemon,
+      move: { id: "tackle", type: "normal", category: "physical" },
+      rng: makeRng({ chance: () => true }),
+    });
+
+    const result = applyGen9HeldItem("before-turn-order", ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([]);
+    expect(result.messages).toEqual(["The Pokemon's Quick Claw let it move first!"]);
+  });
+
+  it("given Magic Room, when before-turn-order triggers, then go-first items stay suppressed", () => {
+    const pokemon = makeActive({ heldItem: "quick-claw" });
+    const ctx = makeContext({
+      pokemon,
+      move: { id: "tackle", type: "normal", category: "physical" },
+      rng: makeRng({ chance: () => true }),
+      state: makeState({ magicRoom: { active: true, turnsLeft: 3 } }),
+    });
+
+    const result = applyGen9HeldItem("before-turn-order", ctx);
+
+    expect(result.activated).toBe(false);
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Leftovers
 // ═══════════════════════════════════════════════════════════════════════════

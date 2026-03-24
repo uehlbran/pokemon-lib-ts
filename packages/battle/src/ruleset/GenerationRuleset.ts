@@ -386,6 +386,7 @@ export interface ItemSystem {
   /**
    * Apply held item effects for the given trigger.
    * @param trigger Known trigger points:
+   *   - `"before-turn-order"` -- triggered before move-order sorting for same-priority go-first items
    *   - `"end-of-turn"` -- standard end-of-turn item effects (Leftovers, Black Sludge, etc.)
    *   - `"on-damage-taken"` -- triggered when the holder takes damage (context.opponent = attacker)
    *   - `"on-hit"` -- triggered when the holder lands a hit (context.opponent = defender)
