@@ -95,6 +95,24 @@ export function createActivePokemon(
   };
 }
 
+/** Clone a PokemonInstance so battle state never aliases caller-owned team data. */
+export function clonePokemonInstance(pokemon: PokemonInstance): PokemonInstance {
+  return {
+    ...pokemon,
+    ivs: { ...pokemon.ivs },
+    evs: { ...pokemon.evs },
+    moves: pokemon.moves.map((move) => ({ ...move })),
+    calculatedStats: pokemon.calculatedStats ? { ...pokemon.calculatedStats } : undefined,
+    megaTypes: pokemon.megaTypes ? [...pokemon.megaTypes] : undefined,
+    teraTypes: pokemon.teraTypes ? [...pokemon.teraTypes] : undefined,
+    teraOriginalTypes: pokemon.teraOriginalTypes ? [...pokemon.teraOriginalTypes] : undefined,
+    stellarBoostedTypes: pokemon.stellarBoostedTypes ? [...pokemon.stellarBoostedTypes] : undefined,
+    rageFistLastHitTurns: pokemon.rageFistLastHitTurns
+      ? { ...pokemon.rageFistLastHitTurns }
+      : undefined,
+  };
+}
+
 /** Get the display name for a pokemon */
 export function getPokemonName(active: ActivePokemon): string {
   return active.pokemon.nickname ?? `Pokemon #${active.pokemon.speciesId}`;

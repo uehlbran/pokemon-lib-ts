@@ -14,6 +14,7 @@ import type { BattleGimmickType, GenerationRuleset } from "../ruleset";
 import { generations } from "../ruleset";
 import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";
 import {
+  clonePokemonInstance,
   createActivePokemon,
   createDefaultStatStages,
   createPokemonSnapshot,
@@ -992,7 +993,7 @@ export class BattleEngine implements BattleEventEmitter {
     return {
       index,
       trainer,
-      team: [...team],
+      team: team.map((pokemon) => clonePokemonInstance(pokemon)),
       active: [],
       hazards: [],
       screens: [],
