@@ -18,6 +18,7 @@ export {
   applyDamageModifierChain,
   getStabModifier,
   getWeatherDamageModifier,
+  pokeRound,
 } from "./damage-utils";
 export {
   calculateExpGain,

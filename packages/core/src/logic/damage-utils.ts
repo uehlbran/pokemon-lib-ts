@@ -25,6 +25,19 @@ export function applyDamageModifierChain(value: number, modifiers: readonly numb
 }
 
 /**
+ * Apply a 4096-based modifier using Showdown's fixed-point rounding convention.
+ *
+ * Equivalent to Showdown's `modify(value, modifier/4096)` for positive integers:
+ *   `floor((value * modifier + 2047) / 4096)`
+ *
+ * Source: references/pokemon-showdown/sim/battle.ts modify() method
+ * Source: references/pokemon-showdown/sim/dex.ts trunc() -- num >>> 0
+ */
+export function pokeRound(value: number, modifier: number): number {
+  return Math.floor((value * modifier + 2047) / 4096);
+}
+
+/**
  * STAB (Same Type Attack Bonus) modifier.
  *
  * Source: pret/pokeemerald src/pokemon.c — CalculateBaseDamage: damage = damage * 150 / 100 for STAB
