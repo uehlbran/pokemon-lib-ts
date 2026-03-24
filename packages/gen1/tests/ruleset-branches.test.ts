@@ -1495,12 +1495,28 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [{ moveId: customMoveId, currentPP: 10, maxPP: 10, ppUps: 0 }],
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 80,
+        },
       } as PokemonInstance,
     });
     const tacklePokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
       } as PokemonInstance,
     });
     const state = makeBattleState({ side0Active: customMovePokemon, side1Active: tacklePokemon });
