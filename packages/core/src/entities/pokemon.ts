@@ -92,12 +92,32 @@ export interface PokemonInstance {
   /** Computed stats — recalculated when level/EVs/nature change */
   calculatedStats?: StatBlock;
 
-  // --- Generation-specific fields ---
+  // --- Persisted per-Pokemon attributes / battle-state restoration fields ---
 
-  /** Tera Type for Gen 9 battles */
+  /**
+   * Exception to the usual core rule that interfaces stay generation-agnostic.
+   *
+   * `PokemonInstance` is the durable per-Pokemon record used by factories, save-state-like
+   * battle restoration, and switch-out / switch-in reconstruction. A generation-specific
+   * field is only allowed here when it represents either:
+   *   1. intrinsic per-Pokemon data that exists before battle setup, or
+   *   2. persistent battle-form state that must survive switching for the rest of the battle.
+   *
+   * That is why assigned Tera metadata, Dynamax level, Mega state, and once-per-battle
+   * activation flags live here instead of on short-lived `ActivePokemon` wrappers.
+   */
+
+  /**
+   * Assigned Tera Type for Gen 9 battles.
+   * Stored on the durable Pokemon record because gimmick eligibility is decided from the
+   * underlying team member before any active-battle wrapper is created.
+   */
   teraType?: PokemonType;
 
-  /** Dynamax Level for Gen 8 battles (0-10) */
+  /**
+   * Dynamax Level for Gen 8 battles (0-10).
+   * This is a persistent per-Pokemon progression value, not transient battle state.
+   */
   dynamaxLevel?: number;
 
   /**
@@ -198,6 +218,8 @@ export interface PokemonCreationOptions {
   originalTrainer: string;
   originalTrainerId: number;
   pokeball: string;
+  /** Optional Gen 9 assigned Tera Type for the created Pokemon. */
   teraType?: PokemonType;
+  /** Optional Gen 8 Dynamax Level progression value for the created Pokemon. */
   dynamaxLevel?: number;
 }
