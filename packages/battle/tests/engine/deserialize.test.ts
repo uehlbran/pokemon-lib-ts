@@ -153,6 +153,56 @@ function createSwitchPromptBattleWithBench(): {
 }
 
 describe("BattleEngine.deserialize", () => {
+  it("given one side has already submitted an action, when serialized and deserialized, then the pending action is preserved", () => {
+    const ruleset = new MockRuleset();
+    ruleset.setFixedDamage(10);
+    const dataManager = createMockDataManager();
+    const { engine } = createTestEngine({ ruleset, dataManager });
+    engine.start();
+
+    const initialHpSide0 = engine.getActive(0)!.pokemon.currentHp;
+    const initialHpSide1 = engine.getActive(1)!.pokemon.currentHp;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+
+    const serialized = engine.serialize();
+    const restored = BattleEngine.deserialize(serialized, ruleset, dataManager);
+
+    restored.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(restored.getState().turnNumber).toBe(1);
+    expect(restored.getActive(0)?.pokemon.currentHp).toBe(initialHpSide0 - 10);
+    expect(restored.getActive(1)?.pokemon.currentHp).toBe(initialHpSide1 - 10);
+  });
+
+  it("given serialize is called during turn resolution, when a save is attempted, then it throws instead of producing a lossy snapshot", () => {
+    const ruleset = new MockRuleset();
+    const dataManager = createMockDataManager();
+    const { engine } = createTestEngine({ ruleset, dataManager });
+    engine.start();
+
+    let serializeError: Error | null = null;
+
+    engine.on((event) => {
+      if (event.type !== "damage") {
+        return;
+      }
+
+      try {
+        engine.serialize();
+      } catch (error) {
+        serializeError = error as Error;
+      }
+    });
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(serializeError?.message).toBe(
+      "BattleEngine.serialize cannot save during phase turn-resolve; save only from stable checkpoint phases",
+    );
+  });
+
   it("given serialized state and a ruleset whose generation does not match the saved battle generation, when deserialized, then it throws", () => {
     const { engine } = createTestEngine();
     const serialized = engine.serialize();
@@ -236,6 +286,77 @@ describe("BattleEngine.deserialize", () => {
     expect(restored.getActive(0)?.pokemon.uid).toBe("pikachu-0");
     expect(restored.getActive(1)?.pokemon.uid).toBe("pikachu-1");
     expect(restored.getState().phase).toBe("action-select");
+  });
+
+  it("given serialized switch-prompt state with malformed switch bookkeeping, when deserialized, then invalid entries are ignored and the prompt remains resumable", () => {
+    const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const serializedState = JSON.parse(engine.serialize()) as {
+      pendingSwitches: { __type: "Map"; entries: [number, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: number[] };
+    };
+
+    serializedState.pendingSwitches = {
+      __type: "Map",
+      entries: [
+        [7, 1],
+        [1, 1],
+        [0, 99],
+      ],
+    };
+    serializedState.sidesNeedingSwitch = {
+      __type: "Set",
+      values: [1, 12],
+    };
+
+    const restored = BattleEngine.deserialize(
+      JSON.stringify(serializedState),
+      ruleset,
+      dataManager,
+    );
+
+    expect(restored.getState().phase).toBe("switch-prompt");
+    expect(() => restored.submitSwitch(1, 1)).not.toThrow();
+    expect(restored.getActive(1)?.pokemon.uid).toBe("pikachu-1");
+    expect(restored.getState().phase).toBe("action-select");
+  });
+
+  it("given serialized non-switch state with stale switch bookkeeping, when deserialized, then stale switch requirements are cleared", () => {
+    const { dataManager, engine, ruleset } = createTestEngine();
+    engine.start();
+
+    const serializedState = JSON.parse(engine.serialize()) as {
+      pendingSwitches: { __type: "Map"; entries: [number, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: number[] };
+    };
+
+    serializedState.pendingSwitches = {
+      __type: "Map",
+      entries: [[0, 0]],
+    };
+    serializedState.sidesNeedingSwitch = {
+      __type: "Set",
+      values: [0],
+    };
+
+    const restored = BattleEngine.deserialize(
+      JSON.stringify(serializedState),
+      ruleset,
+      dataManager,
+    );
+
+    const reserialized = JSON.parse(restored.serialize()) as {
+      pendingSwitches: { __type: "Map"; entries: [number, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: number[] };
+      state: { phase: string };
+    };
+
+    expect(reserialized.state.phase).toBe("action-select");
+    expect(reserialized.pendingSwitches.entries).toEqual([]);
+    expect(reserialized.sidesNeedingSwitch.values).toEqual([]);
   });
 
   it("given a serialized battle state where currentHp is less than maxHp, when deserialized, then currentHp matches the saved value (not recalculated)", () => {

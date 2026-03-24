@@ -127,6 +127,89 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private static inferSwitchPromptSides(state: BattleState): Set<0 | 1> {
+    const inferredSides = new Set<0 | 1>();
+
+    for (const side of [0, 1] as const) {
+      const active = state.sides[side]?.active[0];
+      if (active && active.pokemon.currentHp <= 0) {
+        inferredSides.add(side);
+      }
+    }
+
+    return inferredSides;
+  }
+
+  private static sanitizePendingSwitches(
+    state: BattleState,
+    rawPendingSwitches: unknown,
+  ): Map<0 | 1, number> {
+    if (!(rawPendingSwitches instanceof Map)) {
+      return new Map();
+    }
+
+    const sanitizedPendingSwitches = new Map<0 | 1, number>();
+
+    for (const [rawSide, rawTeamSlot] of rawPendingSwitches) {
+      if ((rawSide !== 0 && rawSide !== 1) || !Number.isInteger(rawTeamSlot)) {
+        continue;
+      }
+
+      if (rawTeamSlot < 0 || rawTeamSlot >= state.sides[rawSide].team.length) {
+        continue;
+      }
+
+      sanitizedPendingSwitches.set(rawSide, rawTeamSlot);
+    }
+
+    return sanitizedPendingSwitches;
+  }
+
+  private static sanitizeSidesNeedingSwitch(rawSidesNeedingSwitch: unknown): Set<0 | 1> {
+    if (!(rawSidesNeedingSwitch instanceof Set)) {
+      return new Set();
+    }
+
+    const sanitizedSidesNeedingSwitch = new Set<0 | 1>();
+
+    for (const rawSide of rawSidesNeedingSwitch) {
+      if (rawSide === 0 || rawSide === 1) {
+        sanitizedSidesNeedingSwitch.add(rawSide);
+      }
+    }
+
+    return sanitizedSidesNeedingSwitch;
+  }
+
+  private static restoreSwitchPromptState(
+    state: BattleState,
+    rawPendingSwitches: unknown,
+    rawSidesNeedingSwitch: unknown,
+  ): {
+    pendingSwitches: Map<0 | 1, number>;
+    sidesNeedingSwitch: Set<0 | 1>;
+  } {
+    if (state.phase !== "switch-prompt") {
+      return {
+        pendingSwitches: new Map(),
+        sidesNeedingSwitch: new Set(),
+      };
+    }
+
+    const pendingSwitches = BattleEngine.sanitizePendingSwitches(state, rawPendingSwitches);
+    const sidesNeedingSwitch = BattleEngine.sanitizeSidesNeedingSwitch(rawSidesNeedingSwitch);
+
+    for (const side of BattleEngine.inferSwitchPromptSides(state)) {
+      sidesNeedingSwitch.add(side);
+    }
+
+    for (const side of pendingSwitches.keys()) {
+      sidesNeedingSwitch.add(side);
+    }
+
+    return { pendingSwitches, sidesNeedingSwitch };
+  }
+
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     BattleEngine.assertRulesetGenerationMatches("BattleEngine", config.generation, ruleset);
     BattleEngine.assertSinglesOnlyFormat("BattleEngine", config.format);
@@ -702,6 +785,8 @@ export class BattleEngine implements BattleEventEmitter {
 
   /** Serialize battle state for save/load or network transmission */
   serialize(): string {
+    this.assertSerializablePhase();
+
     // participantTracker is an engine-private field (not in BattleState), so we must
     // include it separately. Convert Map<string, Set<string>> → plain object for JSON.
     // Source: bug fix — tracker was silently dropped on serialize/deserialize round-trips,
@@ -714,6 +799,7 @@ export class BattleEngine implements BattleEventEmitter {
       {
         state: this.state,
         participantTracker: participantTrackerObj,
+        pendingActions: this.pendingActions,
         // Source: bug fix — getEventLog() promises the ordered log of all events
         // emitted since start(), so save/load must preserve the emitted history.
         eventLog: this.eventLog,
@@ -760,9 +846,10 @@ export class BattleEngine implements BattleEventEmitter {
     }) as {
       state: BattleState;
       participantTracker?: Record<string, string[]>;
+      pendingActions?: Map<0 | 1, BattleAction>;
       eventLog?: BattleEvent[];
-      pendingSwitches?: Map<0 | 1, number>;
-      sidesNeedingSwitch?: Set<0 | 1>;
+      pendingSwitches?: unknown;
+      sidesNeedingSwitch?: unknown;
     };
 
     BattleEngine.assertRulesetGenerationMatches(
@@ -771,6 +858,12 @@ export class BattleEngine implements BattleEventEmitter {
       ruleset,
     );
     BattleEngine.assertSinglesOnlyFormat("BattleEngine.deserialize", parsed.state.format);
+
+    const restoredSwitchPromptState = BattleEngine.restoreSwitchPromptState(
+      parsed.state,
+      parsed.pendingSwitches,
+      parsed.sidesNeedingSwitch,
+    );
 
     // Create the engine instance without running the constructor.
     // This avoids: (1) stat recalculation, (2) HP reset to max,
@@ -798,15 +891,20 @@ export class BattleEngine implements BattleEventEmitter {
         enumerable: false,
         configurable: false,
       },
-      pendingActions: { value: new Map(), writable: true, enumerable: false, configurable: false },
+      pendingActions: {
+        value: parsed.pendingActions ?? new Map(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
       pendingSwitches: {
-        value: parsed.pendingSwitches ?? new Map(),
+        value: restoredSwitchPromptState.pendingSwitches,
         writable: true,
         enumerable: false,
         configurable: false,
       },
       sidesNeedingSwitch: {
-        value: parsed.sidesNeedingSwitch ?? new Set(),
+        value: restoredSwitchPromptState.sidesNeedingSwitch,
         writable: true,
         enumerable: false,
         configurable: false,
@@ -838,6 +936,24 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     return engine;
+  }
+
+  private assertSerializablePhase(): void {
+    const stableCheckpointPhases: ReadonlySet<BattlePhase> = new Set([
+      "battle-start",
+      "action-select",
+      "switch-prompt",
+      "battle-end",
+    ]);
+
+    if (stableCheckpointPhases.has(this.state.phase)) {
+      return;
+    }
+
+    throw new Error(
+      `BattleEngine.serialize cannot save during phase ${this.state.phase}; ` +
+        `save only from stable checkpoint phases`,
+    );
   }
 
   // --- Private Methods ---
