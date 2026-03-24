@@ -306,6 +306,7 @@ describe("Acrobatics", () => {
   });
 
   it("given both Acrobatics export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- Acrobatics doubles from 55 to 110 with no held item.
     expect(getAcrobaticsPower(false)).toBe(110);
     expect(getAcrobaticsPower(false)).toBe(getAcrobaticsBP(false));
     expect(getAcrobaticsPower(true)).toBe(getAcrobaticsBP(true));
@@ -723,6 +724,7 @@ describe("Electro Ball", () => {
   });
 
   it("given both Electro Ball export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- floor(300 / 100) = 3, so Electro Ball returns 120.
     expect(getElectroBallPower(300, 100)).toBe(120);
     expect(getElectroBallPower(300, 100)).toBe(getElectroBallBP(300, 100));
   });
@@ -757,6 +759,7 @@ describe("Gyro Ball", () => {
   });
 
   it("given both Gyro Ball export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- floor(25 * 200 / 50) + 1 = 101 for Gyro Ball.
     expect(getGyroBallPower(50, 200)).toBe(101);
     expect(getGyroBallPower(50, 200)).toBe(getGyroBallBP(50, 200));
   });
@@ -799,6 +802,7 @@ describe("Heat Crash / Heavy Slam", () => {
   });
 
   it("given both weight-based export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- 4x weight yields 100 BP for Heat Crash / Heavy Slam.
     expect(getWeightBasedPower(400, 100)).toBe(100);
     expect(getWeightBasedPower(400, 100)).toBe(getWeightBasedBP(400, 100));
   });
@@ -822,6 +826,7 @@ describe("Retaliate", () => {
   });
 
   it("given both Retaliate export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- Retaliate doubles from 70 to 140 after an ally faint.
     expect(getRetaliatePower(true)).toBe(140);
     expect(getRetaliatePower(true)).toBe(getRetaliateBP(true));
     expect(getRetaliatePower(false)).toBe(getRetaliateBP(false));
