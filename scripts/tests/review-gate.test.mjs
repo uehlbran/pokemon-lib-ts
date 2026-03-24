@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { validateReviewMarker } from "../lib/review-gate.mjs";
 
-test("accepts matching review marker", () => {
+test("given a matching review marker, when validating the review gate, then it accepts the marker", () => {
   const result = validateReviewMarker({
     markerText: "feat/test-branch\nabc1234\n",
     currentBranch: "feat/test-branch",
@@ -12,7 +12,7 @@ test("accepts matching review marker", () => {
   assert.equal(result.isValid, true);
 });
 
-test("rejects missing review marker", () => {
+test("given a missing review marker, when validating the review gate, then it blocks the PR", () => {
   const result = validateReviewMarker({
     markerText: "",
     currentBranch: "feat/test-branch",
@@ -23,7 +23,7 @@ test("rejects missing review marker", () => {
   assert.match(result.error ?? "", /Run \/review before opening a PR/);
 });
 
-test("rejects stale review marker commit", () => {
+test("given a stale review marker commit, when validating the review gate, then it requires a fresh review", () => {
   const result = validateReviewMarker({
     markerText: "feat/test-branch\nabc1234\n",
     currentBranch: "feat/test-branch",
@@ -34,7 +34,7 @@ test("rejects stale review marker commit", () => {
   assert.match(result.error ?? "", /Run \/review again/);
 });
 
-test("rejects stale review marker branch", () => {
+test("given a stale review marker branch, when validating the review gate, then it requires a fresh review", () => {
   const result = validateReviewMarker({
     markerText: "feat/old-branch\nabc1234\n",
     currentBranch: "feat/test-branch",

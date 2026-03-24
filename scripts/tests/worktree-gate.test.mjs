@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { validateWorktreeContext } from "../lib/worktree-gate.mjs";
 
-test("rejects the primary checkout for task work", () => {
+test("given the primary checkout, when validating task worktree context, then it rejects task work there", () => {
   const result = validateWorktreeContext({
     projectDir: "/repo",
     primaryWorktree: "/repo",
@@ -14,7 +14,7 @@ test("rejects the primary checkout for task work", () => {
   assert.match(result.error ?? "", /primary checkout is not for task work/i);
 });
 
-test("rejects missing session branch marker", () => {
+test("given a worktree without a session branch marker, when validating task worktree context, then it rejects the worktree", () => {
   const result = validateWorktreeContext({
     projectDir: "/repo/.worktrees/feat-task",
     primaryWorktree: "/repo",
@@ -26,7 +26,7 @@ test("rejects missing session branch marker", () => {
   assert.match(result.error ?? "", /No session branch declared/i);
 });
 
-test("rejects branch mismatch", () => {
+test("given a branch mismatch, when validating task worktree context, then it rejects the worktree", () => {
   const result = validateWorktreeContext({
     projectDir: "/repo/.worktrees/feat-task",
     primaryWorktree: "/repo",
@@ -38,7 +38,7 @@ test("rejects branch mismatch", () => {
   assert.match(result.error ?? "", /Branch mismatch/i);
 });
 
-test("accepts a dedicated worktree with matching branch marker", () => {
+test("given a dedicated worktree with a matching branch marker, when validating task worktree context, then it accepts the worktree", () => {
   const result = validateWorktreeContext({
     projectDir: "/repo/.worktrees/feat-task",
     primaryWorktree: "/repo",
