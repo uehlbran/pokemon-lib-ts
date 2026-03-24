@@ -9,9 +9,14 @@ import type { SeededRandom } from "../prng/seeded-random.js";
  * @param rng - The battle's seeded PRNG
  * @returns `true` if the Pokémon is fully paralyzed this turn
  */
-export function gen12FullParalysisCheck(rng: SeededRandom): boolean {
+export function gen1to2FullParalysisCheck(rng: SeededRandom): boolean {
   return rng.int(0, 255) < 63;
 }
+
+/**
+ * @deprecated Use gen1to2FullParalysisCheck for the explicit generation range.
+ */
+export const gen12FullParalysisCheck = gen1to2FullParalysisCheck;
 
 /**
  * Gen 1–4: Weighted multi-hit distribution [2,2,2,3,3,3,4,5].
@@ -24,9 +29,14 @@ export function gen12FullParalysisCheck(rng: SeededRandom): boolean {
  * @param rng - The battle's seeded PRNG
  * @returns Number of hits: 2, 3, 4, or 5
  */
-export function gen14MultiHitRoll(rng: SeededRandom): number {
+export function gen1to4MultiHitRoll(rng: SeededRandom): number {
   return rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
 }
+
+/**
+ * @deprecated Use gen1to4MultiHitRoll for the explicit generation range.
+ */
+export const gen14MultiHitRoll = gen1to4MultiHitRoll;
 
 /**
  * Gen 1–6: 50% chance to hit self in confusion.
@@ -37,9 +47,14 @@ export function gen14MultiHitRoll(rng: SeededRandom): number {
  * @param rng - The battle's seeded PRNG
  * @returns `true` if the Pokémon hits itself in confusion
  */
-export function gen16ConfusionSelfHitRoll(rng: SeededRandom): boolean {
+export function gen1to6ConfusionSelfHitRoll(rng: SeededRandom): boolean {
   return rng.chance(0.5);
 }
+
+/**
+ * @deprecated Use gen1to6ConfusionSelfHitRoll for the explicit generation range.
+ */
+export const gen16ConfusionSelfHitRoll = gen1to6ConfusionSelfHitRoll;
 
 /**
  * Gen 1–2: Stat EXP contribution = floor(ceil(sqrt(statExp)) / 4).

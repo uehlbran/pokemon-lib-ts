@@ -43,9 +43,9 @@ import type {
 import {
   CRIT_MULTIPLIER_CLASSIC,
   calculateExpGainClassic,
-  gen12FullParalysisCheck,
-  gen14MultiHitRoll,
-  gen16ConfusionSelfHitRoll,
+  gen1to2FullParalysisCheck,
+  gen1to4MultiHitRoll,
+  gen1to6ConfusionSelfHitRoll,
   getAccuracyStageRatio,
   getGen12StatStageRatio,
 } from "@pokemon-lib-ts/core";
@@ -585,11 +585,11 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   checkFullParalysis(_pokemon: ActivePokemon, rng: SeededRandom): boolean {
-    return gen12FullParalysisCheck(rng);
+    return gen1to2FullParalysisCheck(rng);
   }
 
   rollConfusionSelfHit(rng: SeededRandom): boolean {
-    return gen16ConfusionSelfHitRoll(rng);
+    return gen1to6ConfusionSelfHitRoll(rng);
   }
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
@@ -1045,7 +1045,7 @@ export class Gen2Ruleset implements GenerationRuleset {
   }
 
   rollMultiHitCount(_attacker: ActivePokemon, rng: SeededRandom): number {
-    return gen14MultiHitRoll(rng);
+    return gen1to4MultiHitRoll(rng);
   }
 
   rollProtectSuccess(consecutiveProtects: number, rng: SeededRandom): boolean {

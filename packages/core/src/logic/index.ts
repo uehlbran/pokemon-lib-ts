@@ -27,6 +27,9 @@ export {
 } from "./experience";
 export {
   calculateStatExpContribution,
+  gen1to2FullParalysisCheck,
+  gen1to4MultiHitRoll,
+  gen1to6ConfusionSelfHitRoll,
   gen12FullParalysisCheck,
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,

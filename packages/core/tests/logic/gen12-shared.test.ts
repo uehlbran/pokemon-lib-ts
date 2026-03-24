@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateStatExpContribution,
+  gen1to2FullParalysisCheck,
+  gen1to4MultiHitRoll,
+  gen1to6ConfusionSelfHitRoll,
   gen12FullParalysisCheck,
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
@@ -8,10 +11,10 @@ import {
 import { SeededRandom } from "../../src/prng/seeded-random.js";
 
 // ============================================================
-// gen12FullParalysisCheck
+// gen1to2FullParalysisCheck
 // ============================================================
 
-describe("gen12FullParalysisCheck", () => {
+describe("gen1to2FullParalysisCheck", () => {
   // Source: pret/pokered engine/battle/core.asm:3454 — cp 25 percent (= 63/256)
   // The check returns true when rng.int(0,255) < 63.
 
@@ -19,21 +22,21 @@ describe("gen12FullParalysisCheck", () => {
     // Seed 7 → int(0,255) = 2 → 2 < 63 → paralyzed
     // Verified: new SeededRandom(7).int(0,255) === 2
     const rng = new SeededRandom(7);
-    expect(gen12FullParalysisCheck(rng)).toBe(true);
+    expect(gen1to2FullParalysisCheck(rng)).toBe(true);
   });
 
   it("given seed 0, when checking full paralysis, then returns false (rng.int(0,255) = 68 >= 63)", () => {
     // Seed 0 → int(0,255) = 68 → 68 >= 63 → not paralyzed
     // Verified: new SeededRandom(0).int(0,255) === 68
     const rng = new SeededRandom(0);
-    expect(gen12FullParalysisCheck(rng)).toBe(false);
+    expect(gen1to2FullParalysisCheck(rng)).toBe(false);
   });
 
   it("given same seed 7, when checking full paralysis twice, then both calls return the same result", () => {
     // Source: pret/pokered engine/battle/core.asm:3454 — deterministic PRNG
     const rng1 = new SeededRandom(7);
     const rng2 = new SeededRandom(7);
-    expect(gen12FullParalysisCheck(rng1)).toBe(gen12FullParalysisCheck(rng2));
+    expect(gen1to2FullParalysisCheck(rng1)).toBe(gen1to2FullParalysisCheck(rng2));
   });
 
   it("given 10,000 trials with seed 42, when counting paralysis triggers, then rate is between 22% and 27%", () => {
@@ -43,7 +46,7 @@ describe("gen12FullParalysisCheck", () => {
     let trueCount = 0;
     const trials = 10000;
     for (let i = 0; i < trials; i++) {
-      if (gen12FullParalysisCheck(rng)) trueCount++;
+      if (gen1to2FullParalysisCheck(rng)) trueCount++;
     }
     const rate = trueCount / trials;
     expect(rate).toBeGreaterThan(0.22);
@@ -54,15 +57,19 @@ describe("gen12FullParalysisCheck", () => {
     // Seed 15 → int(0,255) = 60 → 60 < 63 → paralyzed (triangulation: second true case)
     // Verified: new SeededRandom(15).int(0,255) === 60
     const rng = new SeededRandom(15);
-    expect(gen12FullParalysisCheck(rng)).toBe(true);
+    expect(gen1to2FullParalysisCheck(rng)).toBe(true);
+  });
+
+  it("keeps gen12FullParalysisCheck as a compatibility alias", () => {
+    expect(gen12FullParalysisCheck).toBe(gen1to2FullParalysisCheck);
   });
 });
 
 // ============================================================
-// gen14MultiHitRoll
+// gen1to4MultiHitRoll
 // ============================================================
 
-describe("gen14MultiHitRoll", () => {
+describe("gen1to4MultiHitRoll", () => {
   // Source: pret/pokered engine/battle/core.asm — multi-hit distribution [2,2,2,3,3,3,4,5]
   // Source: Bulbapedia — Multi-hit move — counts 2 (37.5%), 3 (37.5%), 4 (12.5%), 5 (12.5%)
 
@@ -70,28 +77,28 @@ describe("gen14MultiHitRoll", () => {
     // Seed 0 → pick index 0 → value 2
     // Verified: new SeededRandom(0).pick([2,2,2,3,3,3,4,5]) === 2
     const rng = new SeededRandom(0);
-    expect(gen14MultiHitRoll(rng)).toBe(2);
+    expect(gen1to4MultiHitRoll(rng)).toBe(2);
   });
 
   it("given seed 1, when rolling multi-hit, then returns 3 (picks from the 3-hit slots)", () => {
     // Seed 1 → pick index in [3,4,5] → value 3
     // Verified: new SeededRandom(1).pick([2,2,2,3,3,3,4,5]) === 3
     const rng = new SeededRandom(1);
-    expect(gen14MultiHitRoll(rng)).toBe(3);
+    expect(gen1to4MultiHitRoll(rng)).toBe(3);
   });
 
   it("given seed 20, when rolling multi-hit, then returns 4 (picks index 6 of [2,2,2,3,3,3,4,5])", () => {
     // Seed 20 → pick index 6 → value 4
     // Verified: new SeededRandom(20).pick([2,2,2,3,3,3,4,5]) === 4
     const rng = new SeededRandom(20);
-    expect(gen14MultiHitRoll(rng)).toBe(4);
+    expect(gen1to4MultiHitRoll(rng)).toBe(4);
   });
 
   it("given seed 4, when rolling multi-hit, then returns 5 (picks index 7 of [2,2,2,3,3,3,4,5])", () => {
     // Seed 4 → pick index 7 → value 5
     // Verified: new SeededRandom(4).pick([2,2,2,3,3,3,4,5]) === 5
     const rng = new SeededRandom(4);
-    expect(gen14MultiHitRoll(rng)).toBe(5);
+    expect(gen1to4MultiHitRoll(rng)).toBe(5);
   });
 
   it("given seeds 0-99, when rolling multi-hit, then every result is in {2, 3, 4, 5}", () => {
@@ -99,7 +106,7 @@ describe("gen14MultiHitRoll", () => {
     const validHits = new Set([2, 3, 4, 5]);
     for (let seed = 0; seed < 100; seed++) {
       const rng = new SeededRandom(seed);
-      const result = gen14MultiHitRoll(rng);
+      const result = gen1to4MultiHitRoll(rng);
       expect(validHits.has(result)).toBe(true);
     }
   });
@@ -112,7 +119,7 @@ describe("gen14MultiHitRoll", () => {
     const counts: Record<number, number> = { 2: 0, 3: 0, 4: 0, 5: 0 };
     const trials = 10000;
     for (let i = 0; i < trials; i++) {
-      const result = gen14MultiHitRoll(rng);
+      const result = gen1to4MultiHitRoll(rng);
       counts[result]++;
     }
     // 2-hits: expected 37.5%, acceptable 33–42%
@@ -128,13 +135,17 @@ describe("gen14MultiHitRoll", () => {
     expect(counts[5] / trials).toBeGreaterThan(0.08);
     expect(counts[5] / trials).toBeLessThan(0.17);
   });
+
+  it("keeps gen14MultiHitRoll as a compatibility alias", () => {
+    expect(gen14MultiHitRoll).toBe(gen1to4MultiHitRoll);
+  });
 });
 
 // ============================================================
-// gen16ConfusionSelfHitRoll
+// gen1to6ConfusionSelfHitRoll
 // ============================================================
 
-describe("gen16ConfusionSelfHitRoll", () => {
+describe("gen1to6ConfusionSelfHitRoll", () => {
   // Source: pret/pokered engine/battle/core.asm — confusion self-hit check (50%)
   // Source: pret/pokecrystal engine/battle/effect_commands.asm:602 HitConfusion
 
@@ -142,21 +153,21 @@ describe("gen16ConfusionSelfHitRoll", () => {
     // Seed 0 → next() < 0.5 → true
     // Verified: new SeededRandom(0).chance(0.5) === true
     const rng = new SeededRandom(0);
-    expect(gen16ConfusionSelfHitRoll(rng)).toBe(true);
+    expect(gen1to6ConfusionSelfHitRoll(rng)).toBe(true);
   });
 
   it("given seed 1, when rolling confusion self-hit, then returns false (rng.chance(0.5) misses)", () => {
     // Seed 1 → next() >= 0.5 → false
     // Verified: new SeededRandom(1).chance(0.5) === false
     const rng = new SeededRandom(1);
-    expect(gen16ConfusionSelfHitRoll(rng)).toBe(false);
+    expect(gen1to6ConfusionSelfHitRoll(rng)).toBe(false);
   });
 
   it("given same seed 0, when rolling confusion self-hit twice, then both calls return the same result", () => {
     // Source: Mulberry32 PRNG — same seed always produces same sequence
     const rng1 = new SeededRandom(0);
     const rng2 = new SeededRandom(0);
-    expect(gen16ConfusionSelfHitRoll(rng1)).toBe(gen16ConfusionSelfHitRoll(rng2));
+    expect(gen1to6ConfusionSelfHitRoll(rng1)).toBe(gen1to6ConfusionSelfHitRoll(rng2));
   });
 
   it("given 10,000 trials with seed 42, when counting self-hits, then rate is between 47% and 53%", () => {
@@ -166,11 +177,15 @@ describe("gen16ConfusionSelfHitRoll", () => {
     let trueCount = 0;
     const trials = 10000;
     for (let i = 0; i < trials; i++) {
-      if (gen16ConfusionSelfHitRoll(rng)) trueCount++;
+      if (gen1to6ConfusionSelfHitRoll(rng)) trueCount++;
     }
     const rate = trueCount / trials;
     expect(rate).toBeGreaterThan(0.47);
     expect(rate).toBeLessThan(0.53);
+  });
+
+  it("keeps gen16ConfusionSelfHitRoll as a compatibility alias", () => {
+    expect(gen16ConfusionSelfHitRoll).toBe(gen1to6ConfusionSelfHitRoll);
   });
 });
 
