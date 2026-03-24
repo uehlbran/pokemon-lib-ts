@@ -199,6 +199,140 @@ export class BattleEngine implements BattleEventEmitter {
     return firstSpeed > secondSpeed ? [firstEntry, secondEntry] : [secondEntry, firstEntry];
   }
 
+  private getCustomDamageMoveData(
+    source: string,
+    fallbackType?: MoveData["type"] | null,
+  ): MoveData {
+    try {
+      return this.dataManager.getMove(source);
+    } catch {
+      return {
+        ...STRUGGLE_MOVE_DATA,
+        id: source,
+        displayName: source,
+        type: fallbackType ?? STRUGGLE_MOVE_DATA.type,
+        flags: {
+          ...STRUGGLE_MOVE_DATA.flags,
+          contact: false,
+        },
+      };
+    }
+  }
+
+  private applyCustomDamage(
+    target: ActivePokemon,
+    sourcePokemon: ActivePokemon,
+    targetSide: 0 | 1,
+    amount: number,
+    source: string,
+    type?: MoveData["type"] | null,
+  ): void {
+    const moveData = this.getCustomDamageMoveData(source, type);
+    let damage = amount;
+    const maxHp = target.pokemon.calculatedStats?.hp ?? target.pokemon.currentHp;
+
+    if (this.ruleset.capLethalDamage) {
+      const survivalResult = this.ruleset.capLethalDamage(
+        damage,
+        target,
+        sourcePokemon,
+        moveData,
+        this.state,
+      );
+      damage = survivalResult.damage;
+      for (const message of survivalResult.messages) {
+        this.emit({ type: "message", text: message });
+      }
+      if (survivalResult.consumedItem) {
+        target.pokemon.heldItem = null;
+        this.emit({
+          type: "item-consumed",
+          side: targetSide,
+          pokemon: getPokemonName(target),
+          item: survivalResult.consumedItem,
+        });
+      }
+    }
+
+    target.pokemon.currentHp = Math.max(0, target.pokemon.currentHp - damage);
+    target.lastDamageTaken = damage;
+    target.lastDamageType = type ?? moveData.type;
+    target.lastDamageCategory = moveData.category;
+    this.emit({
+      type: "damage",
+      side: targetSide,
+      pokemon: getPokemonName(target),
+      amount: damage,
+      currentHp: target.pokemon.currentHp,
+      maxHp,
+      source,
+    });
+
+    if (damage <= 0) {
+      return;
+    }
+
+    this.ruleset.onDamageReceived(target, damage, moveData, this.state);
+
+    if (this.ruleset.hasHeldItems()) {
+      const damageTakenItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
+        pokemon: target,
+        state: this.state,
+        rng: this.state.rng,
+        damage,
+        move: moveData,
+        opponent: sourcePokemon,
+      });
+      if (damageTakenItemResult.activated) {
+        this.processItemResult(damageTakenItemResult, target, sourcePokemon, targetSide);
+      }
+    }
+
+    if (this.ruleset.hasHeldItems() && moveData.flags.contact && target.pokemon.currentHp > 0) {
+      const contactItemResult = this.ruleset.applyHeldItem("on-contact", {
+        pokemon: target,
+        opponent: sourcePokemon,
+        state: this.state,
+        rng: this.state.rng,
+        damage,
+        move: moveData,
+      });
+      if (contactItemResult.activated) {
+        this.processItemResult(contactItemResult, target, sourcePokemon, targetSide);
+      }
+    }
+
+    if (this.ruleset.hasAbilities() && target.pokemon.currentHp > 0) {
+      const damageTakenAbilityResult = this.ruleset.applyAbility("on-damage-taken", {
+        pokemon: target,
+        opponent: sourcePokemon,
+        state: this.state,
+        rng: this.state.rng,
+        trigger: "on-damage-taken",
+        move: moveData,
+        damage,
+      });
+      if (damageTakenAbilityResult.activated) {
+        this.processAbilityResult(damageTakenAbilityResult, target, sourcePokemon, targetSide);
+      }
+    }
+
+    if (this.ruleset.hasAbilities() && moveData.flags.contact && target.pokemon.currentHp > 0) {
+      const contactAbilityResult = this.ruleset.applyAbility("on-contact", {
+        pokemon: target,
+        opponent: sourcePokemon,
+        state: this.state,
+        rng: this.state.rng,
+        trigger: "on-contact",
+        move: moveData,
+        damage,
+      });
+      if (contactAbilityResult.activated) {
+        this.processAbilityResult(contactAbilityResult, target, sourcePokemon, targetSide);
+      }
+    }
+  }
+
   private static sanitizePendingSwitches(
     state: BattleState,
     rawPendingSwitches: unknown,
@@ -592,7 +726,16 @@ export class BattleEngine implements BattleEventEmitter {
               entries.push({ side: switchSide, pokemon: active });
             }
           }
-          for (const entry of this.orderSwitchInAbilityEntries(entries)) {
+          const orderedEntries =
+            entries.length === 2
+              ? this.orderSwitchInAbilityEntries(
+                  entries as [
+                    { side: 0 | 1; pokemon: ActivePokemon },
+                    { side: 0 | 1; pokemon: ActivePokemon },
+                  ],
+                )
+              : entries;
+          for (const entry of orderedEntries) {
             const opponent = this.getOpponentActive(entry.side);
             if (opponent) {
               const abilityResult = this.ruleset.applyAbility("on-switch-in", {
@@ -3565,27 +3708,17 @@ export class BattleEngine implements BattleEventEmitter {
     // Custom damage (OHKO, fixed damage, Counter)
     if (result.customDamage) {
       const customTarget = result.customDamage.target === "attacker" ? attacker : defender;
+      const customSource = result.customDamage.target === "attacker" ? defender : attacker;
       const customTargetSide =
         result.customDamage.target === "attacker" ? attackerSide : defenderSide;
-      const customMaxHp =
-        customTarget.pokemon.calculatedStats?.hp ?? customTarget.pokemon.currentHp;
-      customTarget.pokemon.currentHp = Math.max(
-        0,
-        customTarget.pokemon.currentHp - result.customDamage.amount,
+      this.applyCustomDamage(
+        customTarget,
+        customSource,
+        customTargetSide,
+        result.customDamage.amount,
+        result.customDamage.source,
+        result.customDamage.type,
       );
-      if (result.customDamage.target === "defender") {
-        customTarget.lastDamageTaken = result.customDamage.amount;
-        customTarget.lastDamageType = result.customDamage.type ?? null;
-      }
-      this.emit({
-        type: "damage",
-        side: customTargetSide,
-        pokemon: getPokemonName(customTarget),
-        amount: result.customDamage.amount,
-        currentHp: customTarget.pokemon.currentHp,
-        maxHp: customMaxHp,
-        source: result.customDamage.source,
-      });
     }
 
     // Status cure: cures status AND resets stat stages for target(s)

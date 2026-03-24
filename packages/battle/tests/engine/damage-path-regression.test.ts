@@ -103,6 +103,40 @@ class MultiHitEndureMockRuleset extends AlwaysEndureMockRuleset {
   }
 }
 
+class CustomDamageHookMockRuleset extends MockRuleset {
+  damageReceivedCalls: Array<{ defenderUid: string; damage: number; moveId: string }> = [];
+
+  override capLethalDamage(
+    damage: number,
+    defender: import("../../src/state").ActivePokemon,
+    _attacker: import("../../src/state").ActivePokemon,
+    _move: MoveData,
+    _state: import("../../src/state").BattleState,
+  ): { damage: number; survived: boolean; messages: string[] } {
+    if (damage >= defender.pokemon.currentHp) {
+      return {
+        damage: defender.pokemon.currentHp - 1,
+        survived: true,
+        messages: ["Custom damage was capped"],
+      };
+    }
+    return { damage, survived: false, messages: [] };
+  }
+
+  override onDamageReceived(
+    defender: import("../../src/state").ActivePokemon,
+    damage: number,
+    move: MoveData,
+    _state: import("../../src/state").BattleState,
+  ): void {
+    this.damageReceivedCalls.push({
+      defenderUid: defender.pokemon.uid,
+      damage,
+      moveId: move.id,
+    });
+  }
+}
+
 function createEngine(overrides?: {
   seed?: number;
   team1?: PokemonInstance[];
@@ -161,6 +195,59 @@ function createEngine(overrides?: {
 }
 
 describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
+  describe("#829 — customDamage uses the shared damage pipeline", () => {
+    it("given a move effect that applies lethal custom damage, when it resolves, then the engine still applies capLethalDamage and onDamageReceived", () => {
+      const ruleset = new CustomDamageHookMockRuleset();
+      ruleset.setMoveEffectResult({
+        customDamage: {
+          target: "defender",
+          amount: 999,
+          source: "tackle",
+          type: "normal",
+        },
+      });
+
+      const charizard = createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      });
+
+      const { engine, events } = createEngine({ ruleset, team1: [charizard] });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const defender = engine.getState().sides[1].active[0];
+      expect(defender?.pokemon.currentHp).toBe(1);
+
+      const damageEvent = events.find((event) => event.type === "damage" && event.side === 1);
+      expect(damageEvent).toBeDefined();
+      expect(damageEvent && "amount" in damageEvent ? damageEvent.amount : null).toBe(153);
+
+      expect(ruleset.damageReceivedCalls).toContainEqual({
+        defenderUid: "blastoise-1",
+        damage: 153,
+        moveId: "tackle",
+      });
+
+      const surviveMessage = events.find(
+        (event) => event.type === "message" && event.text === "Custom damage was capped",
+      );
+      expect(surviveMessage).toBeDefined();
+    });
+  });
+
   // -----------------------------------------------------------------------
   // #531: capLethalDamage missing from executeMoveById damage path
   // -----------------------------------------------------------------------
