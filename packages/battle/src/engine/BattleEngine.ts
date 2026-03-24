@@ -4982,6 +4982,11 @@ export class BattleEngine implements BattleEventEmitter {
   private processScreenCountdown(): void {
     for (const side of this.state.sides) {
       side.screens = side.screens.filter((screen) => {
+        // Safeguard has its own countdown handler in Gen 4-8 so it can keep the
+        // legacy wear-off message without being decremented twice per turn.
+        if ((screen.type as string) === "safeguard") {
+          return true;
+        }
         if (screen.turnsLeft < 0) return true; // permanent sentinel — never expires
         screen.turnsLeft--;
         if (screen.turnsLeft <= 0) {
