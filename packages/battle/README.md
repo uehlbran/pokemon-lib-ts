@@ -4,17 +4,22 @@ Pluggable Pokemon battle engine. Bring your own generation ruleset.
 
 ## Features
 
-- **GenerationRuleset interface** — ~20 methods defining gen-specific behavior (damage calc, type chart, crit formula, turn order, etc.)
+- **GenerationRuleset interface** — battle contract for generation-specific behavior (damage calc, type chart, crit formula, turn order, etc.)
 - **BaseRuleset** — abstract class with Gen 3+ defaults
 - **BattleEngine** — state machine: start, action select, turn resolve, end of turn, faint check, battle end
-- **Event-driven** — emits 35+ event types for UI rendering, logging, replay
+- **Event-driven** — emits typed `BattleEvent` values for UI rendering, logging, and replay
 - **Deterministic** — same seed + same inputs = same outputs
 - **AI controllers** — RandomAI included, interface for custom AI
 
 ## Installation
 
+These packages are not yet published to npm. Clone the monorepo and build from the root:
+
 ```bash
-npm install @pokemon-lib-ts/battle @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage
