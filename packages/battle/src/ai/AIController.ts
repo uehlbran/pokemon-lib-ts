@@ -1,4 +1,5 @@
 import type { SeededRandom } from "@pokemon-lib-ts/core";
+import type { AvailableMove } from "../context";
 import type { BattleAction } from "../events";
 import type { GenerationRuleset } from "../ruleset";
 import type { BattleState } from "../state";
@@ -13,6 +14,7 @@ export interface AIController {
     state: Readonly<BattleState>,
     ruleset: GenerationRuleset,
     rng: SeededRandom,
+    availableMoves: readonly AvailableMove[],
   ): BattleAction;
 
   /** Choose a switch-in after a faint */
