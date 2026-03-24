@@ -239,6 +239,29 @@ describe("BattleEngine", () => {
       expect(damageEvents.length).toBeGreaterThan(0);
     });
 
+    it("given both sides submit moves, when turn resolves, then event pokemon fields use display names instead of uids", () => {
+      const { engine, events } = createTestEngine();
+      engine.start();
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 10;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const moveStarts = events.filter((e) => e.type === "move-start");
+      const damageEvents = events.filter((e) => e.type === "damage");
+      const faintEvents = events.filter((e) => e.type === "faint");
+
+      expect(
+        moveStarts.map((event) => (event.type === "move-start" ? event.pokemon : null)),
+      ).toEqual(["Charizard"]);
+      expect(damageEvents.map((event) => (event.type === "damage" ? event.pokemon : null))).toEqual(
+        ["Blastoise"],
+      );
+      expect(faintEvents.map((event) => (event.type === "faint" ? event.pokemon : null))).toEqual([
+        "Blastoise",
+      ]);
+    });
+
     it("given a mismatched submitAction side and action.side, when submitAction is called, then it throws instead of queueing an inconsistent action", () => {
       const { engine } = createTestEngine();
       engine.start();
