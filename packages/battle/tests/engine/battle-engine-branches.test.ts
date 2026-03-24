@@ -362,6 +362,44 @@ describe("BattleEngine — branch coverage", () => {
       const warning = events.find((e) => e.type === "engine-warning");
       expect(warning).toBeDefined();
     });
+
+    it("given a pokemon locked into a missing forced move, when getAvailableMoves is called, then the move is skipped and a warning is emitted", () => {
+      // Arrange
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [
+            { moveId: "nonexistent-move", currentPP: 10, maxPP: 15, ppUps: 0 },
+            { moveId: "scratch", currentPP: 20, maxPP: 20, ppUps: 0 },
+          ],
+          currentHp: 200,
+        }),
+      ];
+
+      const { engine, events } = createEngine({ team1 });
+      engine.start();
+
+      const active = engine.state.sides[0].active[0];
+      expect(active).not.toBeNull();
+      active!.forcedMove = { moveIndex: 0, moveId: "nonexistent-move" };
+
+      // Act
+      const moves = engine.getAvailableMoves(0);
+
+      // Assert — the missing forced move is skipped, and the remaining move stays locked
+      expect(moves).toHaveLength(1);
+      expect(moves[0]).toEqual(
+        expect.objectContaining({
+          index: 1,
+          moveId: "scratch",
+          disabled: true,
+          disabledReason: "Locked into move",
+        }),
+      );
+      const warning = events.find((e) => e.type === "engine-warning");
+      expect(warning).toBeDefined();
+    });
   });
 
   describe("getDefenderSelectedMove with unknown move data", () => {

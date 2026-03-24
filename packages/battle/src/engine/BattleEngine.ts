@@ -829,25 +829,31 @@ export class BattleEngine implements BattleEventEmitter {
     if (active.forcedMove) {
       const forcedSlot = active.pokemon.moves[active.forcedMove.moveIndex];
       if (forcedSlot) {
-        return active.pokemon.moves.map((slot, index) => {
+        return active.pokemon.moves.flatMap((slot, index) => {
           const isForcedMove = index === active.forcedMove?.moveIndex;
           let moveData: MoveData | undefined;
           try {
             moveData = this.dataManager.getMove(slot.moveId);
           } catch {
-            // skip
+            this.emit({
+              type: "engine-warning",
+              message: `Move "${slot.moveId}" not found in data for Pokémon "${active.pokemon.speciesId}". Slot skipped.`,
+            });
+            return [];
           }
-          return {
-            index,
-            moveId: slot.moveId,
-            displayName: moveData?.displayName ?? slot.moveId,
-            type: moveData?.type ?? ("normal" as const),
-            category: moveData?.category ?? ("physical" as const),
-            pp: slot.currentPP,
-            maxPp: slot.maxPP,
-            disabled: !isForcedMove,
-            disabledReason: isForcedMove ? undefined : "Locked into move",
-          };
+          return [
+            {
+              index,
+              moveId: slot.moveId,
+              displayName: moveData.displayName,
+              type: moveData.type,
+              category: moveData.category,
+              pp: slot.currentPP,
+              maxPp: slot.maxPP,
+              disabled: !isForcedMove,
+              disabledReason: isForcedMove ? undefined : "Locked into move",
+            },
+          ];
         });
       }
     }
