@@ -5685,6 +5685,11 @@ export class BattleEngine implements BattleEventEmitter {
       if (safeguard.turnsLeft <= 0) {
         side.screens.splice(safeguardIdx, 1);
         this.emit({
+          type: "screen-end",
+          side: side.index,
+          screen: "safeguard",
+        });
+        this.emit({
           type: "message",
           text: `Side ${side.index}'s Safeguard wore off!`,
         });

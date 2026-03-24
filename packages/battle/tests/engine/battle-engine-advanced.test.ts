@@ -282,6 +282,30 @@ describe("BattleEngine — advanced scenarios", () => {
       const screenEnd = events.find((e) => e.type === "screen-end");
       expect(screenEnd).toBeDefined();
     });
+
+    it("given Safeguard at 1 turn remaining, when safeguard-countdown runs, then it emits screen-end", () => {
+      // Arrange
+      const ruleset = new MockRuleset();
+      const originalOrder = ruleset.getEndOfTurnOrder();
+      const patchedRuleset = Object.create(ruleset) as MockRuleset;
+      patchedRuleset.getEndOfTurnOrder = () => ["safeguard-countdown" as const, ...originalOrder];
+
+      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      engine.start();
+
+      engine.state.sides[0].screens = [{ type: "safeguard", turnsLeft: 1 }];
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      expect(engine.state.sides[0].screens).toHaveLength(0);
+      const screenEnd = events.find(
+        (event) => event.type === "screen-end" && event.side === 0 && event.screen === "safeguard",
+      );
+      expect(screenEnd).toBeDefined();
+    });
   });
 
   describe("hazard removal effects", () => {
