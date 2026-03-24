@@ -10,8 +10,8 @@ import { MockRuleset } from "../helpers/mock-ruleset";
 /**
  * Tests for Issue #623: Assault Vest blocks status moves.
  *
- * Source: Showdown data/items.ts -- Assault Vest: "The holder is unable to use status moves"
- * Source: Bulbapedia "Assault Vest" -- "The holder cannot use status moves"
+ * Source: packages/battle/src/engine/BattleEngine.ts — getAvailableMoves() and executeMove()
+ *   block status moves when the holder has Assault Vest.
  */
 
 function createEngine(overrides?: {
@@ -81,8 +81,8 @@ describe("Assault Vest -- getAvailableMoves (#623)", () => {
     "given a Pokemon holding Assault Vest with both physical and status moves, " +
       "when getAvailableMoves is called, then status moves are disabled",
     () => {
-      // Source: Showdown data/items.ts -- Assault Vest: "The holder is unable to use status moves"
-      // Source: Bulbapedia "Assault Vest" -- prevents holder from selecting status moves
+      // Source: packages/battle/src/engine/BattleEngine.ts — getAvailableMoves() blocks
+      // status moves when the holder has Assault Vest.
       const ruleset = new MockRuleset();
       ruleset.hasHeldItems = () => true;
 
@@ -111,7 +111,8 @@ describe("Assault Vest -- getAvailableMoves (#623)", () => {
     "given a Pokemon without Assault Vest, " +
       "when getAvailableMoves is called, then status moves are NOT disabled",
     () => {
-      // Source: Showdown data/items.ts -- only Assault Vest blocks status moves
+      // Source: packages/battle/src/engine/BattleEngine.ts — only Assault Vest blocks
+      // status moves here.
       const ruleset = new MockRuleset();
       ruleset.hasHeldItems = () => true;
 
@@ -132,7 +133,8 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
     "given a Pokemon holding Assault Vest that tries to use a status move, " +
       "when the move executes, then the move is blocked with a message",
     () => {
-      // Source: Showdown data/items.ts -- Assault Vest blocks status move execution
+      // Source: packages/battle/src/engine/BattleEngine.ts — executeMove() blocks status
+      // moves when the holder has Assault Vest.
       const ruleset = new MockRuleset();
       ruleset.hasHeldItems = () => true;
 
@@ -165,7 +167,8 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
     "given a Pokemon holding Assault Vest that uses a physical move, " +
       "when the move executes, then it is NOT blocked",
     () => {
-      // Source: Showdown data/items.ts -- Assault Vest only blocks status moves
+      // Source: packages/battle/src/engine/BattleEngine.ts — Assault Vest only blocks
+      // status moves.
       const ruleset = new MockRuleset();
       ruleset.hasHeldItems = () => true;
 

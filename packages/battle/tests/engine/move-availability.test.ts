@@ -258,7 +258,7 @@ function createChoiceLockTestEngine() {
 
 describe("Taunt move availability", () => {
   it("given a taunted Pokemon with status moves, when checking available moves, then status moves are disabled with reason 'Blocked by Taunt'", () => {
-    // Source: Bulbapedia — "Taunt prevents the target from using status moves"
+    // Source: specs/battle/05-gen4.md — Taunt prevents the target from using status moves
     // Arrange
     const { engine } = createTauntTestEngine();
     engine.start();
@@ -306,8 +306,7 @@ describe("Taunt move availability", () => {
 
 describe("Choice lock move availability", () => {
   it("given a choice-locked Pokemon, when checking available moves, then only the locked move is enabled", () => {
-    // Source: Bulbapedia — "Choice Band boosts the holder's Attack by 50%,
-    // but only allows the use of the first move selected."
+    // Source: specs/battle/05-gen4.md — Choice Band/Specs/Scarf lock the first move used
     // Arrange
     const { engine } = createChoiceLockTestEngine();
     engine.start();
@@ -341,7 +340,7 @@ describe("Choice lock move availability", () => {
   });
 
   it("given a Pokemon holding Choice Band that uses a move, when the move succeeds, then the choice-locked volatile is set automatically", () => {
-    // Source: Bulbapedia — Choice items lock into the first move used
+    // Source: specs/battle/05-gen4.md — Choice Band/Specs/Scarf lock the first move used
     // Arrange
     const { engine } = createChoiceLockTestEngine();
     engine.start();

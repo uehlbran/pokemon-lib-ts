@@ -14,6 +14,11 @@ import type { BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
 import { MockRuleset } from "../helpers/mock-ruleset";
 
+// Source: packages/battle/src/engine/BattleEngine.ts — future-attack resolves at end
+// of turn once the countdown reaches 0.
+// Source: packages/battle/src/ruleset/GenerationRuleset.ts — Gen 2-4 store future
+// attack damage at use time; Gen 5+ recalculate it when the attack lands.
+
 /**
  * MockRuleset subclass that includes future-attack in the end-of-turn order
  * and supports configurable executeMoveEffect for scheduling future attacks.
@@ -259,7 +264,8 @@ function createFutureAttackEngine() {
 
 describe("Future Sight end-of-turn processing", () => {
   it("given a pending future attack with turnsLeft=2, when end of turn runs, then the counter decrements to 1 and no damage is dealt", () => {
-    // Source: Bulbapedia — "Future Sight strikes two turns after it is used"
+    // Source: packages/battle/src/engine/BattleEngine.ts — future-attack resolves when
+    // the countdown reaches 0, so turnsLeft=2 becomes 1 without damage.
     // Arrange
     const { engine, events } = createFutureAttackEngine();
     engine.start();
@@ -288,11 +294,9 @@ describe("Future Sight end-of-turn processing", () => {
   });
 
   it("given a pending future attack with turnsLeft=1, when end of turn runs, then damage is calculated and dealt to the target", () => {
-    // Source: Bulbapedia — "In Generations II-IV, damage is calculated when
-    // Future Sight or Doom Desire hits."
     // Arrange
     const { engine, ruleset, events } = createFutureAttackEngine();
-    // Source: Test expectation derived from mock damage (80 damage configured in ruleset)
+    // Fixture: the mock stores 80 damage so the Gen 4 hit-time value is observable.
     ruleset.setFutureSightDamage(80);
     engine.start();
 
@@ -311,14 +315,14 @@ describe("Future Sight end-of-turn processing", () => {
     // Assert — future attack should have been cleared
     expect(engine.state.sides[1].futureAttack).toBeNull();
 
-    // Source: Mock FutureAttackMockRuleset.calculateDamage returns 80 for future-sight
-    // Blastoise should have taken future sight damage (80) plus tackle damage (10)
+    // Source: packages/battle/src/ruleset/GenerationRuleset.ts — Gen 2-4 use the stored
+    // future-attack damage value when the hit resolves.
     const futureSightDamage = events.filter(
       (e) => e.type === "damage" && "source" in e && e.source === "future-sight",
     );
     expect(futureSightDamage.length).toBe(1);
 
-    // Verify the damage amount from future sight is 80
+    // Fixture value from the mock setup above.
     const fsEvent = futureSightDamage[0]!;
     expect(fsEvent.type === "damage" && fsEvent.amount).toBe(80);
   });
@@ -349,8 +353,8 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
     // Arrange — set up a ruleset that recalculates and returns a different value
     const ruleset = new RecalcFutureAttackMockRuleset();
     ruleset.setRecalculates(true);
-    // The calculateDamage for future-sight returns this value on recalculation
-    // Source: Showdown — Gen 5+ always recalculates at hit time
+    // Source: packages/battle/src/ruleset/GenerationRuleset.ts — Gen 5+ recalculates
+    // future attack damage when the attack lands.
     ruleset.setFutureSightDamage(120);
 
     const dataManager = createFutureAttackDataManager();
@@ -429,7 +433,8 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
     // Arrange — Gen 4 does NOT recalculate
     const ruleset = new RecalcFutureAttackMockRuleset();
     ruleset.setRecalculates(false);
-    // Set a different value that would be used if recalculation happened
+    // Source: packages/battle/src/ruleset/GenerationRuleset.ts — Gen 2-4 keep the
+    // stored future-attack damage value instead of recalculating.
     ruleset.setFutureSightDamage(120);
 
     const dataManager = createFutureAttackDataManager();
