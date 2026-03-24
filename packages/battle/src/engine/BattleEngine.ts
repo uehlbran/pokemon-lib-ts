@@ -5875,24 +5875,19 @@ export class BattleEngine implements BattleEventEmitter {
       if (!active || active.pokemon.currentHp <= 0) continue;
       if (!active.volatileStatuses.has("perish-song")) continue;
 
-      const perishState = active.volatileStatuses.get("perish-song");
-      if (!perishState) continue;
-      const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
+      // Source: GenerationRuleset.processPerishSong contract — the ruleset owns
+      // Perish Song countdown semantics, so the engine delegates the mutation and
+      // uses the returned state to drive messaging / faint handling.
+      const perishResult = this.ruleset.processPerishSong(active);
 
       this.emit({
         type: "message",
-        text: `${getPokemonName(active)}'s perish count fell to ${counter - 1}!`,
+        text: `${getPokemonName(active)}'s perish count fell to ${perishResult.newCount}!`,
       });
 
-      if (counter <= 1) {
+      if (perishResult.fainted) {
         active.pokemon.currentHp = 0;
         // Don't emit faint here — checkMidTurnFaints() handles it
-      } else {
-        if (perishState.data) {
-          perishState.data.counter = counter - 1;
-        } else {
-          perishState.turnsLeft = counter - 1;
-        }
       }
     }
   }
