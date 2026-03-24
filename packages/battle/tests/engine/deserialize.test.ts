@@ -193,8 +193,8 @@ describe("BattleEngine.deserialize", () => {
     expect(engine.getState().phase).toBe("switch-prompt");
 
     const serializedState = JSON.parse(engine.serialize()) as {
-      pendingSwitches: { __type: "Map"; entries: Array<[0 | 1, number]> };
-      sidesNeedingSwitch: { __type: "Set"; values: Array<0 | 1> };
+      pendingSwitches: { __type: "Map"; entries: [0 | 1, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: (0 | 1)[] };
       state: {
         phase: string;
         sides: Array<{
@@ -209,7 +209,11 @@ describe("BattleEngine.deserialize", () => {
     serializedState.pendingSwitches = { __type: "Map", entries: [[1, 1]] };
     serializedState.sidesNeedingSwitch = { __type: "Set", values: [0, 1] };
 
-    const restored = BattleEngine.deserialize(JSON.stringify(serializedState), ruleset, dataManager);
+    const restored = BattleEngine.deserialize(
+      JSON.stringify(serializedState),
+      ruleset,
+      dataManager,
+    );
 
     expect(restored.getState().phase).toBe("switch-prompt");
     expect(restored.getActive(1)?.pokemon.uid).toBe("blastoise-1");
