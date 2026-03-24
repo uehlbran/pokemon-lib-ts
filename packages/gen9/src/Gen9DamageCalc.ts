@@ -68,7 +68,6 @@ const CLAMPERL_SPECIES_ID = 366;
 const PIKACHU_SPECIES_ID = 25;
 const CUBONE_SPECIES_ID = 104;
 const MAROWAK_SPECIES_ID = 105;
-const ALOLAN_MAROWAK_SPECIES_ID = 10115;
 const DIALGA_SPECIES_ID = 483;
 const PALKIA_SPECIES_ID = 484;
 const GIRATINA_SPECIES_ID = 487;
@@ -427,16 +426,16 @@ function getAttackStat(
     rawStat = rawStat * 2;
   }
 
-  // Thick Club: 2x Attack for Cubone (104) / Marowak (105) / Alolan Marowak (10115)
+  // Thick Club: 2x Attack for Cubone (104) / Marowak (105)
   // Source: Showdown data/items.ts -- Thick Club
+  // The shipped species model uses National Dex ids and does not yet expose
+  // regional-form species entries through `speciesId`; tracked separately.
   if (
     !attackerHasKlutz &&
     isPhysical &&
     !isBodyPress &&
     attackerItem === "thick-club" &&
-    (attackerSpecies === CUBONE_SPECIES_ID ||
-      attackerSpecies === MAROWAK_SPECIES_ID ||
-      attackerSpecies === ALOLAN_MAROWAK_SPECIES_ID)
+    (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
   }

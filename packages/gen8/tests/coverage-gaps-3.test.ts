@@ -485,7 +485,8 @@ describe("getAttackStat — ability and item buffs (via calculateGen8Damage)", (
   // --- Thick Club (Cubone speciesId=104) ---
 
   it("given Cubone (speciesId=104) holds thick-club, when using physical move, then doubled Attack damage", () => {
-    // Source: Showdown data/items.ts -- Thick Club: doubles Attack for Cubone/Marowak/Alolan Marowak
+    // Source: Showdown data/items.ts -- Thick Club doubles Attack for Cubone/Marowak.
+    // Regional-form species ids are tracked separately from the current National Dex model.
     const cubone = makeActive({
       speciesId: 104,
       attack: 100,
@@ -508,7 +509,8 @@ describe("getAttackStat — ability and item buffs (via calculateGen8Damage)", (
   });
 
   it("given non-Cubone/Marowak pokemon holds thick-club, when using physical move, then no boost", () => {
-    // Source: Showdown data/items.ts -- Thick Club: only boosts speciesId 104, 105, 10115
+    // Source: Showdown data/items.ts -- Thick Club only boosts Cubone/Marowak in the
+    // current shipped species-id model (National Dex ids 104 and 105).
     const nonCubone = makeActive({
       speciesId: 1,
       attack: 100,
