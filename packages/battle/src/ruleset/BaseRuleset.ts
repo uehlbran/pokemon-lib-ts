@@ -14,12 +14,12 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
-  ALL_NATURES,
   calculateAllStats,
   calculateModifiedCatchRate,
   calculateShakeChecks,
   DataManager,
   getStatStageMultiplier,
+  NATURES_BY_ID,
 } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
@@ -77,7 +77,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
     // Delegate to core calculateAllStats — single source of truth for Gen 3+ stat formula.
     // Source: pret/pokeemerald src/pokemon.c:2814 CALC_STAT macro + :2851 HP branch
-    const nature = ALL_NATURES.find((n) => n.id === pokemon.nature) ?? BaseRuleset.HARDY_NATURE;
+    const nature = NATURES_BY_ID.get(pokemon.nature) ?? BaseRuleset.HARDY_NATURE;
     return calculateAllStats(pokemon, species, nature);
   }
 

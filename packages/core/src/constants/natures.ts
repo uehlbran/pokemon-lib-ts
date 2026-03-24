@@ -223,3 +223,8 @@ export const ALL_NATURES: readonly NatureData[] = [
     dislikedFlavor: "dry",
   },
 ] as const;
+
+/** O(1) lookup for nature data by id. */
+export const NATURES_BY_ID: ReadonlyMap<NatureData["id"], NatureData> = new Map(
+  ALL_NATURES.map((nature) => [nature.id, nature] as const),
+);

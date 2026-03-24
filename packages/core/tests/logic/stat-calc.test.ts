@@ -89,10 +89,14 @@ describe("calculateHp", () => {
     expect(calculateHp(78, 31, 0, 100)).toBe(297);
   });
 
-  it("should return 1 for Shedinja (base HP = 1) regardless of IVs/EVs/level", () => {
-    expect(calculateHp(1, 31, 252, 50)).toBe(1);
-    expect(calculateHp(1, 31, 252, 100)).toBe(1);
-    expect(calculateHp(1, 0, 0, 1)).toBe(1);
+  it("given a non-Shedinja species with base HP 1, when calculating HP directly, then the standard formula is used", () => {
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — HP formula
+    // base HP 1, IV 31, EV 252, level 50:
+    // floor(((2 * 1 + 31 + floor(252 / 4)) * 50) / 100) + 50 + 10
+    // = floor((2 + 31 + 63) * 50 / 100) + 60
+    // = floor(96 * 50 / 100) + 60
+    // = 48 + 60 = 108
+    expect(calculateHp(1, 31, 252, 50)).toBe(108);
   });
 
   it("should calculate L50 Pikachu HP correctly (base 35, 31 IV, 252 EV)", () => {
@@ -283,5 +287,55 @@ describe("calculateAllStats", () => {
     expect(stats.spAttack).toBe(63); // Jolly: -SpA (0.9)
     expect(stats.spDefense).toBe(70);
     expect(stats.speed).toBe(156);
+  });
+
+  it("given Shedinja, when calculating all stats, then HP is forced to 1", () => {
+    const shedinjaSpecies = {
+      id: 292,
+      baseStats: {
+        hp: 1,
+        attack: 90,
+        defense: 45,
+        spAttack: 30,
+        spDefense: 30,
+        speed: 40,
+      },
+    } as PokemonSpeciesData;
+
+    const pokemon = makeInstance(
+      50,
+      ALL_31_IVS,
+      { hp: 252, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      "hardy",
+    );
+
+    const stats = calculateAllStats(pokemon, shedinjaSpecies, HARDY);
+
+    expect(stats.hp).toBe(1);
+  });
+
+  it("given a custom non-Shedinja species with base HP 1, when calculating all stats, then HP uses the standard formula", () => {
+    const customSpecies = {
+      id: 999,
+      baseStats: {
+        hp: 1,
+        attack: 90,
+        defense: 45,
+        spAttack: 30,
+        spDefense: 30,
+        speed: 40,
+      },
+    } as PokemonSpeciesData;
+
+    const pokemon = makeInstance(
+      50,
+      ALL_31_IVS,
+      { hp: 252, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      "hardy",
+    );
+
+    const stats = calculateAllStats(pokemon, customSpecies, HARDY);
+
+    expect(stats.hp).toBe(108);
   });
 });
