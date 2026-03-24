@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   CRIT_MULTIPLIER_CLASSIC,
   CRIT_MULTIPLIER_MODERN,
+  CRIT_RATE_PROBABILITIES_GEN2,
+  CRIT_RATE_PROBABILITIES_GEN3_5,
+  CRIT_RATE_PROBABILITIES_GEN6,
   CRIT_RATES_GEN2,
   CRIT_RATES_GEN3_5,
   CRIT_RATES_GEN6,
@@ -19,6 +22,12 @@ describe("CRIT_RATES_GEN6", () => {
     expect(CRIT_RATES_GEN6[2]).toBeCloseTo(1 / 2);
     expect(CRIT_RATES_GEN6[3]).toBe(1);
   });
+
+  it("given the explicit Gen 6 probability export, when compared to the legacy alias, then they are the same table", () => {
+    // Source: issue #773 keeps CRIT_RATES_GEN6 as a deprecated compatibility alias while
+    // the canonical probability name becomes CRIT_RATE_PROBABILITIES_GEN6.
+    expect(CRIT_RATE_PROBABILITIES_GEN6).toBe(CRIT_RATES_GEN6);
+  });
 });
 
 // --- CRIT_RATES_GEN2 ---
@@ -31,6 +40,12 @@ describe("CRIT_RATES_GEN2", () => {
     expect(CRIT_RATES_GEN2[2]).toBeCloseTo(64 / 256);
     expect(CRIT_RATES_GEN2[3]).toBeCloseTo(85 / 256);
     expect(CRIT_RATES_GEN2[4]).toBeCloseTo(128 / 256);
+  });
+
+  it("given the explicit Gen 2 probability export, when compared to the legacy alias, then they are the same table", () => {
+    // Source: issue #773 keeps CRIT_RATES_GEN2 as a deprecated compatibility alias while
+    // the canonical probability name becomes CRIT_RATE_PROBABILITIES_GEN2.
+    expect(CRIT_RATE_PROBABILITIES_GEN2).toBe(CRIT_RATES_GEN2);
   });
 });
 
@@ -45,6 +60,12 @@ describe("CRIT_RATES_GEN3_5", () => {
     expect(CRIT_RATES_GEN3_5[2]).toBeCloseTo(1 / 4);
     expect(CRIT_RATES_GEN3_5[3]).toBeCloseTo(1 / 3);
     expect(CRIT_RATES_GEN3_5[4]).toBeCloseTo(1 / 2);
+  });
+
+  it("given the explicit Gen 3-5 probability export, when compared to the legacy alias, then they are the same table", () => {
+    // Source: issue #773 keeps CRIT_RATES_GEN3_5 as a deprecated compatibility alias while
+    // the canonical probability name becomes CRIT_RATE_PROBABILITIES_GEN3_5.
+    expect(CRIT_RATE_PROBABILITIES_GEN3_5).toBe(CRIT_RATES_GEN3_5);
   });
 });
 
@@ -136,5 +157,11 @@ describe("getCritRate", () => {
     expect(getCritRate(2, CRIT_RATES_GEN3_5)).toBeCloseTo(1 / 4);
     expect(getCritRate(3, CRIT_RATES_GEN3_5)).toBeCloseTo(1 / 3);
     expect(getCritRate(4, CRIT_RATES_GEN3_5)).toBeCloseTo(1 / 2);
+  });
+
+  it("given an empty probability table, when called, then throws instead of returning undefined", () => {
+    expect(() => getCritRate(0, [])).toThrowError(
+      "probabilityTable must contain at least one entry",
+    );
   });
 });

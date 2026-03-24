@@ -1,6 +1,11 @@
-import { DataManager } from "@pokemon-lib-ts/core";
+import { CRIT_RATE_PROBABILITIES_GEN6, DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN7_CRIT_MULTIPLIER, GEN7_CRIT_RATE_TABLE } from "../src/Gen7CritCalc";
+import {
+  GEN7_CRIT_MULTIPLIER,
+  GEN7_CRIT_RATE_PROBABILITIES,
+  GEN7_CRIT_RATE_TABLE,
+  GEN7_CRIT_RATES,
+} from "../src/Gen7CritCalc";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
 
 // ---------------------------------------------------------------------------
@@ -44,6 +49,18 @@ describe("Gen 7 critical hit constants", () => {
   it("given GEN7_CRIT_RATE_TABLE, then values match [24, 8, 2, 1]", () => {
     // Source: Bulbapedia "Critical hit" Gen 7 -- complete table
     expect(Array.from(GEN7_CRIT_RATE_TABLE)).toEqual([24, 8, 2, 1]);
+  });
+
+  it("given the canonical Gen 7 probability table, when checked, then values match [1/24, 1/8, 1/2, 1]", () => {
+    // Source: Bulbapedia / Showdown Gen 7 crit table — same as Gen 6.
+    expect(Array.from(GEN7_CRIT_RATE_PROBABILITIES)).toEqual([1 / 24, 1 / 8, 1 / 2, 1]);
+  });
+
+  it("given the canonical Gen 7 probability table, when compared to its aliases, then all references match", () => {
+    // Source: issue #773 standardizes the probability surface on GEN7_CRIT_RATE_PROBABILITIES
+    // while preserving GEN7_CRIT_RATES and the shared core export for compatibility.
+    expect(GEN7_CRIT_RATE_PROBABILITIES).toBe(GEN7_CRIT_RATES);
+    expect(GEN7_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN6);
   });
 
   it("given GEN7_CRIT_MULTIPLIER, then it is 1.5", () => {

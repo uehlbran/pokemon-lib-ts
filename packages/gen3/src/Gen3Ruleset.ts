@@ -43,7 +43,7 @@ import {
   isWeatherSuppressedGen3,
   WEATHER_SUPPRESSING_ABILITIES,
 } from "./Gen3Abilities";
-import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS } from "./Gen3CritCalc";
+import { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_TABLE } from "./Gen3CritCalc";
 import { calculateGen3Damage } from "./Gen3DamageCalc";
 import { applyGen3HeldItem } from "./Gen3Items";
 import { executeGen3MoveEffect } from "./Gen3MoveEffects";
@@ -164,7 +164,7 @@ export class Gen3Ruleset extends BaseRuleset {
    * Source: pret/pokeemerald src/battle_util.c CalcCritChanceStage
    */
   getCritRateTable(): readonly number[] {
-    return GEN3_CRIT_RATE_DENOMINATORS;
+    return GEN3_CRIT_RATE_TABLE;
   }
 
   /**

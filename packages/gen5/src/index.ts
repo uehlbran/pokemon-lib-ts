@@ -31,9 +31,12 @@ export {
 } from "./Gen5Abilities";
 export {
   CRIT_MULTIPLIER_CLASSIC,
+  CRIT_RATE_PROBABILITIES_GEN3_5,
   CRIT_RATES_GEN3_5,
   GEN5_CRIT_MULTIPLIER,
   GEN5_CRIT_RATE_DENOMINATORS,
+  GEN5_CRIT_RATE_PROBABILITIES,
+  GEN5_CRIT_RATE_TABLE,
   GEN5_CRIT_RATES,
 } from "./Gen5CritCalc";
 export { calculateGen5Damage, pokeRound, TYPE_RESIST_BERRIES } from "./Gen5DamageCalc";

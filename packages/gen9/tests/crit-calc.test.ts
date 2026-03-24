@@ -1,6 +1,11 @@
-import { DataManager } from "@pokemon-lib-ts/core";
+import { CRIT_RATE_PROBABILITIES_GEN6, DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "../src/Gen9CritCalc";
+import {
+  GEN9_CRIT_MULTIPLIER,
+  GEN9_CRIT_RATE_PROBABILITIES,
+  GEN9_CRIT_RATE_TABLE,
+  GEN9_CRIT_RATES,
+} from "../src/Gen9CritCalc";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
 
 // ---------------------------------------------------------------------------
@@ -44,6 +49,18 @@ describe("Gen 9 critical hit constants", () => {
   it("given GEN9_CRIT_RATE_TABLE, then values match [24, 8, 2, 1]", () => {
     // Source: Showdown sim/battle-actions.ts -- complete Gen 9 crit rate table
     expect(Array.from(GEN9_CRIT_RATE_TABLE)).toEqual([24, 8, 2, 1]);
+  });
+
+  it("given the canonical Gen 9 probability table, when checked, then values match [1/24, 1/8, 1/2, 1]", () => {
+    // Source: Showdown / Bulbapedia Gen 9 crit table — unchanged from Gen 6-8.
+    expect(Array.from(GEN9_CRIT_RATE_PROBABILITIES)).toEqual([1 / 24, 1 / 8, 1 / 2, 1]);
+  });
+
+  it("given the canonical Gen 9 probability table, when compared to its aliases, then all references match", () => {
+    // Source: issue #773 standardizes the probability surface on GEN9_CRIT_RATE_PROBABILITIES
+    // while preserving GEN9_CRIT_RATES and the shared core export for compatibility.
+    expect(GEN9_CRIT_RATE_PROBABILITIES).toBe(GEN9_CRIT_RATES);
+    expect(GEN9_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN6);
   });
 
   it("given GEN9_CRIT_MULTIPLIER, then it is 1.5", () => {

@@ -30,7 +30,7 @@ import type {
 import { DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { applyGen5Ability } from "./Gen5Abilities";
 import { getSturdyDamageCap } from "./Gen5AbilitiesDamage";
-import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_DENOMINATORS } from "./Gen5CritCalc";
+import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_TABLE } from "./Gen5CritCalc";
 import { calculateGen5Damage } from "./Gen5DamageCalc";
 import { applyGen5EntryHazards } from "./Gen5EntryHazards";
 import { applyGen5HeldItem } from "./Gen5Items";
@@ -293,7 +293,7 @@ export class Gen5Ruleset extends BaseRuleset {
    * Source: references/pokemon-showdown/sim/battle-actions.ts line 1625
    */
   getCritRateTable(): readonly number[] {
-    return GEN5_CRIT_RATE_DENOMINATORS;
+    return GEN5_CRIT_RATE_TABLE;
   }
 
   /**

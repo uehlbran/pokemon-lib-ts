@@ -11,7 +11,13 @@ export {
   isWeatherSuppressedGen3,
   WEATHER_SUPPRESSING_ABILITIES,
 } from "./Gen3Abilities";
-export { GEN3_CRIT_MULTIPLIER, GEN3_CRIT_RATE_DENOMINATORS, GEN3_CRIT_RATES } from "./Gen3CritCalc";
+export {
+  GEN3_CRIT_MULTIPLIER,
+  GEN3_CRIT_RATE_DENOMINATORS,
+  GEN3_CRIT_RATE_PROBABILITIES,
+  GEN3_CRIT_RATE_TABLE,
+  GEN3_CRIT_RATES,
+} from "./Gen3CritCalc";
 export { calculateGen3Damage, isGen3PhysicalType } from "./Gen3DamageCalc";
 export { applyGen3HeldItem, TYPE_BOOST_ITEMS } from "./Gen3Items";
 export { executeGen3MoveEffect } from "./Gen3MoveEffects";
