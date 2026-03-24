@@ -42,8 +42,9 @@ import type {
   ValidationResult,
   WeatherEffectResult,
 } from "../context";
-import type { BattleAction } from "../events";
-import type { ActivePokemon, BattleSide, BattleState } from "../state";
+import type { BattleAction } from "../events/BattleAction";
+import type { ActivePokemon, BattleSide } from "../state/BattleSide";
+import type { BattleState } from "../state/BattleState";
 import type {
   BattleGimmickType,
   ExpRecipient,

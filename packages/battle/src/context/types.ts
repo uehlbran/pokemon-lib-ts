@@ -15,16 +15,14 @@ import type {
   VolatileStatusByGeneration,
   WeatherType,
 } from "@pokemon-lib-ts/core";
-import type { BattleEvent } from "../events";
+import type { BattleEvent } from "../events/BattleEvent";
 import type {
   ActivePokemon,
   ActivePokemonFor,
-  BattleFormat,
   BattleSide,
-  BattleState,
-  BattleStateFor,
   TrainerDataRef,
-} from "../state";
+} from "../state/BattleSide";
+import type { BattleFormat, BattleState, BattleStateFor } from "../state/BattleState";
 
 /**
  * All inputs required for a generation's damage calculation.
