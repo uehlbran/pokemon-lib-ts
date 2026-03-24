@@ -349,6 +349,29 @@ export class Gen7ZMove implements BattleGimmick {
     this.usedBySide.clear();
   }
 
+  serializeState(): { usedBySide: Array<0 | 1> } {
+    return { usedBySide: [...this.usedBySide] };
+  }
+
+  restoreState(state: unknown): void {
+    this.usedBySide.clear();
+
+    if (!state || typeof state !== "object" || !("usedBySide" in state)) {
+      return;
+    }
+
+    const usedBySide = (state as { usedBySide?: unknown }).usedBySide;
+    if (!Array.isArray(usedBySide)) {
+      return;
+    }
+
+    for (const sideIndex of usedBySide) {
+      if (sideIndex === 0 || sideIndex === 1) {
+        this.usedBySide.add(sideIndex);
+      }
+    }
+  }
+
   /**
    * Check if a side has already used its Z-Move.
    * Exposed for testing and external validation.
