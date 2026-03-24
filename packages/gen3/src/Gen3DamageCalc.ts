@@ -15,6 +15,14 @@ import {
 import { isWeatherSuppressedGen3 } from "./Gen3Abilities";
 import { TYPE_BOOST_ITEMS } from "./Gen3Items";
 
+const DITTO_SPECIES_ID = 132;
+const LATIAS_SPECIES_ID = 380;
+const LATIOS_SPECIES_ID = 381;
+const CLAMPERL_SPECIES_ID = 366;
+const PIKACHU_SPECIES_ID = 25;
+const CUBONE_SPECIES_ID = 104;
+const MAROWAK_SPECIES_ID = 105;
+
 /**
  * Physical types in Gen 3.
  * In Gen 3 (like Gen 1-2), the category (physical/special) is determined by the move's TYPE,
@@ -113,7 +121,7 @@ function getAttackStat(
   if (
     !physical &&
     attackerItem === "soul-dew" &&
-    (attackerSpecies === 380 || attackerSpecies === 381)
+    (attackerSpecies === LATIAS_SPECIES_ID || attackerSpecies === LATIOS_SPECIES_ID)
   ) {
     rawStat = Math.floor((rawStat * 150) / 100);
   }
@@ -121,14 +129,14 @@ function getAttackStat(
   // Deep Sea Tooth: 2x SpAtk for Clamperl (366)
   // Source: pret/pokeemerald HOLD_EFFECT_DEEP_SEA_TOOTH
   // Source: Bulbapedia — "When held by Clamperl, doubles its Special Attack."
-  if (!physical && attackerItem === "deep-sea-tooth" && attackerSpecies === 366) {
+  if (!physical && attackerItem === "deep-sea-tooth" && attackerSpecies === CLAMPERL_SPECIES_ID) {
     rawStat = rawStat * 2;
   }
 
   // Light Ball: 2x SpAtk for Pikachu (25) — Gen 3 is SpAtk ONLY (Attack boost is Gen 4+)
   // Source: pret/pokeemerald HOLD_EFFECT_LIGHT_BALL
   // Source: Bulbapedia — "When held by Pikachu, doubles its Special Attack. (Generation III)"
-  if (!physical && attackerItem === "light-ball" && attackerSpecies === 25) {
+  if (!physical && attackerItem === "light-ball" && attackerSpecies === PIKACHU_SPECIES_ID) {
     rawStat = rawStat * 2;
   }
 
@@ -138,7 +146,7 @@ function getAttackStat(
   if (
     physical &&
     attackerItem === "thick-club" &&
-    (attackerSpecies === 104 || attackerSpecies === 105)
+    (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
   }
@@ -203,7 +211,7 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   if (
     !physical &&
     defenderItem === "soul-dew" &&
-    (defenderSpecies === 380 || defenderSpecies === 381)
+    (defenderSpecies === LATIAS_SPECIES_ID || defenderSpecies === LATIOS_SPECIES_ID)
   ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
@@ -211,7 +219,7 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Deep Sea Scale: 2x SpDef for Clamperl (366)
   // Source: pret/pokeemerald HOLD_EFFECT_DEEP_SEA_SCALE
   // Source: Bulbapedia — "When held by Clamperl, doubles its Special Defense."
-  if (!physical && defenderItem === "deep-sea-scale" && defenderSpecies === 366) {
+  if (!physical && defenderItem === "deep-sea-scale" && defenderSpecies === CLAMPERL_SPECIES_ID) {
     baseStat = baseStat * 2;
   }
 
@@ -231,7 +239,7 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Source: pret/pokeemerald src/pokemon.c:3197 —
   //   if (defenderHoldEffect == HOLD_EFFECT_METAL_POWDER && defender->species == SPECIES_DITTO) defense *= 2
   // Note: only affects physical Defense; SpDef unaffected. Ditto-specific item.
-  if (physical && defenderItem === "metal-powder" && defenderSpecies === 132) {
+  if (physical && defenderItem === "metal-powder" && defenderSpecies === DITTO_SPECIES_ID) {
     baseStat = baseStat * 2;
   }
 

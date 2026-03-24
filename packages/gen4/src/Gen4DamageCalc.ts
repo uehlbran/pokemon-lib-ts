@@ -19,6 +19,16 @@ import {
 } from "@pokemon-lib-ts/core";
 import { isWeatherSuppressedGen4 } from "./Gen4Abilities";
 
+const LATIAS_SPECIES_ID = 380;
+const LATIOS_SPECIES_ID = 381;
+const CLAMPERL_SPECIES_ID = 366;
+const PIKACHU_SPECIES_ID = 25;
+const CUBONE_SPECIES_ID = 104;
+const MAROWAK_SPECIES_ID = 105;
+const DIALGA_SPECIES_ID = 483;
+const PALKIA_SPECIES_ID = 484;
+const GIRATINA_SPECIES_ID = 487;
+
 // ─── Type-Boosting Items ────────────────────────────────────────────────────
 
 /**
@@ -278,7 +288,7 @@ function getAttackStat(
     !attackerHasKlutz &&
     !isPhysical &&
     attackerItem === "soul-dew" &&
-    (attackerSpecies === 380 || attackerSpecies === 381)
+    (attackerSpecies === LATIAS_SPECIES_ID || attackerSpecies === LATIOS_SPECIES_ID)
   ) {
     rawStat = Math.floor((rawStat * 150) / 100);
   }
@@ -290,7 +300,7 @@ function getAttackStat(
     !attackerHasKlutz &&
     !isPhysical &&
     attackerItem === "deep-sea-tooth" &&
-    attackerSpecies === 366
+    attackerSpecies === CLAMPERL_SPECIES_ID
   ) {
     rawStat = rawStat * 2;
   }
@@ -309,7 +319,7 @@ function getAttackStat(
     !attackerHasKlutz &&
     isPhysical &&
     attackerItem === "thick-club" &&
-    (attackerSpecies === 104 || attackerSpecies === 105)
+    (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
   }
@@ -413,7 +423,7 @@ function getDefenseStat(
     !defenderHasKlutz &&
     !isPhysical &&
     defenderItem === "soul-dew" &&
-    (defenderSpecies === 380 || defenderSpecies === 381)
+    (defenderSpecies === LATIAS_SPECIES_ID || defenderSpecies === LATIOS_SPECIES_ID)
   ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
@@ -425,7 +435,7 @@ function getDefenseStat(
     !defenderHasKlutz &&
     !isPhysical &&
     defenderItem === "deep-sea-scale" &&
-    defenderSpecies === 366
+    defenderSpecies === CLAMPERL_SPECIES_ID
   ) {
     baseStat = baseStat * 2;
   }
@@ -719,7 +729,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !attackerHasKlutzPower &&
     attackerItemPower === "adamant-orb" &&
-    attackerSpeciesIdPower === 483 && // Dialga
+    attackerSpeciesIdPower === DIALGA_SPECIES_ID &&
     (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
   ) {
     power = Math.floor((power * 4915) / 4096);
@@ -728,7 +738,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !attackerHasKlutzPower &&
     attackerItemPower === "lustrous-orb" &&
-    attackerSpeciesIdPower === 484 && // Palkia
+    attackerSpeciesIdPower === PALKIA_SPECIES_ID &&
     (effectiveMoveType === "water" || effectiveMoveType === "dragon")
   ) {
     power = Math.floor((power * 4915) / 4096);
@@ -741,7 +751,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !attackerHasKlutzPower &&
     attackerItemPower === "griseous-orb" &&
-    attackerSpeciesIdPower === 487 && // Giratina
+    attackerSpeciesIdPower === GIRATINA_SPECIES_ID &&
     (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
   ) {
     power = Math.floor((power * 4915) / 4096);
@@ -754,7 +764,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !attackerHasKlutzPower &&
     attackerItemPower === "light-ball" &&
-    attackerSpeciesIdPower === 25 // Pikachu
+    attackerSpeciesIdPower === PIKACHU_SPECIES_ID
   ) {
     power = power * 2;
     basePowerItemMultiplier = 2;

@@ -20,6 +20,16 @@ import {
 import { isSheerForceEligibleMove } from "./Gen5AbilitiesDamage";
 import { isWeatherSuppressedGen5 } from "./Gen5Weather";
 
+const LATIAS_SPECIES_ID = 380;
+const LATIOS_SPECIES_ID = 381;
+const CLAMPERL_SPECIES_ID = 366;
+const PIKACHU_SPECIES_ID = 25;
+const CUBONE_SPECIES_ID = 104;
+const MAROWAK_SPECIES_ID = 105;
+const DIALGA_SPECIES_ID = 483;
+const PALKIA_SPECIES_ID = 484;
+const GIRATINA_SPECIES_ID = 487;
+
 // ---- Type-Resist Berries ----
 
 /**
@@ -199,7 +209,7 @@ function getAttackStat(
     !attackerHasKlutz &&
     !isPhysical &&
     attackerItem === "soul-dew" &&
-    (attackerSpecies === 380 || attackerSpecies === 381)
+    (attackerSpecies === LATIAS_SPECIES_ID || attackerSpecies === LATIOS_SPECIES_ID)
   ) {
     rawStat = Math.floor((rawStat * 150) / 100);
   }
@@ -210,14 +220,18 @@ function getAttackStat(
     !attackerHasKlutz &&
     !isPhysical &&
     attackerItem === "deep-sea-tooth" &&
-    attackerSpecies === 366
+    attackerSpecies === CLAMPERL_SPECIES_ID
   ) {
     rawStat = rawStat * 2;
   }
 
   // Light Ball: 2x Atk AND SpAtk for Pikachu (25)
   // Source: Showdown sim/items.ts -- Light Ball Gen 4+ behavior
-  if (!attackerHasKlutz && attackerItem === "light-ball" && attackerSpecies === 25) {
+  if (
+    !attackerHasKlutz &&
+    attackerItem === "light-ball" &&
+    attackerSpecies === PIKACHU_SPECIES_ID
+  ) {
     rawStat = rawStat * 2;
   }
 
@@ -227,7 +241,7 @@ function getAttackStat(
     !attackerHasKlutz &&
     isPhysical &&
     attackerItem === "thick-club" &&
-    (attackerSpecies === 104 || attackerSpecies === 105)
+    (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
   }
@@ -334,7 +348,7 @@ function getDefenseStat(
     !defenderHasKlutz &&
     !isPhysical &&
     defenderItem === "soul-dew" &&
-    (defenderSpecies === 380 || defenderSpecies === 381)
+    (defenderSpecies === LATIAS_SPECIES_ID || defenderSpecies === LATIOS_SPECIES_ID)
   ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
@@ -345,7 +359,7 @@ function getDefenseStat(
     !defenderHasKlutz &&
     !isPhysical &&
     defenderItem === "deep-sea-scale" &&
-    defenderSpecies === 366
+    defenderSpecies === CLAMPERL_SPECIES_ID
   ) {
     baseStat = baseStat * 2;
   }
@@ -648,21 +662,21 @@ export function calculateGen5Damage(
   if (!attackerHasKlutz && attackerItem) {
     if (
       attackerItem === "adamant-orb" &&
-      attacker.pokemon.speciesId === 483 &&
+      attacker.pokemon.speciesId === DIALGA_SPECIES_ID &&
       (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
     ) {
       power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "lustrous-orb" &&
-      attacker.pokemon.speciesId === 484 &&
+      attacker.pokemon.speciesId === PALKIA_SPECIES_ID &&
       (effectiveMoveType === "water" || effectiveMoveType === "dragon")
     ) {
       power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "griseous-orb" &&
-      attacker.pokemon.speciesId === 487 &&
+      attacker.pokemon.speciesId === GIRATINA_SPECIES_ID &&
       (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
     ) {
       power = pokeRound(power, 4915);
