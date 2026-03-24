@@ -1966,6 +1966,11 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
+    if (this.state.ended) {
+      actor.lastMoveUsed = moveData.id;
+      actor.movedThisTurn = true;
+      return;
+    }
 
     // Multi-hit move loop: repeat damage for additional hits beyond the first.
     // Source: pokered multi-hit moves — the engine repeats the damage step for each
@@ -2319,6 +2324,9 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     this.processEffectResult(effectResult, actor, defender, actorSide, defenderSide);
+    if (this.state.ended) {
+      return;
+    }
 
     // Chain nested recursiveMove (e.g., Metronome -> Mirror Move)
     // Source: pret/pokered — MetronomeEffect can call MirrorMoveEffect which then copies the foe's last move
@@ -3107,6 +3115,14 @@ export class BattleEngine implements BattleEventEmitter {
     attackerSide: 0 | 1,
     defenderSide: 0 | 1,
   ): void {
+    if (result.escapeBattle && attackerSide === 0 && this.state.isWildBattle) {
+      this.emit({ type: "flee-attempt", side: 0, success: true });
+      this.emit({ type: "message", text: "Got away safely!" });
+      this.state.ended = true;
+      this.emit({ type: "battle-end", winner: null });
+      return;
+    }
+
     // Status infliction
     if (result.statusInflicted && !defender.pokemon.status) {
       this.applyPrimaryStatus(defender, result.statusInflicted, defenderSide);

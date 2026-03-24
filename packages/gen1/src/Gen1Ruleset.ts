@@ -251,6 +251,16 @@ export class Gen1Ruleset implements GenerationRuleset {
     return Math.max(1, effective);
   }
 
+  private getActiveSideIndex(state: BattleState, pokemon: ActivePokemon): 0 | 1 | null {
+    for (const side of state.sides) {
+      if (side.active[0] === pokemon) {
+        return side.index;
+      }
+    }
+
+    return null;
+  }
+
   // --- Move Execution ---
 
   doesMoveHit(context: AccuracyContext): boolean {
@@ -359,6 +369,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       recoilDamage: number;
       healAmount: number;
       switchOut: boolean;
+      escapeBattle?: boolean;
       messages: string[];
       screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
       selfFaint?: boolean;
@@ -446,6 +457,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       recoilDamage: number;
       healAmount: number;
       switchOut: boolean;
+      escapeBattle?: boolean;
       messages: string[];
       screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
       selfFaint?: boolean;
@@ -743,9 +755,13 @@ export class Gen1Ruleset implements GenerationRuleset {
           };
         } else if (effect.handler === "teleport") {
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Teleport
-          // In Gen 1, Teleport always fails in trainer battles and flees in wild battles.
-          // Flee mechanics are not wired up; always fail for now.
-          result.messages.push("But it failed!");
+          // In Gen 1, Teleport fails in trainer battles and escapes wild battles for the player.
+          const attackerSideIndex = this.getActiveSideIndex(context.state, attacker);
+          if (context.state.isWildBattle && attackerSideIndex === 0) {
+            result.escapeBattle = true;
+          } else {
+            result.messages.push("But it failed!");
+          }
         } else if (effect.handler === "haze") {
           // Haze: resets all stat stages for both pokemon, clears all volatile statuses
           // for both Pokemon, and removes all screens from both sides (Gen 1 only).
