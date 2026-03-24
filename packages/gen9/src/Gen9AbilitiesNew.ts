@@ -1,5 +1,9 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
+import {
+  getSupremeOverlordModifier,
+  SUPREME_OVERLORD_TABLE as SUPREME_OVERLORD_MODIFIER_TABLE,
+} from "./Gen9AbilitiesDamage.js";
 
 /**
  * Gen 9 new signature abilities.
@@ -279,14 +283,9 @@ export function isMyceliumMightBypassingAbility(abilityId: string, moveCategory:
  * Source: Showdown data/abilities.ts:4634-4658
  *   "const dominated = [4096, 4506, 4915, 5325, 5734, 6144]"
  */
-export const SUPREME_OVERLORD_TABLE: readonly number[] = [
-  4096 / 4096, // 0 fainted: 1.0x
-  4506 / 4096, // 1 fainted: ~1.10x
-  4915 / 4096, // 2 fainted: ~1.20x
-  5325 / 4096, // 3 fainted: ~1.30x
-  5734 / 4096, // 4 fainted: ~1.40x
-  6144 / 4096, // 5+ fainted: 1.50x
-];
+export const SUPREME_OVERLORD_TABLE = SUPREME_OVERLORD_MODIFIER_TABLE.map(
+  (modifier) => modifier / 4096,
+) as readonly number[];
 
 /**
  * Get the power multiplier for Supreme Overlord.
@@ -296,10 +295,14 @@ export const SUPREME_OVERLORD_TABLE: readonly number[] = [
  *
  * Source: Showdown data/abilities.ts:4634-4658
  */
-export function getSupremeOverlordMultiplier(faintedAllies: number): number {
-  const capped = Math.min(5, Math.max(0, faintedAllies));
-  return SUPREME_OVERLORD_TABLE[capped] ?? 1;
+export function getSupremeOverlordFloatMultiplier(faintedAllies: number): number {
+  return getSupremeOverlordModifier("supreme-overlord", faintedAllies) / 4096;
 }
+
+/**
+ * @deprecated Use getSupremeOverlordFloatMultiplier() for the floating-point helper.
+ */
+export const getSupremeOverlordMultiplier = getSupremeOverlordFloatMultiplier;
 
 // ---------------------------------------------------------------------------
 // Gen 9 nerfed abilities: Intrepid Sword, Dauntless Shield, Protean/Libero
@@ -311,7 +314,7 @@ export function getSupremeOverlordMultiplier(faintedAllies: number): number {
  * Source: Showdown data/abilities.ts -- intrepidsword: once per battle in Gen 9
  * Source: specs/battle/10-gen9.md -- "Intrepid Sword: once per battle (nerfed from Gen 8)"
  */
-export function handleIntrepidSwordGen9(ctx: AbilityContext): AbilityResult {
+export function handleGen9IntrepidSword(ctx: AbilityContext): AbilityResult {
   if (ctx.trigger !== "on-switch-in") return INACTIVE;
 
   // Once per battle
@@ -329,12 +332,17 @@ export function handleIntrepidSwordGen9(ctx: AbilityContext): AbilityResult {
 }
 
 /**
+ * @deprecated Use handleGen9IntrepidSword for the canonical Gen 9 public handler name.
+ */
+export const handleIntrepidSwordGen9 = handleGen9IntrepidSword;
+
+/**
  * Handle Dauntless Shield in Gen 9 (once per battle, not every switch-in).
  *
  * Source: Showdown data/abilities.ts -- dauntlessshield: once per battle in Gen 9
  * Source: specs/battle/10-gen9.md -- "Dauntless Shield: once per battle (nerfed from Gen 8)"
  */
-export function handleDauntlessShieldGen9(ctx: AbilityContext): AbilityResult {
+export function handleGen9DauntlessShield(ctx: AbilityContext): AbilityResult {
   if (ctx.trigger !== "on-switch-in") return INACTIVE;
 
   // Once per battle
@@ -352,12 +360,17 @@ export function handleDauntlessShieldGen9(ctx: AbilityContext): AbilityResult {
 }
 
 /**
+ * @deprecated Use handleGen9DauntlessShield for the canonical Gen 9 public handler name.
+ */
+export const handleDauntlessShieldGen9 = handleGen9DauntlessShield;
+
+/**
  * Handle Protean/Libero in Gen 9 (once per switch-in, not every move).
  *
  * Source: Showdown data/abilities.ts -- protean/libero: once per switchin in Gen 9
  * Source: specs/battle/10-gen9.md -- "Protean/Libero: once per switchin"
  */
-export function handleProteanGen9(ctx: AbilityContext): AbilityResult {
+export function handleGen9Protean(ctx: AbilityContext): AbilityResult {
   if (ctx.trigger !== "on-before-move") return INACTIVE;
   if (!ctx.move) return INACTIVE;
 
@@ -380,6 +393,11 @@ export function handleProteanGen9(ctx: AbilityContext): AbilityResult {
     ],
   };
 }
+
+/**
+ * @deprecated Use handleGen9Protean for the canonical Gen 9 public handler name.
+ */
+export const handleProteanGen9 = handleGen9Protean;
 
 // ---------------------------------------------------------------------------
 // Public dispatch
@@ -404,12 +422,12 @@ export function handleGen9NewAbility(ctx: AbilityContext): AbilityResult {
     case "mycelium-might":
       return handleMyceliumMight(ctx);
     case "intrepid-sword":
-      return handleIntrepidSwordGen9(ctx);
+      return handleGen9IntrepidSword(ctx);
     case "dauntless-shield":
-      return handleDauntlessShieldGen9(ctx);
+      return handleGen9DauntlessShield(ctx);
     case "protean":
     case "libero":
-      return handleProteanGen9(ctx);
+      return handleGen9Protean(ctx);
     default:
       return INACTIVE;
   }

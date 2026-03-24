@@ -4,10 +4,14 @@ import { describe, expect, it } from "vitest";
 import {
   canToxicChainApply,
   EMBODY_ASPECT_BOOSTS,
+  getSupremeOverlordFloatMultiplier,
   getSupremeOverlordMultiplier,
   handleDauntlessShieldGen9,
   handleEmbodyAspect,
+  handleGen9DauntlessShield,
+  handleGen9IntrepidSword,
   handleGen9NewAbility,
+  handleGen9Protean,
   handleGoodAsGold,
   handleIntrepidSwordGen9,
   handleMyceliumMight,
@@ -734,6 +738,10 @@ describe("getSupremeOverlordMultiplier", () => {
   it("given negative fainted allies, when getting multiplier, then clamps to 0 and returns 1.0x", () => {
     expect(getSupremeOverlordMultiplier(-1)).toBe(1);
   });
+
+  it("keeps getSupremeOverlordFloatMultiplier as the canonical alias", () => {
+    expect(getSupremeOverlordFloatMultiplier).toBe(getSupremeOverlordMultiplier);
+  });
 });
 
 describe("SUPREME_OVERLORD_TABLE", () => {
@@ -800,6 +808,10 @@ describe("handleIntrepidSwordGen9", () => {
     const result = handleIntrepidSwordGen9(ctx);
     expect(result.activated).toBe(false);
   });
+
+  it("keeps handleGen9IntrepidSword as the canonical alias", () => {
+    expect(handleGen9IntrepidSword).toBe(handleIntrepidSwordGen9);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -852,6 +864,10 @@ describe("handleDauntlessShieldGen9", () => {
     });
     const result = handleDauntlessShieldGen9(ctx);
     expect(result.activated).toBe(false);
+  });
+
+  it("keeps handleGen9DauntlessShield as the canonical alias", () => {
+    expect(handleGen9DauntlessShield).toBe(handleDauntlessShieldGen9);
   });
 });
 
@@ -953,6 +969,10 @@ describe("handleProteanGen9", () => {
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(false);
+  });
+
+  it("keeps handleGen9Protean as the canonical alias", () => {
+    expect(handleGen9Protean).toBe(handleProteanGen9);
   });
 });
 
