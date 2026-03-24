@@ -370,7 +370,7 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
 
   it("given Fury Attack hits, when executeMoveEffect is called, then multiHitCount is set to (total hits - 1)", () => {
     // Source: pokered multi-hit distribution — 37.5/37.5/12.5/12.5% for 2/3/4/5 hits.
-    // gen14MultiHitRoll uses the Gen 1-4 distribution.
+    // gen1to4MultiHitRoll uses the Gen 1-4 distribution.
     // The first hit is already dealt by the engine; multiHitCount = additional hits.
     // Arrange
     const rng = new SeededRandom(42);
@@ -385,7 +385,7 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
   it("given Pin Missile hits with seed producing 2 total hits, when executeMoveEffect is called, then multiHitCount is 1", () => {
     // Source: pokered multi-hit — 37.5% chance of 2 hits.
     // multiHitCount = totalHits - 1 = 2 - 1 = 1.
-    // Find a seed where gen14MultiHitRoll returns 2.
+    // Find a seed where gen1to4MultiHitRoll returns 2.
     const pinMissileMove = makeMove({
       id: "pin-missile",
       displayName: "Pin Missile",

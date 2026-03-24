@@ -306,7 +306,7 @@ describe("Gen4Ruleset rollMultiHitCount — Skill Link (NEW in Gen 4)", () => {
   });
 
   it("given an attacker WITHOUT Skill Link, when rollMultiHitCount is called, then returns a value in {2, 3, 4, 5}", () => {
-    // Source: Showdown Gen 4 mod — gen14MultiHitRoll returns 2–5
+    // Source: Showdown Gen 4 mod — gen1to4MultiHitRoll returns 2–5
     // Source: Bulbapedia — Multi-hit moves without Skill Link: 2-5 hits (weighted 2:2:1:1)
     // This triangulates that Skill Link's forced-5 path is distinct from the standard path
     const attacker = createActivePokemon({ ability: "blaze" });
@@ -885,7 +885,6 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     const context = {
       attacker,
       defender,
-      // biome-ignore lint/style/noNonNullAssertion: asserted above via expect()
       move: trickMove!,
       damage: 0,
       state,
@@ -915,7 +914,6 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     const context = {
       attacker,
       defender,
-      // biome-ignore lint/style/noNonNullAssertion: asserted above via expect()
       move: trickMove!,
       damage: 0,
       state,

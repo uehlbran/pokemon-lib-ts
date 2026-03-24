@@ -32,7 +32,7 @@ import type {
 import {
   calculateExpGainClassic,
   DataManager,
-  gen14MultiHitRoll,
+  gen1to4MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 import {
@@ -63,7 +63,7 @@ import { applyGen4WeatherEffects } from "./Gen4Weather";
  *
  * Overrides implemented here:
  *   - calculateBindDamage — 1/16 max HP (Gen 2-4; Gen 5+ uses 1/8)
- *   - rollMultiHitCount — Gen 1-4 weighted distribution via gen14MultiHitRoll
+ *   - rollMultiHitCount — Gen 1-4 weighted distribution via gen1to4MultiHitRoll
  *   - rollSleepTurns — 1-5 turns (international Gen 4; Gen 5+ uses 1-3)
  *   - calculateExpGain — classic formula (no level scaling)
  *   - getCritMultiplier — 2.0x (Gen 3-5; Gen 6+ uses 1.5x)
@@ -508,12 +508,12 @@ export class Gen4Ruleset extends BaseRuleset {
    * Gen 5+ uses a different distribution (BaseRuleset default).
    *
    * Source: pret/pokeplatinum — multi-hit uses same 8-entry lookup table as Gen 1-3
-   * Also: packages/core/src/logic/gen12-shared.ts gen14MultiHitRoll
+   * Also: packages/core/src/logic/gen12-shared.ts gen1to4MultiHitRoll
    */
   rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number {
     // Source: Showdown — Skill Link (introduced Gen 4) always hits 5 times
     if (attacker.ability === "skill-link") return 5;
-    return gen14MultiHitRoll(rng);
+    return gen1to4MultiHitRoll(rng);
   }
 
   // --- Status System ---
