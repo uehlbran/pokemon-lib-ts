@@ -61,6 +61,8 @@ describe("gen1to2FullParalysisCheck", () => {
   });
 
   it("keeps gen12FullParalysisCheck as a deprecated alias", () => {
+    // Source: issue #769 requires the explicit gen1toN rename while preserving deprecated
+    // aliases during the compatibility window tracked in issue #1011.
     expect(gen12FullParalysisCheck).toBe(gen1to2FullParalysisCheck);
   });
 });
@@ -137,6 +139,8 @@ describe("gen1to4MultiHitRoll", () => {
   });
 
   it("keeps gen14MultiHitRoll as a deprecated alias", () => {
+    // Source: issue #769 requires the explicit gen1toN rename while preserving deprecated
+    // aliases during the compatibility window tracked in issue #1011.
     expect(gen14MultiHitRoll).toBe(gen1to4MultiHitRoll);
   });
 });
@@ -185,6 +189,8 @@ describe("gen1to6ConfusionSelfHitRoll", () => {
   });
 
   it("keeps gen16ConfusionSelfHitRoll as a deprecated alias", () => {
+    // Source: issue #769 requires the explicit gen1toN rename while preserving deprecated
+    // aliases during the compatibility window tracked in issue #1011.
     expect(gen16ConfusionSelfHitRoll).toBe(gen1to6ConfusionSelfHitRoll);
   });
 });

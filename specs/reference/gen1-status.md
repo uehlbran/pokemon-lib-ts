@@ -59,7 +59,7 @@
 ### Status Conditions — `Gen1Ruleset.ts`
 - Burn: shared N/16 counter (shared with poison and Leech Seed per the Gen 1 toxic counter bug)
 - Freeze: permanent (no natural thaw); `checkFreezeThaw()` always returns false
-- Paralysis: 25% full paralysis (63/256 via `gen12FullParalysisCheck`); Speed quartered for turn order
+- Paralysis: 25% full paralysis (63/256 via `gen1to2FullParalysisCheck`); Speed quartered for turn order
 - Sleep: 1-7 turns; cannot act on wake turn; counter persists on switch-out
 - Poison: shared N/16 counter (shared with burn and Leech Seed)
 - Toxic: escalating N/16 per turn — same shared counter; reverts to regular poison on switch-out

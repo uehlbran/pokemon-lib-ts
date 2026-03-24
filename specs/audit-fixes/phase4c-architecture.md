@@ -227,7 +227,7 @@ import type { SeededRandom } from "../prng/seeded-random.js";
  * @param rng - The battle's seeded PRNG
  * @returns `true` if the Pokémon is fully paralyzed this turn
  */
-export function gen12FullParalysisCheck(rng: SeededRandom): boolean {
+export function gen1to2FullParalysisCheck(rng: SeededRandom): boolean {
   return rng.int(0, 255) < 63;
 }
 
@@ -239,7 +239,7 @@ export function gen12FullParalysisCheck(rng: SeededRandom): boolean {
  * @param rng - The battle's seeded PRNG
  * @returns Number of hits: 2, 3, 4, or 5
  */
-export function gen14MultiHitRoll(rng: SeededRandom): number {
+export function gen1to4MultiHitRoll(rng: SeededRandom): number {
   const roll = rng.int(0, 7);
   if (roll < 3) return 2;
   if (roll < 6) return 3;
@@ -253,7 +253,7 @@ export function gen14MultiHitRoll(rng: SeededRandom): number {
  * @param rng - The battle's seeded PRNG
  * @returns `true` if the Pokémon hits itself in confusion
  */
-export function gen16ConfusionSelfHitRoll(rng: SeededRandom): boolean {
+export function gen1to6ConfusionSelfHitRoll(rng: SeededRandom): boolean {
   return rng.chance(0.5);
 }
 
@@ -279,9 +279,9 @@ export function calculateStatExpContribution(statExp: number): number {
 Add:
 ```typescript
 export {
-  gen12FullParalysisCheck,
-  gen14MultiHitRoll,
-  gen16ConfusionSelfHitRoll,
+  gen1to2FullParalysisCheck,
+  gen1to4MultiHitRoll,
+  gen1to6ConfusionSelfHitRoll,
   calculateStatExpContribution,
 } from "./gen12-shared.js";
 ```
@@ -293,16 +293,16 @@ export {
 Add import at the top:
 ```typescript
 import {
-  gen12FullParalysisCheck,
-  gen14MultiHitRoll,
-  gen16ConfusionSelfHitRoll,
+  gen1to2FullParalysisCheck,
+  gen1to4MultiHitRoll,
+  gen1to6ConfusionSelfHitRoll,
 } from "@pokemon-lib-ts/core";
 ```
 
 Replace:
-- Line ~614: Replace inline `checkFullParalysis` implementation with a call to `gen12FullParalysisCheck(rng)`
-- Line ~619: Replace inline `rollConfusionSelfHit` implementation with a call to `gen16ConfusionSelfHitRoll(rng)`
-- Line ~848: Replace inline `rollMultiHitCount` implementation with a call to `gen14MultiHitRoll(rng)`
+- Line ~614: Replace inline `checkFullParalysis` implementation with a call to `gen1to2FullParalysisCheck(rng)`
+- Line ~619: Replace inline `rollConfusionSelfHit` implementation with a call to `gen1to6ConfusionSelfHitRoll(rng)`
+- Line ~848: Replace inline `rollMultiHitCount` implementation with a call to `gen1to4MultiHitRoll(rng)`
 
 **File:** `packages/gen1/src/Gen1StatCalc.ts`
 
@@ -318,9 +318,9 @@ Delete the local function and use the import.
 **File:** `packages/gen2/src/Gen2Ruleset.ts`
 
 Same as Gen 1 above — add import and replace:
-- Line ~629: `gen12FullParalysisCheck(rng)`
-- Line ~634: `gen16ConfusionSelfHitRoll(rng)`
-- Line ~858: `gen14MultiHitRoll(rng)`
+- Line ~629: `gen1to2FullParalysisCheck(rng)`
+- Line ~634: `gen1to6ConfusionSelfHitRoll(rng)`
+- Line ~858: `gen1to4MultiHitRoll(rng)`
 
 **File:** `packages/gen2/src/Gen2StatCalc.ts`
 
@@ -332,7 +332,7 @@ Before deleting any Gen 1/Gen 2 inline implementations, verify they produce iden
 
 ```typescript
 // Quick sanity check — add to a scratch test file, then delete
-import { gen12FullParalysisCheck, gen14MultiHitRoll } from "@pokemon-lib-ts/core";
+import { gen1to2FullParalysisCheck, gen1to4MultiHitRoll } from "@pokemon-lib-ts/core";
 // Run and confirm distributions match Bulbapedia values
 ```
 

@@ -235,7 +235,7 @@ AI reviews are advisory (comments only, never formal approvals). See `.github/AI
 7. Create `specs/reference/genN-status.md` to track implementation progress (waves, PRs, open bugs, test coverage)
 8. Update the Generation Status table in this file
 
-> Gen 1–2 implement `GenerationRuleset` directly. Do **not** make them extend `BaseRuleset` — they are too mechanically different. Shared Gen 1–2 formulas (`gen12FullParalysisCheck`, `gen16ConfusionSelfHitRoll`, `gen14MultiHitRoll`, `calculateStatExpContribution`) live in `packages/core/src/logic/gen12-shared.ts` — fix them there and both gens benefit automatically.
+> Gen 1–2 implement `GenerationRuleset` directly. Do **not** make them extend `BaseRuleset` — they are too mechanically different. Shared Gen 1–2 formulas (`gen1to2FullParalysisCheck`, `gen1to6ConfusionSelfHitRoll`, `gen1to4MultiHitRoll`, `calculateStatExpContribution`) live in `packages/core/src/logic/gen12-shared.ts` — fix them there and both gens benefit automatically. Deprecated `gen12`/`gen14`/`gen16` aliases remain source-local during the compatibility window and are tracked for removal in `#1011`.
 
 ## Implementation Phases
 

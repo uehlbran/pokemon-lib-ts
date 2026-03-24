@@ -81,10 +81,11 @@
 - Tests: `tests/prng/seeded-random.test.ts` (14 tests)
 
 ### Gen 1-2 Shared Utilities (`packages/core/src/logic/gen12-shared.ts`)
-- `gen12FullParalysisCheck` — 63/256 (~24.6%) paralysis check (pret/pokered)
-- `gen14MultiHitRoll` — [2,2,2,3,3,3,4,5] distribution (pret/pokered)
-- `gen16ConfusionSelfHitRoll` — 50% confusion self-hit (pret/pokered, pret/pokecrystal)
+- `gen1to2FullParalysisCheck` — 63/256 (~24.6%) paralysis check (pret/pokered)
+- `gen1to4MultiHitRoll` — [2,2,2,3,3,3,4,5] distribution (pret/pokered)
+- `gen1to6ConfusionSelfHitRoll` — 50% confusion self-hit (pret/pokered, pret/pokecrystal)
 - `calculateStatExpContribution` — floor(ceil(sqrt(statExp))/4) formula (pret/pokered)
+- Deprecated compatibility aliases `gen12FullParalysisCheck`, `gen14MultiHitRoll`, and `gen16ConfusionSelfHitRoll` remain source-local during the transition tracked in #1011.
 - Tests: `tests/logic/gen12-shared.test.ts` (24 tests) — added PR #235
 
 ### Constants

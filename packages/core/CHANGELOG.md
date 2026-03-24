@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking (pre-1.0):** `GenerationRuleset` now extends 15 named sub-interfaces (`TypeSystem`, `StatCalculator`, `DamageSystem`, `CriticalHitSystem`, `TurnOrderSystem`, `MoveSystem`, `StatusSystem`, `AbilitySystem`, `ItemSystem`, `WeatherSystem`, `TerrainSystem`, `HazardSystem`, `SwitchSystem`, `EndOfTurnSystem`, `ValidationSystem`). Consumers can type-narrow to just the slice they need (#44)
-- `calculateStatExpContribution`, `gen12FullParalysisCheck`, `gen14MultiHitRoll`, `gen16ConfusionSelfHitRoll` extracted from per-gen packages to `@pokemon-lib-ts/core` as shared Gen 1–2 formulas in `gen12-shared.ts` (#44)
+- `calculateStatExpContribution`, `gen1to2FullParalysisCheck`, `gen1to4MultiHitRoll`, and `gen1to6ConfusionSelfHitRoll` extracted from per-gen packages to `@pokemon-lib-ts/core` as shared Gen 1–2 formulas in `gen12-shared.ts` (#44). Deprecated `gen12`/`gen14`/`gen16` aliases remain source-local during the transition.
 - `BattleEngine` constructor now throws on unknown species (no silent fallbacks) (#44)
 - `getAvailableMoves` emits `EngineWarningEvent` for missing move data instead of silently including broken entries (#44)
 - `BattleEngine.fromGeneration()` static factory added (#44)
