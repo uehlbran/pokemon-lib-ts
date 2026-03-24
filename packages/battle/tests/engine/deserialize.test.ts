@@ -78,6 +78,20 @@ describe("BattleEngine.deserialize", () => {
     ).toThrow("BattleEngine.deserialize: ruleset generation 9 does not match battle generation 1");
   });
 
+  it("given a serialized battle state with a non-singles format, when deserialized, then it rejects unsupported multi-active formats", () => {
+    const { engine } = createTestEngine();
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        format: string;
+      };
+    };
+    parsed.state.format = "triples";
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow('BattleEngine.deserialize: battle format "triples" is not supported');
+  });
+
   it("given a serialized battle state where currentHp is less than maxHp, when deserialized, then currentHp matches the saved value (not recalculated)", () => {
     // Arrange — create an engine, start it, deal some damage to reduce HP
     const ruleset = new MockRuleset();

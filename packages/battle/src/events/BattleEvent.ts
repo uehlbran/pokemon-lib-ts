@@ -107,7 +107,7 @@ export type BattleEvent =
 export interface BattleStartEvent {
   /** Discriminant: always `"battle-start"` */
   readonly type: "battle-start";
-  /** The battle format (singles, doubles, triples, or rotation) */
+  /** The battle format; BattleEngine currently emits `"singles"` only */
   readonly format: BattleFormat;
   /** The game generation (1–9) governing all mechanics */
   readonly generation: Generation;
@@ -134,7 +134,7 @@ export interface SwitchInEvent {
   readonly side: 0 | 1;
   /** Snapshot of the Pokémon's public state at the moment it enters */
   readonly pokemon: PokemonSnapshot;
-  /** Active slot index on the side (0 for singles, 0–1 for doubles, etc.) */
+  /** Active slot index on the side (always 0 in current singles-only support) */
   readonly slot: number;
 }
 

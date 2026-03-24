@@ -27,10 +27,8 @@ export type BattlePhase =
 
 /**
  * The battle format determines how many Pokémon are active per side at once.
- * - `singles` — 1 vs 1 (most common format)
- * - `doubles` — 2 vs 2
- * - `triples` — 3 vs 3 (Gen 5–6)
- * - `rotation` — 3 on each side, only 1 attacks per turn (Gen 5)
+ * BattleEngine currently only runs `singles`; the broader union is reserved for
+ * future multi-active support and rejected at runtime.
  */
 export type BattleFormat = "singles" | "doubles" | "triples" | "rotation";
 
@@ -84,7 +82,7 @@ export interface BattleState {
   phase: BattlePhase;
   /** Game generation (1–9); immutable after construction */
   readonly generation: Generation;
-  /** Battle format; immutable after construction */
+  /** Battle format; BattleEngine currently stores `"singles"` only */
   readonly format: BattleFormat;
   /** 1-based turn counter; incremented at the start of each new turn */
   turnNumber: number;

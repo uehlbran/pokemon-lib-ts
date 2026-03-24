@@ -30,9 +30,9 @@ export interface MoveAction {
   readonly side: 0 | 1;
   /** Index into the active Pokémon's move array (0–3) */
   readonly moveIndex: number;
-  /** Target side for multi-target scenarios (doubles/triples); omit for singles */
+  /** Reserved for future multi-active support; BattleEngine currently rejects this field */
   readonly targetSide?: 0 | 1;
-  /** Target slot within the target side (doubles/triples); omit for singles */
+  /** Reserved for future multi-active support; BattleEngine currently rejects this field */
   readonly targetSlot?: number;
   /** `true` to mega evolve this turn (Gen 6+); only valid once per battle */
   readonly mega?: boolean;
