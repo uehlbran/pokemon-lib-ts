@@ -51,6 +51,8 @@ This repository uses AI-powered code review tools to supplement human review. AI
 
 Run `npm run verify:local` before PRs. This is the source of truth for build, test, typecheck,
 contract checks, package-boundary checks, lint, and changeset validation.
+Use targeted package tests while iterating. `npm run test:slow` is explicit extra smoke
+coverage, not part of the default handoff gate.
 
 ### Local Pre-PR Review (Required)
 

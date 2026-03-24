@@ -53,9 +53,7 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 ```bash
 npm run verify:local  # Local verification gate
 npm run build          # Build all packages (turbo)
-npm run test           # Full test suite: fast + medium + slow
-npm run test:fast      # Default fast test path
-npm run test:medium    # Replay validation + cheap simulation confidence checks
+npm run test           # Full package test suite
 npm run test:slow      # Manual heavy smoke verification
 npm run typecheck      # Type check all packages (turbo)
 npx @biomejs/biome check --write .   # Lint + format
@@ -65,13 +63,12 @@ npx vitest run --coverage  # Run with coverage
 
 ### Verification Model
 
-- `npm run test:fast` — default fast test loop while developing.
-- `npm run test:medium` — replay validation plus cheap simulation confidence checks for
-  battle-relevant changes.
+- `npm run test` — the real package test suite.
 - `npm run test:slow` — manual heavy smoke coverage for broad or confidence-sensitive changes.
-- `npm run test` — all test tiers: fast, medium, then slow.
 - `npm run verify:local` — the local handoff gate. It runs the broader non-test checks plus
-  `test:fast` before commits and PR updates.
+  `test` before commits and PR updates.
+- `replay:*` commands remain targeted tools. Run them explicitly when replay validation or
+  simulation confidence checks are relevant.
 
 ### Biome Tips
 - `npx @biomejs/biome check --changed --since=main .` — lint only changed files (`--since=main` is required; `vcs.defaultBranch` is not set in biome.json so `--changed` alone errors)
@@ -343,10 +340,9 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 ## PR Workflow
 
 - **Local verification is authoritative**: run `npm run verify:local` before opening or updating a PR.
-- **Three test tiers**: `test:fast` is the default fast test loop, `test:medium` covers replay
-  validation and cheap simulation checks, `test:slow` is reserved for manual heavy smoke
-  coverage, and `test` runs all three tiers.
-- **`verify:local` is the handoff gate**: it runs the broader non-test checks plus `test:fast`
+- **Test commands must be honest**: `npm run test` is the actual package suite, and
+  `npm run test:slow` is extra manual smoke coverage.
+- **`verify:local` is the handoff gate**: it runs the broader non-test checks plus `test`
   before commits/PR updates.
 - **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally.
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/*/src/` or `packages/*/data/`. Creates a `.changeset/<name>.md` file; does NOT edit `package.json` or `CHANGELOG.md`. See Package Versioning above. Tests, docs, config, and `specs/` changes do not require a changeset.

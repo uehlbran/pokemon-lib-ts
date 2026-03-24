@@ -34,7 +34,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run test:fast
+      - run: npm run test
 
   typecheck:
     name: typecheck

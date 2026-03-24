@@ -43,9 +43,8 @@ Agents must read repo instructions before acting, not after making a mistake.
   [`.claude/skills/start-task/SKILL.md`](./.claude/skills/start-task/SKILL.md).
 - Do not edit repo files until the session branch requirement has been satisfied.
 - Local verification is authoritative: run `npm run verify:local` before PRs and other
-  handoffs. Use `npm run test:fast` as the default fast test loop, `npm run test:medium` for
-  replay/simulation confidence checks when battle behavior is relevant, and `npm run test:slow`
-  for manual heavy smoke coverage.
+  handoffs. Use targeted package tests while iterating, and use `npm run test:slow` only for
+  manual heavy smoke coverage.
 - Respect repo safety guidance in:
   - [`.claude/rules/git-safety.md`](./.claude/rules/git-safety.md)
   - [`.claude/rules/context-management.md`](./.claude/rules/context-management.md)
@@ -53,11 +52,10 @@ Agents must read repo instructions before acting, not after making a mistake.
 
 ## Verification Model
 
-- `npm run test:fast` — default fast test loop while developing.
-- `npm run test:medium` — replay validation plus cheap simulation confidence checks.
+- `npm run test` — the real package test suite.
 - `npm run test:slow` — manual heavy smoke coverage.
-- `npm run test` — all three test tiers.
-- `npm run verify:local` — broader handoff gate that runs non-test checks plus `test:fast`.
+- `npm run verify:local` — broader handoff gate that runs non-test checks plus `test`.
+- `replay:*` commands remain targeted tools and should be run explicitly when relevant.
 
 ## Repo-Specific Expectations
 

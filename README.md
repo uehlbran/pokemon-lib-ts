@@ -135,10 +135,8 @@ npm install
 ```bash
 npm run verify:local  # Authoritative local verification
 npm run build          # Build all packages (Turborepo)
-npm run test           # Full test suite: fast + medium + slow
-npm run test:fast      # Default fast test path
-npm run test:medium    # Replay validation + cheap simulation confidence checks
-npm run test:slow      # Manual heavy verification for broad smoke coverage
+npm run test           # Full package test suite
+npm run test:slow      # Manual heavy Gen 3 stability smoke verification
 npm run typecheck      # Type check all packages
 npm run lint           # Lint + format (Biome)
 ```
@@ -146,11 +144,8 @@ npm run lint           # Lint + format (Biome)
 ### Running Tests
 
 ```bash
-# Full test suite
+# Full package suite
 npm run test
-
-# Default fast test path
-npm run test:fast
 
 # Single package
 cd packages/core && npx vitest run
@@ -158,24 +153,19 @@ cd packages/core && npx vitest run
 # With coverage
 cd packages/core && npx vitest run --coverage
 
-# Medium confidence checks
-npm run test:medium
-
-# Manual slow verification
+# Manual heavy smoke verification
 npm run test:slow
 ```
 
 ### Verification Model
 
-- `npm run test:fast` — default fast test loop while developing. This is the normal mechanics
-  feedback path.
-- `npm run test:medium` — replay validation plus cheap simulation confidence checks. Use this
-  when battle behavior is relevant and you want more confidence without paying for the heavy tier.
-- `npm run test:slow` — manual heavy smoke coverage. Use this for broad, cross-cutting, or
-  confidence-sensitive battle changes.
-- `npm run test` — runs all three test tiers in order: fast, medium, then slow.
+- `npm run test` — the real package test suite.
+- `npm run test:slow` — explicit extra heavy smoke coverage. Run it for broad, confidence-sensitive,
+  or battle-stability work.
 - `npm run verify:local` — broader handoff gate, not just tests. It runs workflow/lint/build/
-  typecheck/package-boundary checks plus `test:fast`. Use this before commits and PR updates.
+  typecheck/package-boundary checks plus `test`. Use this before commits and PR updates.
+- `replay:*` commands remain targeted tooling. Run them explicitly when replay validation or
+  simulation confidence checks are relevant.
 
 ## Project Status
 
@@ -212,12 +202,11 @@ All nine generations are complete. 10,332+ tests across all packages, validated 
 
 Contributions welcome. Start each task in a fresh task-owned worktree from `origin/main`
 with `/start-task <branch-name>`; the root checkout is not for task work. Run
-`npm run verify:local` as the authoritative local handoff gate, use `npm run test:fast`
-as the default fast test loop, use `npm run test:medium`
-for replay/simulation confidence checks when battle behavior is relevant, and reserve
-`npm run test:slow` for heavy manual smoke verification. Then run `/review` before opening
-or updating a PR, and `git pushreview` after pushing. PRs get advisory CodeRabbit comments
-and may still get Qodo comments, but local verification is the source of truth.
+`npm run verify:local` as the authoritative local handoff gate, use targeted package tests while
+iterating, and reserve `npm run test:slow` for heavy manual smoke verification. Then run
+`/review` before opening or updating a PR, and `git pushreview` after pushing. PRs get advisory
+CodeRabbit comments and may still get Qodo comments, but local verification is the source of
+truth.
 
 ## Tech Stack
 

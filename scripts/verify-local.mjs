@@ -17,7 +17,7 @@ const steps = [
   ["workflow validator tests", ["run", "test:workflow"]],
   ["lint", ["run", "lint:check"]],
   ["build", ["run", "build"]],
-  ["fast tests", ["run", "test:fast"]],
+  ["tests", ["run", "test"]],
   ["typecheck", ["run", "typecheck"]],
   ["contract typecheck", ["run", "typecheck:contracts"]],
   ["package boundaries", ["run", "ci:package-boundaries"]],
