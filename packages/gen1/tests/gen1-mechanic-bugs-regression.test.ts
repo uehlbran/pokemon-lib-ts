@@ -1016,8 +1016,8 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
         // Side 0: attacker knows Explosion (move index 0)
         // Using Weezing (#110) — learns Explosion in Gen 1
         [makeGen1Pokemon(110, 50, ["explosion", "tackle"])],
-        // Side 1: defender knows Tackle
-        [makeGen1Pokemon(143, 50, ["tackle"])], // Snorlax
+        // Side 1: defender knows a legal Gen 1 move and stays slower than Weezing
+        [makeGen1Pokemon(16, 50, ["gust"])], // Pidgey
       ],
       seed: 491,
     };
