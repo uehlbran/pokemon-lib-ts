@@ -24,6 +24,8 @@ describe("Gen5 pokeRound export wiring", () => {
         ),
     );
 
+    // Source: the predicate above succeeds only when the AST contains
+    // `import { pokeRound } from "@pokemon-lib-ts/core"` in Gen5DamageCalc.
     expect(importsPokeRoundFromCore).toBe(true);
   });
 
@@ -44,6 +46,8 @@ describe("Gen5 pokeRound export wiring", () => {
           )),
     );
 
+    // Source: the export predicate above matches `export { pokeRound }`, while the
+    // local-definition predicate rejects a function or variable named `pokeRound`.
     expect(reexportsPokeRound).toBe(true);
     expect(definesLocalPokeRound).toBe(false);
   });
