@@ -5632,12 +5632,10 @@ export class BattleEngine implements BattleEventEmitter {
             this.performImmediateForcedSwitch(switchSide, { markSideAsPhased: true });
           }
           break;
-        case "damage-boost":
         case "speed-boost":
-        case "status-prevention":
           // These effect types carry no immediate engine action here.
           // 'none' is used for force-switch and other engine-deferred behaviors.
-          // 'damage-boost', 'speed-boost', 'status-prevention' are applied inline in item handlers.
+          // 'speed-boost' is applied inline in item handlers.
           break;
       }
     }
