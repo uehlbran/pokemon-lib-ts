@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { BattleConfig, DamageContext, DamageResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
+import { GenerationRegistry } from "../../src/ruleset/GenerationRegistry";
 import type { BattleGimmick, BattleGimmickType } from "../../src/ruleset";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
@@ -112,14 +113,17 @@ describe("BattleEngine — simple bug fixes", () => {
   // Bug #871 — shared ruleset instances leak per-battle gimmick state
   // -----------------------------------------------------------------------
   describe("Bug #871: ruleset instance isolation", () => {
-    it("given two engines built from the same ruleset instance, when one battle starts, then the other battle's gimmick state is not cleared", () => {
-      // Arrange — both engines receive the same ruleset object, which must be cloned
-      const sharedRuleset = new SharedStateRuleset();
-      const { engine: engine1 } = createEngine({ ruleset: sharedRuleset });
-      const { engine: engine2 } = createEngine({ ruleset: sharedRuleset });
+    it("given the registry returns cloned rulesets for the same generation, when two engines start from those clones, then their gimmick state stays isolated", () => {
+      // Arrange — registry lookups must return battle-local ruleset copies instead of
+      // sharing the same mutable singleton instance across overlapping battles.
+      const registry = new GenerationRegistry();
+      registry.register(new SharedStateRuleset());
 
-      const ruleset1 = Reflect.get(engine1, "ruleset") as SharedStateRuleset;
-      const ruleset2 = Reflect.get(engine2, "ruleset") as SharedStateRuleset;
+      const ruleset1 = registry.get(1) as SharedStateRuleset;
+      const ruleset2 = registry.get(1) as SharedStateRuleset;
+      const { engine: engine1 } = createEngine({ ruleset: ruleset1 });
+      const { engine: engine2 } = createEngine({ ruleset: ruleset2 });
+
       const gimmick1 = ruleset1.getBattleGimmick("mega") as TrackingGimmick;
       const gimmick2 = ruleset2.getBattleGimmick("mega") as TrackingGimmick;
 
