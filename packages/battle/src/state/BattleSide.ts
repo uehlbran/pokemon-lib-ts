@@ -41,7 +41,16 @@ export interface BattleSide {
   futureAttack: FutureAttackState | null;
   /** Number of Pokémon on this side that have fainted so far this battle */
   faintCount: number;
-  /** `true` if this side has already used its once-per-battle gimmick (mega/Z/dynamax/tera) */
+  /**
+   * `true` when this side has consumed a once-per-battle gimmick that is tracked
+   * directly on `BattleState` (for example Gen 6 Mega Evolution, Gen 8 Dynamax,
+   * or Gen 9 Terastallization).
+   *
+   * This is not a generation-agnostic source of truth for every gimmick.
+   * Gen 7 tracks Mega Evolution and Z-Move usage inside the ruleset's gimmick
+   * handlers instead, so `gimmickUsed` remains `false` there even after a side
+   * has used one of those mechanics.
+   */
   gimmickUsed: boolean;
 }
 
