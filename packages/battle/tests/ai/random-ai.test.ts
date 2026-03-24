@@ -273,7 +273,7 @@ describe("RandomAI", () => {
       expect(slot).toBe(1); // Only Pikachu is on the bench and alive
     });
 
-    it("given no alive bench pokemon, when chooseSwitchIn is called, then fallback slot is returned", () => {
+    it("given no alive bench pokemon, when chooseSwitchIn is called, then null is returned", () => {
       // Arrange
       const ai = new RandomAI();
       const state = createTestState({ team1Hp: [200, 0] }); // Pikachu fainted
@@ -283,8 +283,7 @@ describe("RandomAI", () => {
       // Act
       const slot = ai.chooseSwitchIn(0, state, ruleset, rng);
 
-      // Assert — no valid targets, returns fallback 0
-      expect(slot).toBe(0);
+      expect(slot).toBeNull();
     });
 
     it("given the same seed, when chooseSwitchIn is called twice, then same result is returned", () => {

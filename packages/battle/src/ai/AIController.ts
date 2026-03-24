@@ -21,5 +21,5 @@ export interface AIController {
     state: Readonly<BattleState>,
     ruleset: GenerationRuleset,
     rng: SeededRandom,
-  ): number;
+  ): number | null;
 }
