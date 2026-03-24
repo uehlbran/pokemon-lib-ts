@@ -537,10 +537,7 @@ export class Gen9Ruleset extends BaseRuleset {
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
    */
   calculateDamage(context: DamageContext): DamageResult {
-    return calculateGen9Damage(
-      context,
-      this.getTypeChart() as Record<string, Record<string, number>>,
-    );
+    return calculateGen9Damage(context, this.getTypeChart());
   }
 
   // --- Salt Cure End-of-Turn ---

@@ -42,7 +42,12 @@ import {
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
 } from "@pokemon-lib-ts/battle/data";
-import type { MoveEffect, PokemonType, TypeChart, VolatileStatus } from "@pokemon-lib-ts/core";
+import type {
+  MoveEffect,
+  PokemonType,
+  TypeChartLookup,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
 import {
   getStabModifier,
   getStatStageMultiplier,
@@ -614,7 +619,7 @@ const GEN7_ATE_MODIFIER = 4915; // 1.2x in 4096-based math
  */
 export function calculateGen7Damage(
   context: DamageContext,
-  typeChart: Record<string, Record<string, number>>,
+  typeChart: TypeChartLookup,
 ): DamageResult {
   const { attacker, defender, move, rng, isCrit } = context;
 
@@ -1088,11 +1093,7 @@ export function calculateGen7Damage(
     const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
     effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
   }
-  let effectiveness = getTypeEffectiveness(
-    effectiveMoveType,
-    effectiveDefenderTypes,
-    typeChart as TypeChart,
-  );
+  let effectiveness = getTypeEffectiveness(effectiveMoveType, effectiveDefenderTypes, typeChart);
 
   // Scrappy: Normal and Fighting hit Ghost
   // Source: Showdown data/abilities.ts -- Scrappy
@@ -1105,7 +1106,7 @@ export function calculateGen7Damage(
     const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== "ghost");
     effectiveness =
       nonGhostTypes.length > 0
-        ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart as TypeChart)
+        ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart)
         : 1;
   }
 

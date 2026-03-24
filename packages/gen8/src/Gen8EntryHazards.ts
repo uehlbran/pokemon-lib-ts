@@ -152,7 +152,7 @@ export function applyGen8StealthRock(
 
   // Calculate Rock-type effectiveness against switching Pokemon's types
   let effectiveness = 1;
-  const rockChart = (typeChart as Record<string, Record<string, number>>).rock;
+  const rockChart = typeChart.rock;
   if (rockChart) {
     for (const type of switchingIn.types) {
       const mult = rockChart[type] ?? 1;
@@ -192,7 +192,7 @@ export function applyGen8GMaxSteelsurge(
 
   // Calculate Steel-type effectiveness against switching Pokemon's types
   let effectiveness = 1;
-  const steelChart = (typeChart as Record<string, Record<string, number>>).steel;
+  const steelChart = typeChart.steel;
   if (steelChart) {
     for (const type of switchingIn.types) {
       const mult = steelChart[type] ?? 1;

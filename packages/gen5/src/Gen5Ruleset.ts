@@ -118,10 +118,7 @@ export class Gen5Ruleset extends BaseRuleset {
    * Source: references/pokemon-showdown/sim/battle-actions.ts lines 1718-1838
    */
   calculateDamage(context: DamageContext): DamageResult {
-    return calculateGen5Damage(
-      context,
-      this.getTypeChart() as Record<string, Record<string, number>>,
-    );
+    return calculateGen5Damage(context, this.getTypeChart());
   }
 
   /**

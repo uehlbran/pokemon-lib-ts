@@ -16,3 +16,10 @@ import type { PokemonType } from "./types";
  * Battle library gen plugins can provide their own charts.
  */
 export type TypeChart = Record<PokemonType, Record<PokemonType, number>>;
+
+/**
+ * Broader lookup shape used by damage-calculation helpers and synthetic tests.
+ * Keeps the public strict chart type intact while allowing callers that build
+ * ad-hoc chart records for targeted matchups.
+ */
+export type TypeChartLookup = TypeChart | Record<string, Record<string, number>>;
