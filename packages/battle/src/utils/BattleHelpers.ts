@@ -69,7 +69,7 @@ export function createActivePokemon(
     teamSlot,
     statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: teraResolvedTypes,
+    types: [...teraResolvedTypes],
     ability: resolvedAbility,
     suppressedAbility: null,
     itemKnockedOff: false,
