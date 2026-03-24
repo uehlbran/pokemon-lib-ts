@@ -5211,6 +5211,12 @@ export class BattleEngine implements BattleEventEmitter {
       const moveData = this.dataManager.getMove(moveSlot.moveId);
       return { id: moveData.id, category: moveData.category };
     } catch {
+      this.emit({
+        type: "engine-warning",
+        message:
+          `Move "${moveSlot.moveId}" not found while resolving defenderSelectedMove ` +
+          `for Sucker Punch. Treating this as missing move data, not a switch action.`,
+      });
       return null;
     }
   }
