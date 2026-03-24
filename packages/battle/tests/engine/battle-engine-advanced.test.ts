@@ -344,10 +344,12 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
+      // Source: only Reflect and Light Screen were targeted for removal in the fixture above.
       expect(engine.state.sides[1].screens).toEqual([{ type: "safeguard", turnsLeft: 5 }]);
       const screenEndEvents = events.filter(
         (event) => event.type === "screen-end" && event.side === 1,
       );
+      // Source: clearScreens emits one screen-end event per removed screen, in removal order.
       expect(screenEndEvents).toEqual([
         { type: "screen-end", side: 1, screen: "reflect" },
         { type: "screen-end", side: 1, screen: "light-screen" },
