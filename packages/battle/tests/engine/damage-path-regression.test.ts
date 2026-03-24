@@ -1,9 +1,14 @@
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type {
+  AbilityContext,
+  AbilityResult,
+  AbilityTrigger,
   BattleConfig,
   DamageContext,
   DamageResult,
+  ItemContext,
+  ItemResult,
   MoveEffectResult,
 } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
@@ -103,6 +108,64 @@ class MultiHitEndureMockRuleset extends AlwaysEndureMockRuleset {
   }
 }
 
+class CustomDamageHookMockRuleset extends MockRuleset {
+  damageReceivedCalls: Array<{ defenderUid: string; damage: number; moveId: string }> = [];
+  abilityTriggerCalls: string[] = [];
+  heldItemTriggerCalls: string[] = [];
+
+  override capLethalDamage(
+    damage: number,
+    defender: import("../../src/state").ActivePokemon,
+    _attacker: import("../../src/state").ActivePokemon,
+    _move: MoveData,
+    _state: import("../../src/state").BattleState,
+  ): { damage: number; survived: boolean; messages: string[] } {
+    if (damage >= defender.pokemon.currentHp) {
+      return {
+        damage: defender.pokemon.currentHp - 1,
+        survived: true,
+        messages: ["Custom damage was capped"],
+      };
+    }
+    return { damage, survived: false, messages: [] };
+  }
+
+  override onDamageReceived(
+    defender: import("../../src/state").ActivePokemon,
+    damage: number,
+    move: MoveData,
+    _state: import("../../src/state").BattleState,
+  ): void {
+    this.damageReceivedCalls.push({
+      defenderUid: defender.pokemon.uid,
+      damage,
+      moveId: move.id,
+    });
+  }
+
+  override hasAbilities(): boolean {
+    return true;
+  }
+
+  override applyAbility(trigger: AbilityTrigger, _context: AbilityContext): AbilityResult {
+    if (trigger === "on-damage-taken" || trigger === "on-contact") {
+      this.abilityTriggerCalls.push(trigger);
+    }
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override applyHeldItem(trigger: string, _context: ItemContext): ItemResult {
+    if (trigger === "on-damage-taken" || trigger === "on-contact") {
+      this.heldItemTriggerCalls.push(trigger);
+    }
+    return { activated: false, effects: [], messages: [] };
+  }
+}
+
 function createEngine(overrides?: {
   seed?: number;
   team1?: PokemonInstance[];
@@ -161,6 +224,320 @@ function createEngine(overrides?: {
 }
 
 describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
+  describe("#829 — customDamage uses the shared damage pipeline", () => {
+    it("given a move effect that applies lethal custom damage, when it resolves, then the engine still applies capLethalDamage and onDamageReceived", () => {
+      const ruleset = new CustomDamageHookMockRuleset();
+      ruleset.setFixedDamage(0);
+      ruleset.setMoveEffectResult({
+        customDamage: {
+          target: "defender",
+          // Source: 999 is intentionally over any plausible Gen 1 HP total so the
+          // test always exercises the capLethalDamage branch.
+          amount: 999,
+          source: "tackle",
+          type: "normal",
+        },
+      });
+
+      const charizard = createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      });
+
+      const { engine, events } = createEngine({
+        ruleset,
+        team1: [charizard],
+        team2: [
+          createTestPokemon(9, 50, {
+            uid: "blastoise-1",
+            nickname: "Blastoise",
+            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            calculatedStats: {
+              hp: 200,
+              attack: 100,
+              defense: 100,
+              spAttack: 100,
+              spDefense: 100,
+              speed: 80,
+            },
+            currentHp: 200,
+          }),
+        ],
+      });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const defender = engine.getState().sides[1].active[0];
+      expect(defender).toBeDefined();
+      const defenderMaxHp = defender!.pokemon.calculatedStats?.hp ?? defender!.pokemon.currentHp;
+      const expectedDamage = defenderMaxHp - 1;
+      expect(defender!.pokemon.currentHp).toBe(1);
+
+      const damageEvent = events.find((event) => event.type === "damage" && event.side === 1);
+      expect(damageEvent).toMatchObject({
+        type: "damage",
+        side: 1,
+        amount: expectedDamage,
+        currentHp: 1,
+        maxHp: defenderMaxHp,
+        source: "tackle",
+      });
+
+      expect(ruleset.damageReceivedCalls).toContainEqual({
+        defenderUid: "blastoise-1",
+        damage: expectedDamage,
+        moveId: "tackle",
+      });
+
+      const surviveMessage = events.find(
+        (event) => event.type === "message" && event.text === "Custom damage was capped",
+      );
+      expect(surviveMessage).toMatchObject({
+        type: "message",
+        text: "Custom damage was capped",
+      });
+    });
+
+    it("given a non-lethal custom damage amount, when it resolves, then the engine applies the exact damage once", () => {
+      const ruleset = new MockRuleset();
+      ruleset.setFixedDamage(0);
+      ruleset.setMoveEffectResult({
+        customDamage: {
+          target: "defender",
+          // Source: this fixture is intentionally below max HP so the test verifies
+          // the direct subtraction path rather than the capLethalDamage branch.
+          amount: 37,
+          source: "tackle",
+          type: "normal",
+        },
+      });
+
+      const charizard = createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      });
+
+      const { engine, events } = createEngine({
+        ruleset,
+        team1: [charizard],
+        team2: [
+          createTestPokemon(9, 50, {
+            uid: "blastoise-1",
+            nickname: "Blastoise",
+            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            calculatedStats: {
+              hp: 200,
+              attack: 100,
+              defense: 100,
+              spAttack: 100,
+              spDefense: 100,
+              speed: 80,
+            },
+            currentHp: 200,
+          }),
+        ],
+      });
+      engine.start();
+
+      const defender = engine.getState().sides[1].active[0];
+      expect(defender).toBeDefined();
+      const startingHp = defender!.pokemon.currentHp;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(defender!.pokemon.currentHp).toBe(startingHp - 37);
+
+      const damageEvent = events.find((event) => event.type === "damage" && event.side === 1);
+      expect(damageEvent).toMatchObject({
+        type: "damage",
+        side: 1,
+        amount: 37,
+        currentHp: startingHp - 37,
+        source: "tackle",
+      });
+    });
+
+    it("given custom damage hits a substitute, when it resolves, then the substitute absorbs it and reactive hooks stay silent", () => {
+      const ruleset = new CustomDamageHookMockRuleset();
+      ruleset.setFixedDamage(0);
+      ruleset.setMoveEffectResult({
+        customDamage: {
+          target: "defender",
+          // Source: this fixture uses contact move data so the regression covers the
+          // same hook path as normal damaging contact attacks.
+          amount: 30,
+          source: "tackle",
+          type: "normal",
+        },
+      });
+
+      const charizard = createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      });
+
+      const { engine, events } = createEngine({
+        ruleset,
+        team1: [charizard],
+        team2: [
+          createTestPokemon(9, 50, {
+            uid: "blastoise-1",
+            nickname: "Blastoise",
+            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            calculatedStats: {
+              hp: 200,
+              attack: 100,
+              defense: 100,
+              spAttack: 100,
+              spDefense: 100,
+              speed: 80,
+            },
+            currentHp: 200,
+          }),
+        ],
+      });
+      engine.start();
+
+      const defender = engine.getState().sides[1].active[0];
+      expect(defender).toBeDefined();
+      defender!.substituteHp = 50;
+      defender!.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      const startingHp = defender!.pokemon.currentHp;
+
+      events.length = 0;
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(defender!.substituteHp).toBe(20);
+      expect(defender!.pokemon.currentHp).toBe(startingHp);
+      expect(ruleset.damageReceivedCalls).toEqual([]);
+      expect(ruleset.abilityTriggerCalls).toEqual([]);
+      expect(ruleset.heldItemTriggerCalls).toEqual([]);
+
+      const substituteMessage = events.find(
+        (event) => event.type === "message" && event.text === "The substitute took damage!",
+      );
+      expect(substituteMessage).toMatchObject({
+        type: "message",
+        text: "The substitute took damage!",
+      });
+
+      const defenderDamageEvent = events.find(
+        (event) => event.type === "damage" && event.side === 1,
+      );
+      expect(defenderDamageEvent).toBeUndefined();
+    });
+
+    it.each([
+      [-5],
+      [Number.NaN],
+    ])("given custom damage amount %s, when it resolves, then it is normalized to zero and does not heal or fire hooks", (amount) => {
+      const ruleset = new CustomDamageHookMockRuleset();
+      ruleset.setFixedDamage(0);
+      ruleset.setMoveEffectResult({
+        customDamage: {
+          target: "defender",
+          // Source: invalid inputs are clamped to zero so they cannot heal or
+          // trigger the downstream reactive hooks.
+          amount,
+          source: "tackle",
+          type: "normal",
+        },
+      });
+
+      const charizard = createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      });
+
+      const { engine, events } = createEngine({
+        ruleset,
+        team1: [charizard],
+        team2: [
+          createTestPokemon(9, 50, {
+            uid: "blastoise-1",
+            nickname: "Blastoise",
+            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            calculatedStats: {
+              hp: 200,
+              attack: 100,
+              defense: 100,
+              spAttack: 100,
+              spDefense: 100,
+              speed: 80,
+            },
+            currentHp: 200,
+          }),
+        ],
+      });
+      engine.start();
+
+      const defender = engine.getState().sides[1].active[0];
+      expect(defender).toBeDefined();
+      const startingHp = defender!.pokemon.currentHp;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(defender!.pokemon.currentHp).toBe(startingHp);
+      expect(ruleset.damageReceivedCalls).toEqual([]);
+      expect(ruleset.abilityTriggerCalls).toEqual([]);
+      expect(ruleset.heldItemTriggerCalls).toEqual([]);
+
+      const damageEvent = events.find((event) => event.type === "damage" && event.side === 1);
+      expect(damageEvent).toMatchObject({
+        type: "damage",
+        side: 1,
+        amount: 0,
+        currentHp: startingHp,
+        source: "tackle",
+      });
+    });
+  });
+
   // -----------------------------------------------------------------------
   // #531: capLethalDamage missing from executeMoveById damage path
   // -----------------------------------------------------------------------
