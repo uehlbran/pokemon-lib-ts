@@ -29,6 +29,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
+  DataManager,
   EntryHazardType,
   MoveData,
   PokemonInstance,
@@ -72,6 +73,11 @@ export interface Gen1RulesetOptions {
    * Default: undefined (no badge boosts applied).
    */
   readonly badgeBoosts?: Gen1BadgeBoosts;
+  /**
+   * Shared data manager used for move/species lookups.
+   * Defaults to the bundled Gen 1 data manager.
+   */
+  readonly dataManager?: DataManager;
 }
 
 /**
@@ -92,11 +98,12 @@ export class Gen1Ruleset implements GenerationRuleset {
   readonly generation = 1 as const;
   readonly name = "Gen 1 (RBY)";
 
-  private readonly dataManager = createGen1DataManager();
+  private readonly dataManager: DataManager;
   private readonly badgeBoosts?: Gen1BadgeBoosts;
 
   constructor(options?: Gen1RulesetOptions) {
     this.badgeBoosts = options?.badgeBoosts;
+    this.dataManager = options?.dataManager ?? createGen1DataManager();
   }
 
   // --- Type System ---
@@ -186,18 +193,8 @@ export class Gen1Ruleset implements GenerationRuleset {
         const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
         if (!moveSlotA || !moveSlotB) return 0;
 
-        let priorityA = 0;
-        let priorityB = 0;
-        try {
-          priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
-        } catch {
-          // Move not found, use 0 priority
-        }
-        try {
-          priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
-        } catch {
-          // Move not found, use 0 priority
-        }
+        const priorityA = this.getMovePriorityOrThrow(moveSlotA.moveId);
+        const priorityB = this.getMovePriorityOrThrow(moveSlotB.moveId);
 
         // Higher priority goes first
         if (priorityA !== priorityB) {
@@ -268,6 +265,20 @@ export class Gen1Ruleset implements GenerationRuleset {
     }
 
     return null;
+  }
+
+  private getMovePriorityOrThrow(moveId: string): number {
+    try {
+      return this.dataManager.getMove(moveId).priority;
+    } catch (error) {
+      if (error instanceof Error && /not found/i.test(error.message)) {
+        throw new Error(
+          `Gen1Ruleset.resolveTurnOrder: move data not found for move ID "${moveId}"`,
+        );
+      }
+
+      throw error;
+    }
   }
 
   // --- Move Execution ---

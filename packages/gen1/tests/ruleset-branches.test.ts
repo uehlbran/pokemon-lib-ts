@@ -8,6 +8,7 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type {
+  DataManager,
   MoveData,
   PokemonInstance,
   PokemonSpeciesData,
@@ -1391,7 +1392,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     expect(ordered[0]?.side).toBe(0);
   });
 
-  it("given a move action with an unrecognized move ID, when resolving turn order, then defaults to priority 0 (catch branch)", () => {
+  it("given a move action with an unrecognized move ID, when resolving turn order, then throws instead of fabricating priority 0", () => {
     // Arrange: Use a move ID that doesn't exist in the data manager
     const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
     const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
@@ -1428,15 +1429,13 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
       side1Active: pokemonWithTackle,
     });
     const rng = new SeededRandom(42);
-    // Act
-    const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
-    // Assert: Should not throw; defaults to priority 0 for unrecognized move
-    expect(ordered).toHaveLength(2);
-    // Faster pokemon (side 1, speed 200) should go first since both have priority 0
-    expect(ordered[0]?.side).toBe(1);
+    // Act & Assert
+    expect(() => ruleset.resolveTurnOrder([move0, move1], state, rng)).toThrow(
+      /move data not found|unknown move/i,
+    );
   });
 
-  it("given both Pokemon have unrecognized moves, when resolving turn order, then both default to priority 0 (both catch branches)", () => {
+  it("given both Pokemon have unrecognized moves, when resolving turn order, then throws before sorting", () => {
     // Arrange: Both moves are unrecognized
     const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
     const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
@@ -1470,10 +1469,84 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     });
     const state = makeBattleState({ side0Active: pokemonA, side1Active: pokemonB });
     const rng = new SeededRandom(42);
-    // Act
-    const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
-    // Assert: Both default to priority 0, so speed decides; side 1 (speed 200) goes first
-    expect(ordered[0]?.side).toBe(1);
+    // Act & Assert
+    expect(() => ruleset.resolveTurnOrder([move0, move1], state, rng)).toThrow(
+      /move data not found|unknown move/i,
+    );
+  });
+
+  it("given an injected data manager knows the move, when resolving turn order, then Gen1Ruleset uses that shared move source", () => {
+    const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
+    const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
+    const customMoveId = "custom-priority-move";
+    const sharedDataManager = {
+      getMove: (moveId: string) => {
+        if (moveId === customMoveId) {
+          return { priority: 2 };
+        }
+        if (moveId === "tackle") {
+          return { priority: 0 };
+        }
+        throw new Error(`Move ${moveId} not found`);
+      },
+    } as DataManager;
+    const rulesetWithSharedData = new Gen1Ruleset({ dataManager: sharedDataManager });
+    const customMovePokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [{ moveId: customMoveId, currentPP: 10, maxPP: 10, ppUps: 0 }],
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 80,
+        },
+      } as PokemonInstance,
+    });
+    const tacklePokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const state = makeBattleState({ side0Active: customMovePokemon, side1Active: tacklePokemon });
+
+    const ordered = rulesetWithSharedData.resolveTurnOrder(
+      [move0, move1],
+      state,
+      new SeededRandom(42),
+    );
+
+    expect(ordered[0]).toEqual(move0);
+  });
+
+  it("given an injected data manager throws a non-lookup error, when resolving turn order, then the original loader error is preserved", () => {
+    const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
+    const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
+    const sharedDataManager = {
+      getMove: (_moveId: string) => {
+        throw new Error("custom loader exploded");
+      },
+    } as DataManager;
+    const rulesetWithSharedData = new Gen1Ruleset({ dataManager: sharedDataManager });
+    const state = makeBattleState({
+      side0Active: makeActivePokemon(),
+      side1Active: makeActivePokemon(),
+    });
+
+    expect(() =>
+      rulesetWithSharedData.resolveTurnOrder([move0, move1], state, new SeededRandom(42)),
+    ).toThrow(/custom loader exploded/i);
   });
 
   it("given a Pokemon with no calculatedStats, when resolving turn order, then uses default speed of 100", () => {
