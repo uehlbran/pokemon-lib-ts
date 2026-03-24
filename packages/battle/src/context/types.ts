@@ -921,7 +921,7 @@ export interface ValidationResult {
 export interface WeatherEffectResult {
   /** Which side the damaged Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the damaged Pokémon */
+  /** Display name of the damaged Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** HP removed by weather damage (0 if immune) */
   readonly damage: number;
@@ -936,7 +936,7 @@ export interface WeatherEffectResult {
 export interface TerrainEffectResult {
   /** Which side the affected Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Unique identifier of the affected Pokémon */
+  /** Display name of the affected Pokémon (nickname if present, otherwise a fallback species label) */
   readonly pokemon: string;
   /** Effect identifier (e.g., `"grassy-heal"`, `"electric-immunity"`) */
   readonly effect: string;
