@@ -62,6 +62,7 @@ jobs:
           key: turbo-${{ github.sha }}
           restore-keys: turbo-
       - run: npm run typecheck
+      - run: npm run typecheck:contracts
 
   package-boundaries:
     name: package-boundaries
