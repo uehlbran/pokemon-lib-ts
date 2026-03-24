@@ -1,4 +1,4 @@
-import type { TypeChart } from "../entities/type-chart";
+import type { TypeChartLookup } from "../entities/type-chart";
 import type { PokemonType } from "../entities/types";
 
 /**
@@ -28,7 +28,7 @@ export type EffectivenessCategory =
 export function getTypeMultiplier(
   attackType: PokemonType,
   defendType: PokemonType,
-  chart: TypeChart,
+  chart: TypeChartLookup,
 ): number {
   return chart[attackType]?.[defendType] ?? 1;
 }
@@ -42,7 +42,7 @@ export function getTypeMultiplier(
 export function getTypeEffectiveness(
   attackType: PokemonType,
   defenderTypes: readonly PokemonType[],
-  chart: TypeChart,
+  chart: TypeChartLookup,
 ): number {
   let multiplier = 1;
   for (const defType of defenderTypes) {

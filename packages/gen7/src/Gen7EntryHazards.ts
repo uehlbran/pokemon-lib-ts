@@ -132,7 +132,7 @@ export function applyGen7StealthRock(
 
   // Calculate Rock-type effectiveness against switching Pokemon's types
   let effectiveness = 1;
-  const rockChart = (typeChart as Record<string, Record<string, number>>).rock;
+  const rockChart = typeChart.rock;
   if (rockChart) {
     for (const type of switchingIn.types) {
       const mult = rockChart[type] ?? 1;

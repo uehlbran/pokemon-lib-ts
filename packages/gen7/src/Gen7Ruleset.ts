@@ -321,10 +321,7 @@ export class Gen7Ruleset extends BaseRuleset {
    * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
    */
   calculateDamage(context: DamageContext): DamageResult {
-    return calculateGen7Damage(
-      context,
-      this.getTypeChart() as Record<string, Record<string, number>>,
-    );
+    return calculateGen7Damage(context, this.getTypeChart());
   }
 
   /**
