@@ -26,7 +26,7 @@ src/
 
 ## Key Interfaces
 
-- **GenerationRuleset** (~20 methods): damage calc, stat calc, type chart, turn order, accuracy, move effects, ability triggers, weather, terrain, etc. Each gen implements this.
+- **GenerationRuleset**: damage calc, stat calc, type chart, turn order, accuracy, move effects, ability triggers, weather, terrain, validation, and other battle delegation points. Each gen implements this contract directly or through `BaseRuleset`.
 - **BattleState**: Full battle snapshot — both sides, field conditions, turn count, PRNG state. Immutable between turns.
 - **BattleAction**: Discriminated union — `'move' | 'switch' | 'item' | 'run'`
 - **BattleEvent**: Discriminated union — `'damage' | 'heal' | 'status' | 'faint' | 'switch'` etc. The event stream is the engine's only output.
@@ -50,7 +50,7 @@ The engine emits `BattleEvent[]` per turn. No UI coupling. Consumers (Phaser, CL
 - **Integration tests**: Use real gen rulesets (e.g., Gen1Ruleset) to verify end-to-end battle scenarios.
 - **Determinism**: Same seed + same actions = same events. Always.
 - **Replay validation**: Compare engine output against Showdown battle logs.
-- All tests use AAA pattern with Given/When/Then naming.
+- Prefer clear Given/When/Then naming, but preserve existing test names when changing them would create churn without improving clarity.
 
 ## Gen Ruleset Patterns
 
