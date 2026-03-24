@@ -16,4 +16,5 @@ extra_instructions = """
 - If the claim depends on generated files or config (for example a temporary tsconfig), explicitly state what in the code generates it and quote the relevant snippet or lines.
 - If the issue may be environment-dependent or TypeScript-version-dependent (for example JSON module resolution), inspect the repo's actual TypeScript version and effective config first. If the diff alone does not prove the failure, present it as "Requires verification" instead of an action-required bug.
 - Prefer minimal, verifiable recommendations. Avoid speculative "add option X" fixes unless the diff proves the option is missing and required.
+- Acceptable example: "In `scripts/verify-package-boundaries.ts:347-364`, the generated temp tsconfig omits a setting required by the imported module type. Running `npm run ci:package-boundaries` fails during the smoke `tsc` step because the diff adds that import path without the matching compiler option."
 """
