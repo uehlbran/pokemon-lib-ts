@@ -392,7 +392,7 @@ describe("processEffectResult — self-targeted effects", () => {
           };
         };
 
-        const { engine } = createEngine({ ruleset });
+        const { engine, events } = createEngine({ ruleset });
         engine.start();
 
         // Pre-condition: attacker (side 0, Charizard) has +3 attack and burn status
@@ -417,6 +417,13 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(attackerActive?.pokemon.status).toBe("burn");
         // Assert — defender defense stage unchanged (Blastoise used a no-op move)
         expect(defenderActive?.statStages.defense).toBe(2);
+        // Assert — the reset is surfaced as a stat-change event for downstream listeners
+        const attackReset = events.find(
+          (e) => e.type === "stat-change" && e.side === 0 && e.stat === "attack",
+        );
+        expect(attackReset).toBeDefined();
+        expect(attackReset?.type === "stat-change" && attackReset.stages).toBe(-3);
+        expect(attackReset?.type === "stat-change" && attackReset.currentStage).toBe(0);
       },
     );
 
@@ -496,7 +503,7 @@ describe("processEffectResult — self-targeted effects", () => {
           };
         };
 
-        const { engine } = createEngine({ ruleset });
+        const { engine, events } = createEngine({ ruleset });
         engine.start();
 
         // Pre-condition: attacker (Charizard, side 0) +1 attack; defender (Blastoise, side 1) +3 defense
@@ -517,6 +524,77 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(defenderActive?.statStages.defense).toBe(0);
         // Assert — attacker (Charizard) attack stage unchanged (Blastoise used no-op)
         expect(attackerActive?.statStages.attack).toBe(1);
+        // Assert — defender reset is surfaced as a stat-change event for downstream listeners
+        const defenseReset = events.find(
+          (e) => e.type === "stat-change" && e.side === 1 && e.stat === "defense",
+        );
+        expect(defenseReset).toBeDefined();
+        expect(defenseReset?.type === "stat-change" && defenseReset.stages).toBe(-3);
+        expect(defenseReset?.type === "stat-change" && defenseReset.currentStage).toBe(0);
+      },
+    );
+  });
+
+  describe("statusCured", () => {
+    it(
+      "given attacker has boosted stat stages and burn status and statusCured targets attacker," +
+        " when processing, then attacker stages are reset and the reset is emitted",
+      () => {
+        // Arrange — only the first executeMoveEffect call returns statusCured; the second
+        // call returns a no-op so the defender's own action does not affect the assertion.
+        const ruleset = new MockRuleset();
+        let callCount = 0;
+        ruleset.executeMoveEffect = () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              statusInflicted: null,
+              volatileInflicted: null,
+              statChanges: [],
+              recoilDamage: 0,
+              healAmount: 0,
+              switchOut: false,
+              messages: [],
+              statusCured: { target: "attacker" as const },
+            };
+          }
+          return {
+            statusInflicted: null,
+            volatileInflicted: null,
+            statChanges: [],
+            recoilDamage: 0,
+            healAmount: 0,
+            switchOut: false,
+            messages: [],
+          };
+        };
+
+        const { engine, events } = createEngine({ ruleset });
+        engine.start();
+
+        const attackerActive = engine.state.sides[0].active[0];
+        if (attackerActive) {
+          attackerActive.statStages.attack = 2;
+          attackerActive.pokemon.status = "burn";
+        }
+
+        engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+        expect(attackerActive?.statStages.attack).toBe(0);
+        expect(attackerActive?.pokemon.status).toBeNull();
+
+        const statusCure = events.find(
+          (e) => e.type === "status-cure" && e.side === 0 && e.status === "burn",
+        );
+        expect(statusCure).toBeDefined();
+
+        const attackReset = events.find(
+          (e) => e.type === "stat-change" && e.side === 0 && e.stat === "attack",
+        );
+        expect(attackReset).toBeDefined();
+        expect(attackReset?.type === "stat-change" && attackReset.stages).toBe(-2);
+        expect(attackReset?.type === "stat-change" && attackReset.currentStage).toBe(0);
       },
     );
   });
