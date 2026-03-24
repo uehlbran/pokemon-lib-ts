@@ -35,6 +35,7 @@ export {
   gen1to4MultiHitRoll,
   gen1to6ConfusionSelfHitRoll,
 } from "./gen12-shared.js";
+export { MEGA_STONE_DATA } from "./mega-stone-data.js";
 export {
   createMoveSlot,
   createPokemonInstance,
