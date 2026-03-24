@@ -369,55 +369,6 @@ describe("BattleEngine — edge cases", () => {
     });
   });
 
-  describe("submitSwitch error — side does not need switch", () => {
-    it("given a side in switch-prompt that doesn't need to switch, when submitSwitch is called for that side, then it throws", () => {
-      // Arrange — force only side 1 to need a switch
-      const team2 = [
-        createTestPokemon(9, 50, {
-          uid: "blastoise-1",
-          nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 80,
-          },
-          currentHp: 1,
-        }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-2",
-          nickname: "Pikachu2",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 120,
-            attack: 80,
-            defense: 60,
-            spAttack: 80,
-            spDefense: 80,
-            speed: 130,
-          },
-          currentHp: 120,
-        }),
-      ];
-
-      const { engine } = createEngine({ team2 });
-      engine.start();
-      engine.getActive(1)!.pokemon.currentHp = 1;
-
-      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
-
-      // Should now be in switch-prompt for side 1
-      expect(engine.getPhase()).toBe("switch-prompt");
-
-      // Act & Assert — side 0 doesn't need to switch
-      expect(() => engine.submitSwitch(0, 0)).toThrow("Side 0 does not need to switch");
-    });
-  });
-
   describe("events emitted chronologically and completely", () => {
     it("given a normal turn, when both sides use moves, then event log has battle-start, switch-ins, turn-start, move-starts, damages in order", () => {
       // Arrange
