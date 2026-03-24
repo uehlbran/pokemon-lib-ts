@@ -371,6 +371,18 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    if (action.type === "switch") {
+      const activePokemon = this.getActive(side);
+      if (!activePokemon) {
+        throw new Error(`Side ${side} has no active Pokemon to execute SwitchAction`);
+      }
+
+      // Voluntary switch requests must stay aligned with getAvailableSwitches().
+      if (!this.getAvailableSwitches(side).includes(action.switchTo)) {
+        throw new Error(`Invalid switch slot ${action.switchTo}`);
+      }
+    }
+
     if (action.type === "run" && (side !== 0 || action.side !== 0)) {
       throw new Error("RunAction is only valid for side 0");
     }
