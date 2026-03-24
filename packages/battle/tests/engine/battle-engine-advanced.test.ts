@@ -395,6 +395,33 @@ describe("BattleEngine — advanced scenarios", () => {
       expect(safeguardWearOffMessageIndex).toBeGreaterThanOrEqual(0);
       expect(screenEndIndex).toBeLessThan(safeguardWearOffMessageIndex);
     });
+
+    it("given Safeguard at 5 turns remaining, when both screen-countdown and safeguard-countdown run, then it only loses one turn", () => {
+      // Arrange
+      const ruleset = new MockRuleset();
+      const originalOrder = ruleset.getEndOfTurnOrder();
+      const patchedRuleset = Object.create(ruleset) as MockRuleset;
+      patchedRuleset.getEndOfTurnOrder = () => [
+        "screen-countdown" as const,
+        "safeguard-countdown" as const,
+        ...originalOrder,
+      ];
+
+      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      engine.start();
+
+      // Source: specs/battle/05-gen4.md lists Safeguard as lasting 5 turns in Gen 4.
+      engine.state.sides[0].screens = [{ type: "safeguard", turnsLeft: 5 }];
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      expect(engine.state.sides[0].screens).toEqual([{ type: "safeguard", turnsLeft: 4 }]);
+      const screenEnd = events.find((event) => event.type === "screen-end");
+      expect(screenEnd).toBeUndefined();
+    });
   });
 
   describe("hazard removal effects", () => {
