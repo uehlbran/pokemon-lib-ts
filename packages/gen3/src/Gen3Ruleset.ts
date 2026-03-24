@@ -402,6 +402,7 @@ export class Gen3Ruleset extends BaseRuleset {
       context.isTradedPokemon ?? false,
       context.isInternationalTrade ?? false,
     );
+    // Source: specs/battle/04-gen3.md -- Non-participating Pokémon holding Exp. Share receives 50% of total EXP
     if (context.hasExpShare) {
       exp = Math.max(1, Math.floor(exp / 2));
     }

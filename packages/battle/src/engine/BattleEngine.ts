@@ -10,7 +10,12 @@ import type {
   MoveAction,
   RunAction,
 } from "../events";
-import type { BattleGimmickType, GenerationRuleset } from "../ruleset";
+import type {
+  BattleGimmickType,
+  ExpRecipient,
+  ExpRecipientSelectionContext,
+  GenerationRuleset,
+} from "../ruleset";
 import { generations } from "../ruleset";
 import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";
 import {
@@ -73,11 +78,6 @@ const STRUGGLE_MOVE_DATA: MoveData = {
 const BATTLE_GIMMICK_TYPES: readonly BattleGimmickType[] = ["mega", "zmove", "dynamax", "tera"];
 
 type SerializedBattleGimmickState = Partial<Record<BattleGimmickType, unknown>>;
-type ExpRecipient = {
-  readonly hasExpShare: boolean;
-  readonly pokemon: BattleState["sides"][number]["team"][number];
-};
-
 /**
  * The core battle engine. Manages the battle state machine, delegates
  * generation-specific behavior to the provided ruleset, and emits
@@ -4822,31 +4822,13 @@ export class BattleEngine implements BattleEventEmitter {
   private getExpRecipients(
     winnerTeam: BattleState["sides"][number]["team"],
     livingParticipantUids: ReadonlySet<string>,
-  ): ExpRecipient[] {
-    const usesHeldExpShare = this.ruleset.generation >= 2 && this.ruleset.generation <= 5;
-    const hasAlwaysOnExpShare = this.ruleset.generation >= 6;
-    const recipients: ExpRecipient[] = [];
+  ): readonly ExpRecipient[] {
+    const recipientContext: ExpRecipientSelectionContext = {
+      winnerTeam,
+      livingParticipantUids,
+    };
 
-    for (const pokemon of winnerTeam) {
-      if (pokemon.currentHp <= 0) continue;
-
-      const isParticipant = livingParticipantUids.has(pokemon.uid);
-      if (isParticipant) {
-        recipients.push({ pokemon, hasExpShare: false });
-        continue;
-      }
-
-      if (hasAlwaysOnExpShare) {
-        recipients.push({ pokemon, hasExpShare: true });
-        continue;
-      }
-
-      if (usesHeldExpShare && pokemon.heldItem === "exp-share") {
-        recipients.push({ pokemon, hasExpShare: true });
-      }
-    }
-
-    return recipients;
+    return this.ruleset.getExpRecipients(recipientContext);
   }
 
   /**

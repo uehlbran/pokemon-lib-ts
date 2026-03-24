@@ -34,7 +34,12 @@ import type {
   WeatherEffectResult,
 } from "../../src/context";
 import type { BattleAction } from "../../src/events";
-import type { BattleGimmickType, GenerationRuleset } from "../../src/ruleset";
+import type {
+  BattleGimmickType,
+  ExpRecipient,
+  ExpRecipientSelectionContext,
+  GenerationRuleset,
+} from "../../src/ruleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
 
 /**
@@ -380,6 +385,33 @@ export class MockRuleset implements GenerationRuleset {
     return Math.floor(
       (context.defeatedSpecies.baseExp * context.defeatedLevel) / (5 * context.participantCount),
     );
+  }
+
+  getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[] {
+    const usesHeldExpShare = this.generation >= 2 && this.generation <= 5;
+    const hasAlwaysOnExpShare = this.generation >= 6;
+    const recipients: ExpRecipient[] = [];
+
+    for (const pokemon of context.winnerTeam) {
+      if (pokemon.currentHp <= 0) continue;
+
+      const isParticipant = context.livingParticipantUids.has(pokemon.uid);
+      if (isParticipant) {
+        recipients.push({ pokemon, hasExpShare: false });
+        continue;
+      }
+
+      if (hasAlwaysOnExpShare) {
+        recipients.push({ pokemon, hasExpShare: true });
+        continue;
+      }
+
+      if (usesHeldExpShare && pokemon.heldItem === "exp-share") {
+        recipients.push({ pokemon, hasExpShare: true });
+      }
+    }
+
+    return recipients;
   }
 
   getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {

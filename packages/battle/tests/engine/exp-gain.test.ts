@@ -26,7 +26,8 @@ function createAndStartExpTestEngine(overrides?: {
   isWildBattle?: boolean;
   skipFaintSetup?: boolean;
 }): { engine: BattleEngine; ruleset: MockRuleset; events: BattleEvent[] } {
-  const ruleset = overrides?.ruleset ?? new MockRuleset();
+  const generation = overrides?.generation ?? overrides?.ruleset?.generation ?? 1;
+  const ruleset = (overrides?.ruleset ?? new MockRuleset()).setGenerationForTest(generation);
   const dataManager = createMockDataManager();
   const events: BattleEvent[] = [];
 
@@ -48,7 +49,7 @@ function createAndStartExpTestEngine(overrides?: {
   ];
 
   const config: BattleConfig = {
-    generation: overrides?.generation ?? 1,
+    generation,
     format: "singles",
     teams: [team1, team2],
     seed: overrides?.seed ?? 12345,
@@ -255,6 +256,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       const capturedContexts = new Map<string, ExpContext>();
       const ruleset = new MockRuleset().setGenerationForTest(3);
       ruleset.calculateExpGain = (context) => {
+        // Source: this test's mock split policy — full EXP for participants, 50% for Exp. Share recipients
         const recipientUid = context.hasExpShare ? "pikachu-1" : "charizard-1";
         capturedContexts.set(recipientUid, context);
         return context.hasExpShare ? 50 : 100;
@@ -286,6 +288,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       const expGainEvents = events.filter(
         (event): event is ExpGainEvent => event.type === "exp-gain",
       );
+      // Source: mocked calculateExpGain override above
       expect(expGainEvents).toEqual([
         { type: "exp-gain", side: 0, pokemon: "charizard-1", amount: 100 },
         { type: "exp-gain", side: 0, pokemon: "pikachu-1", amount: 50 },
@@ -300,6 +303,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       const capturedContexts = new Map<string, ExpContext>();
       const ruleset = new MockRuleset().setGenerationForTest(8);
       ruleset.calculateExpGain = (context) => {
+        // Source: this test's mock split policy — full EXP for participants, 50% for Exp. Share recipients
         const recipientUid = context.hasExpShare ? "pikachu-1" : "charizard-1";
         capturedContexts.set(recipientUid, context);
         return context.hasExpShare ? 50 : 100;
@@ -330,6 +334,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       const expGainEvents = events.filter(
         (event): event is ExpGainEvent => event.type === "exp-gain",
       );
+      // Source: mocked calculateExpGain override above
       expect(expGainEvents).toEqual([
         { type: "exp-gain", side: 0, pokemon: "charizard-1", amount: 100 },
         { type: "exp-gain", side: 0, pokemon: "pikachu-1", amount: 50 },

@@ -817,6 +817,7 @@ export class Gen6Ruleset extends BaseRuleset {
       exp = Math.floor(exp * tradedMultiplier);
     }
 
+    // Source: specs/battle/07-gen6.md -- Gen 6+ EXP Share is party-wide; inactive members receive 50% of the participant award
     if (context.hasExpShare) {
       exp = Math.floor(exp / 2);
     }

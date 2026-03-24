@@ -295,7 +295,7 @@ describe("Gen3Ruleset simple overrides", () => {
   });
 
   it("given hasExpShare=true in Gen 3, when calculating EXP, then returns half of the normal award", () => {
-    // Source: specs/battle/04-gen3.md -- non-participating Exp. Share holder receives 50% of the EXP award
+    // Source: specs/battle/04-gen3.md -- non-participating Exp. Share holder receives 50% of total EXP
     const ruleset = makeRuleset();
     const dm = createGen3DataManager();
     const abra = dm.getSpeciesByName("abra");
@@ -322,8 +322,42 @@ describe("Gen3Ruleset simple overrides", () => {
       affectionBonus: false,
     });
 
+    // Abra base EXP = 62; floor((62 * 50) / 7) = 442; Exp. Share halves that to 221
     expect(withoutExpShare).toBe(442);
     expect(withExpShare).toBe(221);
+  });
+
+  it("given hasExpShare=true in a Gen 3 trainer battle, when calculating EXP, then returns half of the trainer-boosted award", () => {
+    // Source: specs/battle/04-gen3.md -- non-participating Exp. Share holder receives 50% of total EXP
+    const ruleset = makeRuleset();
+    const dm = createGen3DataManager();
+    const bulbasaur = dm.getSpeciesByName("bulbasaur");
+
+    const withoutExpShare = ruleset.calculateExpGain({
+      defeatedSpecies: bulbasaur,
+      defeatedLevel: 30,
+      participantLevel: 25,
+      isTrainerBattle: true,
+      participantCount: 1,
+      hasLuckyEgg: false,
+      hasExpShare: false,
+      affectionBonus: false,
+    });
+
+    const withExpShare = ruleset.calculateExpGain({
+      defeatedSpecies: bulbasaur,
+      defeatedLevel: 30,
+      participantLevel: 25,
+      isTrainerBattle: true,
+      participantCount: 1,
+      hasLuckyEgg: false,
+      hasExpShare: true,
+      affectionBonus: false,
+    });
+
+    // Bulbasaur base EXP = 64; floor((64 * 30) / 7) = 274; trainer bonus = floor(274 * 1.5) = 411; Exp. Share halves that to 205
+    expect(withoutExpShare).toBe(411);
+    expect(withExpShare).toBe(205);
   });
 });
 

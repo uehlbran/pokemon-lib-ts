@@ -228,6 +228,23 @@ describe("Gen8Ruleset -- EXP Share always active", () => {
     expect(ruleset.calculateExpGain(context)).toBe(500);
   });
 
+  it("given hasExpShare=true with trainer and Lucky Egg modifiers, when calculating EXP, then halves the fully modified award", () => {
+    // Source: specs/battle/09-gen8.md -- inactive party members receive 50% of earned EXP each
+    // base = floor((100 * 50) / (5 * 2)) = 500
+    // trainer = floor(500 * 1.5) = 750
+    // lucky egg = floor(750 * 1.5) = 1125
+    // Exp. Share = floor(1125 / 2) = 562
+    const context = makeExpContext({
+      defeatedLevel: 50,
+      defeatedSpecies: { baseExp: 100 } as any,
+      participantCount: 2,
+      isTrainerBattle: true,
+      hasLuckyEgg: true,
+      hasExpShare: true,
+    });
+    expect(ruleset.calculateExpGain(context)).toBe(562);
+  });
+
   it("given fainted Pokemon, when not included in participantCount, then receives 0 EXP", () => {
     // Source: Showdown -- Fainted Pokemon do not receive EXP
     // A fainted Pokemon should not be passed to calculateExpGain at all;

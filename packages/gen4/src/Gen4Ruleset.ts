@@ -637,6 +637,7 @@ export class Gen4Ruleset extends BaseRuleset {
       context.isTradedPokemon ?? false,
       context.isInternationalTrade ?? false,
     );
+    // Source: specs/battle/05-gen4.md -- EXP Share holders gain a separate 50% share of defeated Pokémon's base EXP
     if (context.hasExpShare) {
       exp = Math.max(1, Math.floor(exp / 2));
     }

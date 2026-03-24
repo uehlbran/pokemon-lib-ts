@@ -16,6 +16,8 @@ import type {
   EndOfTurnEffect,
   EntryHazardResult,
   ExpContext,
+  ExpRecipient,
+  ExpRecipientSelectionContext,
   GenerationRuleset,
   ItemContext,
   ItemResult,
@@ -104,6 +106,26 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
     return calculateGen2Stats(pokemon, species);
+  }
+
+  getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[] {
+    const recipients: ExpRecipient[] = [];
+
+    for (const pokemon of context.winnerTeam) {
+      if (pokemon.currentHp <= 0) continue;
+
+      const isParticipant = context.livingParticipantUids.has(pokemon.uid);
+      if (isParticipant) {
+        recipients.push({ pokemon, hasExpShare: false });
+        continue;
+      }
+
+      if (pokemon.heldItem === "exp-share") {
+        recipients.push({ pokemon, hasExpShare: true });
+      }
+    }
+
+    return recipients;
   }
 
   // --- Damage Calculation ---
@@ -696,6 +718,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       context.isTradedPokemon ?? false,
       false, // Gen 2: no international trade concept
     );
+    // Source: specs/battle/03-gen2.md -- Exp. Share (Gen 2: held item giving 50% EXP split)
     if (context.hasExpShare) {
       exp = Math.max(1, Math.floor(exp / 2));
     }

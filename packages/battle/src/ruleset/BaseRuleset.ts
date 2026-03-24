@@ -44,7 +44,12 @@ import type {
 } from "../context";
 import type { BattleAction } from "../events";
 import type { ActivePokemon, BattleSide, BattleState } from "../state";
-import type { BattleGimmickType, GenerationRuleset } from "./GenerationRuleset";
+import type {
+  BattleGimmickType,
+  ExpRecipient,
+  ExpRecipientSelectionContext,
+  GenerationRuleset,
+} from "./GenerationRuleset";
 
 /**
  * Abstract base class implementing GenerationRuleset with Gen 6+/7+ defaults.
@@ -675,6 +680,33 @@ export abstract class BaseRuleset implements GenerationRuleset {
     }
 
     return exp;
+  }
+
+  getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[] {
+    const usesHeldExpShare = this.generation >= 2 && this.generation <= 5;
+    const hasAlwaysOnExpShare = this.generation >= 6;
+    const recipients: ExpRecipient[] = [];
+
+    for (const pokemon of context.winnerTeam) {
+      if (pokemon.currentHp <= 0) continue;
+
+      const isParticipant = context.livingParticipantUids.has(pokemon.uid);
+      if (isParticipant) {
+        recipients.push({ pokemon, hasExpShare: false });
+        continue;
+      }
+
+      if (hasAlwaysOnExpShare) {
+        recipients.push({ pokemon, hasExpShare: true });
+        continue;
+      }
+
+      if (usesHeldExpShare && pokemon.heldItem === "exp-share") {
+        recipients.push({ pokemon, hasExpShare: true });
+      }
+    }
+
+    return recipients;
   }
 
   getBattleGimmick(_type: BattleGimmickType): BattleGimmick | null {
