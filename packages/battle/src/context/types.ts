@@ -594,8 +594,6 @@ export interface ItemContext {
 export type ItemEffectType =
   | "stat-boost"
   | "heal"
-  | "damage-boost"
-  | "status-prevention"
   | "speed-boost"
   | "status-cure"
   | "consume"
@@ -632,8 +630,6 @@ export type ItemEffect =
       readonly value: string;
       readonly stages?: number;
     }
-  | { readonly type: "damage-boost"; readonly target: "self" | "opponent"; readonly value: number }
-  | { readonly type: "status-prevention"; readonly target: "self" | "opponent" }
   | { readonly type: "speed-boost"; readonly target: "self" | "opponent"; readonly value: number }
   | {
       /** Chip damage to a target (Life Orb recoil, Black Sludge, Sticky Barb, Rocky Helmet). */
