@@ -284,6 +284,44 @@ describe("BattleEngine — advanced scenarios", () => {
     });
   });
 
+  describe("hazard removal effects", () => {
+    it("given a move effect clears defender hazards, when turn resolution removes them, then hazard-clear events are emitted for each removed hazard", () => {
+      // Arrange
+      const ruleset = new MockRuleset();
+      ruleset.setMoveEffectResult({ clearSideHazards: "defender" });
+      const { engine, events } = createEngine({ ruleset });
+      engine.start();
+
+      engine.state.sides[1].hazards = [
+        { type: "spikes", layers: 2 },
+        { type: "stealth-rock", layers: 1 },
+      ];
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      expect(engine.state.sides[1].hazards).toHaveLength(0);
+      const hazardClearEvents = events.filter(
+        (event) => event.type === "hazard-clear" && event.side === 1,
+      );
+      // Source: the fixture seeded only Spikes and Stealth Rock on side 1, so those are the hazards cleared.
+      expect(hazardClearEvents).toEqual([
+        { type: "hazard-clear", side: 1, hazard: "spikes" },
+        { type: "hazard-clear", side: 1, hazard: "stealth-rock" },
+      ]);
+      const hazardClearMessageIndex = events.findIndex(
+        (event) => event.type === "message" && event.text === "The hazards were cleared!",
+      );
+      const lastHazardClearEventIndex = events.reduce((lastIndex, event, index) => {
+        return event.type === "hazard-clear" && event.side === 1 ? index : lastIndex;
+      }, -1);
+      // Source: BattleEngine emits the legacy clear message after the structured hazard-clear events.
+      expect(hazardClearMessageIndex).toBeGreaterThan(lastHazardClearEventIndex);
+    });
+  });
+
   describe("tailwind countdown", () => {
     it("given tailwind at 1 turn remaining, when end of turn processes, then tailwind expires", () => {
       // Arrange

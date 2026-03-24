@@ -3313,8 +3313,17 @@ export class BattleEngine implements BattleEventEmitter {
         result.clearSideHazards === "attacker"
           ? this.state.sides[attackerSide]
           : this.state.sides[defenderSide];
+      const clearSideIndex = result.clearSideHazards === "attacker" ? attackerSide : defenderSide;
       if (clearSide.hazards.length > 0) {
+        const clearedHazards = [...clearSide.hazards];
         clearSide.hazards = [];
+        for (const clearedHazard of clearedHazards) {
+          this.emit({
+            type: "hazard-clear",
+            side: clearSideIndex,
+            hazard: clearedHazard.type,
+          });
+        }
         this.emit({
           type: "message",
           text: "The hazards were cleared!",
