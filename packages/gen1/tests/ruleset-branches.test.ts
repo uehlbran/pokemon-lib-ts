@@ -1391,7 +1391,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     expect(ordered[0]?.side).toBe(0);
   });
 
-  it("given a move action with an unrecognized move ID, when resolving turn order, then defaults to priority 0 (catch branch)", () => {
+  it("given a move action with an unrecognized move ID, when resolving turn order, then throws instead of fabricating priority 0", () => {
     // Arrange: Use a move ID that doesn't exist in the data manager
     const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
     const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
@@ -1428,15 +1428,13 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
       side1Active: pokemonWithTackle,
     });
     const rng = new SeededRandom(42);
-    // Act
-    const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
-    // Assert: Should not throw; defaults to priority 0 for unrecognized move
-    expect(ordered).toHaveLength(2);
-    // Faster pokemon (side 1, speed 200) should go first since both have priority 0
-    expect(ordered[0]?.side).toBe(1);
+    // Act & Assert
+    expect(() => ruleset.resolveTurnOrder([move0, move1], state, rng)).toThrow(
+      /move data not found|unknown move/i,
+    );
   });
 
-  it("given both Pokemon have unrecognized moves, when resolving turn order, then both default to priority 0 (both catch branches)", () => {
+  it("given both Pokemon have unrecognized moves, when resolving turn order, then throws before sorting", () => {
     // Arrange: Both moves are unrecognized
     const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
     const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
@@ -1470,10 +1468,10 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     });
     const state = makeBattleState({ side0Active: pokemonA, side1Active: pokemonB });
     const rng = new SeededRandom(42);
-    // Act
-    const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
-    // Assert: Both default to priority 0, so speed decides; side 1 (speed 200) goes first
-    expect(ordered[0]?.side).toBe(1);
+    // Act & Assert
+    expect(() => ruleset.resolveTurnOrder([move0, move1], state, rng)).toThrow(
+      /move data not found|unknown move/i,
+    );
   });
 
   it("given a Pokemon with no calculatedStats, when resolving turn order, then uses default speed of 100", () => {

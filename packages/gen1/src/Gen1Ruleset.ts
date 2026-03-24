@@ -186,18 +186,8 @@ export class Gen1Ruleset implements GenerationRuleset {
         const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
         if (!moveSlotA || !moveSlotB) return 0;
 
-        let priorityA = 0;
-        let priorityB = 0;
-        try {
-          priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
-        } catch {
-          // Move not found, use 0 priority
-        }
-        try {
-          priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
-        } catch {
-          // Move not found, use 0 priority
-        }
+        const priorityA = this.getMovePriorityOrThrow(moveSlotA.moveId);
+        const priorityB = this.getMovePriorityOrThrow(moveSlotB.moveId);
 
         // Higher priority goes first
         if (priorityA !== priorityB) {
@@ -268,6 +258,14 @@ export class Gen1Ruleset implements GenerationRuleset {
     }
 
     return null;
+  }
+
+  private getMovePriorityOrThrow(moveId: string): number {
+    try {
+      return this.dataManager.getMove(moveId).priority;
+    } catch {
+      throw new Error(`Gen1Ruleset.resolveTurnOrder: move data not found for move ID "${moveId}"`);
+    }
   }
 
   // --- Move Execution ---
