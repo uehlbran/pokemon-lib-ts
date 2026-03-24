@@ -364,6 +364,49 @@ describe("BattleEngine — branch coverage", () => {
     });
   });
 
+  describe("getDefenderSelectedMove with unknown move data", () => {
+    it("given the defender selected a move missing from the data manager, when Sucker Punch resolves, then the engine emits a warning instead of silently treating it as switching", () => {
+      // Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch depends on the target's selected move.
+      // Issue #843: missing move data must be surfaced distinctly from the normal null sentinel used for switching.
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "nonexistent-move", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 200,
+        }),
+      ];
+
+      const { engine, events } = createEngine({ team2 });
+      engine.start();
+
+      // Simulate the turn state the engine would have when resolving Sucker Punch.
+      (engine as any).currentTurnActions = [
+        { type: "move", side: 0, moveIndex: 0 },
+        { type: "move", side: 1, moveIndex: 0 },
+      ];
+
+      const defenderSelectedMove = (engine as any).getDefenderSelectedMove(1);
+
+      expect(defenderSelectedMove).toBeNull();
+      const warning = events.find((e) => e.type === "engine-warning");
+      expect(warning).toEqual(
+        expect.objectContaining({
+          type: "engine-warning",
+          message: expect.stringContaining("defenderSelectedMove"),
+        }),
+      );
+    });
+  });
+
   describe("sleep status handling", () => {
     it("given a sleeping pokemon, when it tries to move, then it cannot act", () => {
       // Arrange
