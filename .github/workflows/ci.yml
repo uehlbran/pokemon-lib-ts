@@ -21,11 +21,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-${{ github.sha }}
-          restore-keys: turbo-
       - run: npm run build
 
   test:
@@ -39,11 +34,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-${{ github.sha }}
-          restore-keys: turbo-
       - run: npm run test
 
   typecheck:
@@ -56,11 +46,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-${{ github.sha }}
-          restore-keys: turbo-
       - run: npm run typecheck
       - run: npm run typecheck:contracts
 
@@ -74,11 +59,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-${{ github.sha }}
-          restore-keys: turbo-
       - run: npm run build
       - run: npm run ci:package-boundaries
 
