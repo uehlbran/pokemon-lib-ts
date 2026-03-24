@@ -619,6 +619,33 @@ describe("BattleEngine", () => {
       // Assert
       expect(switches).toEqual([]);
     });
+
+    it("given the active pokemon has fainted but a healthy bench remains, when getAvailableSwitches is called, then trap checks are skipped for replacement flow", () => {
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 0,
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          currentHp: 150,
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+      ];
+      const { engine } = createTestEngine({
+        team1,
+        ruleset: new TrappedSwitchRuleset(),
+      });
+      engine.start();
+      engine.state.sides[0].active[0]!.pokemon.currentHp = 0;
+
+      const switches = engine.getAvailableSwitches(0);
+
+      expect(switches).toEqual([1]);
+    });
   });
 
   describe("determinism", () => {
