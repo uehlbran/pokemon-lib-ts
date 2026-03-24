@@ -3976,6 +3976,9 @@ export class BattleEngine implements BattleEventEmitter {
             outgoing.lastDamageCategory = null;
           }
           this.sendOut(defenderSideState, switchTarget.i);
+          // Record the forced replacement immediately so participation survives
+          // even if entry hazards faint it before the next turn starts.
+          this.recordParticipation();
           // Mark this side as phased — the replacement should not execute the
           // original Pokemon's queued action for this turn.
           this.phasedSides.add(defenderSide);

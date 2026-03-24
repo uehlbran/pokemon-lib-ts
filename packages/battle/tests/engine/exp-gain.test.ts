@@ -1,6 +1,7 @@
 import { getExpForLevel } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig, ExpContext } from "../../src/context";
+<<<<<<< HEAD
+import type { BattleConfig, EntryHazardResult, ExpContext } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent, ExpGainEvent, LevelUpEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
@@ -70,6 +71,30 @@ function createAndStartExpTestEngine(overrides?: {
   }
 
   return { engine, ruleset, events };
+}
+
+class PhazingHazardRuleset extends MockRuleset {
+  getAvailableHazards(): readonly import("@pokemon-lib-ts/core").EntryHazardType[] {
+    return ["stealth-rock"];
+  }
+
+  applyEntryHazards(
+    pokemon: import("../../src/state").ActivePokemon,
+    side: import("../../src/state").BattleSide,
+  ): EntryHazardResult {
+    if (side.index !== 1) {
+      return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
+    }
+
+    return {
+      // Derived from the local fixture: the phazed-in Pikachu should be KO'd by the
+      // hazard so the only way to observe it is through participant tracking.
+      damage: pokemon.pokemon.currentHp,
+      statusInflicted: null,
+      statChanges: [],
+      messages: [],
+    };
+  }
 }
 
 describe("BattleEngine - EXP gain on faint", () => {
@@ -248,6 +273,88 @@ describe("BattleEngine - EXP gain on faint", () => {
       // Source: Bulbapedia EXP mechanics — Charizard fainted before Blastoise, so only
       // Pikachu (living participant) counts → participantCount=1
       expect(capturedParticipantCount).toBe(1);
+    });
+
+    it("given Whirlwind drags in a replacement that faints to entry hazards, when the turn ends, then the replacement is still recorded as a participant", () => {
+      const ruleset = new PhazingHazardRuleset();
+      ruleset.setFixedDamage(0);
+      ruleset.setMoveEffectResult({ switchOut: true, forcedSwitch: true });
+
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+      ];
+
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 200,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-bench",
+          nickname: "Pikachu",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 90,
+          },
+          currentHp: 120,
+        }),
+      ];
+
+      const config: BattleConfig = {
+        generation: 1,
+        format: "singles",
+        teams: [team1, team2],
+        seed: 54321,
+        isWildBattle: true,
+      };
+
+      const dataManager = createMockDataManager();
+      const engine = new BattleEngine(config, ruleset, dataManager);
+      engine.start();
+      engine.state.sides[1].hazards.push({ type: "stealth-rock", layers: 1 });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+      expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("pikachu-bench");
+      expect(engine.state.sides[1].active[0]?.pokemon.currentHp).toBe(0);
+
+      const serialized = JSON.parse(engine.serialize()) as {
+        participantTracker: Record<string, string[]>;
+      };
+
+      // Derived from the local fixture uids: the Whirlwind replacement is Pikachu, and it
+      // should be recorded immediately even if hazards faint it before the next turn.
+      expect(serialized.participantTracker["charizard-1"]).toContain("pikachu-bench");
     });
   });
 
