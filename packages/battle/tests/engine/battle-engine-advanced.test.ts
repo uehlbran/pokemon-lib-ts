@@ -322,6 +322,39 @@ describe("BattleEngine — advanced scenarios", () => {
     });
   });
 
+  describe("screen removal effects", () => {
+    it("given a move effect clears selected defender screens, when turn resolution removes them, then screen-end events are emitted for each removed screen", () => {
+      // Arrange
+      const ruleset = new MockRuleset();
+      ruleset.setMoveEffectResult({
+        screensCleared: "defender",
+        screenTypesToRemove: ["reflect", "light-screen"],
+      });
+      const { engine, events } = createEngine({ ruleset });
+      engine.start();
+
+      engine.state.sides[1].screens = [
+        { type: "reflect", turnsLeft: 5 },
+        { type: "light-screen", turnsLeft: 5 },
+        { type: "safeguard", turnsLeft: 5 },
+      ];
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      expect(engine.state.sides[1].screens).toEqual([{ type: "safeguard", turnsLeft: 5 }]);
+      const screenEndEvents = events.filter(
+        (event) => event.type === "screen-end" && event.side === 1,
+      );
+      expect(screenEndEvents).toEqual([
+        { type: "screen-end", side: 1, screen: "reflect" },
+        { type: "screen-end", side: 1, screen: "light-screen" },
+      ]);
+    });
+  });
+
   describe("tailwind countdown", () => {
     it("given tailwind at 1 turn remaining, when end of turn processes, then tailwind expires", () => {
       // Arrange
