@@ -185,9 +185,9 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — capLethalDamage should still be called at least once on the primary hit.
-      // The regression verifies the recursive hit path is also covered by the hook.
-      expect(ruleset.capLethalDamageCalls).toBeGreaterThanOrEqual(1);
+      // Assert — capLethalDamage should be called once for the primary hit and once for the
+      // recursive hit path.
+      expect(ruleset.capLethalDamageCalls).toBe(2);
     });
 
     it("when the recursive move delivers lethal damage and capLethalDamage is NOT called for it, then the recursive hit kills the defender even with Sturdy", () => {

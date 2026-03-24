@@ -85,7 +85,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Damage the pokemon after engine init (engine recalculates stats on start,
       // overwriting any currentHp set in the constructor).
-      // Charizard HP under the standard stat formula at level 50 is 153.
+      // Charizard HP at level 50: floor(((2*78 + 31 + 0) * 50) / 100) + 50 + 10 = 153
       const active = engine.state.sides[0].active[0];
       const maxHp = active!.pokemon.calculatedStats!.hp; // 153
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
@@ -258,7 +258,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Faint the bench pokemon after engine init (engine recalculates stats on start).
-      // Pikachu HP under the standard stat formula at level 50 is 110.
+      // Pikachu HP at level 50: floor(((2*35 + 31 + 0) * 50) / 100) + 50 + 10 = 110
       const faintedMon = engine.getState().sides[0].team[1];
       const faintedMaxHp = faintedMon.calculatedStats!.hp; // 110
       faintedMon.currentHp = 0; // faint it
@@ -308,7 +308,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Faint the bench pokemon after engine init (engine recalculates stats on start).
-      // Pikachu HP under the standard stat formula at level 50 is 110.
+      // Pikachu HP at level 50: floor(((2*35 + 31 + 0) * 50) / 100) + 50 + 10 = 110
       const faintedMon = engine.getState().sides[0].team[1];
       const faintedMaxHp = faintedMon.calculatedStats!.hp; // 110
       faintedMon.currentHp = 0; // faint it
@@ -449,7 +449,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Damage and poison the pokemon after engine init (engine recalculates stats
       // on start, overwriting any currentHp/status set in the constructor).
-      // Charizard HP under the standard stat formula at level 50 is 153.
+      // Charizard HP at level 50: floor(((2*78 + 31 + 0) * 50) / 100) + 50 + 10 = 153
       const active = engine.state.sides[0].active[0];
       const maxHp = active!.pokemon.calculatedStats!.hp; // 153
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
