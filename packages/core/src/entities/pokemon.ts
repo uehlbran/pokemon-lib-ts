@@ -92,12 +92,18 @@ export interface PokemonInstance {
   /** Computed stats — recalculated when level/EVs/nature change */
   calculatedStats?: StatBlock;
 
-  // --- Generation-specific fields ---
+  // --- Generation-specific metadata and persisted battle state ---
+  //
+  // This is the deliberate exception to core's generation-agnostic interface rule.
+  // These fields are stored here only when they are properties of the individual
+  // Pokemon or battle state that must survive switching (for example team-sheet
+  // metadata like Tera Type / Dynamax Level, or once-per-battle activation state).
+  // The mechanics that interpret these fields still live in the generation packages.
 
-  /** Tera Type for Gen 9 battles */
+  /** Tera Type assigned to this Pokemon for Gen 9 battles. */
   teraType?: PokemonType;
 
-  /** Dynamax Level for Gen 8 battles (0-10) */
+  /** Dynamax Level assigned to this Pokemon for Gen 8 battles (0-10). */
   dynamaxLevel?: number;
 
   /**
@@ -198,6 +204,9 @@ export interface PokemonCreationOptions {
   originalTrainer: string;
   originalTrainerId: number;
   pokeball: string;
+  /** Optional Gen 9 team-sheet metadata. Earlier generations ignore this. */
   teraType?: PokemonType;
+
+  /** Optional Gen 8 team-sheet metadata. Earlier generations ignore this. */
   dynamaxLevel?: number;
 }
