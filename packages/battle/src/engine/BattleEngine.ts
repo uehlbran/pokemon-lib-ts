@@ -3396,22 +3396,10 @@ export class BattleEngine implements BattleEventEmitter {
     // This prevents Brick Break from incorrectly removing Safeguard.
     if (result.screensCleared) {
       if (result.screensCleared === "attacker" || result.screensCleared === "both") {
-        if (result.screenTypesToRemove) {
-          this.state.sides[attackerSide].screens = this.state.sides[attackerSide].screens.filter(
-            (s) => !result.screenTypesToRemove?.includes(s.type),
-          );
-        } else {
-          this.state.sides[attackerSide].screens = [];
-        }
+        this.clearScreens(attackerSide, result.screenTypesToRemove);
       }
       if (result.screensCleared === "defender" || result.screensCleared === "both") {
-        if (result.screenTypesToRemove) {
-          this.state.sides[defenderSide].screens = this.state.sides[defenderSide].screens.filter(
-            (s) => !result.screenTypesToRemove?.includes(s.type),
-          );
-        } else {
-          this.state.sides[defenderSide].screens = [];
-        }
+        this.clearScreens(defenderSide, result.screenTypesToRemove);
       }
     }
 
@@ -4718,6 +4706,29 @@ export class BattleEngine implements BattleEventEmitter {
           return false;
         }
         return true;
+      });
+    }
+  }
+
+  private clearScreens(sideIndex: 0 | 1, screenTypesToRemove?: readonly string[]): void {
+    const side = this.state.sides[sideIndex];
+    const removedScreens = screenTypesToRemove
+      ? side.screens.filter((screen) => screenTypesToRemove.includes(screen.type))
+      : [...side.screens];
+
+    if (removedScreens.length === 0) {
+      return;
+    }
+
+    side.screens = screenTypesToRemove
+      ? side.screens.filter((screen) => !screenTypesToRemove.includes(screen.type))
+      : [];
+
+    for (const removedScreen of removedScreens) {
+      this.emit({
+        type: "screen-end",
+        side: sideIndex,
+        screen: removedScreen.type,
       });
     }
   }
