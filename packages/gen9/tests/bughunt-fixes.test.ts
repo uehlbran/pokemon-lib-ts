@@ -18,11 +18,10 @@ import type {
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveTarget, PokemonInstance } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createTestPokemon } from "../../battle/src/utils";
+import { createActivePokemon, createTestPokemon } from "../../battle/src/utils";
 import { handlePopulationBomb } from "../src/Gen9MoveEffects";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
 
