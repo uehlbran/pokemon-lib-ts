@@ -353,6 +353,21 @@ export class BattleEngine implements BattleEventEmitter {
       throw new Error(`Side ${side} does not need to switch`);
     }
 
+    const sideState = this.state.sides[side];
+    const candidate = sideState.team[teamSlot];
+    if (!candidate) {
+      throw new Error(`Invalid switch slot ${teamSlot}`);
+    }
+
+    const active = sideState.active[0];
+    if (active?.teamSlot === teamSlot) {
+      throw new Error(`Team slot ${teamSlot} is already active`);
+    }
+
+    if (candidate.currentHp <= 0) {
+      throw new Error(`Team slot ${teamSlot} has fainted`);
+    }
+
     this.pendingSwitches.set(side, teamSlot);
 
     // Process when all pending switches are submitted

@@ -764,6 +764,150 @@ describe("BattleEngine", () => {
       expect(engine.getPhase()).toBe("action-select");
       expect(engine.getActive(1)?.pokemon.uid).toBe("pikachu-1");
     });
+
+    it("given switch-prompt for side 1, when side 0 submits a switch, then it throws", () => {
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 1,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 130,
+          },
+          currentHp: 120,
+        }),
+      ];
+
+      const { engine } = createTestEngine({ team2 });
+      engine.start();
+      (engine.getActive(1) as ActivePokemon).pokemon.currentHp = 1;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+      expect(() => engine.submitSwitch(0, 0)).toThrow("Side 0 does not need to switch");
+    });
+
+    it("given switch-prompt, when the chosen replacement has fainted, then submitSwitch throws", () => {
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 1,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 130,
+          },
+          currentHp: 0,
+        }),
+        createTestPokemon(6, 50, {
+          uid: "charizard-2",
+          nickname: "Charizard2",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 180,
+            attack: 100,
+            defense: 90,
+            spAttack: 100,
+            spDefense: 90,
+            speed: 120,
+          },
+          currentHp: 180,
+        }),
+      ];
+
+      const { engine } = createTestEngine({ team2 });
+      engine.start();
+      (engine.getActive(1) as ActivePokemon).pokemon.currentHp = 1;
+      engine.getTeam(1)[1]!.currentHp = 0;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+      expect(() => engine.submitSwitch(1, 1)).toThrow("Team slot 1 has fainted");
+    });
+
+    it("given switch-prompt, when the chosen replacement is already active, then submitSwitch throws", () => {
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 1,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 130,
+          },
+          currentHp: 120,
+        }),
+      ];
+
+      const { engine } = createTestEngine({ team2 });
+      engine.start();
+      (engine.getActive(1) as ActivePokemon).pokemon.currentHp = 1;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+      expect(() => engine.submitSwitch(1, 0)).toThrow("Team slot 0 is already active");
+    });
   });
 
   describe("struggle", () => {

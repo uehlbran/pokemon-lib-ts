@@ -440,6 +440,48 @@ describe("BattleEngine — advanced scenarios", () => {
         "Cannot submit switch in phase action-select",
       );
     });
+
+    it("given switch-prompt, when submitSwitch is called with an already-active team slot, then it throws", () => {
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 1,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-2",
+          nickname: "Pikachu2",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 120,
+            attack: 80,
+            defense: 60,
+            spAttack: 80,
+            spDefense: 80,
+            speed: 130,
+          },
+          currentHp: 120,
+        }),
+      ];
+      const { engine } = createEngine({ team2 });
+      engine.start();
+      engine.getActive(1)!.pokemon.currentHp = 1;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+      expect(() => engine.submitSwitch(1, 0)).toThrow("Team slot 0 is already active");
+    });
   });
 
   describe("action on ended battle", () => {
