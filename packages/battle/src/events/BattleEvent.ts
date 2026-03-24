@@ -139,8 +139,8 @@ export interface SwitchInEvent {
 }
 
 /**
- * Emitted when a Pokémon is withdrawn from the field — either by voluntary switch
- * or because it fainted (the faint event follows separately).
+ * Emitted when a Pokémon is withdrawn from the field by a voluntary switch or
+ * phazing. Fainting emits a separate `faint` event instead of `switch-out`.
  */
 export interface SwitchOutEvent {
   /** Discriminant: always `"switch-out"` */

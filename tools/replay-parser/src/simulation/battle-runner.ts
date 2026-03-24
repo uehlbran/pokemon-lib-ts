@@ -80,8 +80,8 @@ export function runBattle(config: BattleRunConfig): BattleReport {
 
       if (phase === "action-select") {
         const state = engine.getState();
-        const action0 = ai.chooseAction(0, state, ruleset, aiRng);
-        const action1 = ai.chooseAction(1, state, ruleset, aiRng);
+        const action0 = ai.chooseAction(0, state, ruleset, aiRng, engine.getAvailableMoves(0));
+        const action1 = ai.chooseAction(1, state, ruleset, aiRng, engine.getAvailableMoves(1));
         engine.submitAction(0, action0);
         engine.submitAction(1, action1);
         turnCount++;

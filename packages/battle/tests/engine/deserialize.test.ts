@@ -65,6 +65,93 @@ function createTestEngine(overrides?: {
   return { engine, ruleset, events };
 }
 
+function createSwitchPromptBattleWithBench(): {
+  dataManager: DataManager;
+  engine: BattleEngine;
+  ruleset: MockRuleset;
+} {
+  const ruleset = new MockRuleset();
+  ruleset.setFixedDamage(500);
+  const dataManager = createMockDataManager();
+
+  const side0Team = [
+    createTestPokemon(6, 50, {
+      uid: "charizard-1",
+      nickname: "Charizard",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 120,
+      },
+      currentHp: 200,
+    }),
+    createTestPokemon(25, 50, {
+      uid: "pikachu-0",
+      nickname: "Pikachu",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 150,
+        attack: 90,
+        defense: 70,
+        spAttack: 80,
+        spDefense: 80,
+        speed: 110,
+      },
+      currentHp: 150,
+    }),
+  ];
+
+  const side1Team = [
+    createTestPokemon(9, 50, {
+      uid: "blastoise-1",
+      nickname: "Blastoise",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 80,
+      },
+      currentHp: 200,
+    }),
+    createTestPokemon(25, 50, {
+      uid: "pikachu-1",
+      nickname: "Pikachu",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 150,
+        attack: 90,
+        defense: 70,
+        spAttack: 80,
+        spDefense: 80,
+        speed: 110,
+      },
+      currentHp: 150,
+    }),
+  ];
+
+  const engine = new BattleEngine(
+    {
+      generation: 1,
+      format: "singles",
+      teams: [side0Team, side1Team],
+      seed: 12345,
+    },
+    ruleset,
+    dataManager,
+  );
+
+  engine.start();
+
+  return { dataManager, engine, ruleset };
+}
+
 describe("BattleEngine.deserialize", () => {
   it("given one side has already submitted an action, when serialized and deserialized, then the pending action is preserved", () => {
     const ruleset = new MockRuleset();
@@ -140,6 +227,136 @@ describe("BattleEngine.deserialize", () => {
     expect(() =>
       BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
     ).toThrow('BattleEngine.deserialize: battle format "triples" is not supported');
+  });
+
+  it("given a battle saved in switch-prompt, when deserialized, then submitSwitch resumes with the saved switch requirements", () => {
+    const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: side 1's active Pokemon faints and still has a healthy bench Pokemon,
+    // so the engine transitions into switch-prompt and side 1 must choose slot 1.
+    expect(engine.getState().phase).toBe("switch-prompt");
+
+    const serialized = engine.serialize();
+    const restored = BattleEngine.deserialize(serialized, ruleset, dataManager);
+
+    expect(restored.getState().phase).toBe("switch-prompt");
+    expect(() => restored.submitSwitch(1, 1)).not.toThrow();
+    expect(restored.getActive(1)?.pokemon.uid).toBe("pikachu-1");
+    expect(restored.getState().phase).toBe("action-select");
+  });
+
+  it("given serialized switch-prompt state with one pending switch already recorded, when deserialized, then the remaining switch submission completes the prompt", () => {
+    const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.getState().phase).toBe("switch-prompt");
+
+    const serializedState = JSON.parse(engine.serialize()) as {
+      pendingSwitches: { __type: "Map"; entries: [0 | 1, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: (0 | 1)[] };
+      state: {
+        phase: string;
+        sides: Array<{
+          active: Array<{ pokemon: { currentHp: number } }>;
+          team: Array<{ currentHp: number }>;
+        }>;
+      };
+    };
+
+    serializedState.state.sides[0].active[0]!.pokemon.currentHp = 0;
+    serializedState.state.sides[0].team[0]!.currentHp = 0;
+    serializedState.pendingSwitches = { __type: "Map", entries: [[1, 1]] };
+    serializedState.sidesNeedingSwitch = { __type: "Set", values: [0, 1] };
+
+    const restored = BattleEngine.deserialize(
+      JSON.stringify(serializedState),
+      ruleset,
+      dataManager,
+    );
+
+    expect(restored.getState().phase).toBe("switch-prompt");
+    expect(restored.getActive(1)?.pokemon.uid).toBe("blastoise-1");
+
+    expect(() => restored.submitSwitch(0, 1)).not.toThrow();
+    expect(restored.getActive(0)?.pokemon.uid).toBe("pikachu-0");
+    expect(restored.getActive(1)?.pokemon.uid).toBe("pikachu-1");
+    expect(restored.getState().phase).toBe("action-select");
+  });
+
+  it("given serialized switch-prompt state with malformed switch bookkeeping, when deserialized, then invalid entries are ignored and the prompt remains resumable", () => {
+    const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const serializedState = JSON.parse(engine.serialize()) as {
+      pendingSwitches: { __type: "Map"; entries: [number, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: number[] };
+    };
+
+    serializedState.pendingSwitches = {
+      __type: "Map",
+      entries: [
+        [7, 1],
+        [1, 1],
+        [0, 99],
+      ],
+    };
+    serializedState.sidesNeedingSwitch = {
+      __type: "Set",
+      values: [1, 12],
+    };
+
+    const restored = BattleEngine.deserialize(
+      JSON.stringify(serializedState),
+      ruleset,
+      dataManager,
+    );
+
+    expect(restored.getState().phase).toBe("switch-prompt");
+    expect(() => restored.submitSwitch(1, 1)).not.toThrow();
+    expect(restored.getActive(1)?.pokemon.uid).toBe("pikachu-1");
+    expect(restored.getState().phase).toBe("action-select");
+  });
+
+  it("given serialized non-switch state with stale switch bookkeeping, when deserialized, then stale switch requirements are cleared", () => {
+    const { dataManager, engine, ruleset } = createTestEngine();
+    engine.start();
+
+    const serializedState = JSON.parse(engine.serialize()) as {
+      pendingSwitches: { __type: "Map"; entries: [number, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: number[] };
+    };
+
+    serializedState.pendingSwitches = {
+      __type: "Map",
+      entries: [[0, 0]],
+    };
+    serializedState.sidesNeedingSwitch = {
+      __type: "Set",
+      values: [0],
+    };
+
+    const restored = BattleEngine.deserialize(
+      JSON.stringify(serializedState),
+      ruleset,
+      dataManager,
+    );
+
+    const reserialized = JSON.parse(restored.serialize()) as {
+      pendingSwitches: { __type: "Map"; entries: [number, number][] };
+      sidesNeedingSwitch: { __type: "Set"; values: number[] };
+      state: { phase: string };
+    };
+
+    expect(reserialized.state.phase).toBe("action-select");
+    expect(reserialized.pendingSwitches.entries).toEqual([]);
+    expect(reserialized.sidesNeedingSwitch.values).toEqual([]);
   });
 
   it("given a serialized battle state where currentHp is less than maxHp, when deserialized, then currentHp matches the saved value (not recalculated)", () => {

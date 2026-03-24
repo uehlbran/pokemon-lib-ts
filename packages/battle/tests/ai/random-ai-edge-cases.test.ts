@@ -2,7 +2,7 @@ import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { RandomAI } from "../../src/ai/RandomAI";
-import type { BattleConfig } from "../../src/context";
+import type { AvailableMove, BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleState } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
@@ -179,6 +179,25 @@ function createTestState(
   };
 }
 
+function createAvailableMoves(state: BattleState, side: 0 | 1): AvailableMove[] {
+  const active = state.sides[side].active[0];
+  if (!active) {
+    return [];
+  }
+
+  return active.pokemon.moves.map((slot, index) => ({
+    index,
+    moveId: slot.moveId,
+    displayName: slot.moveId,
+    type: "normal",
+    category: "physical",
+    pp: slot.currentPP,
+    maxPp: slot.maxPP,
+    disabled: slot.currentPP <= 0,
+    disabledReason: slot.currentPP <= 0 ? "No PP remaining" : undefined,
+  }));
+}
+
 describe("RandomAI — edge cases", () => {
   describe("chooseAction", () => {
     it("given no active pokemon, when chooseAction is called, then struggle is returned as fallback", () => {
@@ -191,7 +210,7 @@ describe("RandomAI — edge cases", () => {
       const rng = new SeededRandom(42);
 
       // Act
-      const action = ai.chooseAction(0, state, ruleset, rng);
+      const action = ai.chooseAction(0, state, ruleset, rng, []);
 
       // Assert
       expect(action.type).toBe("struggle");
@@ -209,7 +228,13 @@ describe("RandomAI — edge cases", () => {
 
       // Act — call many times to verify only index 1 is picked
       for (let i = 0; i < 50; i++) {
-        const action = ai.chooseAction(0, state, ruleset, new SeededRandom(i));
+        const action = ai.chooseAction(
+          0,
+          state,
+          ruleset,
+          new SeededRandom(i),
+          createAvailableMoves(state, 0),
+        );
         if (action.type === "move") {
           moveIndices.add(action.moveIndex);
         }
@@ -228,10 +253,33 @@ describe("RandomAI — edge cases", () => {
 
       // Act & Assert
       for (let i = 0; i < 20; i++) {
-        const action = ai.chooseAction(0, state, ruleset, new SeededRandom(i));
+        const action = ai.chooseAction(
+          0,
+          state,
+          ruleset,
+          new SeededRandom(i),
+          createAvailableMoves(state, 0),
+        );
         expect(action.type).toBe("move");
         if (action.type === "move") {
           expect(action.moveIndex).toBe(0); // Only tackle has PP
+        }
+      }
+    });
+
+    it("given one move is disabled in the available move snapshot, when chooseAction is called many times, then the disabled move is never selected", () => {
+      const ai = new RandomAI();
+      const state = createTestState();
+      const ruleset = new MockRuleset();
+      const availableMoves = createAvailableMoves(state, 0).map((move) =>
+        move.index === 0 ? { ...move, disabled: true, disabledReason: "Blocked by Taunt" } : move,
+      );
+
+      for (let i = 0; i < 20; i++) {
+        const action = ai.chooseAction(0, state, ruleset, new SeededRandom(i), availableMoves);
+        expect(action.type).toBe("move");
+        if (action.type === "move") {
+          expect(action.moveIndex).toBe(1);
         }
       }
     });
@@ -346,8 +394,20 @@ describe("RandomAI — edge cases", () => {
       // Act — AI loop
       while (!engine.isEnded() && maxTurns > 0) {
         if (engine.getPhase() === "action-select") {
-          const action0 = ai.chooseAction(0, engine.getState(), ruleset, aiRng);
-          const action1 = ai.chooseAction(1, engine.getState(), ruleset, aiRng);
+          const action0 = ai.chooseAction(
+            0,
+            engine.getState(),
+            ruleset,
+            aiRng,
+            engine.getAvailableMoves(0),
+          );
+          const action1 = ai.chooseAction(
+            1,
+            engine.getState(),
+            ruleset,
+            aiRng,
+            engine.getAvailableMoves(1),
+          );
           engine.submitAction(0, action0);
           engine.submitAction(1, action1);
           maxTurns--;
