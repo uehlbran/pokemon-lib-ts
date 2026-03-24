@@ -306,10 +306,19 @@ describe("BattleEngine — advanced scenarios", () => {
       const hazardClearEvents = events.filter(
         (event) => event.type === "hazard-clear" && event.side === 1,
       );
+      // Source: the fixture seeded only Spikes and Stealth Rock on side 1, so those are the hazards cleared.
       expect(hazardClearEvents).toEqual([
         { type: "hazard-clear", side: 1, hazard: "spikes" },
         { type: "hazard-clear", side: 1, hazard: "stealth-rock" },
       ]);
+      const hazardClearMessageIndex = events.findIndex(
+        (event) => event.type === "message" && event.text === "The hazards were cleared!",
+      );
+      const lastHazardClearEventIndex = events.reduce((lastIndex, event, index) => {
+        return event.type === "hazard-clear" && event.side === 1 ? index : lastIndex;
+      }, -1);
+      // Source: BattleEngine emits the legacy clear message after the structured hazard-clear events.
+      expect(hazardClearMessageIndex).toBeGreaterThan(lastHazardClearEventIndex);
     });
   });
 
