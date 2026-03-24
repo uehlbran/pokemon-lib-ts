@@ -1,5 +1,5 @@
 import type { DataManager } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { NEUTRAL_NATURES, SeededRandom } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -364,35 +364,9 @@ describe("generateRandomTeam — metadata", () => {
     }
   });
 
-  it("given any generation, when generating a team, then each Pokemon's nature is a valid nature id", () => {
+  it("given generation 1, when generating a team, then each Pokemon's nature is neutral", () => {
     // Arrange
-    const validNatures = new Set([
-      "hardy",
-      "lonely",
-      "brave",
-      "adamant",
-      "naughty",
-      "bold",
-      "docile",
-      "relaxed",
-      "impish",
-      "lax",
-      "timid",
-      "hasty",
-      "serious",
-      "jolly",
-      "naive",
-      "modest",
-      "mild",
-      "quiet",
-      "bashful",
-      "rash",
-      "calm",
-      "gentle",
-      "sassy",
-      "careful",
-      "quirky",
-    ]);
+    const neutralNatures = new Set(NEUTRAL_NATURES);
     const rng = new SeededRandom(42);
 
     // Act
@@ -400,7 +374,21 @@ describe("generateRandomTeam — metadata", () => {
 
     // Assert
     for (const pokemon of team) {
-      expect(validNatures.has(pokemon.nature)).toBe(true);
+      expect(neutralNatures.has(pokemon.nature)).toBe(true);
+    }
+  });
+
+  it("given generation 2, when generating a team, then each Pokemon's nature is neutral", () => {
+    // Arrange
+    const neutralNatures = new Set(NEUTRAL_NATURES);
+    const rng = new SeededRandom(42);
+
+    // Act
+    const team = generateRandomTeam(2, gen2Dm, rng);
+
+    // Assert
+    for (const pokemon of team) {
+      expect(neutralNatures.has(pokemon.nature)).toBe(true);
     }
   });
 });
