@@ -1,9 +1,9 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../src/context";
+import type { BattleConfig, EntryHazardResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
-import type { ActivePokemon } from "../../src/state";
+import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -649,9 +649,129 @@ describe("BattleEngine", () => {
 
       const replacement = engine.state.sides[0].active[0]!;
       expect(replacement.pokemon.uid).toBe("pikachu-1");
+      // Source: Baton Pass preserves the user's stat stages for the incoming Pokemon.
+      // The test queues Baton Pass via ruleset.setMoveEffectResult({ switchOut: true, batonPass: true }),
+      // so the replacement should inherit attacker.statStages.attack = +2 and speed = +1.
       expect(replacement.statStages.attack).toBe(2);
       expect(replacement.statStages.speed).toBe(1);
+      // Source: the mock ruleset decrements confusion during turn processing before the switch prompt,
+      // so attacker.volatileStatuses.get("confusion") goes from { turnsLeft: 2 } to { turnsLeft: 1 }
+      // before engine.submitSwitch sends the replacement in.
       expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
+    });
+
+    it("given Baton Pass into Sticky Web, when the replacement is chosen, then inherited boosts are merged before switch-in effects", () => {
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+        }),
+      ];
+
+      const ruleset = new MockRuleset();
+      ruleset.getAvailableHazards = () => ["sticky-web"] as any;
+      ruleset.applyEntryHazards = (
+        _pokemon: ActivePokemon,
+        _side: BattleSide,
+        _state?: BattleState,
+      ): EntryHazardResult => ({
+        damage: 0,
+        statusInflicted: null,
+        statChanges: [{ stat: "speed", stages: -1 }],
+        messages: [],
+      });
+
+      const { engine } = createTestEngine({ team1, ruleset });
+      ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
+      engine.start();
+
+      engine.state.sides[0].hazards.push({ type: "sticky-web" as any, layers: 1 });
+
+      const attacker = engine.state.sides[0].active[0]!;
+      attacker.statStages.speed = 1;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+      engine.submitSwitch(0, 1);
+
+      const replacement = engine.state.sides[0].active[0]!;
+      expect(replacement.pokemon.uid).toBe("pikachu-1");
+      expect(replacement.statStages.speed).toBe(0);
+    });
+
+    it("given a queued Baton Pass user faints before switching, when the replacement is chosen, then it is handled as a normal faint replacement", () => {
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 200,
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+        }),
+      ];
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 200,
+        }),
+      ];
+
+      const ruleset = new MockRuleset();
+      ruleset.calculateDamage = (context) => ({
+        damage: context.attacker.pokemon.uid === "charizard-1" ? 10 : 250,
+        effectiveness: 1,
+        isCrit: context.isCrit,
+        randomFactor: 1,
+      });
+
+      const { engine, events } = createTestEngine({ team1, team2, ruleset });
+      ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
+      engine.start();
+
+      const attacker = engine.state.sides[0].active[0]!;
+      attacker.statStages.attack = 2;
+      attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+
+      engine.submitSwitch(0, 1);
+
+      const replacement = engine.state.sides[0].active[0]!;
+      expect(replacement.pokemon.uid).toBe("pikachu-1");
+      expect(replacement.statStages.attack).toBe(0);
+      expect(replacement.volatileStatuses.has("confusion")).toBe(false);
+      expect(
+        events.filter((event) => event.type === "switch-out" && event.side === 0),
+      ).toHaveLength(0);
     });
   });
 

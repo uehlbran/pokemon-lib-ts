@@ -365,7 +365,11 @@ describe("BattleEngine.deserialize", () => {
 
     const replacement = restored.getActive(0)!;
     expect(replacement.pokemon.uid).toBe("pikachu-1");
+    // Source: Baton Pass preserves the outgoing Pokemon's stat stages across the queued self-switch,
+    // so the replacement after restored.submitSwitch(0, 1) should still have the attack boost.
     expect(replacement.statStages.attack).toBe(2);
+    // Source: the original attacker started at confusion turnsLeft = 2, and the mock ruleset consumes
+    // one confusion turn during move resolution before the switch prompt, so the replacement inherits 1.
     expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
   });
 
