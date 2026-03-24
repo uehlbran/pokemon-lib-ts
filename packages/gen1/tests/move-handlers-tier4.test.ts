@@ -1169,7 +1169,7 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
       nickname: nickname ?? null,
       level,
       experience: 0,
-      nature: "adamant",
+      nature: "hardy",
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 999,
@@ -1219,7 +1219,7 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
     const hitter = createPokemon(9, 50, ["water-gun", "tackle", "bubble", "withdraw"], "Hitter");
     const engine = createBattle([rager], [hitter], 42);
 
-    // Act — Turn 1: Rager uses Rage (moveIndex 0), Hitter uses Tackle (moveIndex 0)
+    // Act — Turn 1: Rager uses Rage (moveIndex 0), Hitter uses Water Gun (moveIndex 0)
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -1231,7 +1231,7 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
 
     // Turn 2: Both submit actions, but Rager's is forced to Rage
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 }); // ignored, forced to rage
-    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 }); // Hitter uses Tackle
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 }); // Hitter uses Water Gun
 
     // Assert — Rager's attack should have been boosted by hits received
     const ragerAfter = engine.getActive(0);

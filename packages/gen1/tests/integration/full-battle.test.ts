@@ -128,7 +128,7 @@ describe("Gen 1 Full Battle Integration", () => {
   function createTeam1(): PokemonInstance[] {
     return [
       createGen1Pokemon(6, 50, ["flamethrower", "slash", "ember", "scratch"], "Charizard"),
-      createGen1Pokemon(9, 50, ["hydro-pump", "surf", "water-gun", "tackle"], "Blastoise"),
+      createGen1Pokemon(9, 50, ["hydro-pump", "water-gun", "bubble", "withdraw"], "Blastoise"),
       createGen1Pokemon(3, 50, ["razor-leaf", "vine-whip", "tackle", "growl"], "Venusaur"),
     ];
   }
@@ -278,7 +278,7 @@ describe("Gen 1 Full Battle Integration", () => {
   });
 
   it("given a Gen 1 battle, when a super-effective move hits, then effectiveness event shows 2x", () => {
-    // Arrange: Water move (Surf) against Fire type (Charizard) -> 2x (or 4x since Charizard is Fire/Flying and water is 2x vs Fire, 1x vs Flying)
+    // Arrange: Water move (water-gun) against Fire type (Charizard) -> 2x
     const waterAttacker = createGen1Pokemon(
       9,
       50,
@@ -295,7 +295,7 @@ describe("Gen 1 Full Battle Integration", () => {
 
     // Act
     engine.start();
-    // Blastoise uses Surf (water) against Charizard (fire/flying)
+    // Blastoise uses Water Gun (water) against Charizard (fire/flying)
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 1 }); // Scratch (normal)
 
@@ -610,7 +610,7 @@ describe("Gen 1 Full Battle Integration", () => {
     const strong = createGen1Pokemon(
       150,
       100,
-      ["psychic", "confusion", "recover", "reflect"],
+      ["psychic", "confusion", "recover", "barrier"],
       "Mewtwo",
     );
     const weak1 = createGen1Pokemon(129, 5, ["tackle", "tackle", "tackle", "tackle"], "Magikarp1");

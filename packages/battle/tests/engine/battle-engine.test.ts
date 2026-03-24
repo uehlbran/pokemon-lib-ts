@@ -249,6 +249,7 @@ describe("BattleEngine", () => {
 
       createTestEngine({ ruleset });
 
+      // Source: createTestEngine() seeds side 0/1 with Charizard (#6) and Blastoise (#9).
       expect(ruleset.validationCalls).toEqual([
         { speciesId: 6, pokemonUid: "charizard-1" },
         { speciesId: 9, pokemonUid: "blastoise-1" },
@@ -257,11 +258,13 @@ describe("BattleEngine", () => {
 
     it("given an illegal pokemon, when engine is created, then battle setup fails fast with the validation errors", () => {
       const ruleset = new ValidatingRuleset();
+      // Source: the injected invalid-pokemon map controls the exact error text we want to surface.
       ruleset.setInvalidPokemon("charizard-1", ['Move "sketch" is not legal']);
 
       expect(() => createTestEngine({ ruleset })).toThrow(
         'BattleEngine: pokemon "Charizard" failed validation: Move "sketch" is not legal',
       );
+      expect(ruleset.validationCalls).toEqual([{ speciesId: 6, pokemonUid: "charizard-1" }]);
     });
   });
 
