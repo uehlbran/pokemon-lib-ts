@@ -155,6 +155,13 @@ export interface VolatileStatusState {
   turnsLeft: number;
   /** Identifier of whatever caused this volatile status (move ID, ability ID, etc.) */
   source?: string;
+  /**
+   * UID of the active Pokemon that created this volatile, when the effect is
+   * source-linked and should disappear if the source leaves the field.
+   */
+  sourcePokemonUid?: string;
+  /** When true, the volatile blocks the Pokemon from acting while it remains active. */
+  blocksAction?: boolean;
   /** Arbitrary extra data for complex volatiles (e.g., confusion damage threshold) */
   data?: Record<string, unknown>;
 }

@@ -178,6 +178,18 @@ export interface MoveEffectResult {
   readonly statusInflicted: PrimaryStatus | null;
   /** Volatile status to inflict on the defender, or `null` */
   readonly volatileInflicted: VolatileStatus | null;
+  /**
+   * Volatile status to inflict on the defender with source-link metadata.
+   * Use this for effects that immobilize the target until the source leaves
+   * the field or the effect is explicitly cleared.
+   */
+  readonly targetVolatileInflicted?: {
+    volatile: VolatileStatus;
+    turnsLeft?: number;
+    data?: Record<string, unknown>;
+    sourcePokemonUid?: string;
+    blocksAction?: boolean;
+  } | null;
   /** Stat stage changes to apply; empty array means no stat changes */
   readonly statChanges: ReadonlyArray<{
     target: "attacker" | "defender";

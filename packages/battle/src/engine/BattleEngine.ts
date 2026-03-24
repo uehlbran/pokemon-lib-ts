@@ -878,6 +878,35 @@ export class BattleEngine implements BattleEventEmitter {
     const active = this.state.sides[side].active[0];
     if (!active) return [];
 
+    const actionBlockingVolatile = this.getSourceLinkedActionBlocker(active);
+    if (actionBlockingVolatile) {
+      return active.pokemon.moves.flatMap((slot, index) => {
+        let moveData: MoveData | undefined;
+        try {
+          moveData = this.dataManager.getMove(slot.moveId);
+        } catch {
+          this.emit({
+            type: "engine-warning",
+            message: `Move "${slot.moveId}" not found in data for Pokémon "${active.pokemon.speciesId}". Slot skipped.`,
+          });
+          return [];
+        }
+        return [
+          {
+            index,
+            moveId: slot.moveId,
+            displayName: moveData.displayName,
+            type: moveData.type,
+            category: moveData.category,
+            pp: slot.currentPP,
+            maxPp: slot.maxPP,
+            disabled: true,
+            disabledReason: "Can't move",
+          },
+        ];
+      });
+    }
+
     // If the Pokemon has a forced move (two-turn move second turn), only that move is available
     // Source: Showdown — during the execution turn of a two-turn move, only that move can be selected
     if (active.forcedMove) {
@@ -1074,6 +1103,67 @@ export class BattleEngine implements BattleEventEmitter {
 
   private getActiveMutable(side: 0 | 1): ActivePokemon | null {
     return this.state.sides[side].active[0] ?? null;
+  }
+
+  /**
+   * Returns the first source-linked volatile that should prevent the Pokemon
+   * from acting. If the source is no longer active, the stale volatile is
+   * cleared immediately and `null` is returned.
+   */
+  private getSourceLinkedActionBlocker(
+    actor: ActivePokemon,
+  ): { volatile: VolatileStatus; state: VolatileStatusState } | null {
+    for (const [volatile, volatileState] of actor.volatileStatuses.entries()) {
+      if (!volatileState.blocksAction) continue;
+
+      const sourcePokemonUid = volatileState.sourcePokemonUid;
+      if (sourcePokemonUid && !this.isPokemonActive(sourcePokemonUid)) {
+        const side = this.getSideIndex(actor);
+        actor.volatileStatuses.delete(volatile);
+        this.emit({
+          type: "volatile-end",
+          side,
+          pokemon: getPokemonName(actor),
+          volatile,
+        });
+        continue;
+      }
+
+      return { volatile, state: volatileState };
+    }
+
+    return null;
+  }
+
+  /**
+   * Removes any source-linked volatiles created by the given source Pokemon.
+   * Used when the source leaves the field so linked targets are released.
+   */
+  private clearSourceLinkedVolatiles(sourcePokemonUid: string): void {
+    for (const side of this.state.sides) {
+      for (const active of side.active) {
+        if (!active) continue;
+
+        for (const [volatile, volatileState] of [...active.volatileStatuses.entries()]) {
+          if (volatileState.sourcePokemonUid !== sourcePokemonUid) continue;
+
+          active.volatileStatuses.delete(volatile);
+          this.emit({
+            type: "volatile-end",
+            side: side.index,
+            pokemon: getPokemonName(active),
+            volatile,
+          });
+        }
+      }
+    }
+  }
+
+  /** Returns `true` if the given Pokemon UID is still active on the field. */
+  private isPokemonActive(pokemonUid: string): boolean {
+    return this.state.sides.some((side) =>
+      side.active.some((active) => active?.pokemon.uid === pokemonUid),
+    );
   }
 
   // --- Serialization ---
@@ -2724,6 +2814,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (outgoing) {
       // Let the ruleset handle any gen-specific switch-out cleanup first
       this.ruleset.onSwitchOut(outgoing, this.state);
+      this.clearSourceLinkedVolatiles(outgoing.pokemon.uid);
 
       this.emit({
         type: "switch-out",
@@ -2779,6 +2870,7 @@ export class BattleEngine implements BattleEventEmitter {
     const outgoing = side.active[0];
     if (outgoing) {
       this.ruleset.onSwitchOut(outgoing, this.state);
+      this.clearSourceLinkedVolatiles(outgoing.pokemon.uid);
       this.emit({
         type: "switch-out",
         side: sideIndex,
@@ -3453,6 +3545,17 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Source-linked target-volatiles (e.g., Sky Drop-style immobilization) can
+    // block the Pokemon from acting while the source remains active.
+    const sourceLinkedBlocker = this.getSourceLinkedActionBlocker(actor);
+    if (sourceLinkedBlocker) {
+      this.emit({
+        type: "message",
+        text: `${getPokemonName(actor)} can't move!`,
+      });
+      return false;
+    }
+
     // Gravity check — prevents moves with the gravity flag (Fly, Bounce, etc.)
     // Source: Showdown Gen 4 mod — Gravity disables gravity-flagged moves
     if (this.state.gravity.active && move.flags.gravity) {
@@ -3629,6 +3732,29 @@ export class BattleEngine implements BattleEventEmitter {
           side: defenderSide,
           pokemon: getPokemonName(defender),
           volatile: result.volatileInflicted,
+        });
+      }
+    }
+
+    // Source-linked target volatile infliction — used by effects that immobilize
+    // the defender while the source Pokemon remains on the field.
+    if (
+      result.targetVolatileInflicted &&
+      !defender.volatileStatuses.has(result.targetVolatileInflicted.volatile)
+    ) {
+      const linkedVolatile = result.targetVolatileInflicted;
+      if (!this.ruleset.shouldBlockVolatile?.(linkedVolatile.volatile, defender, this.state)) {
+        defender.volatileStatuses.set(linkedVolatile.volatile, {
+          turnsLeft: linkedVolatile.turnsLeft ?? -1,
+          data: linkedVolatile.data,
+          sourcePokemonUid: linkedVolatile.sourcePokemonUid ?? attacker.pokemon.uid,
+          blocksAction: linkedVolatile.blocksAction ?? false,
+        });
+        this.emit({
+          type: "volatile-start",
+          side: defenderSide,
+          pokemon: getPokemonName(defender),
+          volatile: linkedVolatile.volatile,
         });
       }
     }
@@ -5274,6 +5400,7 @@ export class BattleEngine implements BattleEventEmitter {
           pokemon: getPokemonName(active),
         });
         side.faintCount++;
+        this.clearSourceLinkedVolatiles(active.pokemon.uid);
 
         // Award EXP to the winning side's participants for this faint
         this.awardExpForFaint(side.index as 0 | 1, active.pokemon.uid);
