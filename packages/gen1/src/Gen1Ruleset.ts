@@ -1879,8 +1879,9 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Ghost types are immune to Normal-type moves.
     // We build a minimal MoveData for Struggle and delegate to calculateDamage.
     // Source: BattleEngine passes the live battle state into calculateStruggleDamage().
-    // Use the state's RNG so Struggle follows normal battle variance instead of a
-    // synthetic fixed seed.
+    // This method intentionally consumes `state.rng` via calculateDamage so the live
+    // battle roll (217-255 / 255) is part of the damage result instead of a synthetic
+    // fixed seed.
     const STRUGGLE_MOVE_GEN1: MoveData = {
       id: "struggle",
       displayName: "Struggle",
