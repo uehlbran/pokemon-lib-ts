@@ -641,16 +641,6 @@ describe("BattleEngine — edge cases", () => {
     });
   });
 
-  describe("multi-turn moves", () => {
-    it.todo(
-      "given a multi-turn move like Hyper Beam, when the first turn executes, then the next turn requires recharge action",
-    );
-
-    it.todo(
-      "given a charging move like Solar Beam, when charge turn executes, then the next turn auto-attacks",
-    );
-  });
-
   describe("struggle when no defender", () => {
     it("given a struggle action with no opponent active, when turn resolves, then struggle emits move-start but does no damage", () => {
       // Arrange — edge case: remove defender mid-turn
