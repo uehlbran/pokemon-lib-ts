@@ -760,6 +760,16 @@ export interface BattleGimmick {
    * Optional — only needed for gimmicks that cache state internally.
    */
   reset?(): void;
+  /**
+   * Serializes gimmick-owned per-battle state that is not stored in BattleState.
+   * Used by BattleEngine save/load to preserve once-per-battle mechanics.
+   */
+  serializeState?(): unknown;
+  /**
+   * Restores gimmick-owned per-battle state from BattleEngine save/load data.
+   * Implementations should tolerate malformed input and fall back to empty state.
+   */
+  restoreState?(state: unknown): void;
 }
 
 /**
