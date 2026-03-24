@@ -39,6 +39,9 @@ const defaultFlags: MoveData["flags"] = {
 
 function createSleepTestDataManager(): DataManager {
   const dm = createMockDataManager();
+  const existingSpecies = dm.getAllSpecies();
+  const existingMoves = dm.getAllMoves();
+  const existingTypeChart = dm.getTypeChart();
 
   // Sleep Talk — status move usable while asleep
   // Source: Showdown data/moves.ts — sleepUsable: true, handler calls randomMove
@@ -77,11 +80,13 @@ function createSleepTestDataManager(): DataManager {
     generation: 2,
   };
 
+  // Reload the full fixture snapshot so the helper stays compatible with
+  // DataManager.loadFromObjects replacing all entity maps atomically.
   dm.loadFromObjects({
-    pokemon: [],
-    moves: [sleepTalkData, snoreData],
+    pokemon: existingSpecies,
+    moves: [...existingMoves, sleepTalkData, snoreData],
     items: [],
-    typeChart: {} as never,
+    typeChart: existingTypeChart,
   });
 
   return dm;

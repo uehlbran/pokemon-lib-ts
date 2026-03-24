@@ -14,12 +14,12 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  ALL_NATURES,
   calculateAllStats,
   calculateModifiedCatchRate,
   calculateShakeChecks,
   DataManager,
   getStatStageMultiplier,
-  NATURES_BY_ID,
 } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
@@ -51,6 +51,10 @@ import type { BattleGimmickType, GenerationRuleset } from "./GenerationRuleset";
  * Gen 6-9 typically extend this directly; Gen 3-5 need to override some methods.
  * Gen 1-2 implement the interface directly (too mechanically different).
  */
+const NATURES_BY_ID: ReadonlyMap<NatureData["id"], NatureData> = new Map(
+  ALL_NATURES.map((nature) => [nature.id, nature] as const),
+);
+
 export abstract class BaseRuleset implements GenerationRuleset {
   abstract readonly generation: Generation;
   abstract readonly name: string;
