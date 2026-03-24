@@ -708,6 +708,7 @@ describe("BattleEngine", () => {
 
       const replacement = engine.state.sides[0].active[0]!;
       expect(replacement.pokemon.uid).toBe("pikachu-1");
+      // Source: Baton Pass applies the queued +1 speed stage first, then Sticky Web applies -1 on switch-in.
       expect(replacement.statStages.speed).toBe(0);
     });
 
@@ -773,9 +774,13 @@ describe("BattleEngine", () => {
       engine.submitSwitch(0, 1);
 
       const replacement = engine.state.sides[0].active[0]!;
+      // Source: submitSwitch(0, 1) selects the second Pokemon from team1, whose fixture uid is "pikachu-1".
       expect(replacement.pokemon.uid).toBe("pikachu-1");
+      // Source: the Baton Pass user fainted before the voluntary switch resolved, so no stat stages are preserved.
       expect(replacement.statStages.attack).toBe(0);
+      // Source: volatiles are only transferred for a live Baton Pass replacement, not after the passer faints.
       expect(replacement.volatileStatuses.has("confusion")).toBe(false);
+      // Source: the live self-switch branch emits switch-out, but a faint replacement does not reuse that event path.
       expect(
         events.filter((event) => event.type === "switch-out" && event.side === 0),
       ).toHaveLength(0);
