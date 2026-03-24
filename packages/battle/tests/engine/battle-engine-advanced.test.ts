@@ -332,6 +332,37 @@ describe("BattleEngine — advanced scenarios", () => {
     });
   });
 
+  describe("encore countdown", () => {
+    it("given encore tracked by moveId, when the encored move reaches 0 PP, then encore ends at end of turn", () => {
+      // Arrange
+      const ruleset = new MockRuleset();
+      const originalOrder = ruleset.getEndOfTurnOrder();
+      const patchedRuleset = Object.create(ruleset) as MockRuleset;
+      patchedRuleset.getEndOfTurnOrder = () => ["encore-countdown" as const, ...originalOrder];
+
+      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      engine.start();
+
+      const active = engine.state.sides[0].active[0] as ActivePokemon;
+      active.pokemon.moves[0] = { moveId: "tackle", currentPP: 1, maxPP: 35, ppUps: 0 };
+      active.volatileStatuses.set("encore", {
+        turnsLeft: 2,
+        data: { moveId: "tackle" },
+      });
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      expect(active.volatileStatuses.has("encore")).toBe(false);
+      const encoreEnd = events.find(
+        (event) => event.type === "volatile-end" && event.side === 0 && event.volatile === "encore",
+      );
+      expect(encoreEnd).toBeDefined();
+    });
+  });
+
   describe("flinch", () => {
     it("given a pokemon with flinch volatile, when it tries to move, then it cannot move", () => {
       // Arrange

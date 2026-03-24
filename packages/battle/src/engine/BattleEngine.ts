@@ -5759,6 +5759,32 @@ export class BattleEngine implements BattleEventEmitter {
    * Decrements the Encore counter. If it reaches 0, or the encored move has 0 PP,
    * remove the Encore volatile status.
    */
+  private resolveEncoredMoveSlot(active: ActivePokemon, encoreData: unknown) {
+    const moveIndex =
+      typeof encoreData === "object" &&
+      encoreData !== null &&
+      "moveIndex" in encoreData &&
+      typeof encoreData.moveIndex === "number"
+        ? encoreData.moveIndex
+        : undefined;
+    if (moveIndex !== undefined) {
+      return active.pokemon.moves[moveIndex];
+    }
+
+    const moveId =
+      typeof encoreData === "object" &&
+      encoreData !== null &&
+      "moveId" in encoreData &&
+      typeof encoreData.moveId === "string"
+        ? encoreData.moveId
+        : undefined;
+    if (moveId === undefined) {
+      return undefined;
+    }
+
+    return active.pokemon.moves.find((moveSlot) => moveSlot.moveId === moveId);
+  }
+
   private processEncoreCountdown(): void {
     for (const side of this.state.sides) {
       const active = side.active[0];
@@ -5771,9 +5797,8 @@ export class BattleEngine implements BattleEventEmitter {
 
       // Check if encore should end: counter reached 0 or encored move has 0 PP
       let shouldEnd = encoreState.turnsLeft <= 0;
-      if (!shouldEnd && encoreState.data?.moveIndex !== undefined) {
-        const moveIdx = encoreState.data.moveIndex as number;
-        const moveSlot = active.pokemon.moves[moveIdx];
+      if (!shouldEnd) {
+        const moveSlot = this.resolveEncoredMoveSlot(active, encoreState.data);
         if (moveSlot && moveSlot.currentPP <= 0) {
           shouldEnd = true;
         }
