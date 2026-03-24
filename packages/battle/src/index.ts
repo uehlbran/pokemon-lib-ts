@@ -38,12 +38,6 @@ export type {
   ValidationResult,
   WeatherEffectResult,
 } from "./context";
-// Data
-export {
-  BASE_PINCH_ABILITY_TYPES,
-  BASE_PLATE_ITEMS,
-  BASE_TYPE_BOOST_ITEMS,
-} from "./data";
 // Engine
 export { BattleEngine } from "./engine";
 // Events

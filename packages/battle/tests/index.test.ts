@@ -11,9 +11,6 @@ describe("barrel exports", () => {
     expect(mod.GenerationRegistry).toBeDefined();
     expect(mod.generations).toBeDefined();
     expect(mod.RandomAI).toBeDefined();
-    expect(mod.BASE_TYPE_BOOST_ITEMS).toBeDefined();
-    expect(mod.BASE_PLATE_ITEMS).toBeDefined();
-    expect(mod.BASE_PINCH_ABILITY_TYPES).toBeDefined();
     expect(mod.createPokemonSnapshot).toBeDefined();
     expect(mod.getPokemonName).toBeDefined();
 
@@ -21,16 +18,9 @@ describe("barrel exports", () => {
     expect(Object.hasOwn(mod, "createActivePokemon")).toBe(false);
     expect(Object.hasOwn(mod, "createDefaultStatStages")).toBe(false);
     expect(Object.hasOwn(mod, "createTestPokemon")).toBe(false);
-  });
-
-  it("given the shared data entrypoint, when imported, then the damage-calc tables are exposed there", async () => {
-    // Act
-    const data = await import("../src/data/index");
-
-    // Assert — the dedicated submodule exposes the shared tables
-    expect(data.BASE_TYPE_BOOST_ITEMS).toBeDefined();
-    expect(data.BASE_PLATE_ITEMS).toBeDefined();
-    expect(data.BASE_PINCH_ABILITY_TYPES).toBeDefined();
+    expect(Object.hasOwn(mod, "BASE_TYPE_BOOST_ITEMS")).toBe(false);
+    expect(Object.hasOwn(mod, "BASE_PLATE_ITEMS")).toBe(false);
+    expect(Object.hasOwn(mod, "BASE_PINCH_ABILITY_TYPES")).toBe(false);
   });
 
   it("given the utils entrypoint, when imported, then internal helpers are exposed there", async () => {
