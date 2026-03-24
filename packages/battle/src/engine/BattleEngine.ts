@@ -5957,6 +5957,12 @@ export class BattleEngine implements BattleEventEmitter {
       moveSlot.currentPP = Math.min(moveSlot.maxPP, moveSlot.currentPP + restoreAmount);
       active.pokemon.heldItem = null;
       this.emit({
+        type: "item-consumed",
+        side: side.index,
+        pokemon: getPokemonName(active),
+        item: "mystery-berry",
+      });
+      this.emit({
         type: "message",
         text: `${getPokemonName(active)}'s Mystery Berry restored PP!`,
       });

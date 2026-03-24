@@ -374,6 +374,102 @@ describe("Bug #494 — Uproar wake condition", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Bug #879: Mystery Berry clears the held item without item-consumed
+// ---------------------------------------------------------------------------
+
+describe("Bug #879 — Mystery Berry item consumption event", () => {
+  class MysteryBerryMockRuleset extends MockRuleset {
+    override hasHeldItems(): boolean {
+      return true;
+    }
+
+    override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
+      return ["mystery-berry"];
+    }
+  }
+
+  function createMysteryBerryEngine() {
+    const ruleset = new MysteryBerryMockRuleset();
+    const dataManager = createMockDataManager();
+    const events: BattleEvent[] = [];
+
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        heldItem: "mystery-berry",
+        moves: [
+          { moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 },
+          { moveId: "growl", currentPP: 35, maxPP: 35, ppUps: 0 },
+        ],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const team2 = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const config: BattleConfig = {
+      generation: 2,
+      format: "singles",
+      teams: [team1, team2],
+      seed: 12345,
+    };
+
+    ruleset.setGenerationForTest(config.generation);
+    const engine = new BattleEngine(config, ruleset, dataManager);
+    engine.on((e) => events.push(e));
+
+    return { engine, events };
+  }
+
+  it("given a Pokemon holding Mystery Berry with an empty move PP slot, when the turn ends, then PP is restored and item-consumed is emitted", () => {
+    // Source: pret/pokecrystal engine/battle/core.asm:1328-1464 HandleMysteryberry
+    const { engine, events } = createMysteryBerryEngine();
+
+    engine.start();
+    events.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const itemConsumed = events.find((e) => e.type === "item-consumed");
+    expect(itemConsumed).toBeDefined();
+    if (itemConsumed?.type === "item-consumed") {
+      expect(itemConsumed.side).toBe(0);
+      expect(itemConsumed.pokemon).toBe("Charizard");
+      expect(itemConsumed.item).toBe("mystery-berry");
+    }
+
+    const active = engine.state.sides[0].active[0];
+    expect(active?.pokemon.heldItem).toBeNull();
+    expect(active?.pokemon.moves[0]?.currentPP).toBe(5);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Bug #514: Uproar wake-up bypasses Soundproof
 // ---------------------------------------------------------------------------
 
