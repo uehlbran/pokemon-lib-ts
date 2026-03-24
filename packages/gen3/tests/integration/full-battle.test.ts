@@ -104,7 +104,9 @@ function runFullBattle(engine: BattleEngine, seed: number, maxTurns = 500): Batt
         const active = engine.getActive(sideIdx);
         if (active && active.pokemon.currentHp <= 0) {
           const switchTarget = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
-          engine.submitSwitch(sideIdx, switchTarget);
+          if (switchTarget !== null) {
+            engine.submitSwitch(sideIdx, switchTarget);
+          }
         }
       }
     } else {
