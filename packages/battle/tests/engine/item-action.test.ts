@@ -436,6 +436,9 @@ describe("BattleEngine - ItemAction bag item usage", () => {
     it("given a Full Restore used on a damaged and poisoned pokemon, when item action submitted, then both heal and status cure events emitted", () => {
       // Arrange
       const ruleset = new MockRuleset();
+      const configuredDamage = 10;
+      // configuredDamage controls the expected post-move HP in this test.
+      ruleset.setFixedDamage(configuredDamage);
       // Source: Bulbapedia "Full Restore" — heals all HP and cures all status conditions
       ruleset.setNextBagItemResult({
         activated: true,
@@ -469,9 +472,9 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       expect(cureEvent!.status).toBe("poison");
 
       // Verify state was mutated — after heal, HP = 103 + 50 = 153 (= maxHp, capped).
-      // Then the configured 10-damage Tackle leaves the pokemon at 143 HP.
+      // Then the configured damage leaves the pokemon at maxHp - configuredDamage.
       const activeAfter = engine.state.sides[0].active[0];
-      expect(activeAfter!.pokemon.currentHp).toBe(maxHp - 10);
+      expect(activeAfter!.pokemon.currentHp).toBe(maxHp - configuredDamage);
       expect(activeAfter!.pokemon.status).toBeNull();
     });
   });
