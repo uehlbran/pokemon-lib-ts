@@ -349,10 +349,11 @@ export class BattleEngine implements BattleEventEmitter {
    * Returns the ordered log of all events emitted since `start()` was called.
    * Useful for replay, undo, and post-battle analysis.
    *
-   * @returns An immutable view of the event log; safe to iterate or serialize.
+   * @returns A snapshot copy of the event log. Mutating the returned array does not
+   * affect the engine's internal history.
    */
   getEventLog(): readonly BattleEvent[] {
-    return this.eventLog;
+    return [...this.eventLog];
   }
 
   private emit(event: BattleEvent): void {
