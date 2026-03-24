@@ -19,4 +19,14 @@ describe("barrel exports", () => {
     expect(Object.hasOwn(mod, "createDefaultStatStages")).toBe(false);
     expect(Object.hasOwn(mod, "createTestPokemon")).toBe(false);
   });
+
+  it("given the utils entrypoint, when imported, then internal helpers are exposed there", async () => {
+    // Act
+    const utils = await import("../src/utils/index");
+
+    // Assert — the supported submodule keeps the internal helpers available
+    expect(Object.hasOwn(utils, "createActivePokemon")).toBe(true);
+    expect(Object.hasOwn(utils, "createDefaultStatStages")).toBe(true);
+    expect(Object.hasOwn(utils, "createTestPokemon")).toBe(true);
+  });
 });
