@@ -654,7 +654,13 @@ export class BattleEngine implements BattleEventEmitter {
     );
 
     return JSON.stringify(
-      { state: this.state, participantTracker: participantTrackerObj },
+      {
+        state: this.state,
+        participantTracker: participantTrackerObj,
+        // Source: bug fix — getEventLog() promises the ordered log of all events
+        // emitted since start(), so save/load must preserve the emitted history.
+        eventLog: this.eventLog,
+      },
       (_key, value) => {
         if (value instanceof Map) {
           return { __type: "Map", entries: [...value.entries()] };
@@ -692,7 +698,11 @@ export class BattleEngine implements BattleEventEmitter {
         return rng;
       }
       return value;
-    }) as { state: BattleState; participantTracker?: Record<string, string[]> };
+    }) as {
+      state: BattleState;
+      participantTracker?: Record<string, string[]>;
+      eventLog?: BattleEvent[];
+    };
 
     // Create the engine instance without running the constructor.
     // This avoids: (1) stat recalculation, (2) HP reset to max,
@@ -714,7 +724,12 @@ export class BattleEngine implements BattleEventEmitter {
       ruleset: { value: ruleset, writable: false, enumerable: false, configurable: false },
       dataManager: { value: dataManager, writable: false, enumerable: false, configurable: false },
       listeners: { value: new Set(), writable: true, enumerable: false, configurable: false },
-      eventLog: { value: [], writable: true, enumerable: false, configurable: false },
+      eventLog: {
+        value: parsed.eventLog ?? [],
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
       pendingActions: { value: new Map(), writable: true, enumerable: false, configurable: false },
       pendingSwitches: { value: new Map(), writable: true, enumerable: false, configurable: false },
       sidesNeedingSwitch: {
