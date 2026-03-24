@@ -106,7 +106,20 @@ export class BattleEngine implements BattleEventEmitter {
   // Source: Game mechanic — EXP is split among all pokemon that participated in a battle.
   private readonly participantTracker: Map<string, Set<string>> = new Map();
 
+  private static assertRulesetGenerationMatches(
+    source: "BattleEngine" | "BattleEngine.deserialize",
+    battleGeneration: number,
+    ruleset: GenerationRuleset,
+  ): void {
+    if (ruleset.generation !== battleGeneration) {
+      throw new Error(
+        `${source}: ruleset generation ${ruleset.generation} does not match battle generation ${battleGeneration}`,
+      );
+    }
+  }
+
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
+    BattleEngine.assertRulesetGenerationMatches("BattleEngine", config.generation, ruleset);
     this.ruleset = ruleset;
     this.dataManager = dataManager;
 
@@ -724,6 +737,12 @@ export class BattleEngine implements BattleEventEmitter {
       participantTracker?: Record<string, string[]>;
       eventLog?: BattleEvent[];
     };
+
+    BattleEngine.assertRulesetGenerationMatches(
+      "BattleEngine.deserialize",
+      parsed.state.generation,
+      ruleset,
+    );
 
     // Create the engine instance without running the constructor.
     // This avoids: (1) stat recalculation, (2) HP reset to max,

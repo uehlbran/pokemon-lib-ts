@@ -93,6 +93,23 @@ describe("BattleEngine", () => {
       expect(engine.getTeam(0)).toHaveLength(1);
       expect(engine.getTeam(1)).toHaveLength(1);
     });
+
+    it("given a ruleset whose generation does not match the battle config, when engine is created, then it throws", () => {
+      const ruleset = new MockRuleset();
+      Object.defineProperty(ruleset, "generation", { value: 9 });
+
+      const dataManager = createMockDataManager();
+      const config: BattleConfig = {
+        generation: 1,
+        format: "singles",
+        teams: [[createTestPokemon(6, 50)], [createTestPokemon(9, 50)]],
+        seed: 12345,
+      };
+
+      expect(() => new BattleEngine(config, ruleset, dataManager)).toThrow(
+        "BattleEngine: ruleset generation 9 does not match battle generation 1",
+      );
+    });
   });
 
   describe("start", () => {

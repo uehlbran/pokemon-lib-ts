@@ -69,6 +69,11 @@ export class MockRuleset implements GenerationRuleset {
     this.fleeSuccess = success;
   }
 
+  setGenerationForTest(generation: Generation): this {
+    Object.defineProperty(this, "generation", { value: generation, configurable: true });
+    return this;
+  }
+
   getTypeChart(): TypeChart {
     // Minimal type chart — everything is neutral
     const types = this.getAvailableTypes();
