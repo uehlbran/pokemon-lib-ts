@@ -1,3 +1,4 @@
+import type { PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createActivePokemon,
@@ -71,6 +72,21 @@ describe("BattleHelpers", () => {
       expect(active.isDynamaxed).toBe(false);
       expect(active.isTerastallized).toBe(false);
       expect(active.stellarBoostedTypes).toEqual([]);
+    });
+
+    it("given a caller-owned types array, when createActivePokemon is called, then the ActivePokemon gets its own copy", () => {
+      const pokemon = createTestPokemon(6, 50);
+      const types: PokemonType[] = ["fire", "flying"];
+
+      const active = createActivePokemon(pokemon, 0, types);
+
+      expect(active.types).toEqual(["fire", "flying"]);
+      expect(active.types).not.toBe(types);
+
+      active.types[0] = "water";
+
+      expect(types).toEqual(["fire", "flying"]);
+      expect(active.types).toEqual(["water", "flying"]);
     });
   });
 
