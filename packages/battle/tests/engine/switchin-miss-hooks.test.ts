@@ -434,4 +434,105 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     // The faster replacement (speed 200) should fire its ability before the slower one (speed 50)
     expect(abilityOrder).toEqual(["fast-replacement", "slow-replacement"]);
   });
+
+  it("given a double-KO where replacements tie on speed, when abilities fire, then replacement order uses the battle tie-break instead of submission order", () => {
+    const ruleset = new MockRuleset();
+    const abilityOrder: string[] = [];
+
+    ruleset.hasAbilities = () => true;
+    ruleset.setFixedDamage(0);
+    const origApplyAbility = ruleset.applyAbility.bind(ruleset);
+    ruleset.applyAbility = (trigger, context) => {
+      if (trigger === "on-switch-in") {
+        abilityOrder.push(context.pokemon.pokemon.uid);
+      }
+      return origApplyAbility(trigger, context);
+    };
+
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "starter-1",
+        nickname: "Starter1",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 1,
+        status: "poison",
+      }),
+      createTestPokemon(25, 50, {
+        uid: "side-0-replacement",
+        nickname: "Side0Replace",
+        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 100,
+        },
+        currentHp: 100,
+      }),
+    ];
+
+    const team2 = [
+      createTestPokemon(9, 50, {
+        uid: "starter-2",
+        nickname: "Starter2",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 1,
+        status: "poison",
+      }),
+      createTestPokemon(6, 50, {
+        uid: "side-1-replacement",
+        nickname: "Side1Replace",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 100,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const { engine } = createEngine({ ruleset, team1, team2, seed: 1 });
+    engine.start();
+
+    engine.state.sides[0].active[0]!.pokemon.currentHp = 1;
+    engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
+    engine.state.sides[0].team[1].calculatedStats!.speed = 100;
+    engine.state.sides[1].team[1].calculatedStats!.speed = 100;
+
+    abilityOrder.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.getPhase()).toBe("switch-prompt");
+
+    engine.submitSwitch(0, 1);
+    engine.submitSwitch(1, 1);
+
+    // Source: SeededRandom(1).chance(0.5) returns false, so the tied order should
+    // flip to side 1 before side 0 instead of preserving switch submission order.
+    expect(abilityOrder).toEqual(["side-1-replacement", "side-0-replacement"]);
+  });
 });

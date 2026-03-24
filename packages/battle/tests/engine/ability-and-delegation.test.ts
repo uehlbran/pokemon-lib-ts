@@ -65,6 +65,7 @@ function createAbilityEngine(opts?: {
   team2Ability?: string;
   team1Speed?: number;
   team2Speed?: number;
+  seed?: number;
 }) {
   const ruleset = new AbilityMockRuleset();
   const dataManager = createMockDataManager();
@@ -110,7 +111,7 @@ function createAbilityEngine(opts?: {
     generation: 3,
     format: "singles",
     teams: [team1, team2],
-    seed: 12345,
+    seed: opts?.seed ?? 12345,
   };
 
   ruleset.setGenerationForTest(config.generation);
@@ -375,6 +376,51 @@ describe("Bug 2A: switch-in ability processing", () => {
       expect(side1!.statStages.attack).toBe(-1);
       // Both abilities should have been called
       expect(callOrder.length).toBe(2);
+    });
+
+    it("given both leads tie on speed, when battle starts, then switch-in ability order uses the battle tie-break instead of always favoring side 0", () => {
+      const callOrder: string[] = [];
+      const ruleset = new AbilityMockRuleset();
+      const dataManager = createMockDataManager();
+      const config: BattleConfig = {
+        generation: 3,
+        format: "singles",
+        teams: [
+          [
+            createTestPokemon(6, 50, {
+              uid: "charizard-1",
+              nickname: "Charizard1",
+              ability: "intimidate",
+              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            }),
+          ],
+          [
+            createTestPokemon(6, 50, {
+              uid: "charizard-2",
+              nickname: "Charizard2",
+              ability: "intimidate",
+              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            }),
+          ],
+        ],
+        seed: 1,
+      };
+
+      ruleset.setAbilityHandler((trigger, ctx) => {
+        if (trigger === "on-switch-in") {
+          callOrder.push(ctx.pokemon.pokemon.uid);
+        }
+        return { activated: false, effects: [], messages: [] };
+      });
+
+      ruleset.setGenerationForTest(config.generation);
+      const engine = new BattleEngine(config, ruleset, dataManager);
+
+      engine.start();
+
+      // Source: SeededRandom(1).chance(0.5) returns false in the current core RNG,
+      // so the tied switch-in order should flip to side 1 before side 0.
+      expect(callOrder).toEqual(["charizard-2", "charizard-1"]);
     });
   });
 });

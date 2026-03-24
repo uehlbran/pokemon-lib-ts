@@ -175,6 +175,28 @@ export class BattleEngine implements BattleEventEmitter {
     return inferredSides;
   }
 
+  private orderSwitchInAbilityEntries(
+    entries: Array<{ side: 0 | 1; pokemon: ActivePokemon }>,
+  ): Array<{ side: 0 | 1; pokemon: ActivePokemon }> {
+    if (entries.length < 2) {
+      return entries;
+    }
+
+    const [firstEntry, secondEntry] = entries;
+    if (!firstEntry || !secondEntry) {
+      return entries;
+    }
+
+    const firstSpeed = firstEntry.pokemon.pokemon.calculatedStats?.speed ?? 0;
+    const secondSpeed = secondEntry.pokemon.pokemon.calculatedStats?.speed ?? 0;
+
+    if (firstSpeed === secondSpeed) {
+      return this.state.rng.chance(0.5) ? [firstEntry, secondEntry] : [secondEntry, firstEntry];
+    }
+
+    return firstSpeed > secondSpeed ? [firstEntry, secondEntry] : [secondEntry, firstEntry];
+  }
+
   private static sanitizePendingSwitches(
     state: BattleState,
     rawPendingSwitches: unknown,
@@ -403,18 +425,10 @@ export class BattleEngine implements BattleEventEmitter {
       const active0 = this.state.sides[0].active[0];
       const active1 = this.state.sides[1].active[0];
       if (active0 && active1) {
-        const speed0 = active0.pokemon.calculatedStats?.speed ?? 0;
-        const speed1 = active1.pokemon.calculatedStats?.speed ?? 0;
-        const order: Array<{ side: 0 | 1; pokemon: ActivePokemon }> =
-          speed0 >= speed1
-            ? [
-                { side: 0, pokemon: active0 },
-                { side: 1, pokemon: active1 },
-              ]
-            : [
-                { side: 1, pokemon: active1 },
-                { side: 0, pokemon: active0 },
-              ];
+        const order = this.orderSwitchInAbilityEntries([
+          { side: 0, pokemon: active0 },
+          { side: 1, pokemon: active1 },
+        ]);
 
         for (const entry of order) {
           const opponent = this.getOpponentActive(entry.side);
@@ -576,13 +590,7 @@ export class BattleEngine implements BattleEventEmitter {
               entries.push({ side: switchSide, pokemon: active });
             }
           }
-          // Sort by speed (faster goes first)
-          entries.sort((a, b) => {
-            const speedA = a.pokemon.pokemon.calculatedStats?.speed ?? 0;
-            const speedB = b.pokemon.pokemon.calculatedStats?.speed ?? 0;
-            return speedB - speedA;
-          });
-          for (const entry of entries) {
+          for (const entry of this.orderSwitchInAbilityEntries(entries)) {
             const opponent = this.getOpponentActive(entry.side);
             if (opponent) {
               const abilityResult = this.ruleset.applyAbility("on-switch-in", {
