@@ -1,7 +1,14 @@
-import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import type {
+  ActivePokemon,
+  BattleConfig,
+  BattleState,
+  MoveEffectContext,
+} from "@pokemon-lib-ts/battle";
+import { BattleEngine } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager } from "../src/data";
 import { Gen1Ruleset } from "../src/Gen1Ruleset";
 
 /**
@@ -166,6 +173,7 @@ function makeBattleState(): BattleState {
     gravity: { active: false, turnsLeft: 0 },
     turnHistory: [],
     rng,
+    isWildBattle: false,
     ended: false,
     winner: null,
   } as BattleState;
@@ -405,13 +413,33 @@ describe("Gen 1 Teleport handler", () => {
     effect: { type: "custom" as const, handler: "teleport" },
   });
 
-  it('given teleport is used, when executeMoveEffect called, then messages includes "But it failed!"', () => {
+  it('given teleport is used in a trainer battle, when executeMoveEffect called, then messages includes "But it failed!"', () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: teleportMove, damage: 0 });
+    const attacker = makeActivePokemon();
+    const state = makeBattleState();
+    state.sides[0].active[0] = attacker;
+    const context = makeMoveEffectContext({ move: teleportMove, damage: 0, attacker, state });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.messages).toContain("But it failed!");
+    expect(result.escapeBattle).not.toBe(true);
+  });
+
+  it("given teleport is used by the player in a wild battle, when executeMoveEffect called, then it requests a successful escape", () => {
+    // Arrange
+    const attacker = makeActivePokemon();
+    const state = makeBattleState();
+    state.isWildBattle = true;
+    state.sides[0].active[0] = attacker;
+    const context = makeMoveEffectContext({ move: teleportMove, damage: 0, attacker, state });
+
+    // Act
+    const result = ruleset.executeMoveEffect(context);
+
+    // Assert
+    expect(result.escapeBattle).toBe(true);
+    expect(result.messages).not.toContain("But it failed!");
   });
 
   it("given teleport is used, when executeMoveEffect called, then no status is inflicted", () => {
@@ -439,5 +467,56 @@ describe("Gen 1 Teleport handler", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.statChanges).toHaveLength(0);
+  });
+
+  it("given teleport is used by the player in a wild battle, when BattleEngine resolves the move, then the battle ends as a successful escape", () => {
+    // Arrange
+    const dataManager = createGen1DataManager();
+    const engineRuleset = new Gen1Ruleset();
+    const config: BattleConfig = {
+      generation: 1,
+      format: "singles",
+      teams: [
+        [
+          {
+            ...makeActivePokemon().pokemon,
+            speciesId: 63,
+            uid: "abra-player",
+            moves: [{ moveId: "teleport", currentPP: 20, maxPP: 20, ppUps: 0 }],
+          } as PokemonInstance,
+        ],
+        [
+          {
+            ...makeActivePokemon().pokemon,
+            speciesId: 19,
+            uid: "rattata-wild",
+            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          } as PokemonInstance,
+        ],
+      ],
+      seed: 42,
+      isWildBattle: true,
+    };
+    const engine = new BattleEngine(config, engineRuleset, dataManager);
+    engine.start();
+
+    // Act
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert
+    expect(engine.isEnded()).toBe(true);
+    expect(engine.getWinner()).toBeNull();
+    expect(engine.getPhase()).toBe("battle-end");
+    expect(() => engine.serialize()).not.toThrow();
+    const events = engine.getEventLog();
+    // Source: pret/pokered src/engine/battle/effect_commands.asm — successful wild Teleport
+    // uses the standard "Got away safely!" escape text.
+    expect(events.some((event) => event.type === "flee-attempt" && event.side === 0)).toBe(true);
+    expect(
+      events.some(
+        (event) => event.type === "message" && "text" in event && event.text === "Got away safely!",
+      ),
+    ).toBe(true);
   });
 });

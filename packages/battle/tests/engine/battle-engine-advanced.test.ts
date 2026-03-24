@@ -1,6 +1,6 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import type { DataManager, MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../src/context";
+import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
 import type { ActivePokemon } from "../../src/state";
@@ -13,9 +13,11 @@ function createEngine(overrides?: {
   team1?: PokemonInstance[];
   team2?: PokemonInstance[];
   ruleset?: MockRuleset;
+  dataManager?: DataManager;
+  isWildBattle?: boolean;
 }) {
   const ruleset = overrides?.ruleset ?? new MockRuleset();
-  const dataManager = createMockDataManager();
+  const dataManager = overrides?.dataManager ?? createMockDataManager();
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
@@ -57,12 +59,34 @@ function createEngine(overrides?: {
     format: "singles",
     teams: [team1, team2],
     seed: overrides?.seed ?? 12345,
+    isWildBattle: overrides?.isWildBattle ?? false,
   };
 
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 
   return { engine, ruleset, events, dataManager };
+}
+
+class RecursiveEscapeRuleset extends MockRuleset {
+  private executeMoveEffectCalls = 0;
+
+  override executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    this.executeMoveEffectCalls += 1;
+    const base = super.executeMoveEffect(context);
+
+    if (this.executeMoveEffectCalls === 1) {
+      return {
+        ...base,
+        recursiveMove: "recharge-test-move",
+      };
+    }
+
+    return {
+      ...base,
+      escapeBattle: true,
+    };
+  }
 }
 
 describe("BattleEngine — advanced scenarios", () => {
@@ -171,6 +195,60 @@ describe("BattleEngine — advanced scenarios", () => {
       // Assert — battle should have ended
       expect(engine.isEnded()).toBe(true);
       expect(engine.getWinner()).not.toBeNull();
+    });
+
+    it("given a recursive move ends the battle, when the outer move resolves, then it stops post-battle bookkeeping", () => {
+      // Arrange
+      const dataManager = createMockDataManager();
+      const tackleMove = dataManager.getMove("tackle");
+      const rechargeMove = {
+        ...tackleMove,
+        id: "recharge-test-move",
+        displayName: "Recharge Test Move",
+        flags: {
+          ...tackleMove.flags,
+          recharge: true,
+        },
+      } satisfies MoveData;
+      (dataManager as unknown as { movesById: Map<string, MoveData> }).movesById.set(
+        rechargeMove.id,
+        rechargeMove,
+      );
+
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: rechargeMove.id, currentPP: 5, maxPP: 5, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 120,
+          },
+          currentHp: 1,
+        }),
+      ];
+
+      const { engine } = createEngine({
+        team1,
+        ruleset: new RecursiveEscapeRuleset(),
+        dataManager,
+        isWildBattle: true,
+      });
+      engine.start();
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      const actor = engine.state.sides[0].active[0] as ActivePokemon;
+      expect(engine.isEnded()).toBe(true);
+      expect(engine.getPhase()).toBe("battle-end");
+      expect(actor.volatileStatuses.has("recharge")).toBe(false);
     });
   });
 

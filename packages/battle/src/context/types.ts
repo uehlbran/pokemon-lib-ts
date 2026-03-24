@@ -199,6 +199,11 @@ export interface MoveEffectResult {
   /** `true` if the attacker should be forced to switch out after this move */
   readonly switchOut: boolean;
   /**
+   * `true` if the move should immediately end the battle as a successful escape.
+   * Used by mechanics like wild-battle Teleport in Gen 1.
+   */
+  readonly escapeBattle?: boolean;
+  /**
    * `true` if the switch-out is a Baton Pass — stat stages and volatile statuses
    * should be preserved and transferred to the incoming Pokemon.
    * Only meaningful when `switchOut` is also `true`.
