@@ -87,8 +87,8 @@ function makeActivePokemon(
   };
 }
 
-function makeBattleState(): BattleState {
-  const rng = new SeededRandom(42);
+function makeBattleState(seed = 42): BattleState {
+  const rng = new SeededRandom(seed);
   return {
     phase: "turn-resolve",
     generation: 1,
@@ -138,7 +138,7 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
       // Arrange
       const attacker = makeActivePokemon({ types: ["normal"], attack: 80 });
       const defender = makeActivePokemon({ types: ["ghost"], defense: 60 });
-      const state = makeBattleState();
+      const state = makeBattleState(99);
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
@@ -153,12 +153,12 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
       // Arrange
       const attacker = makeActivePokemon({ types: ["normal"], level: 50, attack: 80 });
       const defender = makeActivePokemon({ types: ["normal"], defense: 60 });
-      const state = makeBattleState();
+      const state = makeBattleState(99);
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
 
-      // Assert — calculateStruggleDamage uses SeededRandom(0); seed 0 → int(217,255) = 227
+      // Assert — seed 99 gives the live battle RNG roll used by this test setup.
       // Source: pret/pokered — Struggle is Normal-type BP=50 in Gen 1
       // L50, Atk=80, Def=60, STAB (attacker types: [normal] matches move type normal):
       //   levelFactor = floor(2*50/5)+2 = 22
@@ -166,27 +166,43 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
       //   baseDamage = floor(1466/50)+2 = 29+2 = 31
       //   STAB: floor(31 * 1.5) = 46
       //   Normal vs Normal type: 1x → 46
-      //   Random: floor(46 * 227 / 255) = floor(10442/255) = 40
+      //   Random roll from seed 99 yields 40 damage.
       expect(damage).toBe(40);
+    });
+
+    it("given different battle RNG seeds, when calculating Struggle damage, then the damage roll changes", () => {
+      // Arrange
+      const attacker = makeActivePokemon({ types: ["normal"], level: 50, attack: 80 });
+      const defender = makeActivePokemon({ types: ["normal"], defense: 60 });
+      const lowRollState = makeBattleState(99);
+      const highRollState = makeBattleState(1);
+
+      // Act
+      const lowRollDamage = ruleset.calculateStruggleDamage(attacker, defender, lowRollState);
+      const highRollDamage = ruleset.calculateStruggleDamage(attacker, defender, highRollState);
+
+      // Assert — seed 99 → int(217,255) = 227; seed 1 → int(217,255) = 241.
+      expect(lowRollDamage).toBe(40);
+      expect(highRollDamage).toBe(43);
     });
 
     it("should return exact damage against an Electric-type defender", () => {
       // Arrange
       const attacker = makeActivePokemon({ types: ["fire"], level: 50, attack: 100 });
       const defender = makeActivePokemon({ types: ["electric"], defense: 80 });
-      const state = makeBattleState();
+      const state = makeBattleState(99);
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
 
-      // Assert — calculateStruggleDamage uses SeededRandom(0); seed 0 → int(217,255) = 227
+      // Assert — seed 99 uses the live battle RNG roll for this test setup.
       // Source: pret/pokered — Struggle is Normal-type BP=50 in Gen 1
       // L50, Atk=100, Def=80, no STAB (fire != normal):
       //   levelFactor = floor(2*50/5)+2 = 22
       //   inner = floor(22*50*100) / 80 = floor(110000) / 80 = floor(1375) = 1375
       //   baseDamage = floor(1375/50)+2 = 27+2 = 29
       //   No STAB, Normal vs Electric = 1x → 29
-      //   Random: floor(29 * 227 / 255) = floor(6583/255) = 25
+      //   Random roll from seed 99 yields 25 damage.
       expect(damage).toBe(25);
     });
 
