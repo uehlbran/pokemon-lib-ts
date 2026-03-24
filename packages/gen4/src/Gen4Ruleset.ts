@@ -628,7 +628,7 @@ export class Gen4Ruleset extends BaseRuleset {
   calculateExpGain(context: ExpContext): number {
     // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9984
     //   traded EXP bonus: same language → 1.5x, international → 1.7x
-    return calculateExpGainClassic(
+    let exp = calculateExpGainClassic(
       context.defeatedSpecies.baseExp,
       context.defeatedLevel,
       context.isTrainerBattle,
@@ -637,6 +637,10 @@ export class Gen4Ruleset extends BaseRuleset {
       context.isTradedPokemon ?? false,
       context.isInternationalTrade ?? false,
     );
+    if (context.hasExpShare) {
+      exp = Math.max(1, Math.floor(exp / 2));
+    }
+    return exp;
   }
 
   // --- Protect ---

@@ -1,6 +1,6 @@
 import { getExpForLevel } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../src/context";
+import type { BattleConfig, ExpContext } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent, ExpGainEvent, LevelUpEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
@@ -18,6 +18,7 @@ import { MockRuleset } from "../helpers/mock-ruleset";
  * pokemon, so HP must be adjusted after construction. This helper does that automatically.
  */
 function createAndStartExpTestEngine(overrides?: {
+  generation?: BattleConfig["generation"];
   seed?: number;
   team1?: ReturnType<typeof createTestPokemon>[];
   team2?: ReturnType<typeof createTestPokemon>[];
@@ -47,7 +48,7 @@ function createAndStartExpTestEngine(overrides?: {
   ];
 
   const config: BattleConfig = {
-    generation: 1,
+    generation: overrides?.generation ?? 1,
     format: "singles",
     teams: [team1, team2],
     seed: overrides?.seed ?? 12345,
@@ -246,6 +247,97 @@ describe("BattleEngine - EXP gain on faint", () => {
       // Source: Bulbapedia EXP mechanics — Charizard fainted before Blastoise, so only
       // Pikachu (living participant) counts → participantCount=1
       expect(capturedParticipantCount).toBe(1);
+    });
+  });
+
+  describe("EXP Share recipients", () => {
+    it("given a Gen 3 benched Exp. Share holder, when a teammate faints the opponent, then the holder receives a held-item EXP award", () => {
+      const capturedContexts = new Map<string, ExpContext>();
+      const ruleset = new MockRuleset().setGenerationForTest(3);
+      ruleset.calculateExpGain = (context) => {
+        const recipientUid = context.hasExpShare ? "pikachu-1" : "charizard-1";
+        capturedContexts.set(recipientUid, context);
+        return context.hasExpShare ? 50 : 100;
+      };
+
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          heldItem: "exp-share",
+          moves: [{ moveId: "growl", currentPP: 40, maxPP: 40, ppUps: 0 }],
+        }),
+      ];
+
+      const { engine, events } = createAndStartExpTestEngine({
+        generation: 3,
+        team1,
+        ruleset,
+      });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const expGainEvents = events.filter(
+        (event): event is ExpGainEvent => event.type === "exp-gain",
+      );
+      expect(expGainEvents).toEqual([
+        { type: "exp-gain", side: 0, pokemon: "charizard-1", amount: 100 },
+        { type: "exp-gain", side: 0, pokemon: "pikachu-1", amount: 50 },
+      ]);
+
+      expect(capturedContexts.get("charizard-1")?.hasExpShare).toBe(false);
+      expect(capturedContexts.get("pikachu-1")?.hasExpShare).toBe(true);
+      expect(capturedContexts.get("pikachu-1")?.participantCount).toBe(1);
+    });
+
+    it("given a Gen 8 inactive party member, when a teammate faints the opponent, then the inactive member receives the always-on EXP Share award", () => {
+      const capturedContexts = new Map<string, ExpContext>();
+      const ruleset = new MockRuleset().setGenerationForTest(8);
+      ruleset.calculateExpGain = (context) => {
+        const recipientUid = context.hasExpShare ? "pikachu-1" : "charizard-1";
+        capturedContexts.set(recipientUid, context);
+        return context.hasExpShare ? 50 : 100;
+      };
+
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [{ moveId: "growl", currentPP: 40, maxPP: 40, ppUps: 0 }],
+        }),
+      ];
+
+      const { engine, events } = createAndStartExpTestEngine({
+        generation: 8,
+        team1,
+        ruleset,
+      });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const expGainEvents = events.filter(
+        (event): event is ExpGainEvent => event.type === "exp-gain",
+      );
+      expect(expGainEvents).toEqual([
+        { type: "exp-gain", side: 0, pokemon: "charizard-1", amount: 100 },
+        { type: "exp-gain", side: 0, pokemon: "pikachu-1", amount: 50 },
+      ]);
+
+      expect(capturedContexts.get("charizard-1")?.hasExpShare).toBe(false);
+      expect(capturedContexts.get("pikachu-1")?.hasExpShare).toBe(true);
+      expect(capturedContexts.get("pikachu-1")?.participantCount).toBe(1);
     });
   });
 

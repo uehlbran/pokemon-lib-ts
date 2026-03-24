@@ -393,7 +393,7 @@ export class Gen3Ruleset extends BaseRuleset {
   calculateExpGain(context: ExpContext): number {
     // Source: pret/pokeemerald src/battle_util.c GiveExpToMon — traded bonus applied after Lucky Egg
     // Gen 3+ tracks language in the Pokemon data structure; international trades give 1.7x.
-    return calculateExpGainClassic(
+    let exp = calculateExpGainClassic(
       context.defeatedSpecies.baseExp,
       context.defeatedLevel,
       context.isTrainerBattle,
@@ -402,6 +402,10 @@ export class Gen3Ruleset extends BaseRuleset {
       context.isTradedPokemon ?? false,
       context.isInternationalTrade ?? false,
     );
+    if (context.hasExpShare) {
+      exp = Math.max(1, Math.floor(exp / 2));
+    }
+    return exp;
   }
 
   // --- Held Item System ---

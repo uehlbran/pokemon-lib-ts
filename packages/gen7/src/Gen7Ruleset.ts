@@ -928,6 +928,10 @@ export class Gen7Ruleset extends BaseRuleset {
       exp = Math.floor(exp * tradedMultiplier);
     }
 
+    if (context.hasExpShare) {
+      exp = Math.floor(exp / 2);
+    }
+
     return Math.max(1, exp);
   }
 
