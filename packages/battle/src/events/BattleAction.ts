@@ -8,8 +8,8 @@
  * - `switch` — voluntarily switch the active Pokémon for another in the team
  * - `item` — use a bag item on a Pokémon when the ruleset permits bag items
  * - `run` — attempt to flee (wild battles only; side 0 only)
- * - `recharge` — engine-generated action for moves that require a recharge turn (e.g., Hyper Beam)
- * - `struggle` — engine-generated action when all moves are out of PP
+ * - `recharge` — skip-turn action for a forced recharge turn (e.g., after Hyper Beam)
+ * - `struggle` — fallback action when no moves have PP remaining
  */
 export type BattleAction =
   | MoveAction
@@ -85,9 +85,9 @@ export interface RunAction {
 }
 
 /**
- * Engine-generated action that forces a Pokémon to skip its turn while recharging
- * after a two-turn move (e.g., Hyper Beam, Giga Impact).
- * Not submitted by consumers — the engine injects this automatically.
+ * Action representing a forced recharge turn after a move like Hyper Beam or
+ * Giga Impact. The engine often injects this automatically after replacing a
+ * submitted action, but it remains part of the public action union.
  */
 export interface RechargeAction {
   /** Discriminant: always `"recharge"` */
@@ -97,9 +97,9 @@ export interface RechargeAction {
 }
 
 /**
- * Engine-generated action that forces a Pokémon to use Struggle when it has no
- * remaining PP across all moves. Struggle deals typeless damage with 50% recoil.
- * Not submitted by consumers — the engine injects this automatically.
+ * Action representing Struggle when a side has no PP left across its moves.
+ * Higher-level controllers may submit this directly; for example, `RandomAI`
+ * returns `struggle` when no moves are usable.
  */
 export interface StruggleAction {
   /** Discriminant: always `"struggle"` */
