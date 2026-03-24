@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import * as core from "../src/index.js";
 
 describe("core public API exports", () => {
+  it("exports the shared damage lookup tables from the root barrel", () => {
+    expect(core.BASE_TYPE_BOOST_ITEMS).toBeDefined();
+    expect(core.BASE_PLATE_ITEMS).toBeDefined();
+    expect(core.BASE_PINCH_ABILITY_TYPES).toBeDefined();
+  });
+
   it("exports the clearer shared-mechanics names from the root barrel", () => {
     expect(core.gen1to2FullParalysisCheck).toBeDefined();
     expect(core.gen1to4MultiHitRoll).toBeDefined();

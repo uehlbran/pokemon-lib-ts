@@ -1,11 +1,11 @@
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import type { PokemonType } from "../entities/types";
 
 /**
- * Battle-local shared lookup tables for damage calculation.
+ * Shared offensive lookup tables used by Gen 4-9 damage calculators.
  *
- * These are the stable offensive tables that are duplicated across multiple
- * generation damage calculators. Generation-specific files extend these tables
- * only when a newer generation adds an entry.
+ * These tables are generation-agnostic constants, so they belong in core rather than
+ * the battle engine package. Later generations extend them locally when mechanics add
+ * new entries such as Pixie Plate or Roseli Berry.
  */
 
 export const BASE_TYPE_BOOST_ITEMS: Readonly<Record<string, PokemonType>> = {

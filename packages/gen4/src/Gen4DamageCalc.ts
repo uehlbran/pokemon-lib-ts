@@ -4,13 +4,11 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
+import type { MoveEffect, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
-} from "@pokemon-lib-ts/battle/data";
-import type { MoveEffect, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import {
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,

@@ -37,11 +37,6 @@ import type {
   DamageResult,
 } from "@pokemon-lib-ts/battle";
 import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
-import {
-  BASE_PINCH_ABILITY_TYPES,
-  BASE_PLATE_ITEMS,
-  BASE_TYPE_BOOST_ITEMS,
-} from "@pokemon-lib-ts/battle/data";
 import type {
   MoveEffect,
   PokemonType,
@@ -49,6 +44,9 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  BASE_PINCH_ABILITY_TYPES,
+  BASE_PLATE_ITEMS,
+  BASE_TYPE_BOOST_ITEMS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
