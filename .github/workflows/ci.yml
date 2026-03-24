@@ -63,6 +63,24 @@ jobs:
           restore-keys: turbo-
       - run: npm run typecheck
 
+  package-boundaries:
+    name: package-boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ github.sha }}
+          restore-keys: turbo-
+      - run: npm run build
+      - run: npm run ci:package-boundaries
+
   lint:
     name: lint
     runs-on: ubuntu-latest
