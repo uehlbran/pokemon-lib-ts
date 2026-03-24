@@ -2,6 +2,8 @@ import type { BattleStat, PokemonInstance, PokemonType } from "@pokemon-lib-ts/c
 import type { PokemonSnapshot } from "../events";
 import type { ActivePokemon } from "../state";
 
+let testPokemonUidCounter = 0;
+
 /** Create a PokemonSnapshot from an ActivePokemon (public-facing info only) */
 export function createPokemonSnapshot(active: ActivePokemon): PokemonSnapshot {
   return {
@@ -102,13 +104,18 @@ export function getPokemonName(active: ActivePokemon): string {
  * Create a minimal test Pokemon with sane defaults.
  * Useful for tests — avoids needing a full DataManager.
  */
+function createTestPokemonUid(speciesId: number, level: number): string {
+  testPokemonUidCounter += 1;
+  return `test-${speciesId}-${level}-${testPokemonUidCounter}`;
+}
+
 export function createTestPokemon(
   speciesId: number,
   level: number,
   overrides?: Partial<PokemonInstance>,
 ): PokemonInstance {
   return {
-    uid: `test-${speciesId}-${level}`,
+    uid: createTestPokemonUid(speciesId, level),
     speciesId,
     nickname: null,
     level,
