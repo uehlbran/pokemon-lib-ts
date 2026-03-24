@@ -305,11 +305,17 @@ describe("BattleEngine — advanced scenarios", () => {
         (event) => event.type === "screen-end" && event.side === 0 && event.screen === "safeguard",
       );
       expect(screenEnd).toBeDefined();
+      const screenEndIndex = events.indexOf(screenEnd);
       const safeguardWearOffMessage = events.find(
         (event) => event.type === "message" && event.text === "Side 0's Safeguard wore off!",
       );
-      // Source: BattleEngine emits the existing wear-off text immediately after the new screen-end event.
+      // Source: packages/battle/src/engine/BattleEngine.ts emits the legacy wear-off text
+      // immediately after the new screen-end event for Safeguard expiration.
       expect(safeguardWearOffMessage).toBeDefined();
+      const safeguardWearOffMessageIndex = events.indexOf(safeguardWearOffMessage);
+      expect(screenEndIndex).toBeGreaterThanOrEqual(0);
+      expect(safeguardWearOffMessageIndex).toBeGreaterThanOrEqual(0);
+      expect(screenEndIndex).toBeLessThan(safeguardWearOffMessageIndex);
     });
   });
 
