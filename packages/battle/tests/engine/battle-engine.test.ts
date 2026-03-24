@@ -834,6 +834,19 @@ describe("BattleEngine", () => {
       expect(log.length).toBeGreaterThan(0);
       expect(log[0]?.type).toBe("battle-start");
     });
+
+    it("given a retrieved event log, when the caller mutates that array, then the engine's backing log is unchanged", () => {
+      const { engine } = createTestEngine();
+      engine.start();
+
+      const log = engine.getEventLog();
+      const originalLength = log.length;
+
+      (log as BattleEvent[]).push({ type: "message", text: "mutated" });
+
+      expect(log.length).toBe(originalLength + 1);
+      expect(engine.getEventLog()).toHaveLength(originalLength);
+    });
   });
 
   describe("serialization", () => {

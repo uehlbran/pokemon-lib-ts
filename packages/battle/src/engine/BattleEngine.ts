@@ -209,7 +209,7 @@ export class BattleEngine implements BattleEventEmitter {
    * @returns An immutable view of the event log; safe to iterate or serialize.
    */
   getEventLog(): readonly BattleEvent[] {
-    return this.eventLog;
+    return [...this.eventLog];
   }
 
   private emit(event: BattleEvent): void {
