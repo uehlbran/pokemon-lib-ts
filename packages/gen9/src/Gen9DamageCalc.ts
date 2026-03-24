@@ -41,13 +41,13 @@ import type {
   DamageResult,
 } from "@pokemon-lib-ts/battle";
 import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
-import type { MoveEffect, PokemonType, TypeChart, VolatileStatus } from "@pokemon-lib-ts/core";
-import { getStatStageMultiplier, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import {
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
-} from "../../battle/src/data/index.js";
+} from "@pokemon-lib-ts/battle/data";
+import type { MoveEffect, PokemonType, TypeChart, VolatileStatus } from "@pokemon-lib-ts/core";
+import { getStatStageMultiplier, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import {
   getFluffyModifier,
   getHadronEngineSpAModifier,

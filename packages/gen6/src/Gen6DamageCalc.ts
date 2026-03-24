@@ -5,17 +5,17 @@ import type {
   DamageResult,
 } from "@pokemon-lib-ts/battle";
 import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
+import {
+  BASE_PINCH_ABILITY_TYPES,
+  BASE_PLATE_ITEMS,
+  BASE_TYPE_BOOST_ITEMS,
+} from "@pokemon-lib-ts/battle/data";
 import type { MoveEffect, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
-import {
-  BASE_PINCH_ABILITY_TYPES,
-  BASE_PLATE_ITEMS,
-  BASE_TYPE_BOOST_ITEMS,
-} from "../../battle/src/data/index.js";
 import { isGen6Grounded } from "./Gen6EntryHazards.js";
 import { getTerrainDamageModifier } from "./Gen6Terrain.js";
 import { isWeatherSuppressedGen6 } from "./Gen6Weather.js";
