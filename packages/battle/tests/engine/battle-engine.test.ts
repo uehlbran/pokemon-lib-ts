@@ -1110,6 +1110,21 @@ describe("BattleEngine", () => {
       expect(log.length).toBeGreaterThan(0);
       expect(log[0]?.type).toBe("battle-start");
     });
+
+    it("given a caller mutates the array returned by getEventLog, when getEventLog is called again, then the engine history is unchanged", () => {
+      const { engine } = createTestEngine();
+      engine.start();
+
+      const firstSnapshot = engine.getEventLog();
+      const originalLength = firstSnapshot.length;
+
+      (firstSnapshot as BattleEvent[]).pop();
+
+      const secondSnapshot = engine.getEventLog();
+
+      expect(secondSnapshot).toHaveLength(originalLength);
+      expect(secondSnapshot[0]?.type).toBe("battle-start");
+    });
   });
 
   describe("serialization", () => {
