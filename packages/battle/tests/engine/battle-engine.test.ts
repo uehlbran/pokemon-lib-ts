@@ -641,7 +641,9 @@ describe("BattleEngine", () => {
       const attacker = engine.state.sides[0].active[0]!;
       attacker.statStages.attack = 2;
       attacker.statStages.speed = 1;
+      attacker.substituteHp = 50;
       attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
+      attacker.volatileStatuses.set("substitute", { turnsLeft: -1 });
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -654,10 +656,15 @@ describe("BattleEngine", () => {
       // so the replacement should inherit attacker.statStages.attack = +2 and speed = +1.
       expect(replacement.statStages.attack).toBe(2);
       expect(replacement.statStages.speed).toBe(1);
+      // Source: Baton Pass also preserves an existing Substitute, and the engine tracks that
+      // via replacement.substituteHp alongside the substitute volatile. The opposing Tackle
+      // hits the substitute for 10 damage before the switch prompt, so the passed substitute has 40 HP left.
+      expect(replacement.substituteHp).toBe(40);
       // Source: the mock ruleset decrements confusion during turn processing before the switch prompt,
       // so attacker.volatileStatuses.get("confusion") goes from { turnsLeft: 2 } to { turnsLeft: 1 }
       // before engine.submitSwitch sends the replacement in.
       expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
+      expect(replacement.volatileStatuses.get("substitute")).toEqual({ turnsLeft: -1 });
     });
 
     it("given Baton Pass into Sticky Web, when the replacement is chosen, then inherited boosts are merged before switch-in effects", () => {
