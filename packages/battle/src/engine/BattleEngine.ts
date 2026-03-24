@@ -2336,7 +2336,7 @@ export class BattleEngine implements BattleEventEmitter {
         damage, // damage dealt this hit — required by Life Orb / Shell Bell handlers
       });
       if (atkItemResult.activated) {
-        this.processItemResult(atkItemResult, actor, action.side);
+        this.processItemResult(atkItemResult, actor, defender, action.side);
       }
     }
 
@@ -2436,6 +2436,25 @@ export class BattleEngine implements BattleEventEmitter {
       });
       damage = result.damage;
 
+      // Passive immunity ability (Water Absorb, Volt Absorb, Motor Drive, Flash Fire, Dry Skin, Levitate)
+      // Source: Showdown sim/battle-actions.ts — ability immunities checked after damage calc returns 0
+      if (this.ruleset.hasAbilities() && result.damage === 0 && result.effectiveness === 0) {
+        const immunityResult = this.ruleset.applyAbility("passive-immunity", {
+          pokemon: defender,
+          opponent: actor,
+          state: this.state,
+          rng: this.state.rng,
+          trigger: "passive-immunity",
+          move: moveData,
+        });
+        if (immunityResult.activated) {
+          this.processAbilityResult(immunityResult, defender, actor, defenderSide);
+          actor.lastMoveUsed = moveId;
+          actor.movedThisTurn = true;
+          return; // Move fully absorbed — skip damage, effects, items
+        }
+      }
+
       if (result.effectiveness !== 1) {
         this.emit({ type: "effectiveness", multiplier: result.effectiveness });
       }
@@ -2444,7 +2463,9 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       // Apply damage to substitute or pokemon
+      let hitSubstitute = false;
       if (defender.substituteHp > 0 && !moveData.flags.bypassSubstitute) {
+        hitSubstitute = true;
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
         this.emit({ type: "message", text: "The substitute took damage!" });
         if (defender.substituteHp === 0) {
@@ -2500,6 +2521,76 @@ export class BattleEngine implements BattleEventEmitter {
         if (damage > 0) {
           this.ruleset.onDamageReceived(defender, damage, moveData, this.state);
         }
+
+        // Held item: on-damage-taken trigger for defender
+        // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks (Absorb Bulb, Cell Battery, etc.)
+        if (this.ruleset.hasHeldItems() && damage > 0) {
+          const defItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
+            pokemon: defender,
+            state: this.state,
+            rng: this.state.rng,
+            damage,
+            move: moveData,
+            opponent: actor, // attacker is the opponent from the defender's perspective
+          });
+          if (defItemResult.activated) {
+            this.processItemResult(defItemResult, defender, actor, defenderSide);
+          }
+        }
+
+        // Held item: on-contact trigger for defender (Rocky Helmet, etc.)
+        // Source: Showdown sim/battle-actions.ts — onDamagingHit contact item hooks
+        if (this.ruleset.hasHeldItems() && damage > 0 && moveData.flags.contact && !hitSubstitute) {
+          if (defender.pokemon.currentHp > 0) {
+            const contactItemResult = this.ruleset.applyHeldItem("on-contact", {
+              pokemon: defender,
+              opponent: actor,
+              state: this.state,
+              rng: this.state.rng,
+              damage,
+              move: moveData,
+            });
+            if (contactItemResult.activated) {
+              this.processItemResult(contactItemResult, defender, actor, defenderSide);
+            }
+          }
+        }
+
+        // Ability: on-damage-taken trigger (e.g., Color Change — type changes to match move type)
+        // Source: Showdown sim/battle-actions.ts — onDamagingHit ability hook (fires after damage dealt)
+        if (this.ruleset.hasAbilities() && damage > 0 && defender.pokemon.currentHp > 0) {
+          const damageTakenAbilityResult = this.ruleset.applyAbility("on-damage-taken", {
+            pokemon: defender,
+            opponent: actor,
+            state: this.state,
+            rng: this.state.rng,
+            trigger: "on-damage-taken",
+            move: moveData,
+            damage,
+          });
+          if (damageTakenAbilityResult.activated) {
+            this.processAbilityResult(damageTakenAbilityResult, defender, actor, defenderSide);
+          }
+        }
+
+        // Contact ability trigger (Static, Flame Body, Poison Point, Rough Skin, etc.)
+        // Source: Showdown sim/battle-actions.ts — contact abilities checked after damage
+        if (this.ruleset.hasAbilities() && damage > 0 && moveData.flags.contact && !hitSubstitute) {
+          if (defender.pokemon.currentHp > 0) {
+            const contactResult = this.ruleset.applyAbility("on-contact", {
+              pokemon: defender,
+              opponent: actor,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-contact",
+              move: moveData,
+              damage,
+            });
+            if (contactResult.activated) {
+              this.processAbilityResult(contactResult, defender, actor, defenderSide);
+            }
+          }
+        }
       }
     }
 
@@ -2525,6 +2616,22 @@ export class BattleEngine implements BattleEventEmitter {
     // Depth guard: only recurse once to prevent infinite chains (Metronome -> Metronome is excluded from the pool but defensive check)
     if (effectResult.recursiveMove) {
       this.executeMoveById(effectResult.recursiveMove, actor, actorSide, defender, defenderSide);
+    }
+
+    // Held item: on-hit trigger for attacker
+    // Recursive move execution should preserve the same attacker item hook parity as executeMove().
+    if (this.ruleset.hasHeldItems() && damage > 0) {
+      const atkItemResult = this.ruleset.applyHeldItem("on-hit", {
+        pokemon: actor,
+        opponent: defender,
+        state: this.state,
+        rng: this.state.rng,
+        damage,
+        move: moveData,
+      });
+      if (atkItemResult.activated) {
+        this.processItemResult(atkItemResult, actor, defender, actorSide);
+      }
     }
 
     actor.lastMoveUsed = moveId;
