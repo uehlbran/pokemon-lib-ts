@@ -39,7 +39,8 @@ function createAndStartExpTestEngine(overrides?: {
     }),
   ];
 
-  // Blastoise level 30: MockRuleset HP = floor(((2*79+31)*30)/100) + 30 + 10 = 96
+  // Blastoise level 30 HP under the standard stat formula:
+  //   floor(((2*79+31)*30)/100) + 30 + 10 = 96
   const team2 = overrides?.team2 ?? [
     createTestPokemon(9, 30, {
       uid: "blastoise-1",
@@ -60,8 +61,8 @@ function createAndStartExpTestEngine(overrides?: {
   engine.on((e) => events.push(e));
   engine.start();
 
-  // After start(), the engine has recalculated stats. Now set the opponent's HP to 1
-  // so that MockRuleset's fixed 10-damage attack causes a faint on the next move.
+  // After start(), the engine has recalculated stats. Set the opponent's HP to 1 so the
+  // configured 10-damage attack causes a faint on the next move.
   if (!overrides?.skipFaintSetup) {
     const blastoiseActive = engine.state.sides[1].active[0];
     if (blastoiseActive) {
@@ -100,13 +101,8 @@ describe("BattleEngine - EXP gain on faint", () => {
   describe("basic EXP gain", () => {
     it("given wild pokemon faints, when participant is below level 100, then ExpGainEvent emitted with correct amount", () => {
       // Arrange
-      // MockRuleset calculateStats for Charizard (base HP=78) at level 50:
-      //   floor(((2*78+31)*50)/100) + 50 + 10 = floor(93.5) + 60 = 153
-      // Charizard calculatedStats.speed at level 50 with MockRuleset calcStat(100):
-      //   floor(((2*100+31)*50)/100) + 5 = floor(115.5) + 5 = 120
-      // Blastoise speed at level 30 with MockRuleset calcStat(78):
-      //   floor(((2*78+31)*30)/100) + 5 = floor(56.7) + 5 = 61
-      // Charizard (speed 120) > Blastoise (speed 61) → Charizard moves first.
+      // Charizard is faster than Blastoise in this fixture, so it moves first and the
+      // opponent is reduced to 1 HP before EXP is awarded.
       const { engine, events } = createAndStartExpTestEngine();
 
       // Act — Charizard moves first, deals 10 dmg to Blastoise (1 HP → faint)
@@ -114,15 +110,15 @@ describe("BattleEngine - EXP gain on faint", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      // Source: MockRuleset.calculateExpGain — floor(defeatedSpecies.baseExp * defeatedLevel / (5 * participantCount))
-      // Blastoise baseExp=239 (from mock-data-manager.ts), defeatedLevel=30, participantCount=1
-      // → floor(239 * 30 / (5 * 1)) = floor(1434) = 1434
+      // Derived inline from the EXP formula:
+      // floor(defeatedSpecies.baseExp * defeatedLevel / (5 * participantCount))
+      // = floor(239 * 30 / (5 * 1)) = 1434
       const expGainEvent = events.find((e): e is ExpGainEvent => e.type === "exp-gain");
       if (!expGainEvent) throw new Error("Expected an exp-gain event to be emitted");
       // EXP goes to side 0 (the winner, opposite the fainted pokemon on side 1)
       expect(expGainEvent.side).toBe(0);
       expect(expGainEvent.pokemon).toBe("charizard-1");
-      // Source: mock-configured value — see MockRuleset.calculateExpGain formula above
+      // Derived from the same EXP formula above.
       expect(expGainEvent.amount).toBe(1434);
     });
   });
@@ -154,10 +150,10 @@ describe("BattleEngine - EXP gain on faint", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      // Source: BattleEngine.awardExpForFaint level-up loop — emits LevelUpEvent per level gained
+      // The engine should emit one LevelUpEvent per level threshold crossed.
       const levelUpEvent = events.find((e): e is LevelUpEvent => e.type === "level-up");
       if (!levelUpEvent) throw new Error("Expected a level-up event to be emitted");
-      // Source: Charizard started at level 50, gained 1434 EXP → crossed level 51 threshold
+      // Charizard started at level 50 and gained 1434 EXP, so it crosses the level 51 threshold.
       expect(levelUpEvent.newLevel).toBe(51);
       expect(levelUpEvent.side).toBe(0);
       expect(levelUpEvent.pokemon).toBe("charizard-1");
@@ -165,7 +161,7 @@ describe("BattleEngine - EXP gain on faint", () => {
 
     it("given pokemon has enough EXP for 8 level-ups, when fainted opponent awards EXP, then 8 LevelUpEvents emitted in ascending order from level 6 to 13", () => {
       // Arrange: Charizard at level 5 with 0 EXP; inject EXP via setNextExpGain to trigger 8 level-ups.
-      // Source: getExpForLevel("medium-slow", N) — medium-slow formula: floor(1.2*n³ - 15*n² + 100*n - 140)
+      // getExpForLevel("medium-slow", N) uses the medium-slow formula: floor(1.2*n³ - 15*n² + 100*n - 140)
       // expPastLevel8 = getExpForLevel("medium-slow", 8) + 1000 = 314 + 1000 = 1314
       // Starting at level 5 with 0 EXP, after gaining 1314 EXP:
       //   Level 6 threshold: 179  → 1314 ≥ 179  ✓ (level up to 6)
@@ -181,7 +177,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       const expPastLevel8 = getExpForLevel("medium-slow", 8) + 1000;
 
       const ruleset = new MockRuleset();
-      // Source: mock-configured value — setNextExpGain stores a one-shot override in MockRuleset
+      // Configured one-shot EXP gain for this test fixture.
       ruleset.setNextExpGain(expPastLevel8);
 
       const team1 = [
@@ -201,7 +197,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      // Source: BattleEngine.awardExpForFaint — emits one LevelUpEvent per level gained
+      // The engine should emit one LevelUpEvent per level gained.
       const levelUpEvents = events.filter((e): e is LevelUpEvent => e.type === "level-up");
       // Source: formula derivation above — exactly 8 level-ups (levels 6 through 13)
       expect(levelUpEvents.length).toBe(8);
@@ -505,11 +501,11 @@ describe("BattleEngine - EXP gain on faint", () => {
   describe("HP adjustment on level up", () => {
     it("given level up occurs, when stats recalculated, then currentHp increases by HP stat difference", () => {
       // Arrange
-      // MockRuleset.calculateStats for Charizard (base HP=78):
-      //   Level 50: floor(((2*78+31)*50)/100) + 50 + 10 = floor(93.5) + 60 = 153
-      //   Level 51: floor(((2*78+31)*51)/100) + 51 + 10 = floor(95.37) + 61 = 156
-      //   HP stat delta = 156 - 153 = 3
-      // Source: BattleEngine.awardExpForFaint — currentHp += (newStats.hp - oldHpStat), capped at newStats.hp
+      // Charizard HP under the standard stat formula:
+      //   Level 50: floor(((2*78+31)*50)/100) + 50 + 10 = 153
+      //   Level 51: floor(((2*78+31)*51)/100) + 51 + 10 = 156
+      //   HP stat delta = 3
+      // Level-up restores current HP by the HP delta, capped at the new max HP.
       const expForLevel51 = getExpForLevel("medium-slow", 51);
       // mock gain = floor(239*30/(5*1)) = 1434 → startExp = expForLevel51 - 1434
       const startExp = expForLevel51 - 1434;
@@ -526,7 +522,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       const { engine, events } = createAndStartExpTestEngine({ team1 });
 
       // Verify Charizard's HP is at its calculated max before the faint
-      // Source: MockRuleset calcHp at level 50 = 153 (see formula above)
+      // Charizard level 50 HP under the standard stat formula is 153.
       const charizardBefore = engine.state.sides[0].active[0];
       expect(charizardBefore?.pokemon.currentHp).toBe(153);
 
@@ -538,8 +534,8 @@ describe("BattleEngine - EXP gain on faint", () => {
       const levelUpEvent = events.find((e): e is LevelUpEvent => e.type === "level-up");
       if (!levelUpEvent) throw new Error("Expected a level-up event to be emitted");
 
-      // Source: MockRuleset calcHp at level 51 = 156; started at 153 (full HP)
-      // After level-up: currentHp = min(153 + (156-153), 156) = min(156, 156) = 156
+      // Charizard level 51 HP under the standard stat formula is 156; starting from 153,
+      // the level-up restores the HP delta and caps at the new max.
       const charizardAfter = engine.state.sides[0].active[0];
       expect(charizardAfter?.pokemon.currentHp).toBe(156);
       expect(charizardAfter?.pokemon.calculatedStats?.hp).toBe(156);

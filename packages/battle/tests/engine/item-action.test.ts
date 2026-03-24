@@ -85,8 +85,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Damage the pokemon after engine init (engine recalculates stats on start,
       // overwriting any currentHp set in the constructor).
-      // Source: MockRuleset calcHp for Charizard (base HP 78, level 50):
-      //   floor(((2*78+31)*50)/100) + 50 + 10 = 153
+      // Charizard HP at level 50: floor(((2*78 + 31 + 0) * 50) / 100) + 50 + 10 = 153
       const active = engine.state.sides[0].active[0];
       const maxHp = active!.pokemon.calculatedStats!.hp; // 153
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
@@ -259,8 +258,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Faint the bench pokemon after engine init (engine recalculates stats on start).
-      // Source: MockRuleset calcHp for Pikachu (base HP 35, level 50):
-      //   floor(((2*35+31)*50)/100) + 50 + 10 = floor(50.5) + 60 = 50 + 60 = 110
+      // Pikachu HP at level 50: floor(((2*35 + 31 + 0) * 50) / 100) + 50 + 10 = 110
       const faintedMon = engine.getState().sides[0].team[1];
       const faintedMaxHp = faintedMon.calculatedStats!.hp; // 110
       faintedMon.currentHp = 0; // faint it
@@ -310,8 +308,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Faint the bench pokemon after engine init (engine recalculates stats on start).
-      // Source: MockRuleset calcHp for Pikachu (base HP 35, level 50):
-      //   floor(((2*35+31)*50)/100) + 50 + 10 = 110
+      // Pikachu HP at level 50: floor(((2*35 + 31 + 0) * 50) / 100) + 50 + 10 = 110
       const faintedMon = engine.getState().sides[0].team[1];
       const faintedMaxHp = faintedMon.calculatedStats!.hp; // 110
       faintedMon.currentHp = 0; // faint it
@@ -343,8 +340,8 @@ describe("BattleEngine - ItemAction bag item usage", () => {
   describe("priority ordering", () => {
     it("given item action submitted before move action, when both sides submit, then item executes first", () => {
       // Arrange
-      // Source: Bulbapedia "Priority" — item usage has higher priority than moves
-      // The engine's resolveTurnOrder (BaseRuleset/MockRuleset) sorts items before moves.
+      // Source: Bulbapedia "Priority" — item usage has higher priority than moves.
+      // This test expects item actions to resolve before moves.
       const ruleset = new MockRuleset();
       ruleset.setNextBagItemResult({
         activated: true,
@@ -439,6 +436,9 @@ describe("BattleEngine - ItemAction bag item usage", () => {
     it("given a Full Restore used on a damaged and poisoned pokemon, when item action submitted, then both heal and status cure events emitted", () => {
       // Arrange
       const ruleset = new MockRuleset();
+      const configuredDamage = 10;
+      // configuredDamage controls the expected post-move HP in this test.
+      ruleset.setFixedDamage(configuredDamage);
       // Source: Bulbapedia "Full Restore" — heals all HP and cures all status conditions
       ruleset.setNextBagItemResult({
         activated: true,
@@ -452,8 +452,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Damage and poison the pokemon after engine init (engine recalculates stats
       // on start, overwriting any currentHp/status set in the constructor).
-      // Source: MockRuleset calcHp for Charizard (base HP 78, level 50):
-      //   floor(((2*78+31)*50)/100) + 50 + 10 = 153
+      // Charizard HP at level 50: floor(((2*78 + 31 + 0) * 50) / 100) + 50 + 10 = 153
       const active = engine.state.sides[0].active[0];
       const maxHp = active!.pokemon.calculatedStats!.hp; // 153
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
@@ -473,9 +472,9 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       expect(cureEvent!.status).toBe("poison");
 
       // Verify state was mutated — after heal, HP = 103 + 50 = 153 (= maxHp, capped).
-      // Then opponent's Tackle deals 10 damage (MockRuleset fixed damage) = 143.
+      // Then the configured damage leaves the pokemon at maxHp - configuredDamage.
       const activeAfter = engine.state.sides[0].active[0];
-      expect(activeAfter!.pokemon.currentHp).toBe(maxHp - 10);
+      expect(activeAfter!.pokemon.currentHp).toBe(maxHp - configuredDamage);
       expect(activeAfter!.pokemon.status).toBeNull();
     });
   });
