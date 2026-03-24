@@ -776,7 +776,7 @@ export class BattleEngine implements BattleEventEmitter {
     const activeSlot = active?.teamSlot ?? -1;
 
     // Delegate switching restriction check to the ruleset
-    if (active && !this.ruleset.canSwitch(active, this.state)) {
+    if (active && active.pokemon.currentHp > 0 && !this.ruleset.canSwitch(active, this.state)) {
       return [];
     }
 
