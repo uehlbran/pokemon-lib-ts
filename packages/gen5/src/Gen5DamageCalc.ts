@@ -15,6 +15,7 @@ import {
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
+  pokeRound,
 } from "@pokemon-lib-ts/core";
 import { isSheerForceEligibleMove } from "./Gen5AbilitiesDamage";
 import { isWeatherSuppressedGen5 } from "./Gen5Weather";
@@ -49,36 +50,8 @@ export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
   "chilan-berry": "normal",
 };
 
-// ---- pokeRound: the 4096-based rounding function ----
-
-/**
- * Apply a 4096-based modifier to a value, using Showdown's rounding convention.
- *
- * This is the core new mechanic in Gen 5+. All modifiers use 4096-based rounding
- * instead of the integer multiply/divide from earlier gens.
- *
- * Equivalent to Showdown's `modify(value, modifier/4096)`:
- *   `tr((tr(value * modifier) + 2048 - 1) / 4096)`
- *
- * Showdown's tr() is `num >>> 0` (unsigned 32-bit truncation), which for
- * positive integers is equivalent to Math.floor. For positive damage values,
- * `tr(v*m) + 2048 - 1` simplifies to `v*m + 2047`, giving:
- *   `floor((value * modifier + 2047) / 4096)`
- *
- * Source: references/pokemon-showdown/sim/battle.ts modify() method (line 2334-2344)
- * Source: references/pokemon-showdown/sim/dex.ts trunc() — num >>> 0
- *
- * @param value - The damage/stat value to modify
- * @param modifier - The 4096-based modifier (4096 = 1.0x, 6144 = 1.5x, etc.)
- * @returns The modified value after rounding
- */
-export function pokeRound(value: number, modifier: number): number {
-  // Source: references/pokemon-showdown/sim/battle.ts line 2344
-  // return tr((tr(value * modifier) + 2048 - 1) / 4096)
-  // For positive integers, equivalent to: floor((value * modifier + 2047) / 4096)
-  // Fix: +2047 not +2048 -- see GitHub #536
-  return Math.floor((value * modifier + 2047) / 4096);
-}
+// Re-exported for backwards compatibility; canonical implementation lives in core.
+export { pokeRound };
 
 // ---- Type-Boosting Items ----
 

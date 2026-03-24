@@ -51,29 +51,12 @@ import {
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
+  pokeRound,
 } from "@pokemon-lib-ts/core";
 import { isWeatherSuppressedGen8 } from "./Gen8Weather.js";
 
-// ---- pokeRound: the 4096-based rounding function ----
-
-/**
- * Apply a 4096-based modifier to a value, using Showdown's rounding convention.
- *
- * Equivalent to Showdown's `modify(value, modifier/4096)`:
- *   `tr((tr(value * modifier) + 2048 - 1) / 4096)`
- *
- * For positive damage values, simplifies to:
- *   `floor((value * modifier + 2047) / 4096)`
- *
- * Source: references/pokemon-showdown/sim/battle.ts modify() method
- *
- * @param value - The damage/stat value to modify
- * @param modifier - The 4096-based modifier (4096 = 1.0x, 6144 = 1.5x, etc.)
- * @returns The modified value after rounding
- */
-export function pokeRound(value: number, modifier: number): number {
-  return Math.floor((value * modifier + 2047) / 4096);
-}
+// Re-exported for backwards compatibility; canonical implementation lives in core.
+export { pokeRound };
 
 // ---- Type-Resist Berries ----
 

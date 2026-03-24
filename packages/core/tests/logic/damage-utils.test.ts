@@ -4,6 +4,7 @@ import {
   applyDamageModifierChain,
   getStabModifier,
   getWeatherDamageModifier,
+  pokeRound,
 } from "../../src/logic/damage-utils";
 
 // --- applyDamageModifier ---
@@ -127,6 +128,26 @@ describe("applyDamageModifierChain", () => {
     // Step 2: floor(150 * 0) = 0
     // Step 3: floor(0 * 2.0) = 0
     expect(result).toBe(0);
+  });
+});
+
+describe("pokeRound", () => {
+  it("given a half modifier on a boundary case, when called, then uses Showdown's +2047 rounding", () => {
+    // Source: Showdown sim/battle.ts modify() -- floor((value * modifier + 2047) / 4096)
+    // Derivation: floor((3 * 2048 + 2047) / 4096) = floor(8191 / 4096) = 1
+    expect(pokeRound(3, 2048)).toBe(1);
+  });
+
+  it("given a 1.5x modifier on a boundary case, when called, then does not round up", () => {
+    // Source: Showdown sim/battle.ts modify() -- floor((value * modifier + 2047) / 4096)
+    // Derivation: floor((57 * 6144 + 2047) / 4096) = floor(352255 / 4096) = 85
+    expect(pokeRound(57, 6144)).toBe(85);
+  });
+
+  it("given an identity modifier, when called, then returns the original value", () => {
+    // Source: Showdown sim/battle.ts modify() -- floor((value * modifier + 2047) / 4096)
+    // Derivation: floor((100 * 4096 + 2047) / 4096) = floor(411647 / 4096) = 100
+    expect(pokeRound(100, 4096)).toBe(100);
   });
 });
 
