@@ -2583,7 +2583,10 @@ export class BattleEngine implements BattleEventEmitter {
     try {
       itemData = this.dataManager.getItem(action.itemId);
     } catch {
-      // Item not in data manager — fall through to normal bag item logic
+      this.emit({
+        type: "engine-warning",
+        message: `Item "${action.itemId}" not found in data manager; falling back to bag-item handling.`,
+      });
     }
     if (itemData?.useEffect?.type === "catch") {
       this.executeCatchAttempt(action, itemData);

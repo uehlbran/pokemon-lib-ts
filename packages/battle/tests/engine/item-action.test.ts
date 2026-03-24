@@ -398,6 +398,43 @@ describe("BattleEngine - ItemAction bag item usage", () => {
     });
   });
 
+  describe("unknown item ids", () => {
+    it("given an item action with an unknown item id, when it is submitted, then the engine emits a warning and still falls back to bag-item handling", () => {
+      const ruleset = new MockRuleset();
+
+      const { engine, events } = createTestEngine({ ruleset });
+      engine.start();
+
+      engine.submitAction(0, { type: "item", side: 0, itemId: "mystery-item" });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const warning = events.find((event) => event.type === "engine-warning");
+      expect(warning).toMatchObject({
+        type: "engine-warning",
+        message:
+          'Item "mystery-item" not found in data manager; falling back to bag-item handling.',
+      });
+
+      const usageMessage = events.find(
+        (event) =>
+          event.type === "message" && "text" in event && event.text === "Side 0 used mystery-item!",
+      );
+      expect(usageMessage).toMatchObject({
+        type: "message",
+        text: "Side 0 used mystery-item!",
+      });
+
+      const noEffectMessage = events.find(
+        (event) =>
+          event.type === "message" && "text" in event && event.text === "It had no effect.",
+      );
+      expect(noEffectMessage).toMatchObject({
+        type: "message",
+        text: "It had no effect.",
+      });
+    });
+  });
+
   describe("Full Restore", () => {
     it("given a Full Restore used on a damaged and poisoned pokemon, when item action submitted, then both heal and status cure events emitted", () => {
       // Arrange
