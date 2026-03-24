@@ -11,6 +11,7 @@
     "ci:package-boundaries": "tsx scripts/verify-package-boundaries.ts",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
+    "typecheck:contracts": "npm run typecheck:contracts --workspace @pokemon-lib-ts/battle",
     "lint": "npx @biomejs/biome check --write .",
     "lint:check": "npx @biomejs/biome check .",
     "clean": "turbo run clean",

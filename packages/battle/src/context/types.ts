@@ -473,7 +473,6 @@ export type AbilityEffectType =
   | "volatile-inflict"
   | "volatile-remove"
   | "item-restore"
-  | "move-prevented"
   | "none";
 
 /** A single effect produced by an ability trigger — proper discriminated union on effectType. */
@@ -536,7 +535,6 @@ export type AbilityEffect =
       readonly target: "self";
       readonly item: string;
     }
-  | { readonly effectType: "move-prevented"; readonly target: "self" }
   | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
 
 export interface AbilityResult {

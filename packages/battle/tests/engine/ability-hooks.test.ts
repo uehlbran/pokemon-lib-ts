@@ -700,9 +700,9 @@ describe("on-before-move ability hook", () => {
       if (trigger === "on-before-move") {
         return {
           activated: true,
-          effects: [{ effectType: "move-prevented" as const, target: "self" as const }],
           messages: ["Charizard is loafing around!"],
           movePrevented: true,
+          effects: [],
         };
       }
       return { activated: false, effects: [], messages: [] };
