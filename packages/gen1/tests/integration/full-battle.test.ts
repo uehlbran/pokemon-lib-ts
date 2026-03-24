@@ -87,8 +87,20 @@ describe("Gen 1 Full Battle Integration", () => {
       const phase = engine.getPhase();
 
       if (phase === "action-select") {
-        const action0 = ai.chooseAction(0, engine.getState(), ruleset, aiRng);
-        const action1 = ai.chooseAction(1, engine.getState(), ruleset, aiRng);
+        const action0 = ai.chooseAction(
+          0,
+          engine.getState(),
+          ruleset,
+          aiRng,
+          engine.getAvailableMoves(0),
+        );
+        const action1 = ai.chooseAction(
+          1,
+          engine.getState(),
+          ruleset,
+          aiRng,
+          engine.getAvailableMoves(1),
+        );
         engine.submitAction(0, action0);
         engine.submitAction(1, action1);
         turns++;
