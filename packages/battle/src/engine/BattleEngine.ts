@@ -1779,6 +1779,10 @@ export class BattleEngine implements BattleEventEmitter {
       "underwater",
       "shadow-force-charging",
     ];
+    const actorWasCharging =
+      semiInvulnerableVolatiles.some((vol) => actor.volatileStatuses.has(vol)) ||
+      actor.volatileStatuses.has("charging");
+
     for (const vol of semiInvulnerableVolatiles) {
       if (actor.volatileStatuses.has(vol)) {
         actor.volatileStatuses.delete(vol);
@@ -1862,6 +1866,60 @@ export class BattleEngine implements BattleEventEmitter {
           return;
         }
       }
+    }
+
+    const defenderSelectedMove = this.getDefenderSelectedMove(defenderSide as 0 | 1);
+
+    // Charge-turn handlers must run before accuracy and damage. On the setup turn
+    // they can request a forced follow-up move, and on Power Herb turns they can
+    // consume the item and skip the setup turn entirely.
+    let handledChargeMove = false;
+    let chargeMoveEffectResult: MoveEffectResult | null = null;
+    if (effectiveMoveData.flags.charge && !actorWasCharging) {
+      handledChargeMove = true;
+      chargeMoveEffectResult = this.ruleset.executeMoveEffect({
+        attacker: actor,
+        defender,
+        move: effectiveMoveData,
+        damage: 0,
+        state: this.state,
+        rng: this.state.rng,
+        defenderSelectedMove,
+      });
+
+      if (chargeMoveEffectResult.forcedMoveSet) {
+        this.processEffectResult(
+          chargeMoveEffectResult,
+          actor,
+          defender,
+          action.side,
+          defenderSide as 0 | 1,
+        );
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+
+      if (chargeMoveEffectResult.attackerItemConsumed) {
+        this.processEffectResult(
+          chargeMoveEffectResult,
+          actor,
+          defender,
+          action.side,
+          defenderSide as 0 | 1,
+        );
+        if (this.state.ended) {
+          actor.lastMoveUsed = moveData.id;
+          actor.movedThisTurn = true;
+          return;
+        }
+        chargeMoveEffectResult = null;
+      }
+    } else if (effectiveMoveData.flags.charge) {
+      // The attacker was already in its charge volatile, so this is the
+      // follow-up attack turn. Skip the post-damage move-effect hook to avoid
+      // re-triggering the charge setup after the volatile is cleared above.
+      handledChargeMove = true;
     }
 
     // Accuracy check — use effectiveMoveData so gimmick-modified accuracy/flags are applied.
@@ -2216,23 +2274,37 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Apply move effects
-    const effectResult = this.ruleset.executeMoveEffect({
-      attacker: actor,
-      defender,
-      move: effectiveMoveData,
-      damage,
-      state: this.state,
-      rng: this.state.rng,
-      brokeSubstitute,
-      defenderSelectedMove: this.getDefenderSelectedMove(defenderSide as 0 | 1),
-    });
+    const effectResult = handledChargeMove
+      ? chargeMoveEffectResult
+      : this.ruleset.executeMoveEffect({
+          attacker: actor,
+          defender,
+          move: effectiveMoveData,
+          damage,
+          state: this.state,
+          rng: this.state.rng,
+          brokeSubstitute,
+          defenderSelectedMove,
+        });
 
-    this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
-    if (this.state.ended) {
-      actor.lastMoveUsed = moveData.id;
-      actor.movedThisTurn = true;
-      return;
+    if (effectResult !== null) {
+      this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
+      if (this.state.ended) {
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
     }
+
+    const resolvedEffectResult: MoveEffectResult = effectResult ?? {
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    };
 
     // Multi-hit move loop: repeat damage for additional hits beyond the first.
     // Source: pokered multi-hit moves — the engine repeats the damage step for each
@@ -2240,11 +2312,11 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: pokered — all hits after the first use the same damage as the first hit.
     // The random factor and stat stage application are locked to the first calculation.
     // Ends early if the target faints or the substitute breaks.
-    if (effectResult.multiHitCount && effectResult.multiHitCount > 0) {
+    if (resolvedEffectResult.multiHitCount && resolvedEffectResult.multiHitCount > 0) {
       // Capture first hit damage; subsequent hits reuse this value (Gen 1 multi-hit rule)
       const firstHitDamage = damage;
       let totalHits = 1; // already dealt the first hit
-      for (let i = 0; i < effectResult.multiHitCount; i++) {
+      for (let i = 0; i < resolvedEffectResult.multiHitCount; i++) {
         // Stop if defender fainted
         if (defender.pokemon.currentHp <= 0 && defender.substituteHp <= 0) break;
         // Stop if substitute was broken (Gen 1: multi-hit ends when sub breaks)
@@ -2254,7 +2326,7 @@ export class BattleEngine implements BattleEventEmitter {
         // When checkPerHitAccuracy is set, re-roll accuracy before each additional hit.
         // If the hit misses, the multi-hit loop stops immediately.
         // Source: Showdown data/moves.ts -- populationbomb: multiaccuracy: true
-        if (effectResult.checkPerHitAccuracy) {
+        if (resolvedEffectResult.checkPerHitAccuracy) {
           if (
             !this.ruleset.doesMoveHit({
               attacker: actor,
@@ -2288,10 +2360,10 @@ export class BattleEngine implements BattleEventEmitter {
         // Prefer perHitDamageFn (lazy, RNG consumed per-hit) over perHitDamage (eager).
         // Source: pret/pokecrystal TripleKickEffect/BeatUpEffect — damage computed in hit loop
         // Source: Bulbapedia — Triple Kick power escalates 10/20/30 per hit
-        let hitDamage = effectResult.perHitDamageFn
-          ? effectResult.perHitDamageFn(i)
-          : effectResult.perHitDamage && i < effectResult.perHitDamage.length
-            ? (effectResult.perHitDamage[i] ?? firstHitDamage)
+        let hitDamage = resolvedEffectResult.perHitDamageFn
+          ? resolvedEffectResult.perHitDamageFn(i)
+          : resolvedEffectResult.perHitDamage && i < resolvedEffectResult.perHitDamage.length
+            ? (resolvedEffectResult.perHitDamage[i] ?? firstHitDamage)
             : firstHitDamage;
         if (hitDamage <= 0) break;
 
@@ -2373,9 +2445,9 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Recursive move execution (Mirror Move, Metronome)
     // Source: pret/pokered MirrorMoveEffect, MetronomeEffect
-    if (effectResult.recursiveMove) {
+    if (resolvedEffectResult.recursiveMove) {
       this.executeMoveById(
-        effectResult.recursiveMove,
+        resolvedEffectResult.recursiveMove,
         actor,
         action.side,
         defender,
@@ -2394,7 +2466,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Recharge: if the move requires recharge and noRecharge was not set, mark the attacker
-    if (effectiveMoveData.flags.recharge && !effectResult.noRecharge) {
+    if (effectiveMoveData.flags.recharge && !resolvedEffectResult.noRecharge) {
       actor.volatileStatuses.set("recharge", { turnsLeft: 1 });
     }
 
