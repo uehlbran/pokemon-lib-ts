@@ -202,6 +202,15 @@ describe("BattleEngine", () => {
       expect(damageEvents.length).toBeGreaterThan(0);
     });
 
+    it("given a mismatched submitAction side and action.side, when submitAction is called, then it throws instead of queueing an inconsistent action", () => {
+      const { engine } = createTestEngine();
+      engine.start();
+
+      expect(() => engine.submitAction(0, { type: "move", side: 1, moveIndex: 0 })).toThrow(
+        "Submitted side 0 does not match action.side 1",
+      );
+    });
+
     it("given both sides submit moves, when turn resolves, then move-start events are emitted", () => {
       // Arrange
       const { engine, events } = createTestEngine();
