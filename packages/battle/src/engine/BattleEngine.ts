@@ -698,6 +698,8 @@ export class BattleEngine implements BattleEventEmitter {
         // Source: bug fix — getEventLog() promises the ordered log of all events
         // emitted since start(), so save/load must preserve the emitted history.
         eventLog: this.eventLog,
+        pendingSwitches: this.pendingSwitches,
+        sidesNeedingSwitch: this.sidesNeedingSwitch,
       },
       (_key, value) => {
         if (value instanceof Map) {
@@ -740,6 +742,8 @@ export class BattleEngine implements BattleEventEmitter {
       state: BattleState;
       participantTracker?: Record<string, string[]>;
       eventLog?: BattleEvent[];
+      pendingSwitches?: Map<0 | 1, number>;
+      sidesNeedingSwitch?: Set<0 | 1>;
     };
 
     BattleEngine.assertRulesetGenerationMatches(
@@ -775,9 +779,14 @@ export class BattleEngine implements BattleEventEmitter {
         configurable: false,
       },
       pendingActions: { value: new Map(), writable: true, enumerable: false, configurable: false },
-      pendingSwitches: { value: new Map(), writable: true, enumerable: false, configurable: false },
+      pendingSwitches: {
+        value: parsed.pendingSwitches ?? new Map(),
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
       sidesNeedingSwitch: {
-        value: new Set(),
+        value: parsed.sidesNeedingSwitch ?? new Set(),
         writable: true,
         enumerable: false,
         configurable: false,

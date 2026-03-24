@@ -78,6 +78,85 @@ describe("BattleEngine.deserialize", () => {
     ).toThrow("BattleEngine.deserialize: ruleset generation 9 does not match battle generation 1");
   });
 
+  it("given a battle saved in switch-prompt, when deserialized, then submitSwitch resumes with the saved switch requirements", () => {
+    const ruleset = new MockRuleset();
+    ruleset.setFixedDamage(500);
+    const dataManager = createMockDataManager();
+
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 200,
+      }),
+    ];
+
+    const team2 = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
+        currentHp: 200,
+      }),
+      createTestPokemon(25, 50, {
+        uid: "pikachu-1",
+        nickname: "Pikachu",
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: {
+          hp: 150,
+          attack: 90,
+          defense: 70,
+          spAttack: 80,
+          spDefense: 80,
+          speed: 110,
+        },
+        currentHp: 150,
+      }),
+    ];
+
+    const config: BattleConfig = {
+      generation: 1,
+      format: "singles",
+      teams: [team1, team2],
+      seed: 12345,
+    };
+
+    const engine = new BattleEngine(config, ruleset, dataManager);
+    engine.start();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: side 1's active Pokemon faints and still has a healthy bench Pokemon,
+    // so the engine transitions into switch-prompt and side 1 must choose slot 1.
+    expect(engine.getState().phase).toBe("switch-prompt");
+
+    const serialized = engine.serialize();
+    const restored = BattleEngine.deserialize(serialized, ruleset, dataManager);
+
+    expect(restored.getState().phase).toBe("switch-prompt");
+    expect(() => restored.submitSwitch(1, 1)).not.toThrow();
+    expect(restored.getActive(1)?.pokemon.uid).toBe("pikachu-1");
+    expect(restored.getState().phase).toBe("action-select");
+  });
+
   it("given a serialized battle state where currentHp is less than maxHp, when deserialized, then currentHp matches the saved value (not recalculated)", () => {
     // Arrange — create an engine, start it, deal some damage to reduce HP
     const ruleset = new MockRuleset();
