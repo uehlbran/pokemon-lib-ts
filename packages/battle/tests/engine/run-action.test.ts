@@ -236,6 +236,7 @@ describe("RunAction flee mechanic", () => {
       const { engine } = createWildBattleEngine();
       engine.start();
 
+      // Source: BattleEngine.submitAction run-side validation guard.
       expect(() => engine.submitAction(1, { type: "run", side: 1 })).toThrow(
         "RunAction is only valid for side 0",
       );
