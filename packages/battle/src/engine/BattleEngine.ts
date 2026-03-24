@@ -118,8 +118,18 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private static assertSinglesOnlyFormat(
+    source: "BattleEngine" | "BattleEngine.deserialize",
+    format: BattleState["format"],
+  ): void {
+    if (format !== "singles") {
+      throw new Error(`${source}: battle format "${format}" is not supported`);
+    }
+  }
+
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     BattleEngine.assertRulesetGenerationMatches("BattleEngine", config.generation, ruleset);
+    BattleEngine.assertSinglesOnlyFormat("BattleEngine", config.format);
     this.ruleset = ruleset;
     this.dataManager = dataManager;
 
@@ -334,6 +344,15 @@ export class BattleEngine implements BattleEventEmitter {
 
     if (side !== action.side) {
       throw new Error(`Submitted side ${side} does not match action.side ${action.side}`);
+    }
+
+    if (
+      action.type === "move" &&
+      (action.targetSide !== undefined || action.targetSlot !== undefined)
+    ) {
+      throw new Error(
+        "BattleEngine: move targetSide/targetSlot are not supported in singles battles",
+      );
     }
 
     if (action.type === "move" && !Number.isInteger(action.moveIndex)) {
@@ -743,6 +762,7 @@ export class BattleEngine implements BattleEventEmitter {
       parsed.state.generation,
       ruleset,
     );
+    BattleEngine.assertSinglesOnlyFormat("BattleEngine.deserialize", parsed.state.format);
 
     // Create the engine instance without running the constructor.
     // This avoids: (1) stat recalculation, (2) HP reset to max,
