@@ -57,6 +57,40 @@ class HazardMockRuleset extends MockRuleset {
   }
 }
 
+class ToxicSpikesAbsorbMockRuleset extends MockRuleset {
+  override getAvailableHazards(): readonly import("@pokemon-lib-ts/core").EntryHazardType[] {
+    return ["toxic-spikes"];
+  }
+
+  override applyEntryHazards(
+    pokemon: import("../../src/state").ActivePokemon,
+    side: import("../../src/state").BattleSide,
+    _state?: import("../../src/state").BattleState,
+  ): import("../../src/context").EntryHazardResult {
+    if (
+      pokemon.types.includes("poison") &&
+      side.hazards.some((hazard) => hazard.type === "toxic-spikes")
+    ) {
+      return {
+        damage: 0,
+        statusInflicted: null,
+        statChanges: [],
+        messages: [
+          `${pokemon.pokemon.nickname ?? pokemon.pokemon.speciesId.toString()} absorbed the poison spikes!`,
+        ],
+        hazardsToRemove: ["toxic-spikes"],
+      };
+    }
+
+    return {
+      damage: 0,
+      statusInflicted: null,
+      statChanges: [],
+      messages: [],
+    };
+  }
+}
+
 function createHazardEngine(overrides?: { seed?: number }): {
   engine: BattleEngine;
   ruleset: HazardMockRuleset;
@@ -113,6 +147,95 @@ function createHazardEngine(overrides?: { seed?: number }): {
   engine.on((e) => events.push(e));
 
   return { engine, ruleset, events };
+}
+
+function createToxicSpikesAbsorbEngine(): {
+  engine: BattleEngine;
+  events: BattleEvent[];
+} {
+  const ruleset = new ToxicSpikesAbsorbMockRuleset();
+  const dataManager = createMockDataManager();
+  const poisonSpecies = {
+    ...dataManager.getSpecies(25),
+    id: 999,
+    name: "poison-mon",
+    displayName: "Poison Mon",
+    types: ["poison"],
+    baseStats: {
+      hp: 60,
+      attack: 60,
+      defense: 60,
+      spAttack: 60,
+      spDefense: 60,
+      speed: 60,
+    },
+    learnset: {
+      levelUp: [{ level: 1, move: "tackle" }],
+      tm: [],
+      egg: [],
+      tutor: [],
+    },
+    spriteKey: "poison-mon",
+    generation: 4,
+    isLegendary: false,
+    isMythical: false,
+  };
+  dataManager.loadFromObjects({
+    pokemon: [...dataManager.getAllSpecies(), poisonSpecies],
+    moves: dataManager.getAllMoves(),
+    abilities: dataManager.getAllAbilities(),
+    items: dataManager.getAllItems(),
+    natures: dataManager.getAllNatures(),
+    typeChart: dataManager.getTypeChart(),
+  });
+  const events: BattleEvent[] = [];
+
+  const team1: PokemonInstance[] = [
+    createTestPokemon(6, 50, {
+      uid: "charizard-1",
+      nickname: "Charizard",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 120,
+      },
+      currentHp: 200,
+    }),
+  ];
+
+  const team2: PokemonInstance[] = [
+    createTestPokemon(999, 50, {
+      uid: "poison-mon-1",
+      nickname: "Poison Mon",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 80,
+      },
+      currentHp: 200,
+    }),
+  ];
+
+  const config: BattleConfig = {
+    generation: 4,
+    format: "singles",
+    teams: [team1, team2],
+    seed: 12345,
+  };
+
+  ruleset.setGenerationForTest(config.generation);
+  const engine = new BattleEngine(config, ruleset, dataManager);
+  engine.on((e) => events.push(e));
+
+  return { engine, events };
 }
 
 // ---------------------------------------------------------------------------
@@ -275,6 +398,27 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     // No hazard-set event at max layers
     const hazardSetEvents = events.filter((e): e is HazardSetEvent => e.type === "hazard-set");
     expect(hazardSetEvents.length).toBe(0);
+  });
+});
+
+describe("Toxic Spikes absorption emits hazard-clear", () => {
+  it("given a grounded Poison-type switches in on Toxic Spikes, when the battle starts, then hazard-clear is emitted for Toxic Spikes", () => {
+    // Source: Bulbapedia — grounded Poison-types absorb Toxic Spikes on switch-in
+    // Source: pret/pokeplatinum — the Toxic Spikes hazard is removed on absorb
+    const { engine, events } = createToxicSpikesAbsorbEngine();
+
+    engine.state.sides[1].hazards = [{ type: "toxic-spikes", layers: 1 }];
+
+    engine.start();
+
+    expect(engine.state.sides[1].hazards).toHaveLength(0);
+
+    const hazardClearEvents = events.filter(
+      (event): event is Extract<BattleEvent, { type: "hazard-clear" }> =>
+        event.type === "hazard-clear" && event.side === 1,
+    );
+    // Source: Toxic Spikes absorption should emit the public hazard-clear event for the removed hazard.
+    expect(hazardClearEvents).toEqual([{ type: "hazard-clear", side: 1, hazard: "toxic-spikes" }]);
   });
 });
 

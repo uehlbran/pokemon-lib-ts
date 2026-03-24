@@ -1285,6 +1285,11 @@ export class BattleEngine implements BattleEventEmitter {
       if (hazardResult.hazardsToRemove && hazardResult.hazardsToRemove.length > 0) {
         for (const hazardType of hazardResult.hazardsToRemove) {
           side.hazards = side.hazards.filter((h) => h.type !== hazardType);
+          this.emit({
+            type: "hazard-clear",
+            side: side.index,
+            hazard: hazardType,
+          });
         }
       }
       for (const msg of hazardResult.messages) {
