@@ -13,10 +13,15 @@ import { describe, expect, it } from "vitest";
 import {
   didAllyFaintLastTurn,
   getAcrobaticsBP,
+  getAcrobaticsPower,
   getElectroBallBP,
+  getElectroBallPower,
   getGyroBallBP,
+  getGyroBallPower,
   getRetaliateBP,
+  getRetaliatePower,
   getWeightBasedBP,
+  getWeightBasedPower,
   handleGen5CombatMove,
 } from "../src/Gen5MoveEffectsCombat";
 
@@ -298,6 +303,13 @@ describe("Acrobatics", () => {
     // Source: Showdown data/moves.ts -- acrobatics: basePower: 55 (no doubling with item)
     const bp = getAcrobaticsBP(true);
     expect(bp).toBe(55);
+  });
+
+  it("given both Acrobatics export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- Acrobatics doubles from 55 to 110 with no held item.
+    expect(getAcrobaticsPower(false)).toBe(110);
+    expect(getAcrobaticsPower(false)).toBe(getAcrobaticsBP(false));
+    expect(getAcrobaticsPower(true)).toBe(getAcrobaticsBP(true));
   });
 });
 
@@ -710,6 +722,12 @@ describe("Electro Ball", () => {
     // Source: Showdown data/moves.ts -- Math.min(ratio, 4) caps at index 4
     expect(getElectroBallBP(1000, 100)).toBe(150);
   });
+
+  it("given both Electro Ball export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- floor(300 / 100) = 3, so Electro Ball returns 120.
+    expect(getElectroBallPower(300, 100)).toBe(120);
+    expect(getElectroBallPower(300, 100)).toBe(getElectroBallBP(300, 100));
+  });
 });
 
 // ===========================================================================
@@ -738,6 +756,12 @@ describe("Gyro Ball", () => {
   it("given user speed is 0, when calculating Gyro Ball BP, then returns 1 (edge case)", () => {
     // Source: Showdown data/moves.ts -- division by zero guard
     expect(getGyroBallBP(0, 100)).toBe(1);
+  });
+
+  it("given both Gyro Ball export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- floor(25 * 200 / 50) + 1 = 101 for Gyro Ball.
+    expect(getGyroBallPower(50, 200)).toBe(101);
+    expect(getGyroBallPower(50, 200)).toBe(getGyroBallBP(50, 200));
   });
 });
 
@@ -776,6 +800,12 @@ describe("Heat Crash / Heavy Slam", () => {
     // Source: Showdown -- 0 weight target would make all ratios true; return maximum
     expect(getWeightBasedBP(100, 0)).toBe(120);
   });
+
+  it("given both weight-based export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- 4x weight yields 100 BP for Heat Crash / Heavy Slam.
+    expect(getWeightBasedPower(400, 100)).toBe(100);
+    expect(getWeightBasedPower(400, 100)).toBe(getWeightBasedBP(400, 100));
+  });
 });
 
 // ===========================================================================
@@ -793,6 +823,13 @@ describe("Retaliate", () => {
   it("given no ally fainted last turn, when calculating Retaliate BP, then returns 70", () => {
     // Source: Showdown data/moves.ts -- retaliate: basePower: 70 (no doubling)
     expect(getRetaliateBP(false)).toBe(70);
+  });
+
+  it("given both Retaliate export names, when calculating power, then they match", () => {
+    // Source: Showdown data/moves.ts -- Retaliate doubles from 70 to 140 after an ally faint.
+    expect(getRetaliatePower(true)).toBe(140);
+    expect(getRetaliatePower(true)).toBe(getRetaliateBP(true));
+    expect(getRetaliatePower(false)).toBe(getRetaliateBP(false));
   });
 });
 

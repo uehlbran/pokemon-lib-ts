@@ -100,7 +100,7 @@ function emptyResult(): MutableResult {
  *   let ratio = Math.floor(pokemon.getStat('spe') / target.getStat('spe'));
  *   const bp = [40, 60, 80, 120, 150][Math.min(ratio, 4)];
  */
-export function getElectroBallBP(userSpeed: number, targetSpeed: number): number {
+export function getElectroBallPower(userSpeed: number, targetSpeed: number): number {
   if (targetSpeed <= 0) return 40;
   const ratio = Math.floor(userSpeed / targetSpeed);
   const bpTable = [40, 60, 80, 120, 150];
@@ -116,7 +116,7 @@ export function getElectroBallBP(userSpeed: number, targetSpeed: number): number
  *   let power = Math.floor(25 * target.getStat('spe') / pokemon.getStat('spe')) + 1;
  *   if (power > 150) power = 150;
  */
-export function getGyroBallBP(userSpeed: number, targetSpeed: number): number {
+export function getGyroBallPower(userSpeed: number, targetSpeed: number): number {
   if (userSpeed <= 0) return 1;
   const power = Math.floor((25 * targetSpeed) / userSpeed) + 1;
   return Math.min(150, power);
@@ -132,7 +132,7 @@ export function getGyroBallBP(userSpeed: number, targetSpeed: number): number {
  *   pokemonWeight >= targetWeight * 2 → 60
  *   else → 40
  */
-export function getWeightBasedBP(userWeight: number, targetWeight: number): number {
+export function getWeightBasedPower(userWeight: number, targetWeight: number): number {
   if (targetWeight <= 0) return 120;
   if (userWeight >= targetWeight * 5) return 120;
   if (userWeight >= targetWeight * 4) return 100;
@@ -151,7 +151,7 @@ export function getWeightBasedBP(userWeight: number, targetWeight: number): numb
  *
  * Note: Showdown's nominal BP is 55 and doubles it to 110 when no item.
  */
-export function getAcrobaticsBP(hasItem: boolean): number {
+export function getAcrobaticsPower(hasItem: boolean): number {
   // Source: Showdown data/moves.ts -- Acrobatics: 55 BP * 2 = 110 when no item
   return hasItem ? 55 : 110;
 }
@@ -166,10 +166,25 @@ export function getAcrobaticsBP(hasItem: boolean): number {
  * Note: We check BattleState.turnHistory for faint events on the attacker's side
  * from the previous turn, since BattleSide doesn't track faintedLastTurn directly.
  */
-export function getRetaliateBP(allyFaintedLastTurn: boolean): number {
+export function getRetaliatePower(allyFaintedLastTurn: boolean): number {
   // Source: Showdown data/moves.ts -- Retaliate: 70 BP * 2 = 140 if ally fainted last turn
   return allyFaintedLastTurn ? 140 : 70;
 }
+
+/** @deprecated Use getElectroBallPower instead. */
+export const getElectroBallBP = getElectroBallPower;
+
+/** @deprecated Use getGyroBallPower instead. */
+export const getGyroBallBP = getGyroBallPower;
+
+/** @deprecated Use getWeightBasedPower instead. */
+export const getWeightBasedBP = getWeightBasedPower;
+
+/** @deprecated Use getAcrobaticsPower instead. */
+export const getAcrobaticsBP = getAcrobaticsPower;
+
+/** @deprecated Use getRetaliatePower instead. */
+export const getRetaliateBP = getRetaliatePower;
 
 /**
  * Check whether an ally fainted on the previous turn for Retaliate.
