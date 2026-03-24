@@ -54,7 +54,7 @@ A separate `if (format === "doubles")` code path was rejected — it would dupli
 
 ## Phase 0: Foundation Refactor
 
-**Goal**: Replace all `active[0]` references with slot-aware helpers. Zero behavioral change — all 546 existing battle tests must pass unchanged.
+**Goal**: Replace all `active[0]` references with slot-aware helpers. Zero behavioral change — all 596 existing battle tests must pass unchanged.
 
 ### New helper methods on BattleEngine
 
@@ -319,7 +319,7 @@ Gen-specific ability/damage calc files, `BattleEngine.ts`. ~500 lines.
 
 | Phase | Test Strategy |
 |-------|--------------|
-| 0 | All 546 existing singles tests pass unchanged. New tests for helper methods. |
+| 0 | All 596 existing singles tests pass unchanged. New tests for helper methods. |
 | 1 | `doubles-turn-loop.test.ts` — 4-action submission, priority sort, spread moves, single-target resolution |
 | 2 | `doubles-faint-handling.test.ts` — mid-turn faint, slot replacement, double faint |
 | 3 | `doubles-battle-start.test.ts` — 2 leads per side, entry ability ordering |
