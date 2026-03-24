@@ -1,9 +1,9 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../src/context";
+import type { BattleConfig, EntryHazardResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
-import type { ActivePokemon } from "../../src/state";
+import type { ActivePokemon, BattleSide, BattleState } from "../../src/state";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
 import { MockRuleset } from "../helpers/mock-ruleset";
@@ -70,6 +70,51 @@ function createTestEngine(overrides?: {
   engine.on((e) => events.push(e));
 
   return { engine, ruleset, events };
+}
+
+function createVoluntarySelfSwitchScenario(overrides?: {
+  ruleset?: MockRuleset;
+  team2?: PokemonInstance[];
+}): { engine: BattleEngine; ruleset: MockRuleset; events: BattleEvent[] } {
+  const team1 = [
+    createTestPokemon(6, 50, {
+      uid: "charizard-1",
+      nickname: "Charizard",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 120,
+      },
+      currentHp: 200,
+    }),
+    createTestPokemon(25, 50, {
+      uid: "pikachu-1",
+      nickname: "Pikachu",
+    }),
+  ];
+
+  const team2 = overrides?.team2 ?? [
+    createTestPokemon(9, 50, {
+      uid: "blastoise-1",
+      nickname: "Blastoise",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 80,
+      },
+      currentHp: 200,
+    }),
+  ];
+
+  return createTestEngine({ team1, team2, ruleset: overrides?.ruleset });
 }
 
 describe("BattleEngine", () => {
@@ -590,6 +635,150 @@ describe("BattleEngine", () => {
       const switchOutIndex = events.findIndex((e) => e.type === "switch-out");
       const lastMoveStartIndex = events.findLastIndex((e) => e.type === "move-start");
       expect(switchOutIndex).toBeLessThan(lastMoveStartIndex);
+    });
+
+    it("given a move effect that requests a voluntary self-switch, when the turn resolves, then the engine enters switch-prompt and allows the replacement", () => {
+      const { engine, ruleset, events } = createVoluntarySelfSwitchScenario();
+      ruleset.setMoveEffectResult({ switchOut: true });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+
+      engine.submitSwitch(0, 1);
+
+      expect(engine.getPhase()).toBe("action-select");
+      expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("pikachu-1");
+      expect(events.some((event) => event.type === "switch-out" && event.side === 0)).toBe(true);
+    });
+
+    it("given Baton Pass sets a voluntary self-switch, when the replacement is chosen, then stat stages and volatile statuses carry to the incoming pokemon", () => {
+      const { engine, ruleset } = createVoluntarySelfSwitchScenario();
+      ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
+      engine.start();
+
+      const attacker = engine.state.sides[0].active[0]!;
+      attacker.statStages.attack = 2;
+      attacker.statStages.speed = 1;
+      attacker.substituteHp = 50;
+      attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
+      attacker.volatileStatuses.set("substitute", { turnsLeft: -1 });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+      engine.submitSwitch(0, 1);
+
+      const replacement = engine.state.sides[0].active[0]!;
+      expect(replacement.pokemon.uid).toBe("pikachu-1");
+      // Source: Baton Pass preserves the user's stat stages for the incoming Pokemon.
+      // The test queues Baton Pass via ruleset.setMoveEffectResult({ switchOut: true, batonPass: true }),
+      // so the replacement should inherit attacker.statStages.attack = +2 and speed = +1.
+      expect(replacement.statStages.attack).toBe(2);
+      expect(replacement.statStages.speed).toBe(1);
+      // Source: Baton Pass also preserves an existing Substitute, and the engine tracks that
+      // via replacement.substituteHp alongside the substitute volatile. The opposing Tackle
+      // hits the substitute for 10 damage before the switch prompt, so the passed substitute has 40 HP left.
+      expect(replacement.substituteHp).toBe(40);
+      // Source: the mock ruleset decrements confusion during turn processing before the switch prompt,
+      // so attacker.volatileStatuses.get("confusion") goes from { turnsLeft: 2 } to { turnsLeft: 1 }
+      // before engine.submitSwitch sends the replacement in.
+      expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
+      expect(replacement.volatileStatuses.get("substitute")).toEqual({ turnsLeft: -1 });
+    });
+
+    it("given Baton Pass into Sticky Web, when the replacement is chosen, then inherited boosts are merged before switch-in effects", () => {
+      const ruleset = new MockRuleset();
+      let speedSeenByStickyWeb: number | null = null;
+      ruleset.getAvailableHazards = () => ["sticky-web"] as any;
+      ruleset.applyEntryHazards = (
+        pokemon: ActivePokemon,
+        _side: BattleSide,
+        _state?: BattleState,
+      ): EntryHazardResult => {
+        speedSeenByStickyWeb = pokemon.statStages.speed;
+        return {
+          damage: 0,
+          statusInflicted: null,
+          statChanges: [{ stat: "speed", stages: -1 }],
+          messages: [],
+        };
+      };
+
+      const { engine } = createVoluntarySelfSwitchScenario({ ruleset });
+      ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
+      engine.start();
+
+      engine.state.sides[0].hazards.push({ type: "sticky-web" as any, layers: 1 });
+
+      const attacker = engine.state.sides[0].active[0]!;
+      attacker.statStages.speed = 1;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+      engine.submitSwitch(0, 1);
+
+      const replacement = engine.state.sides[0].active[0]!;
+      expect(replacement.pokemon.uid).toBe("pikachu-1");
+      // Source: Sticky Web should see the Baton Pass speed boost before applying its own -1 drop.
+      expect(speedSeenByStickyWeb).toBe(1);
+      // Source: Baton Pass applies the queued +1 speed stage first, then Sticky Web applies -1 on switch-in.
+      expect(replacement.statStages.speed).toBe(0);
+    });
+
+    it("given a queued Baton Pass user faints before switching, when the replacement is chosen, then it is handled as a normal faint replacement", () => {
+      const team2 = [
+        createTestPokemon(9, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: {
+            hp: 200,
+            attack: 100,
+            defense: 100,
+            spAttack: 100,
+            spDefense: 100,
+            speed: 80,
+          },
+          currentHp: 200,
+        }),
+      ];
+
+      const ruleset = new MockRuleset();
+      ruleset.calculateDamage = (context) => ({
+        damage: context.attacker.pokemon.uid === "charizard-1" ? 10 : 250,
+        effectiveness: 1,
+        isCrit: context.isCrit,
+        randomFactor: 1,
+      });
+
+      const { engine, events } = createVoluntarySelfSwitchScenario({ ruleset, team2 });
+      ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
+      engine.start();
+
+      const attacker = engine.state.sides[0].active[0]!;
+      attacker.statStages.attack = 2;
+      attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+
+      engine.submitSwitch(0, 1);
+
+      const replacement = engine.state.sides[0].active[0]!;
+      // Source: submitSwitch(0, 1) selects the second Pokemon from team1, whose fixture uid is "pikachu-1".
+      expect(replacement.pokemon.uid).toBe("pikachu-1");
+      // Source: the Baton Pass user fainted before the voluntary switch resolved, so no stat stages are preserved.
+      expect(replacement.statStages.attack).toBe(0);
+      // Source: volatiles are only transferred for a live Baton Pass replacement, not after the passer faints.
+      expect(replacement.volatileStatuses.has("confusion")).toBe(false);
+      // Source: the live self-switch branch emits switch-out, but a faint replacement does not reuse that event path.
+      expect(
+        events.filter((event) => event.type === "switch-out" && event.side === 0),
+      ).toHaveLength(0);
     });
   });
 

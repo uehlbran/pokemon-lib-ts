@@ -4,6 +4,7 @@ import type {
   ItemData,
   MoveData,
   PrimaryStatus,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { getExpForLevel, getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
@@ -23,7 +24,13 @@ import type {
   GenerationRuleset,
 } from "../ruleset";
 import { generations } from "../ruleset";
-import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";
+import type {
+  ActivePokemon,
+  BattlePhase,
+  BattleSide,
+  BattleState,
+  VolatileStatusState,
+} from "../state";
 import {
   clonePokemonInstance,
   createActivePokemon,
@@ -84,6 +91,15 @@ const STRUGGLE_MOVE_DATA: MoveData = {
 const BATTLE_GIMMICK_TYPES: readonly BattleGimmickType[] = ["mega", "zmove", "dynamax", "tera"];
 
 type SerializedBattleGimmickState = Partial<Record<BattleGimmickType, unknown>>;
+interface BatonPassState {
+  readonly statStages: Record<BattleStat, number>;
+  readonly substituteHp: number;
+  readonly volatileStatuses: Map<VolatileStatus, VolatileStatusState>;
+}
+
+interface PendingSelfSwitchState {
+  readonly batonPass: boolean;
+}
 /**
  * The core battle engine. Manages the battle state machine, delegates
  * generation-specific behavior to the provided ruleset, and emits
@@ -104,6 +120,7 @@ export class BattleEngine implements BattleEventEmitter {
   private pendingActions: Map<0 | 1, BattleAction> = new Map();
   private pendingSwitches: Map<0 | 1, number> = new Map();
   private sidesNeedingSwitch: Set<0 | 1> = new Set();
+  private pendingSelfSwitches: Map<0 | 1, PendingSelfSwitchState> = new Map();
   // Tracks which pokemon have already been processed as fainted during the current turn,
   // preventing duplicate faint events and double faintCount increments when
   // checkMidTurnFaints() is called multiple times per turn. Cleared at turn start.
@@ -418,19 +435,23 @@ export class BattleEngine implements BattleEventEmitter {
     state: BattleState,
     rawPendingSwitches: unknown,
     rawSidesNeedingSwitch: unknown,
+    rawPendingSelfSwitches: unknown,
   ): {
     pendingSwitches: Map<0 | 1, number>;
     sidesNeedingSwitch: Set<0 | 1>;
+    pendingSelfSwitches: Map<0 | 1, PendingSelfSwitchState>;
   } {
     if (state.phase !== "switch-prompt") {
       return {
         pendingSwitches: new Map(),
         sidesNeedingSwitch: new Set(),
+        pendingSelfSwitches: new Map(),
       };
     }
 
     const pendingSwitches = BattleEngine.sanitizePendingSwitches(state, rawPendingSwitches);
     const sidesNeedingSwitch = BattleEngine.sanitizeSidesNeedingSwitch(rawSidesNeedingSwitch);
+    const pendingSelfSwitches = BattleEngine.sanitizePendingSelfSwitches(rawPendingSelfSwitches);
 
     for (const side of BattleEngine.inferSwitchPromptSides(state)) {
       sidesNeedingSwitch.add(side);
@@ -440,7 +461,33 @@ export class BattleEngine implements BattleEventEmitter {
       sidesNeedingSwitch.add(side);
     }
 
-    return { pendingSwitches, sidesNeedingSwitch };
+    return { pendingSwitches, sidesNeedingSwitch, pendingSelfSwitches };
+  }
+
+  private static sanitizePendingSelfSwitches(
+    rawPendingSelfSwitches: unknown,
+  ): Map<0 | 1, PendingSelfSwitchState> {
+    if (!(rawPendingSelfSwitches instanceof Map)) {
+      return new Map();
+    }
+
+    const sanitizedPendingSelfSwitches = new Map<0 | 1, PendingSelfSwitchState>();
+
+    for (const [rawSide, rawState] of rawPendingSelfSwitches) {
+      if (rawSide !== 0 && rawSide !== 1) {
+        continue;
+      }
+
+      const batonPass =
+        rawState &&
+        typeof rawState === "object" &&
+        (("batonPass" in rawState && rawState.batonPass === true) ||
+          ("batonPassState" in rawState && rawState.batonPassState !== null));
+
+      sanitizedPendingSelfSwitches.set(rawSide, { batonPass });
+    }
+
+    return sanitizedPendingSelfSwitches;
   }
 
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
@@ -740,59 +787,45 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Process when all pending switches are submitted
     if (this.pendingSwitches.size === this.sidesNeedingSwitch.size) {
-      const isDoubleSwitch = this.pendingSwitches.size > 1;
+      for (const [switchSide, slot] of this.pendingSwitches) {
+        this.resolvePendingSwitchPromptReplacement(switchSide, slot);
+      }
 
-      if (isDoubleSwitch) {
-        // Phase 1: Send out all replacement Pokemon without ability triggers.
-        // When both sides faint simultaneously, we must get both replacements on
-        // the field before firing switch-in abilities, so each ability correctly
-        // targets the opponent's new Pokemon (not the fainted one).
-        // Source: Showdown sim/battle.ts — simultaneous switches send out first, abilities second
-        for (const [switchSide, slot] of this.pendingSwitches) {
-          this.sendOut(this.state.sides[switchSide], slot, true);
-        }
-
-        // Phase 2: Fire switch-in abilities in speed order (faster first).
-        if (this.ruleset.hasAbilities()) {
-          const entries: Array<{ side: 0 | 1; pokemon: ActivePokemon }> = [];
-          for (const [switchSide] of this.pendingSwitches) {
-            const active = this.state.sides[switchSide].active[0];
-            if (active && active.pokemon.currentHp > 0) {
-              entries.push({ side: switchSide, pokemon: active });
-            }
-          }
-          const orderedEntries =
-            entries.length === 2
-              ? this.orderSwitchInAbilityEntries(
-                  entries as [
-                    { side: 0 | 1; pokemon: ActivePokemon },
-                    { side: 0 | 1; pokemon: ActivePokemon },
-                  ],
-                )
-              : entries;
-          for (const entry of orderedEntries) {
-            const opponent = this.getOpponentActive(entry.side);
-            if (opponent) {
-              const abilityResult = this.ruleset.applyAbility("on-switch-in", {
-                pokemon: entry.pokemon,
-                opponent,
-                state: this.state,
-                rng: this.state.rng,
-                trigger: "on-switch-in",
-              });
-              this.processAbilityResult(abilityResult, entry.pokemon, opponent, entry.side);
-            }
+      if (this.ruleset.hasAbilities()) {
+        const entries: Array<{ side: 0 | 1; pokemon: ActivePokemon }> = [];
+        for (const [switchSide] of this.pendingSwitches) {
+          const active = this.state.sides[switchSide].active[0];
+          if (active && active.pokemon.currentHp > 0) {
+            entries.push({ side: switchSide, pokemon: active });
           }
         }
-      } else {
-        // Single switch: normal path (sendOut handles abilities internally)
-        for (const [switchSide, slot] of this.pendingSwitches) {
-          this.sendOut(this.state.sides[switchSide], slot);
+        const orderedEntries =
+          entries.length === 2
+            ? this.orderSwitchInAbilityEntries(
+                entries as [
+                  { side: 0 | 1; pokemon: ActivePokemon },
+                  { side: 0 | 1; pokemon: ActivePokemon },
+                ],
+              )
+            : entries;
+        for (const entry of orderedEntries) {
+          const opponent = this.getOpponentActive(entry.side);
+          if (opponent) {
+            const abilityResult = this.ruleset.applyAbility("on-switch-in", {
+              pokemon: entry.pokemon,
+              opponent,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: "on-switch-in",
+            });
+            this.processAbilityResult(abilityResult, entry.pokemon, opponent, entry.side);
+          }
         }
       }
 
       this.pendingSwitches.clear();
       this.sidesNeedingSwitch.clear();
+      this.pendingSelfSwitches.clear();
 
       // Record the newly sent-out pokemon as participants against the current opponent
       this.recordParticipation();
@@ -1052,6 +1085,7 @@ export class BattleEngine implements BattleEventEmitter {
         eventLog: this.eventLog,
         pendingSwitches: this.pendingSwitches,
         sidesNeedingSwitch: this.sidesNeedingSwitch,
+        pendingSelfSwitches: this.pendingSelfSwitches,
         gimmickState: this.serializeBattleGimmickState(),
       },
       (_key, value) => {
@@ -1098,6 +1132,7 @@ export class BattleEngine implements BattleEventEmitter {
       eventLog?: BattleEvent[];
       pendingSwitches?: unknown;
       sidesNeedingSwitch?: unknown;
+      pendingSelfSwitches?: unknown;
       gimmickState?: SerializedBattleGimmickState;
     };
 
@@ -1112,6 +1147,7 @@ export class BattleEngine implements BattleEventEmitter {
       parsed.state,
       parsed.pendingSwitches,
       parsed.sidesNeedingSwitch,
+      parsed.pendingSelfSwitches,
     );
 
     // Create the engine instance without running the constructor.
@@ -1154,6 +1190,12 @@ export class BattleEngine implements BattleEventEmitter {
       },
       sidesNeedingSwitch: {
         value: restoredSwitchPromptState.sidesNeedingSwitch,
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
+      pendingSelfSwitches: {
+        value: restoredSwitchPromptState.pendingSelfSwitches,
         writable: true,
         enumerable: false,
         configurable: false,
@@ -1234,7 +1276,12 @@ export class BattleEngine implements BattleEventEmitter {
     };
   }
 
-  private sendOut(side: BattleSide, teamSlot: number, skipAbility = false): void {
+  private sendOut(
+    side: BattleSide,
+    teamSlot: number,
+    skipAbility = false,
+    batonPassState: BatonPassState | null = null,
+  ): void {
     const pokemon = side.team[teamSlot];
     if (!pokemon) return;
 
@@ -1248,6 +1295,7 @@ export class BattleEngine implements BattleEventEmitter {
     const types = [...species.types];
 
     const active = createActivePokemon(pokemon, teamSlot, types);
+    this.applyBatonPassState(active, batonPassState);
     side.active[0] = active;
 
     this.emit({
@@ -2686,7 +2734,6 @@ export class BattleEngine implements BattleEventEmitter {
     // Record participation for the newly sent-out pokemon against the current opponent
     this.recordParticipation();
   }
-
   private getRandomForcedSwitchSlot(side: BattleSide): number | null {
     const activeTeamSlot = side.active[0]?.teamSlot ?? -1;
     const validTargets = side.team
@@ -2744,6 +2791,53 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     return true;
+  }
+
+  private captureBatonPassState(attacker: ActivePokemon): BatonPassState {
+    return {
+      statStages: structuredClone(attacker.statStages),
+      substituteHp: attacker.substituteHp,
+      volatileStatuses: structuredClone(attacker.volatileStatuses),
+    };
+  }
+
+  private applyBatonPassState(active: ActivePokemon, batonPassState: BatonPassState | null): void {
+    if (!batonPassState) {
+      return;
+    }
+
+    active.statStages = structuredClone(batonPassState.statStages);
+    active.substituteHp = batonPassState.substituteHp;
+    active.volatileStatuses = structuredClone(batonPassState.volatileStatuses);
+  }
+
+  private resolvePendingSwitchPromptReplacement(side: 0 | 1, slot: number): void {
+    const sideState = this.state.sides[side];
+    const pendingSelfSwitch = this.pendingSelfSwitches.get(side);
+    const outgoing = sideState.active[0];
+    const isLiveVoluntarySelfSwitch =
+      pendingSelfSwitch && outgoing && outgoing.pokemon.currentHp > 0;
+    let batonPassState: BatonPassState | null = null;
+
+    if (isLiveVoluntarySelfSwitch) {
+      this.ruleset.onSwitchOut(outgoing, this.state);
+      this.emit({
+        type: "switch-out",
+        side,
+        pokemon: createPokemonSnapshot(outgoing),
+      });
+      batonPassState = pendingSelfSwitch.batonPass ? this.captureBatonPassState(outgoing) : null;
+      outgoing.statStages = createDefaultStatStages();
+      outgoing.consecutiveProtects = 0;
+      outgoing.turnsOnField = 0;
+      outgoing.movedThisTurn = false;
+      outgoing.lastMoveUsed = null;
+      outgoing.lastDamageTaken = 0;
+      outgoing.lastDamageType = null;
+      outgoing.lastDamageCategory = null;
+    }
+
+    this.sendOut(sideState, slot, true, batonPassState);
   }
 
   /**
@@ -4141,18 +4235,19 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // Voluntary self-switch: Shed Tail only.
-    // Shed Tail sets result.shedTail=true. Only this flag triggers the switch prompt — NOT
-    // the generic `switchOut && !forcedSwitch` check, which would also fire for Baton Pass and
-    // U-turn in gen3-8, causing those tests to hang waiting for a switch-prompt that never resolves.
-    // Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' is distinct from 'copyvolatile'
-    if (result.shedTail) {
+    // Voluntary self-switch: Baton Pass, U-turn-style moves, and Shed Tail all
+    // queue a replacement on the attacker's side rather than silently falling
+    // through as normal moves.
+    if (result.shedTail || (result.switchOut && !result.forcedSwitch)) {
       const attackerSideState = this.state.sides[attackerSide];
       const hasAlive = attackerSideState.team.some(
         (p, idx) => p.currentHp > 0 && idx !== (attackerSideState.active[0]?.teamSlot ?? -1),
       );
       if (hasAlive) {
         this.sidesNeedingSwitch.add(attackerSide);
+        this.pendingSelfSwitches.set(attackerSide, {
+          batonPass: result.batonPass ?? false,
+        });
       }
     }
 

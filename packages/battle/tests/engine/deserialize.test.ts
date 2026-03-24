@@ -314,6 +314,74 @@ describe("BattleEngine.deserialize", () => {
     expect(restored.getState().phase).toBe("action-select");
   });
 
+  it("given a battle saved in switch-prompt after Baton Pass queues a self-switch, when deserialized, then the replacement still receives the preserved state", () => {
+    const ruleset = new MockRuleset();
+    const dataManager = createMockDataManager();
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        speed: 120,
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      }),
+      createTestPokemon(25, 50, {
+        uid: "pikachu-1",
+        nickname: "Pikachu",
+      }),
+    ];
+    const team2 = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        speed: 80,
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      }),
+    ];
+
+    const engine = new BattleEngine(
+      {
+        generation: 1,
+        format: "singles",
+        teams: [team1, team2],
+        seed: 12345,
+      },
+      ruleset,
+      dataManager,
+    );
+
+    ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
+    engine.start();
+
+    const attacker = engine.state.sides[0].active[0]!;
+    attacker.statStages.attack = 2;
+    attacker.substituteHp = 50;
+    attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
+    attacker.volatileStatuses.set("substitute", { turnsLeft: -1 });
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+    expect(engine.getState().phase).toBe("switch-prompt");
+
+    const restored = BattleEngine.deserialize(engine.serialize(), ruleset, dataManager);
+    expect(restored.getState().phase).toBe("switch-prompt");
+
+    restored.submitSwitch(0, 1);
+
+    const replacement = restored.getActive(0)!;
+    expect(replacement.pokemon.uid).toBe("pikachu-1");
+    // Source: Baton Pass preserves the outgoing Pokemon's stat stages across the queued self-switch,
+    // so the replacement after restored.submitSwitch(0, 1) should still have the attack boost.
+    expect(replacement.statStages.attack).toBe(2);
+    // Source: Substitute state is tracked separately from volatileStatuses via substituteHp, so
+    // the deserialized Baton Pass flow must preserve both the substitute volatile and its HP value.
+    // The opponent damages the substitute for 10 before the switch prompt, leaving 40 HP to pass.
+    expect(replacement.substituteHp).toBe(40);
+    // Source: the original attacker started at confusion turnsLeft = 2, and the mock ruleset consumes
+    // one confusion turn during move resolution before the switch prompt, so the replacement inherits 1.
+    expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
+    expect(replacement.volatileStatuses.get("substitute")).toEqual({ turnsLeft: -1 });
+  });
+
   it("given serialized switch-prompt state with one pending switch already recorded, when deserialized, then the remaining switch submission completes the prompt", () => {
     const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
 
