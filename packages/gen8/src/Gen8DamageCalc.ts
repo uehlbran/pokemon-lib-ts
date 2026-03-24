@@ -58,6 +58,16 @@ import { isWeatherSuppressedGen8 } from "./Gen8Weather.js";
 // Re-exported for backwards compatibility; canonical implementation lives in core.
 export { pokeRound };
 
+const LATIAS_SPECIES_ID = 380;
+const LATIOS_SPECIES_ID = 381;
+const CLAMPERL_SPECIES_ID = 366;
+const PIKACHU_SPECIES_ID = 25;
+const CUBONE_SPECIES_ID = 104;
+const MAROWAK_SPECIES_ID = 105;
+const DIALGA_SPECIES_ID = 483;
+const PALKIA_SPECIES_ID = 484;
+const GIRATINA_SPECIES_ID = 487;
+
 // ---- Type-Resist Berries ----
 
 /**
@@ -419,25 +429,31 @@ function getAttackStat(
     !attackerHasKlutz &&
     !isPhysical &&
     attackerItem === "deep-sea-tooth" &&
-    attackerSpecies === 366
+    attackerSpecies === CLAMPERL_SPECIES_ID
   ) {
     rawStat = rawStat * 2;
   }
 
   // Light Ball: 2x Atk AND SpAtk for Pikachu (25)
   // Source: Showdown data/items.ts -- Light Ball Gen 4+ behavior
-  if (!attackerHasKlutz && attackerItem === "light-ball" && attackerSpecies === 25) {
+  if (
+    !attackerHasKlutz &&
+    attackerItem === "light-ball" &&
+    attackerSpecies === PIKACHU_SPECIES_ID
+  ) {
     rawStat = rawStat * 2;
   }
 
-  // Thick Club: 2x Attack for Cubone (104) / Marowak (105) / Alolan Marowak (10115)
+  // Thick Club: 2x Attack for Cubone (104) / Marowak (105)
   // Source: Showdown data/items.ts -- Thick Club
+  // The shipped species model uses National Dex ids and does not yet expose
+  // regional-form species entries through `speciesId`; tracked separately.
   if (
     !attackerHasKlutz &&
     isPhysical &&
     !isBodyPress &&
     attackerItem === "thick-club" &&
-    (attackerSpecies === 104 || attackerSpecies === 105 || attackerSpecies === 10115)
+    (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
   }
@@ -520,7 +536,7 @@ function getDefenseStat(
     !defenderHasKlutz &&
     !isPhysical &&
     defenderItem === "deep-sea-scale" &&
-    defenderSpecies === 366
+    defenderSpecies === CLAMPERL_SPECIES_ID
   ) {
     baseStat = baseStat * 2;
   }
@@ -760,7 +776,8 @@ export function calculateGen8Damage(
   if (
     !attackerHasKlutz &&
     attackerItem === "soul-dew" &&
-    (attacker.pokemon.speciesId === 380 || attacker.pokemon.speciesId === 381) &&
+    (attacker.pokemon.speciesId === LATIAS_SPECIES_ID ||
+      attacker.pokemon.speciesId === LATIOS_SPECIES_ID) &&
     (effectiveMoveType === "psychic" || effectiveMoveType === "dragon")
   ) {
     power = pokeRound(power, 4915);
@@ -918,21 +935,21 @@ export function calculateGen8Damage(
   if (!attackerHasKlutz && attackerItem) {
     if (
       attackerItem === "adamant-orb" &&
-      attacker.pokemon.speciesId === 483 &&
+      attacker.pokemon.speciesId === DIALGA_SPECIES_ID &&
       (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
     ) {
       power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "lustrous-orb" &&
-      attacker.pokemon.speciesId === 484 &&
+      attacker.pokemon.speciesId === PALKIA_SPECIES_ID &&
       (effectiveMoveType === "water" || effectiveMoveType === "dragon")
     ) {
       power = pokeRound(power, 4915);
     }
     if (
       attackerItem === "griseous-orb" &&
-      attacker.pokemon.speciesId === 487 &&
+      attacker.pokemon.speciesId === GIRATINA_SPECIES_ID &&
       (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
     ) {
       power = pokeRound(power, 4915);
