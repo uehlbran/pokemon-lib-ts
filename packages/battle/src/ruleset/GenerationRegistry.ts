@@ -1,4 +1,5 @@
 import type { Generation } from "@pokemon-lib-ts/core";
+import { cloneGenerationRuleset } from "./cloneGenerationRuleset";
 import type { GenerationRuleset } from "./GenerationRuleset";
 
 /**
@@ -17,7 +18,7 @@ export class GenerationRegistry {
     if (!ruleset) {
       throw new Error(`Generation ${gen} ruleset not registered. Import and register it first.`);
     }
-    return ruleset;
+    return cloneGenerationRuleset(ruleset);
   }
 
   has(gen: Generation): boolean {
@@ -25,7 +26,9 @@ export class GenerationRegistry {
   }
 
   getAll(): GenerationRuleset[] {
-    return [...this.rulesets.values()].sort((a, b) => a.generation - b.generation);
+    return [...this.rulesets.values()]
+      .sort((a, b) => a.generation - b.generation)
+      .map((ruleset) => cloneGenerationRuleset(ruleset));
   }
 }
 

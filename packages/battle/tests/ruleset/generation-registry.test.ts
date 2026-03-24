@@ -31,8 +31,10 @@ describe("GenerationRegistry", () => {
       // Act
       const result = registry.get(1);
 
-      // Assert
-      expect(result).toBe(ruleset);
+      // Assert — registry lookups return a cloned ruleset so mutable battle-local
+      // state cannot leak across overlapping battles through a singleton entry.
+      expect(result).not.toBe(ruleset);
+      expect(result.generation).toBe(ruleset.generation);
     });
 
     it("given an unregistered generation, when get is called, then it throws an error", () => {
@@ -73,6 +75,7 @@ describe("GenerationRegistry", () => {
       // Assert
       expect(all).toHaveLength(1);
       expect(all[0]?.generation).toBe(1);
+      expect(all[0]).not.toBe(ruleset);
     });
   });
 });
