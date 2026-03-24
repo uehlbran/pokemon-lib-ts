@@ -1,6 +1,5 @@
 import { getExpForLevel } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-<<<<<<< HEAD
 import type { BattleConfig, EntryHazardResult, ExpContext } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent, ExpGainEvent, LevelUpEvent } from "../../src/events";
