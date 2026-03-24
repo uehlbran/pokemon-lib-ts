@@ -66,6 +66,56 @@ function createTestEngine(overrides?: {
 }
 
 describe("BattleEngine.deserialize", () => {
+  it("given one side has already submitted an action, when serialized and deserialized, then the pending action is preserved", () => {
+    const ruleset = new MockRuleset();
+    ruleset.setFixedDamage(10);
+    const dataManager = createMockDataManager();
+    const { engine } = createTestEngine({ ruleset, dataManager });
+    engine.start();
+
+    const initialHpSide0 = engine.getActive(0)!.pokemon.currentHp;
+    const initialHpSide1 = engine.getActive(1)!.pokemon.currentHp;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+
+    const serialized = engine.serialize();
+    const restored = BattleEngine.deserialize(serialized, ruleset, dataManager);
+
+    restored.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(restored.getState().turnNumber).toBe(1);
+    expect(restored.getActive(0)?.pokemon.currentHp).toBe(initialHpSide0 - 10);
+    expect(restored.getActive(1)?.pokemon.currentHp).toBe(initialHpSide1 - 10);
+  });
+
+  it("given serialize is called during turn resolution, when a save is attempted, then it throws instead of producing a lossy snapshot", () => {
+    const ruleset = new MockRuleset();
+    const dataManager = createMockDataManager();
+    const { engine } = createTestEngine({ ruleset, dataManager });
+    engine.start();
+
+    let serializeError: Error | null = null;
+
+    engine.on((event) => {
+      if (event.type !== "damage") {
+        return;
+      }
+
+      try {
+        engine.serialize();
+      } catch (error) {
+        serializeError = error as Error;
+      }
+    });
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(serializeError?.message).toBe(
+      "BattleEngine.serialize cannot save during phase turn-resolve; save only from stable checkpoint phases",
+    );
+  });
+
   it("given serialized state and a ruleset whose generation does not match the saved battle generation, when deserialized, then it throws", () => {
     const { engine } = createTestEngine();
     const serialized = engine.serialize();
@@ -76,6 +126,20 @@ describe("BattleEngine.deserialize", () => {
     expect(() =>
       BattleEngine.deserialize(serialized, mismatchedRuleset, createMockDataManager()),
     ).toThrow("BattleEngine.deserialize: ruleset generation 9 does not match battle generation 1");
+  });
+
+  it("given a serialized battle state with a non-singles format, when deserialized, then it rejects unsupported multi-active formats", () => {
+    const { engine } = createTestEngine();
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        format: string;
+      };
+    };
+    parsed.state.format = "triples";
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow('BattleEngine.deserialize: battle format "triples" is not supported');
   });
 
   it("given a serialized battle state where currentHp is less than maxHp, when deserialized, then currentHp matches the saved value (not recalculated)", () => {
