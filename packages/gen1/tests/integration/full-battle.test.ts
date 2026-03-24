@@ -26,7 +26,7 @@ describe("Gen 1 Full Battle Integration", () => {
       nickname: nickname ?? null,
       level,
       experience: 0,
-      nature: "adamant",
+      nature: "hardy",
       // In Gen 1, IVs are DVs (0-15) and EVs are StatExp (0-65535)
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
@@ -282,7 +282,7 @@ describe("Gen 1 Full Battle Integration", () => {
     const waterAttacker = createGen1Pokemon(
       9,
       50,
-      ["surf", "water-gun", "tackle", "withdraw"],
+      ["water-gun", "bubble", "tackle", "withdraw"],
       "Blastoise",
     );
     const fireDefender = createGen1Pokemon(
@@ -348,7 +348,7 @@ describe("Gen 1 Full Battle Integration", () => {
     const strongAttacker = createGen1Pokemon(
       150,
       100,
-      ["psychic", "confusion", "recover", "reflect"],
+      ["psychic", "confusion", "recover", "barrier"],
       "Mewtwo",
     );
     const weakDefender = createGen1Pokemon(
@@ -379,7 +379,7 @@ describe("Gen 1 Full Battle Integration", () => {
     const strongAttacker = createGen1Pokemon(
       150,
       100,
-      ["psychic", "confusion", "recover", "reflect"],
+      ["psychic", "confusion", "recover", "barrier"],
       "Mewtwo",
     );
     const weakDefender = createGen1Pokemon(
@@ -446,7 +446,7 @@ describe("Gen 1 Full Battle Integration", () => {
       createGen1Pokemon(6, 50, ["flamethrower", "scratch", "ember", "slash"], "Charizard"),
     ];
     const team2 = [
-      createGen1Pokemon(9, 50, ["surf", "water-gun", "tackle", "withdraw"], "Blastoise"),
+      createGen1Pokemon(9, 50, ["water-gun", "bubble", "tackle", "withdraw"], "Blastoise"),
     ];
     const engine = createBattle(team1, team2, 42);
 
@@ -467,7 +467,7 @@ describe("Gen 1 Full Battle Integration", () => {
     const strong = createGen1Pokemon(
       150,
       100,
-      ["psychic", "confusion", "recover", "reflect"],
+      ["psychic", "confusion", "recover", "barrier"],
       "Mewtwo",
     );
     const weak = createGen1Pokemon(129, 5, ["tackle", "tackle", "tackle", "tackle"], "Magikarp");
@@ -564,22 +564,20 @@ describe("Gen 1 Full Battle Integration", () => {
     for (const sideIdx of [0, 1] as const) {
       const team = engine.getTeam(sideIdx);
       for (const pokemon of team) {
-        expect(pokemon.calculatedStats).toBeDefined();
+        const calculatedStats = pokemon.calculatedStats;
+        expect(calculatedStats).toBeDefined();
         const nickname = pokemon.nickname;
         if (nickname && expectedStats[nickname]) {
           const expected = expectedStats[nickname];
-          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
-          expect(pokemon.calculatedStats!.hp).toBe(expected.hp);
-          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
-          expect(pokemon.calculatedStats!.attack).toBe(expected.attack);
-          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
-          expect(pokemon.calculatedStats!.defense).toBe(expected.defense);
-          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
-          expect(pokemon.calculatedStats!.spAttack).toBe(expected.spAttack);
-          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
-          expect(pokemon.calculatedStats!.spDefense).toBe(expected.spDefense);
-          // biome-ignore lint/style/noNonNullAssertion: expected is always defined in this block
-          expect(pokemon.calculatedStats!.speed).toBe(expected.speed);
+          if (!calculatedStats) {
+            throw new Error("Expected calculated stats to be present after battle setup");
+          }
+          expect(calculatedStats.hp).toBe(expected.hp);
+          expect(calculatedStats.attack).toBe(expected.attack);
+          expect(calculatedStats.defense).toBe(expected.defense);
+          expect(calculatedStats.spAttack).toBe(expected.spAttack);
+          expect(calculatedStats.spDefense).toBe(expected.spDefense);
+          expect(calculatedStats.speed).toBe(expected.speed);
         }
       }
     }
@@ -639,7 +637,7 @@ describe("Gen 1 Full Battle Integration", () => {
       createGen1Pokemon(6, 50, ["flamethrower", "scratch", "ember", "slash"], "Charizard"),
     ];
     const team2 = [
-      createGen1Pokemon(9, 50, ["surf", "water-gun", "tackle", "withdraw"], "Blastoise"),
+      createGen1Pokemon(9, 50, ["water-gun", "bubble", "tackle", "withdraw"], "Blastoise"),
     ];
     const engine = createBattle(team1, team2, 42);
     engine.start();

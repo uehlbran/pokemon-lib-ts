@@ -1215,9 +1215,8 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
     // Source: pret/pokered RageEffect — Rage locks the user into repeating, and
     // each hit boosts Attack by +1. The forcedMove mechanism forces Rage on turn 2.
     // Arrange
-    // Snorlax (speciesId 143) has high HP so neither faints quickly
-    const rager = createPokemon(143, 50, ["rage", "tackle", "body-slam", "rest"], "Rager");
-    const hitter = createPokemon(143, 50, ["tackle", "body-slam", "rest", "headbutt"], "Hitter");
+    const rager = createPokemon(6, 50, ["rage", "scratch", "ember", "slash"], "Rager");
+    const hitter = createPokemon(9, 50, ["water-gun", "tackle", "bubble", "withdraw"], "Hitter");
     const engine = createBattle([rager], [hitter], 42);
 
     // Act — Turn 1: Rager uses Rage (moveIndex 0), Hitter uses Tackle (moveIndex 0)
@@ -1244,11 +1243,16 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
   it("given attacker uses Thrash, when engine processes multiple turns, then thrash-lock volatile is active during forced turns and confusion is applied after", () => {
     // Source: pret/pokered ThrashEffect — locks for 2-3 turns, then confuses
     // Arrange
-    const thrasher = createPokemon(143, 50, ["thrash", "tackle", "body-slam", "rest"], "Thrasher");
-    const defender = createPokemon(
-      143,
+    const thrasher = createPokemon(
+      34,
       50,
-      ["tackle", "body-slam", "rest", "headbutt"],
+      ["thrash", "horn-attack", "poison-sting", "tackle"],
+      "Thrasher",
+    );
+    const defender = createPokemon(
+      9,
+      50,
+      ["water-gun", "tackle", "bubble", "withdraw"],
       "Defender",
     );
     const engine = createBattle([thrasher], [defender], 42);
