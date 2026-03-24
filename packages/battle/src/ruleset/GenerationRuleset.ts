@@ -72,6 +72,8 @@ export interface DamageSystem {
    * Gen 2+: Typeless damage (50 BP physical, type chart does NOT apply, Ghost takes full damage).
    * @param state - Required for Gen 1 (passed to calculateDamage for Normal-type chart lookup);
    *   Gen 2+ compute damage inline without consulting state.
+   *   Gen 1 also consumes `state.rng` because the live battle damage roll is part of the
+   *   formula; callers must pass the active battle state rather than a synthetic copy.
    * @returns damage amount (non-negative integer)
    */
   calculateStruggleDamage(
