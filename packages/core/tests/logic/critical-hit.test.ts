@@ -158,4 +158,10 @@ describe("getCritRate", () => {
     expect(getCritRate(3, CRIT_RATES_GEN3_5)).toBeCloseTo(1 / 3);
     expect(getCritRate(4, CRIT_RATES_GEN3_5)).toBeCloseTo(1 / 2);
   });
+
+  it("given an empty probability table, when called, then throws instead of returning undefined", () => {
+    expect(() => getCritRate(0, [])).toThrowError(
+      "probabilityTable must contain at least one entry",
+    );
+  });
 });

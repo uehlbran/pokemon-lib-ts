@@ -27,7 +27,7 @@ export const GEN3_CRIT_RATE_DENOMINATORS = GEN3_CRIT_RATE_TABLE;
 
 /**
  * Gen 3 critical hit rate table as probability fractions (0–1), indexed by stage.
- * Re-exports CRIT_RATES_GEN3_5 from core for convenience.
+ * Re-exports CRIT_RATE_PROBABILITIES_GEN3_5 from core for convenience.
  *
  * Source: pret/pokeemerald src/battle_util.c CalcCritChanceStage
  */

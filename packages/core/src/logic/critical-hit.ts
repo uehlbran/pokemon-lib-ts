@@ -18,7 +18,7 @@ export const CRIT_RATE_PROBABILITIES_GEN6: readonly number[] = [
   1, // Stage 3+
 ] as const;
 
-/** @deprecated Use `CRIT_RATE_PROBABILITIES_GEN6`. */
+/** @deprecated Use `CRIT_RATE_PROBABILITIES_GEN6`. This alias still contains probability fractions (0-1). */
 export const CRIT_RATES_GEN6 = CRIT_RATE_PROBABILITIES_GEN6;
 
 /**
@@ -44,7 +44,7 @@ export const CRIT_RATE_PROBABILITIES_GEN2: readonly number[] = [
   128 / 256, // Stage 4+
 ] as const;
 
-/** @deprecated Use `CRIT_RATE_PROBABILITIES_GEN2`. */
+/** @deprecated Use `CRIT_RATE_PROBABILITIES_GEN2`. This alias still contains probability fractions (0-1). */
 export const CRIT_RATES_GEN2 = CRIT_RATE_PROBABILITIES_GEN2;
 
 /**
@@ -69,7 +69,7 @@ export const CRIT_RATE_PROBABILITIES_GEN3_5: readonly number[] = [
   1 / 2, // Stage 4+
 ] as const;
 
-/** @deprecated Use `CRIT_RATE_PROBABILITIES_GEN3_5`. */
+/** @deprecated Use `CRIT_RATE_PROBABILITIES_GEN3_5`. This alias still contains probability fractions (0-1). */
 export const CRIT_RATES_GEN3_5 = CRIT_RATE_PROBABILITIES_GEN3_5;
 
 /**
@@ -79,6 +79,9 @@ export const CRIT_RATES_GEN3_5 = CRIT_RATE_PROBABILITIES_GEN3_5;
  * @returns Probability of critical hit (0 to 1)
  */
 export function getCritRate(stage: number, probabilityTable: readonly number[]): number {
+  if (probabilityTable.length === 0) {
+    throw new Error("probabilityTable must contain at least one entry");
+  }
   const index = Math.min(Math.max(0, stage), probabilityTable.length - 1);
   return probabilityTable[index] as number;
 }

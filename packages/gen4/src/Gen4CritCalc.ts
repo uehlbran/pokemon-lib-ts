@@ -25,7 +25,7 @@ export const GEN4_CRIT_RATE_DENOMINATORS = GEN4_CRIT_RATE_TABLE;
 
 /**
  * Gen 4 critical hit rate table as probability fractions (0-1), indexed by stage.
- * Re-exports CRIT_RATES_GEN3_5 from core for convenience.
+ * Re-exports CRIT_RATE_PROBABILITIES_GEN3_5 from core for convenience.
  *
  * Source: pret/pokeplatinum — same crit system as Gen 3-5
  */
