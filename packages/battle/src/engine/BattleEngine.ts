@@ -10,7 +10,12 @@ import type {
   MoveAction,
   RunAction,
 } from "../events";
-import type { BattleGimmickType, GenerationRuleset } from "../ruleset";
+import type {
+  BattleGimmickType,
+  ExpRecipient,
+  ExpRecipientSelectionContext,
+  GenerationRuleset,
+} from "../ruleset";
 import { generations } from "../ruleset";
 import type { ActivePokemon, BattlePhase, BattleSide, BattleState } from "../state";
 import {
@@ -73,7 +78,6 @@ const STRUGGLE_MOVE_DATA: MoveData = {
 const BATTLE_GIMMICK_TYPES: readonly BattleGimmickType[] = ["mega", "zmove", "dynamax", "tera"];
 
 type SerializedBattleGimmickState = Partial<Record<BattleGimmickType, unknown>>;
-
 /**
  * The core battle engine. Manages the battle state machine, delegates
  * generation-specific behavior to the provided ruleset, and emits
@@ -4841,6 +4845,18 @@ export class BattleEngine implements BattleEventEmitter {
     this.participantTracker.get(side1Active)?.add(side0Active);
   }
 
+  private getExpRecipients(
+    winnerTeam: BattleState["sides"][number]["team"],
+    livingParticipantUids: ReadonlySet<string>,
+  ): readonly ExpRecipient[] {
+    const recipientContext: ExpRecipientSelectionContext = {
+      winnerTeam,
+      livingParticipantUids,
+    };
+
+    return this.ruleset.getExpRecipients(recipientContext);
+  }
+
   /**
    * Awards EXP to all living participants on the winning side after a pokemon faints.
    * Emits ExpGainEvent and, if enough EXP to level up, LevelUpEvent (possibly multiple).
@@ -4886,9 +4902,9 @@ export class BattleEngine implements BattleEventEmitter {
     const participantCount = livingParticipants.length;
     if (participantCount === 0) return;
 
-    for (const participantUid of livingParticipants) {
-      const participant = winnerTeam.find((p) => p.uid === participantUid);
-      if (!participant || participant.currentHp <= 0) continue;
+    const expRecipients = this.getExpRecipients(winnerTeam, new Set(livingParticipants));
+
+    for (const { pokemon: participant, hasExpShare } of expRecipients) {
       if (participant.level >= 100) continue; // max level — no EXP
 
       const participantSpecies = this.dataManager.getSpecies(participant.speciesId);
@@ -4901,7 +4917,7 @@ export class BattleEngine implements BattleEventEmitter {
         isTrainerBattle: !this.state.isWildBattle,
         participantCount, // living participants only — Source: Bulbapedia EXP mechanics
         hasLuckyEgg: participant.heldItem === "lucky-egg",
-        hasExpShare: false, // TODO: Gen 2+ Exp. Share in a future pass
+        hasExpShare,
         affectionBonus: false,
         // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
         // Passed from PokemonInstance so consumers can set traded status on their Pokemon.

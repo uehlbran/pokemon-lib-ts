@@ -708,6 +708,11 @@ export class Gen5Ruleset extends BaseRuleset {
       exp = Math.floor(exp * tradedMultiplier);
     }
 
+    // Source: specs/battle/06-gen5.md -- Exp. Share holder receives 50% of the awarded EXP
+    if (context.hasExpShare) {
+      exp = Math.floor(exp / 2);
+    }
+
     return Math.max(1, exp);
   }
 

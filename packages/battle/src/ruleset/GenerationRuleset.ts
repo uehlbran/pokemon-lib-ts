@@ -695,6 +695,28 @@ export interface ValidationSystem {
   getBattleGimmick(type: BattleGimmickType): BattleGimmick | null;
 }
 
+/** EXP recipient selection for faint rewards. */
+export interface ExpRecipient {
+  readonly pokemon: BattleState["sides"][number]["team"][number];
+  readonly hasExpShare: boolean;
+}
+
+export interface ExpRecipientSelectionContext {
+  readonly winnerTeam: BattleState["sides"][number]["team"];
+  readonly livingParticipantUids: ReadonlySet<string>;
+}
+
+export interface ExpDistributionSystem {
+  /**
+   * Select all living Pokemon on the winning side that should receive EXP for a faint.
+   *
+   * Gen 1: only living participants receive EXP.
+   * Gen 2-5: living participants plus non-participating held Exp. Share holders.
+   * Gen 6+: living participants plus all other living party members (always-on Exp. Share).
+   */
+  getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[];
+}
+
 /**
  * The complete interface that a generation ruleset must implement.
  *
@@ -722,7 +744,8 @@ export interface GenerationRuleset
     FleeSystem,
     CatchSystem,
     EndOfTurnSystem,
-    ValidationSystem {
+    ValidationSystem,
+    ExpDistributionSystem {
   /** The generation number this ruleset implements (1–9). */
   readonly generation: Generation;
   /** Human-readable name, e.g. "Generation I". */

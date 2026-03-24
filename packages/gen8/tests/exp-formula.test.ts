@@ -210,23 +210,39 @@ describe("Gen8Ruleset -- calculateExpGain traded Pokemon EXP bonus", () => {
 //
 // In Gen 8, the EXP Share is always on -- it cannot be turned off.
 // The formula itself is unchanged; the engine-level concern is that
-// inactive party members always receive EXP.
-// We test that hasExpShare=true does not break the formula.
+// inactive party members always receive 50% of the participant award.
 // ---------------------------------------------------------------------------
 
 describe("Gen8Ruleset -- EXP Share always active", () => {
   const ruleset = new Gen8Ruleset(new DataManager());
 
-  it("given hasExpShare=true (always on in Gen 8), when calculating EXP, then returns the base formula result", () => {
-    // Source: Bulbapedia Gen VIII -- EXP Share is always active, all party members gain EXP
-    // The EXP formula itself is unchanged; hasExpShare affects who receives EXP, not the amount
-    // base = floor((100 * 50) / (5 * 1)) = 1000
+  it("given hasExpShare=true (always on in Gen 8), when calculating EXP, then returns half of the participant award", () => {
+    // Source: specs/battle/09-gen8.md -- inactive party members get 50% EXP while active participants get 100%
+    // participant award = floor((100 * 50) / (5 * 1)) = 1000
+    // inactive party member award = floor(1000 / 2) = 500
     const context = makeExpContext({
       defeatedLevel: 50,
       defeatedSpecies: { baseExp: 100 } as any,
       hasExpShare: true,
     });
-    expect(ruleset.calculateExpGain(context)).toBe(1000);
+    expect(ruleset.calculateExpGain(context)).toBe(500);
+  });
+
+  it("given hasExpShare=true with trainer and Lucky Egg modifiers, when calculating EXP, then halves the fully modified award", () => {
+    // Source: specs/battle/09-gen8.md -- inactive party members receive 50% of earned EXP each
+    // base = floor((100 * 50) / (5 * 2)) = 500
+    // trainer = floor(500 * 1.5) = 750
+    // lucky egg = floor(750 * 1.5) = 1125
+    // Exp. Share = floor(1125 / 2) = 562
+    const context = makeExpContext({
+      defeatedLevel: 50,
+      defeatedSpecies: { baseExp: 100 } as any,
+      participantCount: 2,
+      isTrainerBattle: true,
+      hasLuckyEgg: true,
+      hasExpShare: true,
+    });
+    expect(ruleset.calculateExpGain(context)).toBe(562);
   });
 
   it("given fainted Pokemon, when not included in participantCount, then receives 0 EXP", () => {

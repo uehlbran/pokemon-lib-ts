@@ -188,6 +188,28 @@ describe("Gen5 EXP formula", () => {
     // Should be roughly half when split between 2
     expect(doubleExp).toBeLessThan(singleExp);
   });
+
+  it("given hasExpShare=true in Gen 5, when calculating exp, then returns half of the normal award", () => {
+    // Source: specs/battle/06-gen5.md -- Exp. Share holder receives 50% of the awarded EXP
+    const baseContext = makeExpContext({
+      defeatedBaseExp: 240,
+      defeatedLevel: 50,
+      participantLevel: 50,
+      hasExpShare: false,
+    });
+    const expShareContext = makeExpContext({
+      defeatedBaseExp: 240,
+      defeatedLevel: 50,
+      participantLevel: 50,
+      hasExpShare: true,
+    });
+
+    const withoutExpShare = ruleset.calculateExpGain(baseContext);
+    const withExpShare = ruleset.calculateExpGain(expShareContext);
+
+    expect(withoutExpShare).toBe(241);
+    expect(withExpShare).toBe(120);
+  });
 });
 
 describe("Gen5Ruleset calculateExpGain — traded Pokemon EXP bonus", () => {

@@ -16,6 +16,8 @@ import type {
   EndOfTurnEffect,
   EntryHazardResult,
   ExpContext,
+  ExpRecipient,
+  ExpRecipientSelectionContext,
   GenerationRuleset,
   ItemContext,
   ItemResult,
@@ -112,6 +114,12 @@ export class Gen1Ruleset implements GenerationRuleset {
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
     const base = calculateGen1Stats(pokemon, species);
     return this.badgeBoosts ? applyGen1BadgeBoosts(base, this.badgeBoosts) : base;
+  }
+
+  getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[] {
+    return context.winnerTeam
+      .filter((pokemon) => pokemon.currentHp > 0 && context.livingParticipantUids.has(pokemon.uid))
+      .map((pokemon) => ({ pokemon, hasExpShare: false }));
   }
 
   // --- Damage Calculation ---

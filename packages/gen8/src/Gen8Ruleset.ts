@@ -464,6 +464,11 @@ export class Gen8Ruleset extends BaseRuleset {
       exp = Math.floor(exp * tradedMultiplier);
     }
 
+    // Source: specs/battle/09-gen8.md -- Inactive party members get 50% of earned EXP when EXP Share is always on
+    if (context.hasExpShare) {
+      exp = Math.floor(exp / 2);
+    }
+
     return Math.max(1, exp);
   }
 
