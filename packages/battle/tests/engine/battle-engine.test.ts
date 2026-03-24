@@ -211,6 +211,18 @@ describe("BattleEngine", () => {
       );
     });
 
+    it("given a move action without moveIndex, when submitAction is called, then it throws instead of accepting a malformed action", () => {
+      const { engine } = createTestEngine();
+      engine.start();
+
+      expect(() =>
+        engine.submitAction(0, {
+          type: "move",
+          side: 0,
+        } as unknown as Parameters<typeof engine.submitAction>[1]),
+      ).toThrow("MoveAction requires an integer moveIndex");
+    });
+
     it("given both sides submit moves, when turn resolves, then move-start events are emitted", () => {
       // Arrange
       const { engine, events } = createTestEngine();

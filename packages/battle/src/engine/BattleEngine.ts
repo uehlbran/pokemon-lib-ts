@@ -323,6 +323,10 @@ export class BattleEngine implements BattleEventEmitter {
       throw new Error(`Submitted side ${side} does not match action.side ${action.side}`);
     }
 
+    if (action.type === "move" && !Number.isInteger(action.moveIndex)) {
+      throw new Error("MoveAction requires an integer moveIndex");
+    }
+
     this.pendingActions.set(side, action);
 
     // When both sides have submitted, resolve the turn
