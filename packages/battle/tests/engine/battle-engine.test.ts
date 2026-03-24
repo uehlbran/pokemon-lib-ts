@@ -250,6 +250,7 @@ describe("BattleEngine", () => {
       const moveStarts = events.filter((e) => e.type === "move-start");
       const damageEvents = events.filter((e) => e.type === "damage");
       const faintEvents = events.filter((e) => e.type === "faint");
+      // Provenance: createTestEngine() defaults side 0/1 actives to Charizard/Blastoise in BattleHelpers.
 
       expect(
         moveStarts.map((event) => (event.type === "move-start" ? event.pokemon : null)),
