@@ -91,6 +91,28 @@ describe("BattleEngine — faint deduplication (#78)", () => {
     expect(faintEvents).toHaveLength(1);
   });
 
+  it("given a pokemon at 0 HP, when checkMidTurnFaints is called, then it emits faint without switch-out", () => {
+    // Arrange
+    const { engine, events } = createEngine();
+    engine.start();
+
+    const side0 = engine.state.sides[0];
+    const active = side0.active[0];
+    if (!active) throw new Error("No active pokemon on side 0");
+    active.pokemon.currentHp = 0;
+
+    const engineAny = engine as any;
+
+    // Act
+    engineAny.checkMidTurnFaints();
+
+    // Assert
+    const faintEvents = events.filter((e) => e.type === "faint" && e.side === 0);
+    const switchOutEvents = events.filter((e) => e.type === "switch-out" && e.side === 0);
+    expect(faintEvents).toHaveLength(1);
+    expect(switchOutEvents).toHaveLength(0);
+  });
+
   it("given a pokemon at 0 HP, when checkMidTurnFaints is called twice, then faintCount is incremented only once", () => {
     // Arrange
     const { engine } = createEngine();
