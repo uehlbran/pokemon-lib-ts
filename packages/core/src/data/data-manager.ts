@@ -38,6 +38,13 @@ export class DataManager {
    *   (e.g., Gen 1 has no abilities or natures).
    */
   loadFromObjects(data: RawDataObjects): void {
+    this.speciesById.clear();
+    this.speciesByName.clear();
+    this.movesById.clear();
+    this.abilitiesById.clear();
+    this.itemsById.clear();
+    this.naturesById.clear();
+
     // Load pokemon
     for (const species of data.pokemon) {
       this.speciesById.set(species.id, species);

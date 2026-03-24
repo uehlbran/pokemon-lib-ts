@@ -574,6 +574,23 @@ describe("DataManager", () => {
       expect(dm.getAllItems()).toHaveLength(0);
       expect(dm.getAllNatures()).toHaveLength(0);
     });
+
+    it("replaces previously loaded entities instead of retaining stale data", () => {
+      // Arrange
+      dm.loadFromObjects(createFullData());
+
+      // Act
+      dm.loadFromObjects(createMinimalData());
+
+      // Assert
+      expect(dm.getAllSpecies().map((species) => species.name)).toEqual(["bulbasaur"]);
+      expect(dm.getAllMoves().map((move) => move.id)).toEqual(["tackle"]);
+      expect(dm.getAllAbilities()).toHaveLength(0);
+      expect(dm.getAllItems()).toHaveLength(0);
+      expect(dm.getAllNatures()).toHaveLength(0);
+      expect(() => dm.getSpecies(4)).toThrow("Species with id 4 not found");
+      expect(() => dm.getMove("flamethrower")).toThrow('Move "flamethrower" not found');
+    });
   });
 
   describe("getSpecies()", () => {
