@@ -2119,6 +2119,11 @@ export class BattleEngine implements BattleEventEmitter {
         defender,
         defenderSide as 0 | 1,
       );
+      if (this.state.ended) {
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
     }
 
     // Increment consecutiveProtects if protect was successfully used
@@ -3116,9 +3121,14 @@ export class BattleEngine implements BattleEventEmitter {
     defenderSide: 0 | 1,
   ): void {
     if (result.escapeBattle && attackerSide === 0 && this.state.isWildBattle) {
+      // Source: pret/pokered src/engine/battle/effect_commands.asm — successful wild Teleport
+      // uses the standard flee-attempt + "Got away safely!" flow, and BattleEndEvent
+      // is documented as the final event before the engine enters battle-end phase.
       this.emit({ type: "flee-attempt", side: 0, success: true });
       this.emit({ type: "message", text: "Got away safely!" });
       this.state.ended = true;
+      this.state.winner = null;
+      this.transitionTo("battle-end");
       this.emit({ type: "battle-end", winner: null });
       return;
     }

@@ -507,7 +507,11 @@ describe("Gen 1 Teleport handler", () => {
     // Assert
     expect(engine.isEnded()).toBe(true);
     expect(engine.getWinner()).toBeNull();
+    expect(engine.getPhase()).toBe("battle-end");
+    expect(() => engine.serialize()).not.toThrow();
     const events = engine.getEventLog();
+    // Source: pret/pokered src/engine/battle/effect_commands.asm — successful wild Teleport
+    // uses the standard "Got away safely!" escape text.
     expect(events.some((event) => event.type === "flee-attempt" && event.side === 0)).toBe(true);
     expect(
       events.some(
