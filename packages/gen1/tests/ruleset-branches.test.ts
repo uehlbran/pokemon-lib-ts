@@ -8,6 +8,7 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type {
+  DataManager,
   MoveData,
   PokemonInstance,
   PokemonSpeciesData,
@@ -1472,6 +1473,45 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     expect(() => ruleset.resolveTurnOrder([move0, move1], state, rng)).toThrow(
       /move data not found|unknown move/i,
     );
+  });
+
+  it("given an injected data manager knows the move, when resolving turn order, then Gen1Ruleset uses that shared move source", () => {
+    const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
+    const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
+    const customMoveId = "custom-priority-move";
+    const sharedDataManager = {
+      getMove: (moveId: string) => {
+        if (moveId === customMoveId) {
+          return { priority: 2 };
+        }
+        if (moveId === "tackle") {
+          return { priority: 0 };
+        }
+        throw new Error(`Move ${moveId} not found`);
+      },
+    } as DataManager;
+    const rulesetWithSharedData = new Gen1Ruleset({ dataManager: sharedDataManager });
+    const customMovePokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [{ moveId: customMoveId, currentPP: 10, maxPP: 10, ppUps: 0 }],
+      } as PokemonInstance,
+    });
+    const tacklePokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      } as PokemonInstance,
+    });
+    const state = makeBattleState({ side0Active: customMovePokemon, side1Active: tacklePokemon });
+
+    const ordered = rulesetWithSharedData.resolveTurnOrder(
+      [move0, move1],
+      state,
+      new SeededRandom(42),
+    );
+
+    expect(ordered[0]).toEqual(move0);
   });
 
   it("given a Pokemon with no calculatedStats, when resolving turn order, then uses default speed of 100", () => {

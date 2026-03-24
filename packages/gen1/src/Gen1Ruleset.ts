@@ -29,6 +29,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
+  DataManager,
   EntryHazardType,
   MoveData,
   PokemonInstance,
@@ -72,6 +73,11 @@ export interface Gen1RulesetOptions {
    * Default: undefined (no badge boosts applied).
    */
   readonly badgeBoosts?: Gen1BadgeBoosts;
+  /**
+   * Shared data manager used for move/species lookups.
+   * Defaults to the bundled Gen 1 data manager.
+   */
+  readonly dataManager?: DataManager;
 }
 
 /**
@@ -92,11 +98,12 @@ export class Gen1Ruleset implements GenerationRuleset {
   readonly generation = 1 as const;
   readonly name = "Gen 1 (RBY)";
 
-  private readonly dataManager = createGen1DataManager();
+  private readonly dataManager: DataManager;
   private readonly badgeBoosts?: Gen1BadgeBoosts;
 
   constructor(options?: Gen1RulesetOptions) {
     this.badgeBoosts = options?.badgeBoosts;
+    this.dataManager = options?.dataManager ?? createGen1DataManager();
   }
 
   // --- Type System ---
