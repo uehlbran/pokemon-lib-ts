@@ -1,5 +1,6 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType } from "@pokemon-lib-ts/core";
+import { MEGA_STONE_DATA as CORE_MEGA_STONE_DATA } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen7MegaEvolution, getMegaEvolutionData, MEGA_STONE_DATA } from "../src/Gen7MegaEvolution";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
@@ -134,6 +135,10 @@ describe("MEGA_STONE_DATA -- Gen 7 mega stone lookup table", () => {
     // Source: Bulbapedia "Mega Evolution" -- no new Mega Evolutions in Gen 7;
     // same 47 as Gen 6 (44 single-suffix + charizardite-x/y + mewtwonite-x/y = 47 total)
     expect(Object.keys(MEGA_STONE_DATA).length).toBe(47);
+  });
+
+  it("given the Gen 7 export, then it is the shared core mega stone table", () => {
+    expect(MEGA_STONE_DATA).toBe(CORE_MEGA_STONE_DATA);
   });
 
   it("given venusaurite, when looking up in MEGA_STONE_DATA, then returns Mega Venusaur data", () => {

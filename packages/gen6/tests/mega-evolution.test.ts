@@ -1,5 +1,6 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType } from "@pokemon-lib-ts/core";
+import { MEGA_STONE_DATA as CORE_MEGA_STONE_DATA } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen6MegaEvolution, getMegaEvolutionData, MEGA_STONE_DATA } from "../src/Gen6MegaEvolution";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
@@ -135,6 +136,10 @@ describe("MEGA_STONE_DATA -- mega stone lookup table", () => {
     // This covers all XY and ORAS mega stones. Excludes: Rayquaza (Dragon Ascent, not a stone),
     // Blue Orb (Primal Kyogre), Red Orb (Primal Groudon).
     expect(Object.keys(MEGA_STONE_DATA).length).toBe(47);
+  });
+
+  it("given the Gen 6 export, then it is the shared core mega stone table", () => {
+    expect(MEGA_STONE_DATA).toBe(CORE_MEGA_STONE_DATA);
   });
 
   it("given charizardite-x, when looking up in MEGA_STONE_DATA, then returns Charizard Mega X data", () => {
