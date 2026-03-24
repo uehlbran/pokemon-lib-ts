@@ -17,7 +17,16 @@ if (!values.body && !values["body-file"]) {
   process.exit(1);
 }
 
-const body = values["body-file"] ? readFileSync(values["body-file"], "utf8") : (values.body ?? "");
+let body = values.body ?? "";
+if (values["body-file"]) {
+  try {
+    body = readFileSync(values["body-file"], "utf8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Failed to read PR body file '${values["body-file"]}': ${message}`);
+    process.exit(1);
+  }
+}
 const result = validatePullRequestBody(body);
 
 if (!result.isValid) {

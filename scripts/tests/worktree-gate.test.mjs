@@ -47,4 +47,5 @@ test("accepts a dedicated worktree with matching branch marker", () => {
   });
 
   assert.equal(result.isValid, true);
+  assert.equal(result.error, null);
 });

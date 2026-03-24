@@ -61,7 +61,7 @@ Agents must read repo instructions before acting, not after making a mistake.
 - `npm run test:all` — full taxonomy suite: unit, integration, smoke, e2e, then stress.
 - `npm run verify:local` — broader handoff gate that runs non-test checks plus plain `test`.
 - `replay:*` commands remain targeted tools and should be run explicitly when relevant.
-- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:stress`.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:smoke`.
 
 ## Repo-Specific Expectations
 

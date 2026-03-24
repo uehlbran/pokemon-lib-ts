@@ -43,10 +43,21 @@ function createMockRng(opts: {
   nextValue?: number;
   chanceResult?: boolean;
   onChance?: (probability: number) => void;
+  expectedIntArgs?: { min: number; max: number };
 }): SeededRandom {
   return {
     next: () => opts.nextValue ?? 0,
-    int: (_min: number, _max: number) => opts.intValue ?? 100,
+    int: (min: number, max: number) => {
+      if (
+        opts.expectedIntArgs &&
+        (min !== opts.expectedIntArgs.min || max !== opts.expectedIntArgs.max)
+      ) {
+        throw new Error(
+          `Expected rng.int(${opts.expectedIntArgs.min}, ${opts.expectedIntArgs.max}), got rng.int(${min}, ${max})`,
+        );
+      }
+      return opts.intValue ?? min;
+    },
     chance: (probability: number) => {
       opts.onChance?.(probability);
       return opts.chanceResult ?? false;
@@ -534,7 +545,7 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
       defender,
       move,
       damage: 50,
-      rng: createMockRng({ intValue: 99 }),
+      rng: createMockRng({ intValue: 99, expectedIntArgs: { min: 0, max: 99 } }),
       state,
     } as MoveEffectContext);
 
@@ -562,7 +573,7 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
       defender,
       move,
       damage: 50,
-      rng: createMockRng({ intValue: 49 }),
+      rng: createMockRng({ intValue: 49, expectedIntArgs: { min: 0, max: 99 } }),
       state,
     } as MoveEffectContext);
 
@@ -588,7 +599,7 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
       defender,
       move,
       damage: 50,
-      rng: createMockRng({ intValue: 50 }),
+      rng: createMockRng({ intValue: 50, expectedIntArgs: { min: 0, max: 99 } }),
       state,
     } as MoveEffectContext);
 
@@ -623,7 +634,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 36 }), // rng.int(1, 100) returns 36
+      rng: createMockRng({ intValue: 36, expectedIntArgs: { min: 1, max: 100 } }), // rng.int(1, 100) returns 36
       state,
     } as AccuracyContext;
 
@@ -634,7 +645,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 37 }),
+      rng: createMockRng({ intValue: 37, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
 
@@ -660,7 +671,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 43 }),
+      rng: createMockRng({ intValue: 43, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
 
@@ -671,7 +682,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 44 }),
+      rng: createMockRng({ intValue: 44, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
 
@@ -693,7 +704,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 100 }),
+      rng: createMockRng({ intValue: 100, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
 
@@ -704,7 +715,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 1 }),
+      rng: createMockRng({ intValue: 1, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
 
@@ -727,7 +738,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 100 }),
+      rng: createMockRng({ intValue: 100, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
 
@@ -746,7 +757,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move: move as MoveData,
-      rng: createMockRng({ intValue: 100 }),
+      rng: createMockRng({ intValue: 100, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
 
@@ -770,7 +781,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 26 }),
+      rng: createMockRng({ intValue: 26, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
     expect(ruleset.doesMoveHit(hitContext)).toBe(true);
@@ -780,7 +791,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       attacker,
       defender,
       move,
-      rng: createMockRng({ intValue: 27 }),
+      rng: createMockRng({ intValue: 27, expectedIntArgs: { min: 1, max: 100 } }),
       state,
     } as AccuracyContext;
     expect(ruleset.doesMoveHit(missContext)).toBe(false);

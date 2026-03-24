@@ -72,10 +72,21 @@ function createStubRng(opts?: {
   intValue?: number;
   chanceResult?: boolean;
   onChance?: (probability: number) => void;
+  expectedIntArgs?: { min: number; max: number };
 }): SeededRandom {
   return {
     next: () => 0,
-    int: (_min: number, _max: number) => opts?.intValue ?? 2,
+    int: (min: number, max: number) => {
+      if (
+        opts?.expectedIntArgs &&
+        (min !== opts.expectedIntArgs.min || max !== opts.expectedIntArgs.max)
+      ) {
+        throw new Error(
+          `Expected rng.int(${opts.expectedIntArgs.min}, ${opts.expectedIntArgs.max}), got rng.int(${min}, ${max})`,
+        );
+      }
+      return opts?.intValue ?? 2;
+    },
     chance: (probability: number) => {
       opts?.onChance?.(probability);
       return opts?.chanceResult ?? false;
@@ -177,13 +188,17 @@ describe("Gen3Ruleset simple overrides", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c
     // Sleep counter = Random(4) + 2, so the minimum result is 2.
     const ruleset = makeRuleset();
-    expect(ruleset.rollSleepTurns(createStubRng({ intValue: 2 }))).toBe(2);
+    expect(
+      ruleset.rollSleepTurns(createStubRng({ intValue: 2, expectedIntArgs: { min: 2, max: 5 } })),
+    ).toBe(2);
   });
 
   it("given rollSleepTurns with the maximum roll, when called, then returns 5", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — sleep is 2-5 turns
     const ruleset = makeRuleset();
-    expect(ruleset.rollSleepTurns(createStubRng({ intValue: 5 }))).toBe(5);
+    expect(
+      ruleset.rollSleepTurns(createStubRng({ intValue: 5, expectedIntArgs: { min: 2, max: 5 } })),
+    ).toBe(5);
   });
 
   // --- Types ---

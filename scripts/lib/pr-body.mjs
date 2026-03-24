@@ -1,6 +1,5 @@
 const CLOSING_REF_PATTERN = /\b(?:closes|fixes|resolves)\s+#(\d+)\b/gi;
-const NO_ISSUE_PATTERN =
-  /\b(?:closes|fixes|resolves)\s*:\s*n\/?a\b|\bno.?issue\b|\bnot.?applicable\b/i;
+const NO_ISSUE_PATTERN = /^(?:\s*[-*]\s*)?(?:closes|fixes|resolves)\s*:\s*n\/?a\s*$/im;
 const CLOSING_KEYWORD_PATTERN = /\b(?:closes|fixes|resolves)\b/i;
 const ISSUE_REF_PATTERN = /#\d+\b/g;
 

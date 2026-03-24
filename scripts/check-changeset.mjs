@@ -31,7 +31,8 @@ if (!mergeBase) {
 
 const committedFiles = runGit(["diff", "--name-only", `${mergeBase}..HEAD`]).split("\n");
 const stagedFiles = runGit(["diff", "--name-only", "--cached"]).split("\n");
-const changedFiles = [...new Set([...committedFiles, ...stagedFiles])];
+const unstagedFiles = runGit(["diff", "--name-only"]).split("\n");
+const changedFiles = [...new Set([...committedFiles, ...stagedFiles, ...unstagedFiles])];
 
 const committedChangesets = runGit([
   "diff",

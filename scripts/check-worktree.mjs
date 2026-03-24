@@ -21,12 +21,14 @@ const primaryWorktree = runGit(["worktree", "list", "--porcelain"])
 const currentBranch = runGit(["branch", "--show-current"]);
 
 let declaredBranch = "";
-try {
-  declaredBranch = readFileSync(join(projectDir, ".claude/.session-branch"), "utf8")
-    .split(/\r?\n/)[0]
-    ?.trim();
-} catch {
-  declaredBranch = "";
+if (projectDir) {
+  try {
+    declaredBranch = readFileSync(join(projectDir, ".claude/.session-branch"), "utf8")
+      .split(/\r?\n/)[0]
+      ?.trim();
+  } catch {
+    declaredBranch = "";
+  }
 }
 
 const result = validateWorktreeContext({

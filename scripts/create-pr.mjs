@@ -53,7 +53,6 @@ if (!prBodyResult.isValid) {
 
 runNodeScript("scripts/check-review-marker.mjs");
 runNodeScript("scripts/check-changeset.mjs");
-runNodeScript("scripts/check-pr-body.mjs", ["--body-file", bodyFile]);
 
 const ghResult = spawnSync("gh", ["pr", "create", ...args], {
   stdio: "inherit",

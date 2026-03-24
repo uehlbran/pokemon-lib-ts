@@ -1,11 +1,11 @@
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { RandomAI } from "../../src/ai/RandomAI";
-import type { BattleConfig } from "../../src/context";
-import { BattleEngine } from "../../src/engine";
-import { createTestPokemon } from "../../src/utils";
-import { createMockDataManager } from "../helpers/mock-data-manager";
-import { MockRuleset } from "../helpers/mock-ruleset";
+import { RandomAI } from "../../../src/ai/RandomAI";
+import type { BattleConfig } from "../../../src/context";
+import { BattleEngine } from "../../../src/engine";
+import { createTestPokemon } from "../../../src/utils";
+import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { MockRuleset } from "../../helpers/mock-ruleset";
 
 describe("RandomAI integration", () => {
   it("given a RandomAI controlling both sides, when a pokemon faints and reserve is available, then AI picks a valid switch", () => {

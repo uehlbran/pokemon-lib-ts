@@ -81,7 +81,7 @@ npx vitest run --coverage  # Run with coverage
   plain `test` before commits and PR updates.
 - `replay:*` commands remain targeted tools. Run them explicitly when replay validation or
   simulation confidence checks are relevant.
-- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:stress`.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:smoke`.
 
 ### Biome Tips
 - `npx @biomejs/biome check --changed --since=main .` — lint only changed files (`--since=main` is required; `vcs.defaultBranch` is not set in biome.json so `--changed` alone errors)

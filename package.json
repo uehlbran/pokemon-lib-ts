@@ -16,7 +16,7 @@
     "test:e2e": "turbo run test:e2e",
     "test:stress": "turbo run test:stress",
     "test:all": "turbo run test:all",
-    "test:slow": "npm run test:stress",
+    "test:slow": "npm run test:smoke",
     "test:workflow": "node --test scripts/tests/*.test.mjs",
     "typecheck": "turbo run typecheck",
     "typecheck:contracts": "npm run typecheck:contracts --workspace @pokemon-lib-ts/battle",

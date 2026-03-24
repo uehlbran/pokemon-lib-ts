@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import { createTestPokemon } from "../../src/utils";

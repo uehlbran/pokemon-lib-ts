@@ -33,3 +33,14 @@ test("rejects stale review marker commit", () => {
   assert.equal(result.isValid, false);
   assert.match(result.error ?? "", /Run \/review again/);
 });
+
+test("rejects stale review marker branch", () => {
+  const result = validateReviewMarker({
+    markerText: "feat/old-branch\nabc1234\n",
+    currentBranch: "feat/test-branch",
+    currentCommit: "abc1234",
+  });
+
+  assert.equal(result.isValid, false);
+  assert.match(result.error ?? "", /Run \/review again/);
+});

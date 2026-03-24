@@ -185,7 +185,7 @@ npm run test:stress
   typecheck/package-boundary checks plus plain `test`. Use this before commits and PR updates.
 - `replay:*` commands remain targeted tooling. Run them explicitly when replay validation or
   simulation confidence checks are relevant.
-- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:stress`.
+- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:smoke`.
 
 ## Project Status
 

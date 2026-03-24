@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { runBatch } from "../../../../tools/replay-parser/src/simulation/index.js";
 
 describe("Gen 1 Battle Simulation Harness", () => {
-  it("should complete 50 random battles with no invariant violations", {
+  it("given 50 seeded Gen 1 random battles, when runBatch executes, then no invariants are violated", {
     timeout: 30_000,
   }, () => {
     const report = runBatch({ generation: 1, seed: 42, teamSize: 3, maxTurns: 500 }, 50);
