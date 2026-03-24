@@ -1,0 +1,7 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["context/ability-effect-contract.test.ts"]
+}
