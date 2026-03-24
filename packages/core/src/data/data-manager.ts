@@ -38,47 +38,57 @@ export class DataManager {
    *   (e.g., Gen 1 has no abilities or natures).
    */
   loadFromObjects(data: RawDataObjects): void {
-    this.speciesById.clear();
-    this.speciesByName.clear();
-    this.movesById.clear();
-    this.abilitiesById.clear();
-    this.itemsById.clear();
-    this.naturesById.clear();
+    const speciesById = new Map<number, PokemonSpeciesData>();
+    const speciesByName = new Map<string, PokemonSpeciesData>();
+    const movesById = new Map<string, MoveData>();
+    const abilitiesById = new Map<string, AbilityData>();
+    const itemsById = new Map<string, ItemData>();
+    const naturesById = new Map<string, NatureData>();
 
     // Load pokemon
     for (const species of data.pokemon) {
-      this.speciesById.set(species.id, species);
-      this.speciesByName.set(species.name.toLowerCase(), species);
+      speciesById.set(species.id, species);
+      speciesByName.set(species.name.toLowerCase(), species);
     }
 
     // Load moves
     for (const move of data.moves) {
-      this.movesById.set(move.id, move);
+      movesById.set(move.id, move);
     }
 
     // Load abilities (optional)
     if (data.abilities) {
       for (const ability of data.abilities) {
-        this.abilitiesById.set(ability.id, ability);
+        abilitiesById.set(ability.id, ability);
       }
     }
 
     // Load items (optional)
     if (data.items) {
       for (const item of data.items) {
-        this.itemsById.set(item.id, item);
+        itemsById.set(item.id, item);
       }
     }
 
     // Load natures (optional)
     if (data.natures) {
       for (const nature of data.natures) {
-        this.naturesById.set(nature.id, nature);
+        naturesById.set(nature.id, nature);
       }
     }
 
     // Load type chart
-    this.typeChart = data.typeChart;
+    const typeChart = data.typeChart;
+
+    // Swap the fully built snapshot only after every load step succeeds, so a
+    // malformed bundle cannot leave the manager partially populated.
+    this.speciesById = speciesById;
+    this.speciesByName = speciesByName;
+    this.movesById = movesById;
+    this.abilitiesById = abilitiesById;
+    this.itemsById = itemsById;
+    this.naturesById = naturesById;
+    this.typeChart = typeChart;
     this.loaded = true;
   }
 

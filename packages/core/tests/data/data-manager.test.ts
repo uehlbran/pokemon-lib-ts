@@ -583,13 +583,34 @@ describe("DataManager", () => {
       dm.loadFromObjects(createMinimalData());
 
       // Assert
-      expect(dm.getAllSpecies().map((species) => species.name)).toEqual(["bulbasaur"]);
-      expect(dm.getAllMoves().map((move) => move.id)).toEqual(["tackle"]);
+      // Derived from createMinimalData(): the second load only keeps Bulbasaur and Tackle.
+      expect(dm.getAllSpecies().map((species) => species.name)).toEqual([bulbasaur.name]);
+      expect(dm.getAllMoves().map((move) => move.id)).toEqual([tackle.id]);
       expect(dm.getAllAbilities()).toHaveLength(0);
       expect(dm.getAllItems()).toHaveLength(0);
       expect(dm.getAllNatures()).toHaveLength(0);
-      expect(() => dm.getSpecies(4)).toThrow("Species with id 4 not found");
-      expect(() => dm.getMove("flamethrower")).toThrow('Move "flamethrower" not found');
+      expect(() => dm.getSpecies(charmander.id)).toThrow();
+      expect(() => dm.getMove(flamethrower.id)).toThrow();
+    });
+
+    it("keeps the last good data if a reload fails midway", () => {
+      dm.loadFromObjects(createFullData());
+
+      const invalidData: RawDataObjects = {
+        ...createMinimalData(),
+        pokemon: [{ ...bulbasaur, name: undefined as unknown as string }],
+      };
+
+      expect(() => dm.loadFromObjects(invalidData)).toThrow();
+
+      // Derived from the first successful full load: the transactional reload must leave it intact.
+      expect(dm.isLoaded()).toBe(true);
+      expect(dm.getAllSpecies()).toHaveLength(2);
+      expect(dm.getSpecies(bulbasaur.id)).toBe(bulbasaur);
+      expect(dm.getSpecies(charmander.id)).toBe(charmander);
+      expect(dm.getAllMoves()).toHaveLength(2);
+      expect(dm.getMove(tackle.id)).toBe(tackle);
+      expect(dm.getMove(flamethrower.id)).toBe(flamethrower);
     });
   });
 
