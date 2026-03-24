@@ -155,7 +155,12 @@ export class BattleEngine implements BattleEventEmitter {
         continue;
       }
 
-      if (rawTeamSlot < 0 || rawTeamSlot >= state.sides[rawSide].team.length) {
+      const sideState = state.sides[rawSide];
+      if (!sideState) {
+        continue;
+      }
+
+      if (rawTeamSlot < 0 || rawTeamSlot >= sideState.team.length) {
         continue;
       }
 
