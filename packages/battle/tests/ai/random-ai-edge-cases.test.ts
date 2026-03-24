@@ -417,6 +417,9 @@ describe("RandomAI — edge cases", () => {
             const switches = engine.getAvailableSwitches(side);
             if (switches.length > 0 && engine.getActive(side)?.pokemon.currentHp === 0) {
               const slot = ai.chooseSwitchIn(side, engine.getState(), ruleset, aiRng);
+              if (slot === null) {
+                continue;
+              }
               try {
                 engine.submitSwitch(side, slot);
               } catch {

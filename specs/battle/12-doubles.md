@@ -228,7 +228,7 @@ Must fire against all opponents. The engine calls `applyAbility("on-switch-in", 
 chooseActions(side: 0 | 1, state: BattleState, ruleset: GenerationRuleset, rng: SeededRandom): BattleAction[]
 
 /** Updated: forSlot parameter indicates which slot needs replacement. */
-chooseSwitchIn(side: 0 | 1, state: BattleState, forSlot?: number): number
+chooseSwitchIn(side: 0 | 1, state: BattleState, forSlot?: number): number | null
 ```
 
 ### RandomAI update
