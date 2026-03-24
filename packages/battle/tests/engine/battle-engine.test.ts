@@ -100,6 +100,54 @@ describe("BattleEngine", () => {
       expect(engine.state.sides[1].team).toHaveLength(1);
     });
 
+    it("given caller-owned team members, when engine is created, then constructor state stays engine-owned and does not mutate the caller objects", () => {
+      const team1 = [
+        createTestPokemon(25, 5, {
+          currentHp: 1,
+          calculatedStats: {
+            hp: 1,
+            attack: 1,
+            defense: 1,
+            spAttack: 1,
+            spDefense: 1,
+            speed: 1,
+          },
+        }),
+      ];
+      const originalPokemon = team1[0]!;
+      const originalMoves = originalPokemon.moves;
+      const originalEvs = originalPokemon.evs;
+      const originalIvs = originalPokemon.ivs;
+      const originalCalculatedStats = originalPokemon.calculatedStats;
+
+      const { engine } = createTestEngine({ team1 });
+
+      const enginePokemon = engine.getTeam(0)[0]!;
+      expect(enginePokemon).not.toBe(originalPokemon);
+      expect(enginePokemon.moves).not.toBe(originalMoves);
+      expect(enginePokemon.evs).not.toBe(originalEvs);
+      expect(enginePokemon.ivs).not.toBe(originalIvs);
+      expect(enginePokemon.calculatedStats).not.toBe(originalCalculatedStats);
+
+      expect(originalPokemon.currentHp).toBe(1);
+      expect(originalPokemon.calculatedStats).toEqual({
+        hp: 1,
+        attack: 1,
+        defense: 1,
+        spAttack: 1,
+        spDefense: 1,
+        speed: 1,
+      });
+
+      originalPokemon.currentHp = 7;
+      originalPokemon.moves[0]!.currentPP = 1;
+      originalPokemon.evs.hp = 200;
+
+      expect(enginePokemon.currentHp).toBe(20);
+      expect(enginePokemon.moves[0]!.currentPP).toBe(35);
+      expect(enginePokemon.evs.hp).toBe(0);
+    });
+
     it("given a ruleset whose generation does not match the battle config, when engine is created, then it throws", () => {
       const ruleset = new MockRuleset();
       Object.defineProperty(ruleset, "generation", { value: 9 });
