@@ -92,7 +92,10 @@ export interface PokemonInstance {
   /** Computed stats — recalculated when level/EVs/nature change */
   calculatedStats?: StatBlock;
 
-  // --- Generation-specific fields ---
+  // --- Persisted battle-state fields ---
+  // Exception to the usual "generation-agnostic interfaces" rule: these values are stored
+  // on PokemonInstance because createActivePokemon() must restore them after a switch.
+  // Keep transient battle state on ActivePokemon or in volatiles instead.
 
   /** Tera Type for Gen 9 battles */
   teraType?: PokemonType;

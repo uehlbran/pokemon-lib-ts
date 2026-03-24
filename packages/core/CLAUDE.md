@@ -24,6 +24,7 @@ src/
 - **Lowercase string literals** for all entity types: `'fire'`, `'physical'`, `'paralysis'` — never UPPERCASE enums.
 - **Discriminated unions** over class hierarchies for MoveEffect, categories, etc.
 - Interfaces must be **generation-agnostic**. Gen-specific behavior belongs in the gen package's ruleset, not here.
+- Exception: `PokemonInstance` may carry persisted battle-state fields when the engine must restore that state after a switch (for example Mega form identity, Terastallization state, Dynamax level, once-per-battle ability flags, or Rage Fist counters). Prefer documenting that persistence over introducing per-gen interface trees that leak through every battle/state API.
 
 ## Stat Formulas (Quick Reference)
 
