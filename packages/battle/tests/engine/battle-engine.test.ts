@@ -110,6 +110,20 @@ describe("BattleEngine", () => {
         "BattleEngine: ruleset generation 9 does not match battle generation 1",
       );
     });
+
+    it("given a non-singles battle format, when engine is created, then it rejects unsupported multi-active formats", () => {
+      const dataManager = createMockDataManager();
+      const config: BattleConfig = {
+        generation: 1,
+        format: "doubles",
+        teams: [[createTestPokemon(6, 50)], [createTestPokemon(9, 50)]],
+        seed: 12345,
+      };
+
+      expect(() => new BattleEngine(config, new MockRuleset(), dataManager)).toThrow(
+        'BattleEngine: battle format "doubles" is not supported',
+      );
+    });
   });
 
   describe("start", () => {
@@ -226,6 +240,21 @@ describe("BattleEngine", () => {
       expect(() => engine.submitAction(0, { type: "move", side: 1, moveIndex: 0 })).toThrow(
         "Submitted side 0 does not match action.side 1",
       );
+    });
+
+    it("given a move action with targetSide and targetSlot, when submitAction is called, then it rejects unsupported multi-active targeting fields", () => {
+      const { engine } = createTestEngine();
+      engine.start();
+
+      expect(() =>
+        engine.submitAction(0, {
+          type: "move",
+          side: 0,
+          moveIndex: 0,
+          targetSide: 1,
+          targetSlot: 0,
+        }),
+      ).toThrow("BattleEngine: move targetSide/targetSlot are not supported in singles battles");
     });
 
     it("given a move action without moveIndex, when submitAction is called, then it throws instead of accepting a malformed action", () => {
