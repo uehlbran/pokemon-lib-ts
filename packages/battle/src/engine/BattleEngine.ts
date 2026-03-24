@@ -352,6 +352,10 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    if (action.type === "run" && (side !== 0 || action.side !== 0)) {
+      throw new Error("RunAction is only valid for side 0");
+    }
+
     this.pendingActions.set(side, action);
 
     // When both sides have submitted, resolve the turn
