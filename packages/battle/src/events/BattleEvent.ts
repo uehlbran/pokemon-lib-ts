@@ -711,10 +711,11 @@ export type BattleEventListener = (event: BattleEvent) => void;
 
 /**
  * Interface for objects that emit BattleEvents. Implemented by BattleEngine.
- * Consumers use `on`/`off` for real-time updates and `getEventLog` for replay.
+ * Consumers use `on`/`off` for real-time updates and `getEventLog` for replay snapshots.
  */
 export interface BattleEventEmitter {
   on(listener: BattleEventListener): void;
   off(listener: BattleEventListener): void;
+  /** Returns a snapshot copy of the event log, not a live view. */
   getEventLog(): readonly BattleEvent[];
 }
