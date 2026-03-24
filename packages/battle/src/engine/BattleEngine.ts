@@ -69,6 +69,10 @@ const STRUGGLE_MOVE_DATA: MoveData = {
   generation: 1,
 };
 
+const BATTLE_GIMMICK_TYPES: readonly BattleGimmickType[] = ["mega", "zmove", "dynamax", "tera"];
+
+type SerializedBattleGimmickState = Partial<Record<BattleGimmickType, unknown>>;
+
 /**
  * The core battle engine. Manages the battle state machine, delegates
  * generation-specific behavior to the provided ruleset, and emits
@@ -124,6 +128,36 @@ export class BattleEngine implements BattleEventEmitter {
   ): void {
     if (format !== "singles") {
       throw new Error(`${source}: battle format "${format}" is not supported`);
+    }
+  }
+
+  private resetBattleGimmicks(): void {
+    for (const gimmickType of BATTLE_GIMMICK_TYPES) {
+      this.ruleset.getBattleGimmick(gimmickType)?.reset?.();
+    }
+  }
+
+  private serializeBattleGimmickState(): SerializedBattleGimmickState {
+    const serializedState: SerializedBattleGimmickState = {};
+
+    for (const gimmickType of BATTLE_GIMMICK_TYPES) {
+      const gimmickState = this.ruleset.getBattleGimmick(gimmickType)?.serializeState?.();
+      if (gimmickState !== undefined) {
+        serializedState[gimmickType] = gimmickState;
+      }
+    }
+
+    return serializedState;
+  }
+
+  private restoreBattleGimmickState(serializedState?: SerializedBattleGimmickState): void {
+    this.resetBattleGimmicks();
+
+    for (const gimmickType of BATTLE_GIMMICK_TYPES) {
+      const gimmickState = serializedState?.[gimmickType];
+      if (gimmickState !== undefined) {
+        this.ruleset.getBattleGimmick(gimmickType)?.restoreState?.(gimmickState);
+      }
     }
   }
 
@@ -269,9 +303,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Reset per-battle gimmick state so that a shared ruleset instance can be
     // safely reused across multiple battles without cross-battle state leakage.
     // Source: Showdown resets side.megaUsed / side.zMoveUsed at battle start.
-    for (const gimmickType of ["mega", "zmove", "dynamax", "tera"] as const) {
-      this.ruleset.getBattleGimmick(gimmickType)?.reset?.();
-    }
+    this.resetBattleGimmicks();
   }
 
   /**
@@ -351,10 +383,7 @@ export class BattleEngine implements BattleEventEmitter {
     // tracking for Z-Move and Mega Evolution — without this, usedBySide persists
     // across battles and incorrectly blocks gimmick use.
     // Source: Qodo review — gimmick state leaks across battles (PR #699)
-    const gimmickTypes: BattleGimmickType[] = ["mega", "zmove", "dynamax", "tera"];
-    for (const type of gimmickTypes) {
-      this.ruleset.getBattleGimmick(type)?.reset?.();
-    }
+    this.resetBattleGimmicks();
 
     this.emit({
       type: "battle-start",
@@ -828,6 +857,7 @@ export class BattleEngine implements BattleEventEmitter {
         eventLog: this.eventLog,
         pendingSwitches: this.pendingSwitches,
         sidesNeedingSwitch: this.sidesNeedingSwitch,
+        gimmickState: this.serializeBattleGimmickState(),
       },
       (_key, value) => {
         if (value instanceof Map) {
@@ -873,6 +903,7 @@ export class BattleEngine implements BattleEventEmitter {
       eventLog?: BattleEvent[];
       pendingSwitches?: unknown;
       sidesNeedingSwitch?: unknown;
+      gimmickState?: SerializedBattleGimmickState;
     };
 
     BattleEngine.assertRulesetGenerationMatches(
@@ -957,6 +988,8 @@ export class BattleEngine implements BattleEventEmitter {
         configurable: false,
       },
     });
+
+    engine.restoreBattleGimmickState(parsed.gimmickState);
 
     return engine;
   }
