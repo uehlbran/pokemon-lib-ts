@@ -3762,7 +3762,12 @@ export class BattleEngine implements BattleEventEmitter {
           });
           launchDamage = calcResult.damage;
         } catch {
-          // Move data missing — launchDamage stays 0 as final fallback
+          this.emit({
+            type: "engine-warning",
+            message:
+              `Future attack move "${result.futureAttack.moveId}" data missing while scheduling. ` +
+              "Storing 0 damage fallback.",
+          });
         }
         targetSideState.futureAttack = {
           moveId: result.futureAttack.moveId,
@@ -4489,7 +4494,12 @@ export class BattleEngine implements BattleEventEmitter {
                     try {
                       moveData = this.dataManager.getMove(side.futureAttack.moveId);
                     } catch {
-                      // Move data missing — use fallback damage
+                      this.emit({
+                        type: "engine-warning",
+                        message:
+                          `Future attack move "${side.futureAttack.moveId}" data missing while resolving. ` +
+                          "Using stored fallback damage.",
+                      });
                     }
                     if (moveData) {
                       const result = this.ruleset.calculateDamage({

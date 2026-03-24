@@ -508,3 +508,88 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
     expect(fsEvent.type === "damage" && fsEvent.amount).toBe(50);
   });
 });
+
+describe("Future attack integrity warnings", () => {
+  it("given scheduling uses missing move data, when a future attack is created, then the engine emits a warning instead of silently storing zero damage", () => {
+    const { engine, ruleset, events } = createFutureAttackEngine();
+    ruleset.setEffectHandler((context) => {
+      if (context.move.id !== "future-sight") {
+        return {
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        };
+      }
+
+      return {
+        statusInflicted: null,
+        volatileInflicted: null,
+        statChanges: [],
+        recoilDamage: 0,
+        healAmount: 0,
+        switchOut: false,
+        messages: [],
+        futureAttack: {
+          moveId: "missing-future-move",
+          turnsLeft: 2,
+          sourceSide: 0,
+        },
+      };
+    });
+
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === "engine-warning" &&
+          event.message.includes(
+            'Future attack move "missing-future-move" data missing while scheduling.',
+          ),
+      ),
+    ).toBe(true);
+    expect(engine.state.sides[1].futureAttack?.damage).toBe(0);
+  });
+
+  it("given future attack resolution uses missing move data, when the hit resolves, then the engine emits a warning before falling back to stored damage", () => {
+    const { engine, ruleset, events } = createFutureAttackEngine();
+    Object.assign(ruleset, {
+      recalculatesFutureAttackDamage: () => true,
+    });
+    engine.start();
+
+    engine.state.sides[1].futureAttack = {
+      moveId: "missing-future-move",
+      turnsLeft: 1,
+      damage: 33,
+      sourceSide: 0,
+    };
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === "engine-warning" &&
+          event.message.includes(
+            'Future attack move "missing-future-move" data missing while resolving.',
+          ),
+      ),
+    ).toBe(true);
+
+    const futureSightDamage = events.filter(
+      (event) =>
+        event.type === "damage" && "source" in event && event.source === "missing-future-move",
+    );
+    expect(futureSightDamage).toHaveLength(1);
+    const damageEvent = futureSightDamage[0]!;
+    expect(damageEvent.type === "damage" && damageEvent.amount).toBe(33);
+  });
+});
