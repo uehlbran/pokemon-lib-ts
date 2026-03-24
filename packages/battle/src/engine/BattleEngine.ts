@@ -3566,6 +3566,7 @@ export class BattleEngine implements BattleEventEmitter {
           turns: result.screenSet.turnsLeft,
         });
       }
+      this.syncLuckyChant(screenSide);
     }
 
     // Screen clear (Haze or switch-out removes screens from a side)
@@ -4875,6 +4876,7 @@ export class BattleEngine implements BattleEventEmitter {
         }
         return true;
       });
+      this.syncLuckyChant(side);
     }
   }
 
@@ -4899,6 +4901,18 @@ export class BattleEngine implements BattleEventEmitter {
         screen: removedScreen.type,
       });
     }
+
+    this.syncLuckyChant(side);
+  }
+
+  private syncLuckyChant(side: BattleSide): void {
+    const luckyChantScreen = side.screens.find(
+      (screen) => (screen.type as string) === "lucky-chant",
+    );
+    side.luckyChant = {
+      active: luckyChantScreen !== undefined,
+      turnsLeft: luckyChantScreen?.turnsLeft ?? 0,
+    };
   }
 
   private processTailwindCountdown(): void {

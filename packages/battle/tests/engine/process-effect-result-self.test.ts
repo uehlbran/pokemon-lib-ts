@@ -306,6 +306,54 @@ describe("processEffectResult — self-targeted effects", () => {
     );
   });
 
+  describe("screenSet", () => {
+    it("given screenSet screen='lucky-chant' on the attacker, when move is used, then the lucky-chant screen and side field stay synchronized", () => {
+      // Arrange
+      const ruleset = new MockRuleset();
+      ruleset.getEndOfTurnOrder = () => [];
+      let callCount = 0;
+      ruleset.executeMoveEffect = () => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            statusInflicted: null,
+            volatileInflicted: null,
+            statChanges: [],
+            recoilDamage: 0,
+            healAmount: 0,
+            switchOut: false,
+            messages: [],
+            screenSet: { screen: "lucky-chant", turnsLeft: 5, side: "attacker" as const },
+          };
+        }
+        return {
+          statusInflicted: null,
+          volatileInflicted: null,
+          statChanges: [],
+          recoilDamage: 0,
+          healAmount: 0,
+          switchOut: false,
+          messages: [],
+        };
+      };
+
+      const { engine } = createEngine({ ruleset });
+      engine.start();
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert — Lucky Chant is tracked in both places so Gen 4 crit suppression can read it
+      expect(engine.state.sides[0].screens).toHaveLength(1);
+      expect(engine.state.sides[0].screens[0]?.turnsLeft).toBe(5);
+      expect((engine.state.sides[0].screens[0] as { type: string } | undefined)?.type).toBe(
+        "lucky-chant",
+      );
+      expect(engine.state.sides[0].luckyChant).toEqual({ active: true, turnsLeft: 5 });
+    });
+  });
+
   describe("statStagesReset", () => {
     // Source: pokered move_effects/haze.asm:15-43 — Haze resets stat stages for one or both
     // sides independently of status; status is NOT cured by statStagesReset.
