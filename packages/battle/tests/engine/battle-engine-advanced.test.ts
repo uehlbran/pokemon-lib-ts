@@ -305,6 +305,11 @@ describe("BattleEngine — advanced scenarios", () => {
         (event) => event.type === "screen-end" && event.side === 0 && event.screen === "safeguard",
       );
       expect(screenEnd).toBeDefined();
+      const safeguardWearOffMessage = events.find(
+        (event) => event.type === "message" && event.text === "Side 0's Safeguard wore off!",
+      );
+      // Source: BattleEngine emits the existing wear-off text immediately after the new screen-end event.
+      expect(safeguardWearOffMessage).toBeDefined();
     });
   });
 
