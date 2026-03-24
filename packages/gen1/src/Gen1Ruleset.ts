@@ -43,6 +43,7 @@ import {
   gen14MultiHitRoll,
   gen16ConfusionSelfHitRoll,
   getGen12StatStageRatio,
+  NEUTRAL_NATURES,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "./data";
@@ -1390,6 +1391,43 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Check move count (1-4 moves)
     if (pokemon.moves.length < 1 || pokemon.moves.length > 4) {
       errors.push(`Pokemon must have 1-4 moves, has ${pokemon.moves.length}`);
+    }
+
+    const legalMoves = new Set<string>();
+    for (const move of species.learnset.levelUp) legalMoves.add(move.move);
+    for (const move of species.learnset.tm) legalMoves.add(move);
+    for (const move of species.learnset.egg) legalMoves.add(move);
+    for (const move of species.learnset.tutor) legalMoves.add(move);
+    for (const move of species.learnset.event ?? []) legalMoves.add(move);
+
+    for (const moveSlot of pokemon.moves) {
+      if (!moveSlot.moveId) {
+        errors.push("Pokemon move slot is empty");
+        continue;
+      }
+
+      try {
+        this.dataManager.getMove(moveSlot.moveId);
+      } catch {
+        errors.push(`Move "${moveSlot.moveId}" is not available in Gen 1`);
+        continue;
+      }
+
+      if (!legalMoves.has(moveSlot.moveId)) {
+        errors.push(`Move "${moveSlot.moveId}" is not legal for ${species.displayName} in Gen 1`);
+      }
+    }
+
+    if (pokemon.ability) {
+      errors.push("Abilities are not available in Gen 1");
+    }
+
+    if (!NEUTRAL_NATURES.includes(pokemon.nature)) {
+      errors.push(`Nature "${pokemon.nature}" is not supported in Gen 1`);
+    }
+
+    if (pokemon.abilitySlot !== "normal1") {
+      errors.push(`Ability slot "${pokemon.abilitySlot}" is not supported in Gen 1`);
     }
 
     // No held items in Gen 1

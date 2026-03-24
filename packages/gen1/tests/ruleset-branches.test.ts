@@ -85,7 +85,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       nature: "hardy",
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: "thunder-shock", currentPP: 30, maxPP: 30, ppUps: 0 }],
       currentHp: 100,
       status: null,
       friendship: 70,
@@ -1527,7 +1527,20 @@ describe("Gen1Ruleset validatePokemon", () => {
       expGroup: "medium-fast",
       evYield: { speed: 2 },
       eggGroups: ["field", "fairy"],
-      learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
+      learnset: {
+        levelUp: [
+          { level: 1, move: "thunder-shock" },
+          { level: 1, move: "growl" },
+          { level: 9, move: "thunder-wave" },
+          { level: 16, move: "quick-attack" },
+          { level: 26, move: "swift" },
+          { level: 33, move: "agility" },
+          { level: 43, move: "thunder" },
+        ],
+        tm: [],
+        egg: [],
+        tutor: [],
+      },
       evolution: null,
       dimensions: { height: 0.4, weight: 6.0 },
       spriteKey: "pikachu",
@@ -1549,7 +1562,7 @@ describe("Gen1Ruleset validatePokemon", () => {
       nature: "hardy",
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: "thunder-shock", currentPP: 30, maxPP: 30, ppUps: 0 }],
       currentHp: 100,
       status: null,
       friendship: 70,
@@ -1566,6 +1579,65 @@ describe("Gen1Ruleset validatePokemon", () => {
       ...overrides,
     } as PokemonInstance;
   }
+
+  it("given a Gen 1 Pokemon with an illegal move, when validating, then returns an error for Gen 1 move legality", () => {
+    // Arrange
+    const pokemon = makePokemonInstance({
+      moves: [{ moveId: "shadow-ball", currentPP: 15, maxPP: 15, ppUps: 0 }],
+    });
+    const species = makeSpecies();
+    // Act
+    const result = ruleset.validatePokemon(pokemon, species);
+    // Assert
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("shadow-ball"))).toBe(true);
+  });
+
+  it("given a Gen 1 Pokemon with a legal move the species cannot learn, when validating, then returns an error for species move legality", () => {
+    // Arrange
+    const pokemon = makePokemonInstance({
+      moves: [{ moveId: "fissure", currentPP: 5, maxPP: 5, ppUps: 0 }],
+    });
+    const species = makeSpecies();
+    // Act
+    const result = ruleset.validatePokemon(pokemon, species);
+    // Assert
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("fissure"))).toBe(true);
+  });
+
+  it("given a Gen 1 Pokemon with an ability, when validating, then returns an error because abilities do not exist in Gen 1", () => {
+    // Arrange
+    const pokemon = makePokemonInstance({ ability: "static" });
+    const species = makeSpecies();
+    // Act
+    const result = ruleset.validatePokemon(pokemon, species);
+    // Assert
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("Abilities"))).toBe(true);
+  });
+
+  it("given a Gen 1 Pokemon with a non-normal ability slot, when validating, then returns an error because ability slots do not exist in Gen 1", () => {
+    // Arrange
+    const pokemon = makePokemonInstance({ abilitySlot: "hidden" as const });
+    const species = makeSpecies();
+    // Act
+    const result = ruleset.validatePokemon(pokemon, species);
+    // Assert
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("Ability slot"))).toBe(true);
+  });
+
+  it("given a Gen 1 Pokemon with a non-neutral nature, when validating, then returns an error because natures do not exist in Gen 1", () => {
+    // Arrange
+    const pokemon = makePokemonInstance({ nature: "modest" });
+    const species = makeSpecies();
+    // Act
+    const result = ruleset.validatePokemon(pokemon, species);
+    // Assert
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("Nature"))).toBe(true);
+  });
 
   it("given a valid Gen 1 Pokemon, when validating, then returns valid with no errors", () => {
     // Arrange
