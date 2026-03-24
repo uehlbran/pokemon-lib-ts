@@ -89,6 +89,26 @@ class RecursiveEscapeRuleset extends MockRuleset {
   }
 }
 
+class DelegatingPerishSongRuleset extends MockRuleset {
+  private perishSongCalls = 0;
+
+  getPerishSongCalls(): number {
+    return this.perishSongCalls;
+  }
+
+  override getEndOfTurnOrder(): readonly ("perish-song" | "status-damage")[] {
+    return ["perish-song", "status-damage"];
+  }
+
+  override processPerishSong(active: ActivePokemon): {
+    readonly newCount: number;
+    readonly fainted: boolean;
+  } {
+    this.perishSongCalls += 1;
+    return super.processPerishSong(active);
+  }
+}
+
 describe("BattleEngine — advanced scenarios", () => {
   describe("move miss", () => {
     it("given the ruleset says move misses, when a move is used, then move-miss event is emitted", () => {
@@ -421,6 +441,32 @@ describe("BattleEngine — advanced scenarios", () => {
       expect(engine.state.sides[0].screens).toEqual([{ type: "safeguard", turnsLeft: 4 }]);
       const screenEnd = events.find((event) => event.type === "screen-end");
       expect(screenEnd).toBeUndefined();
+    });
+  });
+
+  describe("perish song countdown", () => {
+    it("given a pokemon affected by Perish Song, when end of turn processes, then the engine delegates the countdown to the ruleset contract", () => {
+      // Arrange
+      const ruleset = new DelegatingPerishSongRuleset();
+      ruleset.setAlwaysHit(false);
+      const { engine } = createEngine({ ruleset });
+      engine.start();
+
+      const active = engine.state.sides[0].active[0];
+      active!.volatileStatuses.set("perish-song", {
+        turnsLeft: -1,
+        data: { counter: 2 },
+      });
+      const initialHp = active!.pokemon.currentHp;
+
+      // Act
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      expect(ruleset.getPerishSongCalls()).toBe(1);
+      expect(active!.volatileStatuses.get("perish-song")?.data?.counter).toBe(1);
+      expect(active!.pokemon.currentHp).toBe(initialHp);
     });
   });
 
