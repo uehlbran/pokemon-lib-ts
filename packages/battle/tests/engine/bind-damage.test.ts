@@ -61,7 +61,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       engine.start();
 
       // Set bound on Blastoise (side 1) with enough turns so it persists through move execution
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       blastoise?.volatileStatuses.set("bound", { turnsLeft: 3 });
 
       // Act — submit a turn so end-of-turn processing runs
@@ -80,7 +80,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       if (bindDamage && bindDamage.type === "damage") {
         const expectedDamage = Math.max(
           1,
-          Math.floor((engine.getActive(1)?.pokemon.calculatedStats?.hp ?? 200) / 8),
+          Math.floor((engine.state.sides[1].active[0]?.pokemon.calculatedStats?.hp ?? 200) / 8),
         );
         expect(bindDamage.amount).toBe(expectedDamage);
       }
@@ -94,7 +94,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       // turnsLeft=2: canExecuteMove decrements to 1 (not 0) so move is blocked but volatile stays
       // Then processBindDamage decrements to... wait, let's use turnsLeft=3 to be safe
       blastoise?.volatileStatuses.set("bound", { turnsLeft: 3 });
@@ -111,7 +111,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       expect(bindDamageEvents.length).toBeGreaterThan(0);
 
       // The volatile should still be present (counter not yet at 0)
-      const boundState = engine.getActive(1)?.volatileStatuses.get("bound");
+      const boundState = engine.state.sides[1].active[0]?.volatileStatuses.get("bound");
       expect(boundState).toBeDefined();
     });
 
@@ -124,7 +124,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       blastoise?.volatileStatuses.set("bound", { turnsLeft: 1 });
 
       // Act
@@ -139,7 +139,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       expect(volatileEndEvents.length).toBeGreaterThan(0);
 
       // volatile should be cleared
-      expect(engine.getActive(1)?.volatileStatuses.has("bound")).toBe(false);
+      expect(engine.state.sides[1].active[0]?.volatileStatuses.has("bound")).toBe(false);
     });
 
     it("given a fainted pokemon with 'bound' volatile, when end of turn processes, then no bind damage event is emitted", () => {
@@ -150,7 +150,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       if (blastoise) {
         blastoise.pokemon.currentHp = 0; // fainted
         blastoise.volatileStatuses.set("bound", { turnsLeft: 3 });
@@ -178,7 +178,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      const blastoise = engine.getActive(1);
+      const blastoise = engine.state.sides[1].active[0];
       blastoise?.volatileStatuses.set("bound", { turnsLeft: 3 });
 
       // Act

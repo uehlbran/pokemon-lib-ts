@@ -90,8 +90,8 @@ describe("BattleEngine", () => {
       const { engine } = createTestEngine();
 
       // Assert
-      expect(engine.getTeam(0)).toHaveLength(1);
-      expect(engine.getTeam(1)).toHaveLength(1);
+      expect(engine.state.sides[0].team).toHaveLength(1);
+      expect(engine.state.sides[1].team).toHaveLength(1);
     });
 
     it("given a ruleset whose generation does not match the battle config, when engine is created, then it throws", () => {
@@ -179,8 +179,8 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Assert
-      expect(engine.getActive(0)).not.toBeNull();
-      expect(engine.getActive(1)).not.toBeNull();
+      expect(engine.state.sides[0].active[0]).not.toBeNull();
+      expect(engine.state.sides[1].active[0]).not.toBeNull();
     });
 
     it("given a battle already started, when start is called again, then it throws an error", () => {
@@ -332,8 +332,8 @@ describe("BattleEngine", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const active0 = engine.getActive(0) as ActivePokemon;
-      const active1 = engine.getActive(1) as ActivePokemon;
+      const active0 = engine.state.sides[0].active[0] as ActivePokemon;
+      const active1 = engine.state.sides[1].active[0] as ActivePokemon;
       expect(active0.pokemon.moves[0]?.currentPP).toBe(34);
       expect(active1.pokemon.moves[0]?.currentPP).toBe(34);
     });
@@ -407,7 +407,7 @@ describe("BattleEngine", () => {
       // 2 switch-ins from start + 1 from the switch action
       expect(switchIns.length).toBeGreaterThanOrEqual(3);
 
-      const active = engine.getActive(0) as ActivePokemon;
+      const active = engine.state.sides[0].active[0] as ActivePokemon;
       expect(active.pokemon.uid).toBe("pikachu-1");
     });
 
@@ -729,7 +729,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Set Blastoise HP to 1 (after calculatedStats override in start)
-      const blastoise = engine.getActive(1) as ActivePokemon;
+      const blastoise = engine.state.sides[1].active[0] as ActivePokemon;
       blastoise.pokemon.currentHp = 1;
 
       // Act
@@ -764,7 +764,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Set Blastoise HP to 1
-      const blastoise = engine.getActive(1) as ActivePokemon;
+      const blastoise = engine.state.sides[1].active[0] as ActivePokemon;
       blastoise.pokemon.currentHp = 1;
 
       // Act
@@ -815,7 +815,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Set Blastoise HP to 1
-      const blastoise = engine.getActive(1) as ActivePokemon;
+      const blastoise = engine.state.sides[1].active[0] as ActivePokemon;
       blastoise.pokemon.currentHp = 1;
 
       // Act — turn resolves, Blastoise faints
@@ -831,7 +831,7 @@ describe("BattleEngine", () => {
       // Assert — battle continues
       expect(engine.isEnded()).toBe(false);
       expect(engine.getPhase()).toBe("action-select");
-      expect(engine.getActive(1)?.pokemon.uid).toBe("pikachu-1");
+      expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("pikachu-1");
     });
 
     it("given switch-prompt for side 1, when side 0 submits a switch, then it throws", () => {
@@ -868,7 +868,7 @@ describe("BattleEngine", () => {
 
       const { engine } = createTestEngine({ team2 });
       engine.start();
-      (engine.getActive(1) as ActivePokemon).pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -925,8 +925,8 @@ describe("BattleEngine", () => {
 
       const { engine } = createTestEngine({ team2 });
       engine.start();
-      (engine.getActive(1) as ActivePokemon).pokemon.currentHp = 1;
-      engine.getTeam(1)[1]!.currentHp = 0;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
+      engine.state.sides[1].team[1]!.currentHp = 0;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -969,7 +969,7 @@ describe("BattleEngine", () => {
 
       const { engine } = createTestEngine({ team2 });
       engine.start();
-      (engine.getActive(1) as ActivePokemon).pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -1085,7 +1085,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Inflict burn on side 0's active pokemon
-      const active = engine.getActive(0) as ActivePokemon;
+      const active = engine.state.sides[0].active[0] as ActivePokemon;
       active.pokemon.status = "burn";
 
       // Act — run a turn to trigger end-of-turn
@@ -1105,7 +1105,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Inflict poison on side 1's active pokemon
-      const active = engine.getActive(1) as ActivePokemon;
+      const active = engine.state.sides[1].active[0] as ActivePokemon;
       active.pokemon.status = "poison";
 
       // Act
@@ -1140,16 +1140,16 @@ describe("BattleEngine", () => {
       // Arrange
       const { engine } = createTestEngine();
       engine.start();
-      const initialHp0 = engine.getActive(0)?.pokemon.currentHp;
-      const initialHp1 = engine.getActive(1)?.pokemon.currentHp;
+      const initialHp0 = engine.state.sides[0].active[0]?.pokemon.currentHp;
+      const initialHp1 = engine.state.sides[1].active[0]?.pokemon.currentHp;
 
       // Act — play 1 turn
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — both pokemon should have taken damage
-      expect(engine.getActive(0)?.pokemon.currentHp).toBeLessThan(initialHp0);
-      expect(engine.getActive(1)?.pokemon.currentHp).toBeLessThan(initialHp1);
+      expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBeLessThan(initialHp0);
+      expect(engine.state.sides[1].active[0]?.pokemon.currentHp).toBeLessThan(initialHp1);
     });
   });
 });

@@ -87,7 +87,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       // overwriting any currentHp set in the constructor).
       // Source: MockRuleset calcHp for Charizard (base HP 78, level 50):
       //   floor(((2*78+31)*50)/100) + 50 + 10 = 153
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       const maxHp = active!.pokemon.calculatedStats!.hp; // 153
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
 
@@ -174,7 +174,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       expect(cureEvent!.status).toBe("poison");
 
       // Verify the pokemon's status was actually cleared
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       expect(active!.pokemon.status).toBeNull();
     });
 
@@ -232,7 +232,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       expect(statEvent!.currentStage).toBe(2);
 
       // Verify the stat stage was actually applied
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       expect(active!.statStages.attack).toBe(2);
     });
   });
@@ -356,7 +356,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Damage the pokemon after engine init so the heal has something to restore
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       active!.pokemon.currentHp = active!.pokemon.calculatedStats!.hp - 50;
 
       // Act — side 0 uses item, side 1 uses move
@@ -417,7 +417,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       // on start, overwriting any currentHp/status set in the constructor).
       // Source: MockRuleset calcHp for Charizard (base HP 78, level 50):
       //   floor(((2*78+31)*50)/100) + 50 + 10 = 153
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       const maxHp = active!.pokemon.calculatedStats!.hp; // 153
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
       active!.pokemon.status = "poison";
@@ -437,7 +437,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Verify state was mutated — after heal, HP = 103 + 50 = 153 (= maxHp, capped).
       // Then opponent's Tackle deals 10 damage (MockRuleset fixed damage) = 143.
-      const activeAfter = engine.getActive(0);
+      const activeAfter = engine.state.sides[0].active[0];
       expect(activeAfter!.pokemon.currentHp).toBe(maxHp - 10);
       expect(activeAfter!.pokemon.status).toBeNull();
     });

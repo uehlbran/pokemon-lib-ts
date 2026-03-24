@@ -77,7 +77,7 @@ describe("recharge enforcement (#104)", () => {
       engine.start();
 
       // Place the "recharge" volatile on side 0's active Pokemon directly
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       active0?.volatileStatuses.set("recharge", { turnsLeft: 1 });
 
@@ -99,7 +99,7 @@ describe("recharge enforcement (#104)", () => {
       const { engine } = createEngine();
       engine.start();
 
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       active0?.volatileStatuses.set("recharge", { turnsLeft: 1 });
 
@@ -116,7 +116,7 @@ describe("recharge enforcement (#104)", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       active0?.volatileStatuses.set("recharge", { turnsLeft: 1 });
 
