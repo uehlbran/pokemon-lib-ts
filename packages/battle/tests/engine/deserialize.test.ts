@@ -500,9 +500,9 @@ describe("BattleEngine.deserialize", () => {
     const { engine } = createTestEngine({ ruleset, dataManager });
     engine.start();
 
-    // Directly reduce HP to simulate damage taken during a battle
-    // MockRuleset.calculateStats computes HP as: floor((2*78+31)*50/100)+50+10 = 153
-    // Source: MockRuleset.calculateStats formula in mock-ruleset.ts
+    // Directly reduce HP to simulate damage taken during a battle.
+    // Charizard HP under the standard stat formula is 153 at level 50:
+    // floor((2*78+31)*50/100)+50+10 = 153
     const active = engine.state.sides[0].active[0]!;
     const maxHp = active.pokemon.calculatedStats!.hp;
     const damagedHp = Math.floor(maxHp / 2); // Set to half HP
@@ -514,10 +514,7 @@ describe("BattleEngine.deserialize", () => {
     // Act — deserialize the state
     const restored = BattleEngine.deserialize(serialized, ruleset, dataManager);
 
-    // Assert — currentHp should be the damaged value, NOT full HP from stat recalculation
-    // Source: The bug is that the old `new BattleEngine(...)` constructor resets
-    // currentHp = calculatedStats.hp (full HP). After fix, deserialized HP should
-    // match the saved value exactly.
+    // Assert — currentHp should be the damaged value, not a recomputed full-HP value.
     const restoredActive = restored.getActive(0)!;
     expect(restoredActive.pokemon.currentHp).toBe(damagedHp);
     expect(restoredActive.pokemon.currentHp).not.toBe(maxHp);
@@ -550,12 +547,10 @@ describe("BattleEngine.deserialize", () => {
     restored.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     restored.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — the battle should have advanced one turn from where it was serialized
-    // Source: Turn number increments by 1 per turn — engine state machine invariant
+    // Assert — the battle should have advanced one turn from where it was serialized.
     expect(restored.getState().turnNumber).toBe(turnAfterFirst + 1);
 
-    // Both sides should have taken additional damage (10 damage from MockRuleset)
-    // Source: MockRuleset.fixedDamage = 10 (set above)
+    // Both sides should have taken additional damage from the configured 10-damage fixture.
     const restoredHpSide0 = restored.getActive(0)!.pokemon.currentHp;
     const restoredHpSide1 = restored.getActive(1)!.pokemon.currentHp;
     expect(restoredHpSide0).toBe(hpAfterTurn1Side0 - 10);
@@ -718,9 +713,9 @@ describe("BattleEngine.deserialize", () => {
     restored.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
     // Turn 2: Charizard (still active) hits Blastoise (1 → faint).
-    // Source: MockRuleset.calculateExpGain — floor(defeatedSpecies.baseExp * defeatedLevel / (5 * participantCount))
-    // Blastoise baseExp=239, defeatedLevel=30, participantCount=1 (only Charizard, who is living)
-    // → floor(239 * 30 / (5 * 1)) = 1434
+    // Derived inline from the EXP formula:
+    // floor(defeatedSpecies.baseExp * defeatedLevel / (5 * participantCount))
+    // = floor(239 * 30 / (5 * 1)) = 1434
     restored.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     restored.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
@@ -730,7 +725,7 @@ describe("BattleEngine.deserialize", () => {
 
     const charizardExpEvent = expGainEvents.find((e) => e.pokemon === "charizard-1");
     if (!charizardExpEvent) throw new Error("Expected charizard-1 to receive an exp-gain event");
-    // Source: MockRuleset.calculateExpGain — floor(239 * 30 / (5 * 1)) = 1434
+    // Derived inline from the same EXP formula above.
     expect(charizardExpEvent.amount).toBe(1434);
   });
 

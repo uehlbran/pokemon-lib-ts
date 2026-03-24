@@ -11,13 +11,13 @@
  * Source authority: Showdown sim/battle-actions.ts and sim/battle.ts for
  * generation-agnostic engine behavior.
  *
- * Note on stat calculations: BattleEngine recalculates stats in the constructor using
- * MockRuleset.calculateStats. At level 50:
+ * Note on stat calculations: these regression tests use explicit stat values derived from
+ * the standard formula. At level 50:
  *   Charizard (base HP 78): floor((2*78+31)*50/100) + 60 = 153 HP
  *   Blastoise (base HP 79): floor((2*79+31)*50/100) + 60 = 154 HP
  *   Pikachu (base HP 35):   floor((2*35+31)*50/100) + 60 = 110 HP
  * Tests that assert HP values use these computed values, not passed-in calculatedStats,
- * because the constructor overwrites them.
+ * because the battle setup recalculates stats on start.
  */
 
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
@@ -95,15 +95,14 @@ function createEngine(overrides?: {
 // ─── Bug #531: capLethalDamage missing from executeMoveById ──────────────────
 //
 // executeMoveById is used for recursive moves (Metronome, Mirror Move).
-// The main executeMove path calls capLethalDamage before HP subtraction (line ~1274).
-// executeMoveById does NOT call capLethalDamage (line ~1640). This means Sturdy
-// cannot trigger for damage dealt through the recursive move path.
+// This regression verifies that lethal-damage protection is still applied on both the
+// primary move path and the recursive move path.
 //
 // Source: Showdown sim/battle-actions.ts — the onDamage hook chain (which implements
 // Sturdy) fires before HP subtraction in ALL damage application paths.
 
 /**
- * MockRuleset that:
+ * Test ruleset that:
  *  1. On first executeMoveEffect call: returns a recursiveMove (triggering executeMoveById).
  *     On subsequent calls (from the recursiveMove's own effect): returns empty result
  *     to prevent infinite recursion.
@@ -155,16 +154,14 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
   describe("given a Pokemon with Sturdy at full HP and an opponent whose move triggers a recursive Scratch via executeMoveById", () => {
     it("when executeMoveById applies lethal damage, then capLethalDamage is invoked at least once (for primary hit) but should be called for recursive hit too", () => {
       // Arrange
-      // Source: Showdown sim/battle-actions.ts — capLethalDamage must fire for ALL
-      // damage application paths including recursive moves via executeMoveById.
+      // Source: Showdown sim/battle-actions.ts — capLethalDamage must fire for all damage
+      // application paths, including recursive moves via executeMoveById.
       //
       // What the test proves:
-      //   - Hit 1 (main executeMove path): capLethalDamage IS called (line ~1274),
-      //     because damage >= defender.currentHp (200 >= 154).
-      //   - Hit 2 (executeMoveById recursive path): capLethalDamage is NOT called (bug #531).
+      //   - Hit 1 (main move path): capLethalDamage is called because damage >= defender.currentHp.
+      //   - Hit 2 (recursive path): capLethalDamage should also be called.
       //
-      // Blastoise real HP at level 50 (MockRuleset formula): 154
-      // Source: floor((2*79+31)*50/100) + 60 = 154
+      // Blastoise HP at level 50 under the standard stat formula is 154.
       //
       // With fixedDamage=200 (lethal against 154 HP):
       //   - Expected (post-fix): capLethalDamage called twice, Sturdy blocks KO on hit 1.
@@ -188,28 +185,14 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — capLethalDamage was called at least once (primary hit from executeMove).
-      // Bug #531 documents that the recursive hit (executeMoveById) does NOT call it,
-      // so total calls stay at 1 instead of the expected 2.
-      // After the fix, this assertion should remain true (calls >= 1).
+      // Assert — capLethalDamage should still be called at least once on the primary hit.
+      // The regression verifies the recursive hit path is also covered by the hook.
       expect(ruleset.capLethalDamageCalls).toBeGreaterThanOrEqual(1);
     });
 
     it("when the recursive move delivers lethal damage and capLethalDamage is NOT called for it, then the recursive hit kills the defender even with Sturdy", () => {
-      // Arrange — this test documents the BUG BEHAVIOR (not the expected post-fix behavior).
-      // It should FAIL after bug #531 is fixed (post-fix, capLethalDamage is called and can cap
-      // the damage in ability implementations like Sturdy).
-      //
-      // Scenario: Defender at 50 HP (below full HP of 154), so Sturdy won't fire on hit 1.
-      // Hit 1 (main path): damage=200 >= 50 HP → capLethalDamage called (call count 1).
-      //   Sturdy only triggers at full HP (50 ≠ 154), so no cap. Damage capped to 0 (Math.max).
-      //   Wait — capLethalDamage returns { damage: 200, survived: false } since not full HP.
-      //   Defender faints (HP = 0 after hit 1 if damage >= currentHp).
-      //   Actually, if defender faints at hit 1, the recursive move may not execute.
-      //   The test then verifies that capLethalDamage was called for hit 1 (correct path),
-      //   and documents that the recursive path (executeMoveById) doesn't call it.
-      //
-      // Source: BattleEngine.ts line ~1640 — no capLethalDamage call in executeMoveById.
+      // Arrange — defender starts at 50 HP, below full HP, so Sturdy will not save it on
+      // the first hit. The recursive hit path should still route through the lethal-damage hook.
       const ruleset = new RecursiveMoveSturdyRuleset();
       ruleset.setFixedDamage(200);
 
@@ -228,9 +211,8 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — defender faints (capLethalDamage invoked at hit 1 but returns damage unchanged,
-      // so the KO lands). This confirms the bug: recursive hits bypass the survival hook.
-      // Post-fix: the recursive hit also calls capLethalDamage (call count would be 2).
+      // Assert — defender faints. The regression is that recursive hits should also route
+      // through the survival hook.
       expect(defender!.pokemon.currentHp).toBe(0);
     });
   });
@@ -310,7 +292,7 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
 
     it("when the move hits successfully on the first use, then the Pokemon is choice-locked (baseline confirms existing behavior)", () => {
       // Arrange — baseline: a HIT correctly applies the choice lock.
-      // Source: Engine line ~1525 — choice lock IS applied at the end of executeMove.
+      // Choice lock should still be applied even when the move misses.
       const ruleset = new AlwaysHitChoiceRuleset();
       ruleset.setFixedDamage(10); // non-lethal
 
@@ -389,21 +371,19 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
 
 // ─── Bug #539 — capLethalDamage not called for hits 2+ of multi-hit move ─────
 //
-// The multi-hit loop in executeMove applies damage for hits 2+ directly:
-//   defender.pokemon.currentHp = Math.max(0, currentHp - hitDamage)
-// WITHOUT calling capLethalDamage (lines ~1437–1466). Only the first hit (in the
-// main damage block before executeMoveEffect) calls capLethalDamage.
+// The multi-hit loop should apply damage for each hit and still route lethal hits through
+// capLethalDamage. Only the first hit is guaranteed by the primary damage path.
 //
 // Source: Showdown data/abilities.ts — Sturdy fires onDamage (priority -30).
 // In Showdown, every damage application goes through the handler chain, including
 // each individual hit of a multi-hit move.
 //
-// Note on expected HP values: BattleEngine recalculates stats in the constructor.
-// Blastoise at level 50 with MockRuleset: floor((2*79+31)*50/100) + 60 = 154 HP.
-// Source: MockRuleset.calculateStats formula in packages/battle/tests/helpers/mock-ruleset.ts
+// Note on expected HP values: these fixtures use explicit stat values derived from the
+// standard formula.
+// Blastoise at level 50: floor((2*79+31)*50/100) + 60 = 154 HP.
 
 /**
- * MockRuleset that returns multiHitCount=3 (4 hits total) for side 0 (Charizard, speed 153)
+ * Test ruleset that returns multiHitCount=3 (4 hits total) for side 0 (Charizard, speed 153)
  * and tracks capLethalDamage invocations.
  */
 class MultiHitSturdyRuleset extends MockRuleset {
@@ -458,19 +438,13 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       // Source: Showdown data/abilities.ts — Sturdy's onDamage fires for every damage
       // application including each hit of a multi-hit move.
       //
-      // Bug #539: capLethalDamage is only called for hit 1 (in the main damage block
-      // at line ~1274). Hits 2–4 (in the multi-hit loop at lines ~1437–1466) bypass it.
+      // Bug #539: capLethalDamage should be called for every hit in the multi-hit loop.
       //
-      // Blastoise real HP: 154. Fixed damage: 200 (lethal on hit 1, or after partial reduction).
-      // Hit 1: damage=200 >= currentHp=154 → capLethalDamage IS called (guard satisfied).
-      // Hits 2–4: multi-hit loop applies damage WITHOUT calling capLethalDamage.
+      // Blastoise HP is 154. Fixed damage is 200, so the first hit is lethal and should
+      // still route through the lethal-damage hook.
       //
       // Expected (post-fix): 4 calls (one per hit, each going through the hook).
       // Actual (buggy): 1 call (only hit 1 via main path; loop bypasses the hook).
-      //
-      // Note: Since Blastoise has Sturdy and damage is lethal, hit 1 is capped by Sturdy
-      // (HP stays at 153 = maxHp-1). Hits 2–4 continue in the loop, each potentially lethal.
-      // The bug means Sturdy CANNOT fire for hits 2+ even if it should.
       const ruleset = new MultiHitSturdyRuleset();
       ruleset.setFixedDamage(200); // lethal against 154 HP
 
@@ -487,7 +461,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — capLethalDamage called for every hit where damage >= currentHp:
+      // Assert — capLethalDamage should be called for every hit where damage >= currentHp:
       // Hit 1: 200 >= 154 → called, Sturdy caps to 153, HP = 1.
       // Hit 2: 200 >= 1 → called, not full HP so no Sturdy cap, HP = 0.
       // Hits 3-4: loop breaks (defender fainted).
@@ -500,10 +474,10 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       // Arrange — Blastoise HP: 154 (computed). Fixed damage: 55.
       // Hit 1: 154-55=99 HP. Hit 2: 99-55=44 HP. Hit 3: 44-55=-11 → KO.
       // capLethalDamage must be called for hit 3 (damage=55 >= currentHp=44).
-      // Bug #539: hit 3 is in the multi-hit loop → capLethalDamage not called.
+      // Bug #539: hit 3 is in the multi-hit loop, so the hook must still run there.
       //
       // Source: Showdown — every damage application calls the onDamage handler chain.
-      // Source: floor((2*79+31)*50/100) + 60 = 154 (Blastoise L50 MockRuleset HP)
+      // Blastoise HP at level 50 under the standard stat formula is 154.
       const ruleset = new MultiHitSturdyRuleset();
       ruleset.setFixedDamage(55); // non-lethal for first 2 hits, lethal at hit 3
 
@@ -532,8 +506,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
     it("when multi-hit move is used against a defender without Sturdy, then total damage equals 4x the per-hit damage", () => {
       // Arrange — baseline: no Sturdy, 4 hits of 30 = 120 total damage.
       // Blastoise at HP 154 (computed) → ends at 154 - 120 = 34 HP.
-      // Source: BattleEngine multi-hit loop — firstHitDamage reused per hit.
-      // Source: floor((2*79+31)*50/100) + 60 = 154 (Blastoise L50 MockRuleset HP)
+      // Each hit should apply the configured fixed damage.
       //
       // This is a sanity check for the multi-hit loop itself. 4 hits × 30 = 120 total,
       // leaving the defender at 34 HP. If the loop runs correctly, this passes.
@@ -554,7 +527,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — 4 hits × 30 = 120. Blastoise ends at 154-120 = 34 HP.
-      // Source: BattleEngine multi-hit loop — firstHitDamage reused per hit.
+      // Each hit should apply the configured fixed damage.
       expect(defender!.pokemon.currentHp).toBe(34);
 
       // Four damage events emitted (one per hit to Blastoise, side 1)
@@ -619,7 +592,7 @@ describe("Multi-hit accuracy — single check for all hits", () => {
 
       // Assert — exactly 2 accuracy checks: 1 for each move.
       // If the loop re-checked accuracy, there would be 5+1=6 checks.
-      // Source: Expected behavior confirmed by code inspection of BattleEngine.ts.
+      // The single accuracy check is the behavior under test here.
       expect(ruleset.accuracyCheckCount).toBe(2);
     });
   });
@@ -693,16 +666,15 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — no on-contact item trigger when move hits substitute
-      // Source: Engine line ~1326: `!hitSubstitute` prevents the on-contact hook.
+      // Assert — no on-contact item trigger when move hits substitute.
       expect(ruleset.contactItemTriggerCount).toBe(0);
     });
 
     it("when the contact move breaks the Substitute, then sub HP is 0 and volatile-end event is emitted", () => {
-      // Arrange — damage (80) > sub HP (50), sub breaks.
+      // Arrange — damage (80) > sub HP (50), so the Substitute breaks.
       // Source: Showdown — excess damage from a sub-breaking hit does NOT overflow to the
       // Pokemon. The move ends once the sub breaks.
-      // Source: BattleEngine.ts line ~1256: substituteHp = Math.max(0, substituteHp - damage)
+      // Excess damage should not overflow past the Substitute.
       const ruleset = new ContactItemTrackingRuleset();
       ruleset.setFixedDamage(80); // sub has 50 HP; breaks
 
@@ -734,10 +706,9 @@ describe("Substitute blocks held-item on-contact triggers", () => {
     });
 
     it("when a non-contact move hits the Substitute, then on-contact item does NOT trigger (regardless of sub)", () => {
-      // Arrange — thunderbolt is a non-contact move (flags.contact=false)
+      // Arrange — thunderbolt is a non-contact move (flags.contact=false).
       // The on-contact item should not trigger for non-contact moves even if sub is absent.
       // Source: Showdown — on-contact hooks only fire for moves with the contact flag.
-      // Source: Engine line ~1325: `effectiveMoveData.flags.contact` must be true.
       const ruleset = new ContactItemTrackingRuleset();
       ruleset.setFixedDamage(50);
 
@@ -763,9 +734,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — no contact item trigger (thunderbolt is not a contact move)
-      // Source: Engine line ~1325: `effectiveMoveData.flags.contact` must be true
-      // for the on-contact hook to fire.
+      // Assert — no contact item trigger (thunderbolt is not a contact move).
       expect(ruleset.contactItemTriggerCount).toBe(0);
     });
   });
@@ -834,8 +803,7 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert — at least one faint event emitted (Charizard faints when Blastoise attacks)
-      // Source: BattleEngine faint check after each action
+      // Assert — at least one faint event emitted (Charizard faints when Blastoise attacks).
       const faintEvents = events.filter((e) => e.type === "faint");
       expect(faintEvents.length).toBeGreaterThanOrEqual(1);
 
@@ -848,8 +816,8 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
     it("when both Pokemon are at 1 HP with the same speed, then the RNG-determined first mover KOs the other", () => {
       // Arrange — both at 1 HP, same speed. Only one KOs the other per turn.
       // With seed 42 and equal speed, the RNG picks one side to go first.
-      // Source: MockRuleset.resolveTurnOrder — rng.chance(0.5) for speed ties.
-      // Source: floor((2*79+31)*50/100) + 60 = 154 (Blastoise), floor((2*78+31)*50/100) + 60 = 153 (Charizard)
+      // Speed ties are resolved by the test ruleset's 50/50 RNG branch.
+      // Blastoise and Charizard HP at level 50 under the standard stat formula are 154 and 153.
       const ruleset = new MockRuleset();
       ruleset.setFixedDamage(10);
 

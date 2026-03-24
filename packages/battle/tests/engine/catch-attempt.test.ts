@@ -74,7 +74,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
   it("given a wild battle and catch succeeds, when poke-ball thrown, then CatchAttemptEvent(caught=true) and battle-end winner=0 emitted", () => {
     // Arrange
     const ruleset = new MockRuleset();
-    // Source: MockRuleset default returns caught=true, shakes=3
+    // Configure the catch result directly in the test fixture: success with 3 shakes.
     ruleset.setNextCatchResult({ shakes: 3, caught: true });
 
     const { engine, events } = createWildBattleEngine({ ruleset });
@@ -107,7 +107,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
   it("given a wild battle and catch fails with 2 shakes, when poke-ball thrown, then CatchAttemptEvent(caught=false, shakes=2) and battle continues", () => {
     // Arrange
     const ruleset = new MockRuleset();
-    // Source: MockRuleset configured to fail with 2 shakes
+    // Configure the catch result directly in the test fixture: failure with 2 shakes.
     ruleset.setNextCatchResult({ shakes: 2, caught: false });
 
     const { engine, events } = createWildBattleEngine({ ruleset });
