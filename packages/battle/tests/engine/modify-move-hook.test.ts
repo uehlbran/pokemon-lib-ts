@@ -76,6 +76,7 @@ function createEngine(overrides?: {
     seed: overrides?.seed ?? 12345,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 

@@ -87,6 +87,7 @@ function createItemContextEngine(overrides?: {
     seed: overrides?.seed ?? 42,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((e) => events.push(e));
 

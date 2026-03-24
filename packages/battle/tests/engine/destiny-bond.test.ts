@@ -84,6 +84,7 @@ function createDestinyBondEngine(opts?: { side0Hp?: number; side1Hp?: number }) 
     seed: 42,
   };
 
+  ruleset.setGenerationForTest(config.generation);
   const engine = new BattleEngine(config, ruleset, dataManager);
   engine.on((event) => events.push(event));
 

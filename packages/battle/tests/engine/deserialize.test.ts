@@ -65,6 +65,18 @@ function createTestEngine(overrides?: {
 }
 
 describe("BattleEngine.deserialize", () => {
+  it("given serialized state and a ruleset whose generation does not match the saved battle generation, when deserialized, then it throws", () => {
+    const { engine } = createTestEngine();
+    const serialized = engine.serialize();
+    const mismatchedRuleset = new MockRuleset();
+
+    Object.defineProperty(mismatchedRuleset, "generation", { value: 9 });
+
+    expect(() =>
+      BattleEngine.deserialize(serialized, mismatchedRuleset, createMockDataManager()),
+    ).toThrow("BattleEngine.deserialize: ruleset generation 9 does not match battle generation 1");
+  });
+
   it("given a serialized battle state where currentHp is less than maxHp, when deserialized, then currentHp matches the saved value (not recalculated)", () => {
     // Arrange — create an engine, start it, deal some damage to reduce HP
     const ruleset = new MockRuleset();
