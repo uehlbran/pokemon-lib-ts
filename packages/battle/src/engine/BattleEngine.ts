@@ -2675,6 +2675,65 @@ export class BattleEngine implements BattleEventEmitter {
     this.recordParticipation();
   }
 
+  private getRandomForcedSwitchSlot(side: BattleSide): number | null {
+    const activeTeamSlot = side.active[0]?.teamSlot ?? -1;
+    const validTargets = side.team
+      .map((pokemon, teamSlot) => ({ pokemon, teamSlot }))
+      .filter(({ pokemon, teamSlot }) => pokemon.currentHp > 0 && teamSlot !== activeTeamSlot);
+
+    if (validTargets.length === 0) {
+      return null;
+    }
+
+    const randomIndex = this.state.rng.int(0, validTargets.length - 1);
+    return validTargets[randomIndex]?.teamSlot ?? null;
+  }
+
+  private performImmediateForcedSwitch(
+    sideIndex: 0 | 1,
+    options?: {
+      readonly markSideAsPhased?: boolean;
+      readonly message?: string;
+    },
+  ): boolean {
+    const side = this.state.sides[sideIndex];
+    const targetTeamSlot = this.getRandomForcedSwitchSlot(side);
+    if (targetTeamSlot === null) {
+      return false;
+    }
+
+    const outgoing = side.active[0];
+    if (outgoing) {
+      this.ruleset.onSwitchOut(outgoing, this.state);
+      this.emit({
+        type: "switch-out",
+        side: sideIndex,
+        pokemon: createPokemonSnapshot(outgoing),
+      });
+      outgoing.statStages = createDefaultStatStages();
+      outgoing.consecutiveProtects = 0;
+      outgoing.turnsOnField = 0;
+      outgoing.movedThisTurn = false;
+      outgoing.lastMoveUsed = null;
+      outgoing.lastDamageTaken = 0;
+      outgoing.lastDamageType = null;
+      outgoing.lastDamageCategory = null;
+    }
+
+    this.sendOut(side, targetTeamSlot);
+    this.recordParticipation();
+
+    if (options?.markSideAsPhased ?? true) {
+      this.phasedSides.add(sideIndex);
+    }
+
+    if (options?.message) {
+      this.emit({ type: "message", text: options.message });
+    }
+
+    return true;
+  }
+
   /**
    * Execute a bag item action (Potion, Antidote, X Attack, Revive, etc.).
    *
@@ -4064,46 +4123,10 @@ export class BattleEngine implements BattleEventEmitter {
     // valid party member. If no valid targets exist, the move effectively fails.
     // Source: Bulbapedia — "Whirlwind forces the target to switch out"
     if (result.switchOut && result.forcedSwitch) {
-      const defenderSideState = this.state.sides[defenderSide];
-      const defenderTeamSlot = defenderSideState.active[0]?.teamSlot ?? -1;
-      const validTargets = defenderSideState.team
-        .map((p, i) => ({ p, i }))
-        .filter(({ p, i }) => p.currentHp > 0 && i !== defenderTeamSlot);
-      if (validTargets.length > 0) {
-        const randomIndex = this.state.rng.int(0, validTargets.length - 1);
-        const switchTarget = validTargets[randomIndex];
-        if (switchTarget) {
-          // Perform the switch using the same infrastructure as voluntary switches
-          const outgoing = defenderSideState.active[0];
-          if (outgoing) {
-            this.ruleset.onSwitchOut(outgoing, this.state);
-            this.emit({
-              type: "switch-out",
-              side: defenderSide,
-              pokemon: createPokemonSnapshot(outgoing),
-            });
-            outgoing.statStages = createDefaultStatStages();
-            outgoing.consecutiveProtects = 0;
-            outgoing.turnsOnField = 0;
-            outgoing.movedThisTurn = false;
-            outgoing.lastMoveUsed = null;
-            outgoing.lastDamageTaken = 0;
-            outgoing.lastDamageType = null;
-            outgoing.lastDamageCategory = null;
-          }
-          this.sendOut(defenderSideState, switchTarget.i);
-          // Record the forced replacement immediately so participation survives
-          // even if entry hazards faint it before the next turn starts.
-          this.recordParticipation();
-          // Mark this side as phased — the replacement should not execute the
-          // original Pokemon's queued action for this turn.
-          this.phasedSides.add(defenderSide);
-          this.emit({
-            type: "message",
-            text: `${getPokemonName(defender)} was blown away!`,
-          });
-        }
-      }
+      this.performImmediateForcedSwitch(defenderSide, {
+        markSideAsPhased: true,
+        message: `${getPokemonName(defender)} was blown away!`,
+      });
     }
   }
 
@@ -5537,6 +5560,12 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "none":
+          if (effect.value === "force-switch") {
+            const switchSide =
+              effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+            this.performImmediateForcedSwitch(switchSide, { markSideAsPhased: true });
+          }
+          break;
         case "damage-boost":
         case "speed-boost":
         case "status-prevention":
