@@ -115,7 +115,7 @@ describe("Forced switch (phazing) action inheritance", () => {
     // from side 0's attack, but did NOT deal damage back.
 
     // Check that side 1's active is now Pikachu (the replacement)
-    const side1Active = engine.getActive(1);
+    const side1Active = engine.state.sides[1].active[0];
     expect(side1Active).toBeDefined();
     expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
 
@@ -123,7 +123,7 @@ describe("Forced switch (phazing) action inheritance", () => {
     // MockRuleset.calculateStats recalculates from species base stats:
     // Charizard base HP=78, level 50 → floor(((2*78+31)*50)/100) + 50 + 10 = 153
     // Source: MockRuleset.calculateStats formula
-    const side0Active = engine.getActive(0);
+    const side0Active = engine.state.sides[0].active[0];
     expect(side0Active).toBeDefined();
     expect(side0Active!.pokemon.currentHp).toBe(153); // Full HP — never attacked
   });
@@ -151,12 +151,12 @@ describe("Forced switch (phazing) action inheritance", () => {
     // Side 1's queued move should be skipped.
 
     // Verify the replacement is on the field
-    const side1Active = engine.getActive(1);
+    const side1Active = engine.state.sides[1].active[0];
     expect(side1Active).toBeDefined();
     expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
 
     // Charizard should be at full HP (153) — side 1's move was skipped
-    const side0Active = engine.getActive(0);
+    const side0Active = engine.state.sides[0].active[0];
     expect(side0Active).toBeDefined();
     expect(side0Active!.pokemon.currentHp).toBe(153);
   });

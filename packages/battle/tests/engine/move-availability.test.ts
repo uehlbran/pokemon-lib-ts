@@ -264,7 +264,7 @@ describe("Taunt move availability", () => {
     engine.start();
 
     // Apply taunt to side 0's Charizard
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     active0!.volatileStatuses.set("taunt", { turnsLeft: 3 });
 
     // Act
@@ -314,7 +314,7 @@ describe("Choice lock move availability", () => {
 
     // Simulate using tackle (which sets choice-locked via the engine's executeMove)
     // We set it manually for this unit test
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     active0!.volatileStatuses.set("choice-locked", {
       turnsLeft: -1,
       data: { moveId: "tackle" },
@@ -346,7 +346,7 @@ describe("Choice lock move availability", () => {
     const { engine } = createChoiceLockTestEngine();
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0!.volatileStatuses.has("choice-locked")).toBe(false);
 
     // Act — use tackle
@@ -354,7 +354,7 @@ describe("Choice lock move availability", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — choice-locked should be set on side 0
-    const updatedActive0 = engine.getActive(0);
+    const updatedActive0 = engine.state.sides[0].active[0];
     expect(updatedActive0!.volatileStatuses.has("choice-locked")).toBe(true);
     const choiceData = updatedActive0!.volatileStatuses.get("choice-locked");
     expect(choiceData!.data!.moveId).toBe("tackle");

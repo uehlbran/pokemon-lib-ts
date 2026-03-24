@@ -234,7 +234,7 @@ describe("Bug #551 -- Focus Sash activation via capLethalDamage", () => {
     const { engine, events } = createFocusSashEngine({ fixedDamage: 300 });
     engine.start();
 
-    const defender = engine.getActive(1);
+    const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
     // Engine recalculates stats via MockRuleset; read the actual maxHp
     const maxHp = defender!.pokemon.calculatedStats?.hp ?? defender!.pokemon.currentHp;
@@ -266,7 +266,7 @@ describe("Bug #551 -- Focus Sash activation via capLethalDamage", () => {
     const { engine } = createFocusSashEngine({ fixedDamage: 300 });
     engine.start();
 
-    const defender = engine.getActive(1);
+    const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
     const maxHp = defender!.pokemon.calculatedStats?.hp ?? defender!.pokemon.currentHp;
     // Reduce HP below max BEFORE the attack
@@ -291,7 +291,7 @@ describe("Bug #551 -- Focus Sash activation via capLethalDamage", () => {
     const { engine } = createFocusSashEngine({ fixedDamage: 50 });
     engine.start();
 
-    const defender = engine.getActive(1);
+    const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
     const maxHp = defender!.pokemon.calculatedStats?.hp ?? defender!.pokemon.currentHp;
 
@@ -322,7 +322,7 @@ describe("Bug #600 -- Leftovers should not activate twice when toxic-orb-activat
     ]);
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     // The engine may recalculate HP; set it after start
     active0!.pokemon.currentHp = 100;
@@ -364,7 +364,7 @@ describe("Bug #600 -- Leftovers should not activate twice when toxic-orb-activat
     ]);
     engine.start();
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     active0!.pokemon.currentHp = 100;
     const maxHp = active0!.pokemon.calculatedStats?.hp ?? 160;

@@ -137,12 +137,12 @@ describe("Bug #309 — Pressure + self-target moves", () => {
     engine.start();
 
     // Set the opponent's ability to "pressure"
-    const active1 = engine.getActive(1);
+    const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
     active1!.ability = "pressure";
 
     // The attacker has Swords Dance at moveIndex 1
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const swordsDanceSlot = active0!.pokemon.moves[1];
     expect(swordsDanceSlot).toBeDefined();
@@ -168,11 +168,11 @@ describe("Bug #309 — Pressure + self-target moves", () => {
     engine.start();
 
     // Set the opponent's ability to "pressure"
-    const active1 = engine.getActive(1);
+    const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
     active1!.ability = "pressure";
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const tackleSlot = active0!.pokemon.moves[0];
     expect(tackleSlot).toBeDefined();
@@ -232,11 +232,11 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     engine.start();
 
     // Set opponent's ability to Pressure
-    const active1 = engine.getActive(1);
+    const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
     active1!.ability = "pressure";
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const stealthRockSlot = active0!.pokemon.moves[0];
     expect(stealthRockSlot).toBeDefined();
@@ -282,11 +282,11 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     engine.start();
 
     // Set opponent's ability to Pressure
-    const active1 = engine.getActive(1);
+    const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
     active1!.ability = "pressure";
 
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const gravitySlot = active0!.pokemon.moves[0];
     expect(gravitySlot).toBeDefined();

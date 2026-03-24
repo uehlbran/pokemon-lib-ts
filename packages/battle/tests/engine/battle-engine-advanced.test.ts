@@ -90,16 +90,16 @@ describe("BattleEngine — advanced scenarios", () => {
       const { engine } = createEngine({ ruleset });
       engine.start();
 
-      const initialHp0 = engine.getActive(0)?.pokemon.currentHp;
-      const initialHp1 = engine.getActive(1)?.pokemon.currentHp;
+      const initialHp0 = engine.state.sides[0].active[0]?.pokemon.currentHp;
+      const initialHp1 = engine.state.sides[1].active[0]?.pokemon.currentHp;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — both pokemon should still be at full HP (both missed)
-      expect(engine.getActive(0)?.pokemon.currentHp).toBe(initialHp0);
-      expect(engine.getActive(1)?.pokemon.currentHp).toBe(initialHp1);
+      expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBe(initialHp0);
+      expect(engine.state.sides[1].active[0]?.pokemon.currentHp).toBe(initialHp1);
     });
   });
 
@@ -161,8 +161,8 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Manually set HP to 1 after start (start recalculates)
-      engine.getActive(0)!.pokemon.currentHp = 1;
-      engine.getActive(1)!.pokemon.currentHp = 1;
+      engine.state.sides[0].active[0]!.pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -180,7 +180,7 @@ describe("BattleEngine — advanced scenarios", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      engine.getActive(0)!.pokemon.status = "badly-poisoned";
+      engine.state.sides[0].active[0]!.pokemon.status = "badly-poisoned";
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -339,7 +339,7 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Give Blastoise (side 1, slower) the flinch volatile
-      const blastoise = engine.getActive(1) as ActivePokemon;
+      const blastoise = engine.state.sides[1].active[0] as ActivePokemon;
       blastoise.volatileStatuses.set("flinch", { turnsLeft: 1 });
 
       // Act
@@ -367,7 +367,7 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Give Blastoise confusion
-      const blastoise = engine.getActive(1) as ActivePokemon;
+      const blastoise = engine.state.sides[1].active[0] as ActivePokemon;
       blastoise.volatileStatuses.set("confusion", { turnsLeft: 3 });
 
       // Act
@@ -392,7 +392,7 @@ describe("BattleEngine — advanced scenarios", () => {
         const { engine, events } = createEngine({ seed });
         engine.start();
 
-        engine.getActive(1)!.pokemon.status = "paralysis";
+        engine.state.sides[1].active[0]!.pokemon.status = "paralysis";
 
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
         engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -474,7 +474,7 @@ describe("BattleEngine — advanced scenarios", () => {
       ];
       const { engine } = createEngine({ team2 });
       engine.start();
-      engine.getActive(1)!.pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -505,7 +505,7 @@ describe("BattleEngine — advanced scenarios", () => {
       ];
       const { engine } = createEngine({ team2 });
       engine.start();
-      engine.getActive(1)!.pokemon.currentHp = 1;
+      engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -716,7 +716,7 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Lower Charizard's HP to 150
-      engine.getActive(0)!.pokemon.currentHp = 150;
+      engine.state.sides[0].active[0]!.pokemon.currentHp = 150;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -734,15 +734,15 @@ describe("BattleEngine — advanced scenarios", () => {
       const { engine } = createEngine();
       engine.start();
 
-      expect(engine.getActive(0)?.turnsOnField).toBe(0);
+      expect(engine.state.sides[0].active[0]?.turnsOnField).toBe(0);
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      expect(engine.getActive(0)?.turnsOnField).toBe(1);
-      expect(engine.getActive(1)?.turnsOnField).toBe(1);
+      expect(engine.state.sides[0].active[0]?.turnsOnField).toBe(1);
+      expect(engine.state.sides[1].active[0]?.turnsOnField).toBe(1);
     });
   });
 
@@ -757,8 +757,8 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — after turn completes, movedThisTurn should be reset for next turn
-      expect(engine.getActive(0)?.movedThisTurn).toBe(false);
-      expect(engine.getActive(1)?.movedThisTurn).toBe(false);
+      expect(engine.state.sides[0].active[0]?.movedThisTurn).toBe(false);
+      expect(engine.state.sides[1].active[0]?.movedThisTurn).toBe(false);
     });
   });
 

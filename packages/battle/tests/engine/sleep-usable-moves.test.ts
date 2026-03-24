@@ -172,7 +172,7 @@ describe("Sleep-usable moves (issue #524)", () => {
     // Sleep Talk should proceed (PP deducted = evidence of move executing).
     // Since the MockRuleset executeMoveEffect is a no-op, we mainly confirm the move
     // was not blocked. We look for PP deduction on sleep-talk.
-    const team = engine.getTeam(0);
+    const team = engine.state.sides[0].team;
     const sleepTalkSlot = team[0].moves.find((m) => m.moveId === "sleep-talk");
     // Source: Showdown — PP is deducted when a move is selected and executed, even while asleep
     // If the move was blocked, PP would not be deducted
@@ -196,7 +196,7 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert
-    const team = engine.getTeam(0);
+    const team = engine.state.sides[0].team;
     const snoreSlot = team[0].moves.find((m) => m.moveId === "snore");
     // Source: Showdown — PP deducted on execution, proving the move was not blocked
     expect(snoreSlot!.currentPP).toBe(14); // 15 - 1 = 14; move executed
@@ -219,7 +219,7 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — Tackle should be blocked; PP should NOT be deducted
-    const team = engine.getTeam(0);
+    const team = engine.state.sides[0].team;
     const tackleSlot = team[0].moves.find((m) => m.moveId === "tackle");
     // Source: Showdown — PP is not deducted when a move is blocked by sleep
     expect(tackleSlot!.currentPP).toBe(35); // unchanged; move was blocked
@@ -244,7 +244,7 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — move should execute (PP deducted)
-    const team = engine.getTeam(0);
+    const team = engine.state.sides[0].team;
     const sleepTalkSlot = team[0].moves.find((m) => m.moveId === "sleep-talk");
     expect(sleepTalkSlot!.currentPP).toBe(9);
   });

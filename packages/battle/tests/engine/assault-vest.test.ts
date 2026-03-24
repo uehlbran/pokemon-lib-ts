@@ -90,7 +90,7 @@ describe("Assault Vest -- getAvailableMoves (#623)", () => {
       engine.start();
 
       // Set Assault Vest on the active Pokemon
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
       active!.pokemon.heldItem = "assault-vest";
 
@@ -140,7 +140,7 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
       engine.start();
 
       // Set Assault Vest on the active Pokemon
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
       active!.pokemon.heldItem = "assault-vest";
 
@@ -173,7 +173,7 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
       engine.start();
 
       // Set Assault Vest on the active Pokemon
-      const active = engine.getActive(0);
+      const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
       active!.pokemon.heldItem = "assault-vest";
 
