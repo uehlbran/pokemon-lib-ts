@@ -626,7 +626,12 @@ export class BattleEngine implements BattleEventEmitter {
 
   // --- State Inspection ---
 
-  /** Get a read-only view of the battle state */
+  /**
+   * Get the live battle state object.
+   *
+   * The engine mutates this state in place during battle resolution. Consumers that
+   * need an immutable snapshot should clone or serialize the returned value.
+   */
   getState(): Readonly<BattleState> {
     return this.state;
   }
