@@ -1,4 +1,4 @@
-import type { DataManager, MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import type { DataManager, MoveData, PokemonInstance, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
@@ -623,6 +623,40 @@ describe("BattleEngine — advanced scenarios", () => {
         (e) => e.type === "message" && "text" in e && e.text.includes("confused"),
       );
       expect(confusionMsg).toBeDefined();
+    });
+
+    it("given a ruleset with zero confusion self-hit chance, when a confused pokemon moves, then it does not self-hit even if rollConfusionSelfHit returns true", () => {
+      class ZeroChanceConfusionRuleset extends MockRuleset {
+        override getConfusionSelfHitChance(): number {
+          return 0;
+        }
+
+        override rollConfusionSelfHit(_rng: SeededRandom): boolean {
+          return true;
+        }
+      }
+
+      const { engine, events } = createEngine({ ruleset: new ZeroChanceConfusionRuleset() });
+      engine.start();
+
+      const blastoise = engine.state.sides[1].active[0] as ActivePokemon;
+      blastoise.volatileStatuses.set("confusion", { turnsLeft: 3 });
+      const initialHp = engine.state.sides[0].active[0]?.pokemon.currentHp;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const confusionDamage = events.find(
+        (e) => e.type === "damage" && "source" in e && e.source === "confusion",
+      );
+      expect(confusionDamage).toBeUndefined();
+
+      const side1MoveStart = events.find(
+        (e) => e.type === "move-start" && "side" in e && e.side === 1,
+      );
+      expect(side1MoveStart).toBeDefined();
+
+      expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBeLessThan(initialHp ?? 0);
     });
   });
 

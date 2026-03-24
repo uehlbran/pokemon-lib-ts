@@ -3186,7 +3186,7 @@ export class BattleEngine implements BattleEventEmitter {
             type: "message",
             text: `${getPokemonName(actor)} is confused!`,
           });
-          if (this.ruleset.rollConfusionSelfHit(this.state.rng)) {
+          if (this.state.rng.chance(this.ruleset.getConfusionSelfHitChance())) {
             // Self-hit confusion damage — chance and formula delegated to ruleset
             const selfDamage = this.ruleset.calculateConfusionDamage(
               actor,
