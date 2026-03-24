@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import {
   GEN4_CRIT_MULTIPLIER,
   GEN4_CRIT_RATE_DENOMINATORS,
+  GEN4_CRIT_RATE_PROBABILITIES,
+  GEN4_CRIT_RATE_TABLE,
   GEN4_CRIT_RATES,
 } from "../src/Gen4CritCalc";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
@@ -50,6 +52,18 @@ describe("Gen 4 crit calc constants", () => {
     // Source: pret/pokeplatinum — stage 0 crit rate = 1/16
     // Derivation: 1 / 16 = 0.0625
     expect(GEN4_CRIT_RATES[0]).toBeCloseTo(1 / 16, 5);
+  });
+
+  it("given the canonical Gen 4 denominator table, when compared to the deprecated alias, then they are the same table", () => {
+    // Source: issue #773 standardizes the denominator surface on GEN4_CRIT_RATE_TABLE
+    // while preserving GEN4_CRIT_RATE_DENOMINATORS for compatibility.
+    expect(GEN4_CRIT_RATE_TABLE).toBe(GEN4_CRIT_RATE_DENOMINATORS);
+  });
+
+  it("given the canonical Gen 4 probability table, when compared to the deprecated alias, then they are the same table", () => {
+    // Source: issue #773 standardizes the probability surface on GEN4_CRIT_RATE_PROBABILITIES
+    // while preserving GEN4_CRIT_RATES for compatibility.
+    expect(GEN4_CRIT_RATE_PROBABILITIES).toBe(GEN4_CRIT_RATES);
   });
 
   it("given GEN4_CRIT_RATES, when checking stage 1 probability, then probability is 1/8 = 0.125", () => {

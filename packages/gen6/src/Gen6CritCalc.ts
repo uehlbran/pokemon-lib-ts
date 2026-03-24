@@ -1,3 +1,5 @@
+import { CRIT_RATE_PROBABILITIES_GEN6 } from "@pokemon-lib-ts/core";
+
 /**
  * Gen 6 critical hit constants.
  *
@@ -22,6 +24,15 @@
  * Source: Showdown sim/battle-actions.ts -- critRatio array
  */
 export const GEN6_CRIT_RATE_TABLE = [24, 8, 2, 1] as const;
+
+/**
+ * Gen 6 critical hit probabilities by crit stage (0-1 values).
+ * Re-exports the core probability table with a gen-local name for API consistency.
+ */
+export const GEN6_CRIT_RATE_PROBABILITIES = CRIT_RATE_PROBABILITIES_GEN6;
+
+/** @deprecated Use `GEN6_CRIT_RATE_PROBABILITIES`. */
+export const GEN6_CRIT_RATES = GEN6_CRIT_RATE_PROBABILITIES;
 
 /**
  * Critical hit damage multiplier in Gen 6+.

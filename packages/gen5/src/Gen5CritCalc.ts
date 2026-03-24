@@ -1,4 +1,8 @@
-import { CRIT_MULTIPLIER_CLASSIC, CRIT_RATES_GEN3_5 } from "@pokemon-lib-ts/core";
+import {
+  CRIT_MULTIPLIER_CLASSIC,
+  CRIT_RATE_PROBABILITIES_GEN3_5,
+  CRIT_RATES_GEN3_5,
+} from "@pokemon-lib-ts/core";
 
 /**
  * Gen 5 critical hit rate table (denominators), indexed by stage.
@@ -14,7 +18,10 @@ import { CRIT_MULTIPLIER_CLASSIC, CRIT_RATES_GEN3_5 } from "@pokemon-lib-ts/core
  * Source: references/pokemon-showdown/sim/battle-actions.ts lines 1625-1627
  * Gen 5 crit rate table: stage -> denominator (chance = 1/denominator)
  */
-export const GEN5_CRIT_RATE_DENOMINATORS: readonly number[] = [16, 8, 4, 3, 2] as const;
+export const GEN5_CRIT_RATE_TABLE: readonly number[] = [16, 8, 4, 3, 2] as const;
+
+/** @deprecated Use `GEN5_CRIT_RATE_TABLE`. */
+export const GEN5_CRIT_RATE_DENOMINATORS = GEN5_CRIT_RATE_TABLE;
 
 /**
  * Gen 5 critical hit rate table as probability fractions (0-1), indexed by stage.
@@ -22,7 +29,11 @@ export const GEN5_CRIT_RATE_DENOMINATORS: readonly number[] = [16, 8, 4, 3, 2] a
  *
  * Source: references/pokemon-showdown/sim/battle-actions.ts -- same crit system as Gen 3-5
  */
-export const GEN5_CRIT_RATES: typeof CRIT_RATES_GEN3_5 = CRIT_RATES_GEN3_5;
+export const GEN5_CRIT_RATE_PROBABILITIES: typeof CRIT_RATE_PROBABILITIES_GEN3_5 =
+  CRIT_RATE_PROBABILITIES_GEN3_5;
+
+/** @deprecated Use `GEN5_CRIT_RATE_PROBABILITIES`. */
+export const GEN5_CRIT_RATES = GEN5_CRIT_RATE_PROBABILITIES;
 
 /**
  * Gen 5 critical hit damage multiplier: 2.0x (classic, unlike Gen 6+ which uses 1.5x).
@@ -34,4 +45,4 @@ export const GEN5_CRIT_RATES: typeof CRIT_RATES_GEN3_5 = CRIT_RATES_GEN3_5;
 export const GEN5_CRIT_MULTIPLIER: typeof CRIT_MULTIPLIER_CLASSIC = CRIT_MULTIPLIER_CLASSIC;
 
 // Re-export core constants for barrel export
-export { CRIT_MULTIPLIER_CLASSIC, CRIT_RATES_GEN3_5 };
+export { CRIT_MULTIPLIER_CLASSIC, CRIT_RATE_PROBABILITIES_GEN3_5, CRIT_RATES_GEN3_5 };

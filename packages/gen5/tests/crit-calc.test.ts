@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import {
   GEN5_CRIT_MULTIPLIER,
   GEN5_CRIT_RATE_DENOMINATORS,
+  GEN5_CRIT_RATE_PROBABILITIES,
+  GEN5_CRIT_RATE_TABLE,
   GEN5_CRIT_RATES,
 } from "../src/Gen5CritCalc";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
@@ -65,6 +67,18 @@ describe("Gen 5 crit calc constants", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- stage 0 crit rate = 1/16
     // Derivation: 1 / 16 = 0.0625
     expect(GEN5_CRIT_RATES[0]).toBeCloseTo(1 / 16, 5);
+  });
+
+  it("given the canonical Gen 5 denominator table, when compared to the deprecated alias, then they are the same table", () => {
+    // Source: issue #773 standardizes the denominator surface on GEN5_CRIT_RATE_TABLE
+    // while preserving GEN5_CRIT_RATE_DENOMINATORS for compatibility.
+    expect(GEN5_CRIT_RATE_TABLE).toBe(GEN5_CRIT_RATE_DENOMINATORS);
+  });
+
+  it("given the canonical Gen 5 probability table, when compared to the deprecated alias, then they are the same table", () => {
+    // Source: issue #773 standardizes the probability surface on GEN5_CRIT_RATE_PROBABILITIES
+    // while preserving GEN5_CRIT_RATES for compatibility.
+    expect(GEN5_CRIT_RATE_PROBABILITIES).toBe(GEN5_CRIT_RATES);
   });
 
   it("given GEN5_CRIT_RATES, when checking stage 1 probability, then probability is 1/8 = 0.125", () => {

@@ -68,7 +68,12 @@ export {
   TRACE_UNCOPYABLE_ABILITIES,
   UNSUPPRESSABLE_ABILITIES,
 } from "./Gen9AbilitiesSwitch.js";
-export { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
+export {
+  GEN9_CRIT_MULTIPLIER,
+  GEN9_CRIT_RATE_PROBABILITIES,
+  GEN9_CRIT_RATE_TABLE,
+  GEN9_CRIT_RATES,
+} from "./Gen9CritCalc.js";
 export {
   calculateGen9Damage,
   isGen9Grounded,

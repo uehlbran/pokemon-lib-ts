@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   GEN3_CRIT_MULTIPLIER,
   GEN3_CRIT_RATE_DENOMINATORS,
+  GEN3_CRIT_RATE_PROBABILITIES,
+  GEN3_CRIT_RATE_TABLE,
   GEN3_CRIT_RATES,
 } from "../src/Gen3CritCalc";
 
@@ -41,6 +43,18 @@ describe("Gen 3 crit calc", () => {
     // Source: pret/pokeemerald src/battle_util.c CalcCritChanceStage
     // Stage 0: 1/16 = 0.0625
     expect(GEN3_CRIT_RATES[0]).toBeCloseTo(1 / 16, 5);
+  });
+
+  it("given the canonical Gen 3 denominator table, when compared to the deprecated alias, then they are the same table", () => {
+    // Source: issue #773 standardizes the denominator surface on GEN3_CRIT_RATE_TABLE
+    // while preserving GEN3_CRIT_RATE_DENOMINATORS for compatibility.
+    expect(GEN3_CRIT_RATE_TABLE).toBe(GEN3_CRIT_RATE_DENOMINATORS);
+  });
+
+  it("given the canonical Gen 3 probability table, when compared to the deprecated alias, then they are the same table", () => {
+    // Source: issue #773 standardizes the probability surface on GEN3_CRIT_RATE_PROBABILITIES
+    // while preserving GEN3_CRIT_RATES for compatibility.
+    expect(GEN3_CRIT_RATE_PROBABILITIES).toBe(GEN3_CRIT_RATES);
   });
 
   it("given crit rate table, when checking stage 1 probability, then probability is 1/8 = 0.125", () => {

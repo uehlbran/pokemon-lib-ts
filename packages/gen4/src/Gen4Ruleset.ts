@@ -40,7 +40,7 @@ import {
   isWeatherSuppressedGen4,
   isWeatherSuppressedOnField,
 } from "./Gen4Abilities";
-import { GEN4_CRIT_MULTIPLIER, GEN4_CRIT_RATE_DENOMINATORS } from "./Gen4CritCalc";
+import { GEN4_CRIT_MULTIPLIER, GEN4_CRIT_RATE_TABLE } from "./Gen4CritCalc";
 import { calculateGen4Damage } from "./Gen4DamageCalc";
 import { applyGen4HeldItem } from "./Gen4Items";
 import { executeGen4MoveEffect } from "./Gen4MoveEffects";
@@ -239,7 +239,7 @@ export class Gen4Ruleset extends BaseRuleset {
    * Source: pret/pokeplatinum — same crit table as Gen 3 and Gen 5
    */
   getCritRateTable(): readonly number[] {
-    return GEN4_CRIT_RATE_DENOMINATORS;
+    return GEN4_CRIT_RATE_TABLE;
   }
 
   /**
