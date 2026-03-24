@@ -448,7 +448,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     if (action.type === "move") {
-      const activePokemon = this.getActive(side);
+      const activePokemon = this.getActiveMutable(side);
 
       if (!activePokemon) {
         throw new Error(`Side ${side} has no active Pokemon to execute MoveAction`);
@@ -790,12 +790,17 @@ export class BattleEngine implements BattleEventEmitter {
 
   /** Get the active pokemon for a side */
   getActive(side: 0 | 1): ActivePokemon | null {
-    return this.state.sides[side].active[0] ?? null;
+    const active = this.getActiveMutable(side);
+    return active ? structuredClone(active) : null;
   }
 
   /** Get the team for a side */
   getTeam(side: 0 | 1): readonly import("@pokemon-lib-ts/core").PokemonInstance[] {
-    return this.state.sides[side].team;
+    return structuredClone(this.state.sides[side].team);
+  }
+
+  private getActiveMutable(side: 0 | 1): ActivePokemon | null {
+    return this.state.sides[side].active[0] ?? null;
   }
 
   // --- Serialization ---
@@ -1114,7 +1119,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Enforce recharge volatile: override submitted action for recharging Pokemon
     for (let side = 0 as 0 | 1; side <= 1; side = (side + 1) as 0 | 1) {
-      const active = this.getActive(side);
+      const active = this.getActiveMutable(side);
       if (active && active.pokemon.currentHp > 0 && active.volatileStatuses.has("recharge")) {
         active.volatileStatuses.delete("recharge");
         actions[side] = { type: "recharge", side };
@@ -1124,7 +1129,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Enforce forced move (two-turn moves): override submitted action
     // Source: Showdown — two-turn moves force the second-turn action
     for (let side = 0 as 0 | 1; side <= 1; side = (side + 1) as 0 | 1) {
-      const active = this.getActive(side);
+      const active = this.getActiveMutable(side);
       if (active && active.pokemon.currentHp > 0 && active.forcedMove) {
         actions[side] = { type: "move", side, moveIndex: active.forcedMove.moveIndex };
         active.forcedMove = null;
@@ -1165,7 +1170,7 @@ export class BattleEngine implements BattleEventEmitter {
       for (let i = 0; i < orderedActions.length; i++) {
         const action = orderedActions[i];
         if (!action || action.type !== "move") continue;
-        const actor = this.getActive(action.side);
+        const actor = this.getActiveMutable(action.side);
         if (!actor || actor.pokemon.currentHp <= 0) continue;
         const moveSlot = actor.pokemon.moves[action.moveIndex];
         if (!moveSlot) continue;
@@ -1202,7 +1207,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Execute each action in order
     for (const action of orderedActions) {
       // Check if the acting pokemon fainted before it could act
-      const actor = this.getActive(action.side);
+      const actor = this.getActiveMutable(action.side);
       if (!actor || actor.pokemon.currentHp <= 0) continue;
 
       // Skip if this side's Pokemon was phased out (Roar/Whirlwind) earlier this turn.
@@ -1490,7 +1495,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Find the target
     const defenderSide = action.side === 0 ? 1 : 0;
-    const defender = this.getActive(defenderSide as 0 | 1);
+    const defender = this.getActiveMutable(defenderSide as 0 | 1);
     if (!defender) {
       this.emit({
         type: "move-fail",
@@ -2584,7 +2589,7 @@ export class BattleEngine implements BattleEventEmitter {
 
   private executeStruggle(action: import("../events").StruggleAction, actor: ActivePokemon): void {
     const defenderSide = action.side === 0 ? 1 : 0;
-    const defender = this.getActive(defenderSide as 0 | 1);
+    const defender = this.getActiveMutable(defenderSide as 0 | 1);
 
     this.emit({
       type: "move-start",
@@ -2851,7 +2856,7 @@ export class BattleEngine implements BattleEventEmitter {
             // Source: pokered — Gen 1 cartridge bug: confusion self-hit damages
             // the opponent's Substitute if one is active.
             const opponentSide = side === 0 ? 1 : 0;
-            const opponent = this.getActive(opponentSide as 0 | 1);
+            const opponent = this.getActiveMutable(opponentSide as 0 | 1);
             if (
               this.ruleset.confusionSelfHitTargetsOpponentSub() &&
               opponent &&
@@ -3044,7 +3049,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: pret/pokeemerald — ABILITY_SYNCHRONIZE fires when status is inflicted
     if (this.ruleset.hasAbilities()) {
       const opponentSideIdx = (side === 0 ? 1 : 0) as 0 | 1;
-      const opponent = this.getActive(opponentSideIdx);
+      const opponent = this.getActiveMutable(opponentSideIdx);
       if (opponent && opponent.pokemon.currentHp > 0) {
         const statusInflictedResult = this.ruleset.applyAbility("on-status-inflicted", {
           pokemon: target,
@@ -4507,7 +4512,7 @@ export class BattleEngine implements BattleEventEmitter {
           if (this.state.terrain?.type === "grassy") {
             const terrainResults = this.ruleset.applyTerrainEffects(this.state);
             for (const result of terrainResults) {
-              const active = this.getActive(result.side);
+              const active = this.getActiveMutable(result.side);
               if (active && active.pokemon.currentHp > 0) {
                 const healAmount = result.healAmount ?? 0;
                 if (healAmount > 0) {
@@ -4557,7 +4562,7 @@ export class BattleEngine implements BattleEventEmitter {
     const results = this.ruleset.applyWeatherEffects(this.state);
     for (const result of results) {
       if (result.damage > 0) {
-        const active = this.getActive(result.side);
+        const active = this.getActiveMutable(result.side);
         if (active) {
           active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - result.damage);
           this.emit({
@@ -4935,7 +4940,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown sim — Sucker Punch succeeds when target is using Struggle
     if (defenderAction.type === "struggle") return { id: "struggle", category: "physical" };
     if (defenderAction.type !== "move") return null;
-    const defenderActive = this.getActive(defenderSide);
+    const defenderActive = this.getActiveMutable(defenderSide);
     if (!defenderActive) return null;
     const moveSlot = defenderActive.pokemon.moves[defenderAction.moveIndex];
     if (!moveSlot) return null;
@@ -5432,7 +5437,7 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     const opponentSide = sideIndex === 0 ? 1 : 0;
-    const opponent = this.getActive(opponentSide);
+    const opponent = this.getActiveMutable(opponentSide);
     if (opponent && opponent.pokemon.currentHp > 0) {
       const oppMaxHp = opponent.pokemon.calculatedStats?.hp ?? opponent.pokemon.currentHp;
       const oldHp = opponent.pokemon.currentHp;

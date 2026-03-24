@@ -107,7 +107,7 @@ describe("two-turn move engine infrastructure", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert: forcedMove should be set on side 0's active Pokemon
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       expect(active0!.forcedMove).toEqual({ moveIndex: 0, moveId: "tackle" });
 
@@ -129,7 +129,7 @@ describe("two-turn move engine infrastructure", () => {
       engine.start();
 
       // Directly set forcedMove on side 0's active Pokemon
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
 
@@ -170,7 +170,7 @@ describe("two-turn move engine infrastructure", () => {
       engine.start();
 
       // Set forcedMove to move index 0 (tackle)
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
 
@@ -193,7 +193,7 @@ describe("two-turn move engine infrastructure", () => {
       engine.start();
 
       // Set the defender (Blastoise, side 1) to "flying" semi-invulnerable state
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.volatileStatuses.set("flying", { turnsLeft: 1 });
 
@@ -220,7 +220,7 @@ describe("two-turn move engine infrastructure", () => {
       engine.start();
 
       // Set the defender to "flying" semi-invulnerable state
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.volatileStatuses.set("flying", { turnsLeft: 1 });
 
@@ -250,7 +250,7 @@ describe("two-turn move engine infrastructure", () => {
       engine.start();
 
       // Set the defender to "underground" semi-invulnerable state
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.volatileStatuses.set("underground", { turnsLeft: 1 });
 
@@ -274,7 +274,7 @@ describe("two-turn move engine infrastructure", () => {
       engine.start();
 
       // Simulate: attacker has "flying" volatile and a forcedMove (second turn of Fly)
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       active0!.volatileStatuses.set("flying", { turnsLeft: 1 });
       active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
@@ -299,7 +299,7 @@ describe("two-turn move engine infrastructure", () => {
       const { engine } = createEngine();
       engine.start();
 
-      const active0 = engine.getActive(0);
+      const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
       active0!.volatileStatuses.set("charging", { turnsLeft: 1 });
       active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
@@ -319,7 +319,7 @@ describe("two-turn move engine infrastructure", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      const defender = engine.getActive(1);
+      const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.volatileStatuses.set("charging", { turnsLeft: 1 });
 

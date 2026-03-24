@@ -221,7 +221,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.start();
 
     // Damage the pokemon after engine init
-    const active = engine.getActive(0);
+    const active = engine.state.sides[0].active[0];
     const maxHp = active!.pokemon.calculatedStats!.hp;
     active!.pokemon.currentHp = maxHp - 50;
 

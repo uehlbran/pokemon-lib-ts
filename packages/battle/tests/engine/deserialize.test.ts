@@ -160,8 +160,8 @@ describe("BattleEngine.deserialize", () => {
     const { engine } = createTestEngine({ ruleset, dataManager });
     engine.start();
 
-    const initialHpSide0 = engine.getActive(0)!.pokemon.currentHp;
-    const initialHpSide1 = engine.getActive(1)!.pokemon.currentHp;
+    const initialHpSide0 = engine.state.sides[0].active[0]!.pokemon.currentHp;
+    const initialHpSide1 = engine.state.sides[1].active[0]!.pokemon.currentHp;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
 
@@ -369,7 +369,7 @@ describe("BattleEngine.deserialize", () => {
     // Directly reduce HP to simulate damage taken during a battle
     // MockRuleset.calculateStats computes HP as: floor((2*78+31)*50/100)+50+10 = 153
     // Source: MockRuleset.calculateStats formula in mock-ruleset.ts
-    const active = engine.getActive(0)!;
+    const active = engine.state.sides[0].active[0]!;
     const maxHp = active.pokemon.calculatedStats!.hp;
     const damagedHp = Math.floor(maxHp / 2); // Set to half HP
     active.pokemon.currentHp = damagedHp;
@@ -401,8 +401,8 @@ describe("BattleEngine.deserialize", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const hpAfterTurn1Side0 = engine.getActive(0)!.pokemon.currentHp;
-    const hpAfterTurn1Side1 = engine.getActive(1)!.pokemon.currentHp;
+    const hpAfterTurn1Side0 = engine.state.sides[0].active[0]!.pokemon.currentHp;
+    const hpAfterTurn1Side1 = engine.state.sides[1].active[0]!.pokemon.currentHp;
     const turnAfterFirst = engine.getState().turnNumber;
 
     // Serialize after the first turn
@@ -501,7 +501,7 @@ describe("BattleEngine.deserialize", () => {
     engine.start();
 
     // Set HP to 1 (near-faint)
-    const active = engine.getActive(0)!;
+    const active = engine.state.sides[0].active[0]!;
     const maxHp = active.pokemon.calculatedStats!.hp;
     active.pokemon.currentHp = 1;
 
@@ -564,8 +564,8 @@ describe("BattleEngine.deserialize", () => {
 
     // Set Blastoise HP to 15 (survives turn 1's 5-damage hit, faints next turn from manual set)
     // and Charizard HP high so it doesn't faint in turn 1.
-    engine.getActive(1)!.pokemon.currentHp = 15;
-    engine.getActive(0)!.pokemon.currentHp = 200;
+    engine.state.sides[1].active[0]!.pokemon.currentHp = 15;
+    engine.state.sides[0].active[0]!.pokemon.currentHp = 200;
 
     // Turn 1: Charizard faces Blastoise — records Charizard as participant vs Blastoise.
     // Blastoise survives (15 - 5 = 10 HP). Blastoise hits Charizard (200 - 5 = 195 HP).
@@ -581,7 +581,7 @@ describe("BattleEngine.deserialize", () => {
     restored.on((e) => restoredEvents.push(e));
 
     // Override: set Blastoise HP to 1 in the restored engine so it faints on next hit.
-    restored.getActive(1)!.pokemon.currentHp = 1;
+    restored.state.sides[1].active[0]!.pokemon.currentHp = 1;
 
     // Turn 2: Charizard (still active) hits Blastoise (1 → faint).
     // Source: MockRuleset.calculateExpGain — floor(defeatedSpecies.baseExp * defeatedLevel / (5 * participantCount))

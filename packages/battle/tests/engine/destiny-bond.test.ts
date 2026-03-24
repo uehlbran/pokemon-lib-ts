@@ -101,7 +101,7 @@ describe("Destiny Bond faint check", () => {
     engine.start();
 
     // Set HP after engine.start() — the constructor resets currentHp to calculatedStats.hp
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     active0!.pokemon.currentHp = 5;
     active0!.volatileStatuses.set("destiny-bond", { turnsLeft: -1 });
 
@@ -139,7 +139,7 @@ describe("Destiny Bond faint check", () => {
     engine.start();
 
     // Set HP after engine.start() — the constructor resets currentHp to calculatedStats.hp
-    const active0 = engine.getActive(0);
+    const active0 = engine.state.sides[0].active[0];
     active0!.pokemon.currentHp = 1;
     active0!.volatileStatuses.set("destiny-bond", { turnsLeft: -1 });
     active0!.pokemon.status = "burn";
@@ -158,7 +158,7 @@ describe("Destiny Bond faint check", () => {
     expect(blastoiseFaints.length).toBe(0);
 
     // Blastoise should still be alive
-    const blastoise = engine.getActive(1);
+    const blastoise = engine.state.sides[1].active[0];
     if (blastoise) {
       expect(blastoise.pokemon.currentHp).toBeGreaterThan(0);
     }
