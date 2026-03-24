@@ -72,6 +72,51 @@ function createTestEngine(overrides?: {
   return { engine, ruleset, events };
 }
 
+function createVoluntarySelfSwitchScenario(overrides?: {
+  ruleset?: MockRuleset;
+  team2?: PokemonInstance[];
+}): { engine: BattleEngine; ruleset: MockRuleset; events: BattleEvent[] } {
+  const team1 = [
+    createTestPokemon(6, 50, {
+      uid: "charizard-1",
+      nickname: "Charizard",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 120,
+      },
+      currentHp: 200,
+    }),
+    createTestPokemon(25, 50, {
+      uid: "pikachu-1",
+      nickname: "Pikachu",
+    }),
+  ];
+
+  const team2 = overrides?.team2 ?? [
+    createTestPokemon(9, 50, {
+      uid: "blastoise-1",
+      nickname: "Blastoise",
+      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 80,
+      },
+      currentHp: 200,
+    }),
+  ];
+
+  return createTestEngine({ team1, team2, ruleset: overrides?.ruleset });
+}
+
 describe("BattleEngine", () => {
   describe("constructor", () => {
     it("given a valid config, when engine is created, then initial phase is battle-start", () => {
@@ -593,19 +638,7 @@ describe("BattleEngine", () => {
     });
 
     it("given a move effect that requests a voluntary self-switch, when the turn resolves, then the engine enters switch-prompt and allows the replacement", () => {
-      const team1 = [
-        createTestPokemon(6, 50, {
-          uid: "charizard-1",
-          nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-        }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-1",
-          nickname: "Pikachu",
-        }),
-      ];
-
-      const { engine, ruleset, events } = createTestEngine({ team1 });
+      const { engine, ruleset, events } = createVoluntarySelfSwitchScenario();
       ruleset.setMoveEffectResult({ switchOut: true });
       engine.start();
 
@@ -622,19 +655,7 @@ describe("BattleEngine", () => {
     });
 
     it("given Baton Pass sets a voluntary self-switch, when the replacement is chosen, then stat stages and volatile statuses carry to the incoming pokemon", () => {
-      const team1 = [
-        createTestPokemon(6, 50, {
-          uid: "charizard-1",
-          nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-        }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-1",
-          nickname: "Pikachu",
-        }),
-      ];
-
-      const { engine, ruleset } = createTestEngine({ team1 });
+      const { engine, ruleset } = createVoluntarySelfSwitchScenario();
       ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
       engine.start();
 
@@ -668,18 +689,6 @@ describe("BattleEngine", () => {
     });
 
     it("given Baton Pass into Sticky Web, when the replacement is chosen, then inherited boosts are merged before switch-in effects", () => {
-      const team1 = [
-        createTestPokemon(6, 50, {
-          uid: "charizard-1",
-          nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-        }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-1",
-          nickname: "Pikachu",
-        }),
-      ];
-
       const ruleset = new MockRuleset();
       ruleset.getAvailableHazards = () => ["sticky-web"] as any;
       ruleset.applyEntryHazards = (
@@ -693,7 +702,7 @@ describe("BattleEngine", () => {
         messages: [],
       });
 
-      const { engine } = createTestEngine({ team1, ruleset });
+      const { engine } = createVoluntarySelfSwitchScenario({ ruleset });
       ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
       engine.start();
 
@@ -713,26 +722,6 @@ describe("BattleEngine", () => {
     });
 
     it("given a queued Baton Pass user faints before switching, when the replacement is chosen, then it is handled as a normal faint replacement", () => {
-      const team1 = [
-        createTestPokemon(6, 50, {
-          uid: "charizard-1",
-          nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: {
-            hp: 200,
-            attack: 100,
-            defense: 100,
-            spAttack: 100,
-            spDefense: 100,
-            speed: 120,
-          },
-          currentHp: 200,
-        }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-1",
-          nickname: "Pikachu",
-        }),
-      ];
       const team2 = [
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
@@ -758,7 +747,7 @@ describe("BattleEngine", () => {
         randomFactor: 1,
       });
 
-      const { engine, events } = createTestEngine({ team1, team2, ruleset });
+      const { engine, events } = createVoluntarySelfSwitchScenario({ ruleset, team2 });
       ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
       engine.start();
 
