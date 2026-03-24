@@ -488,6 +488,18 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    if (action.type === "switch") {
+      const activePokemon = this.getActive(side);
+      if (!activePokemon) {
+        throw new Error(`Side ${side} has no active Pokemon to execute SwitchAction`);
+      }
+
+      // Voluntary switch requests must stay aligned with getAvailableSwitches().
+      if (!this.getAvailableSwitches(side).includes(action.switchTo)) {
+        throw new Error(`Invalid switch slot ${action.switchTo}`);
+      }
+    }
+
     if (action.type === "run" && (side !== 0 || action.side !== 0)) {
       throw new Error("RunAction is only valid for side 0");
     }
@@ -1130,6 +1142,7 @@ export class BattleEngine implements BattleEventEmitter {
     const action1 = this.pendingActions.get(1);
     if (!action0 || !action1) return;
     const actions = [action0, action1];
+    const submittedActions = actions.map((action) => ({ ...action })) as BattleAction[];
     this.pendingActions.clear();
 
     // Enforce recharge volatile: override submitted action for recharging Pokemon
@@ -1209,7 +1222,7 @@ export class BattleEngine implements BattleEventEmitter {
         this.checkMidTurnFaints({ attackerSide: action.side });
         if (this.checkBattleEnd()) {
           this.transitionTo("battle-end");
-          this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+          this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
           return;
         }
 
@@ -1263,7 +1276,7 @@ export class BattleEngine implements BattleEventEmitter {
           : undefined;
       this.checkMidTurnFaints(moveSourceForFaint);
       if (this.state.ended) {
-        this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+        this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
         return;
       }
 
@@ -1272,7 +1285,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (action.type === "move" || action.type === "struggle") {
         this.processPostAttackResiduals(action.side);
         if (this.state.ended) {
-          this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+          this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
           return;
         }
       }
@@ -1283,7 +1296,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.processEndOfTurn();
 
     if (this.state.ended) {
-      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
 
@@ -1291,20 +1304,20 @@ export class BattleEngine implements BattleEventEmitter {
     this.transitionTo("faint-check");
     if (this.checkBattleEnd()) {
       this.transitionTo("battle-end");
-      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
 
     // If any pokemon need replacement, prompt for switch
     if (this.needsSwitchPrompt()) {
       this.transitionTo("switch-prompt");
-      this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+      this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
 
     // Record turn history — slice from turnStartIndex to capture only events
     // emitted during this turn (fixes #84 — slice(-50) captured cross-turn events).
-    this.recordTurnHistory(this.state.turnNumber, orderedActions, turnStartIndex);
+    this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
 
     // Reset per-turn tracking for next turn
     for (const side of this.state.sides) {

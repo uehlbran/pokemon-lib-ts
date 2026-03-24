@@ -292,3 +292,30 @@ describe("BattleEngine — per-turn event history (#84)", () => {
     void eventsBeforeTurn;
   });
 });
+
+// -----------------------------------------------------------------------
+// Bug #868 — Turn history records rewritten actions instead of submitted choices
+// -----------------------------------------------------------------------
+describe("BattleEngine — turn history submitted actions (#868)", () => {
+  it("given a submitted move that is rewritten into recharge, when the turn is recorded, then turn history keeps the submitted move", () => {
+    const ruleset = new MockRuleset();
+    const { engine } = createEngine({ ruleset });
+    engine.start();
+
+    const active = engine.state.sides[0].active[0];
+    if (!active) {
+      throw new Error("No active pokemon on side 0");
+    }
+
+    active.volatileStatuses.set("recharge", { turnsLeft: 1 });
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.state.turnHistory).toHaveLength(1);
+    expect(engine.state.turnHistory[0]?.actions).toEqual([
+      { type: "move", side: 0, moveIndex: 0 },
+      { type: "move", side: 1, moveIndex: 0 },
+    ]);
+  });
+});
