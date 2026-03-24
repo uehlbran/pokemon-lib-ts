@@ -1,4 +1,4 @@
-import type { DataManager, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type { DataManager, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 import type { AbilityResult, EndOfTurnEffect, ItemResult } from "../context";
 import type { BattleEvent } from "../events";
 import type { GenerationRuleset } from "../ruleset";
@@ -90,6 +90,83 @@ function processSpecificHeldItemEndOfTurn(host: BattleEndOfTurnPipelineHost, ite
   }
 }
 
+type CountdownFieldKey = "gravity" | "magicRoom" | "wonderRoom";
+
+function forEachLivingActivePokemon(
+  host: BattleEndOfTurnPipelineHost,
+  callback: (active: ActivePokemon, sideIndex: 0 | 1) => void,
+): void {
+  for (const side of host.state.sides) {
+    const active = side.active[0];
+    if (!active || active.pokemon.currentHp <= 0) continue;
+    callback(active, side.index);
+  }
+}
+
+function endVolatileStatus(
+  host: BattleEndOfTurnPipelineHost,
+  active: ActivePokemon,
+  sideIndex: 0 | 1,
+  volatile: VolatileStatus,
+): void {
+  active.volatileStatuses.delete(volatile);
+  host.emit({
+    type: "volatile-end",
+    side: sideIndex,
+    pokemon: getPokemonName(active),
+    volatile,
+  });
+}
+
+function processSimpleVolatileCountdown(
+  host: BattleEndOfTurnPipelineHost,
+  volatile: VolatileStatus,
+  onExpire?: (active: ActivePokemon, sideIndex: 0 | 1) => void,
+): void {
+  forEachLivingActivePokemon(host, (active, sideIndex) => {
+    const volatileState = active.volatileStatuses.get(volatile);
+    if (!volatileState || volatileState.turnsLeft <= 0) return;
+
+    volatileState.turnsLeft -= 1;
+    if (volatileState.turnsLeft > 0) return;
+
+    endVolatileStatus(host, active, sideIndex, volatile);
+    onExpire?.(active, sideIndex);
+  });
+}
+
+function processYawnCountdown(host: BattleEndOfTurnPipelineHost): void {
+  forEachLivingActivePokemon(host, (active, sideIndex) => {
+    const yawnState = active.volatileStatuses.get("yawn");
+    if (!yawnState) return;
+
+    if (yawnState.turnsLeft > 0) {
+      yawnState.turnsLeft -= 1;
+    }
+    if (yawnState.turnsLeft > 0) return;
+
+    endVolatileStatus(host, active, sideIndex, "yawn");
+    if (active.pokemon.status === null) {
+      host.applyPrimaryStatus(active, "sleep", sideIndex);
+    }
+  });
+}
+
+function processFieldCountdown(
+  host: BattleEndOfTurnPipelineHost,
+  fieldKey: CountdownFieldKey,
+  expirationMessage: string,
+): void {
+  const fieldState = host.state[fieldKey];
+  if (!fieldState.active) return;
+
+  fieldState.turnsLeft -= 1;
+  if (fieldState.turnsLeft > 0) return;
+
+  fieldState.active = false;
+  host.emit({ type: "message", text: expirationMessage });
+}
+
 /**
  * Shared end-of-turn pipeline extracted from BattleEngine.
  *
@@ -174,36 +251,21 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         processOnTurnEndAbilities(host, abilityEndOfTurnFired);
         break;
       case "slow-start-countdown":
-        for (const side of host.state.sides) {
-          const active = side.active[0];
-          if (!active || active.pokemon.currentHp <= 0) continue;
-          // Slow Start: decrement turnsLeft on the slow-start volatile each EoT.
-          // No ability check: the volatile should tick down even if the ability was
-          // temporarily changed (e.g., by Skill Swap). The stat-halving in damage/speed
-          // calcs already requires both the ability AND the volatile to be present.
-          // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown ticks volatile
-          // When turnsLeft reaches 0, remove the volatile so the Attack/Speed halving stops.
-          // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown
-          // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns
-          const slowStart = active.volatileStatuses.get("slow-start");
-          if (slowStart && slowStart.turnsLeft > 0) {
-            slowStart.turnsLeft -= 1;
-            if (slowStart.turnsLeft === 0) {
-              active.volatileStatuses.delete("slow-start");
-              const pokeName = active.pokemon.nickname ?? String(active.pokemon.speciesId);
-              host.emit({
-                type: "volatile-end",
-                side: side.index,
-                pokemon: getPokemonName(active),
-                volatile: "slow-start",
-              });
-              host.emit({
-                type: "message",
-                text: `${pokeName}'s Slow Start wore off!`,
-              });
-            }
-          }
-        }
+        // Slow Start: decrement turnsLeft on the slow-start volatile each EoT.
+        // No ability check: the volatile should tick down even if the ability was
+        // temporarily changed (e.g., by Skill Swap). The stat-halving in damage/speed
+        // calcs already requires both the ability AND the volatile to be present.
+        // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown ticks volatile
+        // When turnsLeft reaches 0, remove the volatile so the Attack/Speed halving stops.
+        // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown
+        // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns
+        processSimpleVolatileCountdown(host, "slow-start", (active) => {
+          const pokeName = active.pokemon.nickname ?? String(active.pokemon.speciesId);
+          host.emit({
+            type: "message",
+            text: `${pokeName}'s Slow Start wore off!`,
+          });
+        });
         break;
       case "toxic-orb-activation":
         processSpecificHeldItemEndOfTurn(host, "toxic-orb");
@@ -350,178 +412,56 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
       case "taunt-countdown":
         // Taunt volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — "Taunt lasts for 3 turns in Gen 4"
-        for (const side of host.state.sides) {
-          const active = side.active[0];
-          if (!active || active.pokemon.currentHp <= 0) continue;
-          const tauntState = active.volatileStatuses.get("taunt");
-          if (!tauntState) continue;
-          if (tauntState.turnsLeft > 0) {
-            tauntState.turnsLeft--;
-            if (tauntState.turnsLeft <= 0) {
-              active.volatileStatuses.delete("taunt");
-              host.emit({
-                type: "volatile-end",
-                side: side.index,
-                pokemon: getPokemonName(active),
-                volatile: "taunt",
-              });
-            }
-          }
-        }
+        processSimpleVolatileCountdown(host, "taunt");
         break;
       case "disable-countdown":
         // Disable volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — "Disable lasts for 4-7 turns in Gen 4"
-        for (const side of host.state.sides) {
-          const active = side.active[0];
-          if (!active || active.pokemon.currentHp <= 0) continue;
-          const disableState = active.volatileStatuses.get("disable");
-          if (!disableState) continue;
-          if (disableState.turnsLeft > 0) {
-            disableState.turnsLeft--;
-            if (disableState.turnsLeft <= 0) {
-              active.volatileStatuses.delete("disable");
-              host.emit({
-                type: "volatile-end",
-                side: side.index,
-                pokemon: getPokemonName(active),
-                volatile: "disable",
-              });
-            }
-          }
-        }
+        processSimpleVolatileCountdown(host, "disable");
         break;
       case "gravity-countdown":
         // Gravity field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown Gen 4 mod — Gravity lasts 5 turns
-        if (host.state.gravity.active) {
-          host.state.gravity.turnsLeft--;
-          if (host.state.gravity.turnsLeft <= 0) {
-            host.state.gravity.active = false;
-            host.emit({ type: "message", text: "Gravity returned to normal!" });
-          }
-        }
+        processFieldCountdown(host, "gravity", "Gravity returned to normal!");
         break;
       case "magic-room-countdown":
         // Magic Room field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown magicroom condition — duration: 5
-        if (host.state.magicRoom.active) {
-          host.state.magicRoom.turnsLeft--;
-          if (host.state.magicRoom.turnsLeft <= 0) {
-            host.state.magicRoom.active = false;
-            host.emit({ type: "message", text: "The area returned to normal!" });
-          }
-        }
+        processFieldCountdown(host, "magicRoom", "The area returned to normal!");
         break;
       case "wonder-room-countdown":
         // Wonder Room field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown wonderroom condition — duration: 5
-        if (host.state.wonderRoom.active) {
-          host.state.wonderRoom.turnsLeft--;
-          if (host.state.wonderRoom.turnsLeft <= 0) {
-            host.state.wonderRoom.active = false;
-            host.emit({
-              type: "message",
-              text: "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
-            });
-          }
-        }
+        processFieldCountdown(
+          host,
+          "wonderRoom",
+          "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
+        );
         break;
       case "yawn-countdown":
         // Yawn volatile countdown — inflict sleep when turnsLeft reaches 0
         // Source: Bulbapedia — Yawn: "causes drowsiness; the target falls asleep at
         //   the end of the next turn"
         // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
-        for (const side of host.state.sides) {
-          const active = side.active[0];
-          if (!active || active.pokemon.currentHp <= 0) continue;
-          const yawnState = active.volatileStatuses.get("yawn");
-          if (!yawnState) continue;
-          if (yawnState.turnsLeft > 0) {
-            yawnState.turnsLeft--;
-          }
-          if (yawnState.turnsLeft <= 0) {
-            active.volatileStatuses.delete("yawn");
-            host.emit({
-              type: "volatile-end",
-              side: side.index,
-              pokemon: getPokemonName(active),
-              volatile: "yawn",
-            });
-            if (active.pokemon.status === null) {
-              host.applyPrimaryStatus(active, "sleep", side.index);
-            }
-          }
-        }
+        processYawnCountdown(host);
         break;
       case "heal-block-countdown":
         // Heal Block volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Heal Block prevents HP recovery for 5 turns
         // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
-        for (const side of host.state.sides) {
-          const active = side.active[0];
-          if (!active || active.pokemon.currentHp <= 0) continue;
-          const hbState = active.volatileStatuses.get("heal-block");
-          if (!hbState) continue;
-          if (hbState.turnsLeft > 0) {
-            hbState.turnsLeft--;
-            if (hbState.turnsLeft <= 0) {
-              active.volatileStatuses.delete("heal-block");
-              host.emit({
-                type: "volatile-end",
-                side: side.index,
-                pokemon: getPokemonName(active),
-                volatile: "heal-block",
-              });
-            }
-          }
-        }
+        processSimpleVolatileCountdown(host, "heal-block");
         break;
       case "embargo-countdown":
         // Embargo volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
         // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
-        for (const side of host.state.sides) {
-          const active = side.active[0];
-          if (!active || active.pokemon.currentHp <= 0) continue;
-          const embargoState = active.volatileStatuses.get("embargo");
-          if (!embargoState) continue;
-          if (embargoState.turnsLeft > 0) {
-            embargoState.turnsLeft--;
-            if (embargoState.turnsLeft <= 0) {
-              active.volatileStatuses.delete("embargo");
-              host.emit({
-                type: "volatile-end",
-                side: side.index,
-                pokemon: getPokemonName(active),
-                volatile: "embargo",
-              });
-            }
-          }
-        }
+        processSimpleVolatileCountdown(host, "embargo");
         break;
       case "magnet-rise-countdown":
         // Magnet Rise volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Magnet Rise: "The user levitates for five turns."
         // Source: Showdown Gen 4 mod — Magnet Rise lasts 5 turns
-        for (const side of host.state.sides) {
-          const active = side.active[0];
-          if (!active || active.pokemon.currentHp <= 0) continue;
-          const mrState = active.volatileStatuses.get("magnet-rise");
-          if (!mrState) continue;
-          if (mrState.turnsLeft > 0) {
-            mrState.turnsLeft--;
-            if (mrState.turnsLeft <= 0) {
-              active.volatileStatuses.delete("magnet-rise");
-              host.emit({
-                type: "volatile-end",
-                side: side.index,
-                pokemon: getPokemonName(active),
-                volatile: "magnet-rise",
-              });
-            }
-          }
-        }
+        processSimpleVolatileCountdown(host, "magnet-rise");
         break;
       case "uproar": {
         // Source: pret/pokeemerald -- Uproar: countdown duration, wake sleeping Pokemon

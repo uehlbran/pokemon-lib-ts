@@ -920,6 +920,227 @@ describe("slow-start-countdown EoT slot", () => {
   });
 });
 
+// ─── Shared Countdown Handler Coverage ───────────────────────────────────────
+
+describe("simple volatile countdown EoT slots", () => {
+  const removalCases = [
+    {
+      effect: "taunt-countdown",
+      volatile: "taunt",
+      source: 'Bulbapedia — "Taunt lasts for 3 turns in Gen 4"',
+    },
+    {
+      effect: "heal-block-countdown",
+      volatile: "heal-block",
+      source: "Bulbapedia / Showdown Gen 4 mod — Heal Block lasts 5 turns",
+    },
+    {
+      effect: "embargo-countdown",
+      volatile: "embargo",
+      source: "Bulbapedia / Showdown Gen 4 mod — Embargo lasts 5 turns",
+    },
+    {
+      effect: "magnet-rise-countdown",
+      volatile: "magnet-rise",
+      source: "Bulbapedia / Showdown Gen 4 mod — Magnet Rise lasts 5 turns",
+    },
+  ] as const;
+
+  for (const testCase of removalCases) {
+    it(`given ${testCase.volatile} with turnsLeft=1, when ${testCase.effect} runs, then it expires and emits volatile-end`, () => {
+      // Source: see per-case source string above; these countdown volatiles expire once the
+      // final end-of-turn tick decrements turnsLeft from 1 to 0.
+      const ruleset = new Gen4MockRuleset();
+      ruleset.setFixedDamage(0);
+      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [testCase.effect];
+
+      const { engine, events } = createEngine({ ruleset });
+      engine.start();
+
+      const active0 = engine.state.sides[0].active[0];
+      active0?.volatileStatuses.set(testCase.volatile, { turnsLeft: 1 });
+
+      events.length = 0;
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Source: the volatile should be removed after the last tick, and the engine emits
+      // one matching volatile-end event for the expired status.
+      expect(active0?.volatileStatuses.has(testCase.volatile)).toBe(false);
+      const volatileEndEvents = events.filter(
+        (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === testCase.volatile,
+      );
+      expect(volatileEndEvents.length).toBe(1);
+    });
+  }
+
+  it("given disable with turnsLeft=2, when disable-countdown runs, then it decrements to 1 and stays active", () => {
+    // Source: Bulbapedia — Disable lasts 4-7 turns in Gen 4, so a mid-countdown tick
+    // should decrement by exactly 1 without ending the volatile early.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["disable-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    const active0 = engine.state.sides[0].active[0];
+    active0?.volatileStatuses.set("disable", { turnsLeft: 2 });
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: after one tick the volatile should remain with turnsLeft=1 and emit no
+    // volatile-end event yet.
+    expect(active0?.volatileStatuses.get("disable")?.turnsLeft).toBe(1);
+    const volatileEndEvents = events.filter(
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "disable",
+    );
+    expect(volatileEndEvents.length).toBe(0);
+  });
+});
+
+describe("yawn-countdown EoT slot", () => {
+  it("given yawn with turnsLeft=2, when yawn-countdown runs, then it decrements to 1 without applying sleep", () => {
+    // Source: Bulbapedia / Showdown Gen 4 mod — Yawn resolves at the end of the next turn,
+    // so the first countdown tick should only decrement the drowsy volatile.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    const active0 = engine.state.sides[0].active[0];
+    active0?.volatileStatuses.set("yawn", { turnsLeft: 2 });
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: the first tick leaves Yawn active with one turn remaining and does not inflict sleep yet.
+    expect(active0?.volatileStatuses.get("yawn")?.turnsLeft).toBe(1);
+    expect(active0?.pokemon.status).toBe(null);
+    const volatileEndEvents = events.filter(
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "yawn",
+    );
+    expect(volatileEndEvents.length).toBe(0);
+  });
+
+  it("given yawn with turnsLeft=1 and no existing status, when yawn-countdown runs, then the target falls asleep and yawn ends", () => {
+    // Source: Bulbapedia / Showdown Gen 4 mod — Yawn causes drowsiness now and sleep at
+    // the end of the next turn, so turnsLeft=1 should resolve to sleep on this tick.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    const active0 = engine.state.sides[0].active[0];
+    active0?.volatileStatuses.set("yawn", { turnsLeft: 1 });
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: Yawn removes the volatile and inflicts sleep exactly once when it resolves.
+    expect(active0?.volatileStatuses.has("yawn")).toBe(false);
+    expect(active0?.pokemon.status).toBe("sleep");
+    const volatileEndEvents = events.filter(
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "yawn",
+    );
+    expect(volatileEndEvents.length).toBe(1);
+  });
+
+  it("given yawn with turnsLeft=1 and an existing primary status, when yawn-countdown runs, then it ends without overwriting the status", () => {
+    // Source: Pokemon sleep clauses in cartridge/Showdown behavior only apply sleep if the
+    // target is currently status-free; Yawn still ends even when sleep cannot be applied.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    const active0 = engine.state.sides[0].active[0];
+    if (active0) {
+      active0.pokemon.status = "paralysis";
+      active0.volatileStatuses.set("yawn", { turnsLeft: 1 });
+    }
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: the status remains paralysis because Yawn only applies sleep to status-free targets.
+    expect(active0?.volatileStatuses.has("yawn")).toBe(false);
+    expect(active0?.pokemon.status).toBe("paralysis");
+    const volatileEndEvents = events.filter(
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "yawn",
+    );
+    expect(volatileEndEvents.length).toBe(1);
+  });
+});
+
+describe("room countdown EoT slots", () => {
+  it("given Magic Room with turnsLeft=1, when magic-room-countdown runs, then it deactivates and emits the field message", () => {
+    // Source: Showdown magicroom condition — Magic Room duration is 5 turns and the field
+    // ends once the final countdown tick reaches 0.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["magic-room-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    engine.state.magicRoom.active = true;
+    engine.state.magicRoom.turnsLeft = 1;
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: the final tick deactivates the room and emits Showdown's return-to-normal message.
+    expect(engine.state.magicRoom.active).toBe(false);
+    expect(engine.state.magicRoom.turnsLeft).toBe(0);
+    const roomMessages = events.filter(
+      (e) => e.type === "message" && "text" in e && e.text === "The area returned to normal!",
+    );
+    expect(roomMessages.length).toBe(1);
+  });
+
+  it("given Wonder Room with turnsLeft=1, when wonder-room-countdown runs, then it deactivates and emits the field message", () => {
+    // Source: Showdown wonderroom condition — Wonder Room duration is 5 turns and the field
+    // ends once the final countdown tick reaches 0.
+    const ruleset = new Gen4MockRuleset();
+    ruleset.setFixedDamage(0);
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["wonder-room-countdown"];
+
+    const { engine, events } = createEngine({ ruleset });
+    engine.start();
+
+    engine.state.wonderRoom.active = true;
+    engine.state.wonderRoom.turnsLeft = 1;
+
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Source: the final tick deactivates the room and emits the Showdown/engine message.
+    expect(engine.state.wonderRoom.active).toBe(false);
+    expect(engine.state.wonderRoom.turnsLeft).toBe(0);
+    const roomMessages = events.filter(
+      (e) =>
+        e.type === "message" &&
+        "text" in e &&
+        e.text === "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
+    );
+    expect(roomMessages.length).toBe(1);
+  });
+});
+
 // ─── Gen 5+ EoT Stub Tests ───────────────────────────────────────────────────
 
 describe("Gen 5+ EoT handler stubs", () => {
