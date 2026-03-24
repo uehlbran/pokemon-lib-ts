@@ -591,6 +591,68 @@ describe("BattleEngine", () => {
       const lastMoveStartIndex = events.findLastIndex((e) => e.type === "move-start");
       expect(switchOutIndex).toBeLessThan(lastMoveStartIndex);
     });
+
+    it("given a move effect that requests a voluntary self-switch, when the turn resolves, then the engine enters switch-prompt and allows the replacement", () => {
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+        }),
+      ];
+
+      const { engine, ruleset, events } = createTestEngine({ team1 });
+      ruleset.setMoveEffectResult({ switchOut: true });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(engine.getPhase()).toBe("switch-prompt");
+
+      engine.submitSwitch(0, 1);
+
+      expect(engine.getPhase()).toBe("action-select");
+      expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("pikachu-1");
+      expect(events.some((event) => event.type === "switch-out" && event.side === 0)).toBe(true);
+    });
+
+    it("given Baton Pass sets a voluntary self-switch, when the replacement is chosen, then stat stages and volatile statuses carry to the incoming pokemon", () => {
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        }),
+        createTestPokemon(25, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+        }),
+      ];
+
+      const { engine, ruleset } = createTestEngine({ team1 });
+      ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
+      engine.start();
+
+      const attacker = engine.state.sides[0].active[0]!;
+      attacker.statStages.attack = 2;
+      attacker.statStages.speed = 1;
+      attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+      engine.submitSwitch(0, 1);
+
+      const replacement = engine.state.sides[0].active[0]!;
+      expect(replacement.pokemon.uid).toBe("pikachu-1");
+      expect(replacement.statStages.attack).toBe(2);
+      expect(replacement.statStages.speed).toBe(1);
+      expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
+    });
   });
 
   describe("getAvailableMoves", () => {
