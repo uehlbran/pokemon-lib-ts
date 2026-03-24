@@ -1788,6 +1788,12 @@ describe("Gen1Ruleset applyStatusDamage (toxic escalation)", () => {
   });
 });
 
+describe("Gen1Ruleset bag item support", () => {
+  it("given Gen 1 has no implemented bag item data or effects, when querying bag item support, then it reports unsupported", () => {
+    expect(ruleset.canUseBagItems()).toBe(false);
+  });
+});
+
 // ============================================================================
 // No-op Method Return Values
 // ============================================================================

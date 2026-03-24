@@ -1295,7 +1295,7 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   canUseBagItems(): boolean {
-    return true;
+    return false;
   }
 
   applyBagItem(_itemId: string, _target: ActivePokemon, _state: BattleState): BagItemResult {
