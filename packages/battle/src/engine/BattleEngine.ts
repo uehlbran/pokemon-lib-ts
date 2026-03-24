@@ -2769,7 +2769,6 @@ export class BattleEngine implements BattleEventEmitter {
         side: sideIndex,
         pokemon: createPokemonSnapshot(outgoing),
       });
-      batonPassState = pendingSelfSwitch.batonPass ? this.captureBatonPassState(outgoing) : null;
       outgoing.statStages = createDefaultStatStages();
       outgoing.consecutiveProtects = 0;
       outgoing.turnsOnField = 0;
