@@ -123,6 +123,18 @@ describe("BaseRuleset", () => {
       expect(stats.hp).toBeGreaterThan(200);
       expect(stats.speed).toBeGreaterThan(100);
     });
+
+    it("given an unknown nature id, when calculateStats is called, then Hardy fallback behavior is used", () => {
+      const pokemon = {
+        ...createTestPokemon(6, 50),
+        nature: "not-a-real-nature" as unknown as ReturnType<typeof createTestPokemon>["nature"],
+      };
+
+      const stats = ruleset.calculateStats(pokemon, testSpecies);
+
+      expect(stats.attack).toBe(104);
+      expect(stats.spAttack).toBe(129);
+    });
   });
 
   describe("getCritRateTable", () => {

@@ -13,9 +13,6 @@ import type { NonHpStat, StatBlock } from "../entities/stats";
  * Formula (Gen 3+):
  *   HP = floor(((2 * Base + IV + floor(EV / 4)) * Level) / 100) + Level + 10
  *
- * Special case: Shedinja always has 1 HP regardless of stats.
- * Source: pret/pokeemerald src/pokemon.c:2867 — species == SPECIES_SHEDINJA check
- *
  * @param base - Base HP stat (from species data)
  * @param iv - Individual Value (0-31)
  * @param ev - Effort Value (0-252)
@@ -23,7 +20,6 @@ import type { NonHpStat, StatBlock } from "../entities/stats";
  * @returns Maximum HP
  */
 export function calculateHp(base: number, iv: number, ev: number, level: number): number {
-  if (base === 1) return 1; // Shedinja
   return Math.floor(((2 * base + iv + Math.floor(ev / 4)) * level) / 100) + level + 10;
 }
 
@@ -80,8 +76,14 @@ export function calculateAllStats(
   species: PokemonSpeciesData,
   nature: NatureData,
 ): StatBlock {
+  const hp =
+    species.id === 292
+      ? 1
+      : calculateHp(species.baseStats.hp, pokemon.ivs.hp, pokemon.evs.hp, pokemon.level);
+
   return {
-    hp: calculateHp(species.baseStats.hp, pokemon.ivs.hp, pokemon.evs.hp, pokemon.level),
+    // Source: pret/pokeemerald src/pokemon.c:2867 — Shedinja always has 1 HP.
+    hp,
     attack: calculateStat(
       species.baseStats.attack,
       pokemon.ivs.attack,
