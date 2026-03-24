@@ -1,5 +1,5 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 5 switch-in, contact, switch-out, and passive ability handlers.
@@ -779,25 +779,16 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
     }
 
     case "overcoat": {
-      // Source: Showdown data/mods/gen5/abilities.ts — Overcoat Gen 5: only immune to
-      //   sandstorm/hail chip damage. Does NOT block powder moves (Gen 6+ addition).
-      // Source: Bulbapedia — Overcoat (Gen 5): "Protects from sandstorm and hail damage."
-      return {
-        activated: true,
-        effects: [{ effectType: "weather-immunity", target: "self" }],
-        messages: [],
-      };
+      // Source: Showdown data/mods/gen5/abilities.ts — Overcoat's weather immunity is handled
+      // by the weather module, not the passive-immunity ability hook.
+      return NO_EFFECT;
     }
 
     case "sand-rush": {
-      // Source: Showdown data/abilities.ts — Sand Rush: sandstorm immunity
-      // Speed doubling is handled in getEffectiveSpeed, not here
+      // Source: Showdown data/abilities.ts — Sand Rush's weather immunity is handled by the
+      // weather module, while speed doubling is handled in getEffectiveSpeed.
       // Source: Bulbapedia — Sand Rush: "Doubles Speed in sandstorm. Immune to sandstorm damage."
-      return {
-        activated: true,
-        effects: [{ effectType: "weather-immunity", target: "self" }],
-        messages: [],
-      };
+      return NO_EFFECT;
     }
 
     case "sap-sipper": {

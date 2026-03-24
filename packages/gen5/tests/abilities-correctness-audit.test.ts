@@ -643,14 +643,15 @@ describe("Moxie -- +1 Attack after KOing a Pokemon", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Overcoat -- Gen 5: ONLY weather immunity; powder block is Gen 6+
+// Overcoat -- Gen 5: weather immunity is handled in the weather module;
+// powder block is Gen 6+
 // ---------------------------------------------------------------------------
 
-describe("Overcoat -- Gen 5: weather immunity only (powder block is Gen 6+)", () => {
-  it("given Overcoat and passive-immunity trigger, when called, then activates with weather-immunity effect", () => {
+describe("Overcoat -- Gen 5: passive-immunity hook is a no-op for weather", () => {
+  it("given Overcoat and passive-immunity trigger, when called, then does not produce a weather-immunity effect", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- overcoat:
     //   onImmunity(type): if (type === 'sandstorm' || type === 'hail') return false;
-    //   onTryHit() {} -- empty override, powder/spore NOT blocked in Gen 5
+    // Weather immunity is handled by the weather module; passive-immunity is for move immunities.
     // Source: Bulbapedia -- Overcoat (Gen 5): "Protects from sandstorm and hail damage."
     const ctx = makeAbilityContext({
       ability: "overcoat",
@@ -658,9 +659,8 @@ describe("Overcoat -- Gen 5: weather immunity only (powder block is Gen 6+)", ()
     });
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
-    expect(result.activated).toBe(true);
-    const weatherEffect = result.effects.find((e) => e.effectType === "weather-immunity");
-    expect(weatherEffect).toBeDefined();
+    expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
   });
 });
 

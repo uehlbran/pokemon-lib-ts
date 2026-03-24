@@ -767,9 +767,9 @@ describe("Overcoat (Gen 6: blocks powder moves)", () => {
     expect(result.activated).toBe(true);
   });
 
-  it("given Overcoat, when hit by a non-powder move, then returns weather-immunity effect", () => {
-    // Source: Showdown data/abilities.ts -- overcoat: protects from weather damage
-    // Non-powder moves don't trigger the powder block, but Overcoat grants weather immunity
+  it("given Overcoat, when hit by a non-powder move, then returns no passive-immunity effect", () => {
+    // Source: Showdown data/abilities.ts -- overcoat's weather immunity is handled
+    // by the weather module, not the passive-immunity hook.
     const normalMove = makeMove("normal", { flags: {} });
     const ctx = makeContext({
       ability: "overcoat",
@@ -777,8 +777,8 @@ describe("Overcoat (Gen 6: blocks powder moves)", () => {
       move: normalMove,
     });
     const result = handleGen6SwitchAbility("passive-immunity", ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("weather-immunity");
+    expect(result.activated).toBe(false);
+    expect(result.effects).toHaveLength(0);
   });
 });
 

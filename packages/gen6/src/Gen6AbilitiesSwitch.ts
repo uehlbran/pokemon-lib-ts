@@ -783,22 +783,14 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
           messages: [`${name}'s Overcoat protected it from the powder move!`],
         };
       }
-      // Weather immunity handled at the engine level via the weather-immunity effect
-      return {
-        activated: true,
-        effects: [{ effectType: "weather-immunity", target: "self" }],
-        messages: [],
-      };
+      // Weather immunity is handled by the weather module, not the passive-immunity hook.
+      return NO_EFFECT;
     }
 
     case "sand-rush": {
-      // Source: Showdown data/abilities.ts — Sand Rush: sandstorm immunity
-      // Speed doubling is handled in getEffectiveSpeed, not here
-      return {
-        activated: true,
-        effects: [{ effectType: "weather-immunity", target: "self" }],
-        messages: [],
-      };
+      // Source: Showdown data/abilities.ts — Sand Rush's weather immunity is handled by the
+      // weather module, while speed doubling is handled in getEffectiveSpeed.
+      return NO_EFFECT;
     }
 
     case "sap-sipper": {
