@@ -5,6 +5,10 @@ import type { MegaEvolutionData } from "../entities/species.js";
  *
  * The item-to-form mapping is identical in both generations, so this lives in
  * core and is re-used by both per-gen gimmick implementations.
+ *
+ * Rayquaza-Mega is intentionally excluded because it does not use a Mega
+ * Stone; it Mega Evolves via Dragon Ascent and is handled as a separate
+ * special case in the generation-specific gimmick logic.
  */
 export const MEGA_STONE_DATA: Readonly<Record<string, MegaEvolutionData>> = {
   venusaurite: {
