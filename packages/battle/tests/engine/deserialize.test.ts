@@ -321,6 +321,7 @@ describe("BattleEngine.deserialize", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
+        speed: 120,
         moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
       }),
       createTestPokemon(25, 50, {
@@ -332,6 +333,7 @@ describe("BattleEngine.deserialize", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
+        speed: 80,
         moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
       }),
     ];

@@ -690,17 +690,21 @@ describe("BattleEngine", () => {
 
     it("given Baton Pass into Sticky Web, when the replacement is chosen, then inherited boosts are merged before switch-in effects", () => {
       const ruleset = new MockRuleset();
+      let speedSeenByStickyWeb: number | null = null;
       ruleset.getAvailableHazards = () => ["sticky-web"] as any;
       ruleset.applyEntryHazards = (
-        _pokemon: ActivePokemon,
+        pokemon: ActivePokemon,
         _side: BattleSide,
         _state?: BattleState,
-      ): EntryHazardResult => ({
-        damage: 0,
-        statusInflicted: null,
-        statChanges: [{ stat: "speed", stages: -1 }],
-        messages: [],
-      });
+      ): EntryHazardResult => {
+        speedSeenByStickyWeb = pokemon.statStages.speed;
+        return {
+          damage: 0,
+          statusInflicted: null,
+          statChanges: [{ stat: "speed", stages: -1 }],
+          messages: [],
+        };
+      };
 
       const { engine } = createVoluntarySelfSwitchScenario({ ruleset });
       ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
@@ -717,6 +721,8 @@ describe("BattleEngine", () => {
 
       const replacement = engine.state.sides[0].active[0]!;
       expect(replacement.pokemon.uid).toBe("pikachu-1");
+      // Source: Sticky Web should see the Baton Pass speed boost before applying its own -1 drop.
+      expect(speedSeenByStickyWeb).toBe(1);
       // Source: Baton Pass applies the queued +1 speed stage first, then Sticky Web applies -1 on switch-in.
       expect(replacement.statStages.speed).toBe(0);
     });
