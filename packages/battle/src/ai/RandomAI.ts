@@ -1,12 +1,13 @@
 import type { SeededRandom } from "@pokemon-lib-ts/core";
+import type { AvailableMove } from "../context";
 import type { BattleAction } from "../events";
 import type { GenerationRuleset } from "../ruleset";
 import type { BattleState } from "../state";
 import type { AIController } from "./AIController";
 
 /**
- * Random AI — picks a random valid move. Deterministic with seeded RNG.
- * Tier 1: no strategy, just random valid actions.
+ * Random AI — picks a random move from the caller-provided legal move snapshot.
+ * Deterministic with seeded RNG. Tier 1: no strategy, just random available actions.
  */
 export class RandomAI implements AIController {
   chooseAction(
@@ -14,6 +15,7 @@ export class RandomAI implements AIController {
     state: Readonly<BattleState>,
     _ruleset: GenerationRuleset,
     rng: SeededRandom,
+    availableMoves: readonly AvailableMove[],
   ): BattleAction {
     const sideState = state.sides[side];
     const active = sideState.active[0];
@@ -23,17 +25,14 @@ export class RandomAI implements AIController {
       return { type: "struggle", side };
     }
 
-    // Get available moves (those with PP remaining)
-    const availableMoves = active.pokemon.moves
-      .map((slot, index) => ({ slot, index }))
-      .filter((m) => m.slot.currentPP > 0);
+    const enabledMoves = availableMoves.filter((move) => !move.disabled);
 
-    if (availableMoves.length === 0) {
+    if (enabledMoves.length === 0) {
       return { type: "struggle", side };
     }
 
-    // Randomly pick a move
-    const choice = rng.pick(availableMoves);
+    // Randomly pick a legal move from the engine-provided availability snapshot.
+    const choice = rng.pick(enabledMoves);
     return {
       type: "move",
       side,
