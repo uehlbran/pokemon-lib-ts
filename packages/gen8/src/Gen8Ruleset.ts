@@ -535,7 +535,7 @@ export class Gen8Ruleset extends BaseRuleset {
       isIceFaceActive(
         defender.pokemon.speciesId,
         defender.ability,
-        defender.volatileStatuses.has("ice-face-broken" as never),
+        defender.volatileStatuses.has("ice-face-broken"),
       )
     ) {
       defender.volatileStatuses.set("ice-face-broken", { turnsLeft: -1 });

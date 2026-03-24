@@ -878,14 +878,14 @@ function handleIceFaceOnHit(ctx: AbilityContext): AbilityResult {
   if (!ctx.move || ctx.move.category !== "physical") return NO_EFFECT;
 
   // Check if Ice Face is active (not broken)
-  if (ctx.pokemon.volatileStatuses.has("ice-face-broken" as never)) return NO_EFFECT;
+  if (ctx.pokemon.volatileStatuses.has("ice-face-broken")) return NO_EFFECT;
 
   const name = getName(ctx);
   return {
     activated: true,
     effects: [
       { effectType: "damage-reduction", target: "self" },
-      { effectType: "volatile-inflict", target: "self", volatile: "ice-face-broken" as never },
+      { effectType: "volatile-inflict", target: "self", volatile: "ice-face-broken" },
     ],
     messages: [`${name}'s Ice Face absorbed the damage!`],
   };
