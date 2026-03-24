@@ -327,6 +327,18 @@ export class BattleEngine implements BattleEventEmitter {
       throw new Error("MoveAction requires an integer moveIndex");
     }
 
+    if (action.type === "move") {
+      const activePokemon = this.getActive(side);
+
+      if (!activePokemon) {
+        throw new Error(`Side ${side} has no active Pokemon to execute MoveAction`);
+      }
+
+      if (action.moveIndex < 0 || action.moveIndex >= activePokemon.pokemon.moves.length) {
+        throw new Error(`MoveAction moveIndex ${action.moveIndex} is out of range`);
+      }
+    }
+
     this.pendingActions.set(side, action);
 
     // When both sides have submitted, resolve the turn

@@ -215,12 +215,23 @@ describe("BattleEngine", () => {
       const { engine } = createTestEngine();
       engine.start();
 
+      // Source: BattleEngine.submitAction moveIndex integer validation guard.
       expect(() =>
         engine.submitAction(0, {
           type: "move",
           side: 0,
         } as unknown as Parameters<typeof engine.submitAction>[1]),
       ).toThrow("MoveAction requires an integer moveIndex");
+    });
+
+    it("given a move action with an out-of-range moveIndex, when submitAction is called, then it throws instead of silently skipping the move", () => {
+      const { engine } = createTestEngine();
+      engine.start();
+
+      // Source: createTestEngine gives the active Pokemon exactly one move, so valid indexes stop at 0.
+      expect(() => engine.submitAction(0, { type: "move", side: 0, moveIndex: 99 })).toThrow(
+        "MoveAction moveIndex 99 is out of range",
+      );
     });
 
     it("given both sides submit moves, when turn resolves, then move-start events are emitted", () => {
