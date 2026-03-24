@@ -6,7 +6,7 @@
  *
  * - `move` — use a move from the active Pokémon's moveset; supports gimmicks (mega, Z, dynamax, tera)
  * - `switch` — voluntarily switch the active Pokémon for another in the team
- * - `item` — use a bag item on a Pokémon (trainer battles, not wild)
+ * - `item` — use a bag item on a Pokémon when the ruleset permits bag items
  * - `run` — attempt to flee (wild battles only; side 0 only)
  * - `recharge` — engine-generated action for moves that require a recharge turn (e.g., Hyper Beam)
  * - `struggle` — engine-generated action when all moves are out of PP
@@ -59,7 +59,7 @@ export interface SwitchAction {
 
 /**
  * Action submitted when a side uses a bag item on a Pokémon during battle.
- * Only valid in trainer battles where item use is permitted.
+ * Availability depends on the current ruleset's `canUseBagItems()` result.
  */
 export interface ItemAction {
   /** Discriminant: always `"item"` */
