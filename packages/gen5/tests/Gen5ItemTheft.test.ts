@@ -31,10 +31,15 @@ import {
   GEN5_MOVE_IDS,
   GEN5_NATURE_IDS,
   GEN5_SPECIES_IDS,
+  createGen5DataManager,
 } from "@pokemon-lib-ts/gen5";
 import { describe, expect, it } from "vitest";
 import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
 import { handleGen5BehaviorMove } from "../src/Gen5MoveEffectsBehavior";
+
+const dataManager = createGen5DataManager();
+// Gen 5 currently does not expose a named volatile-id surface for the gem-consumed marker.
+const GEM_USED_VOLATILE = "gem-used" as const;
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -126,47 +131,14 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: string;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  priority?: number;
-  contact?: boolean;
-}) {
+function makeMove(moveId: string) {
+  const baseMove = dataManager.getMove(moveId);
   return {
-    id: overrides.id ?? GEN5_MOVE_IDS.tackle,
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? CORE_TYPE_IDS.normal,
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 5,
-    priority: overrides.priority ?? 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: overrides.contact ?? false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 5,
-  };
+    ...baseMove,
+    id: moveId,
+    displayName: baseMove.displayName,
+    flags: { ...baseMove.flags },
+  } as MoveData;
 }
 
 function makeState(): BattleState {
@@ -225,7 +197,7 @@ function makeContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeMove(GEN5_MOVE_IDS.tackle),
     damage: overrides.damage ?? 0,
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(42),
@@ -282,7 +254,7 @@ describe("Gen 5 Thief -- item theft after damage", () => {
       nickname: "Blissey",
       speciesId: GEN5_SPECIES_IDS.blissey,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -305,7 +277,7 @@ describe("Gen 5 Thief -- item theft after damage", () => {
       nickname: "Blissey",
       speciesId: GEN5_SPECIES_IDS.blissey,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -320,7 +292,7 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   it("given target with no item, when Thief deals damage, then does not steal", () => {
     const attacker = makeActive({ heldItem: null, nickname: "Sneasel", speciesId: GEN5_SPECIES_IDS.sneasel });
     const defender = makeActive({ heldItem: null, nickname: "Blissey", speciesId: GEN5_SPECIES_IDS.blissey });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -339,7 +311,7 @@ describe("Gen 5 Thief -- item theft after damage", () => {
       nickname: "Sableye",
       speciesId: GEN5_SPECIES_IDS.sableye,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 0 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -363,7 +335,7 @@ describe("Gen 5 Covet -- item theft after damage (same logic as Thief)", () => {
       nickname: "Chansey",
       speciesId: GEN5_SPECIES_IDS.chansey,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.covet, type: CORE_TYPE_IDS.normal, category: "physical", power: 60 });
+    const move = makeMove(GEN5_MOVE_IDS.covet);
     const ctx = makeContext({ attacker, defender, move, damage: 45 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -386,7 +358,7 @@ describe("Gen 5 Covet -- item theft after damage (same logic as Thief)", () => {
       nickname: "Chansey",
       speciesId: GEN5_SPECIES_IDS.chansey,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.covet, type: CORE_TYPE_IDS.normal, category: "physical", power: 60 });
+    const move = makeMove(GEN5_MOVE_IDS.covet);
     const ctx = makeContext({ attacker, defender, move, damage: 45 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -412,7 +384,7 @@ describe("Gen 5 Thief/Covet -- Unburden interaction", () => {
       nickname: "Hitmonlee",
       speciesId: GEN5_SPECIES_IDS.hitmonlee,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -434,7 +406,7 @@ describe("Gen 5 Thief/Covet -- Unburden interaction", () => {
       speciesId: GEN5_SPECIES_IDS.hitmonlee,
       volatiles: existingVolatiles,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.covet, type: CORE_TYPE_IDS.normal, category: "physical", power: 60 });
+    const move = makeMove(GEN5_MOVE_IDS.covet);
     const ctx = makeContext({ attacker, defender, move, damage: 45 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -468,7 +440,7 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
       nickname: "Pickpocket Mon",
       speciesId: GEN5_SPECIES_IDS.hitmonlee,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.tackle, contact: true });
+    const move = makeMove(GEN5_MOVE_IDS.tackle);
 
     const ctx = makeAbilityContext({
       ability: GEN5_ABILITY_IDS.pickpocket,
@@ -501,7 +473,7 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
       trigger: "on-contact",
       heldItem: GEN5_ITEM_IDS.leftovers,
       opponent: attacker,
-      move: makeMove({ id: GEN5_MOVE_IDS.tackle, contact: true }),
+      move: makeMove(GEN5_MOVE_IDS.tackle),
     });
 
     const result = handleGen5SwitchAbility("on-contact", ctx);
@@ -524,7 +496,7 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
       trigger: "on-contact",
       heldItem: null,
       opponent: attacker,
-      move: makeMove({ id: GEN5_MOVE_IDS.tackle, contact: true }),
+      move: makeMove(GEN5_MOVE_IDS.tackle),
     });
 
     const result = handleGen5SwitchAbility("on-contact", ctx);
@@ -546,7 +518,7 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
       trigger: "on-contact",
       heldItem: null,
       opponent: attacker,
-      move: makeMove({ id: GEN5_MOVE_IDS.tackle, contact: true }),
+      move: makeMove(GEN5_MOVE_IDS.tackle),
     });
 
     const result = handleGen5SwitchAbility("on-contact", ctx);
@@ -580,7 +552,7 @@ describe("Gen 5 Thief/Covet -- cannot steal through Substitute", () => {
       speciesId: GEN5_SPECIES_IDS.blissey,
     });
     defender.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     // brokeSubstitute: true -- the hit destroyed the sub
     const ctx = makeContext({ attacker, defender, move, damage: 50, brokeSubstitute: true });
 
@@ -606,7 +578,7 @@ describe("Gen 5 Thief/Covet -- cannot steal through Substitute", () => {
     });
     defender.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
     // substituteHp > 0 simulated by the volatile still being present and brokeSubstitute: false
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 30, brokeSubstitute: false });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -632,13 +604,13 @@ describe("Gen 5 Thief/Covet -- cannot steal when user consumed a Gem this move",
       speciesId: GEN5_SPECIES_IDS.sneasel,
     });
     // Simulate post-gem-consumption: heldItem is null but gem-used volatile is set
-    attacker.volatileStatuses.set("gem-used", { turnsLeft: 1 });
+    attacker.volatileStatuses.set(GEM_USED_VOLATILE, { turnsLeft: 1 });
     const defender = makeActive({
       heldItem: GEN5_ITEM_IDS.leftovers,
       nickname: "Blissey",
       speciesId: GEN5_SPECIES_IDS.blissey,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
@@ -660,7 +632,7 @@ describe("Gen 5 Thief/Covet -- cannot steal when user consumed a Gem this move",
       nickname: "Blissey",
       speciesId: GEN5_SPECIES_IDS.blissey,
     });
-    const move = makeMove({ id: GEN5_MOVE_IDS.thief, type: CORE_TYPE_IDS.dark, category: "physical", power: 40 });
+    const move = makeMove(GEN5_MOVE_IDS.thief);
     const ctx = makeContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
