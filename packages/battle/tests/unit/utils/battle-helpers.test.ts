@@ -29,12 +29,16 @@ describe("BattleHelpers", () => {
   describe("createTestPokemon", () => {
     it("given speciesId and level, when createTestPokemon is called, then a valid PokemonInstance is returned", () => {
       // Act
-      const pokemon = createTestPokemon(6, 50);
+      // Source: Battle helper default fixture coverage uses a Charizard-style species/level pair.
+      const speciesId = 6;
+      const level = 50;
+      const expectedCurrentHp = 200;
+      const pokemon = createTestPokemon(speciesId, level);
 
       // Assert
-      expect(pokemon.speciesId).toBe(6);
-      expect(pokemon.level).toBe(50);
-      expect(pokemon.currentHp).toBe(200);
+      expect(pokemon.speciesId).toBe(speciesId);
+      expect(pokemon.level).toBe(level);
+      expect(pokemon.currentHp).toBe(expectedCurrentHp);
       expect(pokemon.moves).toHaveLength(1);
       expect(pokemon.moves[0]?.moveId).toBe("tackle");
     });
@@ -52,15 +56,19 @@ describe("BattleHelpers", () => {
 
     it("given overrides, when createTestPokemon is called, then overrides are applied", () => {
       // Act
-      const pokemon = createTestPokemon(25, 30, {
+      // Source: the override fixture intentionally uses a level-30 Pokemon to verify replacement values.
+      const overriddenSpeciesId = 25;
+      const overriddenLevel = 30;
+      const overriddenCurrentHp = 100;
+      const pokemon = createTestPokemon(overriddenSpeciesId, overriddenLevel, {
         nickname: "Sparky",
-        currentHp: 100,
+        currentHp: overriddenCurrentHp,
       });
 
       // Assert
       expect(pokemon.nickname).toBe("Sparky");
-      expect(pokemon.currentHp).toBe(100);
-      expect(pokemon.level).toBe(30);
+      expect(pokemon.currentHp).toBe(overriddenCurrentHp);
+      expect(pokemon.level).toBe(overriddenLevel);
     });
   });
 
@@ -104,11 +112,16 @@ describe("BattleHelpers", () => {
   describe("createPokemonSnapshot", () => {
     it("given an ActivePokemon, when createPokemonSnapshot is called, then public info is extracted", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, {
+      // Source: the snapshot fixture mirrors the same level-50 Charizard-style test Pokemon used elsewhere.
+      const speciesId = 6;
+      const level = 50;
+      const currentHp = 150;
+      const maxHp = 200;
+      const pokemon = createTestPokemon(speciesId, level, {
         nickname: "Char",
-        currentHp: 150,
+        currentHp,
         calculatedStats: {
-          hp: 200,
+          hp: maxHp,
           attack: 100,
           defense: 100,
           spAttack: 100,
@@ -122,11 +135,11 @@ describe("BattleHelpers", () => {
       const snapshot = createPokemonSnapshot(active);
 
       // Assert
-      expect(snapshot.speciesId).toBe(6);
+      expect(snapshot.speciesId).toBe(speciesId);
       expect(snapshot.nickname).toBe("Char");
-      expect(snapshot.level).toBe(50);
-      expect(snapshot.currentHp).toBe(150);
-      expect(snapshot.maxHp).toBe(200);
+      expect(snapshot.level).toBe(level);
+      expect(snapshot.currentHp).toBe(currentHp);
+      expect(snapshot.maxHp).toBe(maxHp);
       expect(snapshot.status).toBeNull();
       expect(snapshot.gender).toBe("male");
       expect(snapshot.isShiny).toBe(false);
