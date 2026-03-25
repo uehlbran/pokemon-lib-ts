@@ -338,26 +338,19 @@ describe("parseLine", () => {
     expect(ev.amount).toBe(1);
   });
 
-  it("given |raw| line, when parsed, then returns null (skipped)", () => {
+  it("given parser-skipped metadata lines, when parsed, then each returns null and no event shape leaks through", () => {
     // Arrange
-    const line = "|raw|some html content";
+    const skippedLines = [
+      "|raw|some html content",
+      "|j|☆SomePlayer",
+      "|start",
+      "|tier|[Gen 1] OU",
+      "|gen|1",
+      "|player|p1|PlayerOne|1",
+    ];
 
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
-
-  it("given |j| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|j|☆SomePlayer";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
+    // Act / Assert
+    expect(skippedLines.map((line) => parseLine(line))).toEqual([null, null, null, null, null, null]);
   });
 
   it("given unknown line type, when parsed, then returns UnknownEvent", () => {
@@ -491,17 +484,6 @@ describe("parseLine", () => {
     expect(ev.effect).toBe("confusion");
   });
 
-  it("given |start| (battle start, no ident) line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|start";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
-
   it("given damage line with [from] annotation, when parsed, then from field is set", () => {
     // Arrange
     const line = "|-damage|p1a: Gengar|80/100|[from] psn";
@@ -541,44 +523,15 @@ describe("parseLine", () => {
     expect(ev.species).toBe("Starmie");
   });
 
-  it("given |tier| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|tier|[Gen 1] OU";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
-
-  it("given |gen| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|gen|1";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
-
-  it("given |player| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|player|p1|PlayerOne|1";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
 });
 
 // ---------------------------------------------------------------------------
 // parseReplay
 // ---------------------------------------------------------------------------
 describe("parseReplay", () => {
+  // The `minimalLog` fixture contains one pre-battle switch bucket plus turns 1 and 2.
+  const expectedMinimalTurnCount = 3;
+
   const minimalLog = [
     "|gen|1",
     "|tier|[Gen 1] OU",
@@ -615,7 +568,8 @@ describe("parseReplay", () => {
 
     // Assert
     // Turn 0 holds pre-battle switch events; turns 1 and 2 are battle turns
-    expect(result.turns.length).toBe(3);
+    expect(result.turns.map((turn) => turn.turnNumber)).toEqual([0, 1, 2]);
+    expect(result.turns.length).toBe(expectedMinimalTurnCount);
     const turn1 = result.turns.find((t) => t.turnNumber === 1);
     const turn2 = result.turns.find((t) => t.turnNumber === 2);
     expect(turn1).toBeDefined();
@@ -629,6 +583,9 @@ describe("parseReplay", () => {
     const result = parseReplay(minimalLog);
 
     // Assert
+    // Source: the switch lines in `minimalLog` explicitly declare `L50` for both lead Pokemon.
+    expect(result.teams[0]).toHaveLength(1);
+    expect(result.teams[1]).toHaveLength(1);
     expect(result.teams[0].length).toBeGreaterThan(0);
     expect(result.teams[0][0].species).toBe("Charizard");
     expect(result.teams[0][0].level).toBe(50);
@@ -672,6 +629,7 @@ describe("parseReplay", () => {
 
     // Assert
     expect(result.winner).toBeNull();
+    expect(result.turns.map((turn) => turn.turnNumber)).toEqual([1]);
   });
 
   it("given log without win or tie, then winner is null", () => {
@@ -690,6 +648,7 @@ describe("parseReplay", () => {
 
     // Assert
     expect(result.winner).toBeNull();
+    expect(result.turns.map((turn) => turn.turnNumber)).toEqual([1]);
   });
 
   it("given log with multiple switches of same pokemon, then no duplicate team entries", () => {
