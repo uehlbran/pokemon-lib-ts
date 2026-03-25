@@ -10,6 +10,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
@@ -36,6 +37,7 @@ const STATUS_IDS = CORE_STATUS_IDS;
 const TYPE_IDS = CORE_TYPE_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const TRIGGER_IDS = CORE_ABILITY_TRIGGER_IDS;
+const ITEM_TRIGGER_IDS = CORE_ITEM_TRIGGER_IDS;
 
 // ---------------------------------------------------------------------------
 // Helper factories (mirrors damage-calc.test.ts pattern)
@@ -197,7 +199,7 @@ describe("Gen 5 Items -- Klutz and Embargo suppression", () => {
       currentHp: 100,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -212,7 +214,7 @@ describe("Gen 5 Items -- Klutz and Embargo suppression", () => {
       volatiles,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -220,7 +222,7 @@ describe("Gen 5 Items -- Klutz and Embargo suppression", () => {
     // Source: Showdown sim/battle.ts -- item handlers are gated on pokemon.item !== ''; null/empty item means no handler fires
     const pokemon = createOnFieldPokemon({ heldItem: null });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -234,7 +236,7 @@ describe("Gen 5 Items -- Leftovers", () => {
     // Source: Showdown data/items.ts -- Leftovers: heal 1/16 max HP
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers, hp: 200, currentHp: 100 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 12 }]);
   });
@@ -243,7 +245,7 @@ describe("Gen 5 Items -- Leftovers", () => {
     // Source: floor(15/16) = 0, clamped to 1
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers, hp: 15, currentHp: 10 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 1 }]);
   });
@@ -263,7 +265,7 @@ describe("Gen 5 Items -- Black Sludge", () => {
       currentHp: 200,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 20 }]);
   });
@@ -277,7 +279,7 @@ describe("Gen 5 Items -- Black Sludge", () => {
       currentHp: 100,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 20 }]);
   });
@@ -296,7 +298,7 @@ describe("Gen 5 Items -- Toxic Orb", () => {
       status: null,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "inflict-status", target: "self", status: STATUS_IDS.badlyPoisoned },
@@ -311,7 +313,7 @@ describe("Gen 5 Items -- Toxic Orb", () => {
       status: STATUS_IDS.burn,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -323,7 +325,7 @@ describe("Gen 5 Items -- Toxic Orb", () => {
       status: null,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -335,7 +337,7 @@ describe("Gen 5 Items -- Toxic Orb", () => {
       status: null,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -353,7 +355,7 @@ describe("Gen 5 Items -- Flame Orb", () => {
       status: null,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: STATUS_IDS.burn }]);
   });
@@ -366,7 +368,7 @@ describe("Gen 5 Items -- Flame Orb", () => {
       status: null,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -380,7 +382,7 @@ describe("Gen 5 Items -- Sitrus Berry", () => {
     // Source: Showdown data/items.ts -- Sitrus Berry heals 1/4 max HP
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.sitrusBerry, hp: 200, currentHp: 100 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "heal", target: "self", value: 50 },
@@ -393,7 +395,7 @@ describe("Gen 5 Items -- Sitrus Berry", () => {
     // 102 > floor(200 / 2) = 100, so threshold is not met
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.sitrusBerry, hp: 200, currentHp: 102 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -424,7 +426,7 @@ describe("Gen 5 Items -- Lum Berry", () => {
       status: STATUS_IDS.paralysis,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "status-cure", target: "self" },
@@ -441,7 +443,7 @@ describe("Gen 5 Items -- Lum Berry", () => {
       volatiles,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "volatile-cure", target: "self", value: VOLATILE_IDS.confusion },
@@ -453,7 +455,7 @@ describe("Gen 5 Items -- Lum Berry", () => {
     // Source: Showdown data/items.ts -- Lum Berry onUpdate: only triggers if status or confusion present
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.lumBerry });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -467,7 +469,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     // Source: Showdown data/items.ts -- Cheri Berry onUpdate: cures 'par' status
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.cheriBerry, status: STATUS_IDS.paralysis });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
       type: "status-cure",
@@ -479,7 +481,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     // Source: Showdown data/items.ts -- Chesto Berry onUpdate: cures 'slp' status
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.chestoBerry, status: STATUS_IDS.sleep });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
       type: "status-cure",
@@ -491,7 +493,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     // Source: Showdown data/items.ts -- Pecha Berry onUpdate: cures 'psn' and 'tox' status
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.pechaBerry, status: STATUS_IDS.poison });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
       type: "status-cure",
@@ -503,7 +505,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     // Source: Showdown data/items.ts -- Pecha Berry cures both 'psn' and 'tox' (badly-poisoned)
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.pechaBerry, status: STATUS_IDS.badlyPoisoned });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
       type: "status-cure",
@@ -515,7 +517,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     // Source: Showdown data/items.ts -- Rawst Berry onUpdate: cures 'brn' status
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.rawstBerry, status: STATUS_IDS.burn });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
       type: "status-cure",
@@ -527,7 +529,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     // Source: Showdown data/items.ts -- Aspear Berry onUpdate: cures 'frz' status
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.aspearBerry, status: STATUS_IDS.freeze });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
       type: "status-cure",
@@ -539,7 +541,7 @@ describe("Gen 5 Items -- Status-cure berries", () => {
     // Source: Showdown data/items.ts -- single-status berries only fire if the matched condition is present
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.cheriBerry });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -555,7 +557,7 @@ describe("Gen 5 Items -- Persim Berry", () => {
     volatiles.set(VOLATILE_IDS.confusion, { turnsLeft: 3 });
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.persimBerry, volatiles });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "volatile-cure", target: "self", value: VOLATILE_IDS.confusion },
@@ -567,7 +569,7 @@ describe("Gen 5 Items -- Persim Berry", () => {
     // Source: Showdown data/items.ts -- Persim Berry only fires if confusion volatile is present
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.persimBerry });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -583,7 +585,7 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
     volatiles.set(CORE_VOLATILE_IDS.infatuation, { turnsLeft: -1 });
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.mentalHerb, volatiles });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     const cureEffect = result.effects.find(
       (e) => e.type === "volatile-cure" && e.value === CORE_VOLATILE_IDS.infatuation,
@@ -600,7 +602,7 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
     volatiles.set(VOLATILE_IDS.taunt, { turnsLeft: 3 });
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.mentalHerb, volatiles });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     const cureEffect = result.effects.find(
       (e) => e.type === "volatile-cure" && e.value === VOLATILE_IDS.taunt,
@@ -615,7 +617,7 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
     volatiles.set(MOVE_IDS.disable, { turnsLeft: 4 });
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.mentalHerb, volatiles });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     const encoreCure = result.effects.find(
       (e) => e.type === "volatile-cure" && e.value === MOVE_IDS.encore,
@@ -631,7 +633,7 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
     // Source: Showdown data/items.ts -- Mental Herb only fires when one of the six volatiles is present
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.mentalHerb });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -645,7 +647,7 @@ describe("Gen 5 Items -- Sticky Barb", () => {
     // Source: Showdown data/items.ts -- Sticky Barb onResidual: 1/8 max HP
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.stickyBarb, hp: 200, currentHp: 150 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 25 }]);
   });
@@ -655,7 +657,7 @@ describe("Gen 5 Items -- Sticky Barb", () => {
     // floor(7 / 8) = 0, clamped to 1
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.stickyBarb, hp: 7, currentHp: 5 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 1 }]);
   });
@@ -1172,7 +1174,7 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
     // (no more affectedByKingsRock whitelist)
     // Verification: seed 7 deterministically hits the King's Rock flinch branch.
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.kingsRock });
-    const flinchResult = applyGen5HeldItem("on-hit", createItemContext({ pokemon, damage: 50, seed: 7 }));
+    const flinchResult = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, createItemContext({ pokemon, damage: 50, seed: 7 }));
     expect(flinchResult.activated).toBe(true);
     expect(flinchResult.effects).toEqual([{ type: "flinch", target: "opponent" }]);
   });
@@ -1181,7 +1183,7 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
     // Source: Showdown data/items.ts -- Razor Fang: same 10% flinch chance as King's Rock, applies to all damaging moves in Gen 5
     // Verification: seed 7 deterministically hits the Razor Fang flinch branch.
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.razorFang });
-    const flinchResult = applyGen5HeldItem("on-hit", createItemContext({ pokemon, damage: 50, seed: 7 }));
+    const flinchResult = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, createItemContext({ pokemon, damage: 50, seed: 7 }));
     expect(flinchResult.activated).toBe(true);
     expect(flinchResult.effects).toEqual([{ type: "flinch", target: "opponent" }]);
   });
@@ -1190,7 +1192,7 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
     // Source: Showdown data/items.ts -- King's Rock: requires damage > 0 to have a flinch chance
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.kingsRock });
     const ctx = createItemContext({ pokemon, damage: 0 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -1204,7 +1206,7 @@ describe("Gen 5 Items -- Shell Bell", () => {
     // Source: Showdown data/items.ts -- Shell Bell: heal 1/8 damage dealt
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.shellBell });
     const ctx = createItemContext({ pokemon, damage: 80 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 10 }]);
   });
@@ -1214,7 +1216,7 @@ describe("Gen 5 Items -- Shell Bell", () => {
     // floor(5 / 8) = 0, clamped to 1
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.shellBell });
     const ctx = createItemContext({ pokemon, damage: 5 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 1 }]);
   });
@@ -1229,7 +1231,7 @@ describe("Gen 5 Items -- Life Orb", () => {
     // Source: Showdown data/items.ts -- Life Orb recoil: floor(maxHP/10)
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.lifeOrb, hp: 200, currentHp: 200 });
     const ctx = createItemContext({ pokemon, damage: 50 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 20 }]);
   });
@@ -1239,7 +1241,7 @@ describe("Gen 5 Items -- Life Orb", () => {
     // floor(15 / 10) = 1
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.lifeOrb, hp: 15, currentHp: 15 });
     const ctx = createItemContext({ pokemon, damage: 50 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 1 }]);
   });
@@ -1248,7 +1250,7 @@ describe("Gen 5 Items -- Life Orb", () => {
     // Source: Showdown data/items.ts -- Life Orb: requires damage > 0 to trigger recoil
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.lifeOrb, hp: 200, currentHp: 200 });
     const ctx = createItemContext({ pokemon, damage: 0 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -1277,7 +1279,7 @@ describe("Gen 5 Items -- Life Orb + Sheer Force interaction", () => {
       },
     });
     const ctx = createItemContext({ pokemon, move: moveWithEffect, damage: 80 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     // Should NOT activate because Sheer Force suppresses Life Orb recoil
     expect(result.activated).toBe(false);
   });
@@ -1294,7 +1296,7 @@ describe("Gen 5 Items -- Life Orb + Sheer Force interaction", () => {
     // Move with NO secondary effect (Sheer Force does NOT activate)
     const moveWithoutEffect = createSyntheticMoveFrom({ effect: null });
     const ctx = createItemContext({ pokemon, move: moveWithoutEffect, damage: 80 });
-    const result = applyGen5HeldItem("on-hit", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, ctx);
     // SHOULD activate because Sheer Force did not trigger
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 20 }]);
@@ -1315,7 +1317,7 @@ describe("Gen 5 Items -- Unburden interaction", () => {
       currentHp: 100,
     });
     const ctx = createItemContext({ pokemon });
-    applyGen5HeldItem("end-of-turn", ctx);
+    applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(pokemon.volatileStatuses.has(ABILITY_IDS.unburden)).toBe(true);
   });
 
@@ -1328,7 +1330,7 @@ describe("Gen 5 Items -- Unburden interaction", () => {
       currentHp: 100,
     });
     const ctx = createItemContext({ pokemon });
-    applyGen5HeldItem("end-of-turn", ctx);
+    applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(pokemon.volatileStatuses.has(ABILITY_IDS.unburden)).toBe(false);
   });
 });
@@ -1447,7 +1449,7 @@ describe("Gen 5 Items -- Berry Juice", () => {
     // Source: Showdown data/items.ts -- Berry Juice: restores 20 HP at <=50%
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.berryJuice, hp: 200, currentHp: 100 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "heal", target: "self", value: 20 },
@@ -1459,7 +1461,7 @@ describe("Gen 5 Items -- Berry Juice", () => {
     // Source: Showdown data/items.ts -- Berry Juice: threshold is currentHP <= maxHP / 2; 150 > 100 so no activation
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.berryJuice, hp: 200, currentHp: 150 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -1473,7 +1475,7 @@ describe("Gen 5 Items -- unknown trigger and unknown items", () => {
     // Source: Showdown data/items.ts -- unrecognized item IDs have no handler; applyGen5HeldItem returns { activated: false }
     const pokemon = createOnFieldPokemon({ heldItem: "some-unknown-item" });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen5HeldItem("end-of-turn", ctx);
+    const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
