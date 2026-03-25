@@ -14,11 +14,10 @@ import {
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "../src";
+import { createGen6DataManager, GEN6_ABILITY_IDS, GEN6_ITEM_IDS, GEN6_MOVE_IDS, GEN6_NATURE_IDS, GEN6_SPECIES_IDS } from "../src";
 import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
 import {
@@ -28,15 +27,23 @@ import {
 } from "../src/Gen6Terrain";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
-const ABILITIES = CORE_ABILITY_IDS;
-const ITEMS = CORE_ITEM_IDS;
-const MOVES = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS };
+const DATA_MANAGER = createGen6DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const;
 const SPECIES = GEN6_SPECIES_IDS;
 const STATUSES = CORE_STATUS_IDS;
 const TERRAINS = CORE_TERRAIN_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
-const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
+const DEFAULT_NATURE = GEN6_NATURE_IDS.hardy;
+const TACKLE_MOVE = DATA_MANAGER.getMove(MOVES.tackle);
+const THUNDERBOLT_MOVE = DATA_MANAGER.getMove(MOVES.thunderbolt);
+const ENERGY_BALL_MOVE = DATA_MANAGER.getMove(MOVES.energyBall);
+const EARTHQUAKE_MOVE = DATA_MANAGER.getMove(MOVES.earthquake);
+const DRAGON_PULSE_MOVE = DATA_MANAGER.getMove(MOVES.dragonPulse);
+const FLAMETHROWER_MOVE = DATA_MANAGER.getMove(MOVES.flamethrower);
 const TERRAIN_SOURCES = {
   electric: GEN6_MOVE_IDS.electricTerrain,
   grassy: GEN6_MOVE_IDS.grassyTerrain,
@@ -59,11 +66,11 @@ function makeActive(overrides: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: PrimaryStatus | null;
-  speciesId?: number;
-  gender?: "male" | "female" | "genderless";
-  volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
-  nickname?: string | null;
+    status?: PrimaryStatus | null;
+    speciesId?: number;
+    gender?: "male" | "female" | "genderless";
+    volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
+    nickname?: string | null;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
   const attack = overrides.attack ?? 100;
@@ -73,12 +80,12 @@ function makeActive(overrides: {
   const speed = overrides.speed ?? 100;
   return {
     pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
-      nickname: overrides.nickname ?? null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: DEFAULT_NATURE,
+    uid: "test",
+    speciesId: overrides.speciesId ?? DEFAULT_SPECIES.id,
+    nickname: overrides.nickname ?? null,
+    level: overrides.level ?? 50,
+    experience: 0,
+    nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
@@ -88,7 +95,7 @@ function makeActive(overrides: {
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
-      gender: (overrides.gender ?? "male") as any,
+      gender: overrides.gender ?? "male",
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -132,53 +139,6 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  target?: string;
-}): MoveData {
-  return {
-    id: overrides.id ?? MOVES.tackle,
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? TYPES.normal,
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 6,
-    critRatio: overrides.critRatio ?? 0,
-  } as MoveData;
-}
-
 function makeState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
   terrain?: { type: TerrainType; turnsLeft: number; source: string } | null;
@@ -217,7 +177,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? TACKLE_MOVE,
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -339,12 +299,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Grounded: normal-type (not flying, no levitate)
       const attacker = makeActive({ types: [TYPES.normal], spAttack: 150 });
       const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
-      const move = makeMove({
-        id: MOVES.thunderbolt,
-        type: TYPES.electric,
-        category: "special",
-        power: 90,
-      });
+      const move = THUNDERBOLT_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
@@ -369,12 +324,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Source: Bulbapedia "Electric Terrain" -- only grounded attackers get the boost
       const attacker = makeActive({ types: [TYPES.flying], spAttack: 150 });
       const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
-      const move = makeMove({
-        id: MOVES.thunderbolt,
-        type: TYPES.electric,
-        category: "special",
-        power: 90,
-      });
+      const move = THUNDERBOLT_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
@@ -400,12 +350,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Source: Bulbapedia "Grassy Terrain" Gen 6 -- 1.5x Grass for grounded attacker
       const attacker = makeActive({ types: [TYPES.grass], spAttack: 150 });
       const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
-      const move = makeMove({
-        id: MOVES.energyBall,
-        type: TYPES.grass,
-        category: "special",
-        power: 90,
-      });
+      const move = ENERGY_BALL_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
@@ -429,12 +374,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Source: Bulbapedia "Grassy Terrain" -- Earthquake damage halved vs grounded
       const attacker = makeActive({ types: [TYPES.ground], attack: 150 });
       const defender = makeActive({ types: [TYPES.normal], defense: 100 });
-      const move = makeMove({
-        id: MOVES.earthquake,
-        type: TYPES.ground,
-        category: "physical",
-        power: 100,
-      });
+      const move = EARTHQUAKE_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
@@ -460,12 +400,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // tests the terrain halving logic independently from type immunity)
       const attacker = makeActive({ types: [TYPES.ground], attack: 150 });
       const defender = makeActive({ types: [TYPES.normal, TYPES.flying], defense: 100 });
-      const move = makeMove({
-        id: MOVES.earthquake,
-        type: TYPES.ground,
-        category: "physical",
-        power: 100,
-      });
+      const move = EARTHQUAKE_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
@@ -492,12 +427,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Source: Bulbapedia "Misty Terrain" Gen 6 -- Dragon moves 0.5x vs grounded
       const attacker = makeActive({ types: [TYPES.dragon], spAttack: 150 });
       const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
-      const move = makeMove({
-        id: MOVES.dragonPulse,
-        type: TYPES.dragon,
-        category: "special",
-        power: 85,
-      });
+      const move = DRAGON_PULSE_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
@@ -521,12 +451,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Source: Bulbapedia "Misty Terrain" -- halving only vs grounded targets
       const attacker = makeActive({ types: [TYPES.dragon], spAttack: 150 });
       const defender = makeActive({ types: [TYPES.flying], spDefense: 100 });
-      const move = makeMove({
-        id: MOVES.dragonPulse,
-        type: TYPES.dragon,
-        category: "special",
-        power: 85,
-      });
+      const move = DRAGON_PULSE_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
@@ -550,12 +475,7 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Source: Bulbapedia "Misty Terrain" -- only halves Dragon-type moves
       const attacker = makeActive({ types: [TYPES.fire], spAttack: 150 });
       const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
-      const move = makeMove({
-        id: MOVES.flamethrower,
-        type: TYPES.fire,
-        category: "special",
-        power: 90,
-      });
+      const move = FLAMETHROWER_MOVE;
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({

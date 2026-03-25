@@ -12,9 +12,25 @@
  */
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen8Ruleset } from "../src/Gen8Ruleset";
+import {
+  GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
+  GEN8_SPECIES_IDS,
+  Gen8Ruleset,
+  createGen8DataManager,
+} from "../src";
+
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const MOVES = GEN8_MOVE_IDS;
+const NATURES = GEN8_NATURE_IDS;
+const SPECIES = GEN8_SPECIES_IDS;
+const DATA = createGen8DataManager();
+const DEFAULT_SPECIES_ID = DATA.getSpecies(SPECIES.pikachu).id;
+const DEFAULT_NATURE = DATA.getNature(NATURES.hardy).id;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,8 +64,9 @@ function makeActive(
       heldItem: overrides.heldItem ?? null,
       level: 50,
       nickname: null,
-      speciesId: 25,
-      moves: [{ moveId: "tackle" }],
+      speciesId: DEFAULT_SPECIES_ID,
+      nature: DEFAULT_NATURE,
+      moves: [{ moveId: MOVES.tackle }],
     },
     ability: overrides.ability ?? null,
     statStages: {
@@ -61,7 +78,7 @@ function makeActive(
       accuracy: 0,
       evasion: 0,
     },
-    types: ["electric"],
+    types: [TYPES.electric],
     volatileStatuses: new Map(
       (overrides.volatiles ?? []).map(([k, v]) => [k, v] as [string, unknown]),
     ),
@@ -142,7 +159,7 @@ function makeState(overrides?: { sides?: BattleSide[]; rng?: SeededRandom }): Ba
   } as unknown as BattleState;
 }
 
-const ruleset = new Gen8Ruleset(new DataManager());
+const ruleset = new Gen8Ruleset(DATA);
 
 // ===========================================================================
 // Burn damage -- 1/16 max HP in Gen 8 (same as Gen 7, changed from 1/8 in Gen 3-6)
@@ -153,24 +170,24 @@ describe("Gen8Ruleset -- applyStatusDamage (burn)", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 7+ burn damage is 1/16 max HP
     // Source: Bulbapedia -- Burn: "From Generation VII onwards, 1/16 of maximum HP"
     // 160 / 16 = 10
-    const pokemon = makeActive({ hp: 160, status: "burn" });
-    const result = ruleset.applyStatusDamage(pokemon, "burn" as never, {} as BattleState);
+    const pokemon = makeActive({ hp: 160, status: STATUSES.burn });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.burn as never, {} as BattleState);
     expect(result).toBe(10);
   });
 
   it("given burned Pokemon with 400 max HP, when applying status damage, then takes 25 HP (400/16)", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 7+ burn damage is floor(maxHp/16)
     // 400 / 16 = 25
-    const pokemon = makeActive({ hp: 400, status: "burn" });
-    const result = ruleset.applyStatusDamage(pokemon, "burn" as never, {} as BattleState);
+    const pokemon = makeActive({ hp: 400, status: STATUSES.burn });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.burn as never, {} as BattleState);
     expect(result).toBe(25);
   });
 
   it("given burned Pokemon with 15 max HP, when applying status damage, then takes minimum 1 HP", () => {
     // Source: Showdown -- damage is max(1, floor(maxHp/16))
     // 15 / 16 = 0.9375, floor = 0, max(1, 0) = 1
-    const pokemon = makeActive({ hp: 15, status: "burn" });
-    const result = ruleset.applyStatusDamage(pokemon, "burn" as never, {} as BattleState);
+    const pokemon = makeActive({ hp: 15, status: STATUSES.burn });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.burn as never, {} as BattleState);
     expect(result).toBe(1);
   });
 });
@@ -183,16 +200,16 @@ describe("Gen8Ruleset -- applyStatusDamage (poison)", () => {
   it("given poisoned Pokemon with 200 max HP, when applying status damage, then takes 25 HP (200/8)", () => {
     // Source: Showdown -- Poison damage is 1/8 max HP in all gens from Gen 3+
     // 200 / 8 = 25
-    const pokemon = makeActive({ hp: 200, status: "poison" });
-    const result = ruleset.applyStatusDamage(pokemon, "poison" as never, {} as BattleState);
+    const pokemon = makeActive({ hp: 200, status: STATUSES.poison });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.poison as never, {} as BattleState);
     expect(result).toBe(25);
   });
 
   it("given poisoned Pokemon with 160 max HP, when applying status damage, then takes 20 HP (160/8)", () => {
     // Source: Showdown -- Poison damage is 1/8 max HP
     // 160 / 8 = 20
-    const pokemon = makeActive({ hp: 160, status: "poison" });
-    const result = ruleset.applyStatusDamage(pokemon, "poison" as never, {} as BattleState);
+    const pokemon = makeActive({ hp: 160, status: STATUSES.poison });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.poison as never, {} as BattleState);
     expect(result).toBe(20);
   });
 });
@@ -207,10 +224,10 @@ describe("Gen8Ruleset -- applyStatusDamage (badly-poisoned)", () => {
     // 160 * 1 / 16 = 10
     const pokemon = makeActive({
       hp: 160,
-      status: "badly-poisoned",
-      volatiles: [["toxic-counter", { turnsLeft: -1, data: { counter: 1 } }]],
+      status: STATUSES.badlyPoisoned,
+      volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 1 } }]],
     });
-    const result = ruleset.applyStatusDamage(pokemon, "badly-poisoned" as never, {} as BattleState);
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned as never, {} as BattleState);
     expect(result).toBe(10);
   });
 
@@ -219,10 +236,10 @@ describe("Gen8Ruleset -- applyStatusDamage (badly-poisoned)", () => {
     // 160 * 3 / 16 = 30
     const pokemon = makeActive({
       hp: 160,
-      status: "badly-poisoned",
-      volatiles: [["toxic-counter", { turnsLeft: -1, data: { counter: 3 } }]],
+      status: STATUSES.badlyPoisoned,
+      volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 3 } }]],
     });
-    const result = ruleset.applyStatusDamage(pokemon, "badly-poisoned" as never, {} as BattleState);
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned as never, {} as BattleState);
     expect(result).toBe(30);
   });
 });
@@ -234,22 +251,22 @@ describe("Gen8Ruleset -- applyStatusDamage (badly-poisoned)", () => {
 describe("Gen8Ruleset -- applyStatusDamage (no-damage statuses)", () => {
   it("given sleeping Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- sleep has no per-turn chip damage
-    const pokemon = makeActive({ status: "sleep" });
-    const result = ruleset.applyStatusDamage(pokemon, "sleep" as never, {} as BattleState);
+    const pokemon = makeActive({ status: STATUSES.sleep });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.sleep as never, {} as BattleState);
     expect(result).toBe(0);
   });
 
   it("given frozen Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- freeze has no per-turn chip damage
-    const pokemon = makeActive({ status: "freeze" });
-    const result = ruleset.applyStatusDamage(pokemon, "freeze" as never, {} as BattleState);
+    const pokemon = makeActive({ status: STATUSES.freeze });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.freeze as never, {} as BattleState);
     expect(result).toBe(0);
   });
 
   it("given paralyzed Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- paralysis has no per-turn chip damage
-    const pokemon = makeActive({ status: "paralysis" });
-    const result = ruleset.applyStatusDamage(pokemon, "paralysis" as never, {} as BattleState);
+    const pokemon = makeActive({ status: STATUSES.paralysis });
+    const result = ruleset.applyStatusDamage(pokemon, STATUSES.paralysis as never, {} as BattleState);
     expect(result).toBe(0);
   });
 });
@@ -277,7 +294,7 @@ describe("Gen8Ruleset -- paralysis speed via resolveTurnOrder", () => {
   it("given paralyzed Pokemon with 200 base speed vs 120 base speed, when resolving turn order, then paralyzed goes second (200*0.5=100 < 120)", () => {
     // Source: Showdown sim/pokemon.ts Gen 7+ -- paralysis reduces speed to 50%
     // 200 * 0.5 = 100 < 120 => paralyzed goes second
-    const paralyzed = makeActive({ speed: 200, status: "paralysis" });
+    const paralyzed = makeActive({ speed: 200, status: STATUSES.paralysis });
     const normal = makeActive({ speed: 120 });
     expect(whoGoesFirst(paralyzed, normal)).toBe(1);
   });
@@ -285,7 +302,7 @@ describe("Gen8Ruleset -- paralysis speed via resolveTurnOrder", () => {
   it("given paralyzed Pokemon with 100 base speed vs 40 base speed, when resolving turn order, then paralyzed goes first (100*0.5=50 > 40)", () => {
     // Source: Showdown sim/pokemon.ts Gen 7+ -- paralysis reduces speed to 50%
     // 100 * 0.5 = 50 > 40 => paralyzed still faster
-    const paralyzed = makeActive({ speed: 100, status: "paralysis" });
+    const paralyzed = makeActive({ speed: 100, status: STATUSES.paralysis });
     const slower = makeActive({ speed: 40 });
     expect(whoGoesFirst(paralyzed, slower)).toBe(0);
   });

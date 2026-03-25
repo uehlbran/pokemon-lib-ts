@@ -13,7 +13,7 @@ import {
   CORE_TERRAIN_IDS,
   CORE_WEATHER_IDS,
   CORE_TYPE_IDS,
-  NEUTRAL_NATURES,
+  CORE_VOLATILE_IDS,
   SeededRandom,
   type MoveData,
   type PokemonType,
@@ -25,6 +25,7 @@ import {
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
   GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
   GEN7_SPECIES_IDS,
   handleGen7NewAbility,
   isSchoolForm,
@@ -50,6 +51,9 @@ const T = CORE_TYPE_IDS;
 const G = { ...CORE_GIMMICK_IDS, ...BATTLE_GIMMICK_IDS } as const;
 const TERRAIN = CORE_TERRAIN_IDS;
 const WEATHER = CORE_WEATHER_IDS;
+const DEFAULT_NATURE = GEN7_NATURE_IDS.hardy;
+const AURORA_VEIL = M.auroraVeil;
+const DISGUISE_BROKEN = "disguise-broken" as const;
 
 function getMove(moveId: string): MoveData {
   return dataManager.getMove(moveId);
@@ -92,7 +96,7 @@ function makeActive(overrides: {
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: NEUTRAL_NATURES[0],
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
@@ -146,26 +150,12 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  accuracy?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  priority?: number;
-}): MoveData {
-  const baseMove = getMove(overrides.id ?? M.tackle);
+function makeMove(moveId = M.tackle, overrides: Partial<MoveData> = {}): MoveData {
+  const baseMove = getMove(moveId);
   return {
     ...baseMove,
-    type: overrides.type ?? baseMove.type,
-    category: overrides.category ?? baseMove.category,
-    power: overrides.power ?? baseMove.power,
-    accuracy: overrides.accuracy ?? baseMove.accuracy,
-    priority: overrides.priority ?? baseMove.priority,
+    ...overrides,
     flags: { ...baseMove.flags, ...overrides.flags },
-    effect: overrides.effect ?? baseMove.effect,
   } as MoveData;
 }
 
@@ -229,19 +219,14 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
       nickname: "Charizard",
     });
 
-    const gigaImpact = makeMove({
-      id: M.gigaImpact,
-      type: T.normal,
-      category: "physical",
-      power: 150,
-    });
+    const gigaImpact = makeMove(M.gigaImpact);
 
     // Z-Move should be available for side 0
     const canUseZ = zMove.canUse(zUser, gigaImpact, 0, makeState());
     expect(canUseZ).toBe(true);
 
     // Mega should be available for side 1
-    const canUseMega = mega.canUse(megaUser, makeMove({ id: M.flareBlitz }), 1, makeState());
+    const canUseMega = mega.canUse(megaUser, makeMove(M.flareBlitz), 1, makeState());
     expect(canUseMega).toBe(true);
   });
 
@@ -257,7 +242,7 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
       types: [T.normal],
       nickname: "Snorlax",
     });
-    const normalMove = makeMove({ id: M.tackle, type: T.normal, power: 50 });
+    const normalMove = makeMove(M.tackle);
     const state = makeState();
 
     zMove.activate(zUser, normalMove, 0, state);
@@ -271,7 +256,7 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
       nickname: "Charizard",
     });
 
-    const canMega = mega.canUse(megaUser, makeMove({ id: M.flareBlitz }), 0, state);
+    const canMega = mega.canUse(megaUser, makeMove(M.flareBlitz), 0, state);
     expect(canMega).toBe(true);
   });
 });
@@ -292,20 +277,8 @@ describe("Integration: Grassy Terrain + Sun simultaneous effects", () => {
       level: 50,
     });
     const defender = makeActive({ types: [T.normal], defense: 100, hp: 300 });
-    const grassMove = makeMove({
-      id: M.energyBall,
-      type: T.grass,
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
-    const fireMove = makeMove({
-      id: M.flamethrower,
-      type: T.fire,
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
+    const grassMove = makeMove(M.energyBall);
+    const fireMove = makeMove(M.flamethrower);
 
     const stateWithBoth = makeState({
       terrain: { type: TERRAIN.grassy, turnsLeft: 5, source: A.grassySurge },
@@ -503,7 +476,7 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
       state: makeState(),
       rng: new SeededRandom(42),
       trigger: "on-priority-check",
-      move: makeMove({ id: M.thunderWave, category: "status", type: T.electric, power: null }),
+      move: makeMove(M.thunderWave),
     };
 
     // Priority check activates
@@ -553,7 +526,7 @@ describe("Integration: Gale Wings full HP gate (Gen 7 nerf)", () => {
       state: makeState(),
       rng: new SeededRandom(42),
       trigger: "on-priority-check",
-      move: makeMove({ id: M.braveBird, type: T.flying, power: 120 }),
+      move: makeMove(M.braveBird),
     };
 
     const result = handleGen7StatAbility(ctx);
@@ -573,7 +546,7 @@ describe("Integration: Gale Wings full HP gate (Gen 7 nerf)", () => {
       state: makeState(),
       rng: new SeededRandom(42),
       trigger: "on-priority-check",
-      move: makeMove({ id: M.braveBird, type: T.flying, power: 120 }),
+      move: makeMove(M.braveBird),
     };
 
     const result = handleGen7StatAbility(ctx);
@@ -600,12 +573,7 @@ describe("Integration: Aurora Veil + Hail damage reduction", () => {
       nickname: "Alolan Ninetales",
     });
 
-    const move = makeMove({
-      id: M.closeCombat,
-      type: T.fighting,
-      category: "physical",
-      power: 120,
-    });
+    const move = makeMove(M.closeCombat);
 
     const stateWithVeil = makeState({
       weather: { type: WEATHER.hail, turnsLeft: 5 },
@@ -613,7 +581,7 @@ describe("Integration: Aurora Veil + Hail damage reduction", () => {
     stateWithVeil.sides[1] = {
       index: 1,
       active: [defender],
-      screens: [{ type: "aurora-veil", turnsLeft: 5 }],
+      screens: [{ type: AURORA_VEIL, turnsLeft: 5 }],
       hazards: {},
       tailwind: { active: false, turnsLeft: 0 },
     } as any;
@@ -872,22 +840,23 @@ describe("Integration: Disguise break (Gen 7 -- no chip damage)", () => {
       rng: new SeededRandom(42),
       trigger: "on-damage-taken",
       damage: 150,
-      move: makeMove({ id: M.shadowBall, type: T.ghost, category: "special", power: 80 }),
+      move: makeMove(M.shadowBall),
     };
 
     const result = handleGen7NewAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.messages).toEqual(["Mimikyu's Disguise was busted!"]);
     expect(result.effects).toEqual([
-      { effectType: "volatile-inflict", target: "self", volatile: "disguise-broken" },
+      { effectType: "volatile-inflict", target: "self", volatile: DISGUISE_BROKEN },
       { effectType: "damage-reduction", target: "self" },
     ]);
   });
 
   it("given Mimikyu with Disguise already broken (has disguise-broken volatile), damage goes through", () => {
     // Source: Showdown -- disguise only activates once per battle; "disguise-broken" volatile persists
+    // Stopgap: core exposes the Gen 7 volatile type but not a reference-id constant for it yet.
     const brokenVolatiles = new Map<string, unknown>();
-    brokenVolatiles.set("disguise-broken", true);
+    brokenVolatiles.set(DISGUISE_BROKEN, true);
 
     const mimikyu = makeActive({
       ability: A.disguise,
@@ -906,7 +875,7 @@ describe("Integration: Disguise break (Gen 7 -- no chip damage)", () => {
       rng: new SeededRandom(42),
       trigger: "on-damage-taken",
       damage: 150,
-      move: makeMove({ id: M.shadowBall, type: T.ghost, category: "special", power: 80 }),
+      move: makeMove(M.shadowBall),
     };
 
     const result = handleGen7NewAbility(ctx);

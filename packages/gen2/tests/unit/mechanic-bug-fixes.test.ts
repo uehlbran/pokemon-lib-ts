@@ -23,13 +23,12 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type {
-  MoveData,
   PokemonInstance,
   PokemonType,
   PrimaryStatus,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen2DataManager } from "../../src/data";
 import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src/data/reference-ids";
@@ -118,7 +117,7 @@ function createMockActive(
     },
     volatileStatuses: new Map(),
     types: overrides.types ?? [TYPE_IDS.normal],
-    ability: "",
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -172,18 +171,6 @@ function createMockState(
     trickRoom: null,
     format: { id: "singles", slots: 1 },
   } as unknown as BattleState;
-}
-
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  const baseMove = dataManager.getMove(id);
-  return {
-    ...baseMove,
-    ...overrides,
-    flags: {
-      ...baseMove.flags,
-      ...overrides?.flags,
-    },
-  } as MoveData;
 }
 
 function createEmptyResult(): MutableResult {
@@ -259,7 +246,7 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
       {
         attacker,
         defender,
-        move: createMove(MOVE_IDS.tackle, { type: TYPE_IDS.normal, power: 40, category: "physical" }),
+        move: dataManager.getMove(MOVE_IDS.tackle),
         state,
         rng: createMockRng(255),
         isCrit: false,
@@ -273,11 +260,12 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
     // The damage should be lower with Metal Powder active
     // levelFactor = floor(2*50/5)+2 = 22
     // A=100, D=160 (doubled by Metal Powder)
-    // floor(floor(22*40*100)/160/50) = floor(550/50) = 11
-    // +2 = 13, then STAB (attacker is Normal, move is Normal): floor(13 * 1.5) = 19
-    // floor(19 * 255/255) = 19
+    // Gen 2 Tackle power = 35 from dataManager
+    // floor(floor(22*35*100)/160/50) = floor(481.25/50) = 9
+    // +2 = 11, then STAB (attacker is Normal, move is Normal): floor(11 * 1.5) = 16
+    // floor(16 * 255/255) = 16
     // Source: inline formula derivation + pret/pokecrystal BattleCommand_Stab
-    expect(result.damage).toBe(19);
+    expect(result.damage).toBe(16);
   });
 
   it("given Transformed Ditto holding Metal Powder, when physical attack received, then defense is NOT doubled", () => {
@@ -302,7 +290,7 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
       {
         attacker,
         defender,
-        move: createMove(MOVE_IDS.tackle, { type: TYPE_IDS.normal, power: 40, category: "physical" }),
+        move: dataManager.getMove(MOVE_IDS.tackle),
         state,
         rng: createMockRng(255),
         isCrit: false,
@@ -313,11 +301,12 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
 
     // Without Metal Powder effect: defense stays at 80 (Ditto is Transformed)
     // levelFactor = 22, A=100, D=80
-    // floor(floor(22*40*100)/80/50) = floor(1100/50) = 22
-    // +2 = 24, then STAB (attacker is Normal, move is Normal): floor(24 * 1.5) = 36
-    // floor(36 * 255/255) = 36
+    // Gen 2 Tackle power = 35 from dataManager
+    // floor(floor(22*35*100)/80/50) = floor(962.5/50) = 19
+    // +2 = 21, then STAB (attacker is Normal, move is Normal): floor(21 * 1.5) = 31
+    // floor(31 * 255/255) = 31
     // Source: inline formula derivation + pret/pokecrystal BattleCommand_Stab
-    expect(result.damage).toBe(36);
+    expect(result.damage).toBe(31);
   });
 });
 
@@ -332,13 +321,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
   //   ret nc            ; fail if type >= SPECIAL
   // Counter works on ALL physical types (type < SPECIAL), not just Normal/Fighting
   // like Gen 1. Physical types: Normal, Fighting, Flying, Poison, Ground, Rock, Bug, Ghost, Steel.
-  const counterMove = createMove(MOVE_IDS.counter, {
-    type: TYPE_IDS.fighting,
-    category: "physical",
-    power: null,
-    priority: -1,
-    effect: null,
-  });
+  const counterMove = dataManager.getMove(MOVE_IDS.counter);
 
   it("given attacker took physical Normal-type damage, when Counter is used, then reflects 2x damage", () => {
     // Source: pret/pokecrystal counter.asm — Normal (type 0) < SPECIAL → Counter succeeds.
@@ -496,13 +479,7 @@ describe("#252 — Whirlwind/Roar should have priority -6", () => {
 // =========================================================================
 
 describe("#253 — Hyper Beam recharge skipped only on KO, NOT on miss", () => {
-  const hyperBeamMove = createMove(MOVE_IDS.hyperBeam, {
-    type: TYPE_IDS.normal,
-    category: "special",
-    power: 150,
-    flags: { recharge: true } as any,
-    effect: null,
-  });
+  const hyperBeamMove = dataManager.getMove(MOVE_IDS.hyperBeam);
 
   it("given Hyper Beam KOs the target (currentHp === 0), when executeMoveEffect, then noRecharge is true", () => {
     // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
@@ -698,11 +675,7 @@ describe("#329 — Bright Powder reduces opponent's accuracy by 20/256", () => {
     // If the RNG rolls 235-254, the move misses (previously it would always hit)
     const attacker = createMockActive();
     const defender = createMockActive({ heldItem: ITEM_IDS.brightPowder });
-    const move = createMove(MOVE_IDS.bodySlam, {
-      accuracy: 100,
-      type: TYPE_IDS.normal,
-      category: "physical",
-    });
+    const move = dataManager.getMove(MOVE_IDS.bodySlam);
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
     // Roll 240 (above 235, should miss with Bright Powder)
@@ -722,11 +695,7 @@ describe("#329 — Bright Powder reduces opponent's accuracy by 20/256", () => {
     // Source: without Bright Powder, accuracy = 255 and 255 >= 255 means always hit
     const attacker = createMockActive();
     const defender = createMockActive({ heldItem: null });
-    const move = createMove(MOVE_IDS.bodySlam, {
-      accuracy: 100,
-      type: TYPE_IDS.normal,
-      category: "physical",
-    });
+    const move = dataManager.getMove(MOVE_IDS.bodySlam);
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
     const rng = createMockRng(240);
@@ -753,12 +722,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     // Thunder always hits in rain.
     const attacker = createMockActive();
     const defender = createMockActive();
-    const move = createMove(MOVE_IDS.thunder, {
-      type: TYPE_IDS.electric,
-      category: "special",
-      power: 120,
-      accuracy: 70,
-    });
+    const move = dataManager.getMove(MOVE_IDS.thunder);
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
       type: WEATHER_IDS.rain,
       turnsLeft: 3,
@@ -783,12 +747,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     // RNG roll of 250 > 178 -> miss
     const attacker = createMockActive();
     const defender = createMockActive();
-    const move = createMove(MOVE_IDS.thunder, {
-      type: TYPE_IDS.electric,
-      category: "special",
-      power: 120,
-      accuracy: 70,
-    });
+    const move = dataManager.getMove(MOVE_IDS.thunder);
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), null);
 
     const rng = createMockRng(250);
@@ -809,12 +768,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     // RNG roll of 100 > 89 → miss; RNG roll of 50 < 89 → hit
     const attacker = createMockActive();
     const defender = createMockActive();
-    const move = createMove(MOVE_IDS.thunder, {
-      type: TYPE_IDS.electric,
-      category: "special",
-      power: 120,
-      accuracy: 70,
-    });
+    const move = dataManager.getMove(MOVE_IDS.thunder);
     const stateSun = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
       type: WEATHER_IDS.sun,
       turnsLeft: 3,
@@ -858,11 +812,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     const typeChart = createNeutralTypeChart();
     const species = createSpecies();
     const rng = createMockRng(255);
-    const solarBeam = createMove(MOVE_IDS.solarBeam, {
-      type: TYPE_IDS.grass,
-      category: "special",
-      power: 120,
-    });
+    const solarBeam = dataManager.getMove(MOVE_IDS.solarBeam);
 
     const damageRain = calculateGen2Damage(
       {
@@ -921,11 +871,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     const typeChart = createNeutralTypeChart();
     const species = createSpecies();
     const rng = createMockRng(255);
-    const solarBeam = createMove(MOVE_IDS.solarBeam, {
-      type: TYPE_IDS.grass,
-      category: "special",
-      power: 120,
-    });
+    const solarBeam = dataManager.getMove(MOVE_IDS.solarBeam);
 
     const damageSand = calculateGen2Damage(
       {
@@ -971,11 +917,7 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), null);
     const result = createEmptyResult();
-    const move = createMove(MOVE_IDS.moonlight, {
-      category: "status",
-      power: null,
-      effect: { type: "custom", handler: MOVE_IDS.moonlight } as any,
-    });
+    const move = dataManager.getMove(MOVE_IDS.moonlight);
 
     handleCustomEffect(move, result, {
       attacker,
@@ -999,11 +941,7 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
       turnsLeft: 3,
     });
     const result = createEmptyResult();
-    const move = createMove(MOVE_IDS.morningSun, {
-      category: "status",
-      power: null,
-      effect: { type: "custom", handler: MOVE_IDS.morningSun } as any,
-    });
+    const move = dataManager.getMove(MOVE_IDS.morningSun);
 
     handleCustomEffect(move, result, {
       attacker,
@@ -1027,11 +965,7 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
       turnsLeft: 3,
     });
     const result = createEmptyResult();
-    const move = createMove(MOVE_IDS.synthesis, {
-      category: "status",
-      power: null,
-      effect: { type: "custom", handler: MOVE_IDS.synthesis } as any,
-    });
+    const move = dataManager.getMove(MOVE_IDS.synthesis);
 
     handleCustomEffect(move, result, {
       attacker,
@@ -1055,11 +989,7 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
       turnsLeft: 3,
     });
     const result = createEmptyResult();
-    const move = createMove(MOVE_IDS.moonlight, {
-      category: "status",
-      power: null,
-      effect: { type: "custom", handler: MOVE_IDS.moonlight } as any,
-    });
+    const move = dataManager.getMove(MOVE_IDS.moonlight);
 
     handleCustomEffect(move, result, {
       attacker,
