@@ -1,8 +1,16 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonInstance, PokemonType, StatBlock, WeatherType } from "@pokemon-lib-ts/core";
+import { CORE_END_OF_TURN_EFFECT_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen3Ruleset } from "../../src";
-import { createGen3DataManager } from "../../src/data";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+  Gen3Ruleset,
+} from "../../src";
 
 /**
  * Gen 3 New Move Handler Tests
@@ -49,11 +57,11 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: GEN3_SPECIES_IDS.bulbasaur,
     nickname: opts.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN3_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? 300,
@@ -107,36 +115,44 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    name: id,
-    type: "normal",
-    category: "status",
-    power: null,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 3,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
-    ...overrides,
-  } as MoveData;
+const dataManager = createGen3DataManager();
+
+function getGen3Move(moveId: string): MoveData {
+  return dataManager.getMove(moveId);
 }
+
+const END_OF_TURN = {
+  weatherDamage: CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+  futureAttack: CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+  wish: CORE_END_OF_TURN_EFFECT_IDS.wish,
+  weatherHealing: CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
+  statBoostingItems: CORE_END_OF_TURN_EFFECT_IDS.statBoostingItems,
+  statusDamage: CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+  encoreCountdown: CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+  disableCountdown: CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+  tauntCountdown: CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+  weatherCountdown: CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+};
+
+const MOVE_IDS = {
+  bind: GEN3_MOVE_IDS.bind,
+  curse: GEN3_MOVE_IDS.curse,
+  ingrain: GEN3_MOVE_IDS.ingrain,
+  leechSeed: GEN3_MOVE_IDS.leechSeed,
+  nightmare: GEN3_MOVE_IDS.nightmare,
+  perishSong: GEN3_MOVE_IDS.perishSong,
+  uproar: GEN3_MOVE_IDS.uproar,
+};
+
+const ABILITY_IDS = {
+  shedSkin: GEN3_ABILITY_IDS.shedSkin,
+  speedBoost: GEN3_ABILITY_IDS.speedBoost,
+};
 
 function createBattleState(
   attacker: ActivePokemon,
   defender: ActivePokemon,
-  weather: { type: string | null; turnsLeft: number; source: string | null } | null = null,
+  weather: { type: WeatherType | null; turnsLeft: number; source: string | null } | null = null,
 ): BattleState {
   return {
     sides: [
@@ -179,13 +195,12 @@ function createContext(
   move: MoveData,
   damage: number,
   rng: ReturnType<typeof createMockRng>,
-  weather: { type: string | null; turnsLeft: number; source: string | null } | null = null,
+  weather: { type: WeatherType | null; turnsLeft: number; source: string | null } | null = null,
 ): MoveEffectContext {
   const state = createBattleState(attacker, defender, weather);
   return { attacker, defender, move, damage, state, rng } as MoveEffectContext;
 }
 
-const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
 
 // ---------------------------------------------------------------------------
@@ -195,9 +210,9 @@ const ruleset = new Gen3Ruleset(dataManager);
 describe("Gen 3 Whirlwind / Roar", () => {
   it("given defender without Suction Cups, when Whirlwind used, then switchOut = true", () => {
     // Source: pret/pokeemerald — Whirlwind forces switch
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("whirlwind");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.whirlwind);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -207,9 +222,9 @@ describe("Gen 3 Whirlwind / Roar", () => {
 
   it("given defender without Suction Cups, when Roar used, then switchOut = true", () => {
     // Source: pret/pokeemerald — Roar forces switch
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("roar");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.roar);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -219,13 +234,13 @@ describe("Gen 3 Whirlwind / Roar", () => {
 
   it("given defender has Suction Cups, when Whirlwind used, then switchOut = false", () => {
     // Source: pret/pokeemerald — ABILITY_SUCTION_CUPS blocks phazing
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({
-      types: ["rock"],
-      ability: "suction-cups",
+      types: [CORE_TYPE_IDS.rock],
+      ability: GEN3_ABILITY_IDS.suctionCups,
       nickname: "Octillery",
     });
-    const move = createMove("whirlwind");
+    const move = getGen3Move(GEN3_MOVE_IDS.whirlwind);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -236,9 +251,12 @@ describe("Gen 3 Whirlwind / Roar", () => {
 
   it("given defender has Suction Cups, when Roar used, then switchOut = false", () => {
     // Source: pret/pokeemerald — ABILITY_SUCTION_CUPS blocks phazing
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["water"], ability: "suction-cups" });
-    const move = createMove("roar");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.suctionCups,
+    });
+    const move = getGen3Move(GEN3_MOVE_IDS.roar);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -255,15 +273,15 @@ describe("Gen 3 Trick", () => {
   it("given both have items, when Trick used, then itemTransfer from attacker to defender", () => {
     // Source: pret/pokeemerald — Trick swaps held items
     const attacker = createActivePokemon({
-      types: ["psychic"],
-      heldItem: "choice-band",
+      types: [CORE_TYPE_IDS.psychic],
+      heldItem: GEN3_ITEM_IDS.choiceBand,
       nickname: "Alakazam",
     });
     const defender = createActivePokemon({
-      types: ["normal"],
-      heldItem: "leftovers",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN3_ITEM_IDS.leftovers,
     });
-    const move = createMove("trick");
+    const move = getGen3Move(GEN3_MOVE_IDS.trick);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -274,9 +292,9 @@ describe("Gen 3 Trick", () => {
 
   it("given attacker has item but defender has none, when Trick used, then itemTransfer succeeds", () => {
     // Source: pret/pokeemerald — Trick works as long as at least one has an item
-    const attacker = createActivePokemon({ types: ["psychic"], heldItem: "choice-band" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("trick");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic], heldItem: GEN3_ITEM_IDS.choiceBand });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.trick);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -286,9 +304,9 @@ describe("Gen 3 Trick", () => {
 
   it("given neither has items, when Trick used, then it fails", () => {
     // Source: pret/pokeemerald — Trick fails if neither has an item
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("trick");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.trick);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -299,14 +317,14 @@ describe("Gen 3 Trick", () => {
 
   it("given defender has Sticky Hold, when Trick used, then it fails", () => {
     // Source: pret/pokeemerald — Sticky Hold blocks item transfer
-    const attacker = createActivePokemon({ types: ["psychic"], heldItem: "choice-band" });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic], heldItem: GEN3_ITEM_IDS.choiceBand });
     const defender = createActivePokemon({
-      types: ["poison"],
-      ability: "sticky-hold",
-      heldItem: "leftovers",
+      types: [CORE_TYPE_IDS.poison],
+      ability: GEN3_ABILITY_IDS.stickyHold,
+      heldItem: GEN3_ITEM_IDS.leftovers,
       nickname: "Muk",
     });
-    const move = createMove("trick");
+    const move = getGen3Move(GEN3_MOVE_IDS.trick);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -325,9 +343,9 @@ describe("Gen 3 Morning Sun / Synthesis / Moonlight", () => {
     // Source: pret/pokeemerald — No weather: 1/2 maxHP recovery
     // Source: Bulbapedia — "Heals 50% HP normally"
     // floor(300 * 1/2) = 150
-    const attacker = createActivePokemon({ types: ["normal"], currentHp: 100 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("morning-sun");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], currentHp: 100 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.morningSun);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -339,10 +357,10 @@ describe("Gen 3 Morning Sun / Synthesis / Moonlight", () => {
     // Source: pret/pokeemerald — Sun: 2/3 maxHP recovery
     // Source: Bulbapedia — "Heals 2/3 HP in sun"
     // floor(300 * 2/3) = floor(200) = 200
-    const attacker = createActivePokemon({ types: ["grass"], currentHp: 50 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("synthesis");
-    const weather = { type: "sun", turnsLeft: 3, source: "sunny-day" };
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.grass], currentHp: 50 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.synthesis);
+    const weather = { type: CORE_WEATHER_IDS.sun, turnsLeft: 3, source: GEN3_MOVE_IDS.sunnyDay };
     const context = createContext(attacker, defender, move, 0, createMockRng(), weather);
 
     const result = ruleset.executeMoveEffect(context);
@@ -354,10 +372,10 @@ describe("Gen 3 Morning Sun / Synthesis / Moonlight", () => {
     // Source: pret/pokeemerald — Rain/Sand/Hail: 1/4 maxHP recovery
     // Source: Bulbapedia — "Heals 25% HP in rain, sand, or hail"
     // floor(300 * 1/4) = 75
-    const attacker = createActivePokemon({ types: ["fairy"], currentHp: 50 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("moonlight");
-    const weather = { type: "rain", turnsLeft: 3, source: "rain-dance" };
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.fairy], currentHp: 50 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.moonlight);
+    const weather = { type: CORE_WEATHER_IDS.rain, turnsLeft: 3, source: GEN3_MOVE_IDS.rainDance };
     const context = createContext(attacker, defender, move, 0, createMockRng(), weather);
 
     const result = ruleset.executeMoveEffect(context);
@@ -368,10 +386,10 @@ describe("Gen 3 Morning Sun / Synthesis / Moonlight", () => {
   it("given sand weather, when Morning Sun used, then healAmount = floor(maxHp * 1/4) = 75", () => {
     // Source: pret/pokeemerald — Sand: 1/4 maxHP recovery
     // floor(300 * 1/4) = 75
-    const attacker = createActivePokemon({ types: ["normal"], currentHp: 50 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("morning-sun");
-    const weather = { type: "sand", turnsLeft: 3, source: "sandstorm" };
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], currentHp: 50 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.morningSun);
+    const weather = { type: CORE_WEATHER_IDS.sand, turnsLeft: 3, source: GEN3_MOVE_IDS.sandstorm };
     const context = createContext(attacker, defender, move, 0, createMockRng(), weather);
 
     const result = ruleset.executeMoveEffect(context);
@@ -382,10 +400,10 @@ describe("Gen 3 Morning Sun / Synthesis / Moonlight", () => {
   it("given hail weather, when Synthesis used, then healAmount = floor(maxHp * 1/4) = 75", () => {
     // Source: pret/pokeemerald — Hail: 1/4 maxHP recovery
     // floor(300 * 1/4) = 75
-    const attacker = createActivePokemon({ types: ["grass"], currentHp: 50 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("synthesis");
-    const weather = { type: "hail", turnsLeft: 3, source: "hail" };
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.grass], currentHp: 50 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen3Move(GEN3_MOVE_IDS.synthesis);
+    const weather = { type: CORE_WEATHER_IDS.hail, turnsLeft: 3, source: GEN3_MOVE_IDS.hail };
     const context = createContext(attacker, defender, move, 0, createMockRng(), weather);
 
     const result = ruleset.executeMoveEffect(context);
@@ -404,38 +422,41 @@ describe("Gen 3 getEndOfTurnOrder", () => {
     const order = ruleset.getEndOfTurnOrder();
 
     // Verify weather-damage comes first
-    expect(order[0]).toBe("weather-damage");
+    expect(order[0]).toBe(END_OF_TURN.weatherDamage);
 
     // Verify perish-song comes before speed-boost
-    const perishIdx = order.indexOf("perish-song");
-    const speedBoostIdx = order.indexOf("speed-boost");
+    const perishIdx = order.indexOf(MOVE_IDS.perishSong);
+    const speedBoostIdx = order.indexOf(ABILITY_IDS.speedBoost);
     expect(perishIdx).toBeGreaterThan(-1);
     expect(speedBoostIdx).toBeGreaterThan(-1);
     expect(perishIdx).toBeLessThan(speedBoostIdx);
 
     // Verify weather-countdown comes last
-    expect(order[order.length - 1]).toBe("weather-countdown");
+    expect(order[order.length - 1]).toBe(END_OF_TURN.weatherCountdown);
 
     // Verify total count matches expected (20 items: original 16 + wish + ingrain + uproar + stat-boosting-items)
     expect(order).toHaveLength(20);
 
     // Verify key effects are present
-    expect(order).toContain("future-attack");
-    expect(order).toContain("leftovers");
-    expect(order).toContain("ingrain");
-    expect(order).toContain("status-damage");
-    expect(order).toContain("leech-seed");
-    expect(order).toContain("curse");
-    expect(order).toContain("bind");
-    expect(order).toContain("encore-countdown");
-    expect(order).toContain("disable-countdown");
-    expect(order).toContain("taunt-countdown");
-    expect(order).toContain("shed-skin");
+    expect(order).toContain(END_OF_TURN.futureAttack);
+    expect(order).toContain(END_OF_TURN.wish);
+    expect(order).toContain(END_OF_TURN.weatherHealing);
+    expect(order).toContain(GEN3_ITEM_IDS.leftovers);
+    expect(order).toContain(MOVE_IDS.ingrain);
+    expect(order).toContain(END_OF_TURN.statusDamage);
+    expect(order).toContain(MOVE_IDS.leechSeed);
+    expect(order).toContain(MOVE_IDS.curse);
+    expect(order).toContain(MOVE_IDS.bind);
+    expect(order).toContain(END_OF_TURN.statBoostingItems);
+    expect(order).toContain(END_OF_TURN.encoreCountdown);
+    expect(order).toContain(END_OF_TURN.disableCountdown);
+    expect(order).toContain(END_OF_TURN.tauntCountdown);
+    expect(order).toContain(ABILITY_IDS.shedSkin);
 
     // Verify uproar is present between perish-song and speed-boost
     // Source: pret/pokeemerald src/battle_main.c — Uproar processing in end-of-turn loop
     // Source: Spec 04-gen3.md line 1038 — "13. Uproar wake-up check"
-    const uproarIdx = order.indexOf("uproar");
+    const uproarIdx = order.indexOf(MOVE_IDS.uproar);
     expect(uproarIdx).toBeGreaterThan(-1);
     expect(uproarIdx).toBeGreaterThan(perishIdx);
     expect(uproarIdx).toBeLessThan(speedBoostIdx);
@@ -444,8 +465,8 @@ describe("Gen 3 getEndOfTurnOrder", () => {
   it("given Gen3Ruleset, when getEndOfTurnOrder called, then status-damage comes before leech-seed", () => {
     // Source: pret/pokeemerald — burn/poison damage resolves before leech seed
     const order = ruleset.getEndOfTurnOrder();
-    const statusIdx = order.indexOf("status-damage");
-    const leechIdx = order.indexOf("leech-seed");
+    const statusIdx = order.indexOf(END_OF_TURN.statusDamage);
+    const leechIdx = order.indexOf(MOVE_IDS.leechSeed);
     expect(statusIdx).toBeLessThan(leechIdx);
   });
 });
