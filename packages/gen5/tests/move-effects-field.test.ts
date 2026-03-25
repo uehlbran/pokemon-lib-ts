@@ -1,7 +1,7 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   getGen5PriorityOverride,
   handleGen5FieldMove,
@@ -12,6 +12,20 @@ import {
 // ---------------------------------------------------------------------------
 // Test Helpers
 // ---------------------------------------------------------------------------
+
+const MOVE_IDS = {
+  magicRoom: "magic-room",
+  wonderRoom: "wonder-room",
+  trickRoom: "trick-room",
+  quickGuard: "quick-guard",
+  wideGuard: "wide-guard",
+  tailwind: "tailwind",
+  thunderbolt: "thunderbolt",
+  protect: "protect",
+  tackle: "tackle",
+  followMe: "follow-me",
+  ragePowder: "rage-powder",
+} as const;
 
 function makeActivePokemon(overrides: {
   ability?: string;
@@ -132,43 +146,59 @@ describe("Gen5 Magic Room", () => {
   it("given Magic Room is not active, when Magic Room is used, then activates for 5 turns", () => {
     // Source: references/pokemon-showdown/data/moves.ts lines 11153-11197
     //   magicroom condition -- duration: 5
-    const ctx = makeContext("magic-room");
+    const ctx = makeContext(MOVE_IDS.magicRoom);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.magicRoomSet).toEqual({ turnsLeft: 5 });
-    expect(result!.messages[0]).toBe(
-      "It created a bizarre area in which Pokemon's held items lose their effects!",
-    );
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["It created a bizarre area in which Pokemon's held items lose their effects!"],
+      magicRoomSet: { turnsLeft: 5 },
+    });
   });
 
   it("given Magic Room is already active, when Magic Room is used again, then toggles off", () => {
     // Source: references/pokemon-showdown/data/moves.ts line 11183
     //   onFieldRestart: this.field.removePseudoWeather('magicroom') -- toggle off
-    const ctx = makeContext("magic-room", {
+    const ctx = makeContext(MOVE_IDS.magicRoom, {
       magicRoom: { active: true, turnsLeft: 3 },
     });
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.magicRoomSet).toEqual({ turnsLeft: 0 });
-    expect(result!.messages[0]).toBe("The area returned to normal!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["The area returned to normal!"],
+      magicRoomSet: { turnsLeft: 0 },
+    });
   });
 
   it("given Magic Room is activated, when checking result, then no stat changes or status inflicted", () => {
     // Source: Magic Room is a pure field effect -- no stat changes or status
-    const ctx = makeContext("magic-room");
+    const ctx = makeContext(MOVE_IDS.magicRoom);
     const rng = new SeededRandom(99);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.statusInflicted).toBeNull();
-    expect(result!.volatileInflicted).toBeNull();
-    expect(result!.statChanges).toEqual([]);
-    expect(result!.recoilDamage).toBe(0);
-    expect(result!.healAmount).toBe(0);
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["It created a bizarre area in which Pokemon's held items lose their effects!"],
+      magicRoomSet: { turnsLeft: 5 },
+    });
   });
 });
 
@@ -180,45 +210,59 @@ describe("Gen5 Wonder Room", () => {
   it("given Wonder Room is not active, when Wonder Room is used, then activates for 5 turns", () => {
     // Source: references/pokemon-showdown/data/moves.ts lines 21753-21800
     //   wonderroom condition -- duration: 5
-    const ctx = makeContext("wonder-room");
+    const ctx = makeContext(MOVE_IDS.wonderRoom);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.wonderRoomSet).toEqual({ turnsLeft: 5 });
-    expect(result!.messages[0]).toBe(
-      "It created a bizarre area in which Defense and Sp. Def stats are swapped!",
-    );
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["It created a bizarre area in which Defense and Sp. Def stats are swapped!"],
+      wonderRoomSet: { turnsLeft: 5 },
+    });
   });
 
   it("given Wonder Room is already active, when Wonder Room is used again, then toggles off", () => {
     // Source: references/pokemon-showdown/data/moves.ts line 21788
     //   onFieldRestart: this.field.removePseudoWeather('wonderroom') -- toggle off
-    const ctx = makeContext("wonder-room", {
+    const ctx = makeContext(MOVE_IDS.wonderRoom, {
       wonderRoom: { active: true, turnsLeft: 2 },
     });
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.wonderRoomSet).toEqual({ turnsLeft: 0 });
-    expect(result!.messages[0]).toBe(
-      "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
-    );
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["Wonder Room wore off, and Defense and Sp. Def stats returned to normal!"],
+      wonderRoomSet: { turnsLeft: 0 },
+    });
   });
 
   it("given Wonder Room is activated, when checking result, then no stat changes or status inflicted", () => {
     // Source: Wonder Room is a pure field effect -- no stat changes or status
-    const ctx = makeContext("wonder-room");
+    const ctx = makeContext(MOVE_IDS.wonderRoom);
     const rng = new SeededRandom(123);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.statusInflicted).toBeNull();
-    expect(result!.volatileInflicted).toBeNull();
-    expect(result!.statChanges).toEqual([]);
-    expect(result!.recoilDamage).toBe(0);
-    expect(result!.healAmount).toBe(0);
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["It created a bizarre area in which Defense and Sp. Def stats are swapped!"],
+      wonderRoomSet: { turnsLeft: 5 },
+    });
   });
 });
 
@@ -230,27 +274,41 @@ describe("Gen5 Trick Room", () => {
   it("given Trick Room is not active, when Trick Room is used, then activates for 5 turns", () => {
     // Source: references/pokemon-showdown/data/moves.ts lines 20683-20718
     //   trickroom condition -- duration: 5
-    const ctx = makeContext("trick-room");
+    const ctx = makeContext(MOVE_IDS.trickRoom);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.trickRoomSet).toEqual({ turnsLeft: 5 });
-    expect(result!.messages[0]).toBe("The dimensions were twisted!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["The dimensions were twisted!"],
+      trickRoomSet: { turnsLeft: 5 },
+    });
   });
 
   it("given Trick Room is already active, when Trick Room is used again, then toggles off", () => {
     // Source: references/pokemon-showdown/data/moves.ts line 20710
     //   onFieldRestart: this.field.removePseudoWeather('trickroom') -- toggle off
-    const ctx = makeContext("trick-room", {
+    const ctx = makeContext(MOVE_IDS.trickRoom, {
       trickRoom: { active: true, turnsLeft: 3 },
     });
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.trickRoomSet).toEqual({ turnsLeft: 0 });
-    expect(result!.messages[0]).toBe("The twisted dimensions returned to normal!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["The twisted dimensions returned to normal!"],
+      trickRoomSet: { turnsLeft: 0 },
+    });
   });
 });
 
@@ -262,48 +320,64 @@ describe("Gen5 Quick Guard", () => {
   it("given no consecutive protect uses, when Quick Guard is used, then succeeds and sets volatile", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 682-713
     //   Quick Guard is a stallingMove that sets quick-guard volatile
-    const ctx = makeContext("quick-guard");
+    const ctx = makeContext(MOVE_IDS.quickGuard);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("quick-guard");
-    expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
-    expect(result!.messages[0]).toBe("Quick Guard protected the team!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["Quick Guard protected the team!"],
+      selfVolatileInflicted: "quick-guard",
+      selfVolatileData: { turnsLeft: 1 },
+    });
   });
 
   it("given consecutive protect uses exceeded, when Quick Guard is used, then fails", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 685-686
     //   stallingMove: true -- uses same stall counter as Protect
     //   When stall check fails, the move fails
-    const ctx = makeContext("quick-guard");
+    const ctx = makeContext(MOVE_IDS.quickGuard);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysFailProtect);
 
-    expect(result).not.toBeNull();
-    // No volatile applied on failure -- selfVolatileInflicted is not set (undefined)
-    expect(result!.selfVolatileInflicted).toBeUndefined();
-    expect(result!.messages[0]).toBe("But it failed!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given attacker has consecutiveProtects set, when Quick Guard is used, then passes correct count to rollProtectSuccess", () => {
     // Source: BattleEngine.ts -- consecutiveProtects tracked on ActivePokemon, not volatile data
     // Source: Showdown Gen 5 -- Quick Guard shares stall counter with Protect
-    const ctx = makeContext("quick-guard", {}, { consecutiveProtects: 2 });
+    const ctx = makeContext(MOVE_IDS.quickGuard, {}, { consecutiveProtects: 2 });
     const rng = new SeededRandom(42);
 
-    // Capture the consecutiveProtects value passed to rollProtectSuccess
-    let capturedCount = -1;
-    const captureProtectRoll = (count: number, _rng: SeededRandom): boolean => {
-      capturedCount = count;
-      return true;
-    };
+    const captureProtectRoll = vi.fn((count: number, _rng: SeededRandom): boolean => true);
 
     const result = handleGen5FieldMove(ctx, rng, captureProtectRoll);
-    expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("quick-guard");
-    // Verify that consecutiveProtects from ActivePokemon (2) was passed, not 0 from volatile data
-    expect(capturedCount).toBe(2);
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["Quick Guard protected the team!"],
+      selfVolatileInflicted: "quick-guard",
+      selfVolatileData: { turnsLeft: 1 },
+    });
+    expect(captureProtectRoll).toHaveBeenCalledTimes(1);
+    expect(captureProtectRoll).toHaveBeenCalledWith(2, rng);
   });
 });
 
@@ -315,26 +389,38 @@ describe("Gen5 Wide Guard", () => {
   it("given no consecutive protect uses, when Wide Guard is used, then succeeds and sets volatile", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts lines 1029-1037
     //   Wide Guard is a stallingMove that sets wide-guard side condition
-    const ctx = makeContext("wide-guard");
+    const ctx = makeContext(MOVE_IDS.wideGuard);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("wide-guard");
-    expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
-    expect(result!.messages[0]).toBe("Wide Guard protected the team!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["Wide Guard protected the team!"],
+      selfVolatileInflicted: "wide-guard",
+      selfVolatileData: { turnsLeft: 1 },
+    });
   });
 
   it("given consecutive protect uses exceeded, when Wide Guard is used, then fails", () => {
     // Source: Showdown Gen 5 wideguard -- stallingMove: true, uses stall counter
-    const ctx = makeContext("wide-guard");
+    const ctx = makeContext(MOVE_IDS.wideGuard);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysFailProtect);
 
-    expect(result).not.toBeNull();
-    // No volatile applied on failure -- selfVolatileInflicted is not set (undefined)
-    expect(result!.selfVolatileInflicted).toBeUndefined();
-    expect(result!.messages[0]).toBe("But it failed!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["But it failed!"],
+    });
   });
 });
 
@@ -361,13 +447,13 @@ describe("Gen5 isBlockedByQuickGuard", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts line 700
     //   if dex.moves.get(effect.id).priority <= 0 return; (no block)
     // Example: Thunderbolt has priority 0
-    expect(isBlockedByQuickGuard("thunderbolt", 0)).toBe(false);
+    expect(isBlockedByQuickGuard(MOVE_IDS.thunderbolt, 0)).toBe(false);
   });
 
   it("given a negative priority move, when checked against Quick Guard, then is not blocked", () => {
     // Source: Showdown Gen 5 quickguard -- priority <= 0 means no block
     // Example: Trick Room has priority -7
-    expect(isBlockedByQuickGuard("trick-room", -7)).toBe(false);
+    expect(isBlockedByQuickGuard(MOVE_IDS.trickRoom, -7)).toBe(false);
   });
 
   it("given Feint, when checked against Quick Guard, then is not blocked (Feint bypasses)", () => {
@@ -432,30 +518,30 @@ describe("Gen5 priority overrides", () => {
   it("given Follow Me, when getting Gen 5 priority, then returns +3", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts line 253 -- followme priority: 3
     // Follow Me changed from +2 (Gen 4) to +3 (Gen 5)
-    expect(getGen5PriorityOverride("follow-me")).toBe(3);
+    expect(getGen5PriorityOverride(MOVE_IDS.followMe)).toBe(3);
   });
 
   it("given Rage Powder, when getting Gen 5 priority, then returns +3", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts line 717 -- ragepowder priority: 3
     // Rage Powder has priority +3 in Gen 5 (new move introduced in Gen 5)
-    expect(getGen5PriorityOverride("rage-powder")).toBe(3);
+    expect(getGen5PriorityOverride(MOVE_IDS.ragePowder)).toBe(3);
   });
 
   it("given Protect, when getting Gen 5 priority, then returns null (unchanged)", () => {
     // Source: Showdown data/moves.ts protect -- priority: 4 (unchanged in Gen 5)
     // Protect's priority did not change between Gen 4 and Gen 5
-    expect(getGen5PriorityOverride("protect")).toBeNull();
+    expect(getGen5PriorityOverride(MOVE_IDS.protect)).toBe(null);
   });
 
   it("given Tackle (a normal move), when getting Gen 5 priority, then returns null", () => {
     // Tackle has priority 0 in all generations -- no override needed
-    expect(getGen5PriorityOverride("tackle")).toBeNull();
+    expect(getGen5PriorityOverride(MOVE_IDS.tackle)).toBe(null);
   });
 
   it("given Quick Guard (new in Gen 5), when getting Gen 5 priority, then returns null (use data value)", () => {
     // Quick Guard is new in Gen 5 with priority +3 -- no override from Gen 4 needed
     // Source: references/pokemon-showdown/data/moves.ts line 15028 -- quickguard priority: 3
-    expect(getGen5PriorityOverride("quick-guard")).toBeNull();
+    expect(getGen5PriorityOverride(MOVE_IDS.quickGuard)).toBe(null);
   });
 });
 
@@ -466,40 +552,64 @@ describe("Gen5 priority overrides", () => {
 describe("Gen5 handleGen5FieldMove dispatch", () => {
   it("given an unrecognized move, when dispatched, then returns null", () => {
     // Non-field moves should return null so the caller can fall through
-    const ctx = makeContext("thunderbolt");
+    const ctx = makeContext(MOVE_IDS.thunderbolt);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).toBeNull();
+    expect(result).toBe(null);
   });
 
   it("given magic-room, when dispatched, then returns a non-null result with magicRoomSet", () => {
     // Verify dispatch routes to the correct handler
-    const ctx = makeContext("magic-room");
+    const ctx = makeContext(MOVE_IDS.magicRoom);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.magicRoomSet).toBeDefined();
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["It created a bizarre area in which Pokemon's held items lose their effects!"],
+      magicRoomSet: { turnsLeft: 5 },
+    });
   });
 
   it("given wonder-room, when dispatched, then returns a non-null result with wonderRoomSet", () => {
     // Verify dispatch routes to the correct handler
-    const ctx = makeContext("wonder-room");
+    const ctx = makeContext(MOVE_IDS.wonderRoom);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.wonderRoomSet).toBeDefined();
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["It created a bizarre area in which Defense and Sp. Def stats are swapped!"],
+      wonderRoomSet: { turnsLeft: 5 },
+    });
   });
 
   it("given trick-room, when dispatched, then returns a non-null result with trickRoomSet", () => {
     // Verify dispatch routes to the correct handler
-    const ctx = makeContext("trick-room");
+    const ctx = makeContext(MOVE_IDS.trickRoom);
     const rng = new SeededRandom(42);
     const result = handleGen5FieldMove(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.trickRoomSet).toBeDefined();
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["The dimensions were twisted!"],
+      trickRoomSet: { turnsLeft: 5 },
+    });
   });
 });
