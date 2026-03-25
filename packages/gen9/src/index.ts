@@ -2,6 +2,12 @@
 
 export { createGen9DataManager } from "./data/index.js";
 export * from "./data/reference-ids.js";
+export {
+  GEN9_ORICHALCUM_HADRON_MODIFIER,
+  GEN9_ORICHALCUM_HADRON_MULTIPLIER,
+  GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
+  GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
+} from "./constants/mechanics.js";
 export { handleGen9Ability } from "./Gen9Abilities.js";
 export {
   applyGen9DauntlessShieldBoost,

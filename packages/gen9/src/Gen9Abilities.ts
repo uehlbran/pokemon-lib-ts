@@ -1,5 +1,6 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger } from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import { handleGen9NewAbility, isEmbodyAspect } from "./Gen9AbilitiesNew.js";
 import { handleGen9StatAbility } from "./Gen9AbilitiesStat.js";
 import { handleGen9SwitchAbility } from "./Gen9AbilitiesSwitch.js";
@@ -142,24 +143,27 @@ function handleCarryForwardPriorityCheck(ctx: AbilityContext): AbilityResult {
  * Set of ability IDs handled by Gen9AbilitiesNew.
  * These are checked first to ensure Gen 9 nerfs take precedence over carry-forward behavior.
  */
-const GEN9_NEW_ABILITIES = new Set([
-  "toxic-chain",
-  "good-as-gold",
-  "embody-aspect-teal",
-  "embody-aspect-hearthflame",
-  "embody-aspect-wellspring",
-  "embody-aspect-cornerstone",
-  "mycelium-might",
-  "intrepid-sword",
-  "dauntless-shield",
-  "protean",
-  "libero",
+const GEN9_NEW_ABILITIES: ReadonlySet<string> = new Set([
+  GEN9_ABILITY_IDS.toxicChain,
+  GEN9_ABILITY_IDS.goodAsGold,
+  GEN9_ABILITY_IDS.embodyAspectTeal,
+  GEN9_ABILITY_IDS.embodyAspectHearthflame,
+  GEN9_ABILITY_IDS.embodyAspectWellspring,
+  GEN9_ABILITY_IDS.embodyAspectCornerstone,
+  GEN9_ABILITY_IDS.myceliumMight,
+  GEN9_ABILITY_IDS.intrepidSword,
+  GEN9_ABILITY_IDS.dauntlessShield,
+  GEN9_ABILITY_IDS.protean,
+  GEN9_ABILITY_IDS.libero,
 ]);
 
 /**
  * Set of ability IDs handled by Gen9AbilitiesStat.
  */
-const GEN9_STAT_ABILITIES = new Set(["protosynthesis", "quark-drive"]);
+const GEN9_STAT_ABILITIES: ReadonlySet<string> = new Set([
+  GEN9_ABILITY_IDS.protosynthesis,
+  GEN9_ABILITY_IDS.quarkDrive,
+]);
 
 // ---------------------------------------------------------------------------
 // Public dispatch
