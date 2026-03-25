@@ -1,5 +1,14 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+  getSpeciesZMoves,
+} from "@pokemon-lib-ts/gen7";
 import { describe, expect, it } from "vitest";
 import { Gen7ZMove, getZMovePower } from "../src/Gen7ZMove";
 
@@ -17,9 +26,9 @@ function makeMove(overrides?: {
   zMoveEffect?: string;
 }): MoveData {
   return {
-    id: overrides?.id ?? "swords-dance",
+    id: overrides?.id ?? GEN7_MOVE_IDS.swordsDance,
     displayName: overrides?.displayName ?? overrides?.id ?? "Swords Dance",
-    type: overrides?.type ?? "normal",
+    type: overrides?.type ?? CORE_TYPE_IDS.normal,
     category: overrides?.category ?? "status",
     power: overrides?.power ?? null,
     accuracy: 100,
@@ -56,8 +65,9 @@ function makeMove(overrides?: {
 function makeActive(overrides: {
   heldItem?: string | null;
   moves?: Array<{ moveId: string }>;
+  speciesId?: number;
 }): ActivePokemon {
-  const moveSlots = (overrides.moves ?? [{ moveId: "swords-dance" }]).map((m) => ({
+  const moveSlots = (overrides.moves ?? [{ moveId: GEN7_MOVE_IDS.swordsDance }]).map((m) => ({
     moveId: m.moveId,
     currentPP: 10,
     maxPP: 15,
@@ -67,16 +77,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test-pokemon",
-      speciesId: 25,
+      speciesId: overrides.speciesId ?? GEN7_SPECIES_IDS.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: GEN7_NATURE_IDS.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 100,
       moves: moveSlots,
-      ability: "static",
+      ability: GEN7_ABILITY_IDS.static,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: null,
@@ -87,7 +97,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: GEN7_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: 100,
@@ -108,8 +118,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "static",
+    types: [CORE_TYPE_IDS.electric] as PokemonType[],
+    ability: GEN7_ABILITY_IDS.static,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -143,14 +153,14 @@ describe("Status Z-Move: modifyMove preserves original move identity", () => {
     //   status move's effect PLUS a bonus Z-Power effect."
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "swords-dance" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.swordsDance }],
     });
 
     const swordsDance = makeMove({
-      id: "swords-dance",
+      id: GEN7_MOVE_IDS.swordsDance,
       displayName: "Swords Dance",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       zMoveEffect: "clearnegativeboost",
     });
@@ -158,9 +168,8 @@ describe("Status Z-Move: modifyMove preserves original move identity", () => {
     const result = zMove.modifyMove(swordsDance, pokemon);
 
     // The move ID must remain "swords-dance" so the engine executes the original stat boost
-    expect(result.id).toBe("swords-dance");
-    // Display name is prefixed with Z-
-    expect(result.displayName).toBe("Z-Swords Dance");
+    expect(result.id).toBe(GEN7_MOVE_IDS.swordsDance);
+    expect(result.displayName).toBe(`Z-${swordsDance.displayName}`);
     // Category stays status
     expect(result.category).toBe("status");
     // Z-Move power is 0 for status moves (they don't deal damage)
@@ -172,22 +181,22 @@ describe("Status Z-Move: modifyMove preserves original move identity", () => {
     // Source: specs/battle/08-gen7.md -- Calm Mind listed under clearnegativeboost
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "psychium-z",
-      moves: [{ moveId: "calm-mind" }],
+      heldItem: GEN7_ITEM_IDS.psychiumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.calmMind }],
     });
 
     const calmMind = makeMove({
-      id: "calm-mind",
+      id: GEN7_MOVE_IDS.calmMind,
       displayName: "Calm Mind",
-      type: "psychic",
+      type: CORE_TYPE_IDS.psychic,
       category: "status",
       zMoveEffect: "clearnegativeboost",
     });
 
     const result = zMove.modifyMove(calmMind, pokemon);
 
-    expect(result.id).toBe("calm-mind");
-    expect(result.displayName).toBe("Z-Calm Mind");
+    expect(result.id).toBe(GEN7_MOVE_IDS.calmMind);
+    expect(result.displayName).toBe(`Z-${calmMind.displayName}`);
     expect(result.zMoveEffect).toBe("clearnegativeboost");
   });
 });
@@ -201,17 +210,17 @@ describe("Status Z-Move: heal effect", () => {
     // However, for testing the heal pathway, we use a move that HAS heal as its zMoveEffect.
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "memento" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.memento }],
     });
 
     // Memento is a status move with zMoveEffect "heal"
     // Source: Showdown data/moves.ts -- memento: zMove: { effect: 'healreplacement' }
     // For testing the heal pathway, use a fictional status move with zMoveEffect "heal"
     const statusMove = makeMove({
-      id: "memento",
+      id: GEN7_MOVE_IDS.memento,
       displayName: "Memento",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       zMoveEffect: "heal",
     });
@@ -221,7 +230,7 @@ describe("Status Z-Move: heal effect", () => {
     // The zMoveEffect is preserved from the base move data
     expect(result.zMoveEffect).toBe("heal");
     // Move ID preserved so original effect fires
-    expect(result.id).toBe("memento");
+    expect(result.id).toBe(GEN7_MOVE_IDS.memento);
     // Power is 0 (status Z-Move)
     expect(result.zMovePower).toBe(0);
   });
@@ -229,8 +238,8 @@ describe("Status Z-Move: heal effect", () => {
   it("given a status move with heal zMoveEffect, when checking power, then getZMovePower returns 0", () => {
     // Source: Showdown sim/dex-moves.ts:551 -- status moves return 0 power
     const statusMove = makeMove({
-      id: "healing-wish",
-      type: "psychic",
+      id: GEN7_MOVE_IDS.healingWish,
+      type: CORE_TYPE_IDS.psychic,
       category: "status",
       zMoveEffect: "heal",
     });
@@ -245,14 +254,14 @@ describe("Status Z-Move: clearnegativeboost effect", () => {
     // Source: specs/battle/08-gen7.md -- "clearnegativeboost: Clears all negative stat changes"
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "swords-dance" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.swordsDance }],
     });
 
     const swordsDance = makeMove({
-      id: "swords-dance",
+      id: GEN7_MOVE_IDS.swordsDance,
       displayName: "Swords Dance",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       zMoveEffect: "clearnegativeboost",
     });
@@ -260,7 +269,7 @@ describe("Status Z-Move: clearnegativeboost effect", () => {
     const result = zMove.modifyMove(swordsDance, pokemon);
 
     expect(result.zMoveEffect).toBe("clearnegativeboost");
-    expect(result.id).toBe("swords-dance");
+    expect(result.id).toBe(GEN7_MOVE_IDS.swordsDance);
   });
 
   it("given Bulk Up with clearnegativeboost zMoveEffect, when modifying, then preserves the effect", () => {
@@ -268,14 +277,14 @@ describe("Status Z-Move: clearnegativeboost effect", () => {
     // Source: specs/battle/08-gen7.md -- Bulk Up listed under clearnegativeboost
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "fightinium-z",
-      moves: [{ moveId: "bulk-up" }],
+      heldItem: GEN7_ITEM_IDS.fightiniumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.bulkUp }],
     });
 
     const bulkUp = makeMove({
-      id: "bulk-up",
+      id: GEN7_MOVE_IDS.bulkUp,
       displayName: "Bulk Up",
-      type: "fighting",
+      type: CORE_TYPE_IDS.fighting,
       category: "status",
       zMoveEffect: "clearnegativeboost",
     });
@@ -283,8 +292,8 @@ describe("Status Z-Move: clearnegativeboost effect", () => {
     const result = zMove.modifyMove(bulkUp, pokemon);
 
     expect(result.zMoveEffect).toBe("clearnegativeboost");
-    expect(result.id).toBe("bulk-up");
-    expect(result.displayName).toBe("Z-Bulk Up");
+    expect(result.id).toBe(GEN7_MOVE_IDS.bulkUp);
+    expect(result.displayName).toBe(`Z-${bulkUp.displayName}`);
   });
 });
 
@@ -294,14 +303,14 @@ describe("Status Z-Move: crit2 effect", () => {
     // Source: specs/battle/08-gen7.md -- "crit2: +2 crit stage"
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "hone-claws" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.honeClaws }],
     });
 
     const honeClaws = makeMove({
-      id: "hone-claws",
+      id: GEN7_MOVE_IDS.honeClaws,
       displayName: "Hone Claws",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       zMoveEffect: "crit2",
     });
@@ -309,8 +318,8 @@ describe("Status Z-Move: crit2 effect", () => {
     const result = zMove.modifyMove(honeClaws, pokemon);
 
     expect(result.zMoveEffect).toBe("crit2");
-    expect(result.id).toBe("hone-claws");
-    expect(result.displayName).toBe("Z-Hone Claws");
+    expect(result.id).toBe(GEN7_MOVE_IDS.honeClaws);
+    expect(result.displayName).toBe(`Z-${honeClaws.displayName}`);
     expect(result.zMovePower).toBe(0);
   });
 
@@ -319,14 +328,14 @@ describe("Status Z-Move: crit2 effect", () => {
     // Source: specs/battle/08-gen7.md -- Focus Energy listed under crit2
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "focus-energy" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.focusEnergy }],
     });
 
     const focusEnergy = makeMove({
-      id: "focus-energy",
+      id: GEN7_MOVE_IDS.focusEnergy,
       displayName: "Focus Energy",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       zMoveEffect: "crit2",
     });
@@ -334,7 +343,7 @@ describe("Status Z-Move: crit2 effect", () => {
     const result = zMove.modifyMove(focusEnergy, pokemon);
 
     expect(result.zMoveEffect).toBe("crit2");
-    expect(result.id).toBe("focus-energy");
+    expect(result.id).toBe(GEN7_MOVE_IDS.focusEnergy);
   });
 });
 
@@ -344,21 +353,21 @@ describe("Status Z-Move: no zMoveEffect defined", () => {
     // The Z-Move variant should still transform (Z- prefix) but have no bonus effect.
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "growl" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.growl }],
     });
 
     const growl = makeMove({
-      id: "growl",
+      id: GEN7_MOVE_IDS.growl,
       displayName: "Growl",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
     });
 
     const result = zMove.modifyMove(growl, pokemon);
 
-    expect(result.id).toBe("growl");
-    expect(result.displayName).toBe("Z-Growl");
+    expect(result.id).toBe(GEN7_MOVE_IDS.growl);
+    expect(result.displayName).toBe(`Z-${growl.displayName}`);
     expect(result.zMoveEffect).toBeUndefined();
     expect(result.zMovePower).toBe(0);
   });
@@ -370,14 +379,14 @@ describe("Status Z-Move: does NOT convert to a damaging move", () => {
     // Source: specs/battle/08-gen7.md -- "They do NOT deal damage and do NOT convert to named attack moves."
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "thunder-wave" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.thunderWave }],
     });
 
     const thunderWave = makeMove({
-      id: "thunder-wave",
+      id: GEN7_MOVE_IDS.thunderWave,
       displayName: "Thunder Wave",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       zMoveEffect: "clearnegativeboost",
     });
@@ -394,14 +403,14 @@ describe("Status Z-Move: does NOT convert to a damaging move", () => {
     // They keep their original ID with "Z-" prefix on display name
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "normalium-z",
-      moves: [{ moveId: "swords-dance" }],
+      heldItem: GEN7_ITEM_IDS.normaliumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.swordsDance }],
     });
 
     const swordsDance = makeMove({
-      id: "swords-dance",
+      id: GEN7_MOVE_IDS.swordsDance,
       displayName: "Swords Dance",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       zMoveEffect: "clearnegativeboost",
     });
@@ -409,8 +418,8 @@ describe("Status Z-Move: does NOT convert to a damaging move", () => {
     const result = zMove.modifyMove(swordsDance, pokemon);
 
     // ID is NOT "breakneck-blitz" -- it stays as the original status move
-    expect(result.id).not.toBe("breakneck-blitz");
-    expect(result.id).toBe("swords-dance");
+    expect(result.id).not.toBe(GEN7_MOVE_IDS.breakneckBlitz);
+    expect(result.id).toBe(GEN7_MOVE_IDS.swordsDance);
   });
 });
 
@@ -422,8 +431,9 @@ describe("Status Z-Move: species-specific status Z-Move (Extreme Evoboost)", () 
     // (boosts all stats by +2) rather than a damaging move
     const zMove = new Gen7ZMove();
     const pokemon = makeActive({
-      heldItem: "eevium-z",
-      moves: [{ moveId: "last-resort" }],
+      heldItem: GEN7_ITEM_IDS.eeviumZ,
+      moves: [{ moveId: GEN7_MOVE_IDS.lastResort }],
+      speciesId: GEN7_SPECIES_IDS.eevee,
     });
 
     // Last Resort is a Normal-type damaging move (base power 140)
@@ -434,16 +444,16 @@ describe("Status Z-Move: species-specific status Z-Move (Extreme Evoboost)", () 
     // Since Last Resort is actually physical/140, the getSpeciesZMove path
     // will use the damaging branch. Extreme Evoboost has 0 power in SPECIES_Z_POWER.
     const lastResort = makeMove({
-      id: "last-resort",
+      id: GEN7_MOVE_IDS.lastResort,
       displayName: "Last Resort",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "physical",
       power: 140,
     });
 
     const result = zMove.modifyMove(lastResort, pokemon);
 
-    expect(result.id).toBe("extreme-evoboost");
+    expect(result.id).toBe(getSpeciesZMoves()[GEN7_ITEM_IDS.eeviumZ]);
     // Extreme Evoboost has 0 power in the SPECIES_Z_POWER table
     // (it's a status-like Z-Move that boosts all stats)
     expect(result.power).toBe(0);
