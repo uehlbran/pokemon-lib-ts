@@ -1,8 +1,24 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  NEUTRAL_NATURES,
+  type PokemonInstance,
+  type PokemonType,
+  type PrimaryStatus,
+  type StatBlock,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { applyGen3Ability } from "../../src/Gen3Abilities";
-import { Gen3Ruleset } from "../../src/Gen3Ruleset";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_SPECIES_IDS,
+  applyGen3Ability,
+  Gen3Ruleset,
+} from "../../src";
 
 /**
  * Gen 3 Wave 3 Ability Tests
@@ -24,6 +40,22 @@ import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const dataManager = createGen3DataManager();
+const A = {
+  ...CORE_ABILITY_IDS,
+  ...GEN3_ABILITY_IDS,
+} as const;
+const S = CORE_STATUS_IDS;
+const T = CORE_TYPE_IDS;
+const I = GEN3_ITEM_IDS;
+const M = GEN3_MOVE_IDS;
+const SP = GEN3_SPECIES_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const PRESSURE_NAME = dataManager.getAbility(A.pressure).displayName;
+const TRUANT_TURN = "truant-turn" as const;
+const FLAMETHROWER = dataManager.getMove(M.flamethrower);
+const THUNDERBOLT = dataManager.getMove(M.thunderbolt);
+
 function createMockRng(nextValues: number[] = [0]) {
   let index = 0;
   return {
@@ -44,7 +76,7 @@ function createMockRng(nextValues: number[] = [0]) {
 function createMockPokemon(opts: {
   types?: PokemonType[];
   ability?: string;
-  status?: string | null;
+  status?: PrimaryStatus | null;
   hp?: number;
   maxHp?: number;
   gender?: "male" | "female" | "genderless";
@@ -64,16 +96,16 @@ function createMockPokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? SP.gardevoir,
     nickname: opts.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.hp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? A.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -84,7 +116,7 @@ function createMockPokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: I.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -101,8 +133,8 @@ function createMockPokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [T.normal],
+    ability: opts.ability ?? A.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -161,24 +193,6 @@ function createMinimalBattleState(
   } as BattleState;
 }
 
-function createDamagingMove(type: PokemonType, id = "test-move"): MoveData {
-  return {
-    id,
-    displayName: "Test Move",
-    type,
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: { contact: true },
-    effect: null,
-    description: "",
-    generation: 3,
-  } as MoveData;
-}
-
 // ===========================================================================
 // Trace -- copies opponent's ability on switch-in
 // ===========================================================================
@@ -190,13 +204,13 @@ describe("Gen 3 Trace ability (on-switch-in)", () => {
   it("given a Pokemon with Trace, when switching in vs opponent with Intimidate, then copies Intimidate", () => {
     // Source: pret/pokeemerald — Trace copies the foe's ability, returns ability-change effect
     const tracer = createMockPokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [T.psychic],
+      ability: A.trace,
       nickname: "Gardevoir",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "intimidate",
+      types: [T.normal],
+      ability: A.intimidate,
       nickname: "Tauros",
     });
     const state = createMinimalBattleState(tracer, opponent);
@@ -212,27 +226,27 @@ describe("Gen 3 Trace ability (on-switch-in)", () => {
 
     const result = applyGen3Ability("on-switch-in", context);
     expect(result.activated).toBe(true);
-    expect(result.effects).toHaveLength(1);
-    expect(result.effects[0]).toEqual({
+    expect(result.effects).toEqual([
+      {
       effectType: "ability-change",
       target: "self",
-      newAbility: "intimidate",
-    });
-    expect(result.messages[0]).toContain("Gardevoir");
-    expect(result.messages[0]).toContain("intimidate");
+      newAbility: A.intimidate,
+      },
+    ]);
+    expect(result.messages).toEqual([`Gardevoir traced Tauros's ${A.intimidate}!`]);
   });
 
   it("given a Pokemon with Trace, when switching in vs opponent with Trace, then does not copy (banned)", () => {
     // Source: pret/pokeemerald — Trace cannot copy itself
     // Source: Bulbapedia — "Trace will not copy Trace"
     const tracer = createMockPokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [T.psychic],
+      ability: A.trace,
       nickname: "Gardevoir",
     });
     const opponent = createMockPokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [T.psychic],
+      ability: A.trace,
       nickname: "Alakazam",
     });
     const state = createMinimalBattleState(tracer, opponent);
@@ -255,13 +269,13 @@ describe("Gen 3 Trace ability (on-switch-in)", () => {
     // Source: pret/pokeemerald — Trace can copy any non-banned ability
     // Levitate is NOT in the Gen 3 banned list (only Trace itself is banned)
     const tracer = createMockPokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [T.psychic],
+      ability: A.trace,
       nickname: "Gardevoir",
     });
     const opponent = createMockPokemon({
-      types: ["ghost", "poison"],
-      ability: "levitate",
+      types: [T.ghost, T.poison],
+      ability: A.levitate,
       nickname: "Gengar",
     });
     const state = createMinimalBattleState(tracer, opponent);
@@ -281,14 +295,14 @@ describe("Gen 3 Trace ability (on-switch-in)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "ability-change",
       target: "self",
-      newAbility: "levitate",
+      newAbility: A.levitate,
     });
   });
 
   it("given a Pokemon with Trace, when switching in with no opponent, then does not activate", () => {
     // Edge case: no opponent present (e.g., fainted or empty slot)
-    const tracer = createMockPokemon({ types: ["psychic"], ability: "trace" });
-    const state = createMinimalBattleState(tracer, createMockPokemon({ types: ["normal"] }));
+    const tracer = createMockPokemon({ types: [T.psychic], ability: A.trace });
+    const state = createMinimalBattleState(tracer, createMockPokemon({ types: [T.normal] }));
     const rng = createMockRng();
 
     const context: AbilityContext = {
@@ -316,11 +330,11 @@ describe("Gen 3 Pressure ability", () => {
     it("given a Pokemon with Pressure, when switching in, then announces message", () => {
       // Source: pret/pokeemerald — Pressure announces on entry with no battle effect
       const pressureMon = createMockPokemon({
-        types: ["ice", "flying"],
-        ability: "pressure",
+        types: [T.ice, T.flying],
+        ability: A.pressure,
         nickname: "Articuno",
       });
-      const opponent = createMockPokemon({ types: ["normal"] });
+      const opponent = createMockPokemon({ types: [T.normal] });
       const state = createMinimalBattleState(pressureMon, opponent);
       const rng = createMockRng();
 
@@ -334,10 +348,8 @@ describe("Gen 3 Pressure ability", () => {
 
       const result = applyGen3Ability("on-switch-in", context);
       expect(result.activated).toBe(true);
-      expect(result.effects).toHaveLength(0); // No battle effect, just announcement
-      expect(result.messages).toHaveLength(1);
-      expect(result.messages[0]).toContain("Articuno");
-      expect(result.messages[0]).toContain("Pressure");
+      expect(result.effects).toEqual([]);
+      expect(result.messages).toEqual([`Articuno is exerting its ${PRESSURE_NAME}!`]);
     });
   });
 
@@ -346,8 +358,8 @@ describe("Gen 3 Pressure ability", () => {
       // Source: pret/pokeemerald — ABILITY_PRESSURE: deductsExtraMove
       // Source: Bulbapedia — "moves targeting the Ability-bearer use 2 PP"
       const ruleset = new Gen3Ruleset();
-      const actor = createMockPokemon({ types: ["normal"], ability: "none" });
-      const defender = createMockPokemon({ types: ["ice", "flying"], ability: "pressure" });
+      const actor = createMockPokemon({ types: [T.normal], ability: A.none });
+      const defender = createMockPokemon({ types: [T.ice, T.flying], ability: A.pressure });
       const state = createMinimalBattleState(actor, defender);
 
       const ppCost = ruleset.getPPCost(actor, defender, state);
@@ -357,8 +369,8 @@ describe("Gen 3 Pressure ability", () => {
     it("given a defender without Pressure, when actor uses a move, then PP cost is 1", () => {
       // Source: pret/pokeemerald — default PP cost is 1 without Pressure
       const ruleset = new Gen3Ruleset();
-      const actor = createMockPokemon({ types: ["normal"], ability: "none" });
-      const defender = createMockPokemon({ types: ["fire"], ability: "blaze" });
+      const actor = createMockPokemon({ types: [T.normal], ability: A.none });
+      const defender = createMockPokemon({ types: [T.fire], ability: A.blaze });
       const state = createMinimalBattleState(actor, defender);
 
       const ppCost = ruleset.getPPCost(actor, defender, state);
@@ -368,8 +380,8 @@ describe("Gen 3 Pressure ability", () => {
     it("given no defender (null), when actor uses a move, then PP cost is 1", () => {
       // Edge case: defender is null (e.g., field-targeting move or fainted opponent)
       const ruleset = new Gen3Ruleset();
-      const actor = createMockPokemon({ types: ["normal"], ability: "none" });
-      const state = createMinimalBattleState(actor, createMockPokemon({ types: ["normal"] }));
+      const actor = createMockPokemon({ types: [T.normal], ability: A.none });
+      const state = createMinimalBattleState(actor, createMockPokemon({ types: [T.normal] }));
 
       const ppCost = ruleset.getPPCost(actor, null, state);
       expect(ppCost).toBe(1);
@@ -389,16 +401,16 @@ describe("Gen 3 Truant ability (on-before-move)", () => {
     // Source: pret/pokeemerald -- Truant toggle at ABILITYEFFECT_ENDTURN, not at move execution
     // Source: pret/pokeemerald -- Truant acts on the turn it switches in
     const slaking = createMockPokemon({
-      types: ["normal"],
-      ability: "truant",
+      types: [T.normal],
+      ability: A.truant,
       nickname: "Slaking",
     });
-    const opponent = createMockPokemon({ types: ["normal"] });
+    const opponent = createMockPokemon({ types: [T.normal] });
     const state = createMinimalBattleState(slaking, opponent);
     const rng = createMockRng();
 
     // Ensure no volatile set initially
-    expect(slaking.volatileStatuses.has("truant-turn")).toBe(false);
+    expect(slaking.volatileStatuses.has(TRUANT_TURN)).toBe(false);
 
     const context: AbilityContext = {
       pokemon: slaking,
@@ -413,20 +425,20 @@ describe("Gen 3 Truant ability (on-before-move)", () => {
     expect(result.activated).toBe(false);
     expect(result.movePrevented).toBeUndefined();
     // on-before-move does NOT toggle; volatile should NOT be set here
-    expect(slaking.volatileStatuses.has("truant-turn")).toBe(false);
+    expect(slaking.volatileStatuses.has(TRUANT_TURN)).toBe(false);
   });
 
   it("given Truant with truant-turn volatile (second turn), when on-before-move fires, then move is prevented but volatile is NOT removed (toggle is at end-of-turn)", () => {
     // Source: pret/pokeemerald -- Truant check at ABILITYEFFECT_MOVES_BLOCK
     // Source: pret/pokeemerald -- Truant toggle at ABILITYEFFECT_ENDTURN
     const slaking = createMockPokemon({
-      types: ["normal"],
-      ability: "truant",
+      types: [T.normal],
+      ability: A.truant,
       nickname: "Slaking",
     });
     // Pre-set the truant-turn volatile (simulating previous end-of-turn toggle)
-    slaking.volatileStatuses.set("truant-turn", { turnsLeft: -1 });
-    const opponent = createMockPokemon({ types: ["normal"] });
+    slaking.volatileStatuses.set(TRUANT_TURN, { turnsLeft: -1 });
+    const opponent = createMockPokemon({ types: [T.normal] });
     const state = createMinimalBattleState(slaking, opponent);
     const rng = createMockRng();
 
@@ -444,18 +456,18 @@ describe("Gen 3 Truant ability (on-before-move)", () => {
     expect(result.messages[0]).toContain("Slaking");
     expect(result.messages[0]).toContain("loafing around");
     // on-before-move does NOT toggle; volatile should STILL be present
-    expect(slaking.volatileStatuses.has("truant-turn")).toBe(true);
+    expect(slaking.volatileStatuses.has(TRUANT_TURN)).toBe(true);
   });
 
   it("given Truant, when simulating 3 consecutive turns with end-of-turn toggles, then the pattern is act-loaf-act", () => {
     // Source: pret/pokeemerald -- ABILITY_TRUANT alternates via ABILITYEFFECT_ENDTURN
     // Source: Bulbapedia -- "Truant causes the Pokemon to loaf around every other turn"
     const slaking = createMockPokemon({
-      types: ["normal"],
-      ability: "truant",
+      types: [T.normal],
+      ability: A.truant,
       nickname: "Slaking",
     });
-    const opponent = createMockPokemon({ types: ["normal"] });
+    const opponent = createMockPokemon({ types: [T.normal] });
     const state = createMinimalBattleState(slaking, opponent);
     const rng = createMockRng();
 
@@ -473,7 +485,7 @@ describe("Gen 3 Truant ability (on-before-move)", () => {
     expect(r1.movePrevented).toBeUndefined();
     // End of turn 1: toggle sets volatile
     applyGen3Ability("on-turn-end", makeContext("on-turn-end"));
-    expect(slaking.volatileStatuses.has("truant-turn")).toBe(true);
+    expect(slaking.volatileStatuses.has(TRUANT_TURN)).toBe(true);
 
     // Turn 2: loafs (volatile present)
     const r2 = applyGen3Ability("on-before-move", makeContext("on-before-move"));
@@ -481,7 +493,7 @@ describe("Gen 3 Truant ability (on-before-move)", () => {
     expect(r2.movePrevented).toBe(true);
     // End of turn 2: toggle removes volatile
     applyGen3Ability("on-turn-end", makeContext("on-turn-end"));
-    expect(slaking.volatileStatuses.has("truant-turn")).toBe(false);
+    expect(slaking.volatileStatuses.has(TRUANT_TURN)).toBe(false);
 
     // Turn 3: acts again (volatile was removed)
     const r3 = applyGen3Ability("on-before-move", makeContext("on-before-move"));
@@ -491,8 +503,8 @@ describe("Gen 3 Truant ability (on-before-move)", () => {
 
   it("given a non-Truant Pokemon, when on-before-move fires, then move proceeds normally", () => {
     // Non-Truant abilities should not block moves
-    const normal = createMockPokemon({ types: ["normal"], ability: "keen-eye" });
-    const opponent = createMockPokemon({ types: ["normal"] });
+    const normal = createMockPokemon({ types: [T.normal], ability: A.keenEye });
+    const opponent = createMockPokemon({ types: [T.normal] });
     const state = createMinimalBattleState(normal, opponent);
     const rng = createMockRng();
 
@@ -521,14 +533,14 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
   it("given a Pokemon with Color Change hit by a Fire move, when on-damage-taken fires, then type changes to Fire", () => {
     // Source: pret/pokeemerald — Color Change sets holder's type to the incoming move's type
     const kecleon = createMockPokemon({
-      types: ["normal"],
-      ability: "color-change",
+      types: [T.normal],
+      ability: A.colorChange,
       nickname: "Kecleon",
     });
-    const opponent = createMockPokemon({ types: ["fire"] });
+    const opponent = createMockPokemon({ types: [T.fire] });
     const state = createMinimalBattleState(kecleon, opponent);
     const rng = createMockRng();
-    const fireMove = createDamagingMove("fire", "flamethrower");
+    const fireMove = FLAMETHROWER;
 
     const context: AbilityContext = {
       pokemon: kecleon,
@@ -546,24 +558,23 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "type-change",
       target: "self",
-      types: ["fire"],
+      types: [T.fire],
     });
-    expect(result.messages[0]).toContain("Kecleon");
-    expect(result.messages[0]).toContain("fire");
+    expect(result.messages).toEqual([`Kecleon's Color Change made it the fire type!`]);
   });
 
   it("given a Pokemon with Color Change hit by an Electric move, when on-damage-taken fires, then type changes to Electric", () => {
     // Second triangulation case: different move type
     // Source: pret/pokeemerald — Color Change activates for any damaging move type
     const kecleon = createMockPokemon({
-      types: ["normal"],
-      ability: "color-change",
+      types: [T.normal],
+      ability: A.colorChange,
       nickname: "Kecleon",
     });
-    const opponent = createMockPokemon({ types: ["electric"] });
+    const opponent = createMockPokemon({ types: [T.electric] });
     const state = createMinimalBattleState(kecleon, opponent);
     const rng = createMockRng();
-    const electricMove = createDamagingMove("electric", "thunderbolt");
+    const electricMove = THUNDERBOLT;
 
     const context: AbilityContext = {
       pokemon: kecleon,
@@ -580,7 +591,7 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "type-change",
       target: "self",
-      types: ["electric"],
+      types: [T.electric],
     });
   });
 
@@ -588,14 +599,14 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
     // Source: pret/pokeemerald — Color Change does not activate if already that mono-type
     // Source: Bulbapedia — "Color Change does not activate if the Pokemon is already the type"
     const kecleon = createMockPokemon({
-      types: ["fire"],
-      ability: "color-change",
+      types: [T.fire],
+      ability: A.colorChange,
       nickname: "Kecleon",
     });
-    const opponent = createMockPokemon({ types: ["fire"] });
+    const opponent = createMockPokemon({ types: [T.fire] });
     const state = createMinimalBattleState(kecleon, opponent);
     const rng = createMockRng();
-    const fireMove = createDamagingMove("fire", "flamethrower");
+    const fireMove = FLAMETHROWER;
 
     const context: AbilityContext = {
       pokemon: kecleon,
@@ -617,14 +628,14 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
     // Source: pret/pokeemerald src/battle_util.c line 2757 —
     //   gBattleMons[battler].types[0] == type || gBattleMons[battler].types[1] == type
     const kecleon = createMockPokemon({
-      types: ["fire", "flying"],
-      ability: "color-change",
+      types: [T.fire, T.flying],
+      ability: A.colorChange,
       nickname: "Kecleon",
     });
-    const opponent = createMockPokemon({ types: ["fire"] });
+    const opponent = createMockPokemon({ types: [T.fire] });
     const state = createMinimalBattleState(kecleon, opponent);
     const rng = createMockRng();
-    const fireMove = createDamagingMove("fire", "flamethrower");
+    const fireMove = FLAMETHROWER;
 
     const context: AbilityContext = {
       pokemon: kecleon,
@@ -644,11 +655,11 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
 
   it("given a non-Color-Change Pokemon, when on-damage-taken fires, then no type change", () => {
     // Other abilities should not trigger type changes
-    const normal = createMockPokemon({ types: ["normal"], ability: "sturdy" });
-    const opponent = createMockPokemon({ types: ["fire"] });
+    const normal = createMockPokemon({ types: [T.normal], ability: A.sturdy });
+    const opponent = createMockPokemon({ types: [T.fire] });
     const state = createMinimalBattleState(normal, opponent);
     const rng = createMockRng();
-    const fireMove = createDamagingMove("fire", "flamethrower");
+    const fireMove = FLAMETHROWER;
 
     const context: AbilityContext = {
       pokemon: normal,
@@ -667,10 +678,10 @@ describe("Gen 3 Color Change ability (on-damage-taken)", () => {
   it("given Color Change with no move in context, when on-damage-taken fires, then no activation", () => {
     // Edge case: no move information present
     const kecleon = createMockPokemon({
-      types: ["normal"],
-      ability: "color-change",
+      types: [T.normal],
+      ability: A.colorChange,
     });
-    const opponent = createMockPokemon({ types: ["fire"] });
+    const opponent = createMockPokemon({ types: [T.fire] });
     const state = createMinimalBattleState(kecleon, opponent);
     const rng = createMockRng();
 
@@ -699,14 +710,14 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
   it("given a Pokemon with Synchronize that received paralysis, when on-status-inflicted fires, then opponent gets paralysis", () => {
     // Source: pret/pokeemerald — Synchronize mirrors paralysis to foe
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
-      status: "paralysis",
+      types: [T.psychic],
+      ability: A.synchronize,
+      status: S.paralysis,
       nickname: "Alakazam",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
       nickname: "Tauros",
     });
@@ -727,23 +738,22 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "paralysis",
+      status: S.paralysis,
     });
-    expect(result.messages[0]).toContain("Synchronize");
-    expect(result.messages[0]).toContain("paralysis");
+    expect(result.messages).toEqual([`Alakazam's Synchronize shared its paralysis with Tauros!`]);
   });
 
   it("given a Pokemon with Synchronize that received burn, when on-status-inflicted fires, then opponent gets burn", () => {
     // Source: pret/pokeemerald — Synchronize mirrors burn
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
-      status: "burn",
+      types: [T.psychic],
+      ability: A.synchronize,
+      status: S.burn,
       nickname: "Espeon",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
       nickname: "Snorlax",
     });
@@ -763,21 +773,21 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "burn",
+      status: S.burn,
     });
   });
 
   it("given a Pokemon with Synchronize that received poison, when on-status-inflicted fires, then opponent gets poison", () => {
     // Source: pret/pokeemerald — Synchronize mirrors poison
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
-      status: "poison",
+      types: [T.psychic],
+      ability: A.synchronize,
+      status: S.poison,
       nickname: "Gardevoir",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
       nickname: "Slaking",
     });
@@ -797,7 +807,7 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: S.poison,
     });
   });
 
@@ -806,14 +816,14 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     // Source: pret/pokeemerald src/battle_util.c lines 2976-2977, 2992-2993 —
     //   if (synchronizeMoveEffect == MOVE_EFFECT_TOXIC) synchronizeMoveEffect = MOVE_EFFECT_POISON
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
-      status: "badly-poisoned",
+      types: [T.psychic],
+      ability: A.synchronize,
+      status: S.badlyPoisoned,
       nickname: "Alakazam",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
       nickname: "Tauros",
     });
@@ -834,7 +844,7 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: S.poison,
     });
   });
 
@@ -842,14 +852,14 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     // Source: pret/pokeemerald — Synchronize does NOT work with sleep
     // Source: Bulbapedia — "Synchronize does not activate for Sleep or Freeze"
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
-      status: "sleep",
+      types: [T.psychic],
+      ability: A.synchronize,
+      status: S.sleep,
       nickname: "Alakazam",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
     });
     const state = createMinimalBattleState(syncer, opponent);
@@ -872,14 +882,14 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
     // Source: pret/pokeemerald — Synchronize does NOT work with freeze
     // Source: Bulbapedia — "Synchronize does not activate for Sleep or Freeze"
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
-      status: "freeze",
+      types: [T.psychic],
+      ability: A.synchronize,
+      status: S.freeze,
       nickname: "Alakazam",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
     });
     const state = createMinimalBattleState(syncer, opponent);
@@ -901,15 +911,15 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
   it("given a Pokemon with Synchronize and paralyzed opponent, when on-status-inflicted fires, then does NOT trigger (opponent already has status)", () => {
     // Source: pret/pokeemerald — cannot synchronize if opponent already has a primary status
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
-      status: "paralysis",
+      types: [T.psychic],
+      ability: A.synchronize,
+      status: S.paralysis,
       nickname: "Alakazam",
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
-      status: "paralysis", // Already has status
+      types: [T.normal],
+      ability: A.none,
+      status: S.paralysis, // Already has status
     });
     const state = createMinimalBattleState(syncer, opponent);
     const rng = createMockRng();
@@ -930,13 +940,13 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
   it("given a Pokemon with Synchronize but no status, when on-status-inflicted fires, then does not activate", () => {
     // Edge case: trigger fires but the pokemon has no status (shouldn't normally happen)
     const syncer = createMockPokemon({
-      types: ["psychic"],
-      ability: "synchronize",
+      types: [T.psychic],
+      ability: A.synchronize,
       status: null,
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
     });
     const state = createMinimalBattleState(syncer, opponent);
@@ -957,13 +967,13 @@ describe("Gen 3 Synchronize ability (on-status-inflicted)", () => {
   it("given a non-Synchronize Pokemon that received paralysis, when on-status-inflicted fires, then does not activate", () => {
     // Other abilities should not trigger synchronize logic
     const normal = createMockPokemon({
-      types: ["psychic"],
-      ability: "inner-focus",
-      status: "paralysis",
+      types: [T.psychic],
+      ability: A.innerFocus,
+      status: S.paralysis,
     });
     const opponent = createMockPokemon({
-      types: ["normal"],
-      ability: "none",
+      types: [T.normal],
+      ability: A.none,
       status: null,
     });
     const state = createMinimalBattleState(normal, opponent);
