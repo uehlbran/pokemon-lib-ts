@@ -18,6 +18,11 @@ import { handleGen6StatAbility } from "../src/Gen6AbilitiesStat";
 // Helpers
 // ---------------------------------------------------------------------------
 
+let nextTestUid = 0;
+function makeTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
 function makePokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
@@ -33,7 +38,7 @@ function makePokemon(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      uid: overrides.uid ?? `test-${Math.random()}`,
+      uid: overrides.uid ?? makeTestUid(),
       speciesId: overrides.speciesId ?? 1,
       nickname: overrides.nickname ?? null,
       level: 50,

@@ -42,6 +42,11 @@ import { GEN8_TYPE_CHART } from "../../src/Gen8TypeChart";
 // Test Helpers
 // ---------------------------------------------------------------------------
 
+let nextTestUid = 0;
+function makeTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
 function makePokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
@@ -54,7 +59,7 @@ function makePokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
-    uid: `test-${Math.random()}`,
+    uid: makeTestUid(),
     speciesId: overrides.speciesId ?? 1,
     nickname: overrides.nickname ?? null,
     level: 50,
@@ -286,8 +291,13 @@ describe("Dynamax 3-turn lifecycle integration", () => {
     // Step 2: Activate -- HP should double (dynamaxLevel=10 -> 2.0x)
     // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 10: ratio = 2.0
     const activateEvents = gimmick.activate(pokemon, side, state);
-    expect(activateEvents).toHaveLength(1);
-    expect(activateEvents[0].type).toBe("dynamax");
+    expect(activateEvents).toEqual([
+      {
+        type: "dynamax",
+        side: 0,
+        pokemon: pokemon.pokemon.uid,
+      },
+    ]);
     expect(pokemon.isDynamaxed).toBe(true);
     expect(pokemon.dynamaxTurnsLeft).toBe(DYNAMAX_TURNS);
     expect(pokemon.pokemon.calculatedStats!.hp).toBe(600);
@@ -307,8 +317,13 @@ describe("Dynamax 3-turn lifecycle integration", () => {
     // Source: Showdown data/conditions.ts lines 801-802 -- proportional HP restoration
     // round(400 * 300 / 600) = round(200) = 200
     const revertEvents = gimmick.revert(pokemon, state);
-    expect(revertEvents).toHaveLength(1);
-    expect(revertEvents[0].type).toBe("dynamax-end");
+    expect(revertEvents).toEqual([
+      {
+        type: "dynamax-end",
+        side: 0,
+        pokemon: pokemon.pokemon.uid,
+      },
+    ]);
     expect(pokemon.isDynamaxed).toBe(false);
     expect(pokemon.dynamaxTurnsLeft).toBe(0);
     expect(pokemon.pokemon.calculatedStats!.hp).toBe(300);
@@ -479,7 +494,8 @@ describe("Entry hazard edge cases", () => {
       const state = makeState({ terrainType: "misty" });
 
       const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
-      expect(result.statusInflicted).toBeNull();
+      expect(result.statusInflicted).toBe(null);
+      expect(result.messages).toEqual([]);
     });
 
     it("given Misty Terrain active and Toxic Spikes, when grounded Poison-type switches in, then hazard is still absorbed (absorption message emitted)", () => {
@@ -695,11 +711,17 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
       pokemon: {
         ...makeActive({
           ability: "beast-boost",
+          nickname: "Mewtwo",
           maxHp: 200,
           currentHp: 200,
         }),
         pokemon: {
-          ...makePokemonInstance({ ability: "beast-boost", maxHp: 200, currentHp: 200 }),
+          ...makePokemonInstance({
+            ability: "beast-boost",
+            maxHp: 200,
+            currentHp: 200,
+            nickname: "Mewtwo",
+          }),
           calculatedStats: {
             hp: 200,
             attack: 80,
@@ -718,13 +740,17 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
 
     const result = handleGen8StatAbility(ctx);
     expect(result.activated).toBe(true);
-    // formatStatName("spAttack") -> "Special Attack"
-    expect(result.messages[0]).toContain("Special Attack");
-    expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "spAttack",
-      stages: 1,
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "spAttack",
+          stages: 1,
+        },
+      ],
+      messages: ["Mewtwo's Beast Boost raised its Special Attack!"],
     });
   });
 
@@ -736,11 +762,17 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
       pokemon: {
         ...makeActive({
           ability: "beast-boost",
+          nickname: "Mewtwo",
           maxHp: 200,
           currentHp: 200,
         }),
         pokemon: {
-          ...makePokemonInstance({ ability: "beast-boost", maxHp: 200, currentHp: 200 }),
+          ...makePokemonInstance({
+            ability: "beast-boost",
+            maxHp: 200,
+            currentHp: 200,
+            nickname: "Mewtwo",
+          }),
           calculatedStats: {
             hp: 200,
             attack: 80,
@@ -759,13 +791,17 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
 
     const result = handleGen8StatAbility(ctx);
     expect(result.activated).toBe(true);
-    // formatStatName("spDefense") -> "Special Defense"
-    expect(result.messages[0]).toContain("Special Defense");
-    expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "spDefense",
-      stages: 1,
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "spDefense",
+          stages: 1,
+        },
+      ],
+      messages: ["Mewtwo's Beast Boost raised its Special Defense!"],
     });
   });
 
@@ -777,11 +813,17 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
       pokemon: {
         ...makeActive({
           ability: "beast-boost",
+          nickname: "Mewtwo",
           maxHp: 200,
           currentHp: 200,
         }),
         pokemon: {
-          ...makePokemonInstance({ ability: "beast-boost", maxHp: 200, currentHp: 200 }),
+          ...makePokemonInstance({
+            ability: "beast-boost",
+            maxHp: 200,
+            currentHp: 200,
+            nickname: "Mewtwo",
+          }),
           calculatedStats: {
             hp: 200,
             attack: 80,
@@ -800,12 +842,17 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
 
     const result = handleGen8StatAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("Speed");
-    expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "speed",
-      stages: 1,
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "speed",
+          stages: 1,
+        },
+      ],
+      messages: ["Mewtwo's Beast Boost raised its Speed!"],
     });
   });
 });

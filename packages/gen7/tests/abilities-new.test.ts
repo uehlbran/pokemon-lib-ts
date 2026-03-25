@@ -37,6 +37,11 @@ import {
 // Test helpers
 // ---------------------------------------------------------------------------
 
+let nextTestUid = 0;
+function makeTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
 function makePokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
@@ -49,7 +54,7 @@ function makePokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
-    uid: `test-${Math.random()}`,
+    uid: makeTestUid(),
     speciesId: overrides.speciesId ?? 1,
     nickname: overrides.nickname ?? null,
     level: overrides.level ?? 50,
@@ -267,17 +272,22 @@ describe("Disguise (Mimikyu)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects).toContainEqual({
-      effectType: "volatile-inflict",
-      target: "self",
-      volatile: "disguise-broken",
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "disguise-broken",
+        },
+        {
+          effectType: "damage-reduction",
+          target: "self",
+        },
+      ],
+      messages: ["Mimikyu's Disguise was busted!"],
+      movePrevented: false,
     });
-    expect(result.effects).toContainEqual({
-      effectType: "damage-reduction",
-      target: "self",
-    });
-    expect(result.messages[0]).toContain("Disguise was busted");
   });
 
   it("given Disguise already broken, when hit by a move, then does not block damage", () => {
@@ -387,8 +397,11 @@ describe("Schooling (Wishiwashi)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("formed a school");
+    expect(result).toEqual({
+      activated: true,
+      effects: [{ effectType: "none", target: "self" }],
+      messages: ["Wishiwashi formed a school!"],
+    });
   });
 
   it("given Schooling Wishiwashi below 25% HP at turn end, when ability triggers, then reports Solo Form", () => {
@@ -404,8 +417,11 @@ describe("Schooling (Wishiwashi)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("stopped schooling");
+    expect(result).toEqual({
+      activated: true,
+      effects: [{ effectType: "none", target: "self" }],
+      messages: ["Wishiwashi stopped schooling!"],
+    });
   });
 
   it("given SCHOOLING_HP_THRESHOLD constant, then it equals 0.25", () => {
@@ -437,13 +453,17 @@ describe("Battle Bond (Ash-Greninja)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects).toContainEqual({
-      effectType: "volatile-inflict",
-      target: "self",
-      volatile: "battle-bond-transformed",
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "battle-bond-transformed",
+        },
+      ],
+      messages: ["Greninja became Ash-Greninja!"],
     });
-    expect(result.messages[0]).toContain("Ash-Greninja");
   });
 
   it("given Battle Bond Greninja, when opponent has not fainted, then does not transform", () => {
@@ -540,9 +560,12 @@ describe("Shields Down (Minior)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.movePrevented).toBe(true);
-    expect(result.messages[0]).toContain("Shields Down prevents status");
+    expect(result).toEqual({
+      activated: true,
+      effects: [],
+      messages: ["Minior's Shields Down prevents status conditions!"],
+      movePrevented: true,
+    });
   });
 
   it("given Shields Down in Core Form (below 50% HP), when status is inflicted, then does not block", () => {
@@ -572,8 +595,11 @@ describe("Shields Down (Minior)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("shields went down");
+    expect(result).toEqual({
+      activated: true,
+      effects: [{ effectType: "none", target: "self" }],
+      messages: ["Minior's shields went down!"],
+    });
   });
 });
 
@@ -618,13 +644,17 @@ describe("Power Construct (Zygarde)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects).toContainEqual({
-      effectType: "volatile-inflict",
-      target: "self",
-      volatile: "power-construct-transformed",
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "power-construct-transformed",
+        },
+      ],
+      messages: ["Zygarde transformed into its Complete Forme!"],
     });
-    expect(result.messages[0]).toContain("Complete Forme");
   });
 
   it("given Power Construct Zygarde already transformed, when taking more damage, then does not transform again", () => {
@@ -675,9 +705,12 @@ describe("Comatose (Komala)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.movePrevented).toBe(true);
-    expect(result.messages[0]).toContain("Comatose prevents status");
+    expect(result).toEqual({
+      activated: true,
+      effects: [],
+      messages: ["Komala's Comatose prevents status conditions!"],
+      movePrevented: true,
+    });
   });
 
   it("given Comatose holder, when switching in, then announces drowsing", () => {
@@ -690,8 +723,11 @@ describe("Comatose (Komala)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("drowsing");
+    expect(result).toEqual({
+      activated: true,
+      effects: [{ effectType: "none", target: "self" }],
+      messages: ["Komala is drowsing!"],
+    });
   });
 
   describe("isComatoseStatusImmune", () => {
@@ -740,13 +776,13 @@ describe("RKS System (Silvally)", () => {
       expect(getRKSType("fairy-memory")).toBe("fairy");
     });
 
-    it("given no held item, when checking RKS type, then returns null (defaults to Normal)", () => {
+    it("given no held item, when checking RKS type, then it returns null (defaults to Normal)", () => {
       // Source: Showdown -- no Memory = Normal type (handled by base type)
-      expect(getRKSType(null)).toBeNull();
+      expect(getRKSType(null)).toBe(null);
     });
 
-    it("given non-Memory held item, when checking RKS type, then returns null", () => {
-      expect(getRKSType("leftovers")).toBeNull();
+    it("given non-Memory held item, when checking RKS type, then it returns null", () => {
+      expect(getRKSType("leftovers")).toBe(null);
     });
   });
 
@@ -761,11 +797,16 @@ describe("RKS System (Silvally)", () => {
 
     const result = handleGen7NewAbility(ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects).toContainEqual({
-      effectType: "type-change",
-      target: "self",
-      types: ["fire"],
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "type-change",
+          target: "self",
+          types: ["fire"],
+        },
+      ],
+      messages: ["Silvally's RKS System changed its type to fire!"],
     });
   });
 
@@ -788,7 +829,7 @@ describe("RKS System (Silvally)", () => {
       expect(Object.keys(MEMORY_TYPE_MAP)).toHaveLength(17);
     });
 
-    it("given the Memory type map, then every type except Normal is represented", () => {
+    it("given the Memory type map, when enumerating values, then every type except Normal is represented", () => {
       // Source: Bulbapedia -- Silvally can be any type except Normal via Memories
       const types = new Set(Object.values(MEMORY_TYPE_MAP));
       expect(types.has("fire")).toBe(true);

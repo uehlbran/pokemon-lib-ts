@@ -38,6 +38,11 @@ import {
 // Test helpers
 // ---------------------------------------------------------------------------
 
+let nextTestUid = 0;
+function makeTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
 function makePokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
@@ -49,7 +54,7 @@ function makePokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
-    uid: `test-${Math.random()}`,
+    uid: makeTestUid(),
     speciesId: overrides.speciesId ?? 1,
     nickname: overrides.nickname ?? null,
     level: 50,
@@ -233,34 +238,47 @@ describe("handleToxicChain", () => {
     // Source: Showdown data/abilities.ts:5001-5014
     // "this.randomChance(3, 10)" -- 30% chance
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: "toxic-chain", nickname: "Pecharunt" }),
+      opponent: makeActivePokemon({ types: ["normal"], nickname: "Mew" }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
     });
     const result = handleToxicChain(ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(
-      expect.objectContaining({
-        effectType: "status-inflict",
-        target: "opponent",
-        status: "badly-poisoned",
-      }),
-    );
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "status-inflict",
+          target: "opponent",
+          status: "badly-poisoned",
+        },
+      ],
+      messages: ["Pecharunt's Toxic Chain badly poisoned the target!"],
+    });
   });
 
   it("given on-after-move-used with special move and 30% roll succeeds, when handling, then badly poisons target", () => {
     // Source: Showdown data/abilities.ts:5001-5014 -- works on any damaging move
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: "toxic-chain", nickname: "Pecharunt" }),
+      opponent: makeActivePokemon({ types: ["normal"], nickname: "Mew" }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "special" }),
       rng: { chance: () => true },
     });
     const result = handleToxicChain(ctx);
-    expect(result.activated).toBe(true);
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "status-inflict",
+          target: "opponent",
+          status: "badly-poisoned",
+        },
+      ],
+      messages: ["Pecharunt's Toxic Chain badly poisoned the target!"],
+    });
   });
 
   it("given status move, when handling, then does not activate (status moves excluded)", () => {
@@ -389,13 +407,17 @@ describe("handleGoodAsGold", () => {
     // Source: Showdown data/abilities.ts:1573-1584
     // "if (move.category === 'Status' && target !== source) return null"
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "good-as-gold" }),
+      pokemon: makeActivePokemon({ ability: "good-as-gold", nickname: "Gholdengo" }),
       trigger: "on-before-move",
       move: makeMove({ category: "status", id: "toxic" }),
     });
     const result = handleGoodAsGold(ctx);
-    expect(result.activated).toBe(true);
-    expect(result.movePrevented).toBe(true);
+    expect(result).toEqual({
+      activated: true,
+      effects: [],
+      messages: ["Gholdengo's Good as Gold made the move fail!"],
+      movePrevented: true,
+    });
   });
 
   it("given on-before-move with Physical-category move, when handling, then does not block", () => {
@@ -464,26 +486,29 @@ describe("handleEmbodyAspect", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
         ability: "embody-aspect-teal",
+        nickname: "Ogerpon",
         isTerastallized: true,
       }),
       trigger: "on-switch-in",
     });
     const result = handleEmbodyAspect(ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects).toHaveLength(2); // volatile-inflict + stat-change
-    expect(result.effects[0]).toEqual(
-      expect.objectContaining({
-        effectType: "volatile-inflict",
-        volatile: "embody-aspect-used",
-      }),
-    );
-    expect(result.effects[1]).toEqual(
-      expect.objectContaining({
-        effectType: "stat-change",
-        stat: "speed",
-        stages: 1,
-      }),
-    );
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "embody-aspect-used",
+        },
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "speed",
+          stages: 1,
+        },
+      ],
+      messages: ["Ogerpon's Embody Aspect boosted its Speed!"],
+    });
   });
 
   it("given Hearthflame Embody Aspect on Tera'd switch-in, when handling, then boosts Attack", () => {
@@ -492,19 +517,29 @@ describe("handleEmbodyAspect", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
         ability: "embody-aspect-hearthflame",
+        nickname: "Ogerpon",
         isTerastallized: true,
       }),
       trigger: "on-switch-in",
     });
     const result = handleEmbodyAspect(ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects[1]).toEqual(
-      expect.objectContaining({
-        effectType: "stat-change",
-        stat: "attack",
-        stages: 1,
-      }),
-    );
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "embody-aspect-used",
+        },
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "attack",
+          stages: 1,
+        },
+      ],
+      messages: ["Ogerpon's Embody Aspect boosted its Attack!"],
+    });
   });
 
   it("given Wellspring Embody Aspect on Tera'd switch-in, when handling, then boosts SpDefense", () => {
@@ -513,19 +548,29 @@ describe("handleEmbodyAspect", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
         ability: "embody-aspect-wellspring",
+        nickname: "Ogerpon",
         isTerastallized: true,
       }),
       trigger: "on-switch-in",
     });
     const result = handleEmbodyAspect(ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects[1]).toEqual(
-      expect.objectContaining({
-        effectType: "stat-change",
-        stat: "spDefense",
-        stages: 1,
-      }),
-    );
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "embody-aspect-used",
+        },
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "spDefense",
+          stages: 1,
+        },
+      ],
+      messages: ["Ogerpon's Embody Aspect boosted its Sp. Def!"],
+    });
   });
 
   it("given Cornerstone Embody Aspect on Tera'd switch-in, when handling, then boosts Defense", () => {
@@ -534,19 +579,29 @@ describe("handleEmbodyAspect", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
         ability: "embody-aspect-cornerstone",
+        nickname: "Ogerpon",
         isTerastallized: true,
       }),
       trigger: "on-switch-in",
     });
     const result = handleEmbodyAspect(ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects[1]).toEqual(
-      expect.objectContaining({
-        effectType: "stat-change",
-        stat: "defense",
-        stages: 1,
-      }),
-    );
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "embody-aspect-used",
+        },
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "defense",
+          stages: 1,
+        },
+      ],
+      messages: ["Ogerpon's Embody Aspect boosted its Defense!"],
+    });
   });
 
   it("given not Terastallized, when handling, then does not activate", () => {
@@ -614,17 +669,17 @@ describe("isEmbodyAspect", () => {
 });
 
 describe("EMBODY_ASPECT_BOOSTS", () => {
-  it("maps teal to speed", () => {
+  it("given Embody Aspect Teal, when looking up its stat boost, then it maps to Speed", () => {
     // Source: Showdown data/abilities.ts:1162-1212
     expect(EMBODY_ASPECT_BOOSTS["embody-aspect-teal"]).toBe("speed");
   });
-  it("maps hearthflame to attack", () => {
+  it("given Embody Aspect Hearthflame, when looking up its stat boost, then it maps to Attack", () => {
     expect(EMBODY_ASPECT_BOOSTS["embody-aspect-hearthflame"]).toBe("attack");
   });
-  it("maps wellspring to spDefense", () => {
+  it("given Embody Aspect Wellspring, when looking up its stat boost, then it maps to Sp. Def", () => {
     expect(EMBODY_ASPECT_BOOSTS["embody-aspect-wellspring"]).toBe("spDefense");
   });
-  it("maps cornerstone to defense", () => {
+  it("given Embody Aspect Cornerstone, when looking up its stat boost, then it maps to Defense", () => {
     expect(EMBODY_ASPECT_BOOSTS["embody-aspect-cornerstone"]).toBe("defense");
   });
 });
@@ -742,21 +797,22 @@ describe("getSupremeOverlordFloatMultiplier", () => {
     expect(getSupremeOverlordFloatMultiplier(-1)).toBe(1);
   });
 
-  it("keeps getSupremeOverlordMultiplier as a compatibility alias", () => {
+  it("given the compatibility alias, when comparing it to the float helper, then it stays wired to the same implementation", () => {
     expect(getSupremeOverlordMultiplier).toBe(getSupremeOverlordFloatMultiplier);
   });
 });
 
 describe("SUPREME_OVERLORD_TABLE", () => {
-  it("has exactly 6 entries (0 through 5 fainted allies)", () => {
+  it("given the Supreme Overlord table, when checking values, then it matches the 4096-based source table", () => {
     // Source: Showdown data/abilities.ts:4634-4658
-    expect(SUPREME_OVERLORD_TABLE).toHaveLength(6);
-  });
-
-  it("values monotonically increase", () => {
-    for (let i = 1; i < SUPREME_OVERLORD_TABLE.length; i++) {
-      expect(SUPREME_OVERLORD_TABLE[i]!).toBeGreaterThan(SUPREME_OVERLORD_TABLE[i - 1]!);
-    }
+    expect(SUPREME_OVERLORD_TABLE).toEqual([
+      1,
+      4506 / 4096,
+      4915 / 4096,
+      5325 / 4096,
+      5734 / 4096,
+      6144 / 4096,
+    ]);
   });
 });
 
@@ -768,26 +824,28 @@ describe("handleGen9IntrepidSwordTrigger", () => {
   it("given on-switch-in with no prior usage, when handling, then boosts Attack and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- intrepidsword: once per battle in Gen 9
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
+      pokemon: makeActivePokemon({ ability: "intrepid-sword", nickname: "Zacian" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9IntrepidSwordTrigger(ctx);
-    expect(result.activated).toBe(true);
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "intrepid-sword-used",
+        },
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "attack",
+          stages: 1,
+        },
+      ],
+      messages: ["Zacian's Intrepid Sword raised its Attack!"],
+    });
     expect(ctx.pokemon.pokemon.swordBoost).toBe(true);
-    expect(result.effects).toHaveLength(2);
-    expect(result.effects[0]).toEqual(
-      expect.objectContaining({
-        effectType: "volatile-inflict",
-        volatile: "intrepid-sword-used",
-      }),
-    );
-    expect(result.effects[1]).toEqual(
-      expect.objectContaining({
-        effectType: "stat-change",
-        stat: "attack",
-        stages: 1,
-      }),
-    );
   });
 
   it("given already used this battle, when handling, then does not activate", () => {
@@ -812,12 +870,12 @@ describe("handleGen9IntrepidSwordTrigger", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("keeps the legacy aliases wired to the trigger handler", () => {
+  it("given the legacy Intrepid Sword aliases, when comparing exports, then they stay wired to the trigger handler", () => {
     expect(handleGen9IntrepidSword).toBe(handleGen9IntrepidSwordTrigger);
     expect(handleIntrepidSwordGen9).toBe(handleGen9IntrepidSwordTrigger);
   });
 
-  it("stays blocked after switch-out clears volatiles because the once-per-battle flag is persistent", () => {
+  it("given Intrepid Sword already used this battle, when switch-out clears volatiles, then the persistent once-per-battle flag still blocks it", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
       trigger: "on-switch-in",
@@ -839,26 +897,28 @@ describe("handleGen9DauntlessShieldTrigger", () => {
   it("given on-switch-in with no prior usage, when handling, then boosts Defense and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- dauntlessshield: once per battle in Gen 9
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
+      pokemon: makeActivePokemon({ ability: "dauntless-shield", nickname: "Zamazenta" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9DauntlessShieldTrigger(ctx);
-    expect(result.activated).toBe(true);
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "dauntless-shield-used",
+        },
+        {
+          effectType: "stat-change",
+          target: "self",
+          stat: "defense",
+          stages: 1,
+        },
+      ],
+      messages: ["Zamazenta's Dauntless Shield raised its Defense!"],
+    });
     expect(ctx.pokemon.pokemon.shieldBoost).toBe(true);
-    expect(result.effects).toHaveLength(2);
-    expect(result.effects[0]).toEqual(
-      expect.objectContaining({
-        effectType: "volatile-inflict",
-        volatile: "dauntless-shield-used",
-      }),
-    );
-    expect(result.effects[1]).toEqual(
-      expect.objectContaining({
-        effectType: "stat-change",
-        stat: "defense",
-        stages: 1,
-      }),
-    );
   });
 
   it("given already used this battle, when handling, then does not activate", () => {
@@ -883,12 +943,12 @@ describe("handleGen9DauntlessShieldTrigger", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("keeps the legacy aliases wired to the trigger handler", () => {
+  it("given the legacy Dauntless Shield aliases, when comparing exports, then they stay wired to the trigger handler", () => {
     expect(handleGen9DauntlessShield).toBe(handleGen9DauntlessShieldTrigger);
     expect(handleDauntlessShieldGen9).toBe(handleGen9DauntlessShieldTrigger);
   });
 
-  it("stays blocked after switch-out clears volatiles because the once-per-battle flag is persistent", () => {
+  it("given Dauntless Shield already used this battle, when switch-out clears volatiles, then the persistent once-per-battle flag still blocks it", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
       trigger: "on-switch-in",
@@ -910,38 +970,39 @@ describe("handleProteanGen9", () => {
   it("given on-before-move with no prior usage, when handling, then changes type and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- protean/libero: once per switchin in Gen 9
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protean", types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: "protean", types: ["normal"], nickname: "Greninja" }),
       trigger: "on-before-move",
       move: makeMove({ type: "fire" }),
     });
     const result = handleProteanGen9(ctx);
-    expect(result.activated).toBe(true);
-    expect(result.effects).toHaveLength(2);
-    expect(result.effects[0]).toEqual(
-      expect.objectContaining({
-        effectType: "volatile-inflict",
-        volatile: "protean-used",
-      }),
-    );
-    expect(result.effects[1]).toEqual(
-      expect.objectContaining({
-        effectType: "type-change",
-        target: "self",
-        types: ["fire"],
-      }),
-    );
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        {
+          effectType: "volatile-inflict",
+          target: "self",
+          volatile: "protean-used",
+        },
+        {
+          effectType: "type-change",
+          target: "self",
+          types: ["fire"],
+        },
+      ],
+      messages: ["Greninja's Protean changed its type to fire!"],
+    });
   });
 
   it("given Libero ability, when handling, then also works and message says Libero", () => {
     // Source: Showdown data/abilities.ts -- libero: same as protean
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "libero", types: ["grass"] }),
+      pokemon: makeActivePokemon({ ability: "libero", types: ["grass"], nickname: "Cinderace" }),
       trigger: "on-before-move",
       move: makeMove({ type: "fire" }),
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("Libero");
+    expect(result.messages[0]).toBe("Cinderace's Libero changed its type to fire!");
   });
 
   it("given already used (volatile set), when handling, then does not activate (once per switch-in)", () => {
@@ -980,7 +1041,18 @@ describe("handleProteanGen9", () => {
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[1]).toEqual(expect.objectContaining({ types: ["fire"] }));
+    expect(result.effects).toEqual([
+      {
+        effectType: "volatile-inflict",
+        target: "self",
+        volatile: "protean-used",
+      },
+      {
+        effectType: "type-change",
+        target: "self",
+        types: ["fire"],
+      },
+    ]);
   });
 
   it("given wrong trigger, when handling, then does not activate", () => {
@@ -1002,7 +1074,7 @@ describe("handleProteanGen9", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("keeps the legacy aliases wired to the trigger handler", () => {
+  it("given the legacy Protean aliases, when comparing exports, then they stay wired to the trigger handler", () => {
     expect(handleGen9Protean).toBe(handleGen9ProteanTrigger);
     expect(handleProteanGen9).toBe(handleGen9ProteanTrigger);
   });

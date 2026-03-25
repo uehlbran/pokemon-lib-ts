@@ -38,6 +38,11 @@ import {
 // Test helpers
 // ---------------------------------------------------------------------------
 
+let nextTestUid = 0;
+function makeTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
 function makePokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
@@ -50,7 +55,7 @@ function makePokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
-    uid: `test-${Math.random()}`,
+    uid: makeTestUid(),
     speciesId: overrides.speciesId ?? 1,
     nickname: overrides.nickname ?? null,
     level: 50,
@@ -278,7 +283,7 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Intimidate", () => {
     it("given Intimidate user, when switching in with opponent, then lowers opponent Attack by 1 stage", () => {
       // Source: Showdown data/abilities.ts -- Intimidate: -1 Atk to foe on switch-in
-      const opponent = makeActivePokemon({ ability: "inner-focus" });
+      const opponent = makeActivePokemon({ ability: "inner-focus", nickname: "Metagross" });
       const ctx = makeContext({
         ability: "intimidate",
         trigger: "on-switch-in",
@@ -288,15 +293,18 @@ describe("Gen 7 Switch-in Abilities", () => {
 
       const result = handleGen7SwitchAbility("on-switch-in", ctx);
 
-      expect(result.activated).toBe(true);
-      expect(result.effects).toHaveLength(1);
-      expect(result.effects[0]).toEqual({
-        effectType: "stat-change",
-        target: "opponent",
-        stat: "attack",
-        stages: -1,
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          {
+            effectType: "stat-change",
+            target: "opponent",
+            stat: "attack",
+            stages: -1,
+          },
+        ],
+        messages: ["Gyarados's Intimidate cut Metagross's Attack!"],
       });
-      expect(result.messages[0]).toContain("Intimidate");
     });
 
     it("given Intimidate user, when opponent has Substitute, then does not lower Attack", () => {
@@ -329,7 +337,7 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Trace", () => {
     it("given Trace user, when opponent has a copyable ability, then copies opponent ability", () => {
       // Source: Showdown data/abilities.ts -- Trace: copies opponent's ability
-      const opponent = makeActivePokemon({ ability: "levitate" });
+      const opponent = makeActivePokemon({ ability: "levitate", nickname: "Garchomp" });
       const ctx = makeContext({
         ability: "trace",
         trigger: "on-switch-in",
@@ -339,14 +347,17 @@ describe("Gen 7 Switch-in Abilities", () => {
 
       const result = handleGen7SwitchAbility("on-switch-in", ctx);
 
-      expect(result.activated).toBe(true);
-      expect(result.effects).toHaveLength(1);
-      expect(result.effects[0]).toEqual({
-        effectType: "ability-change",
-        target: "self",
-        newAbility: "levitate",
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          {
+            effectType: "ability-change",
+            target: "self",
+            newAbility: "levitate",
+          },
+        ],
+        messages: ["Gardevoir traced Garchomp's levitate!"],
       });
-      expect(result.messages[0]).toContain("traced");
     });
 
     it("given Trace user, when opponent has Disguise (Gen 7 uncopyable), then does not activate", () => {
@@ -715,13 +726,17 @@ describe("Gen 7 Contact Abilities", () => {
 
       const result = handleGen7SwitchAbility("on-contact", ctx);
 
-      expect(result.activated).toBe(true);
-      expect(result.effects[0]).toEqual({
-        effectType: "chip-damage",
-        target: "opponent",
-        value: 25,
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          {
+            effectType: "chip-damage",
+            target: "opponent",
+            value: 25,
+          },
+        ],
+        messages: ["Garchomp's Rough Skin hurt the attacker!"],
       });
-      expect(result.messages[0]).toContain("Rough Skin");
     });
 
     it("given Iron Barbs defender with 160 HP attacker, when attacker makes contact, then deals 20 chip damage (floor(160/8))", () => {
@@ -737,13 +752,17 @@ describe("Gen 7 Contact Abilities", () => {
 
       const result = handleGen7SwitchAbility("on-contact", ctx);
 
-      expect(result.activated).toBe(true);
-      expect(result.effects[0]).toEqual({
-        effectType: "chip-damage",
-        target: "opponent",
-        value: 20,
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          {
+            effectType: "chip-damage",
+            target: "opponent",
+            value: 20,
+          },
+        ],
+        messages: ["Ferrothorn's Iron Barbs hurt the attacker!"],
       });
-      expect(result.messages[0]).toContain("Iron Barbs");
     });
   });
 
@@ -876,14 +895,18 @@ describe("Gen 7 Contact Abilities", () => {
 
       const result = handleGen7SwitchAbility("on-contact", ctx);
 
-      expect(result.activated).toBe(true);
-      expect(result.effects[0]).toEqual({
-        effectType: "stat-change",
-        target: "opponent",
-        stat: "speed",
-        stages: -1,
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          {
+            effectType: "stat-change",
+            target: "opponent",
+            stat: "speed",
+            stages: -1,
+          },
+        ],
+        messages: ["Goodra's Gooey lowered the attacker's Speed!"],
       });
-      expect(result.messages[0]).toContain("Gooey");
     });
 
     it("given Tangling Hair defender (Gen 7 new), when attacker makes contact, then lowers attacker Speed by 1 stage", () => {
@@ -899,14 +922,18 @@ describe("Gen 7 Contact Abilities", () => {
 
       const result = handleGen7SwitchAbility("on-contact", ctx);
 
-      expect(result.activated).toBe(true);
-      expect(result.effects[0]).toEqual({
-        effectType: "stat-change",
-        target: "opponent",
-        stat: "speed",
-        stages: -1,
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          {
+            effectType: "stat-change",
+            target: "opponent",
+            stat: "speed",
+            stages: -1,
+          },
+        ],
+        messages: ["Dugtrio-Alola's Tangling Hair lowered the attacker's Speed!"],
       });
-      expect(result.messages[0]).toContain("Tangling Hair");
     });
   });
 
@@ -1256,7 +1283,7 @@ describe("Gen 7 Ability Constants", () => {
     });
 
     it("given non-matching rock, when getting weather duration, then returns 5", () => {
-      // Damp Rock only extends rain, not sun
+      // Source: Showdown data/items.ts -- Damp Rock only extends rain, so sun stays at the base 5 turns.
       expect(getWeatherDuration("damp-rock", "sun")).toBe(5);
     });
   });

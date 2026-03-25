@@ -19,6 +19,11 @@ import { handleGen9Ability } from "../src/Gen9Abilities";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+let nextTestUid = 0;
+function makeTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
 function makePokemonInstance(overrides: {
   ability?: string;
   nickname?: string | null;
@@ -28,7 +33,7 @@ function makePokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
-    uid: `test-${Math.random()}`,
+    uid: makeTestUid(),
     speciesId: 1,
     nickname: overrides.nickname ?? null,
     level: 50,

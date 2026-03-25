@@ -1028,10 +1028,10 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
 // ===========================================================================
 
 describe("Gen7Ruleset — type system", () => {
-  it("given Gen7Ruleset, when getting type chart, then returns a non-empty chart", () => {
-    // Source: Gen 7 uses same 18-type chart as Gen 6
+  it("given Gen7Ruleset, when getting type chart, then it exposes exactly 18 types", () => {
+    // Source: Gen 7 uses the same 18-type chart as Gen 6, including Fairy.
     const chart = ruleset.getTypeChart();
-    expect(Object.keys(chart).length).toBeGreaterThan(0);
+    expect(Object.keys(chart).length).toBe(18);
   });
 
   it("given Gen7Ruleset, when getting available types, then includes fairy (Gen 6+ type)", () => {
