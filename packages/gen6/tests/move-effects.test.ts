@@ -1,6 +1,6 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   calculateSpikyShieldDamage,
@@ -10,6 +10,14 @@ import {
   isBlockedByMatBlock,
   isBlockedBySpikyShield,
 } from "../src/Gen6MoveEffects";
+import { GEN6_ABILITY_IDS, GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "../src";
+
+const TYPES = CORE_TYPE_IDS;
+const CORE_ABILITIES = CORE_ABILITY_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const ABILITIES = GEN6_ABILITY_IDS;
+const MOVES = GEN6_MOVE_IDS;
+const SPECIES = GEN6_SPECIES_IDS;
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -39,13 +47,13 @@ function makeActivePokemon(overrides: {
       currentHp: maxHp,
       status: null,
       heldItem: overrides.heldItem ?? null,
-      moves: overrides.moves ?? [{ moveId: "tackle" }],
+      moves: overrides.moves ?? [{ moveId: MOVES.tackle }],
       nickname: overrides.nickname ?? null,
-      speciesId: 25,
+      speciesId: SPECIES.pikachu,
     },
-    ability: overrides.ability ?? "blaze",
+    ability: overrides.ability ?? CORE_ABILITIES.blaze,
     volatileStatuses: overrides.volatileStatuses ?? new Map(),
-    types: ["normal"] as const,
+    types: [TYPES.normal] as const,
     consecutiveProtects: overrides.consecutiveProtects ?? 0,
     turnsOnField: overrides.turnsOnField ?? 0,
     statStages: {
@@ -64,7 +72,7 @@ function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
   return {
     id,
     displayName: id,
-    type: "normal",
+    type: TYPES.normal,
     category: "status",
     power: null,
     accuracy: null,
@@ -147,12 +155,12 @@ describe("Gen6 King's Shield — executeGen6MoveEffect", () => {
   it("given no consecutive protect uses, when King's Shield is used, then succeeds and sets volatile", () => {
     // Source: references/pokemon-showdown/data/moves.ts lines 10270-10328
     //   King's Shield sets 'kingsshield' volatile with duration: 1
-    const ctx = makeContext("kings-shield");
+    const ctx = makeContext(MOVES.kingsShield);
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("kings-shield");
+    expect(result!.selfVolatileInflicted).toBe(MOVES.kingsShield);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("protected itself");
   });
@@ -160,7 +168,7 @@ describe("Gen6 King's Shield — executeGen6MoveEffect", () => {
   it("given consecutive protect uses exceeded, when King's Shield is used, then fails", () => {
     // Source: references/pokemon-showdown/data/moves.ts line 10280
     //   stallingMove: true -- uses same stall counter as Protect
-    const ctx = makeContext("kings-shield");
+    const ctx = makeContext(MOVES.kingsShield);
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -172,17 +180,15 @@ describe("Gen6 King's Shield — executeGen6MoveEffect", () => {
   it("given attacker has consecutiveProtects set, when King's Shield is used, then passes correct count to rollProtectSuccess", () => {
     // Source: BattleEngine.ts -- consecutiveProtects tracked on ActivePokemon
     // Source: Showdown -- King's Shield shares stall counter with Protect
-    const ctx = makeContext("kings-shield", { attacker: { consecutiveProtects: 3 } });
+    const ctx = makeContext(MOVES.kingsShield, { attacker: { consecutiveProtects: 3 } });
     const rng = new SeededRandom(42);
 
-    let capturedCount = -1;
     const captureProtectRoll = (count: number, _rng: SeededRandom): boolean => {
-      capturedCount = count;
+      expect(count).toBe(3);
       return true;
     };
 
     executeGen6MoveEffect(ctx, rng, captureProtectRoll);
-    expect(capturedCount).toBe(3);
   });
 });
 
@@ -233,12 +239,12 @@ describe("Gen6 Spiky Shield — executeGen6MoveEffect", () => {
   it("given no consecutive protect uses, when Spiky Shield is used, then succeeds and sets volatile", () => {
     // Source: references/pokemon-showdown/data/moves.ts lines 18175-18232
     //   Spiky Shield sets 'spikyshield' volatile with duration: 1
-    const ctx = makeContext("spiky-shield");
+    const ctx = makeContext(MOVES.spikyShield);
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("spiky-shield");
+    expect(result!.selfVolatileInflicted).toBe(MOVES.spikyShield);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("protected itself");
   });
@@ -246,7 +252,7 @@ describe("Gen6 Spiky Shield — executeGen6MoveEffect", () => {
   it("given consecutive protect uses exceeded, when Spiky Shield is used, then fails", () => {
     // Source: references/pokemon-showdown/data/moves.ts line 18184
     //   stallingMove: true -- uses same stall counter as Protect
-    const ctx = makeContext("spiky-shield");
+    const ctx = makeContext(MOVES.spikyShield);
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -314,12 +320,12 @@ describe("Gen6 Mat Block — executeGen6MoveEffect", () => {
     // Source: references/pokemon-showdown/data/moves.ts lines 11390-11438
     //   onTry: if (source.activeMoveActions > 1) return false; -- first turn only
     //   sideCondition: 'matblock', duration: 1
-    const ctx = makeContext("mat-block", { attacker: { turnsOnField: 0 } });
+    const ctx = makeContext(MOVES.matBlock, { attacker: { turnsOnField: 0 } });
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("mat-block");
+    expect(result!.selfVolatileInflicted).toBe(MOVES.matBlock);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("Mat Block");
   });
@@ -327,7 +333,7 @@ describe("Gen6 Mat Block — executeGen6MoveEffect", () => {
   it("given second turn (turnsOnField=1), when Mat Block is used, then fails", () => {
     // Source: Showdown -- onTry: if (source.activeMoveActions > 1) return false;
     //   "Mat Block only works on your first turn out."
-    const ctx = makeContext("mat-block", { attacker: { turnsOnField: 1 } });
+    const ctx = makeContext(MOVES.matBlock, { attacker: { turnsOnField: 1 } });
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -338,7 +344,7 @@ describe("Gen6 Mat Block — executeGen6MoveEffect", () => {
 
   it("given third turn (turnsOnField=2), when Mat Block is used, then fails", () => {
     // Source: Showdown -- any turn after the first fails
-    const ctx = makeContext("mat-block", { attacker: { turnsOnField: 2 } });
+    const ctx = makeContext(MOVES.matBlock, { attacker: { turnsOnField: 2 } });
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -349,7 +355,7 @@ describe("Gen6 Mat Block — executeGen6MoveEffect", () => {
 
   it("given first turn but stalling check fails, when Mat Block is used, then fails", () => {
     // Source: Showdown -- stallingMove: true; if stall check fails, move fails
-    const ctx = makeContext("mat-block", { attacker: { turnsOnField: 0 } });
+    const ctx = makeContext(MOVES.matBlock, { attacker: { turnsOnField: 0 } });
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -362,17 +368,17 @@ describe("Gen6 Mat Block — executeGen6MoveEffect", () => {
 describe("Gen6 isBlockedByMatBlock", () => {
   it("given physical move with protect flag, when checking, then blocked", () => {
     // Source: Showdown -- blocks damaging moves with protect flag
-    expect(isBlockedByMatBlock("physical", true, "normal")).toBe(true);
+    expect(isBlockedByMatBlock("physical", true, TYPES.normal)).toBe(true);
   });
 
   it("given special move with protect flag, when checking, then blocked", () => {
     // Source: Showdown -- special moves are also damaging
-    expect(isBlockedByMatBlock("special", true, "normal")).toBe(true);
+    expect(isBlockedByMatBlock("special", true, TYPES.normal)).toBe(true);
   });
 
   it("given status move with protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown line 11421 -- if (move.target === 'self' || move.category === 'Status') return;
-    expect(isBlockedByMatBlock("status", true, "normal")).toBe(false);
+    expect(isBlockedByMatBlock("status", true, TYPES.normal)).toBe(false);
   });
 
   it("given self-targeting move with protect flag, when checking, then NOT blocked", () => {
@@ -382,7 +388,7 @@ describe("Gen6 isBlockedByMatBlock", () => {
 
   it("given move without protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown line 11416 -- if (!move.flags['protect']) return;
-    expect(isBlockedByMatBlock("physical", false, "normal")).toBe(false);
+    expect(isBlockedByMatBlock("physical", false, TYPES.normal)).toBe(false);
   });
 });
 
@@ -395,21 +401,21 @@ describe("Gen6 Crafty Shield — executeGen6MoveEffect", () => {
     // Source: references/pokemon-showdown/data/moves.ts lines 3253-3284
     //   No stallingMove property -- Crafty Shield does NOT use the stalling mechanic
     //   sideCondition: 'craftyshield', duration: 1
-    const ctx = makeContext("crafty-shield", { attacker: { nickname: "Klefki" } });
+    const ctx = makeContext(MOVES.craftyShield, { attacker: { nickname: "Klefki" } });
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysFailProtect);
 
     // Should succeed even when rollProtectSuccess would fail -- Crafty Shield
     // does not use the stalling mechanic
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("crafty-shield");
+    expect(result!.selfVolatileInflicted).toBe(MOVES.craftyShield);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("Crafty Shield");
   });
 
   it("given Crafty Shield used with no nickname, when called, then uses default name", () => {
     // Source: message formatting test -- default name used when no nickname
-    const ctx = makeContext("crafty-shield");
+    const ctx = makeContext(MOVES.craftyShield);
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -421,7 +427,7 @@ describe("Gen6 Crafty Shield — executeGen6MoveEffect", () => {
 describe("Gen6 isBlockedByCraftyShield", () => {
   it("given status move targeting normal, when checking, then blocked", () => {
     // Source: Showdown line 3274 -- blocks status moves that don't target self or all
-    expect(isBlockedByCraftyShield("status", "normal")).toBe(true);
+    expect(isBlockedByCraftyShield("status", TYPES.normal)).toBe(true);
   });
 
   it("given status move targeting all-adjacent-foes, when checking, then blocked", () => {
@@ -446,12 +452,12 @@ describe("Gen6 isBlockedByCraftyShield", () => {
 
   it("given physical move targeting normal, when checking, then NOT blocked", () => {
     // Source: Showdown line 3274 -- if (... move.category !== 'Status') return;
-    expect(isBlockedByCraftyShield("physical", "normal")).toBe(false);
+    expect(isBlockedByCraftyShield("physical", TYPES.normal)).toBe(false);
   });
 
   it("given special move targeting normal, when checking, then NOT blocked", () => {
     // Source: Showdown -- only Status category is blocked
-    expect(isBlockedByCraftyShield("special", "normal")).toBe(false);
+    expect(isBlockedByCraftyShield("special", TYPES.normal)).toBe(false);
   });
 });
 
@@ -465,10 +471,10 @@ describe("Gen6 Phantom Force — executeGen6MoveEffect", () => {
     //   onTryMove: attacker.addVolatile('twoturnmove', defender); return null;
     //   condition: { duration: 2, onInvulnerability: false }
     //   Phantom Force shares shadow-force-charging volatile with Shadow Force
-    const ctx = makeContext("phantom-force", {
+    const ctx = makeContext(MOVES.phantomForce, {
       attacker: {
         nickname: "Trevenant",
-        moves: [{ moveId: "phantom-force" }, { moveId: "tackle" }],
+        moves: [{ moveId: MOVES.phantomForce }, { moveId: MOVES.tackle }],
       },
     });
     const rng = new SeededRandom(42);
@@ -477,8 +483,8 @@ describe("Gen6 Phantom Force — executeGen6MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "phantom-force",
-      volatileStatus: "shadow-force-charging",
+      moveId: MOVES.phantomForce,
+      volatileStatus: VOLATILES.shadowForceCharging,
     });
     expect(result!.messages[0]).toBe("Trevenant vanished!");
   });
@@ -487,12 +493,12 @@ describe("Gen6 Phantom Force — executeGen6MoveEffect", () => {
     // Source: Showdown -- if (attacker.removeVolatile(move.id)) return; -- attack turn
     //   The engine handles normal damage calculation on the attack turn.
     const chargeVolatiles = new Map<string, { turnsLeft: number }>();
-    chargeVolatiles.set("shadow-force-charging", { turnsLeft: 1 });
+    chargeVolatiles.set(VOLATILES.shadowForceCharging, { turnsLeft: 1 });
 
-    const ctx = makeContext("phantom-force", {
+    const ctx = makeContext(MOVES.phantomForce, {
       attacker: {
         volatileStatuses: chargeVolatiles,
-        moves: [{ moveId: "phantom-force" }],
+        moves: [{ moveId: MOVES.phantomForce }],
       },
     });
     const rng = new SeededRandom(42);
@@ -504,9 +510,9 @@ describe("Gen6 Phantom Force — executeGen6MoveEffect", () => {
 
   it("given Phantom Force on charge turn with no nickname, when used, then uses default name in message", () => {
     // Source: message formatting -- default name when no nickname
-    const ctx = makeContext("phantom-force", {
+    const ctx = makeContext(MOVES.phantomForce, {
       attacker: {
-        moves: [{ moveId: "phantom-force" }],
+        moves: [{ moveId: MOVES.phantomForce }],
       },
     });
     const rng = new SeededRandom(42);
@@ -518,9 +524,9 @@ describe("Gen6 Phantom Force — executeGen6MoveEffect", () => {
 
   it("given Phantom Force on charge turn with move at index 1, when used, then forcedMoveSet.moveIndex is 1", () => {
     // Source: engine uses moveIndex to know which slot to force
-    const ctx = makeContext("phantom-force", {
+    const ctx = makeContext(MOVES.phantomForce, {
       attacker: {
-        moves: [{ moveId: "tackle" }, { moveId: "phantom-force" }],
+        moves: [{ moveId: MOVES.tackle }, { moveId: MOVES.phantomForce }],
       },
     });
     const rng = new SeededRandom(42);
@@ -538,7 +544,7 @@ describe("Gen6 Phantom Force — executeGen6MoveEffect", () => {
 describe("Gen6 executeGen6MoveEffect — dispatch", () => {
   it("given unrecognized move, when dispatch called, then returns null", () => {
     // Unrecognized moves should fall through to BaseRuleset
-    const ctx = makeContext("thunderbolt");
+    const ctx = makeContext(MOVES.thunderbolt);
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -547,7 +553,7 @@ describe("Gen6 executeGen6MoveEffect — dispatch", () => {
 
   it("given Protect (not a Gen6-specific move), when dispatch called, then returns null", () => {
     // Protect is handled by the engine directly and BaseRuleset, not Gen6MoveEffects
-    const ctx = makeContext("protect");
+    const ctx = makeContext(MOVES.protect);
     const rng = new SeededRandom(42);
     const result = executeGen6MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -568,10 +574,10 @@ describe("Gen6Ruleset.executeMoveEffect — integration", () => {
     const { Gen6Ruleset } = await import("../src/Gen6Ruleset");
     const ruleset = new Gen6Ruleset();
 
-    const ctx = makeContext("kings-shield");
+    const ctx = makeContext(MOVES.kingsShield);
     const result = ruleset.executeMoveEffect(ctx);
 
-    expect(result.selfVolatileInflicted).toBe("kings-shield");
+    expect(result.selfVolatileInflicted).toBe(MOVES.kingsShield);
   }, 15000);
 
   it("given Gen6Ruleset, when executing unrecognized move, then falls through to BaseRuleset", async () => {
@@ -579,7 +585,7 @@ describe("Gen6Ruleset.executeMoveEffect — integration", () => {
     const { Gen6Ruleset } = await import("../src/Gen6Ruleset");
     const ruleset = new Gen6Ruleset();
 
-    const ctx = makeContext("tackle");
+    const ctx = makeContext(MOVES.tackle);
     const result = ruleset.executeMoveEffect(ctx);
 
     // BaseRuleset returns default empty result for unrecognized moves
