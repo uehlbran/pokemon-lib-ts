@@ -1,4 +1,11 @@
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_GENDERS,
+  CORE_HAZARD_IDS,
+  CORE_NATURE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../../src/data";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
@@ -8,11 +15,14 @@ function makeRuleset(): Gen3Ruleset {
   return new Gen3Ruleset(createGen3DataManager());
 }
 
+const GEN3_DATA_MANAGER = createGen3DataManager();
+const TEST_SPECIES = GEN3_DATA_MANAGER.getSpeciesByName("bulbasaur");
+
 // Helper to create a minimal ActivePokemon stub for mechanic tests
-function makeActivePokemon(maxHp: number): Parameters<Gen3Ruleset["calculateBindDamage"]>[0] {
+function createActivePokemon(maxHp: number): Parameters<Gen3Ruleset["calculateBindDamage"]>[0] {
   return {
     pokemon: {
-      speciesId: 1,
+      speciesId: TEST_SPECIES.id,
       level: 50,
       currentHp: maxHp,
       status: null,
@@ -28,8 +38,8 @@ function makeActivePokemon(maxHp: number): Parameters<Gen3Ruleset["calculateBind
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [],
       heldItem: null,
-      nature: "hardy",
-      gender: "male",
+      nature: CORE_NATURE_IDS.hardy,
+      gender: CORE_GENDERS.male,
       nickname: null,
       isShiny: false,
       experiencePoints: 0,
@@ -56,11 +66,11 @@ function makeActivePokemon(maxHp: number): Parameters<Gen3Ruleset["calculateBind
 }
 
 // Helper to create a minimal ActivePokemon with a given status
-function makeActivePokemonWithStatus(
+function createActivePokemonWithStatus(
   maxHp: number,
-  status: "burn" | "paralysis" | "poison" | "badly-poisoned" | null,
+  status: (typeof CORE_STATUS_IDS)[keyof typeof CORE_STATUS_IDS] | null,
 ): Parameters<Gen3Ruleset["calculateBindDamage"]>[0] {
-  const mon = makeActivePokemon(maxHp);
+  const mon = createActivePokemon(maxHp);
   (mon.pokemon as { status: typeof status }).status = status;
   return mon;
 }
@@ -125,7 +135,7 @@ describe("Gen3Ruleset simple overrides", () => {
   it("given Gen3Ruleset, when getAvailableHazards, then stealth-rock is not available", () => {
     // Source: Stealth Rock move was introduced in Gen 4 (Diamond/Pearl)
     const ruleset = makeRuleset();
-    expect(ruleset.getAvailableHazards()).not.toContain("stealth-rock");
+    expect(ruleset.getAvailableHazards()).not.toContain(CORE_HAZARD_IDS.stealthRock);
   });
 
   // --- Bind Damage ---
@@ -134,7 +144,7 @@ describe("Gen3Ruleset simple overrides", () => {
     // Source: pret/pokeemerald src/battle_util.c — bind/wrap damage = maxHP / 16
     // 160 / 16 = 10
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon(160);
+    const mon = createActivePokemon(160);
     expect(ruleset.calculateBindDamage(mon)).toBe(10);
   });
 
@@ -142,7 +152,7 @@ describe("Gen3Ruleset simple overrides", () => {
     // Source: pret/pokeemerald src/battle_util.c — bind/wrap damage = floor(maxHP / 16)
     // floor(200 / 16) = floor(12.5) = 12
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon(200);
+    const mon = createActivePokemon(200);
     expect(ruleset.calculateBindDamage(mon)).toBe(12);
   });
 
@@ -150,7 +160,7 @@ describe("Gen3Ruleset simple overrides", () => {
     // Source: pret/pokeemerald — damage always >= 1; Shedinja has 1 HP
     // floor(1 / 16) = 0 → clamped to 1
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon(1);
+    const mon = createActivePokemon(1);
     expect(ruleset.calculateBindDamage(mon)).toBe(1);
   });
 
@@ -161,7 +171,7 @@ describe("Gen3Ruleset simple overrides", () => {
     // "case MOVE_EFFECT_RECOIL_25: gBattleMoveDamage = (gHpDealt) / 4;"
     // Struggle recoil = floor(100 / 4) = 25
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon(200);
+    const mon = createActivePokemon(200);
     expect(ruleset.calculateStruggleRecoil(mon, 100)).toBe(25);
   });
 
@@ -169,7 +179,7 @@ describe("Gen3Ruleset simple overrides", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c:2637
     // Struggle recoil = floor(75 / 4) = 18
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon(200);
+    const mon = createActivePokemon(200);
     expect(ruleset.calculateStruggleRecoil(mon, 75)).toBe(18);
   });
 
@@ -178,7 +188,7 @@ describe("Gen3Ruleset simple overrides", () => {
     // "if (gBattleMoveDamage == 0) gBattleMoveDamage = 1;"
     // floor(1 / 4) = 0 → clamped to 1
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon(200);
+    const mon = createActivePokemon(200);
     expect(ruleset.calculateStruggleRecoil(mon, 1)).toBe(1);
   });
 
@@ -212,7 +222,7 @@ describe("Gen3Ruleset simple overrides", () => {
   it("given Gen3Ruleset, when getAvailableTypes, then Fairy is not present", () => {
     // Source: Fairy type introduced in Gen 6 (X/Y), not present in Gen 3
     const ruleset = makeRuleset();
-    expect(ruleset.getAvailableTypes()).not.toContain("fairy");
+    expect(ruleset.getAvailableTypes()).not.toContain(CORE_TYPE_IDS.fairy);
   });
 
   // --- Crit Multiplier ---
@@ -245,24 +255,24 @@ describe("Gen3Ruleset simple overrides", () => {
     // 160 / 8 = 20
     // Gen 3-6: 1/8 max HP (Gen 7+ changed to 1/16)
     const ruleset = makeRuleset();
-    const mon = makeActivePokemonWithStatus(160, "burn");
-    expect(ruleset.applyStatusDamage(mon, "burn", STUB_STATE)).toBe(20);
+    const mon = createActivePokemonWithStatus(160, CORE_STATUS_IDS.burn);
+    expect(ruleset.applyStatusDamage(mon, CORE_STATUS_IDS.burn, STUB_STATE)).toBe(20);
   });
 
   it("given a Pokemon with 200 max HP and burn status, when applyStatusDamage, then returns 25", () => {
     // Source: pret/pokeemerald src/battle_util.c — burn damage = floor(maxHP / 8)
     // floor(200 / 8) = 25
     const ruleset = makeRuleset();
-    const mon = makeActivePokemonWithStatus(200, "burn");
-    expect(ruleset.applyStatusDamage(mon, "burn", STUB_STATE)).toBe(25);
+    const mon = createActivePokemonWithStatus(200, CORE_STATUS_IDS.burn);
+    expect(ruleset.applyStatusDamage(mon, CORE_STATUS_IDS.burn, STUB_STATE)).toBe(25);
   });
 
   it("given a Pokemon with 200 max HP and poison status, when applyStatusDamage, then returns 25", () => {
     // Source: BaseRuleset default — poison = floor(maxHP / 8) = 25
     // Poison fraction is the same in Gen 3 as the BaseRuleset default
     const ruleset = makeRuleset();
-    const mon = makeActivePokemonWithStatus(200, "poison");
-    expect(ruleset.applyStatusDamage(mon, "poison", STUB_STATE)).toBe(25);
+    const mon = createActivePokemonWithStatus(200, CORE_STATUS_IDS.poison);
+    expect(ruleset.applyStatusDamage(mon, CORE_STATUS_IDS.poison, STUB_STATE)).toBe(25);
   });
 
   // --- Exp Gain ---
