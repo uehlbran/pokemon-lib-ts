@@ -1,6 +1,5 @@
 import type { Generation, MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
@@ -90,344 +89,281 @@ function createTestMove(overrides?: Partial<MoveData>): MoveData {
   };
 }
 
-describe("rollCritical — crit stage sources (issue #86)", () => {
-  let ruleset: TestRuleset;
+function createProbeRng(result: number) {
+  const calls: Array<{ min: number; max: number }> = [];
+  return {
+    calls,
+    rng: {
+      int(min: number, max: number): number {
+        calls.push({ min, max });
+        return result;
+      },
+    },
+  };
+}
 
-  beforeEach(() => {
-    ruleset = new TestRuleset();
+function probeCritRate(
+  ruleset: TestRuleset,
+  attacker: ReturnType<typeof createActivePokemon>,
+  move: MoveData,
+  expectedRate: number,
+) {
+  const hitProbe = createProbeRng(1);
+  const hitResult = ruleset.rollCritical({
+    attacker,
+    move,
+    state: {} as BattleState,
+    rng: hitProbe.rng as never,
   });
 
-  it("given move with critRatio 1, when rollCritical called 1000 times with seeded rng, then crit rate is approximately 1/8", () => {
+  const missProbe = createProbeRng(expectedRate);
+  const missResult = ruleset.rollCritical({
+    attacker,
+    move,
+    state: {} as BattleState,
+    rng: missProbe.rng as never,
+  });
+
+  return {
+    hitResult,
+    hitCalls: hitProbe.calls,
+    missResult,
+    missCalls: missProbe.calls,
+  };
+}
+
+describe("rollCritical — crit stage sources (issue #86)", () => {
+  it("given move with critRatio 1, when rollCritical is called, then it uses the stage-1 1-in-8 table entry", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — moves with critRatio: 1 get +1 crit stage
-    // Gen 6+ crit table: [24, 8, 2, 1] — stage 1 = 1/8 = 12.5%
+    // Gen 6+ crit table: [24, 8, 2, 1] — stage 1 uses rate 8.
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50);
     const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove({
       id: "slash",
       displayName: "Slash",
       critRatio: 1,
     });
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/8 = 12.5%, allow range 7%-18% for statistical variance
-    // Source: Gen 6+ crit stage table — stage 1 = 1/8 chance
-    expect(crits).toBeGreaterThanOrEqual(70);
-    expect(crits).toBeLessThanOrEqual(180);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 8)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 8 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 8 }],
+    });
   });
 
-  it("given attacker holding scope-lens, when rollCritical called 1000 times, then crit rate is approximately 1/8", () => {
+  it("given attacker holding scope-lens, when rollCritical is called, then it uses the stage-1 1-in-8 table entry", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Scope Lens gives +1 crit stage
-    // Gen 6+ crit table: stage 1 = 1/8 = 12.5%
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50, { heldItem: "scope-lens" });
     const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
-    const rng = new SeededRandom(123);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/8 = 12.5%, allow range 7%-18%
-    // Source: Gen 6+ crit stage table — stage 1 = 1/8 chance
-    expect(crits).toBeGreaterThanOrEqual(70);
-    expect(crits).toBeLessThanOrEqual(180);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 8)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 8 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 8 }],
+    });
   });
 
-  it("given attacker holding razor-claw, when rollCritical called 1000 times, then crit rate is approximately 1/8", () => {
+  it("given attacker holding razor-claw, when rollCritical is called, then it uses the stage-1 1-in-8 table entry", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Razor Claw gives +1 crit stage (same as Scope Lens)
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50, { heldItem: "razor-claw" });
     const active = createActivePokemon(pokemon, 0, ["normal"]);
-    const rng = new SeededRandom(999);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/8 = 12.5%, allow range 7%-18%
-    expect(crits).toBeGreaterThanOrEqual(70);
-    expect(crits).toBeLessThanOrEqual(180);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 8)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 8 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 8 }],
+    });
   });
 
-  it("given attacker with super-luck ability, when rollCritical called 1000 times, then crit rate is approximately 1/8", () => {
+  it("given attacker with super-luck ability, when rollCritical is called, then it uses the stage-1 1-in-8 table entry", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Super Luck gives +1 crit stage
-    // Gen 6+ crit table: stage 1 = 1/8 = 12.5%
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50, { ability: "super-luck" });
     const active = createActivePokemon(pokemon, 0, ["dark", "flying"]);
-    const rng = new SeededRandom(7777);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/8 = 12.5%, allow range 7%-18%
-    // Source: Gen 6+ crit stage table — stage 1 = 1/8 chance
-    expect(crits).toBeGreaterThanOrEqual(70);
-    expect(crits).toBeLessThanOrEqual(180);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 8)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 8 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 8 }],
+    });
   });
 
-  it("given Farfetch'd holding leek, when rollCritical called 1000 times, then crit rate is approximately 1/2", () => {
+  it("given Farfetch'd holding leek, when rollCritical is called, then it uses the stage-2 1-in-2 table entry", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Leek/Stick on Farfetch'd (speciesId=83) gives +2 crit stage
-    // Gen 6+ crit table: stage 2 = 1/2 = 50%
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(83, 50, { heldItem: "leek" });
     const active = createActivePokemon(pokemon, 0, ["normal", "flying"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/2 = 50%, allow range 40%-60%
-    // Source: Gen 6+ crit stage table — stage 2 = 1/2 chance
-    expect(crits).toBeGreaterThanOrEqual(400);
-    expect(crits).toBeLessThanOrEqual(600);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 2)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 2 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 2 }],
+    });
   });
 
-  it("given Sirfetch'd (speciesId=865) holding leek, when rollCritical called 1000 times, then crit rate is approximately 1/2", () => {
+  it("given Sirfetch'd holding leek, when rollCritical is called, then it uses the stage-2 1-in-2 table entry", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Leek on Sirfetch'd (speciesId=865) gives +2 crit stage
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(865, 50, { heldItem: "leek" });
     const active = createActivePokemon(pokemon, 0, ["fighting"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/2 = 50%, allow range 40%-60%
-    expect(crits).toBeGreaterThanOrEqual(400);
-    expect(crits).toBeLessThanOrEqual(600);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 2)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 2 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 2 }],
+    });
   });
 
-  it("given non-Farfetch'd holding leek, when rollCritical called 1000 times, then crit rate stays at base 1/24", () => {
+  it("given non-Farfetch'd holding leek, when rollCritical is called, then species gating keeps the base 1-in-24 table entry", () => {
     // Arrange
     // Source: Showdown — Leek only gives bonus to Farfetch'd (83) and Sirfetch'd (865)
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50, { heldItem: "leek" });
     const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/24 = 4.2%, allow range 1%-8%
-    // Source: Gen 6+ crit stage table — stage 0 = 1/24 chance
-    expect(crits).toBeGreaterThanOrEqual(10);
-    expect(crits).toBeLessThanOrEqual(80);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 24)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 24 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 24 }],
+    });
   });
 
-  it("given Chansey holding lucky-punch, when rollCritical called 1000 times, then crit rate is approximately 1/2", () => {
+  it("given Chansey holding lucky-punch, when rollCritical is called, then it uses the stage-2 1-in-2 table entry", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Lucky Punch on Chansey (speciesId=113) gives +2 crit stage
-    // Gen 6+ crit table: stage 2 = 1/2 = 50%
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(113, 50, { heldItem: "lucky-punch" });
     const active = createActivePokemon(pokemon, 0, ["normal"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/2 = 50%, allow range 40%-60%
-    // Source: Gen 6+ crit stage table — stage 2 = 1/2 chance
-    expect(crits).toBeGreaterThanOrEqual(400);
-    expect(crits).toBeLessThanOrEqual(600);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 2)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 2 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 2 }],
+    });
   });
 
-  it("given non-Chansey holding lucky-punch, when rollCritical called 1000 times, then crit rate stays at base 1/24", () => {
+  it("given non-Chansey holding lucky-punch, when rollCritical is called, then species gating keeps the base 1-in-24 table entry", () => {
     // Arrange
     // Source: Showdown — Lucky Punch only gives bonus to Chansey (speciesId=113)
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50, { heldItem: "lucky-punch" });
     const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/24 = 4.2%, allow range 1%-8%
-    expect(crits).toBeGreaterThanOrEqual(10);
-    expect(crits).toBeLessThanOrEqual(80);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 24)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 24 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 24 }],
+    });
   });
 
-  it("given focus-energy + high-crit move + scope-lens, when rollCritical called, then always crits (stage 3+ = guaranteed)", () => {
+  it("given focus-energy plus a high-crit move plus scope-lens, when rollCritical is called, then stage 3 clamps to guaranteed crits without using rng", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — stages stack: focus-energy (+2) + critRatio (+1) + Scope Lens (+1) = 4
     // Gen 6+ crit table: stage 3+ = rate 1 = always crit
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50, { heldItem: "scope-lens" });
     const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
     active.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-    const rng = new SeededRandom(42);
     const move = createTestMove({
       id: "slash",
       displayName: "Slash",
       critRatio: 1,
     });
 
-    // Act
-    const trials = 100;
-    let crits = 0;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — guaranteed crit (stage >= 3)
-    expect(crits).toBe(trials);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 1)).toEqual({
+      hitResult: true,
+      hitCalls: [],
+      missResult: true,
+      missCalls: [],
+    });
   });
 
-  it("given focus-energy + super-luck, when rollCritical called, then always crits (stage 3 = guaranteed)", () => {
+  it("given focus-energy plus super-luck, when rollCritical is called, then stage 3 guarantees crits without using rng", () => {
     // Arrange
     // Source: Showdown — focus-energy (+2) + Super Luck (+1) = stage 3
     // Gen 6+ crit table: stage 3 = rate 1 = always crit
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50, { ability: "super-luck" });
     const active = createActivePokemon(pokemon, 0, ["dark", "flying"]);
     active.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-    const rng = new SeededRandom(42);
     const move = createTestMove();
 
-    // Act
-    const trials = 100;
-    let crits = 0;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — guaranteed crit (stage 3)
-    expect(crits).toBe(trials);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 1)).toEqual({
+      hitResult: true,
+      hitCalls: [],
+      missResult: true,
+      missCalls: [],
+    });
   });
 
-  it("given no crit stage sources and no critRatio, when rollCritical called 1000 times, then crit rate is approximately 1/24", () => {
+  it("given no crit stage sources and no critRatio, when rollCritical is called, then it uses the base 1-in-24 table entry", () => {
     // Arrange
-    // Source: Gen 6+ crit stage table — stage 0 = 1/24 = ~4.2%
-    // This is the regression test ensuring the base case still works
+    // Source: Gen 6+ crit stage table — stage 0 uses rate 24.
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50);
     const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove();
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — expected 1/24 = 4.2%, allow range 1%-8%
-    expect(crits).toBeGreaterThanOrEqual(10);
-    expect(crits).toBeLessThanOrEqual(80);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 24)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 24 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 24 }],
+    });
   });
 
-  it("given move with undefined critRatio, when rollCritical called, then treated as 0 (no bonus)", () => {
+  it("given move with undefined critRatio, when rollCritical is called, then it is treated as zero bonus and keeps the base 1-in-24 table entry", () => {
     // Arrange
     // Regression test: a move without critRatio should get no crit stage bonus
+    const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50);
     const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
-    const rng = new SeededRandom(42);
     const move = createTestMove(); // no critRatio field
 
-    // Act
-    let crits = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      if (
-        ruleset.rollCritical({ attacker: active, move, state: {} as unknown as BattleState, rng })
-      ) {
-        crits++;
-      }
-    }
-
-    // Assert — should behave the same as stage 0 (1/24 = ~4.2%)
-    expect(crits).toBeGreaterThanOrEqual(10);
-    expect(crits).toBeLessThanOrEqual(80);
+    // Act & Assert
+    expect(probeCritRate(ruleset, active, move, 24)).toEqual({
+      hitResult: true,
+      hitCalls: [{ min: 1, max: 24 }],
+      missResult: false,
+      missCalls: [{ min: 1, max: 24 }],
+    });
   });
 });
