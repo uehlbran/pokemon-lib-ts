@@ -10,9 +10,26 @@
  *   in a single battle, but cannot use more than one of each."
  */
 
-import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import {
+  BATTLE_GIMMICK_IDS,
+  type ActivePokemon,
+  type BattleSide,
+  type BattleState,
+} from "@pokemon-lib-ts/battle";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen7DataManager,
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+} from "../src";
 import { Gen7MegaEvolution } from "../src/Gen7MegaEvolution";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
 import { Gen7ZMove } from "../src/Gen7ZMove";
@@ -20,6 +37,24 @@ import { Gen7ZMove } from "../src/Gen7ZMove";
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
+
+const GEN7_DATA = createGen7DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS };
+const ITEMS = GEN7_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS };
+const NATURES = GEN7_NATURE_IDS;
+const SPECIES = GEN7_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+
+function makeMoveSlot(moveId: string) {
+  const move = GEN7_DATA.getMove(moveId);
+  return {
+    moveId,
+    currentPP: move.pp,
+    maxPP: move.pp,
+    ppUps: 0,
+  };
+}
 
 function makeActivePokemon(overrides: {
   uid?: string;
@@ -31,26 +66,21 @@ function makeActivePokemon(overrides: {
   moves?: Array<{ moveId: string }>;
   transformed?: boolean;
 }): ActivePokemon {
-  const moveSlots = (overrides.moves ?? [{ moveId: "tackle" }]).map((m) => ({
-    moveId: m.moveId,
-    currentPP: 10,
-    maxPP: 15,
-    ppUps: 0,
-  }));
+  const moveSlots = (overrides.moves ?? [{ moveId: MOVES.tackle }]).map((m) => makeMoveSlot(m.moveId));
 
   return {
     pokemon: {
       uid: overrides.uid ?? "test-uid",
-      speciesId: overrides.speciesId ?? 6,
+      speciesId: overrides.speciesId ?? SPECIES.charizard,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: NATURES.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
       moves: moveSlots,
-      ability: overrides.ability ?? "blaze",
+      ability: overrides.ability ?? ABILITIES.blaze,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: null,
@@ -61,7 +91,7 @@ function makeActivePokemon(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -82,8 +112,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["fire", "flying"],
-    ability: overrides.ability ?? "blaze",
+    types: overrides.types ?? [TYPES.fire, TYPES.flying],
+    ability: overrides.ability ?? ABILITIES.blaze,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -155,19 +185,19 @@ describe("Gen 7 Dual Gimmick -- Mega Evolution + Z-Move coexistence", () => {
     // Charizard holds Charizardite X for Mega Evolution
     const charizard = makeActivePokemon({
       uid: "charizard",
-      speciesId: 6,
-      heldItem: "charizardite-x",
-      types: ["fire", "flying"],
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
+      types: [TYPES.fire, TYPES.flying],
     });
 
     // Pikachu holds Normalium Z for Z-Move
     const pikachu = makeActivePokemon({
       uid: "pikachu",
-      speciesId: 25,
-      heldItem: "normalium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "tackle" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.normaliumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.tackle }],
     });
 
     // Step 1: Charizard uses Mega Evolution
@@ -190,19 +220,19 @@ describe("Gen 7 Dual Gimmick -- Mega Evolution + Z-Move coexistence", () => {
     // Pikachu holds Normalium Z for Z-Move
     const pikachu = makeActivePokemon({
       uid: "pikachu",
-      speciesId: 25,
-      heldItem: "normalium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "tackle" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.normaliumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.tackle }],
     });
 
     // Charizard holds Charizardite X for Mega Evolution
     const charizard = makeActivePokemon({
       uid: "charizard",
-      speciesId: 6,
-      heldItem: "charizardite-x",
-      types: ["fire", "flying"],
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
+      types: [TYPES.fire, TYPES.flying],
     });
 
     // Step 1: Pikachu uses Z-Move
@@ -223,31 +253,31 @@ describe("Gen 7 Dual Gimmick -- Mega Evolution + Z-Move coexistence", () => {
 
     const charizard = makeActivePokemon({
       uid: "charizard",
-      speciesId: 6,
-      heldItem: "charizardite-x",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
     });
     const pikachu = makeActivePokemon({
       uid: "pikachu",
-      speciesId: 25,
-      heldItem: "normalium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "tackle" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.normaliumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.tackle }],
     });
     const anotherMega = makeActivePokemon({
       uid: "lucario",
-      speciesId: 448,
-      heldItem: "lucarionite",
-      types: ["fighting", "steel"],
-      ability: "steadfast",
+      speciesId: SPECIES.lucario,
+      heldItem: ITEMS.lucarionite,
+      types: [TYPES.fighting, TYPES.steel],
+      ability: ABILITIES.steadfast,
     });
     const anotherZ = makeActivePokemon({
       uid: "pikachu2",
-      speciesId: 25,
-      heldItem: "electrium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "thunderbolt" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.electriumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.thunderbolt }],
     });
 
     // Use both gimmicks on side 0
@@ -268,13 +298,13 @@ describe("Gen 7 Dual Gimmick -- Mega Evolution + Z-Move coexistence", () => {
 
     const charizardP1 = makeActivePokemon({
       uid: "charizard-p1",
-      speciesId: 6,
-      heldItem: "charizardite-x",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
     });
     const charizardP2 = makeActivePokemon({
       uid: "charizard-p2",
-      speciesId: 6,
-      heldItem: "charizardite-y",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeY,
     });
 
     // Side 0 uses Mega
@@ -294,15 +324,15 @@ describe("Gen 7 Dual Gimmick -- Mega Evolution + Z-Move coexistence", () => {
 
     const charizard = makeActivePokemon({
       uid: "charizard",
-      speciesId: 6,
-      heldItem: "charizardite-x",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
     });
     const lucario = makeActivePokemon({
       uid: "lucario",
-      speciesId: 448,
-      heldItem: "lucarionite",
-      types: ["fighting", "steel"],
-      ability: "steadfast",
+      speciesId: SPECIES.lucario,
+      heldItem: ITEMS.lucarionite,
+      types: [TYPES.fighting, TYPES.steel],
+      ability: ABILITIES.steadfast,
     });
 
     // First Mega succeeds
@@ -321,19 +351,19 @@ describe("Gen 7 Dual Gimmick -- Mega Evolution + Z-Move coexistence", () => {
 
     const pikachu = makeActivePokemon({
       uid: "pikachu",
-      speciesId: 25,
-      heldItem: "normalium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "tackle" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.normaliumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.tackle }],
     });
     const raichu = makeActivePokemon({
       uid: "raichu",
-      speciesId: 26,
-      heldItem: "electrium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "thunderbolt" }],
+      speciesId: SPECIES.raichu,
+      heldItem: ITEMS.electriumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.thunderbolt }],
     });
 
     // First Z-Move succeeds
@@ -353,8 +383,8 @@ describe("Gen7Ruleset -- dual gimmick access via getBattleGimmick", () => {
   it("given Gen7Ruleset, when requesting both gimmick types, then both are available and independent", () => {
     // Source: Showdown sim/battle.ts -- Gen 7 supports both mega and Z-Move gimmicks
     const ruleset = new Gen7Ruleset();
-    const mega = ruleset.getBattleGimmick("mega");
-    const zmove = ruleset.getBattleGimmick("zmove");
+    const mega = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega);
+    const zmove = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove);
 
     expect(mega).not.toBeNull();
     expect(zmove).not.toBeNull();
@@ -367,23 +397,23 @@ describe("Gen7Ruleset -- dual gimmick access via getBattleGimmick", () => {
   it("given Gen7Ruleset, when using Mega via ruleset, then Z-Move from same ruleset is unaffected", () => {
     // Source: Showdown sim/side.ts:170 -- megaUsed and zMoveUsed are separate
     const ruleset = new Gen7Ruleset();
-    const mega = ruleset.getBattleGimmick("mega") as Gen7MegaEvolution;
-    const zmove = ruleset.getBattleGimmick("zmove") as Gen7ZMove;
+    const mega = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega) as Gen7MegaEvolution;
+    const zmove = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove) as Gen7ZMove;
     const side = makeSide(0);
     const state = makeState();
 
     const charizard = makeActivePokemon({
       uid: "charizard",
-      speciesId: 6,
-      heldItem: "charizardite-x",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
     });
     const pikachu = makeActivePokemon({
       uid: "pikachu",
-      speciesId: 25,
-      heldItem: "normalium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "tackle" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.normaliumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.tackle }],
     });
 
     // Use mega through the ruleset
@@ -398,14 +428,14 @@ describe("Gen7Ruleset -- dual gimmick access via getBattleGimmick", () => {
     // Source: Showdown sim/side.ts Gen 7 -- neither mega nor Z-Move sets side.gimmickUsed
     // The shared boolean is not used; each gimmick tracks internally.
     const ruleset = new Gen7Ruleset();
-    const mega = ruleset.getBattleGimmick("mega");
+    const mega = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega);
     const side = makeSide(0);
     const state = makeState();
 
     const charizard = makeActivePokemon({
       uid: "charizard",
-      speciesId: 6,
-      heldItem: "charizardite-x",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
     });
 
     mega!.activate(charizard, side, state);
@@ -418,23 +448,23 @@ describe("Gen7Ruleset -- dual gimmick access via getBattleGimmick", () => {
     // Source: Qodo review PR #699 -- gimmick state must be cleared between battles
     // when the same ruleset instance is reused (e.g., via GenerationRegistry).
     const ruleset = new Gen7Ruleset();
-    const mega = ruleset.getBattleGimmick("mega") as Gen7MegaEvolution;
-    const zmove = ruleset.getBattleGimmick("zmove") as Gen7ZMove;
+    const mega = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega) as Gen7MegaEvolution;
+    const zmove = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove) as Gen7ZMove;
     const side = makeSide(0);
     const state = makeState();
 
     const charizard = makeActivePokemon({
       uid: "charizard",
-      speciesId: 6,
-      heldItem: "charizardite-x",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
     });
     const pikachu = makeActivePokemon({
       uid: "pikachu",
-      speciesId: 25,
-      heldItem: "normalium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "tackle" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.normaliumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.tackle }],
     });
 
     // Battle 1: use both gimmicks on side 0
@@ -454,16 +484,16 @@ describe("Gen7Ruleset -- dual gimmick access via getBattleGimmick", () => {
     // Fresh Pokemon instances for battle 2 (the old ones were mutated by activate)
     const charizard2 = makeActivePokemon({
       uid: "charizard-b2",
-      speciesId: 6,
-      heldItem: "charizardite-x",
+      speciesId: SPECIES.charizard,
+      heldItem: ITEMS.charizarditeX,
     });
     const pikachu2 = makeActivePokemon({
       uid: "pikachu-b2",
-      speciesId: 25,
-      heldItem: "normalium-z",
-      types: ["electric"],
-      ability: "static",
-      moves: [{ moveId: "tackle" }],
+      speciesId: SPECIES.pikachu,
+      heldItem: ITEMS.normaliumZ,
+      types: [TYPES.electric],
+      ability: ABILITIES.static,
+      moves: [{ moveId: MOVES.tackle }],
     });
     const side2 = makeSide(0);
     expect(mega.canUse(charizard2, side2, state)).toBe(true);
