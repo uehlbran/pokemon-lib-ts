@@ -4,9 +4,24 @@ import type {
   PokemonType,
   SeededRandom as SeededRandomType,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  NEUTRAL_NATURES,
+  SeededRandom,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import {
+  createGen4DataManager,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
 /**
@@ -30,27 +45,38 @@ function createMockRng(intReturnValue: number): SeededRandomType {
 // Helpers
 // ---------------------------------------------------------------------------
 
+const DATA_MANAGER = createGen4DataManager()
+const ABILITIES = CORE_ABILITY_IDS
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const
+const SPECIES = GEN4_SPECIES_IDS
+const TYPES = CORE_TYPE_IDS
+const WEATHER = CORE_WEATHER_IDS
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy
+
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle)
+
 function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+  return new Gen4Ruleset(DATA_MANAGER);
 }
 
 function makePokemonInstance(overrides: {
   maxHp?: number;
   status?: PokemonInstance["status"];
-  heldItem?: string | null;
+  heldItem?: PokemonInstance["heldItem"];
 }): PokemonInstance {
   return {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.maxHp ?? 200,
-    moves: [],
-    ability: "",
+    moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
+    ability: ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
@@ -61,7 +87,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: overrides.maxHp ?? 200,
       attack: 100,
@@ -77,8 +103,8 @@ function makeActivePokemon(overrides: {
   maxHp?: number;
   status?: PokemonInstance["status"];
   types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
+  ability?: PokemonInstance["ability"];
+  heldItem?: PokemonInstance["heldItem"];
   movedThisTurn?: boolean;
 }): ActivePokemon {
   return {
@@ -98,8 +124,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -121,15 +147,15 @@ function makeActivePokemon(overrides: {
 type AccuracyContext = Parameters<Gen4Ruleset["doesMoveHit"]>[0];
 
 function makeCtx(overrides: {
-  moveId?: string;
+  moveId?: AccuracyContext["move"]["id"];
   moveAccuracy?: number | null;
-  attackerAbility?: string;
-  defenderAbility?: string;
+  attackerAbility?: PokemonInstance["ability"];
+  defenderAbility?: PokemonInstance["ability"];
   accStage?: number;
   evaStage?: number;
-  weather?: string | null;
-  attackerItem?: string | null;
-  defenderItem?: string | null;
+  weather?: (typeof WEATHER)[keyof typeof WEATHER] | null;
+  attackerItem?: PokemonInstance["heldItem"];
+  defenderItem?: PokemonInstance["heldItem"];
   moveCategory?: "physical" | "special" | "status";
   seed?: number;
   rng?: SeededRandomType;
@@ -148,16 +174,20 @@ function makeCtx(overrides: {
   if (overrides.accStage !== undefined) attacker.statStages.accuracy = overrides.accStage;
   if (overrides.evaStage !== undefined) defender.statStages.evasion = overrides.evaStage;
 
+  const move = DATA_MANAGER.getMove(overrides.moveId ?? MOVES.tackle);
+
   return {
     attacker,
     defender,
     move: {
-      id: overrides.moveId ?? "tackle",
-      accuracy: overrides.moveAccuracy !== undefined ? overrides.moveAccuracy : 100,
-      category: overrides.moveCategory ?? "physical",
+      ...move,
+      accuracy: overrides.moveAccuracy !== undefined ? overrides.moveAccuracy : move.accuracy,
+      category: overrides.moveCategory ?? move.category,
     } as AccuracyContext["move"],
     state: {
-      weather: overrides.weather ? { type: overrides.weather } : null,
+      weather: overrides.weather
+        ? { type: overrides.weather, turnsLeft: 5, source: null }
+        : null,
     } as AccuracyContext["state"],
     rng: overrides.rng ?? new SeededRandom(overrides.seed ?? 1),
   };
@@ -175,9 +205,9 @@ describe("Gen4Ruleset doesMoveHit — Thunder 100% accuracy in rain", () => {
   it("given Thunder in rain and rng roll of 100, when checking accuracy, then always hits (rain bypasses roll)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "rain",
+      weather: WEATHER.rain,
       rng: createMockRng(100),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -186,9 +216,9 @@ describe("Gen4Ruleset doesMoveHit — Thunder 100% accuracy in rain", () => {
   it("given Thunder in rain and rng roll of 1, when checking accuracy, then always hits (rain bypasses roll)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "rain",
+      weather: WEATHER.rain,
       rng: createMockRng(1),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -198,9 +228,9 @@ describe("Gen4Ruleset doesMoveHit — Thunder 100% accuracy in rain", () => {
     // Source: Showdown sim/battle-actions.ts — weather override bypasses stat stages
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "rain",
+      weather: WEATHER.rain,
       accStage: -6,
       rng: createMockRng(100),
     });
@@ -220,9 +250,9 @@ describe("Gen4Ruleset doesMoveHit — Thunder 50% accuracy in sun", () => {
   it("given Thunder in sun and rng roll of 50, when checking accuracy, then hits (boundary: 50 <= 50)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "sun",
+      weather: WEATHER.sun,
       rng: createMockRng(50),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -231,9 +261,9 @@ describe("Gen4Ruleset doesMoveHit — Thunder 50% accuracy in sun", () => {
   it("given Thunder in sun and rng roll of 51, when checking accuracy, then misses (boundary: 51 > 50)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "sun",
+      weather: WEATHER.sun,
       rng: createMockRng(51),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(false);
@@ -242,9 +272,9 @@ describe("Gen4Ruleset doesMoveHit — Thunder 50% accuracy in sun", () => {
   it("given Thunder in sun and rng roll of 1, when checking accuracy, then hits (minimum roll)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "sun",
+      weather: WEATHER.sun,
       rng: createMockRng(1),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -255,9 +285,9 @@ describe("Gen4Ruleset doesMoveHit — Thunder 50% accuracy in sun", () => {
     // bypasses normal accuracy/evasion stage formula entirely.
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "sun",
+      weather: WEATHER.sun,
       accStage: 6,
       rng: createMockRng(51),
     });
@@ -277,9 +307,9 @@ describe("Gen4Ruleset doesMoveHit — Blizzard 100% accuracy in hail", () => {
   it("given Blizzard in hail and rng roll of 100, when checking accuracy, then always hits (hail bypasses roll)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "blizzard",
+      moveId: MOVES.blizzard,
       moveAccuracy: 70,
-      weather: "hail",
+      weather: WEATHER.hail,
       rng: createMockRng(100),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -288,9 +318,9 @@ describe("Gen4Ruleset doesMoveHit — Blizzard 100% accuracy in hail", () => {
   it("given Blizzard in hail and rng roll of 1, when checking accuracy, then always hits (hail bypasses roll)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "blizzard",
+      moveId: MOVES.blizzard,
       moveAccuracy: 70,
-      weather: "hail",
+      weather: WEATHER.hail,
       rng: createMockRng(1),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -300,9 +330,9 @@ describe("Gen4Ruleset doesMoveHit — Blizzard 100% accuracy in hail", () => {
     // Source: Showdown sim/battle-actions.ts — weather override bypasses stat stages
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "blizzard",
+      moveId: MOVES.blizzard,
       moveAccuracy: 70,
-      weather: "hail",
+      weather: WEATHER.hail,
       accStage: -6,
       rng: createMockRng(100),
     });
@@ -323,7 +353,7 @@ describe("Gen4Ruleset doesMoveHit — weather accuracy overrides only apply to m
   it("given Thunder and no weather, when rng roll is 70, then hits (base 70% accuracy, boundary: 70 <= 70)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
       weather: null,
       rng: createMockRng(70),
@@ -334,7 +364,7 @@ describe("Gen4Ruleset doesMoveHit — weather accuracy overrides only apply to m
   it("given Thunder and no weather, when rng roll is 71, then misses (base 70% accuracy, boundary: 71 > 70)", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
       weather: null,
       rng: createMockRng(71),
@@ -346,9 +376,9 @@ describe("Gen4Ruleset doesMoveHit — weather accuracy overrides only apply to m
     // Source: Showdown sim/battle-actions.ts — hail does NOT boost Thunder accuracy
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "thunder",
+      moveId: MOVES.thunder,
       moveAccuracy: 70,
-      weather: "hail",
+      weather: WEATHER.hail,
       rng: createMockRng(71),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(false);
@@ -358,9 +388,9 @@ describe("Gen4Ruleset doesMoveHit — weather accuracy overrides only apply to m
     // Source: Showdown sim/battle-actions.ts — rain does NOT boost Blizzard accuracy
     const ruleset = makeRuleset();
     const ctx = makeCtx({
-      moveId: "blizzard",
+      moveId: MOVES.blizzard,
       moveAccuracy: 70,
-      weather: "rain",
+      weather: WEATHER.rain,
       rng: createMockRng(71),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(false);
@@ -380,7 +410,7 @@ describe("Gen4Ruleset doesMoveHit — Zoom Lens accuracy bonus", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 70,
-      attackerItem: "zoom-lens",
+      attackerItem: ITEMS.zoomLens,
       defenderMovedThisTurn: true,
       rng: createMockRng(84),
     });
@@ -391,7 +421,7 @@ describe("Gen4Ruleset doesMoveHit — Zoom Lens accuracy bonus", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 70,
-      attackerItem: "zoom-lens",
+      attackerItem: ITEMS.zoomLens,
       defenderMovedThisTurn: true,
       rng: createMockRng(85),
     });
@@ -404,7 +434,7 @@ describe("Gen4Ruleset doesMoveHit — Zoom Lens accuracy bonus", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 70,
-      attackerItem: "zoom-lens",
+      attackerItem: ITEMS.zoomLens,
       defenderMovedThisTurn: false,
       rng: createMockRng(71),
     });
@@ -415,7 +445,7 @@ describe("Gen4Ruleset doesMoveHit — Zoom Lens accuracy bonus", () => {
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 70,
-      attackerItem: "zoom-lens",
+      attackerItem: ITEMS.zoomLens,
       defenderMovedThisTurn: false,
       rng: createMockRng(70),
     });
@@ -437,7 +467,7 @@ describe("Gen4Ruleset doesMoveHit — BrightPowder / Lax Incense evasion", () =>
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 100,
-      defenderItem: "bright-powder",
+      defenderItem: ITEMS.brightPowder,
       rng: createMockRng(90),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -447,7 +477,7 @@ describe("Gen4Ruleset doesMoveHit — BrightPowder / Lax Incense evasion", () =>
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 100,
-      defenderItem: "bright-powder",
+      defenderItem: ITEMS.brightPowder,
       rng: createMockRng(91),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(false);
@@ -468,7 +498,7 @@ describe("Gen4Ruleset doesMoveHit — BrightPowder / Lax Incense evasion", () =>
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 100,
-      defenderItem: "lax-incense",
+      defenderItem: ITEMS.laxIncense,
       rng: createMockRng(91),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(false);
@@ -479,7 +509,7 @@ describe("Gen4Ruleset doesMoveHit — BrightPowder / Lax Incense evasion", () =>
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 70,
-      defenderItem: "bright-powder",
+      defenderItem: ITEMS.brightPowder,
       rng: createMockRng(63),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
@@ -489,7 +519,7 @@ describe("Gen4Ruleset doesMoveHit — BrightPowder / Lax Incense evasion", () =>
     const ruleset = makeRuleset();
     const ctx = makeCtx({
       moveAccuracy: 70,
-      defenderItem: "bright-powder",
+      defenderItem: ITEMS.brightPowder,
       rng: createMockRng(64),
     });
     expect(ruleset.doesMoveHit(ctx)).toBe(false);

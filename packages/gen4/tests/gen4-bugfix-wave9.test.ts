@@ -1,7 +1,19 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
@@ -25,6 +37,13 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const dataManager = createGen4DataManager();
+const ABILITIES = GEN4_ABILITY_IDS;
+const ITEMS = GEN4_ITEM_IDS;
+const MOVES = GEN4_MOVE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const NATURES = GEN4_NATURE_IDS;
+
 function createMockRng(intReturnValue: number) {
   return {
     next: () => 0,
@@ -39,13 +58,13 @@ function createMockRng(intReturnValue: number) {
 
 function createActivePokemon(opts: {
   types: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
+  ability?: PokemonInstance["ability"];
+  heldItem?: PokemonInstance["heldItem"];
   currentHp?: number;
   maxHp?: number;
   nickname?: string | null;
   movedThisTurn?: boolean;
-  suppressedAbility?: string | null;
+  suppressedAbility?: ActivePokemon["suppressedAbility"];
   itemKnockedOff?: boolean;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
@@ -60,16 +79,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: `test-${Math.random().toString(36).slice(2, 8)}`,
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: opts.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: NATURES.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: null,
@@ -80,7 +99,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -99,7 +118,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     suppressedAbility: opts.suppressedAbility ?? null,
     itemKnockedOff: opts.itemKnockedOff ?? false,
     lastMoveUsed: null,
@@ -123,26 +142,7 @@ function createActivePokemon(opts: {
 
 function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
   return {
-    id,
-    name: id,
-    type: "normal",
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
+    ...dataManager.getMove(id),
     ...overrides,
   } as MoveData;
 }
@@ -262,11 +262,11 @@ describe("Bug #259 -- Pressure ability", () => {
     //   the message '<Pokemon> is exerting its Pressure!' is displayed."
     // Source: Showdown data/abilities.ts -- Pressure onStart
     const pokemon = createActivePokemon({
-      types: ["psychic"],
-      ability: "pressure",
+      types: [CORE_TYPE_IDS.psychic],
+      ability: ABILITIES.pressure,
       nickname: "Mewtwo",
     });
-    const opponent = createActivePokemon({ types: ["normal"] });
+    const opponent = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState(pokemon, opponent);
     const rng = createMockRng(0);
 
@@ -290,64 +290,56 @@ describe("Bug #259 -- Pressure ability", () => {
 describe("Bug #254 -- Gastro Acid suppressedAbility", () => {
   it("given Gastro Acid is used, when it hits, then defender.suppressedAbility stores original ability", () => {
     // Source: Showdown Gen 4 mod -- Gastro Acid sets suppressedAbility
-    const attacker = createActivePokemon({ types: ["poison"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.poison] });
     const defender = createActivePokemon({
-      types: ["normal"],
-      ability: "intimidate",
+      types: [CORE_TYPE_IDS.normal],
+      ability: ABILITIES.intimidate,
       nickname: "Gyarados",
     });
-    const move = createMove("gastro-acid", {
-      type: "poison",
-      category: "status",
-      power: 0,
-    });
+    const move = createMove(MOVES.gastroAcid);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     executeGen4MoveEffect(ctx);
 
     expect(defender.ability).toBe("");
-    expect(defender.suppressedAbility).toBe("intimidate");
+    expect(defender.suppressedAbility).toBe(ABILITIES.intimidate);
   });
 
   it("given Gastro Acid suppressed ability, when Pokemon switches out, then ability is restored", () => {
     // Source: Showdown Gen 4 mod -- Gastro Acid suppression cleared on switch-out
     const ruleset = new Gen4Ruleset(createGen4DataManager());
     const pokemon = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       ability: "",
-      suppressedAbility: "intimidate",
+      suppressedAbility: ABILITIES.intimidate,
     });
-    // Simulate that Gastro Acid was used: ability="" and suppressedAbility="intimidate"
-    pokemon.suppressedAbility = "intimidate";
+    // Simulate that Gastro Acid was used: ability="" and suppressedAbility=intimidate
+    pokemon.suppressedAbility = ABILITIES.intimidate;
     pokemon.ability = "";
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.ability).toBe("intimidate");
+    expect(pokemon.ability).toBe(ABILITIES.intimidate);
     expect(pokemon.suppressedAbility).toBeNull();
   });
 
   it("given Gastro Acid used on Multitype, when effect executes, then it fails", () => {
     // Source: Showdown Gen 4 mod -- Gastro Acid fails vs Multitype
-    const attacker = createActivePokemon({ types: ["poison"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.poison] });
     const defender = createActivePokemon({
-      types: ["normal"],
-      ability: "multitype",
+      types: [CORE_TYPE_IDS.normal],
+      ability: ABILITIES.multitype,
     });
-    const move = createMove("gastro-acid", {
-      type: "poison",
-      category: "status",
-      power: 0,
-    });
+    const move = createMove(MOVES.gastroAcid);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.messages).toContain("But it failed!");
-    expect(defender.ability).toBe("multitype");
+    expect(defender.ability).toBe(ABILITIES.multitype);
     expect(defender.suppressedAbility).toBeNull();
   });
 
@@ -356,17 +348,13 @@ describe("Bug #254 -- Gastro Acid suppressedAbility", () => {
     // When suppressedAbility is set, the defender's original ability is already stored.
     // A second Gastro Acid would overwrite suppressedAbility with "" (the suppressed value),
     // permanently losing the original ability. The idempotency guard prevents this.
-    const attacker = createActivePokemon({ types: ["poison"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.poison] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       ability: "",
-      suppressedAbility: "intimidate",
+      suppressedAbility: ABILITIES.intimidate,
     });
-    const move = createMove("gastro-acid", {
-      type: "poison",
-      category: "status",
-      power: 0,
-    });
+    const move = createMove(MOVES.gastroAcid);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -374,7 +362,7 @@ describe("Bug #254 -- Gastro Acid suppressedAbility", () => {
 
     expect(result.messages).toContain("But it failed!");
     // Original ability must not be overwritten
-    expect(defender.suppressedAbility).toBe("intimidate");
+    expect(defender.suppressedAbility).toBe(ABILITIES.intimidate);
     expect(defender.ability).toBe("");
   });
 });
@@ -386,13 +374,13 @@ describe("Bug #254 -- Gastro Acid suppressedAbility", () => {
 describe("Bug #271 + #274 -- Knock Off flag and Trick/Switcheroo guard", () => {
   it("given Knock Off is used on a defender with an item, when it hits, then itemKnockedOff is set to true", () => {
     // Source: Showdown Gen 4 -- Knock Off sets itemKnockedOff flag
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
-      heldItem: "leftovers",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: CORE_ITEM_IDS.leftovers,
       nickname: "Blissey",
     });
-    const move = createMove("knock-off", { type: "dark", power: 20 });
+    const move = createMove(MOVES.knockOff);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -400,24 +388,20 @@ describe("Bug #271 + #274 -- Knock Off flag and Trick/Switcheroo guard", () => {
 
     expect(defender.pokemon.heldItem).toBeNull();
     expect(defender.itemKnockedOff).toBe(true);
-    expect(result.messages).toContain("Blissey lost its leftovers!");
+    expect(result.messages).toContain(`Blissey lost its ${CORE_ITEM_IDS.leftovers}!`);
   });
 
   it("given defender had item knocked off, when Trick is used, then it fails", () => {
     // Source: Showdown Gen 4 -- itemKnockedOff flag prevents Trick/Switcheroo
     const attacker = createActivePokemon({
-      types: ["psychic"],
-      heldItem: "choice-scarf",
+      types: [CORE_TYPE_IDS.psychic],
+      heldItem: ITEMS.choiceScarf,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       itemKnockedOff: true,
     });
-    const move = createMove("trick", {
-      type: "psychic",
-      category: "status",
-      power: 0,
-    });
+    const move = createMove(MOVES.trick);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -425,57 +409,49 @@ describe("Bug #271 + #274 -- Knock Off flag and Trick/Switcheroo guard", () => {
 
     expect(result.messages).toContain("But it failed!");
     // Item should NOT be swapped
-    expect(attacker.pokemon.heldItem).toBe("choice-scarf");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.choiceScarf);
   });
 
   it("given attacker had item knocked off, when Switcheroo is used, then it fails", () => {
     // Source: Showdown Gen 4 -- itemKnockedOff flag prevents Trick/Switcheroo
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       itemKnockedOff: true,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
-      heldItem: "leftovers",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: CORE_ITEM_IDS.leftovers,
     });
-    const move = createMove("switcheroo", {
-      type: "dark",
-      category: "status",
-      power: 0,
-    });
+    const move = createMove(MOVES.switcheroo);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.messages).toContain("But it failed!");
-    expect(defender.pokemon.heldItem).toBe("leftovers");
+    expect(defender.pokemon.heldItem).toBe(CORE_ITEM_IDS.leftovers);
   });
 
   it("given no items knocked off, when Trick is used normally, then items are swapped", () => {
     // Source: Showdown Gen 4 -- Trick swaps items when no Knock Off flag
     const attacker = createActivePokemon({
-      types: ["psychic"],
-      heldItem: "choice-scarf",
+      types: [CORE_TYPE_IDS.psychic],
+      heldItem: ITEMS.choiceScarf,
       nickname: "Alakazam",
     });
     const defender = createActivePokemon({
-      types: ["normal"],
-      heldItem: "leftovers",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: CORE_ITEM_IDS.leftovers,
       nickname: "Blissey",
     });
-    const move = createMove("trick", {
-      type: "psychic",
-      category: "status",
-      power: 0,
-    });
+    const move = createMove(MOVES.trick);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(attacker.pokemon.heldItem).toBe("leftovers");
-    expect(defender.pokemon.heldItem).toBe("choice-scarf");
+    expect(attacker.pokemon.heldItem).toBe(CORE_ITEM_IDS.leftovers);
+    expect(defender.pokemon.heldItem).toBe(ITEMS.choiceScarf);
     expect(result.messages).not.toContain("But it failed!");
   });
 });
@@ -491,21 +467,16 @@ describe("Bug #255 -- Pain Split heals both sides", () => {
     // Average = floor((50 + 150) / 2) = 100
     // Attacker gains 50 (100 - 50), defender loses 50 (150 - 100)
     const attacker = createActivePokemon({
-      types: ["ghost"],
+      types: [CORE_TYPE_IDS.ghost],
       maxHp: 200,
       currentHp: 50,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       maxHp: 200,
       currentHp: 150,
     });
-    const move = createMove("pain-split", {
-      type: "normal",
-      category: "status",
-      power: 0,
-      effect: { type: "custom", handler: "pain-split" },
-    });
+    const move = createMove(MOVES.painSplit);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -517,7 +488,7 @@ describe("Bug #255 -- Pain Split heals both sides", () => {
     expect(result.customDamage).toEqual({
       target: "defender",
       amount: 50,
-      source: "pain-split",
+      source: MOVES.painSplit,
     });
     expect(result.messages).toContain("The battlers shared their pain!");
   });
@@ -527,21 +498,16 @@ describe("Bug #255 -- Pain Split heals both sides", () => {
     // Attacker loses 80 (180 - 100), defender gains 80 (100 - 20)
     // Source: Showdown Gen 4 -- Pain Split sets both to floor((a + b) / 2)
     const attacker = createActivePokemon({
-      types: ["ghost"],
+      types: [CORE_TYPE_IDS.ghost],
       maxHp: 200,
       currentHp: 180,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       maxHp: 200,
       currentHp: 20,
     });
-    const move = createMove("pain-split", {
-      type: "normal",
-      category: "status",
-      power: 0,
-      effect: { type: "custom", handler: "pain-split" },
-    });
+    const move = createMove(MOVES.painSplit);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -560,21 +526,16 @@ describe("Bug #255 -- Pain Split heals both sides", () => {
     // Defender new HP = min(175, 150) = 150, gains 100 (150 - 50)
     // Source: Showdown Gen 4 -- Pain Split caps at maxHp
     const attacker = createActivePokemon({
-      types: ["ghost"],
+      types: [CORE_TYPE_IDS.ghost],
       maxHp: 400,
       currentHp: 300,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       maxHp: 150,
       currentHp: 50,
     });
-    const move = createMove("pain-split", {
-      type: "normal",
-      category: "status",
-      power: 0,
-      effect: { type: "custom", handler: "pain-split" },
-    });
+    const move = createMove(MOVES.painSplit);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -596,13 +557,9 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
   it("given defender selected a physical move, when Sucker Punch used, then it succeeds", () => {
     // Source: Showdown sim/battle-actions.ts Gen 4 -- Sucker Punch succeeds if
     //   target selected a damaging move
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("sucker-punch", {
-      type: "dark",
-      power: 80,
-      priority: 1,
-    });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.dark] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = createMove(MOVES.suckerPunch);
     const rng = createMockRng(0);
     const ctx = createContext(
       attacker,
@@ -611,7 +568,7 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: "earthquake", category: "physical" },
+        defenderSelectedMove: { id: MOVES.earthquake, category: "physical" },
       },
     );
 
@@ -622,13 +579,9 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
 
   it("given defender selected a special move, when Sucker Punch used, then it succeeds", () => {
     // Source: Showdown Gen 4 -- Sucker Punch succeeds against special moves too
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["fire"] });
-    const move = createMove("sucker-punch", {
-      type: "dark",
-      power: 80,
-      priority: 1,
-    });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.dark] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.fire] });
+    const move = createMove(MOVES.suckerPunch);
     const rng = createMockRng(0);
     const ctx = createContext(
       attacker,
@@ -637,7 +590,7 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: "flamethrower", category: "special" },
+        defenderSelectedMove: { id: MOVES.flamethrower, category: "special" },
       },
     );
 
@@ -651,13 +604,9 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
     //   target selected a status move
     // Source: Bulbapedia -- "Sucker Punch will fail if the target does not select
     //   a move that deals damage"
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("sucker-punch", {
-      type: "dark",
-      power: 80,
-      priority: 1,
-    });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.dark] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = createMove(MOVES.suckerPunch);
     const rng = createMockRng(0);
     const ctx = createContext(
       attacker,
@@ -666,7 +615,7 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: "toxic", category: "status" },
+        defenderSelectedMove: { id: MOVES.toxic, category: "status" },
       },
     );
 
@@ -677,13 +626,9 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
 
   it("given defender is not using a move (switching), when Sucker Punch used, then it fails", () => {
     // Source: Showdown Gen 4 -- Sucker Punch fails if target is not attacking
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("sucker-punch", {
-      type: "dark",
-      power: 80,
-      priority: 1,
-    });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.dark] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = createMove(MOVES.suckerPunch);
     const rng = createMockRng(0);
     const ctx = createContext(
       attacker,
@@ -703,16 +648,12 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
 
   it("given defender already moved this turn, when Sucker Punch used, then it fails", () => {
     // Source: Showdown Gen 4 -- Sucker Punch fails if target already moved
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       movedThisTurn: true,
     });
-    const move = createMove("sucker-punch", {
-      type: "dark",
-      power: 80,
-      priority: 1,
-    });
+    const move = createMove(MOVES.suckerPunch);
     const rng = createMockRng(0);
     const ctx = createContext(
       attacker,
@@ -721,7 +662,7 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: "tackle", category: "physical" },
+        defenderSelectedMove: { id: MOVES.tackle, category: "physical" },
       },
     );
 
