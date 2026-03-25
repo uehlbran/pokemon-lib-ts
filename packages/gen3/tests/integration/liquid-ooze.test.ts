@@ -1,8 +1,19 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_TYPE_IDS,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  type StatBlock,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen3DataManager } from "../../src/data";
-import { Gen3Ruleset } from "../../src/Gen3Ruleset";
+import { createGen3DataManager, GEN3_ABILITY_IDS, GEN3_MOVE_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 
 /**
  * Gen 3 Liquid Ooze Tests
@@ -48,27 +59,27 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: GEN3_SPECIES_IDS.bulbasaur,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: CORE_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? 200,
     moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -105,7 +116,7 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMinimalBattleState(attacker: ActivePokemon, defender: ActivePokemon): BattleState {
+function createSyntheticBattleState(attacker: ActivePokemon, defender: ActivePokemon): BattleState {
   return {
     sides: [
       {
@@ -146,7 +157,7 @@ function createDrainMove(id: string, type: PokemonType, power: number): MoveData
     id,
     displayName: id,
     type,
-    category: "special",
+    category: CORE_MOVE_CATEGORIES.special,
     power,
     accuracy: 100,
     pp: 10,
@@ -184,7 +195,7 @@ function createContext(
   damage: number,
   rng: ReturnType<typeof createMockRng>,
 ): MoveEffectContext {
-  const state = createMinimalBattleState(attacker, defender);
+  const state = createSyntheticBattleState(attacker, defender);
   return { attacker, defender, move, damage, state, rng } as MoveEffectContext;
 }
 
@@ -199,9 +210,9 @@ describe("Gen 3 Liquid Ooze — drain moves become damage", () => {
   it("given defender with Liquid Ooze, when drain move hits, then attacker takes recoil damage instead of healing", () => {
     // Source: pret/pokeemerald ABILITY_LIQUID_OOZE — drain causes damage instead of heal
     // Source: Showdown data/abilities.ts — Liquid Ooze: this.damage(damage); return 0;
-    const attacker = createActivePokemon({ types: ["grass"] });
-    const defender = createActivePokemon({ types: ["poison"], ability: "liquid-ooze" });
-    const gigaDrain = createDrainMove("giga-drain", "grass", 60);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.grass] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.poison], ability: GEN3_ABILITY_IDS.liquidOoze });
+    const gigaDrain = createDrainMove(GEN3_MOVE_IDS.gigaDrain, CORE_TYPE_IDS.grass, 60);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, gigaDrain, 80, rng);
 
@@ -215,9 +226,9 @@ describe("Gen 3 Liquid Ooze — drain moves become damage", () => {
 
   it("given defender with Liquid Ooze, when drain move hits for 100 damage, then recoil = floor(100 * 0.5) = 50", () => {
     // Source: pret/pokeemerald — Liquid Ooze recoil matches what would have been drained
-    const attacker = createActivePokemon({ types: ["grass"] });
-    const defender = createActivePokemon({ types: ["poison"], ability: "liquid-ooze" });
-    const absorb = createDrainMove("absorb", "grass", 20);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.grass] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.poison], ability: GEN3_ABILITY_IDS.liquidOoze });
+    const absorb = createDrainMove(GEN3_MOVE_IDS.absorb, CORE_TYPE_IDS.grass, 20);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, absorb, 100, rng);
 
@@ -230,9 +241,9 @@ describe("Gen 3 Liquid Ooze — drain moves become damage", () => {
 
   it("given defender without Liquid Ooze, when drain move hits, then attacker heals normally", () => {
     // Source: pret/pokeemerald — without Liquid Ooze, drain works normally
-    const attacker = createActivePokemon({ types: ["grass"] });
-    const defender = createActivePokemon({ types: ["poison"] });
-    const gigaDrain = createDrainMove("giga-drain", "grass", 60);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.grass] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.poison] });
+    const gigaDrain = createDrainMove(GEN3_MOVE_IDS.gigaDrain, CORE_TYPE_IDS.grass, 60);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, gigaDrain, 80, rng);
 
@@ -245,9 +256,9 @@ describe("Gen 3 Liquid Ooze — drain moves become damage", () => {
 
   it("given defender with Liquid Ooze, when drain move hits for 1 damage, then minimum recoil is 1", () => {
     // Source: pret/pokeemerald — minimum drain/recoil is 1
-    const attacker = createActivePokemon({ types: ["grass"] });
-    const defender = createActivePokemon({ types: ["poison"], ability: "liquid-ooze" });
-    const absorb = createDrainMove("absorb", "grass", 20);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.grass] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.poison], ability: GEN3_ABILITY_IDS.liquidOoze });
+    const absorb = createDrainMove(GEN3_MOVE_IDS.absorb, CORE_TYPE_IDS.grass, 20);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, absorb, 1, rng);
 
