@@ -1,9 +1,18 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType, TerrainType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { isGen7Grounded } from "../src/Gen7DamageCalc";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_NATURE_IDS, GEN7_SPECIES_IDS } from "../src";
 import {
   applyGen7TerrainEffects,
   checkGen7TerrainStatusImmunity,
@@ -18,6 +27,15 @@ import {
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
+
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const
+const NATURES = GEN7_NATURE_IDS
+const SPECIES = GEN7_SPECIES_IDS
+const STATUSES = CORE_STATUS_IDS
+const TERRAINS = CORE_TERRAIN_IDS
+const TYPES = CORE_TYPE_IDS
+const VOLATILES = CORE_VOLATILE_IDS
 
 function makeActive(overrides: {
   level?: number;
@@ -45,16 +63,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.pikachu,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: NATURES.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -65,7 +83,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -79,8 +97,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -151,34 +169,34 @@ function makeAbilityContext(overrides: {
 describe("isGen7Grounded", () => {
   it("given a normal Ground-type Pokemon, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- default is grounded unless exempted
-    const pokemon = makeActive({ types: ["ground"] });
+    const pokemon = makeActive({ types: [TYPES.ground] });
     expect(isGen7Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a normal Normal-type Pokemon, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- default is grounded
-    const pokemon = makeActive({ types: ["normal"] });
+    const pokemon = makeActive({ types: [TYPES.normal] });
     expect(isGen7Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a Flying-type Pokemon, when checking grounded, then returns false", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded: type=Flying => not grounded
     // Source: Bulbapedia -- Flying-type Pokemon are not grounded
-    const pokemon = makeActive({ types: ["flying"] });
+    const pokemon = makeActive({ types: [TYPES.flying] });
     expect(isGen7Grounded(pokemon, false)).toBe(false);
   });
 
   it("given a Pokemon with Levitate ability, when checking grounded, then returns false", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded: ability=Levitate => not grounded
     // Source: Bulbapedia -- Levitate: "The Pokemon is made immune to Ground-type moves"
-    const pokemon = makeActive({ ability: "levitate" });
+    const pokemon = makeActive({ ability: ABILITIES.levitate });
     expect(isGen7Grounded(pokemon, false)).toBe(false);
   });
 
   it("given a Pokemon holding Air Balloon, when checking grounded, then returns false", () => {
     // Source: Showdown data/items.ts -- airballoon: isGrounded: false
     // Source: Bulbapedia -- Air Balloon: "Makes the holder unaffected by Ground-type moves"
-    const pokemon = makeActive({ heldItem: "air-balloon" });
+    const pokemon = makeActive({ heldItem: ITEMS.airBalloon });
     expect(isGen7Grounded(pokemon, false)).toBe(false);
   });
 
@@ -186,7 +204,7 @@ describe("isGen7Grounded", () => {
     // Source: Showdown data/conditions.ts -- magnetrise: isGrounded: false
     // Source: Bulbapedia -- Magnet Rise: "causes the user to float for 5 turns"
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("magnet-rise", { turnsLeft: 3 });
+    volatiles.set(VOLATILES.magnetRise, { turnsLeft: 3 });
     const pokemon = makeActive({ volatiles });
     expect(isGen7Grounded(pokemon, false)).toBe(false);
   });
@@ -195,7 +213,7 @@ describe("isGen7Grounded", () => {
     // Source: Showdown data/conditions.ts -- telekinesis: isGrounded: false
     // Source: Bulbapedia -- Telekinesis: "raises the target into the air for 3 turns"
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("telekinesis", { turnsLeft: 2 });
+    volatiles.set(VOLATILES.telekinesis, { turnsLeft: 2 });
     const pokemon = makeActive({ volatiles });
     expect(isGen7Grounded(pokemon, false)).toBe(false);
   });
@@ -203,13 +221,13 @@ describe("isGen7Grounded", () => {
   it("given a Flying-type Pokemon under Gravity, when checking grounded, then returns true", () => {
     // Source: Showdown data/conditions.ts -- gravity: isGrounded overrides everything
     // Source: Bulbapedia -- Gravity: "Grounds all Flying-type Pokemon"
-    const pokemon = makeActive({ types: ["flying"] });
+    const pokemon = makeActive({ types: [TYPES.flying] });
     expect(isGen7Grounded(pokemon, true)).toBe(true);
   });
 
   it("given a Pokemon with Levitate under Gravity, when checking grounded, then returns true", () => {
     // Source: Showdown data/conditions.ts -- gravity overrides Levitate
-    const pokemon = makeActive({ ability: "levitate" });
+    const pokemon = makeActive({ ability: ABILITIES.levitate });
     expect(isGen7Grounded(pokemon, true)).toBe(true);
   });
 });
@@ -635,27 +653,27 @@ describe("Surge abilities", () => {
   describe("isSurgeAbility", () => {
     it("given electric-surge, when checking isSurgeAbility, then returns true", () => {
       // Source: Showdown data/abilities.ts -- electricsurge
-      expect(isSurgeAbility("electric-surge")).toBe(true);
+      expect(isSurgeAbility(ABILITIES.electricSurge)).toBe(true);
     });
 
     it("given grassy-surge, when checking isSurgeAbility, then returns true", () => {
       // Source: Showdown data/abilities.ts -- grassysurge
-      expect(isSurgeAbility("grassy-surge")).toBe(true);
+      expect(isSurgeAbility(ABILITIES.grassySurge)).toBe(true);
     });
 
     it("given psychic-surge, when checking isSurgeAbility, then returns true", () => {
       // Source: Showdown data/abilities.ts -- psychicsurge
-      expect(isSurgeAbility("psychic-surge")).toBe(true);
+      expect(isSurgeAbility(ABILITIES.psychicSurge)).toBe(true);
     });
 
     it("given misty-surge, when checking isSurgeAbility, then returns true", () => {
       // Source: Showdown data/abilities.ts -- mistysurge
-      expect(isSurgeAbility("misty-surge")).toBe(true);
+      expect(isSurgeAbility(ABILITIES.mistySurge)).toBe(true);
     });
 
     it("given intimidate, when checking isSurgeAbility, then returns false", () => {
       // Source: Intimidate is not a Surge ability
-      expect(isSurgeAbility("intimidate")).toBe(false);
+      expect(isSurgeAbility(ABILITIES.intimidate)).toBe(false);
     });
 
     it("given null, when checking isSurgeAbility, then returns false", () => {
@@ -670,8 +688,8 @@ describe("Surge abilities", () => {
       // Source: Bulbapedia "Electric Surge" -- "sets Electric Terrain when the Pokemon enters battle"
       // Default duration: 5 turns
       const pokemon = makeActive({
-        ability: "electric-surge",
-        speciesId: 785,
+        ability: ABILITIES.electricSurge,
+        speciesId: SPECIES.tapukoko,
         nickname: "Tapu Koko",
       });
       const state = makeState();
@@ -681,9 +699,9 @@ describe("Surge abilities", () => {
 
       expect(result.activated).toBe(true);
       expect(state.terrain).not.toBeNull();
-      expect(state.terrain!.type).toBe("electric");
+      expect(state.terrain!.type).toBe(TERRAINS.electric);
       expect(state.terrain!.turnsLeft).toBe(5);
-      expect(state.terrain!.source).toBe("electric-surge");
+      expect(state.terrain!.source).toBe(ABILITIES.electricSurge);
     });
   });
 
@@ -693,8 +711,8 @@ describe("Surge abilities", () => {
       //   onStart: this.field.setTerrain('grassyterrain')
       // Source: Bulbapedia "Grassy Surge" -- "sets Grassy Terrain when the Pokemon enters battle"
       const pokemon = makeActive({
-        ability: "grassy-surge",
-        speciesId: 787,
+        ability: ABILITIES.grassySurge,
+        speciesId: SPECIES.tapubulu,
         nickname: "Tapu Bulu",
       });
       const state = makeState();
@@ -704,7 +722,7 @@ describe("Surge abilities", () => {
 
       expect(result.activated).toBe(true);
       expect(state.terrain).not.toBeNull();
-      expect(state.terrain!.type).toBe("grassy");
+      expect(state.terrain!.type).toBe(TERRAINS.grassy);
       expect(state.terrain!.turnsLeft).toBe(5);
     });
   });
@@ -715,8 +733,8 @@ describe("Surge abilities", () => {
       //   onStart: this.field.setTerrain('psychicterrain')
       // Source: Bulbapedia "Psychic Surge" -- "sets Psychic Terrain when the Pokemon enters battle"
       const pokemon = makeActive({
-        ability: "psychic-surge",
-        speciesId: 786,
+        ability: ABILITIES.psychicSurge,
+        speciesId: SPECIES.tapulele,
         nickname: "Tapu Lele",
       });
       const state = makeState();
@@ -726,7 +744,7 @@ describe("Surge abilities", () => {
 
       expect(result.activated).toBe(true);
       expect(state.terrain).not.toBeNull();
-      expect(state.terrain!.type).toBe("psychic");
+      expect(state.terrain!.type).toBe(TERRAINS.psychic);
       expect(state.terrain!.turnsLeft).toBe(5);
     });
   });
@@ -737,8 +755,8 @@ describe("Surge abilities", () => {
       //   onStart: this.field.setTerrain('mistyterrain')
       // Source: Bulbapedia "Misty Surge" -- "sets Misty Terrain when the Pokemon enters battle"
       const pokemon = makeActive({
-        ability: "misty-surge",
-        speciesId: 788,
+        ability: ABILITIES.mistySurge,
+        speciesId: SPECIES.tapufini,
         nickname: "Tapu Fini",
       });
       const state = makeState();
@@ -748,7 +766,7 @@ describe("Surge abilities", () => {
 
       expect(result.activated).toBe(true);
       expect(state.terrain).not.toBeNull();
-      expect(state.terrain!.type).toBe("misty");
+      expect(state.terrain!.type).toBe(TERRAINS.misty);
       expect(state.terrain!.turnsLeft).toBe(5);
     });
   });
@@ -758,8 +776,8 @@ describe("Surge abilities", () => {
       // Source: Showdown data/abilities.ts -- electricsurge triggers on switch-in
       const ruleset = new Gen7Ruleset();
       const pokemon = makeActive({
-        ability: "electric-surge",
-        speciesId: 785,
+        ability: ABILITIES.electricSurge,
+        speciesId: SPECIES.tapukoko,
         nickname: "Tapu Koko",
       });
       const state = makeState();
@@ -775,7 +793,7 @@ describe("Surge abilities", () => {
 
       expect(result.activated).toBe(true);
       expect(state.terrain).not.toBeNull();
-      expect(state.terrain!.type).toBe("electric");
+      expect(state.terrain!.type).toBe(TERRAINS.electric);
       expect(state.terrain!.turnsLeft).toBe(5);
     });
   });
@@ -783,7 +801,7 @@ describe("Surge abilities", () => {
   describe("non-Surge ability", () => {
     it("given a Pokemon with Intimidate on switch-in, when calling handleSurgeAbility, then returns not activated", () => {
       // Source: Intimidate is not a Surge ability -- no terrain should be set
-      const pokemon = makeActive({ ability: "intimidate" });
+      const pokemon = makeActive({ ability: ABILITIES.intimidate });
       const state = makeState();
       const context = makeAbilityContext({ pokemon, state });
 
@@ -817,9 +835,9 @@ describe("Terrain duration", () => {
     // Source: Bulbapedia "Terrain Extender" -- "If held by a Pokemon that creates a terrain
     //   via its Ability, that terrain will last 8 turns instead of 5."
     const pokemon = makeActive({
-      ability: "electric-surge",
-      heldItem: "terrain-extender",
-      speciesId: 785,
+      ability: ABILITIES.electricSurge,
+      heldItem: ITEMS.terrainExtender,
+      speciesId: SPECIES.tapukoko,
       nickname: "Tapu Koko",
     });
     const state = makeState();
@@ -829,16 +847,16 @@ describe("Terrain duration", () => {
 
     expect(result.activated).toBe(true);
     expect(state.terrain).not.toBeNull();
-    expect(state.terrain!.type).toBe("electric");
+    expect(state.terrain!.type).toBe(TERRAINS.electric);
     expect(state.terrain!.turnsLeft).toBe(8);
   });
 
   it("given a Surge ability without Terrain Extender, when activating, then sets terrain for 5 turns", () => {
     // Source: Showdown data/conditions.ts -- default terrain duration: 5
     const pokemon = makeActive({
-      ability: "grassy-surge",
+      ability: ABILITIES.grassySurge,
       heldItem: null,
-      speciesId: 787,
+      speciesId: SPECIES.tapubulu,
       nickname: "Tapu Bulu",
     });
     const state = makeState();
@@ -853,9 +871,9 @@ describe("Terrain duration", () => {
   it("given Misty Surge with Terrain Extender, when activating, then sets misty terrain for 8 turns", () => {
     // Source: Showdown data/items.ts -- terrainextender works with all Surge abilities
     const pokemon = makeActive({
-      ability: "misty-surge",
-      heldItem: "terrain-extender",
-      speciesId: 788,
+      ability: ABILITIES.mistySurge,
+      heldItem: ITEMS.terrainExtender,
+      speciesId: SPECIES.tapufini,
       nickname: "Tapu Fini",
     });
     const state = makeState();
@@ -864,7 +882,7 @@ describe("Terrain duration", () => {
     const result = handleSurgeAbility(context);
 
     expect(result.activated).toBe(true);
-    expect(state.terrain!.type).toBe("misty");
+    expect(state.terrain!.type).toBe(TERRAINS.misty);
     expect(state.terrain!.turnsLeft).toBe(8);
   });
 });
@@ -878,12 +896,12 @@ describe("Suppressed Surge ability", () => {
     // Source: Showdown sim/pokemon.ts -- suppressedAbility prevents ability triggers
     // Source: Bulbapedia -- Gastro Acid suppresses abilities
     const pokemon = makeActive({
-      ability: "electric-surge",
-      speciesId: 785,
+      ability: ABILITIES.electricSurge,
+      speciesId: SPECIES.tapukoko,
       nickname: "Tapu Koko",
     });
     // Simulate suppressed ability via suppressedAbility field
-    (pokemon as any).suppressedAbility = "electric-surge";
+    (pokemon as any).suppressedAbility = ABILITIES.electricSurge;
     const state = makeState();
     const context = makeAbilityContext({ pokemon, state });
 
