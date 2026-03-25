@@ -3,24 +3,23 @@ import {
   createOnFieldPokemon as createBattleOnFieldPokemon,
   createTestPokemon,
 } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_GENDERS,
   CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen2DataManager,
   GEN2_ITEM_IDS,
   GEN2_MOVE_IDS,
   GEN2_SPECIES_IDS,
   Gen2Ruleset,
-  createGen2DataManager,
   getGen2CritStage,
   rollGen2Critical,
 } from "../../src";
@@ -44,9 +43,9 @@ const ITEM_IDS = GEN2_ITEM_IDS;
 const MOVE_IDS = GEN2_MOVE_IDS;
 const SPECIES_IDS = GEN2_SPECIES_IDS;
 const STATUS_IDS = CORE_STATUS_IDS;
-const TYPE_IDS = CORE_TYPE_IDS;
 const VOLATILE_IDS = { ...CORE_VOLATILE_IDS, focusEnergy: CORE_VOLATILE_IDS.focusEnergy } as const;
 const GEN2_DATA_MANAGER = createGen2DataManager();
+const DEFAULT_SPECIES = GEN2_DATA_MANAGER.getSpecies(SPECIES_IDS.bulbasaur);
 
 function createCanonicalMove(moveId: keyof typeof MOVE_IDS): MoveData {
   return GEN2_DATA_MANAGER.getMove(moveId);
@@ -55,7 +54,7 @@ function createCanonicalMove(moveId: keyof typeof MOVE_IDS): MoveData {
 function createActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
   const maxHp = overrides.pokemon?.calculatedStats?.hp ?? 100;
   const speed = overrides.pokemon?.calculatedStats?.speed ?? 100;
-  const pokemon = createTestPokemon(SPECIES_IDS.bulbasaur, 50, {
+  const pokemon = createTestPokemon(DEFAULT_SPECIES.id, 50, {
     currentHp: maxHp,
     status: null,
     friendship: 70,
@@ -82,14 +81,20 @@ function createActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePoke
   const active = createBattleOnFieldPokemon(
     pokemon,
     overrides.teamSlot ?? 0,
-    overrides.types ?? [TYPE_IDS.normal],
+    overrides.types ?? [...DEFAULT_SPECIES.types],
   );
 
-  active.volatileStatuses = overrides.volatileStatuses
-    ? new Map(overrides.volatileStatuses)
-    : new Map();
-
-  return active;
+  return {
+    ...active,
+    ...overrides,
+    pokemon,
+    teamSlot: overrides.teamSlot ?? active.teamSlot,
+    types: overrides.types ?? active.types,
+    statStages: overrides.statStages ?? active.statStages,
+    volatileStatuses: overrides.volatileStatuses
+      ? new Map(overrides.volatileStatuses)
+      : active.volatileStatuses,
+  };
 }
 
 function createBattleState(): BattleState {
@@ -216,7 +221,10 @@ describe("Gen 2 crit stage stacking with corrected high-crit value", () => {
   it("given high-crit move + Scope Lens, when computing crit stage, then stage is 3 (high-crit +2, Scope Lens +1)", () => {
     // Source: pret/pokecrystal effect_commands.asm — Scope Lens is L1195 (+1); high-crit is L1183-1184 (+2)
     const attacker = createActivePokemon({
-      pokemon: { ...createActivePokemon().pokemon, heldItem: ITEM_IDS.scopeLens } as PokemonInstance,
+      pokemon: {
+        ...createActivePokemon().pokemon,
+        heldItem: ITEM_IDS.scopeLens,
+      } as PokemonInstance,
     });
     const move = createCanonicalMove(MOVE_IDS.slash);
     const stage = getGen2CritStage(attacker, move);
@@ -230,7 +238,10 @@ describe("Gen 2 crit stage stacking with corrected high-crit value", () => {
     volatiles.set(VOLATILE_IDS.focusEnergy, { turnsLeft: -1 });
     const attacker = createActivePokemon({
       volatileStatuses: volatiles,
-      pokemon: { ...createActivePokemon().pokemon, heldItem: ITEM_IDS.scopeLens } as PokemonInstance,
+      pokemon: {
+        ...createActivePokemon().pokemon,
+        heldItem: ITEM_IDS.scopeLens,
+      } as PokemonInstance,
     });
     const move = createCanonicalMove(MOVE_IDS.slash);
     const stage = getGen2CritStage(attacker, move);
@@ -244,7 +255,10 @@ describe("Gen 2 crit stage stacking with corrected high-crit value", () => {
     const volatiles = new Map([[VOLATILE_IDS.focusEnergy, { turnsLeft: -1 }]]);
     const attacker = createActivePokemon({
       volatileStatuses: volatiles,
-      pokemon: { ...createActivePokemon().pokemon, heldItem: ITEM_IDS.scopeLens } as PokemonInstance,
+      pokemon: {
+        ...createActivePokemon().pokemon,
+        heldItem: ITEM_IDS.scopeLens,
+      } as PokemonInstance,
     });
     const move = createCanonicalMove(MOVE_IDS.slash);
     const crits = Array.from({ length: 10000 }, () =>
@@ -393,7 +407,10 @@ describe("Gen 2 Toxic counter reset on switch-out", () => {
         status: STATUS_IDS.badlyPoisoned,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set(VOLATILE_IDS.toxicCounter, { turnsLeft: -1, data: { counter: 5 } });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.toxicCounter, {
+      turnsLeft: -1,
+      data: { counter: 5 },
+    });
 
     const state = createBattleState();
     ruleset.onSwitchOut(pokemon, state);
@@ -412,7 +429,10 @@ describe("Gen 2 Toxic counter reset on switch-out", () => {
         status: STATUS_IDS.badlyPoisoned,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set(VOLATILE_IDS.toxicCounter, { turnsLeft: -1, data: { counter: 8 } });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.toxicCounter, {
+      turnsLeft: -1,
+      data: { counter: 8 },
+    });
 
     const state = createBattleState();
     ruleset.onSwitchOut(pokemon, state);
@@ -491,7 +511,14 @@ describe("Gen 2 catch rate — status bonus bug (BRN/PSN/PAR give no bonus)", ()
   it("given a badly-poisoned Pokemon, when rollCatchAttempt is called with roll=2, then does NOT catch (PSN has no bonus — cartridge bug)", () => {
     // Source: pret/pokecrystal — badly-poisoned is a subtype of poison, also gets no bonus
     const rng = { int: () => 2 } as unknown as SeededRandom;
-    const catchWithBadPoison = ruleset.rollCatchAttempt(45, 100, 100, STATUS_IDS.badlyPoisoned, 1, rng);
+    const catchWithBadPoison = ruleset.rollCatchAttempt(
+      45,
+      100,
+      100,
+      STATUS_IDS.badlyPoisoned,
+      1,
+      rng,
+    );
     expect(catchWithBadPoison.caught).toBe(false);
   });
 });
@@ -529,7 +556,10 @@ describe("Gen 2 Focus Energy crit stage is +1 (bug fixed vs Gen 1)", () => {
       Number(rollGen2Critical(attacker, normalMove, rng1)),
       Number(rollGen2Critical(attackerWithFE, normalMove, rng2)),
     ]).reduce(
-      ([normalTotal, feTotal], [normalRoll, feRoll]) => [normalTotal + normalRoll, feTotal + feRoll],
+      ([normalTotal, feTotal], [normalRoll, feRoll]) => [
+        normalTotal + normalRoll,
+        feTotal + feRoll,
+      ],
       [0, 0],
     );
 
@@ -549,7 +579,10 @@ describe("Gen 2 paralysis full-para chance", () => {
     // Shared via gen1to2FullParalysisCheck in packages/core/src/logic/gen12-shared.ts
     const rng = new SeededRandom(888);
     const pokemon = createActivePokemon({
-      pokemon: { ...createActivePokemon().pokemon, status: STATUS_IDS.paralysis } as PokemonInstance,
+      pokemon: {
+        ...createActivePokemon().pokemon,
+        status: STATUS_IDS.paralysis,
+      } as PokemonInstance,
     });
 
     const trials = 10000;
