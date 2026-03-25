@@ -1,23 +1,16 @@
+import { CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen1DataManager, GEN1_TYPE_CHART, GEN1_TYPES } from "../../src";
+import {
+  createGen1DataManager,
+  GEN1_MOVE_IDS,
+  GEN1_SPECIES_IDS,
+  GEN1_TYPE_CHART,
+  GEN1_TYPES,
+} from "../../src";
 
-const GEN1_SPECIES = {
-  BULBASAUR: { id: 1, name: "bulbasaur", displayName: "Bulbasaur" },
-  CHARIZARD: { id: 6, name: "charizard", displayName: "Charizard" },
-  PIKACHU: { id: 25, name: "pikachu", displayName: "Pikachu" },
-  MEW: { id: 151, name: "mew", displayName: "Mew" },
-} as const;
-
-const GEN1_MOVES = {
-  FLAMETHROWER: "flamethrower",
-  TACKLE: "tackle",
-  THUNDERBOLT: "thunderbolt",
-  EARTHQUAKE: "earthquake",
-  ICE_BEAM: "ice-beam",
-  SURF: "surf",
-  PSYCHIC: "psychic",
-  HYPER_BEAM: "hyper-beam",
-} as const;
+const SPECIES_IDS = GEN1_SPECIES_IDS;
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN1_MOVE_IDS } as const;
+const TYPE_IDS = CORE_TYPE_IDS;
 
 const GEN1_DATA_BOUNDS = {
   SPECIES_COUNT: 151,
@@ -31,45 +24,36 @@ describe("Gen 1 Data Integration", () => {
   // --- Species Data ---
 
   it("given Gen 1 data, when loaded, then all 151 species from Bulbasaur to Mew are present", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allSpecies = dm.getAllSpecies();
+    const allSpecies = dataManager.getAllSpecies();
     const ids = allSpecies.map((s) => s.id).sort((a, b) => a - b);
 
-    // Assert
     // Source: Gen 1 has National Dex entries #1-151 inclusive, from Bulbasaur through Mew.
     expect(allSpecies.length).toBe(GEN1_DATA_BOUNDS.SPECIES_COUNT);
-    expect(ids[0]).toBe(GEN1_SPECIES.BULBASAUR.id);
-    expect(ids[ids.length - 1]).toBe(GEN1_SPECIES.MEW.id);
+    expect(ids[0]).toBe(SPECIES_IDS.bulbasaur);
+    expect(ids[ids.length - 1]).toBe(SPECIES_IDS.mew);
 
-    // Verify first is Bulbasaur
-    const bulbasaur = dm.getSpecies(GEN1_SPECIES.BULBASAUR.id);
-    expect(bulbasaur.displayName).toBe(GEN1_SPECIES.BULBASAUR.displayName);
+    const bulbasaur = dataManager.getSpecies(SPECIES_IDS.bulbasaur);
+    expect(bulbasaur.displayName).toBe("Bulbasaur");
 
-    // Verify last is Mew
-    const mew = dm.getSpecies(GEN1_SPECIES.MEW.id);
-    expect(mew.displayName).toBe(GEN1_SPECIES.MEW.displayName);
+    const mew = dataManager.getSpecies(SPECIES_IDS.mew);
+    expect(mew.displayName).toBe("Mew");
 
-    // Verify continuous range
-    for (let i = GEN1_SPECIES.BULBASAUR.id; i <= GEN1_SPECIES.MEW.id; i++) {
-      const species = dm.getSpecies(i);
+    for (let i = SPECIES_IDS.bulbasaur; i <= SPECIES_IDS.mew; i++) {
+      const species = dataManager.getSpecies(i);
       expect(species.id).toBe(i);
     }
   });
 
   it("given Gen 1 data, when checking Charizard, then has correct base stats and types", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const charizard = dm.getSpecies(GEN1_SPECIES.CHARIZARD.id);
+    const charizard = dataManager.getSpecies(SPECIES_IDS.charizard);
 
-    // Assert
-    expect(charizard.displayName).toBe(GEN1_SPECIES.CHARIZARD.displayName);
-    expect(charizard.name).toBe(GEN1_SPECIES.CHARIZARD.name);
-    expect(charizard.types).toEqual(["fire", "flying"]);
+    expect(charizard.displayName).toBe("Charizard");
+    expect(charizard.name).toBe("charizard");
+    expect(charizard.types).toEqual([TYPE_IDS.fire, TYPE_IDS.flying]);
     expect(charizard.baseStats).toEqual({
       hp: 78,
       attack: 84,
@@ -82,25 +66,20 @@ describe("Gen 1 Data Integration", () => {
   });
 
   it("given Gen 1 data, when checking all moves, then at least 100 moves exist", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allMoves = dm.getAllMoves();
+    const allMoves = dataManager.getAllMoves();
 
     // Source: Gen 1 move data currently includes 165 moves after adding Sharpen coverage.
     expect(allMoves.length).toBe(GEN1_DATA_BOUNDS.MOVE_COUNT);
   });
 
   it("given Gen 1 data, when checking Flamethrower, then it is Fire type and special category", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const flamethrower = dm.getMove(GEN1_MOVES.FLAMETHROWER);
+    const flamethrower = dataManager.getMove(MOVE_IDS.flamethrower);
 
-    // Assert
-    expect(flamethrower.type).toBe("fire");
+    expect(flamethrower.type).toBe(TYPE_IDS.fire);
     expect(flamethrower.category).toBe("special");
     expect(flamethrower.power).toBe(95); // Source: Gen 1 Flamethrower base power is 95.
     expect(flamethrower.accuracy).toBe(100);
@@ -109,34 +88,31 @@ describe("Gen 1 Data Integration", () => {
   });
 
   it("given Gen 1 data, when checking type chart, then has exactly 15 types", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const chart = dm.getTypeChart();
+    const chart = dataManager.getTypeChart();
     const typeCount = Object.keys(chart).length;
 
     // Source: Gen 1 has 15 types; Dark, Steel, and Fairy do not exist yet.
     expect(typeCount).toBe(GEN1_DATA_BOUNDS.TYPE_COUNT);
     expect(GEN1_TYPES.length).toBe(GEN1_DATA_BOUNDS.TYPE_COUNT);
     expect(Object.keys(chart).sort()).toEqual([...GEN1_TYPES].sort());
+    expect(Object.keys(chart)).not.toContain(TYPE_IDS.dark);
+    expect(Object.keys(chart)).not.toContain(TYPE_IDS.steel);
+    expect(Object.keys(chart)).not.toContain(TYPE_IDS.fairy);
   });
 
   it("given Gen 1 data, when creating a DataManager and loading it, then it can look up Pokemon by name and ID", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act: Look up by ID
-    const pikachuById = dm.getSpecies(GEN1_SPECIES.PIKACHU.id);
+    const pikachuById = dataManager.getSpecies(SPECIES_IDS.pikachu);
 
-    // Act: Look up by name
-    const pikachuByName = dm.getSpeciesByName(GEN1_SPECIES.PIKACHU.name);
+    const pikachuByName = dataManager.getSpeciesByName("pikachu");
 
-    // Assert
-    expect(pikachuById.id).toBe(GEN1_SPECIES.PIKACHU.id);
-    expect(pikachuById.displayName).toBe(GEN1_SPECIES.PIKACHU.displayName);
-    expect(pikachuByName.id).toBe(GEN1_SPECIES.PIKACHU.id);
-    expect(pikachuByName.displayName).toBe(GEN1_SPECIES.PIKACHU.displayName);
+    expect(pikachuById.id).toBe(SPECIES_IDS.pikachu);
+    expect(pikachuById.displayName).toBe("Pikachu");
+    expect(pikachuByName.id).toBe(SPECIES_IDS.pikachu);
+    expect(pikachuByName.displayName).toBe("Pikachu");
 
     // They should be the same data
     expect(pikachuById.id).toBe(pikachuByName.id);
@@ -145,81 +121,61 @@ describe("Gen 1 Data Integration", () => {
   });
 
   it("given Gen 1 data, when checking type chart, then Water is super-effective against Fire", () => {
-    // Arrange
     const chart = GEN1_TYPE_CHART;
 
-    // Act
     const waterVsFire = chart.water?.fire;
 
-    // Assert
     expect(waterVsFire).toBe(2);
   });
 
   it("given Gen 1 data, when checking type chart, then Fire is not very effective against Water", () => {
-    // Arrange
     const chart = GEN1_TYPE_CHART;
 
-    // Act
     const fireVsWater = chart.fire?.water;
 
-    // Assert
     expect(fireVsWater).toBe(0.5);
   });
 
   it("given Gen 1 data, when checking type chart, then Normal has no effect on Ghost", () => {
-    // Arrange
     const chart = GEN1_TYPE_CHART;
 
-    // Act
     const normalVsGhost = chart.normal?.ghost;
 
-    // Assert
     expect(normalVsGhost).toBe(0);
   });
 
   it("given Gen 1 data, when checking type chart, then Ghost has no effect on Psychic (Gen 1 bug)", () => {
-    // Arrange: In Gen 1, Ghost was incorrectly immune to Psychic instead of super-effective
     const chart = GEN1_TYPE_CHART;
 
-    // Act
     const ghostVsPsychic = chart.ghost?.psychic;
 
-    // Assert: Gen 1 ghost vs psychic is 0 (bug — fixed in Gen 2)
     expect(ghostVsPsychic).toBe(0);
   });
 
   it("given Gen 1 data, when checking all species, then all have generation set to 1", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allSpecies = dm.getAllSpecies();
+    const allSpecies = dataManager.getAllSpecies();
 
-    // Assert
     for (const species of allSpecies) {
       expect(species.generation).toBe(1);
     }
   });
 
   it("given Gen 1 data, when checking all moves, then all have generation set to 1", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allMoves = dm.getAllMoves();
+    const allMoves = dataManager.getAllMoves();
 
-    // Assert
     for (const move of allMoves) {
       expect(move.generation).toBe(1);
     }
   });
 
   it("given Gen 1 data, when checking all species, then spAttack equals spDefense (unified Special)", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allSpecies = dm.getAllSpecies();
+    const allSpecies = dataManager.getAllSpecies();
 
     // Assert: In Gen 1, Special was a single stat stored in both fields
     for (const species of allSpecies) {
@@ -228,37 +184,29 @@ describe("Gen 1 Data Integration", () => {
   });
 
   it("given Gen 1 data, when loading items, then list is empty (no held items in Gen 1)", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allItems = dm.getAllItems();
+    const allItems = dataManager.getAllItems();
 
-    // Assert
     expect(allItems.length).toBe(0);
   });
 
   it("given Gen 1 data, when loading natures, then list is empty (no natures in Gen 1)", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allNatures = dm.getAllNatures();
+    const allNatures = dataManager.getAllNatures();
 
-    // Assert
     expect(allNatures.length).toBe(0);
   });
 
   it("given Gen 1 data, when checking specific moves, then physical/special split is determined by type", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act: Check several moves
-    const tackle = dm.getMove(GEN1_MOVES.TACKLE); // Normal -> physical
-    const thunderbolt = dm.getMove(GEN1_MOVES.THUNDERBOLT); // Electric -> special
-    const earthquake = dm.getMove(GEN1_MOVES.EARTHQUAKE); // Ground -> physical
-    const iceBeam = dm.getMove(GEN1_MOVES.ICE_BEAM); // Ice -> special
-    const surf = dm.getMove(GEN1_MOVES.SURF); // Water -> special
+    const tackle = dataManager.getMove(MOVE_IDS.tackle);
+    const thunderbolt = dataManager.getMove(MOVE_IDS.thunderbolt);
+    const earthquake = dataManager.getMove(MOVE_IDS.earthquake);
+    const iceBeam = dataManager.getMove(MOVE_IDS.iceBeam);
+    const surf = dataManager.getMove(MOVE_IDS.surf);
 
     // Assert
     expect(tackle.category).toBe("physical");
@@ -269,11 +217,9 @@ describe("Gen 1 Data Integration", () => {
   });
 
   it("given Gen 1 data, when checking moves, then all damaging moves have valid power values", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allMoves = dm.getAllMoves();
+    const allMoves = dataManager.getAllMoves();
 
     // Source: base-game move power is a finite integer on the 1-255 scale for damaging moves.
     const invalidDamagingMoves = allMoves
@@ -290,62 +236,54 @@ describe("Gen 1 Data Integration", () => {
   });
 
   it("given Gen 1 data, when checking moves, then all moves have valid PP values", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const allMoves = dm.getAllMoves();
+    const allMoves = dataManager.getAllMoves();
 
     // Source: Gen 1 move PP is stored as a positive integer and capped at 40 before PP Ups.
     const invalidMovePp = allMoves
-      .filter((move) => !Number.isInteger(move.pp) || move.pp < 1 || move.pp > GEN1_DATA_BOUNDS.MAX_MOVE_PP)
+      .filter(
+        (move) =>
+          !Number.isInteger(move.pp) || move.pp < 1 || move.pp > GEN1_DATA_BOUNDS.MAX_MOVE_PP,
+      )
       .map((move) => ({ id: move.id, pp: move.pp }));
 
     expect(invalidMovePp).toEqual([]);
   });
 
   it("given Gen 1 data, when checking DataManager state, then reports as loaded", () => {
-    // Arrange / Act
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Assert
-    expect(dm.isLoaded()).toBe(true);
+    expect(dataManager.isLoaded()).toBe(true);
   });
 
   it("given Gen 1 data, when checking move by name, then can look up moves", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act
-    const psychic = dm.getMove(GEN1_MOVES.PSYCHIC);
-    const hyperBeam = dm.getMove(GEN1_MOVES.HYPER_BEAM);
+    const psychic = dataManager.getMove(MOVE_IDS.psychic);
+    const hyperBeam = dataManager.getMove(MOVE_IDS.hyperBeam);
 
-    // Assert
     expect(psychic.displayName).toBe("Psychic");
-    expect(psychic.type).toBe("psychic");
+    expect(psychic.type).toBe(TYPE_IDS.psychic);
     // Source: Gen 1 data gives Psychic 90 BP and Hyper Beam 150 BP.
     expect(psychic.power).toBe(90);
 
     expect(hyperBeam.displayName).toBe("Hyper Beam");
-    expect(hyperBeam.type).toBe("normal");
+    expect(hyperBeam.type).toBe(TYPE_IDS.normal);
     expect(hyperBeam.power).toBe(150);
   });
 
   it("given Gen 1 data, when checking non-existent species, then throws error", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act / Assert
-    expect(() => dm.getSpecies(999)).toThrow();
-    expect(() => dm.getSpecies(0)).toThrow();
-    expect(() => dm.getSpecies(152)).toThrow();
+    expect(() => dataManager.getSpecies(999)).toThrow();
+    expect(() => dataManager.getSpecies(0)).toThrow();
+    expect(() => dataManager.getSpecies(152)).toThrow();
   });
 
   it("given Gen 1 data, when checking non-existent move, then throws error", () => {
-    // Arrange
-    const dm = createGen1DataManager();
+    const dataManager = createGen1DataManager();
 
-    // Act / Assert
-    expect(() => dm.getMove("totally-fake-move")).toThrow();
+    expect(() => dataManager.getMove("totally-fake-move")).toThrow();
   });
 });
