@@ -34,6 +34,32 @@ import {
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
 import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
 
+const TEST_ABILITY_IDS = {
+  flashFire: "flash-fire",
+  levitate: "levitate",
+  moldBreaker: "mold-breaker",
+  none: "none",
+  scrappy: "scrappy",
+  wonderGuard: "wonder-guard",
+} as const;
+const TEST_ITEM_IDS = {
+  chilanBerry: "chilan-berry",
+  occaBerry: "occa-berry",
+} as const;
+const TEST_TYPE_IDS = {
+  fighting: "fighting",
+  fire: "fire",
+  flying: "flying",
+  ghost: "ghost",
+  grass: "grass",
+  ground: "ground",
+  normal: "normal",
+  steel: "steel",
+  water: "water",
+} as const;
+// Source: Showdown resist berries use the 2048/4096 half-damage modifier.
+const HALF_DAMAGE_MODIFIER = 2048;
+
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
@@ -1312,27 +1338,71 @@ describe("Ability type immunities", () => {
   });
 
   it("given Mold Breaker attacker vs Levitate defender and Ground move, when calculating, then bypasses immunity", () => {
-    // Source: Showdown -- Mold Breaker bypasses defensive abilities
+    // Source: Showdown data/abilities.ts -- Mold Breaker ignores Levitate's Ground immunity hook.
+    const attacker = makeActive({
+      attack: 100,
+      types: [TEST_TYPE_IDS.ground],
+      ability: TEST_ABILITY_IDS.moldBreaker,
+    });
+    const move = makeMove({ type: TEST_TYPE_IDS.ground, category: "physical", power: 80 });
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["ground"], ability: "mold-breaker" }),
-      defender: makeActive({ defense: 100, types: ["normal"], ability: "levitate" }),
-      move: makeMove({ type: "ground", category: "physical", power: 80 }),
+      attacker,
+      defender: makeActive({
+        defense: 100,
+        types: [TEST_TYPE_IDS.normal],
+        ability: TEST_ABILITY_IDS.levitate,
+      }),
+      move,
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+
+    const control = calculateGen9Damage(
+      makeDamageContext({
+        attacker,
+        defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.water] }),
+        move,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(result.effectiveness).toBe(1);
+    expect(result.damage).toBe(control.damage);
   });
 
   it("given Mold Breaker attacker vs Flash Fire defender and Fire move, when calculating, then bypasses immunity", () => {
-    // Source: Showdown -- Mold Breaker bypasses defensive abilities
+    // Source: Showdown data/abilities.ts -- Mold Breaker ignores Flash Fire's Fire immunity hook.
+    const attacker = makeActive({
+      spAttack: 100,
+      types: [TEST_TYPE_IDS.fire],
+      ability: TEST_ABILITY_IDS.moldBreaker,
+    });
+    const move = makeMove({ type: TEST_TYPE_IDS.fire, category: "special", power: 80 });
     const ctx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"], ability: "mold-breaker" }),
-      defender: makeActive({ spDefense: 100, types: ["normal"], ability: "flash-fire" }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      attacker,
+      defender: makeActive({
+        spDefense: 100,
+        types: [TEST_TYPE_IDS.normal],
+        ability: TEST_ABILITY_IDS.flashFire,
+      }),
+      move,
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+
+    const control = calculateGen9Damage(
+      makeDamageContext({
+        attacker,
+        defender: makeActive({ spDefense: 100, types: [TEST_TYPE_IDS.normal] }),
+        move,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(result.effectiveness).toBe(1);
+    expect(result.damage).toBe(control.damage);
   });
 });
 
@@ -1363,16 +1433,20 @@ describe("Wonder Guard", () => {
   });
 
   it("given Wonder Guard defender and neutral move, when calculating, then returns 0 damage", () => {
-    // Source: Showdown -- neutral moves (1x) are blocked by Wonder Guard
+    // Source: Showdown data/abilities.ts -- Wonder Guard blocks non-super-effective damage.
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"] }),
-      defender: makeActive({ defense: 100, types: ["steel"], ability: "wonder-guard" }),
-      move: makeMove({ type: "fighting", category: "physical", power: 80 }),
+      attacker: makeActive({ spAttack: 100, types: [TEST_TYPE_IDS.water] }),
+      defender: makeActive({
+        spDefense: 100,
+        types: [TEST_TYPE_IDS.steel],
+        ability: TEST_ABILITY_IDS.wonderGuard,
+      }),
+      move: makeMove({ type: TEST_TYPE_IDS.water, category: "special", power: 80 }),
       seed: 42,
     });
-    // Fighting vs Steel = 2x (SE), so this should hit
     const result = calculateGen9Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result.effectiveness).toBe(1);
+    expect(result.damage).toBe(0);
   });
 });
 
@@ -1423,26 +1497,62 @@ describe("Thick Fat", () => {
 describe("Scrappy", () => {
   it("given Scrappy attacker using Normal move vs Ghost, when calculating, then hits normally", () => {
     // Source: Showdown data/abilities.ts -- Scrappy: Normal and Fighting hit Ghost
+    const attacker = makeActive({
+      attack: 100,
+      types: [TEST_TYPE_IDS.normal],
+      ability: TEST_ABILITY_IDS.scrappy,
+    });
+    const move = makeMove({ type: TEST_TYPE_IDS.normal, category: "physical", power: 80 });
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], ability: "scrappy" }),
-      defender: makeActive({ defense: 100, types: ["ghost"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      attacker,
+      defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.ghost] }),
+      move,
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+
+    const control = calculateGen9Damage(
+      makeDamageContext({
+        attacker,
+        defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.fire] }),
+        move,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(result.effectiveness).toBe(1);
+    expect(result.damage).toBe(control.damage);
   });
 
   it("given Scrappy attacker using Fighting move vs Ghost, when calculating, then hits normally", () => {
     // Source: Showdown -- Scrappy allows Fighting to hit Ghost
+    const attacker = makeActive({
+      attack: 100,
+      types: [TEST_TYPE_IDS.fighting],
+      ability: TEST_ABILITY_IDS.scrappy,
+    });
+    const move = makeMove({ type: TEST_TYPE_IDS.fighting, category: "physical", power: 80 });
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"], ability: "scrappy" }),
-      defender: makeActive({ defense: 100, types: ["ghost"] }),
-      move: makeMove({ type: "fighting", category: "physical", power: 80 }),
+      attacker,
+      defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.ghost] }),
+      move,
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+
+    const control = calculateGen9Damage(
+      makeDamageContext({
+        attacker,
+        defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.fire] }),
+        move,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(result.effectiveness).toBe(1);
+    expect(result.damage).toBe(control.damage);
   });
 });
 
@@ -1832,27 +1942,26 @@ describe("Type-resist berries", () => {
     // Source: Showdown data/items.ts -- Occa Berry: halves SE Fire damage, consumed
     const defender = makeActive({
       defense: 100,
-      types: ["grass"],
-      heldItem: "occa-berry",
+      types: [TEST_TYPE_IDS.grass],
+      heldItem: TEST_ITEM_IDS.occaBerry,
     });
     const ctx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
+      attacker: makeActive({ spAttack: 100, types: [TEST_TYPE_IDS.fire] }),
       defender,
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: makeMove({ type: TEST_TYPE_IDS.fire, category: "special", power: 80 }),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
 
     const ctxNoBerry = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
-      defender: makeActive({ defense: 100, types: ["grass"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      attacker: makeActive({ spAttack: 100, types: [TEST_TYPE_IDS.fire] }),
+      defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.grass] }),
+      move: makeMove({ type: TEST_TYPE_IDS.fire, category: "special", power: 80 }),
       seed: 42,
     });
     const resultNoBerry = calculateGen9Damage(ctxNoBerry, typeChart);
 
-    expect(result.damage).toBeLessThan(resultNoBerry.damage);
-    // Berry should be consumed
+    expect(result.damage).toBe(pokeRound(resultNoBerry.damage, HALF_DAMAGE_MODIFIER));
     expect(defender.pokemon.heldItem).toBeNull();
   });
 
@@ -1860,26 +1969,26 @@ describe("Type-resist berries", () => {
     // Source: Showdown data/items.ts -- Chilan Berry: halves Normal damage (no SE requirement)
     const defender = makeActive({
       defense: 100,
-      types: ["normal"],
-      heldItem: "chilan-berry",
+      types: [TEST_TYPE_IDS.normal],
+      heldItem: TEST_ITEM_IDS.chilanBerry,
     });
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"] }),
+      attacker: makeActive({ attack: 100, types: [TEST_TYPE_IDS.normal] }),
       defender,
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: makeMove({ type: TEST_TYPE_IDS.normal, category: "physical", power: 80 }),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
 
     const ctxNoBerry = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"] }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      attacker: makeActive({ attack: 100, types: [TEST_TYPE_IDS.normal] }),
+      defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.normal] }),
+      move: makeMove({ type: TEST_TYPE_IDS.normal, category: "physical", power: 80 }),
       seed: 42,
     });
     const resultNoBerry = calculateGen9Damage(ctxNoBerry, typeChart);
 
-    expect(result.damage).toBeLessThan(resultNoBerry.damage);
+    expect(result.damage).toBe(pokeRound(resultNoBerry.damage, HALF_DAMAGE_MODIFIER));
     expect(defender.pokemon.heldItem).toBeNull();
   });
 
@@ -2601,16 +2710,30 @@ describe("Magnet Rise", () => {
 
 describe("Gravity interaction", () => {
   it("given Gravity active and Flying defender hit by Ground move, when calculating, then Ground move hits", () => {
-    // Source: Showdown -- Gravity removes Ground immunity from Flying types
+    // Source: Showdown data/conditions.ts -- Gravity removes Ground immunity from Flying types.
+    const attacker = makeActive({ attack: 100, types: [TEST_TYPE_IDS.ground] });
+    const move = makeMove({ type: TEST_TYPE_IDS.ground, category: "physical", power: 80 });
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["ground"] }),
-      defender: makeActive({ defense: 100, types: ["flying"] }),
-      move: makeMove({ type: "ground", category: "physical", power: 80 }),
+      attacker,
+      defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.flying] }),
+      move,
       state: makeState({ gravity: { active: true, turnsLeft: 5 } }),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+
+    const control = calculateGen9Damage(
+      makeDamageContext({
+        attacker,
+        defender: makeActive({ defense: 100, types: [TEST_TYPE_IDS.normal] }),
+        move,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(result.effectiveness).toBe(1);
+    expect(result.damage).toBe(control.damage);
   });
 });
 
