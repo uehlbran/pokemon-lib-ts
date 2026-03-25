@@ -1,4 +1,11 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +13,23 @@ import type { BattleAction, BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const defaultDataManager = createMockDataManager()
+const TACKLE_MOVE = defaultDataManager.getMove(CORE_MOVE_IDS.tackle)
+const SCRATCH_MOVE = defaultDataManager.getMove(CORE_MOVE_IDS.scratch)
+const CHARIZARD_ID = defaultDataManager.getSpeciesByName("charizard").id
+const BLASTOISE_ID = defaultDataManager.getSpeciesByName("blastoise").id
+const PIKACHU_ID = defaultDataManager.getSpeciesByName("pikachu").id
+
+function createMoveSlot(moveId: string, dataManager: DataManager = defaultDataManager) {
+  const move = dataManager.getMove(moveId)
+  return {
+    moveId: move.id,
+    currentPP: move.pp,
+    maxPP: move.pp,
+    ppUps: 0,
+  }
+}
 
 function createEngine(overrides?: {
   seed?: number;
@@ -19,10 +43,10 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(CHARIZARD_ID, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(TACKLE_MOVE.id)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -36,10 +60,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(BLASTOISE_ID, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(TACKLE_MOVE.id)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -148,10 +172,10 @@ describe("BattleEngine — edge cases", () => {
     it("given both pokemon at low HP with no PP, when both use struggle, then battle ends", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(CHARIZARD_ID, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }],
+          moves: [{ ...createMoveSlot(TACKLE_MOVE.id), currentPP: 0 }],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -164,10 +188,10 @@ describe("BattleEngine — edge cases", () => {
         }),
       ];
       const team2 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(BLASTOISE_ID, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }],
+          moves: [{ ...createMoveSlot(TACKLE_MOVE.id), currentPP: 0 }],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -204,12 +228,12 @@ describe("BattleEngine — edge cases", () => {
     it("given a pokemon where all moves have 0 PP, when getAvailableMoves is called, then all moves are disabled", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(CHARIZARD_ID, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
-            { moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 },
-            { moveId: "scratch", currentPP: 0, maxPP: 35, ppUps: 0 },
+            { ...createMoveSlot(TACKLE_MOVE.id), currentPP: 0 },
+            { ...createMoveSlot(SCRATCH_MOVE.id), currentPP: 0 },
           ],
           calculatedStats: {
             hp: 200,
@@ -250,8 +274,8 @@ describe("BattleEngine — edge cases", () => {
       // Assert — even though the move missed, lastMoveUsed should be set
       const active0 = engine.state.sides[0].active[0];
       const active1 = engine.state.sides[1].active[0];
-      expect(active0?.lastMoveUsed).toBe("tackle");
-      expect(active1?.lastMoveUsed).toBe("tackle");
+      expect(active0?.lastMoveUsed).toBe(TACKLE_MOVE.id);
+      expect(active1?.lastMoveUsed).toBe(TACKLE_MOVE.id);
     });
 
     it("given a move that misses, when the turn resolves, then movedThisTurn is reset for next turn", () => {
@@ -292,10 +316,10 @@ describe("BattleEngine — edge cases", () => {
     it("given a caller mutates the array returned by getTeam, when reading the engine again, then the live team state is unchanged", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(CHARIZARD_ID, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -306,10 +330,10 @@ describe("BattleEngine — edge cases", () => {
           },
           currentHp: 200,
         }),
-        createTestPokemon(25, 50, {
+        createTestPokemon(PIKACHU_ID, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -339,10 +363,10 @@ describe("BattleEngine — edge cases", () => {
     it("given both pokemon faint from end-of-turn damage, when both have reserves, then both sides get switch-prompt", () => {
       // Arrange — both at low HP with burn, burn will KO at end of turn
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(CHARIZARD_ID, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -353,10 +377,10 @@ describe("BattleEngine — edge cases", () => {
           },
           currentHp: 200,
         }),
-        createTestPokemon(25, 50, {
+        createTestPokemon(PIKACHU_ID, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -370,10 +394,10 @@ describe("BattleEngine — edge cases", () => {
       ];
 
       const team2 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(BLASTOISE_ID, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -384,10 +408,10 @@ describe("BattleEngine — edge cases", () => {
           },
           currentHp: 200,
         }),
-        createTestPokemon(25, 50, {
+        createTestPokemon(PIKACHU_ID, 50, {
           uid: "pikachu-2",
           nickname: "Pikachu2",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -405,9 +429,9 @@ describe("BattleEngine — edge cases", () => {
 
       // Set both to very low HP and inflict burn — they'll take damage at end of turn
       engine.state.sides[0].active[0]!.pokemon.currentHp = 1;
-      engine.state.sides[0].active[0]!.pokemon.status = "burn";
+      engine.state.sides[0].active[0]!.pokemon.status = CORE_STATUS_IDS.burn;
       engine.state.sides[1].active[0]!.pokemon.currentHp = 1;
-      engine.state.sides[1].active[0]!.pokemon.status = "burn";
+      engine.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.burn;
 
       // Both miss so no mid-turn faint — faint happens from burn at end of turn
       const ruleset = new MockRuleset();
@@ -416,9 +440,9 @@ describe("BattleEngine — edge cases", () => {
       const { engine: engine2 } = createEngine({ team1, team2, ruleset });
       engine2.start();
       engine2.state.sides[0].active[0]!.pokemon.currentHp = 1;
-      engine2.state.sides[0].active[0]!.pokemon.status = "burn";
+      engine2.state.sides[0].active[0]!.pokemon.status = CORE_STATUS_IDS.burn;
       engine2.state.sides[1].active[0]!.pokemon.currentHp = 1;
-      engine2.state.sides[1].active[0]!.pokemon.status = "burn";
+      engine2.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.burn;
 
       // Act
       engine2.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -497,8 +521,9 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — damage should be exactly 42 (from the custom ruleset)
+      // Source: ruleset.setFixedDamage(42) above — the custom ruleset forces every damage event to 42.
       const damageEvents = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "tackle",
+        (e) => e.type === "damage" && "source" in e && e.source === TACKLE_MOVE.id,
       );
       expect(damageEvents.length).toBeGreaterThan(0);
       for (const de of damageEvents) {
@@ -627,6 +652,7 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
+      // Source: battle stat stage rules clamp stages to the inclusive range [-6, +6].
       expect(engine.state.sides[0].active[0]?.statStages.attack).toBe(6);
     });
 
@@ -652,6 +678,7 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
+      // Source: battle stat stage rules clamp stages to the inclusive range [-6, +6].
       expect(engine.state.sides[1].active[0]?.statStages.defense).toBe(-6);
     });
   });
@@ -673,9 +700,12 @@ describe("BattleEngine — edge cases", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       const struggleMoveStart = events.find(
-        (e) => e.type === "move-start" && "move" in e && e.move === "struggle",
+        (e) => e.type === "move-start" && "move" in e && e.move === CORE_MOVE_IDS.struggle,
       );
-      expect(struggleMoveStart).toBeDefined();
+      expect(struggleMoveStart).toMatchObject({
+        type: "move-start",
+        move: CORE_MOVE_IDS.struggle,
+      });
     });
   });
 
@@ -685,14 +715,18 @@ describe("BattleEngine — edge cases", () => {
       const ruleset = new MockRuleset();
       const patchedRuleset = Object.create(ruleset) as MockRuleset;
       patchedRuleset.getEndOfTurnOrder = () => [
-        "terrain-countdown" as const,
-        "status-damage" as const,
+        CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+        CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
       ];
 
       const { engine } = createEngine({ ruleset: patchedRuleset });
       engine.start();
 
-      engine.state.terrain = { type: "electric", turnsLeft: -1, source: "electric-surge" };
+      engine.state.terrain = {
+        type: CORE_TERRAIN_IDS.electric,
+        turnsLeft: -1,
+        source: CORE_TERRAIN_IDS.electricTerrain,
+      };
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -700,7 +734,7 @@ describe("BattleEngine — edge cases", () => {
 
       // Assert — permanent terrain should still exist
       expect(engine.state.terrain).not.toBeNull();
-      expect(engine.state.terrain?.type).toBe("electric");
+      expect(engine.state.terrain?.type).toBe(CORE_TERRAIN_IDS.electric);
     });
   });
 
@@ -710,7 +744,7 @@ describe("BattleEngine — edge cases", () => {
       const ruleset = new MockRuleset();
       (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
         () => ({
-          statusInflicted: "poison" as const,
+          statusInflicted: CORE_STATUS_IDS.poison,
           volatileInflicted: null,
           statChanges: [],
           recoilDamage: 0,
@@ -723,14 +757,14 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Pre-inflict burn on Blastoise
-      engine.state.sides[1].active[0]!.pokemon.status = "burn";
+      engine.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.burn;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — the existing burn should not be overwritten by poison
-      expect(engine.state.sides[1].active[0]?.pokemon.status).toBe("burn");
+      expect(engine.state.sides[1].active[0]?.pokemon.status).toBe(CORE_STATUS_IDS.burn);
       // No status-inflict event for Blastoise (already has burn)
       const statusEvents = events.filter(
         (e) => e.type === "status-inflict" && "pokemon" in e && e.pokemon === "Blastoise",
@@ -746,7 +780,7 @@ describe("BattleEngine — edge cases", () => {
       (ruleset as unknown as { executeMoveEffect: () => MoveEffectResult }).executeMoveEffect =
         () => ({
           statusInflicted: null,
-          volatileInflicted: "confusion" as const,
+          volatileInflicted: CORE_VOLATILE_IDS.confusion,
           statChanges: [],
           recoilDamage: 0,
           healAmount: 0,
@@ -758,7 +792,9 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Pre-inflict confusion on Blastoise
-      engine.state.sides[1].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 3 });
+      engine.state.sides[1].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, {
+        turnsLeft: 3,
+      });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -771,7 +807,7 @@ describe("BattleEngine — edge cases", () => {
           "pokemon" in e &&
           e.pokemon === "Blastoise" &&
           "volatile" in e &&
-          e.volatile === "confusion",
+          e.volatile === CORE_VOLATILE_IDS.confusion,
       );
       expect(volatileEvents).toHaveLength(0);
     });
@@ -817,10 +853,10 @@ describe("BattleEngine — edge cases", () => {
     it("given a pokemon with volatile statuses, when it switches out, then volatiles are cleared", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(CHARIZARD_ID, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -831,10 +867,10 @@ describe("BattleEngine — edge cases", () => {
           },
           currentHp: 200,
         }),
-        createTestPokemon(25, 50, {
+        createTestPokemon(PIKACHU_ID, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(TACKLE_MOVE.id)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -851,7 +887,9 @@ describe("BattleEngine — edge cases", () => {
       engine.start();
 
       // Add volatile statuses to Charizard
-      engine.state.sides[0].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 3 });
+      engine.state.sides[0].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, {
+        turnsLeft: 3,
+      });
       // Modify stat stages
       engine.state.sides[0].active[0]!.statStages.attack = 3;
 
@@ -871,7 +909,7 @@ describe("BattleEngine — edge cases", () => {
     it("given a team with one fainted bench pokemon, when getAvailableSwitches is called, then fainted pokemon is excluded", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(CHARIZARD_ID, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           currentHp: 200,
@@ -884,7 +922,7 @@ describe("BattleEngine — edge cases", () => {
             speed: 120,
           },
         }),
-        createTestPokemon(25, 50, {
+        createTestPokemon(PIKACHU_ID, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
           currentHp: 120,
@@ -897,7 +935,7 @@ describe("BattleEngine — edge cases", () => {
             speed: 130,
           },
         }),
-        createTestPokemon(9, 50, {
+        createTestPokemon(BLASTOISE_ID, 50, {
           uid: "blastoise-bench",
           nickname: "Blastoise",
           currentHp: 150,
