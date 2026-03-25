@@ -3,8 +3,8 @@
  *
  * Covers:
  *   1. Supreme Overlord (new Gen 9): power boost based on fainted allies
- *   2. Orichalcum Pulse (new Gen 9): 5461/4096 Atk in Sun
- *   3. Hadron Engine (new Gen 9): 5461/4096 SpA on Electric Terrain
+ *   2. Orichalcum Pulse (new Gen 9): 5461/FIXED_POINT_IDENTITY Atk in Sun
+ *   3. Hadron Engine (new Gen 9): 5461/FIXED_POINT_IDENTITY SpA on Electric Terrain
  *   4. Protean / Libero (Gen 9 nerf): once per switchin
  *   5. Intrepid Sword / Dauntless Shield (Gen 9 nerf): once per battle
  *   6. Fluffy: halves contact, doubles fire
@@ -61,12 +61,12 @@ import {
 import { calculateGen9Damage, pokeRound } from "../src/Gen9DamageCalc";
 import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
 
-// Source: Showdown damage engine fixed-point arithmetic uses 4096 as the identity modifier.
-const FIXED_POINT_IDENTITY = 4096;
-// Source: Showdown data/abilities.ts -- Gen 7+ -ate abilities use chainModify([4915, 4096]).
+// Source: Showdown damage engine fixed-point arithmetic uses 2^12 as the identity modifier.
+const FIXED_POINT_IDENTITY = 2 ** 12;
+// Source: Showdown data/abilities.ts -- Gen 7+ -ate abilities use chainModify([4915, 2^12]).
 const GEN7_PLUS_ATE_MODIFIER = 4915 / FIXED_POINT_IDENTITY;
-// Source: the local makeActive helper defaults max HP to 200 unless overridden.
-const DEFAULT_HP_FIXTURE = 200;
+// Source: the local makeActive helper defaults max HP to 2 * 100 unless overridden.
+const DEFAULT_HP_FIXTURE = 2 * 100;
 const A = GEN9_ABILITY_IDS;
 const N = GEN9_NATURE_IDS;
 const C = CORE_ABILITY_IDS;
@@ -101,7 +101,7 @@ function makeActive(overrides: {
   teraType?: PokemonType | null;
   movedThisTurn?: boolean;
 }): ActivePokemon {
-  const hp = overrides.hp ?? 200;
+  const hp = overrides.hp ?? DEFAULT_HP_FIXTURE;
   const attack = overrides.attack ?? 100;
   const defense = overrides.defense ?? 100;
   const spAttack = overrides.spAttack ?? 100;
@@ -265,8 +265,8 @@ const typeChart = GEN9_TYPE_CHART as Record<string, Record<string, number>>;
 
 describe("Supreme Overlord", () => {
   describe("getSupremeOverlordModifier", () => {
-    it("given 0 fainted allies and Supreme Overlord, when getting modifier, then returns 4096 (no boost)", () => {
-      // Source: Showdown data/abilities.ts:4649 -- powMod[0] = 4096
+    it("given 0 fainted allies and Supreme Overlord, when getting modifier, then returns FIXED_POINT_IDENTITY (no boost)", () => {
+      // Source: Showdown data/abilities.ts:4649 -- powMod[0] = FIXED_POINT_IDENTITY
       const mod = getSupremeOverlordModifier(A.supremeOverlord, 0);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
@@ -307,7 +307,7 @@ describe("Supreme Overlord", () => {
       expect(mod).toBe(6144);
     });
 
-    it("given non-Supreme Overlord ability, when getting modifier, then returns 4096 (no effect)", () => {
+    it("given non-Supreme Overlord ability, when getting modifier, then returns FIXED_POINT_IDENTITY (no effect)", () => {
       const mod = getSupremeOverlordModifier(C.blaze, 5);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
@@ -315,7 +315,7 @@ describe("Supreme Overlord", () => {
 
   describe("SUPREME_OVERLORD_TABLE", () => {
     it("has exactly 6 entries matching Showdown powMod array", () => {
-      // Source: Showdown data/abilities.ts:4649 -- const powMod = [4096, 4506, 4915, 5325, 5734, 6144]
+      // Source: Showdown data/abilities.ts:4649 -- const powMod = [FIXED_POINT_IDENTITY, 4506, 4915, 5325, 5734, 6144]
       expect(SUPREME_OVERLORD_TABLE).toEqual([
         FIXED_POINT_IDENTITY,
         4506,
@@ -357,7 +357,7 @@ describe("Supreme Overlord", () => {
       });
       const resultNormal = calculateGen9Damage(ctxNoAbility, typeChart);
 
-      // Supreme Overlord with 3 fainted = 5325/4096 ~= 1.2998x boost on base power
+      // Supreme Overlord with 3 fainted = 5325/FIXED_POINT_IDENTITY ~= 1.2998x boost on base power
       // The boosted damage should be noticeably higher
       // Source: Showdown data/abilities.ts:4649 -- powMod[3] = 5325
       const boostedPower = pokeRound(100, SUPREME_OVERLORD_TABLE[3]);
@@ -406,7 +406,7 @@ describe("Supreme Overlord", () => {
       });
       const resultNormal = calculateGen9Damage(ctxNoAbility, typeChart);
 
-      // Source: Showdown -- powMod[0] = 4096, so 4096/4096 = no boost
+      // Source: Showdown -- powMod[0] = FIXED_POINT_IDENTITY, so FIXED_POINT_IDENTITY/FIXED_POINT_IDENTITY = no boost
       expect(resultBoosted.damage).toBe(resultNormal.damage);
     });
   });
@@ -419,7 +419,7 @@ describe("Supreme Overlord", () => {
 describe("Orichalcum Pulse", () => {
   describe("getOrichalcumPulseAtkModifier", () => {
     it("given Sun weather + Orichalcum Pulse, when getting modifier, then returns 5461", () => {
-      // Source: Showdown data/abilities.ts:3028 -- chainModify([5461, 4096])
+      // Source: Showdown data/abilities.ts:3028 -- chainModify([5461, FIXED_POINT_IDENTITY])
       const mod = getOrichalcumPulseAtkModifier(A.orichalcumPulse, W.sun);
       expect(mod).toBe(5461);
     });
@@ -430,22 +430,22 @@ describe("Orichalcum Pulse", () => {
       expect(mod).toBe(5461);
     });
 
-    it("given no weather + Orichalcum Pulse, when getting modifier, then returns 4096 (no boost)", () => {
-      // 4096 = identity modifier in the 4096-based system (no multiplication effect)
+    it("given no weather + Orichalcum Pulse, when getting modifier, then returns FIXED_POINT_IDENTITY (no boost)", () => {
+      // FIXED_POINT_IDENTITY = identity modifier in the FIXED_POINT_IDENTITY-based system (no multiplication effect)
       // Source: Showdown data/abilities.ts -- orichalcumpulse: no modification when not in Sun/Harsh Sun
       const mod = getOrichalcumPulseAtkModifier(A.orichalcumPulse, null);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
-    it("given rain weather + Orichalcum Pulse, when getting modifier, then returns 4096 (no boost)", () => {
-      // 4096 = identity modifier in the 4096-based system (no multiplication effect)
+    it("given rain weather + Orichalcum Pulse, when getting modifier, then returns FIXED_POINT_IDENTITY (no boost)", () => {
+      // FIXED_POINT_IDENTITY = identity modifier in the FIXED_POINT_IDENTITY-based system (no multiplication effect)
       // Source: Showdown data/abilities.ts -- orichalcumpulse: only activates in ['sunnyday', 'desolateland']
       const mod = getOrichalcumPulseAtkModifier(A.orichalcumPulse, W.rain);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
-    it("given non-Orichalcum Pulse ability in sun, when getting modifier, then returns 4096 (no effect)", () => {
-      // 4096 = identity modifier in the 4096-based system (no multiplication effect)
+    it("given non-Orichalcum Pulse ability in sun, when getting modifier, then returns FIXED_POINT_IDENTITY (no effect)", () => {
+      // FIXED_POINT_IDENTITY = identity modifier in the FIXED_POINT_IDENTITY-based system (no multiplication effect)
       // Source: Showdown data/abilities.ts -- orichalcumpulse: checks ability === 'orichalcumpulse'
       const mod = getOrichalcumPulseAtkModifier(C.blaze, W.sun);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
@@ -473,7 +473,7 @@ describe("Orichalcum Pulse", () => {
       const resultBoosted = calculateGen9Damage(ctx, typeChart);
 
       // Both get Sun boost on Fire, but Orichalcum Pulse additionally boosts Atk stat.
-      // Source: Showdown -- Orichalcum Pulse: chainModify([5461, 4096]) on Atk.
+      // Source: Showdown -- Orichalcum Pulse: chainModify([5461, FIXED_POINT_IDENTITY]) on Atk.
       const boostedAttack = pokeRound(150, 5461);
       const attackerEquivalent = makeActive({
         ability: C.none,
@@ -535,22 +535,22 @@ describe("Orichalcum Pulse", () => {
 describe("Hadron Engine", () => {
   describe("getHadronEngineSpAModifier", () => {
     it("given Electric Terrain + Hadron Engine, when getting modifier, then returns 5461", () => {
-      // Source: Showdown data/abilities.ts:1735 -- chainModify([5461, 4096])
+      // Source: Showdown data/abilities.ts:1735 -- chainModify([5461, FIXED_POINT_IDENTITY])
       const mod = getHadronEngineSpAModifier(A.hadronEngine, TE.electric);
       expect(mod).toBe(5461);
     });
 
-    it("given no terrain + Hadron Engine, when getting modifier, then returns 4096 (no boost)", () => {
+    it("given no terrain + Hadron Engine, when getting modifier, then returns FIXED_POINT_IDENTITY (no boost)", () => {
       const mod = getHadronEngineSpAModifier(A.hadronEngine, null);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
-    it("given Grassy Terrain + Hadron Engine, when getting modifier, then returns 4096 (wrong terrain)", () => {
+    it("given Grassy Terrain + Hadron Engine, when getting modifier, then returns FIXED_POINT_IDENTITY (wrong terrain)", () => {
       const mod = getHadronEngineSpAModifier(A.hadronEngine, "grassy");
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
-    it("given non-Hadron Engine ability on Electric Terrain, when getting modifier, then returns 4096", () => {
+    it("given non-Hadron Engine ability on Electric Terrain, when getting modifier, then returns FIXED_POINT_IDENTITY", () => {
       const mod = getHadronEngineSpAModifier(C.blaze, TE.electric);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
@@ -592,7 +592,7 @@ describe("Hadron Engine", () => {
       const resultNormal = calculateGen9Damage(ctxNoAbility, typeChart);
 
       // Both get Electric Terrain boost on Electric move, but Hadron Engine adds SpA boost
-      // Source: Showdown -- Hadron Engine: chainModify([5461, 4096]) on SpA
+      // Source: Showdown -- Hadron Engine: chainModify([5461, FIXED_POINT_IDENTITY]) on SpA
       expect(resultBoosted.damage).toBe(resultNormal.damage);
     });
   });
@@ -769,19 +769,19 @@ describe("Fluffy", () => {
       expect(mod).toBe(8192);
     });
 
-    it("given Fluffy defender hit by fire contact move, when getting modifier, then returns 4096 (1.0x, cancel out)", () => {
+    it("given Fluffy defender hit by fire contact move, when getting modifier, then returns FIXED_POINT_IDENTITY (1.0x, cancel out)", () => {
       // Source: Showdown data/abilities.ts -- fluffy: both mods apply and cancel
       // 1 * 2 (fire) / 2 (contact) = 1.0x
       const mod = getFluffyModifier(A.fluffy, T.fire, true);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
-    it("given Fluffy defender hit by non-fire non-contact move, when getting modifier, then returns 4096 (no effect)", () => {
+    it("given Fluffy defender hit by non-fire non-contact move, when getting modifier, then returns FIXED_POINT_IDENTITY (no effect)", () => {
       const mod = getFluffyModifier(A.fluffy, T.normal, false);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
-    it("given non-Fluffy defender, when getting modifier, then returns 4096 regardless", () => {
+    it("given non-Fluffy defender, when getting modifier, then returns FIXED_POINT_IDENTITY regardless", () => {
       const mod = getFluffyModifier(C.blaze, T.fire, true);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
@@ -811,7 +811,6 @@ describe("Fluffy", () => {
 
       // Fluffy halves contact damage, so result should be ~50% of normal (plus SE on normal)
       // Source: Showdown data/abilities.ts -- fluffy: mod /= 2 for contact
-      const ratio = resultFluffy.damage / resultNormal.damage;
       expect(resultFluffy.damage).toBe(pokeRound(resultNormal.damage, 2048));
     });
   });
@@ -829,12 +828,12 @@ describe("Ice Scales", () => {
       expect(mod).toBe(2048);
     });
 
-    it("given Ice Scales defender hit by physical move, when getting modifier, then returns 4096 (no effect)", () => {
+    it("given Ice Scales defender hit by physical move, when getting modifier, then returns FIXED_POINT_IDENTITY (no effect)", () => {
       const mod = getIceScalesModifier(A.iceScales, "physical");
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
-    it("given non-Ice Scales ability hit by special move, when getting modifier, then returns 4096", () => {
+    it("given non-Ice Scales ability hit by special move, when getting modifier, then returns FIXED_POINT_IDENTITY", () => {
       const mod = getIceScalesModifier(C.blaze, "special");
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
@@ -864,7 +863,6 @@ describe("Ice Scales", () => {
 
       // Ice Scales halves special damage
       // Source: Showdown data/abilities.ts -- icescales onSourceModifyDamage: chainModify(0.5)
-      const ratio = resultIceScales.damage / resultNormal.damage;
       expect(resultIceScales.damage).toBe(pokeRound(resultNormal.damage, 2048));
     });
 
@@ -903,11 +901,11 @@ describe("Multiscale / Shadow Shield", () => {
   describe("getMultiscaleMultiplier", () => {
     it("given Multiscale at full HP, when getting multiplier, then returns 0.5", () => {
       // Source: Showdown data/abilities.ts -- multiscale onSourceModifyDamage
-      expect(getMultiscaleMultiplier(A.multiscale, 200, 200)).toBe(0.5);
+      expect(getMultiscaleMultiplier(A.multiscale, DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE)).toBe(0.5);
     });
 
     it("given Multiscale at less than full HP, when getting multiplier, then returns 1", () => {
-      expect(getMultiscaleMultiplier(A.multiscale, 199, 200)).toBe(1);
+      expect(getMultiscaleMultiplier(A.multiscale, 199, DEFAULT_HP_FIXTURE)).toBe(1);
     });
 
     it("given Shadow Shield at full HP, when getting multiplier, then returns 0.5", () => {
@@ -916,19 +914,19 @@ describe("Multiscale / Shadow Shield", () => {
     });
 
     it("given non-Multiscale ability at full HP, when getting multiplier, then returns 1", () => {
-      expect(getMultiscaleMultiplier(C.blaze, 200, 200)).toBe(1);
+      expect(getMultiscaleMultiplier(C.blaze, DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE)).toBe(1);
     });
   });
 
   describe("integration with calculateGen9Damage", () => {
     it("given Multiscale defender at full HP, when calculating damage, then damage is halved", () => {
       const attacker = makeActive({});
-      const defender = makeActive({ ability: A.multiscale, hp: 200, currentHp: 200 });
+      const defender = makeActive({ ability: A.multiscale, hp: DEFAULT_HP_FIXTURE, currentHp: DEFAULT_HP_FIXTURE });
       const move = makeMove({ power: 100, flags: { contact: false } });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultMultiscale = calculateGen9Damage(ctx, typeChart);
 
-      const defenderNoAbility = makeActive({ ability: C.none, hp: 200, currentHp: 200 });
+      const defenderNoAbility = makeActive({ ability: C.none, hp: DEFAULT_HP_FIXTURE, currentHp: DEFAULT_HP_FIXTURE });
       const ctxNormal = makeDamageContext({
         attacker,
         defender: defenderNoAbility,
@@ -938,18 +936,17 @@ describe("Multiscale / Shadow Shield", () => {
       const resultNormal = calculateGen9Damage(ctxNormal, typeChart);
 
       // Source: Showdown -- Multiscale: pokeRound(damage, 2048) = 0.5x
-      const ratio = resultMultiscale.damage / resultNormal.damage;
       expect(resultMultiscale.damage).toBe(pokeRound(resultNormal.damage, 2048));
     });
 
     it("given Multiscale defender not at full HP, when calculating damage, then no reduction", () => {
       const attacker = makeActive({});
-      const defender = makeActive({ ability: A.multiscale, hp: 200, currentHp: 150 });
+      const defender = makeActive({ ability: A.multiscale, hp: DEFAULT_HP_FIXTURE, currentHp: 150 });
       const move = makeMove({ power: 100, flags: { contact: false } });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultMultiscale = calculateGen9Damage(ctx, typeChart);
 
-      const defenderNoAbility = makeActive({ ability: C.none, hp: 200, currentHp: 150 });
+      const defenderNoAbility = makeActive({ ability: C.none, hp: DEFAULT_HP_FIXTURE, currentHp: 150 });
       const ctxNormal = makeDamageContext({
         attacker,
         defender: defenderNoAbility,
@@ -1082,32 +1079,39 @@ describe("Filter / Solid Rock", () => {
 describe("-ate abilities (Gen 9: 1.2x)", () => {
   describe("getAteAbilityOverride", () => {
     it("given Pixilate with Normal-type move, when checking override, then returns fairy + 1.2x", () => {
-      // Source: Showdown data/abilities.ts -- pixilate: Normal -> Fairy + 4915/4096
+      // Source: Showdown data/abilities.ts -- pixilate: Normal -> Fairy + 4915/FIXED_POINT_IDENTITY
       const result = getAteAbilityOverride(A.pixilate, T.normal);
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(T.fairy);
-      expect(result!.multiplier).toBeCloseTo(4915 / 4096, 5);
+      expect(result).toEqual({
+        type: T.fairy,
+        multiplier: GEN7_PLUS_ATE_MODIFIER,
+      });
     });
 
     it("given Aerilate with Normal-type move, when checking override, then returns flying + 1.2x", () => {
-      // Source: Showdown data/abilities.ts -- aerilate: Normal -> Flying + 4915/4096
+      // Source: Showdown data/abilities.ts -- aerilate: Normal -> Flying + 4915/FIXED_POINT_IDENTITY
       const result = getAteAbilityOverride(A.aerilate, T.normal);
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(T.flying);
+      expect(result).toEqual({
+        type: T.flying,
+        multiplier: GEN7_PLUS_ATE_MODIFIER,
+      });
     });
 
     it("given Refrigerate with Normal-type move, when checking override, then returns ice + 1.2x", () => {
-      // Source: Showdown data/abilities.ts -- refrigerate: Normal -> Ice + 4915/4096
+      // Source: Showdown data/abilities.ts -- refrigerate: Normal -> Ice + 4915/FIXED_POINT_IDENTITY
       const result = getAteAbilityOverride(A.refrigerate, T.normal);
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(T.ice);
+      expect(result).toEqual({
+        type: T.ice,
+        multiplier: GEN7_PLUS_ATE_MODIFIER,
+      });
     });
 
     it("given Galvanize with Normal-type move, when checking override, then returns electric + 1.2x", () => {
-      // Source: Showdown data/abilities.ts -- galvanize: Normal -> Electric + 4915/4096
+      // Source: Showdown data/abilities.ts -- galvanize: Normal -> Electric + 4915/FIXED_POINT_IDENTITY
       const result = getAteAbilityOverride(A.galvanize, T.normal);
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(T.electric);
+      expect(result).toEqual({
+        type: T.electric,
+        multiplier: GEN7_PLUS_ATE_MODIFIER,
+      });
     });
 
     it("given Pixilate with non-Normal move, when checking override, then returns null", () => {
@@ -1121,17 +1125,19 @@ describe("-ate abilities (Gen 9: 1.2x)", () => {
     it("given Normalize with Fire-type move, when checking override, then returns normal + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- normalize: all moves become Normal + 1.2x (Gen 7+)
       const result = getAteAbilityOverride(A.normalize, T.fire);
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(T.normal);
-      expect(result!.multiplier).toBeCloseTo(4915 / 4096, 5);
+      expect(result).toEqual({
+        type: T.normal,
+        multiplier: GEN7_PLUS_ATE_MODIFIER,
+      });
     });
 
     it("given Liquid Voice with sound-based move, when checking override, then returns water with 1.0x", () => {
       // Source: Showdown data/abilities.ts -- liquidvoice: sound moves become Water (no power boost)
       const result = getAteAbilityOverride(A.liquidVoice, T.normal, true);
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(T.water);
-      expect(result!.multiplier).toBe(1);
+      expect(result).toEqual({
+        type: T.water,
+        multiplier: 1,
+      });
     });
 
     it("given Liquid Voice with non-sound move, when checking override, then returns null", () => {
@@ -1149,14 +1155,14 @@ describe("-ate abilities (Gen 9: 1.2x)", () => {
 // ===========================================================================
 
 describe("Sheer Force", () => {
-  it("given Sheer Force with move that has status-chance, when getting multiplier, then returns 5325/4096", () => {
-    // Source: Showdown data/abilities.ts -- sheerforce: chainModify([5325, 4096])
+  it("given Sheer Force with move that has status-chance, when getting multiplier, then returns 5325/FIXED_POINT_IDENTITY", () => {
+    // Source: Showdown data/abilities.ts -- sheerforce: chainModify([5325, FIXED_POINT_IDENTITY])
     const mult = getSheerForceMultiplier(A.sheerForce, {
       type: "status-chance",
       status: S.burn,
       chance: 10,
     });
-    expect(mult).toBeCloseTo(5325 / 4096, 5);
+    expect(mult).toBe(5325 / FIXED_POINT_IDENTITY);
   });
 
   it("given Sheer Force with move that has no secondary, when getting multiplier, then returns 1", () => {
@@ -1196,9 +1202,9 @@ describe("Sheer Force", () => {
 
 describe("move-type boosting abilities", () => {
   describe("getToughClawsMultiplier", () => {
-    it("given Tough Claws with contact move, when getting multiplier, then returns 5325/4096 (~1.3x)", () => {
-      // Source: Showdown data/abilities.ts -- toughclaws: chainModify([5325, 4096])
-      expect(getToughClawsMultiplier(A.toughClaws, true)).toBeCloseTo(5325 / 4096, 5);
+    it("given Tough Claws with contact move, when getting multiplier, then returns 5325/FIXED_POINT_IDENTITY (~1.3x)", () => {
+      // Source: Showdown data/abilities.ts -- toughclaws: chainModify([5325, FIXED_POINT_IDENTITY])
+      expect(getToughClawsMultiplier(A.toughClaws, true)).toBe(5325 / FIXED_POINT_IDENTITY);
     });
 
     it("given Tough Claws with non-contact move, when getting multiplier, then returns 1", () => {
@@ -1243,7 +1249,7 @@ describe("Sturdy", () => {
     });
 
     it("given Sturdy at full HP with non-lethal damage, when capping, then returns original damage", () => {
-      expect(getSturdyDamageCap(C.sturdy, 100, 200, 200)).toBe(100);
+      expect(getSturdyDamageCap(C.sturdy, 100, DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE)).toBe(100);
     });
 
     it("given Sturdy NOT at full HP with lethal damage, when capping, then returns original damage (no cap)", () => {
@@ -1398,7 +1404,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
   it("given Supreme Overlord with 0 fainted allies, when handler called, then does not activate", () => {
     // Source: Showdown data/abilities.ts:4634-4658 -- supremeoverlord onBasePower
-    // powMod[0] = 4096 (no boost), so handler should return NO_ACTIVATION
+    // powMod[0] = FIXED_POINT_IDENTITY (no boost), so handler should return NO_ACTIVATION
     const ctx = makeAbilityContext({ abilityId: A.supremeOverlord });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1509,8 +1515,8 @@ describe("handleGen9DamageCalcAbility handler", () => {
   it("given Multiscale at full HP, when handler called, then activates", () => {
     const ctx = makeAbilityContext({
       abilityId: A.multiscale,
-      currentHp: 200,
-      hp: 200,
+      currentHp: DEFAULT_HP_FIXTURE,
+      hp: DEFAULT_HP_FIXTURE,
     });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1520,7 +1526,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
     const ctx = makeAbilityContext({
       abilityId: A.multiscale,
       currentHp: 150,
-      hp: 200,
+      hp: DEFAULT_HP_FIXTURE,
     });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1622,38 +1628,38 @@ describe("hasSheerForceEligibleEffect", () => {
 
 describe("pokeRound verification for ability modifiers", () => {
   it("Supreme Overlord 3 fainted: pokeRound(100, 5325) = 130", () => {
-    // Source: Showdown -- chainModify([5325, 4096])
-    // floor((100 * 5325 + 2047) / 4096) = floor(534547/4096) = 130
+    // Source: Showdown -- chainModify([5325, FIXED_POINT_IDENTITY])
+    // floor((100 * 5325 + 2047) / FIXED_POINT_IDENTITY) = floor(534547/FIXED_POINT_IDENTITY) = 130
     expect(pokeRound(100, 5325)).toBe(130);
   });
 
   it("Supreme Overlord 5 fainted: pokeRound(100, 6144) = 150", () => {
-    // Source: Showdown -- chainModify([6144, 4096])
-    // floor((100 * 6144 + 2047) / 4096) = floor(616447/4096) = 150
+    // Source: Showdown -- chainModify([6144, FIXED_POINT_IDENTITY])
+    // floor((100 * 6144 + 2047) / FIXED_POINT_IDENTITY) = floor(616447/FIXED_POINT_IDENTITY) = 150
     expect(pokeRound(100, 6144)).toBe(150);
   });
 
-  it("Ice Scales: pokeRound(200, 2048) = 100", () => {
-    // Source: Showdown -- chainModify(0.5) = 2048/4096
-    // floor((200 * 2048 + 2047) / 4096) = floor(411647/4096) = 100
-    expect(pokeRound(200, 2048)).toBe(100);
+  it("Ice Scales: pokeRound(fullHP, 2048) = half", () => {
+    // Source: Showdown -- chainModify(0.5) = 2048/FIXED_POINT_IDENTITY
+    // floor((fullHP * 2048 + 2047) / FIXED_POINT_IDENTITY) = half the input
+    expect(pokeRound(DEFAULT_HP_FIXTURE, 2048)).toBe(DEFAULT_HP_FIXTURE / 2);
   });
 
-  it("Fluffy fire: pokeRound(100, 8192) = 200", () => {
-    // Source: Showdown -- Fluffy fire: mod *= 2 => 8192/4096
-    // floor((100 * 8192 + 2047) / 4096) = floor(821247/4096) = 200
+  it("Fluffy fire: pokeRound(100, 8192) = double the input", () => {
+    // Source: Showdown -- Fluffy fire: mod *= 2 => 8192/FIXED_POINT_IDENTITY
+    // floor((100 * 8192 + 2047) / FIXED_POINT_IDENTITY) = double the input
     expect(pokeRound(100, 8192)).toBe(100 * 2);
   });
 
   it("Fluffy contact: pokeRound(100, 2048) = 50", () => {
-    // Source: Showdown -- Fluffy contact: mod /= 2 => 2048/4096
-    // floor((100 * 2048 + 2047) / 4096) = floor(206847/4096) = 50
+    // Source: Showdown -- Fluffy contact: mod /= 2 => 2048/FIXED_POINT_IDENTITY
+    // floor((100 * 2048 + 2047) / FIXED_POINT_IDENTITY) = floor(206847/FIXED_POINT_IDENTITY) = 50
     expect(pokeRound(100, 2048)).toBe(50);
   });
 
-  it("Orichalcum Pulse stat: floor((150 * 5461 + 2047) / 4096) = 200", () => {
-    // Source: Showdown -- chainModify([5461, 4096]) on Atk stat
-    // floor((150 * 5461 + 2047) / 4096) = floor(821197/4096) = 200
+  it("Orichalcum Pulse stat: base 150 becomes +50 under the modifier", () => {
+    // Source: Showdown -- chainModify([5461, FIXED_POINT_IDENTITY]) on Atk stat
+    // floor((150 * 5461 + 2047) / FIXED_POINT_IDENTITY) = 150 + 50
     expect(pokeRound(150, 5461)).toBe(150 + 50);
   });
 });

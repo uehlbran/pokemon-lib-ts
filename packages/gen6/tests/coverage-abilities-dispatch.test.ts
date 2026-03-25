@@ -9,8 +9,9 @@
  */
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { applyGen6Ability } from "../src/Gen6Abilities";
+import { GEN6_ABILITY_IDS, GEN6_ITEM_IDS, GEN6_MOVE_IDS, GEN6_SPECIES_IDS, applyGen6Ability } from "../src";
 import { handleGen6RemainingAbility } from "../src/Gen6AbilitiesRemaining";
 import { handleGen6StatAbility } from "../src/Gen6AbilitiesStat";
 
@@ -22,6 +23,15 @@ let nextTestUid = 0;
 function makeTestUid() {
   return `test-${nextTestUid++}`;
 }
+
+const A = GEN6_ABILITY_IDS;
+const I = GEN6_ITEM_IDS;
+const M = GEN6_MOVE_IDS;
+const SP = GEN6_SPECIES_IDS;
+const C = CORE_ABILITY_IDS;
+const T = CORE_TYPE_IDS;
+const S = CORE_STATUS_IDS;
+const W = CORE_WEATHER_IDS;
 
 function makePokemon(overrides: {
   ability?: string;
@@ -39,13 +49,13 @@ function makePokemon(overrides: {
   return {
     pokemon: {
       uid: overrides.uid ?? makeTestUid(),
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SP.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: 50,
       currentHp: overrides.currentHp ?? maxHp,
       status: (overrides.status ?? null) as PokemonInstance["status"],
       heldItem: overrides.heldItem ?? null,
-      ability: overrides.ability ?? "",
+      ability: overrides.ability ?? C.none,
       calculatedStats: {
         hp: maxHp,
         attack: 100,
@@ -68,8 +78,8 @@ function makePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [T.normal],
+    ability: overrides.ability ?? C.none,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -219,9 +229,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-priority-check trigger with Prankster + status move, when dispatching, then routes to stat module and activates", () => {
     // Source: Showdown data/abilities.ts -- Prankster onModifyPriority +1 for status
     const ctx = makeCtx({
-      ability: "prankster",
+      ability: A.prankster,
       trigger: "on-priority-check",
-      move: makeMove("normal", { category: "status" }),
+      move: makeMove(T.normal, { category: "status" }),
     });
     const result = applyGen6Ability("on-priority-check", ctx);
     expect(result.activated).toBe(true);
@@ -231,7 +241,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     // Source: Showdown data/abilities.ts -- Moxie onSourceAfterFaint: +1 Atk
     const foe = makePokemon({ currentHp: 0 });
     const ctx = makeCtx({
-      ability: "moxie",
+      ability: A.moxie,
       trigger: "on-after-move-used",
       opponent: foe,
     });
@@ -241,14 +251,14 @@ describe("applyGen6Ability — dispatcher triggers", () => {
 
   it("given on-flinch trigger with Steadfast, when dispatching, then routes to stat module", () => {
     // Source: Showdown data/abilities.ts -- Steadfast onFlinch: +1 Speed
-    const ctx = makeCtx({ ability: "steadfast", trigger: "on-flinch" });
+    const ctx = makeCtx({ ability: A.steadfast, trigger: "on-flinch" });
     const result = applyGen6Ability("on-flinch", ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given on-item-use trigger with Unnerve, when dispatching, then routes to stat module", () => {
     // Source: Showdown data/abilities.ts -- Unnerve onFoeTryEatItem
-    const ctx = makeCtx({ ability: "unnerve", trigger: "on-item-use" });
+    const ctx = makeCtx({ ability: A.unnerve, trigger: "on-item-use" });
     const result = applyGen6Ability("on-item-use", ctx);
     expect(result.activated).toBe(true);
   });
@@ -256,9 +266,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-before-move trigger with Protean + non-matching type, when dispatching, then routes to stat module and activates", () => {
     // Source: Showdown data/abilities.ts -- Protean onPrepareHit
     const ctx = makeCtx({
-      ability: "protean",
+      ability: A.protean,
       trigger: "on-before-move",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
     });
     const result = applyGen6Ability("on-before-move", ctx);
     expect(result.activated).toBe(true);
@@ -266,7 +276,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
 
   it("given on-switch-out trigger with Regenerator, when dispatching, then routes to switch module", () => {
     // Source: Showdown data/abilities.ts -- Regenerator onSwitchOut: heal 1/3
-    const ctx = makeCtx({ ability: "regenerator", trigger: "on-switch-out" });
+    const ctx = makeCtx({ ability: A.regenerator, trigger: "on-switch-out" });
     const result = applyGen6Ability("on-switch-out", ctx);
     expect(result.activated).toBe(true);
   });
@@ -275,7 +285,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     // Source: Showdown data/abilities.ts -- Rough Skin: 1/8 chip damage
     const foe = makePokemon({});
     const ctx = makeCtx({
-      ability: "rough-skin",
+      ability: A.roughSkin,
       trigger: "on-contact",
       opponent: foe,
     });
@@ -287,9 +297,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     // Source: Showdown data/abilities.ts -- Synchronize onAfterSetStatus
     const foe = makePokemon({});
     const ctx = makeCtx({
-      ability: "synchronize",
+      ability: A.synchronize,
       trigger: "on-status-inflicted",
-      status: "burn",
+      status: S.burn,
       opponent: foe,
     });
     const result = applyGen6Ability("on-status-inflicted", ctx);
@@ -299,7 +309,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-accuracy-check trigger with Victory Star, when dispatching, then routes to switch module", () => {
     // Source: Showdown data/abilities.ts -- Victory Star onAnyAccuracy: 1.1x
     const ctx = makeCtx({
-      ability: "victory-star",
+      ability: A.victoryStar,
       trigger: "on-accuracy-check",
     });
     const result = applyGen6Ability("on-accuracy-check", ctx);
@@ -310,31 +320,31 @@ describe("applyGen6Ability — dispatcher triggers", () => {
 
   it("given on-switch-in trigger with Drizzle, when dispatching, then routes to switch module first", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- Drizzle sets 5-turn rain
-    const ctx = makeCtx({ ability: "drizzle", trigger: "on-switch-in" });
+    const ctx = makeCtx({ ability: A.drizzle, trigger: "on-switch-in" });
     const result = applyGen6Ability("on-switch-in", ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("rain");
+    expect(result.messages[0]).toContain(W.rain);
   });
 
   it("given on-switch-in trigger with Frisk + foe holding item, when dispatching, then falls through to remaining module", () => {
     // Source: Showdown data/abilities.ts -- Frisk reveals all foe items
-    const foe = makePokemon({ heldItem: "leftovers" });
+    const foe = makePokemon({ heldItem: I.leftovers });
     const ctx = makeCtx({
-      ability: "frisk",
+      ability: A.frisk,
       trigger: "on-switch-in",
       opponent: foe,
     });
     const result = applyGen6Ability("on-switch-in", ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("leftovers");
+    expect(result.messages[0]).toContain(I.leftovers);
   });
 
   it("given on-damage-calc trigger with Technician + low-power move, when dispatching, then routes to damage module", () => {
     // Source: Showdown data/abilities.ts -- Technician: 1.5x for power <= 60
     const ctx = makeCtx({
-      ability: "technician",
+      ability: A.technician,
       trigger: "on-damage-calc",
-      move: makeMove("normal", { power: 40 }),
+      move: makeMove(T.normal, { power: 40 }),
     });
     const result = applyGen6Ability("on-damage-calc", ctx);
     expect(result.activated).toBe(true);
@@ -343,9 +353,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-damage-calc trigger with Serene Grace, when dispatching, then falls through to remaining module", () => {
     // Source: Showdown data/abilities.ts -- Serene Grace doubles secondary chances
     const ctx = makeCtx({
-      ability: "serene-grace",
+      ability: A.sereneGrace,
       trigger: "on-damage-calc",
-      move: makeMove("normal"),
+      move: makeMove(T.normal),
     });
     const result = applyGen6Ability("on-damage-calc", ctx);
     expect(result.activated).toBe(true);
@@ -354,10 +364,10 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-damage-taken trigger with Sturdy + OHKO move, when dispatching, then routes to immunity module first", () => {
     // Source: Showdown data/abilities.ts -- Sturdy blocks OHKO moves
     const ctx = makeCtx({
-      ability: "sturdy",
+      ability: A.sturdy,
       trigger: "on-damage-taken",
-      move: makeMove("ground", {
-        id: "fissure",
+      move: makeMove(T.ground, {
+        id: M.fissure,
         effect: { type: "ohko" },
       }),
     });
@@ -370,7 +380,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     const foe = makePokemon({});
     // RNG next returns 0 which is < 0.3 so Cursed Body triggers
     const ctx = makeCtx({
-      ability: "cursed-body",
+      ability: A.cursedBody,
       trigger: "on-damage-taken",
       opponent: foe,
     });
@@ -385,9 +395,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     // Make RNG return high so Cursed Body (from switch) doesn't activate
     state.rng.next = () => 0.99;
     const ctx = makeCtx({
-      ability: "justified",
+      ability: A.justified,
       trigger: "on-damage-taken",
-      move: makeMove("dark"),
+      move: makeMove(T.dark),
       opponent: foe,
       state,
     });
@@ -398,7 +408,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-stat-change trigger with Defiant + opponent-sourced drop, when dispatching, then routes to stat module", () => {
     // Source: Showdown data/abilities.ts -- Defiant: +2 Atk on any stat drop by foe
     const ctx = makeCtx({
-      ability: "defiant",
+      ability: A.defiant,
       trigger: "on-stat-change",
       statChange: { stages: -1, source: "opponent" },
     });
@@ -409,7 +419,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-turn-end trigger with Speed Boost + turnsOnField > 0, when dispatching, then routes to stat module", () => {
     // Source: Showdown data/abilities.ts -- Speed Boost onResidual
     const ctx = makeCtx({
-      ability: "speed-boost",
+      ability: A.speedBoost,
       trigger: "on-turn-end",
       turnsOnField: 1,
     });
@@ -420,7 +430,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given on-turn-end trigger with Zen Mode + low HP, when dispatching, then falls through to remaining module", () => {
     // Source: Showdown data/abilities.ts -- Zen Mode: transforms below 50%
     const ctx = makeCtx({
-      ability: "zen-mode",
+      ability: A.zenMode,
       trigger: "on-turn-end",
       currentHp: 50,
       maxHp: 200,
@@ -435,9 +445,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given passive-immunity trigger with Levitate + ground move, when dispatching, then returns activated", () => {
     // Source: Showdown data/abilities.ts -- Levitate: ground immunity
     const ctx = makeCtx({
-      ability: "levitate",
+      ability: A.levitate,
       trigger: "passive-immunity",
-      move: makeMove("ground", { displayName: "Earthquake" }),
+      move: makeMove(T.ground, { displayName: "Earthquake" }),
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(true);
@@ -451,9 +461,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     const state = makeState();
     (state.gravity as { active: boolean }).active = true;
     const ctx = makeCtx({
-      ability: "levitate",
+      ability: A.levitate,
       trigger: "passive-immunity",
-      move: makeMove("ground"),
+      move: makeMove(T.ground),
       state,
     });
     const result = applyGen6Ability("passive-immunity", ctx);
@@ -466,10 +476,10 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     // Source: Bulbapedia -- Iron Ball grounds the holder, negating Levitate
     // Note: Same fallthrough as Gravity -- switch module doesn't re-check
     const ctx = makeCtx({
-      ability: "levitate",
+      ability: A.levitate,
       trigger: "passive-immunity",
-      move: makeMove("ground"),
-      heldItem: "iron-ball",
+      move: makeMove(T.ground),
+      heldItem: I.ironBall,
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(true);
@@ -478,9 +488,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given passive-immunity trigger with Volt Absorb + electric move, when dispatching, then returns activated", () => {
     // Source: Showdown data/abilities.ts -- Volt Absorb: electric immunity
     const ctx = makeCtx({
-      ability: "volt-absorb",
+      ability: A.voltAbsorb,
       trigger: "passive-immunity",
-      move: makeMove("electric", { displayName: "Thunderbolt" }),
+      move: makeMove(T.electric, { displayName: "Thunderbolt" }),
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(true);
@@ -489,9 +499,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given passive-immunity trigger with Sap Sipper + grass move, when dispatching, then returns activated", () => {
     // Source: Showdown data/abilities.ts -- Sap Sipper: grass immunity
     const ctx = makeCtx({
-      ability: "sap-sipper",
+      ability: A.sapSipper,
       trigger: "passive-immunity",
-      move: makeMove("grass", { displayName: "Energy Ball" }),
+      move: makeMove(T.grass, { displayName: "Energy Ball" }),
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(true);
@@ -500,9 +510,9 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given passive-immunity trigger with non-immune ability, when dispatching, then falls through to switch/remaining/stat", () => {
     // Source: Showdown -- non-immune abilities fall through
     const ctx = makeCtx({
-      ability: "intimidate",
+      ability: A.intimidate,
       trigger: "passive-immunity",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(false);
@@ -511,7 +521,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
   it("given unknown trigger, when dispatching, then returns NO_ACTIVATION", () => {
     // Default case
     const ctx = makeCtx({
-      ability: "levitate",
+      ability: A.levitate,
       trigger: "unknown-trigger",
     });
     const result = applyGen6Ability("unknown-trigger" as never, ctx);
@@ -527,9 +537,9 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Gale Wings + flying move (no HP check in Gen 6), when on-priority-check, then activates", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- Gale Wings no HP check in Gen 6
     const ctx = makeCtx({
-      ability: "gale-wings",
+      ability: A.galeWings,
       trigger: "on-priority-check",
-      move: makeMove("flying"),
+      move: makeMove(T.flying),
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
@@ -538,9 +548,9 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Gale Wings + non-flying move, when on-priority-check, then does not activate", () => {
     // Source: Showdown -- Gale Wings only boosts Flying moves
     const ctx = makeCtx({
-      ability: "gale-wings",
+      ability: A.galeWings,
       trigger: "on-priority-check",
-      move: makeMove("normal"),
+      move: makeMove(T.normal),
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -549,7 +559,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Competitive + opponent stat drop, when on-stat-change, then activates with +2 SpAtk", () => {
     // Source: Showdown data/abilities.ts -- Competitive: +2 SpAtk on opponent drop
     const ctx = makeCtx({
-      ability: "competitive",
+      ability: A.competitive,
       trigger: "on-stat-change",
       statChange: { stages: -1, source: "opponent" },
     });
@@ -561,7 +571,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Contrary, when on-stat-change, then activates (reversal is signaled)", () => {
     // Source: Showdown data/abilities.ts -- Contrary: reverses stat changes
     const ctx = makeCtx({
-      ability: "contrary",
+      ability: A.contrary,
       trigger: "on-stat-change",
     });
     const result = handleGen6StatAbility(ctx);
@@ -571,7 +581,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Simple, when on-stat-change, then activates (doubling is signaled)", () => {
     // Source: Showdown data/abilities.ts -- Simple: doubles stat changes
     const ctx = makeCtx({
-      ability: "simple",
+      ability: A.simple,
       trigger: "on-stat-change",
     });
     const result = handleGen6StatAbility(ctx);
@@ -581,9 +591,9 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Justified + dark move, when on-damage-taken, then +1 Attack", () => {
     // Source: Showdown data/abilities.ts -- Justified
     const ctx = makeCtx({
-      ability: "justified",
+      ability: A.justified,
       trigger: "on-damage-taken",
-      move: makeMove("dark"),
+      move: makeMove(T.dark),
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
@@ -593,9 +603,9 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Justified + non-dark move, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- Justified only fires for Dark moves
     const ctx = makeCtx({
-      ability: "justified",
+      ability: A.justified,
       trigger: "on-damage-taken",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -604,9 +614,9 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Weak Armor + physical move, when on-damage-taken, then -1 Def and +1 Speed", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- Weak Armor Gen 5-6: +1 Spe
     const ctx = makeCtx({
-      ability: "weak-armor",
+      ability: A.weakArmor,
       trigger: "on-damage-taken",
-      move: makeMove("normal", { category: "physical" }),
+      move: makeMove(T.normal, { category: "physical" }),
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
@@ -618,9 +628,9 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Weak Armor + special move, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- Weak Armor only fires for physical
     const ctx = makeCtx({
-      ability: "weak-armor",
+      ability: A.weakArmor,
       trigger: "on-damage-taken",
-      move: makeMove("fire", { category: "special" }),
+      move: makeMove(T.fire, { category: "special" }),
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -629,7 +639,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Speed Boost + turnsOnField === 0, when on-turn-end, then does not activate", () => {
     // Source: Showdown -- Speed Boost doesn't fire on turn of switch-in
     const ctx = makeCtx({
-      ability: "speed-boost",
+      ability: A.speedBoost,
       trigger: "on-turn-end",
       turnsOnField: 0,
     });
@@ -640,7 +650,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Moody, when on-turn-end, then raises one stat +2 and lowers another -1", () => {
     // Source: Showdown data/mods/gen7/abilities.ts -- Moody Gen 5-7
     const ctx = makeCtx({
-      ability: "moody",
+      ability: A.moody,
       trigger: "on-turn-end",
     });
     const result = handleGen6StatAbility(ctx);
@@ -651,7 +661,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Unnerve, when on-item-use, then activates", () => {
     // Source: Showdown data/abilities.ts -- Unnerve blocks berry consumption
     const ctx = makeCtx({
-      ability: "unnerve",
+      ability: A.unnerve,
       trigger: "on-item-use",
     });
     const result = handleGen6StatAbility(ctx);
@@ -661,10 +671,10 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Protean + already matching type, when on-before-move, then does not activate", () => {
     // Source: Showdown -- Protean only fires if type doesn't match
     const ctx = makeCtx({
-      ability: "protean",
+      ability: A.protean,
       trigger: "on-before-move",
-      types: ["fire"],
-      move: makeMove("fire"),
+      types: [T.fire],
+      move: makeMove(T.fire),
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -677,15 +687,15 @@ describe("handleGen6StatAbility — branch coverage", () => {
     // Source: Bulbapedia "Stance Change" -- "Aegislash changes to Blade Forme when using an attacking move"
     // Bug #675: Previously handleBeforeMove only handled Protean; Stance Change was missing.
     const pokemon = makePokemon({
-      ability: "stance-change",
-      speciesId: 681,
+      ability: A.stanceChange,
+      speciesId: SP.aegislash,
     });
     const ctx = {
       pokemon,
       state: makeState(),
       rng: makeState().rng,
       trigger: "on-before-move",
-      move: makeMove("ghost", { id: "shadow-ball", category: "special" }),
+      move: makeMove(T.ghost, { id: M.shadowBall, category: "special" }),
     } as unknown as AbilityContext;
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
@@ -698,8 +708,8 @@ describe("handleGen6StatAbility — branch coverage", () => {
     // Source: Showdown data/abilities.ts -- stancechange: King's Shield reverts to Shield Forme
     // Source: Bulbapedia "Stance Change" -- "reverts to Shield Forme when using King's Shield"
     const pokemon = makePokemon({
-      ability: "stance-change",
-      speciesId: 681,
+      ability: A.stanceChange,
+      speciesId: SP.aegislash,
     });
     pokemon.volatileStatuses.set("stance-change-blade", { turnsLeft: -1 } as never);
     const ctx = {
@@ -707,7 +717,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
       state: makeState(),
       rng: makeState().rng,
       trigger: "on-before-move",
-      move: makeMove("steel", { id: "kings-shield", category: "status" }),
+      move: makeMove(T.steel, { id: M.kingsShield, category: "status" }),
     } as unknown as AbilityContext;
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
@@ -720,15 +730,15 @@ describe("handleGen6StatAbility — branch coverage", () => {
     // Source: Showdown data/abilities.ts -- stancechange: status moves other than King's Shield
     // do not trigger Stance Change when in Shield Forme
     const pokemon = makePokemon({
-      ability: "stance-change",
-      speciesId: 681,
+      ability: A.stanceChange,
+      speciesId: SP.aegislash,
     });
     const ctx = {
       pokemon,
       state: makeState(),
       rng: makeState().rng,
       trigger: "on-before-move",
-      move: makeMove("normal", { id: "protect", category: "status" }),
+      move: makeMove(T.normal, { id: M.protect, category: "status" }),
     } as unknown as AbilityContext;
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -737,7 +747,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Stance Change on non-Aegislash (wrong speciesId), when on-before-move with attack, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- stancechange only applies to Aegislash (speciesId 681)
     const pokemon = makePokemon({
-      ability: "stance-change",
+      ability: A.stanceChange,
       speciesId: 25, // Pikachu, not Aegislash
     });
     const ctx = {
@@ -745,7 +755,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
       state: makeState(),
       rng: makeState().rng,
       trigger: "on-before-move",
-      move: makeMove("electric", { id: "thunderbolt", category: "special" }),
+      move: makeMove(T.electric, { id: M.thunderbolt, category: "special" }),
     } as unknown as AbilityContext;
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -754,7 +764,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given Steadfast with non-steadfast ability, when on-flinch, then does not activate", () => {
     // Source: Showdown -- only Steadfast responds to flinch
     const ctx = makeCtx({
-      ability: "intimidate",
+      ability: A.intimidate,
       trigger: "on-flinch",
     });
     const result = handleGen6StatAbility(ctx);
@@ -764,7 +774,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
   it("given passive-immunity trigger in stat module, when dispatching, then returns inactive", () => {
     // passive-immunity in stat module is currently unused
     const ctx = makeCtx({
-      ability: "intimidate",
+      ability: A.intimidate,
       trigger: "passive-immunity",
     });
     const result = handleGen6StatAbility(ctx);
@@ -780,11 +790,11 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Zen Mode + above 50% HP + currently in zen form, when on-turn-end, then reverts to standard", () => {
     // Source: Showdown data/abilities.ts -- zenmode: reverts above 50%
     const pokemon = makePokemon({
-      ability: "zen-mode",
+      ability: A.zenMode,
       currentHp: 150,
       maxHp: 200,
     });
-    pokemon.volatileStatuses.set("zen-mode", { turnsLeft: -1 } as never);
+    pokemon.volatileStatuses.set(A.zenMode, { turnsLeft: -1 } as never);
     const ctx = {
       pokemon,
       state: makeState(),
@@ -799,11 +809,11 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Zen Mode + below 50% HP + already in zen form, when on-turn-end, then does not activate", () => {
     // Source: Showdown -- already in zen mode below 50%, no action needed
     const pokemon = makePokemon({
-      ability: "zen-mode",
+      ability: A.zenMode,
       currentHp: 50,
       maxHp: 200,
     });
-    pokemon.volatileStatuses.set("zen-mode", { turnsLeft: -1 } as never);
+    pokemon.volatileStatuses.set(A.zenMode, { turnsLeft: -1 } as never);
     const ctx = {
       pokemon,
       state: makeState(),
@@ -817,14 +827,14 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Harvest + sun weather + consumed berry, when on-turn-end, then restores berry at 100%", () => {
     // Source: Showdown data/abilities.ts -- Harvest in sun: 100% restore
     const pokemon = makePokemon({
-      ability: "harvest",
+      ability: A.harvest,
       heldItem: null,
     });
     pokemon.volatileStatuses.set("harvest-berry", {
       turnsLeft: -1,
-      data: { berryId: "sitrus-berry" },
+      data: { berryId: I.sitrusBerry },
     } as never);
-    const state = makeState({ weather: { type: "sun", turnsLeft: 3 } });
+    const state = makeState({ weather: { type: W.sun, turnsLeft: 3 } });
     const ctx = {
       pokemon,
       state,
@@ -833,18 +843,18 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
     } as unknown as AbilityContext;
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("sitrus-berry");
+    expect(result.messages[0]).toContain(I.sitrusBerry);
   });
 
   it("given Harvest + no sun + RNG fails, when on-turn-end, then does not restore berry", () => {
     // Source: Showdown -- Harvest without sun: 50% chance
     const pokemon = makePokemon({
-      ability: "harvest",
+      ability: A.harvest,
       heldItem: null,
     });
     pokemon.volatileStatuses.set("harvest-berry", {
       turnsLeft: -1,
-      data: { berryId: "sitrus-berry" },
+      data: { berryId: I.sitrusBerry },
     } as never);
     const state = makeState();
     state.rng.next = () => 0.9; // >= 0.5 fails
@@ -861,8 +871,8 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Harvest + already holding item, when on-turn-end, then does not activate", () => {
     // Source: Showdown -- cannot restore if already holding
     const pokemon = makePokemon({
-      ability: "harvest",
-      heldItem: "leftovers",
+      ability: A.harvest,
+      heldItem: I.leftovers,
     });
     const ctx = {
       pokemon,
@@ -877,7 +887,7 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Telepathy in doubles + ally attacking, when passive-immunity, then activates", () => {
     // Source: Showdown data/abilities.ts -- Telepathy: blocks ally damage moves
     const state = makeState({ format: "doubles" });
-    const pokemon = makePokemon({ ability: "telepathy", uid: "poke-1" });
+    const pokemon = makePokemon({ ability: A.telepathy, uid: "poke-1" });
     const ally = makePokemon({ uid: "poke-2" });
     // Both on same side
     const side = state.sides[0];
@@ -888,7 +898,7 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
       state,
       rng: state.rng,
       trigger: "passive-immunity",
-      move: makeMove("fire", { category: "physical" }),
+      move: makeMove(T.fire, { category: "physical" }),
     } as unknown as AbilityContext;
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
@@ -897,9 +907,9 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Telepathy in singles, when passive-immunity, then does not activate", () => {
     // Source: Showdown -- Telepathy no-op in singles
     const ctx = makeCtx({
-      ability: "telepathy",
+      ability: A.telepathy,
       trigger: "passive-immunity",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
     });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(false);
@@ -908,9 +918,9 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Oblivious + Attract move, when passive-immunity, then blocks it", () => {
     // Source: Showdown data/abilities.ts -- Oblivious blocks Attract
     const ctx = makeCtx({
-      ability: "oblivious",
+      ability: A.oblivious,
       trigger: "passive-immunity",
-      move: makeMove("normal", { id: "attract", category: "status" }),
+      move: makeMove(T.normal, { id: M.attract, category: "status" }),
     });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
@@ -919,9 +929,9 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Oblivious + Captivate move, when passive-immunity, then blocks it", () => {
     // Source: Showdown data/abilities.ts -- Oblivious blocks Captivate
     const ctx = makeCtx({
-      ability: "oblivious",
+      ability: A.oblivious,
       trigger: "passive-immunity",
-      move: makeMove("normal", { id: "captivate", category: "status" }),
+      move: makeMove(T.normal, { id: M.captivate, category: "status" }),
     });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
@@ -930,7 +940,7 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Keen Eye, when passive-immunity, then returns inactive (no-op)", () => {
     // Source: Showdown -- Keen Eye passive effects handled by engine
     const ctx = makeCtx({
-      ability: "keen-eye",
+      ability: A.keenEye,
       trigger: "passive-immunity",
     });
     const result = handleGen6RemainingAbility(ctx);
@@ -940,7 +950,7 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Friend Guard in doubles, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Friend Guard: 0.75x ally damage
     const ctx = makeCtx({
-      ability: "friend-guard",
+      ability: A.friendGuard,
       trigger: "on-damage-calc",
     });
     (ctx.state as { format: string }).format = "doubles";
@@ -951,7 +961,7 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Friend Guard in singles, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Friend Guard no-op in singles
     const ctx = makeCtx({
-      ability: "friend-guard",
+      ability: A.friendGuard,
       trigger: "on-damage-calc",
     });
     const result = handleGen6RemainingAbility(ctx);
@@ -961,9 +971,9 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
   it("given Serene Grace + move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Serene Grace doubles secondary chances
     const ctx = makeCtx({
-      ability: "serene-grace",
+      ability: A.sereneGrace,
       trigger: "on-damage-calc",
-      move: makeMove("normal"),
+      move: makeMove(T.normal),
     });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
@@ -971,7 +981,7 @@ describe("handleGen6RemainingAbility — branch coverage", () => {
 
   it("given unknown trigger, when dispatching remaining, then returns inactive", () => {
     const ctx = makeCtx({
-      ability: "zen-mode",
+      ability: A.zenMode,
       trigger: "on-contact",
     });
     const result = handleGen6RemainingAbility(ctx);

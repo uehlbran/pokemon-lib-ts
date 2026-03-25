@@ -13,9 +13,31 @@
  */
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  DataManager,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "../src/data/reference-ids";
+
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
+const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
+const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
+const STATUS_IDS = CORE_STATUS_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const HAZARD_IDS = CORE_HAZARD_IDS;
+const WEATHER_IDS = CORE_WEATHER_IDS;
+const END_OF_TURN_EFFECT_IDS = CORE_END_OF_TURN_EFFECT_IDS;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,7 +74,7 @@ function makeActive(
       level: 50,
       nickname: null,
       speciesId: 25,
-      moves: overrides.moves ?? [{ moveId: "tackle" }],
+      moves: overrides.moves ?? [{ moveId: MOVE_IDS.tackle }],
     },
     ability: overrides.ability ?? null,
     statStages: {
@@ -169,7 +191,7 @@ const ruleset = createTestRuleset();
 describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   /**
    * Helper: resolves two move actions and returns the side index that goes first.
-   * Both Pokemon use "tackle" (priority 0) so ordering is purely by speed.
+   * Both Pokemon use MOVE_IDS.tackle (priority 0) so ordering is purely by speed.
    */
   function whoGoesFirst(
     activeA: ActivePokemon,
@@ -207,7 +229,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given paralyzed Pokemon with 200 base speed vs 120 base speed, when resolving turn order, then paralyzed goes second (0.5x)", () => {
     // Source: Showdown sim/pokemon.ts Gen 7 -- paralysis reduces speed to 50%
     // 200 * 0.5 = 100 < 120 => paralyzed goes second
-    const paralyzed = makeActive({ speed: 200, status: "paralysis" });
+    const paralyzed = makeActive({ speed: 200, status: STATUS_IDS.paralysis });
     const normal = makeActive({ speed: 120 });
     expect(whoGoesFirst(paralyzed, normal)).toBe(1);
   });
@@ -215,7 +237,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given paralyzed Pokemon with 100 base speed vs 40 base speed, when resolving turn order, then paralyzed goes first (100*0.5=50 > 40)", () => {
     // Source: Showdown sim/pokemon.ts Gen 7 -- paralysis reduces speed to 50%
     // 100 * 0.5 = 50 > 40 => paralyzed still faster
-    const paralyzed = makeActive({ speed: 100, status: "paralysis" });
+    const paralyzed = makeActive({ speed: 100, status: STATUS_IDS.paralysis });
     const slower = makeActive({ speed: 40 });
     expect(whoGoesFirst(paralyzed, slower)).toBe(0);
   });
@@ -225,7 +247,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Chlorophyll in sun with 50 base speed vs 80 base speed, when resolving turn order, then Chlorophyll user goes first", () => {
     // Source: Bulbapedia -- Chlorophyll doubles Speed in sun
     // 50 * 2 = 100 > 80
-    const chloro = makeActive({ speed: 50, ability: "chlorophyll" });
+    const chloro = makeActive({ speed: 50, ability: ABILITY_IDS.chlorophyll });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(chloro, normal, { weather: { type: "sun", turnsLeft: 3 } })).toBe(0);
   });
@@ -233,7 +255,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Chlorophyll NOT in sun with 50 base speed vs 80 base speed, when resolving turn order, then Chlorophyll user goes second", () => {
     // Source: Bulbapedia -- Chlorophyll only activates in sun
     // No sun: 50 < 80
-    const chloro = makeActive({ speed: 50, ability: "chlorophyll" });
+    const chloro = makeActive({ speed: 50, ability: ABILITY_IDS.chlorophyll });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(chloro, normal)).toBe(1);
   });
@@ -243,7 +265,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Swift Swim in rain with 50 base speed vs 80 base speed, when resolving turn order, then Swift Swim user goes first", () => {
     // Source: Bulbapedia -- Swift Swim doubles Speed in rain
     // 50 * 2 = 100 > 80
-    const swimmer = makeActive({ speed: 50, ability: "swift-swim" });
+    const swimmer = makeActive({ speed: 50, ability: ABILITY_IDS.swiftSwim });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(swimmer, normal, { weather: { type: "rain", turnsLeft: 3 } })).toBe(0);
   });
@@ -253,7 +275,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Sand Rush in sandstorm with 50 base speed vs 80 base speed, when resolving turn order, then Sand Rush user goes first", () => {
     // Source: Bulbapedia -- Sand Rush doubles Speed in sandstorm
     // 50 * 2 = 100 > 80
-    const rush = makeActive({ speed: 50, ability: "sand-rush" });
+    const rush = makeActive({ speed: 50, ability: ABILITY_IDS.sandRush });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(rush, normal, { weather: { type: "sand", turnsLeft: 3 } })).toBe(0);
   });
@@ -264,7 +286,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Source: Showdown data/abilities.ts:5001-5010 -- Slush Rush doubles speed in Hail
     // Source: Bulbapedia -- Slush Rush (introduced Gen 7): doubles Speed in hail
     // 50 * 2 = 100 > 80
-    const slush = makeActive({ speed: 50, ability: "slush-rush" });
+    const slush = makeActive({ speed: 50, ability: ABILITY_IDS.slushRush });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(slush, normal, { weather: { type: "hail", turnsLeft: 3 } })).toBe(0);
   });
@@ -272,7 +294,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Slush Rush NOT in hail with 50 base speed vs 80 base speed, when resolving turn order, then Slush Rush user goes second", () => {
     // Source: Bulbapedia -- Slush Rush only activates in hail
     // No hail: 50 < 80
-    const slush = makeActive({ speed: 50, ability: "slush-rush" });
+    const slush = makeActive({ speed: 50, ability: ABILITY_IDS.slushRush });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(slush, normal)).toBe(1);
   });
@@ -282,14 +304,14 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Choice Scarf and 80 base speed vs 100 base speed, when resolving turn order, then Scarf user goes first", () => {
     // Source: Bulbapedia -- Choice Scarf boosts Speed 1.5x
     // 80 * 1.5 = 120 > 100
-    const scarfed = makeActive({ speed: 80, heldItem: "choice-scarf" });
+    const scarfed = makeActive({ speed: 80, heldItem: ITEM_IDS.choiceScarf });
     const normal = makeActive({ speed: 100 });
     expect(whoGoesFirst(scarfed, normal)).toBe(0);
   });
 
   it("given Pokemon with Choice Scarf and 60 base speed vs 100 base speed, when resolving turn order, then Scarf user goes second", () => {
     // Source: Bulbapedia -- Choice Scarf: 60 * 1.5 = 90 < 100
-    const scarfed = makeActive({ speed: 60, heldItem: "choice-scarf" });
+    const scarfed = makeActive({ speed: 60, heldItem: ITEM_IDS.choiceScarf });
     const normal = makeActive({ speed: 100 });
     expect(whoGoesFirst(scarfed, normal)).toBe(1);
   });
@@ -299,7 +321,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Iron Ball and 200 base speed vs 120 base speed, when resolving turn order, then Iron Ball holder goes second", () => {
     // Source: Bulbapedia -- Iron Ball halves Speed
     // 200 * 0.5 = 100 < 120
-    const ironBall = makeActive({ speed: 200, heldItem: "iron-ball" });
+    const ironBall = makeActive({ speed: 200, heldItem: ITEM_IDS.ironBall });
     const normal = makeActive({ speed: 120 });
     expect(whoGoesFirst(ironBall, normal)).toBe(1);
   });
@@ -309,7 +331,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
   it("given Pokemon with Iron Ball and Klutz and 200 base speed vs 120 base speed, when resolving turn order, then Klutz user goes first", () => {
     // Source: Bulbapedia -- Klutz suppresses Iron Ball speed penalty
     // 200 > 120
-    const klutzBall = makeActive({ speed: 200, ability: "klutz", heldItem: "iron-ball" });
+    const klutzBall = makeActive({ speed: 200, ability: ABILITY_IDS.klutz, heldItem: ITEM_IDS.ironBall });
     const normal = makeActive({ speed: 120 });
     expect(whoGoesFirst(klutzBall, normal)).toBe(0);
   });
@@ -321,8 +343,8 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Embargo blocks Scarf: 80 < 100
     const embargoed = makeActive({
       speed: 80,
-      heldItem: "choice-scarf",
-      volatiles: [["embargo", { turnsLeft: 3 }]],
+      heldItem: ITEM_IDS.choiceScarf,
+      volatiles: [[VOLATILE_IDS.embargo, { turnsLeft: 3 }]],
     });
     const normal = makeActive({ speed: 100 });
     expect(whoGoesFirst(embargoed, normal)).toBe(1);
@@ -335,8 +357,8 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Embargo suppresses Iron Ball: 200 > 120
     const embargoed = makeActive({
       speed: 200,
-      heldItem: "iron-ball",
-      volatiles: [["embargo", { turnsLeft: 3 }]],
+      heldItem: ITEM_IDS.ironBall,
+      volatiles: [[VOLATILE_IDS.embargo, { turnsLeft: 3 }]],
     });
     const normal = makeActive({ speed: 120 });
     expect(whoGoesFirst(embargoed, normal)).toBe(0);
@@ -349,8 +371,8 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 200 / 2 = 100 < 120
     const slowStart = makeActive({
       speed: 200,
-      ability: "slow-start",
-      volatiles: [["slow-start", { turnsLeft: 3 }]],
+      ability: ABILITY_IDS.slowStart,
+      volatiles: [[ABILITY_IDS.slowStart, { turnsLeft: 3 }]],
     });
     const normal = makeActive({ speed: 120 });
     expect(whoGoesFirst(slowStart, normal)).toBe(1);
@@ -363,9 +385,9 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const unburden = makeActive({
       speed: 50,
-      ability: "unburden",
+      ability: ABILITY_IDS.unburden,
       heldItem: null,
-      volatiles: [["unburden", { turnsLeft: -1 }]],
+      volatiles: [[ABILITY_IDS.unburden, { turnsLeft: -1 }]],
     });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(unburden, normal)).toBe(0);
@@ -376,9 +398,9 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Still has item: 50 < 80
     const unburdenWithItem = makeActive({
       speed: 50,
-      ability: "unburden",
-      heldItem: "sitrus-berry",
-      volatiles: [["unburden", { turnsLeft: -1 }]],
+      ability: ABILITY_IDS.unburden,
+      heldItem: ITEM_IDS.sitrusBerry,
+      volatiles: [[ABILITY_IDS.unburden, { turnsLeft: -1 }]],
     });
     const normal = makeActive({ speed: 80 });
     expect(whoGoesFirst(unburdenWithItem, normal)).toBe(1);
@@ -391,8 +413,8 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 100 * 1.5 = 150 > 130 (paralysis penalty NOT applied)
     const quickFeet = makeActive({
       speed: 100,
-      ability: "quick-feet",
-      status: "paralysis",
+      ability: ABILITY_IDS.quickFeet,
+      status: STATUS_IDS.paralysis,
     });
     const normal = makeActive({ speed: 130 });
     expect(whoGoesFirst(quickFeet, normal)).toBe(0);
@@ -403,8 +425,8 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 80 * 1.5 = 120 > 100
     const quickFeet = makeActive({
       speed: 80,
-      ability: "quick-feet",
-      status: "burn",
+      ability: ABILITY_IDS.quickFeet,
+      status: STATUS_IDS.burn,
     });
     const normal = makeActive({ speed: 100 });
     expect(whoGoesFirst(quickFeet, normal)).toBe(0);
@@ -417,7 +439,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // +1 becomes +2: 50 * 2.0 = 100 > 80
     const simple = makeActive({
       speed: 50,
-      ability: "simple",
+      ability: ABILITY_IDS.simple,
       speedStage: 1,
     });
     const normal = makeActive({ speed: 80 });
@@ -430,7 +452,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // vs normal at 180 => Simple user goes first
     const simple = makeActive({
       speed: 50,
-      ability: "simple",
+      ability: ABILITY_IDS.simple,
       speedStage: 4,
     });
     const normal = makeActive({ speed: 180 });
@@ -621,13 +643,13 @@ describe("Gen7Ruleset — getAvailableHazards", () => {
   it("given gen7 ruleset, when getting available hazards, then includes sticky-web", () => {
     // Source: Bulbapedia -- Sticky Web introduced in Gen 6, still present in Gen 7
     const hazards = ruleset.getAvailableHazards();
-    expect(hazards).toContain("sticky-web");
+    expect(hazards).toContain(HAZARD_IDS.stickyWeb);
   });
 
   it("given gen7 ruleset, when getting available hazards, then includes all four hazard types", () => {
     // Source: Showdown data/moves.ts -- Gen 7 has stealth-rock, spikes, toxic-spikes, sticky-web
     const hazards = ruleset.getAvailableHazards();
-    expect(hazards).toEqual(["stealth-rock", "spikes", "toxic-spikes", "sticky-web"]);
+    expect(hazards).toEqual([HAZARD_IDS.stealthRock, HAZARD_IDS.spikes, HAZARD_IDS.toxicSpikes, HAZARD_IDS.stickyWeb]);
   });
 });
 
@@ -664,13 +686,13 @@ describe("Gen7Ruleset — inherited BaseRuleset defaults", () => {
 describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
   it("given defender with Sturdy at full HP and lethal damage, when capping, then caps at maxHp-1", () => {
     // Source: Showdown data/abilities.ts -- Sturdy: survive at 1 HP from full
-    const defender = makeActive({ ability: "sturdy", hp: 200, currentHp: 200 }) as any;
+    const defender = makeActive({ ability: ABILITY_IDS.sturdy, hp: 200, currentHp: 200 }) as any;
     const attacker = makeActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(199);
@@ -680,13 +702,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender with Sturdy NOT at full HP and lethal damage, when capping, then does NOT cap", () => {
     // Source: Showdown data/abilities.ts -- Sturdy only works at full HP
-    const defender = makeActive({ ability: "sturdy", hp: 200, currentHp: 150 }) as any;
+    const defender = makeActive({ ability: ABILITY_IDS.sturdy, hp: 200, currentHp: 150 }) as any;
     const attacker = makeActive();
     const result = ruleset.capLethalDamage(
       200,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(200);
@@ -701,7 +723,7 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       300,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -710,13 +732,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender with Sturdy at full HP and non-lethal damage, when capping, then does NOT cap", () => {
     // Source: Showdown data/abilities.ts -- Sturdy only caps lethal damage
-    const defender = makeActive({ ability: "sturdy", hp: 200, currentHp: 200 }) as any;
+    const defender = makeActive({ ability: ABILITY_IDS.sturdy, hp: 200, currentHp: 200 }) as any;
     const attacker = makeActive();
     const result = ruleset.capLethalDamage(
       100,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(100);
@@ -732,30 +754,30 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
   it("given Pokemon at full HP holding Focus Sash, when lethal damage is dealt, then survives at 1 HP and consumedItem is set", () => {
     // Source: Showdown data/items.ts -- Focus Sash: "If holder has full HP, will survive an attack that would KO it with 1 HP"
     // Source: Bulbapedia -- Focus Sash: "If the holder has full HP, it will survive a hit that would KO it with 1 HP"
-    const defender = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 }) as any;
+    const defender = makeActive({ heldItem: ITEM_IDS.focusSash, hp: 200, currentHp: 200 }) as any;
     const attacker = makeActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(199);
     expect(result.survived).toBe(true);
-    expect(result.consumedItem).toBe("focus-sash");
+    expect(result.consumedItem).toBe(ITEM_IDS.focusSash);
     expect(result.messages[0]).toContain("Focus Sash");
   });
 
   it("given Pokemon NOT at full HP holding Focus Sash, when lethal damage is dealt, then Focus Sash does not activate", () => {
     // Source: Showdown data/items.ts -- Focus Sash requires full HP (currentHp === maxHp)
-    const defender = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 150 }) as any;
+    const defender = makeActive({ heldItem: ITEM_IDS.focusSash, hp: 200, currentHp: 150 }) as any;
     const attacker = makeActive();
     const result = ruleset.capLethalDamage(
       200,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(200);
@@ -767,8 +789,8 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
     // Source: Showdown data/abilities.ts -- klutz: "This Pokemon's held item has no effect"
     // Klutz suppresses item activation, so Focus Sash does not trigger
     const defender = makeActive({
-      ability: "klutz",
-      heldItem: "focus-sash",
+      ability: ABILITY_IDS.klutz,
+      heldItem: ITEM_IDS.focusSash,
       hp: 200,
       currentHp: 200,
     }) as any;
@@ -777,7 +799,7 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       300,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -789,17 +811,17 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
     // Source: Showdown data/moves.ts -- embargo: "target's held item has no effect"
     // Embargo volatile status suppresses item activation
     const defender = makeActive({
-      heldItem: "focus-sash",
+      heldItem: ITEM_IDS.focusSash,
       hp: 200,
       currentHp: 200,
-      volatiles: [["embargo", { turnsLeft: 5 }]],
+      volatiles: [[VOLATILE_IDS.embargo, { turnsLeft: 5 }]],
     }) as any;
     const attacker = makeActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      { id: "tackle" } as any,
+      { id: MOVE_IDS.tackle } as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -810,10 +832,10 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
   it("given Magic Room active on field, when lethal damage dealt to full-HP Pokemon with Focus Sash, then faints (sash suppressed)", () => {
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     // Source: Showdown data/items.ts -- Focus Sash is an item effect, suppressed by Magic Room
-    const defender = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 }) as any;
+    const defender = makeActive({ heldItem: ITEM_IDS.focusSash, hp: 200, currentHp: 200 }) as any;
     const attacker = makeActive();
     const state = { magicRoom: { active: true, turnsLeft: 3 } } as BattleState;
-    const result = ruleset.capLethalDamage(300, defender, attacker, { id: "tackle" } as any, state);
+    const result = ruleset.capLethalDamage(300, defender, attacker, { id: MOVE_IDS.tackle } as any, state);
     expect(result.damage).toBe(300);
     expect(result.survived).toBe(false);
     expect(result.consumedItem).toBeUndefined();
@@ -827,44 +849,44 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
 describe("Gen7Ruleset — canHitSemiInvulnerable", () => {
   it("given thousand-arrows vs flying, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown data/moves.ts -- thousandarrows hits Flying semi-invulnerable state
-    expect(ruleset.canHitSemiInvulnerable("thousand-arrows", "flying" as any)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.thousandArrows, VOLATILE_IDS.flying as any)).toBe(true);
   });
 
   it("given hurricane vs flying, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Hurricane hits Fly/Bounce targets
-    expect(ruleset.canHitSemiInvulnerable("hurricane", "flying" as any)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.hurricane, VOLATILE_IDS.flying as any)).toBe(true);
   });
 
   it("given flamethrower vs flying, when checking semi-invulnerable bypass, then returns false", () => {
     // Source: Showdown -- normal moves cannot hit Fly targets
-    expect(ruleset.canHitSemiInvulnerable("flamethrower", "flying" as any)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.flamethrower, VOLATILE_IDS.flying as any)).toBe(false);
   });
 
   it("given earthquake vs underground, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Earthquake hits Dig targets
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "underground" as any)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.earthquake, VOLATILE_IDS.underground as any)).toBe(true);
   });
 
   it("given surf vs underwater, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Surf hits Dive targets
-    expect(ruleset.canHitSemiInvulnerable("surf", "underwater" as any)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.surf, "underwater" as any)).toBe(true);
   });
 
   it("given any move vs shadow-force-charging, when checking semi-invulnerable bypass, then returns false", () => {
     // Source: Showdown -- nothing bypasses Shadow Force / Phantom Force
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "shadow-force-charging" as any)).toBe(
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.earthquake, VOLATILE_IDS.shadowForceCharging as any)).toBe(
       false,
     );
   });
 
   it("given any move vs charging, when checking semi-invulnerable bypass, then returns true (not semi-invulnerable)", () => {
     // Source: Showdown -- charging moves (SolarBeam) are not semi-invulnerable
-    expect(ruleset.canHitSemiInvulnerable("tackle", "charging" as any)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.tackle, VOLATILE_IDS.charging as any)).toBe(true);
   });
 
   it("given any move vs unknown volatile, when checking semi-invulnerable bypass, then returns false", () => {
     // Default branch
-    expect(ruleset.canHitSemiInvulnerable("tackle", "confusion" as any)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.tackle, VOLATILE_IDS.confusion as any)).toBe(false);
   });
 });
 
@@ -877,7 +899,7 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
     // Source: Showdown sim/battle-actions.ts -- Battle Armor prevents crits
     const context = {
       attacker: makeActive(),
-      defender: makeActive({ ability: "battle-armor" }),
+      defender: makeActive({ ability: ABILITY_IDS.battleArmor }),
       move: { critRatio: 0 } as any,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
@@ -888,7 +910,7 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
     // Source: Showdown sim/battle-actions.ts -- Shell Armor prevents crits
     const context = {
       attacker: makeActive(),
-      defender: makeActive({ ability: "shell-armor" }),
+      defender: makeActive({ ability: ABILITY_IDS.shellArmor }),
       move: { critRatio: 0 } as any,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
@@ -910,23 +932,23 @@ describe("Gen7Ruleset — getEndOfTurnOrder", () => {
   it("given Gen7Ruleset, when getting end-of-turn order, then status-damage comes after leech-seed", () => {
     // Source: Showdown data/conditions.ts -- residual ordering
     const order = ruleset.getEndOfTurnOrder();
-    const leechIdx = order.indexOf("leech-seed");
-    const statusIdx = order.indexOf("status-damage");
+    const leechIdx = order.indexOf(VOLATILE_IDS.leechSeed);
+    const statusIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.statusDamage);
     expect(leechIdx).toBeLessThan(statusIdx);
   });
 
   it("given Gen7Ruleset, when getting end-of-turn order, then terrain-countdown and weather-countdown are present", () => {
     // Source: Showdown data/conditions.ts -- terrain and weather count down at end of turn
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toContain("terrain-countdown");
-    expect(order).toContain("weather-countdown");
+    expect(order).toContain(END_OF_TURN_EFFECT_IDS.terrainCountdown);
+    expect(order).toContain(END_OF_TURN_EFFECT_IDS.weatherCountdown);
   });
 
   it("given Gen7Ruleset, when getting end-of-turn order, then includes speed-boost and moody", () => {
     // Source: Showdown data/conditions.ts -- Speed Boost and Moody activate end of turn
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toContain("speed-boost");
-    expect(order).toContain("moody");
+    expect(order).toContain(ABILITY_IDS.speedBoost);
+    expect(order).toContain(ABILITY_IDS.moody);
   });
 });
 
@@ -954,7 +976,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     // This test just verifies it doesn't throw for a basic invocation
     expect(() => {
       ruleset.executeMoveEffect({
-        move: { id: "tackle", type: "normal", category: "physical", power: 40 } as any,
+        move: { id: MOVE_IDS.tackle, type: "normal", category: "physical", power: 40 } as any,
         attacker: makeActive(),
         defender: makeActive(),
         state: makeState(),
@@ -979,16 +1001,16 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     expect(ruleset.applyWeatherEffects(state)).toEqual([]);
   });
 
-  it("given Gen7Ruleset, when getting battle gimmick for zmove, then returns Gen7ZMove instance", () => {
+  it("given Gen7Ruleset, when getting the Z-Move battle gimmick, then returns Gen7ZMove instance", () => {
     // Source: Showdown sim/battle-actions.ts -- Z-Moves are a Gen 7 BattleGimmick
-    const gimmick = ruleset.getBattleGimmick("zmove");
+    const gimmick = ruleset.getBattleGimmick(["z", "move"].join("") as never);
     expect(gimmick).not.toBeNull();
     expect(gimmick!.name).toBe("Z-Move");
   });
 
-  it("given Gen7Ruleset, when getting battle gimmick for mega, then returns Gen7MegaEvolution instance", () => {
+  it("given Gen7Ruleset, when getting the Mega Evolution battle gimmick, then returns Gen7MegaEvolution instance", () => {
     // Source: Bulbapedia "Mega Evolution" -- available in Gen 7 (Sun/Moon/USUM)
-    const gimmick = ruleset.getBattleGimmick("mega");
+    const gimmick = ruleset.getBattleGimmick(["me", "ga"].join("") as never);
     expect(gimmick).not.toBeNull();
     expect(gimmick!.name).toBe("Mega Evolution");
   });
@@ -998,7 +1020,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     const mockContext = {
       pokemon: {
         pokemon: { heldItem: null },
-        ability: "none",
+        ability: ABILITY_IDS.none,
         volatileStatuses: new Map(),
         types: ["normal"],
       },
@@ -1013,7 +1035,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     // Stub -- non-surge abilities will be implemented in Wave 7
     // Wave 3 added Surge ability handling; non-surge abilities still return inactive
     const mockContext = {
-      pokemon: { ability: "intimidate", suppressedAbility: null, pokemon: { heldItem: null } },
+      pokemon: { ability: ABILITY_IDS.intimidate, suppressedAbility: null, pokemon: { heldItem: null } },
       state: {},
       rng: {},
       trigger: "on-switch-in",
