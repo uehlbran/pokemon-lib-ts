@@ -1,7 +1,22 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  createMoveSlot,
+  createPokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen1DataManager,
+  GEN1_MOVE_IDS,
+  GEN1_NATURE_IDS,
+  GEN1_SPECIES_IDS,
+} from "../../src";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 
 /**
@@ -17,94 +32,61 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 // ---------------------------------------------------------------------------
 
 const ruleset = new Gen1Ruleset();
-
-const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
-
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
-  return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
-    ...overrides,
-  };
-}
+const DATA_MANAGER = createGen1DataManager();
+const MOVE_IDS = GEN1_MOVE_IDS;
+const NATURE_IDS = GEN1_NATURE_IDS;
+const SPECIES_IDS = GEN1_SPECIES_IDS;
+const PIKACHU = DATA_MANAGER.getSpecies(SPECIES_IDS.pikachu);
+const SNORLAX = DATA_MANAGER.getSpecies(SPECIES_IDS.snorlax);
+const TACKLE = DATA_MANAGER.getMove(MOVE_IDS.tackle);
+const CONFUSE_RAY = DATA_MANAGER.getMove(MOVE_IDS.confuseRay);
+const HAZE = DATA_MANAGER.getMove(MOVE_IDS.haze);
+const ZERO_STAT_STAGES = {
+  hp: 0,
+  attack: 0,
+  defense: 0,
+  spAttack: 0,
+  spDefense: 0,
+  speed: 0,
+  accuracy: 0,
+  evasion: 0,
+} as const;
+const DEFAULT_CALCULATED_STATS = {
+  hp: 100,
+  attack: 80,
+  defense: 60,
+  spAttack: 80,
+  spDefense: 60,
+  speed: 120,
+} as const;
+const ELECTRIC_TYPES = [CORE_TYPE_IDS.electric] as PokemonType[];
+const NORMAL_TYPES = [CORE_TYPE_IDS.normal] as PokemonType[];
 
 function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+  const pokemon = createPokemonInstance(PIKACHU, 50, new SeededRandom(1), {
+    nature: NATURE_IDS.hardy,
+    gender: "male",
+    abilitySlot: "normal1",
+    heldItem: null,
+    moves: [],
+    isShiny: false,
+    metLocation: "pallet-town",
+    originalTrainer: "Red",
+    originalTrainerId: 12345,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
+  pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)];
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.currentHp = 100;
+  pokemon.calculatedStats = { ...DEFAULT_CALCULATED_STATS };
+
   return {
-    pokemon: {
-      uid: "test-uid",
-      speciesId: 25,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      currentHp: 100,
-      status: null,
-      friendship: 70,
-      heldItem: null,
-      ability: "",
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "pallet-town",
-      metLevel: 5,
-      originalTrainer: "Red",
-      originalTrainerId: 12345,
-      pokeball: "poke-ball",
-      calculatedStats: {
-        hp: 100,
-        attack: 80,
-        defense: 60,
-        spAttack: 80,
-        spDefense: 60,
-        speed: 120,
-      },
-    } as PokemonInstance,
+    pokemon,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: { ...ZERO_STAT_STAGES },
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "",
+    types: [...ELECTRIC_TYPES],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -178,8 +160,8 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
   const rng = new SeededRandom(42);
   return {
     attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: ["normal"] }),
-    move: makeMove(),
+    defender: makeActivePokemon({ types: [...NORMAL_TYPES] }),
+    move: TACKLE,
     damage: 0,
     state: makeBattleState(),
     rng,
@@ -191,31 +173,13 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 // Confusion move definition
 // ---------------------------------------------------------------------------
 
-const confusionMove = makeMove({
-  id: "confuse-ray",
-  displayName: "Confuse Ray",
-  type: "ghost" as PokemonType,
-  category: "status",
-  power: null,
-  accuracy: 100,
-  target: "adjacent-foe",
-  effect: { type: "volatile-status" as const, status: "confusion", chance: 100 },
-});
+const confusionMove = CONFUSE_RAY;
 
 // ---------------------------------------------------------------------------
 // Haze move definition
 // ---------------------------------------------------------------------------
 
-const hazeMove = makeMove({
-  id: "haze",
-  displayName: "Haze",
-  type: "ice" as PokemonType,
-  category: "status",
-  power: null,
-  accuracy: null,
-  target: "all",
-  effect: { type: "custom" as const, handler: "haze" },
-});
+const hazeMove = HAZE;
 
 // ---------------------------------------------------------------------------
 // Confusion duration tests
@@ -231,7 +195,7 @@ describe("confusion duration", () => {
     for (let seed = 0; seed < 1000; seed++) {
       // Reset the defender's volatile statuses so confusion is inflicted fresh each time
       const freshDefender = makeActivePokemon({
-        types: ["normal"],
+        types: [...NORMAL_TYPES],
         volatileStatuses: new Map(),
       });
       const context = makeMoveEffectContext({
@@ -244,7 +208,7 @@ describe("confusion duration", () => {
       const result = ruleset.executeMoveEffect(context);
 
       // Only collect when confusion was actually inflicted (not already confused)
-      if (result.volatileInflicted === "confusion" && result.volatileData != null) {
+      if (result.volatileInflicted === CORE_VOLATILE_IDS.confusion && result.volatileData != null) {
         turnsLeftValues.push(result.volatileData.turnsLeft);
       }
     }
@@ -265,7 +229,7 @@ describe("confusion duration", () => {
 
     for (let seed = 0; seed < 1000; seed++) {
       const freshDefender = makeActivePokemon({
-        types: ["normal"],
+        types: [...NORMAL_TYPES],
         volatileStatuses: new Map(),
       });
       const context = makeMoveEffectContext({
@@ -277,7 +241,7 @@ describe("confusion duration", () => {
       // Act
       const result = ruleset.executeMoveEffect(context);
 
-      if (result.volatileInflicted === "confusion" && result.volatileData != null) {
+      if (result.volatileInflicted === CORE_VOLATILE_IDS.confusion && result.volatileData != null) {
         turnsLeftValues.push(result.volatileData.turnsLeft);
       }
     }
@@ -296,12 +260,12 @@ describe("confusion duration", () => {
     // Arrange: two identical contexts using the same seed
     const contextA = makeMoveEffectContext({
       move: confusionMove,
-      defender: makeActivePokemon({ types: ["normal"], volatileStatuses: new Map() }),
+      defender: makeActivePokemon({ types: [...NORMAL_TYPES], volatileStatuses: new Map() }),
       rng: new SeededRandom(SEED),
     });
     const contextB = makeMoveEffectContext({
       move: confusionMove,
-      defender: makeActivePokemon({ types: ["normal"], volatileStatuses: new Map() }),
+      defender: makeActivePokemon({ types: [...NORMAL_TYPES], volatileStatuses: new Map() }),
       rng: new SeededRandom(SEED),
     });
 
@@ -310,8 +274,8 @@ describe("confusion duration", () => {
     const resultB = ruleset.executeMoveEffect(contextB);
 
     // Assert: same seed → same turnsLeft
-    expect(resultA.volatileInflicted).toBe("confusion");
-    expect(resultB.volatileInflicted).toBe("confusion");
+    expect(resultA.volatileInflicted).toBe(CORE_VOLATILE_IDS.confusion);
+    expect(resultB.volatileInflicted).toBe(CORE_VOLATILE_IDS.confusion);
     expect(resultA.volatileData?.turnsLeft).toBe(resultB.volatileData?.turnsLeft);
   });
 });
@@ -378,11 +342,8 @@ describe("Haze handler", () => {
   it("given attacker is burned, when Haze is used, then statusCured targets defender only (not attacker or both)", () => {
     // Source: pokered move_effects/haze.asm:15-43 — user's (attacker's) status is NOT cured by Haze;
     // only the opponent's (defender's) status is cured. Second independent test confirming target="defender".
-    const burnedPokemon = {
-      ...makeActivePokemon().pokemon,
-      status: "burn",
-    } as PokemonInstance;
-    const burnedAttacker = makeActivePokemon({ pokemon: burnedPokemon });
+    const burnedAttacker = makeActivePokemon();
+    burnedAttacker.pokemon.status = CORE_STATUS_IDS.burn;
     const context = makeMoveEffectContext({ move: hazeMove, damage: 0, attacker: burnedAttacker });
 
     // Act
@@ -423,11 +384,11 @@ describe("Haze handler", () => {
 
     // Arrange: attacker has confusion, defender has confusion
     const attackerWithConfusion = makeActivePokemon({
-      volatileStatuses: new Map([["confusion", { turnsLeft: 3 }]]),
+      volatileStatuses: new Map([[CORE_VOLATILE_IDS.confusion, { turnsLeft: 3 }]]),
     });
     const defenderWithConfusion = makeActivePokemon({
-      types: ["normal"],
-      volatileStatuses: new Map([["confusion", { turnsLeft: 2 }]]),
+      types: [...NORMAL_TYPES],
+      volatileStatuses: new Map([[CORE_VOLATILE_IDS.confusion, { turnsLeft: 2 }]]),
     });
     const context = makeMoveEffectContext({
       move: hazeMove,
@@ -443,10 +404,14 @@ describe("Haze handler", () => {
     expect(result.volatilesToClear?.length).toBe(2);
     const clears = result.volatilesToClear ?? [];
 
-    const attackerEntry = clears.find((c) => c.target === "attacker" && c.volatile === "confusion");
-    const defenderEntry = clears.find((c) => c.target === "defender" && c.volatile === "confusion");
+    const attackerEntry = clears.find(
+      (c) => c.target === "attacker" && c.volatile === CORE_VOLATILE_IDS.confusion,
+    );
+    const defenderEntry = clears.find(
+      (c) => c.target === "defender" && c.volatile === CORE_VOLATILE_IDS.confusion,
+    );
 
-    expect(attackerEntry?.volatile).toBe("confusion");
-    expect(defenderEntry?.volatile).toBe("confusion");
+    expect(attackerEntry?.volatile).toBe(CORE_VOLATILE_IDS.confusion);
+    expect(defenderEntry?.volatile).toBe(CORE_VOLATILE_IDS.confusion);
   });
 });

@@ -1,5 +1,5 @@
 import type { DataManager } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, BattleGimmick } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -7,6 +7,7 @@ import type { BattleEvent, ExpGainEvent } from "../../../src/events";
 import type { BattleGimmickType } from "../../../src/ruleset";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
 function createTestEngine(overrides?: {
@@ -22,7 +23,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -39,7 +40,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -79,7 +80,7 @@ function createSwitchPromptBattleWithBench(): {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -93,7 +94,7 @@ function createSwitchPromptBattleWithBench(): {
     createTestPokemon(25, 50, {
       uid: "pikachu-0",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 150,
         attack: 90,
@@ -110,7 +111,7 @@ function createSwitchPromptBattleWithBench(): {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -124,7 +125,7 @@ function createSwitchPromptBattleWithBench(): {
     createTestPokemon(25, 50, {
       uid: "pikachu-1",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 150,
         attack: 90,
@@ -322,7 +323,7 @@ describe("BattleEngine.deserialize", () => {
         uid: "charizard-1",
         nickname: "Charizard",
         speed: 120,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       }),
       createTestPokemon(25, 50, {
         uid: "pikachu-1",
@@ -334,7 +335,7 @@ describe("BattleEngine.deserialize", () => {
         uid: "blastoise-1",
         nickname: "Blastoise",
         speed: 80,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       }),
     ];
 
@@ -355,8 +356,8 @@ describe("BattleEngine.deserialize", () => {
     const attacker = engine.state.sides[0].active[0]!;
     attacker.statStages.attack = 2;
     attacker.substituteHp = 50;
-    attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
-    attacker.volatileStatuses.set("substitute", { turnsLeft: -1 });
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: 2 });
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -378,8 +379,8 @@ describe("BattleEngine.deserialize", () => {
     expect(replacement.substituteHp).toBe(40);
     // Source: the original attacker started at confusion turnsLeft = 2, and the mock ruleset consumes
     // one confusion turn during move resolution before the switch prompt, so the replacement inherits 1.
-    expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
-    expect(replacement.volatileStatuses.get("substitute")).toEqual({ turnsLeft: -1 });
+    expect(replacement.volatileStatuses.get(CORE_VOLATILE_IDS.confusion)).toEqual({ turnsLeft: 1 });
+    expect(replacement.volatileStatuses.get(CORE_VOLATILE_IDS.substitute)).toEqual({ turnsLeft: -1 });
   });
 
   it("given serialized switch-prompt state with one pending switch already recorded, when deserialized, then the remaining switch submission completes the prompt", () => {
@@ -663,12 +664,12 @@ describe("BattleEngine.deserialize", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       }),
       createTestPokemon(25, 50, {
         uid: "pikachu-1",
         nickname: "Pikachu",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       }),
     ];
 
@@ -676,7 +677,7 @@ describe("BattleEngine.deserialize", () => {
       createTestPokemon(9, 30, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       }),
     ];
 
@@ -741,14 +742,14 @@ describe("BattleEngine.deserialize", () => {
             createTestPokemon(25, 50, {
               uid: "pikachu-0",
               nickname: "Pikachu",
-              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+              moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             }),
           ],
           [
             createTestPokemon(9, 50, {
               uid: "blastoise-1",
               nickname: "Blastoise",
-              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+              moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             }),
           ],
         ],
@@ -766,6 +767,7 @@ describe("BattleEngine.deserialize", () => {
     const restoredRuleset = new SerializableTrackingRuleset();
     const restored = BattleEngine.deserialize(serialized, restoredRuleset, dataManager);
 
+    // Source: this engine is created above with `generation: 7`, and deserialize must preserve it.
     expect(restored.getState().generation).toBe(7);
     expect(ruleset.canUseZMove(0)).toBe(false);
     expect(restoredRuleset.canUseZMove(0)).toBe(false);

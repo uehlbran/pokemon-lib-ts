@@ -1,8 +1,21 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { isChoiceLocked } from "../src/Gen8Items";
-import { Gen8Ruleset } from "../src/Gen8Ruleset";
+import {
+  GEN8_ABILITY_IDS,
+  GEN8_ITEM_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
+  GEN8_SPECIES_IDS,
+  Gen8Ruleset,
+  createGen8DataManager,
+} from "../src";
 
 /**
  * Phase 2 bugfix tests for Gen 8 issues:
@@ -42,16 +55,16 @@ function makeActivePokemon(overrides: {
   return {
     pokemon: {
       uid: overrides.uid ?? "test-uid",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.charizard,
       nickname: overrides.nickname ?? null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: NATURES.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? maxHp,
-      moves: overrides.moves ?? [],
-      ability: overrides.ability ?? "none",
+      moves: overrides.moves ?? [{ moveId: MOVES.tackle, currentPP: TACKLE_MOVE.pp, maxPP: TACKLE_MOVE.pp }],
+      ability: overrides.ability ?? ABILITIES.blaze,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: null,
@@ -62,7 +75,7 @@ function makeActivePokemon(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: cs.hp ?? maxHp,
         attack: cs.attack ?? 100,
@@ -83,8 +96,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [TYPES.fire, TYPES.flying],
+    ability: overrides.ability ?? ABILITIES.blaze,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -122,39 +135,58 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMoveData(overrides: Partial<MoveData> = {}): MoveData {
-  return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.displayName ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 40,
-    accuracy: overrides.accuracy ?? 100,
-    pp: overrides.pp ?? 35,
-    priority: overrides.priority ?? 0,
-    flags: overrides.flags ?? [],
-    ...overrides,
-  } as MoveData;
+function makeMoveData(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
+  const base = GEN8_DATA.getMove(moveId);
+  const move = { ...base, flags: { ...base.flags } } as MoveData;
+  move.id = moveId;
+  move.displayName = overrides.displayName ?? move.displayName;
+  move.type = overrides.type ?? move.type;
+  move.category = overrides.category ?? move.category;
+  move.power = overrides.power ?? move.power;
+  move.accuracy = overrides.accuracy ?? move.accuracy;
+  move.pp = overrides.pp ?? move.pp;
+  move.priority = overrides.priority ?? move.priority;
+  move.flags = overrides.flags ?? move.flags;
+  move.effect = overrides.effect ?? move.effect;
+  move.description = overrides.description ?? move.description;
+  move.generation = overrides.generation ?? move.generation;
+  return move;
 }
+
+const ABILITIES = GEN8_ABILITY_IDS;
+const ITEMS = GEN8_ITEM_IDS;
+const MOVES = GEN8_MOVE_IDS;
+const NATURES = GEN8_NATURE_IDS;
+const SPECIES = GEN8_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const GEN8_DATA = createGen8DataManager();
+const TACKLE_MOVE = GEN8_DATA.getMove(MOVES.tackle);
+// Synthetic volatile used by the bugfix harness; no owned Gen 8 id exists for this internal state.
+const DISGUISE_BROKEN = "disguise-broken" as const;
+const ruleset = new Gen8Ruleset(GEN8_DATA);
 
 // ===========================================================================
 // #738 — Gen8 Disguise blocks non-lethal hits with 1/8 chip damage
 // ===========================================================================
 
 describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust", () => {
-  const ruleset = new Gen8Ruleset();
-
   it("given Mimikyu with intact Disguise hit by a 10 HP physical move, when capLethalDamage fires, then damage is 1/8 maxHP chip", () => {
     // Source: Showdown data/abilities.ts — disguise Gen 8: Math.ceil(maxhp / 8) chip damage
     // Source: Bulbapedia "Disguise" Gen 8 — "deals 1/8 of max HP as damage when busted"
     // 200 max HP -> Math.ceil(200/8) = 25 chip damage
     const defender = makeActivePokemon({
-      ability: "disguise",
+      speciesId: SPECIES.mimikyu,
+      ability: ABILITIES.disguise,
+      types: [TYPES.ghost, TYPES.fairy],
       currentHp: 200,
       maxHp: 200,
     });
     const attacker = makeActivePokemon({});
-    const move = makeMoveData({ category: "physical", power: 10 });
+    // Synthetic probe: a deliberately weak physical hit to exercise Disguise chip damage.
+    const move = makeMoveData(MOVES.tackle);
+    move.category = "physical";
+    move.power = 10;
     const state = makeState();
 
     const result = ruleset.capLethalDamage(10, defender, attacker, move, state);
@@ -164,19 +196,24 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     expect(result.survived).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
     expect(result.messages[0]).toContain("Disguise was busted");
-    expect(defender.volatileStatuses.has("disguise-broken")).toBe(true);
+    expect(defender.volatileStatuses.has(DISGUISE_BROKEN)).toBe(true);
   });
 
   it("given Mimikyu with intact Disguise hit by a lethal move, when capLethalDamage fires, then damage is 1/8 maxHP chip (not lethal)", () => {
     // Disguise blocks the killing blow AND replaces with chip damage
     // Source: Showdown data/abilities.ts — disguise blocks all hits including lethal ones
     const defender = makeActivePokemon({
-      ability: "disguise",
+      speciesId: SPECIES.mimikyu,
+      ability: ABILITIES.disguise,
+      types: [TYPES.ghost, TYPES.fairy],
       currentHp: 200,
       maxHp: 200,
     });
     const attacker = makeActivePokemon({});
-    const move = makeMoveData({ category: "physical", power: 250 });
+    // Synthetic probe: an overkill physical hit should still be converted into chip damage.
+    const move = makeMoveData(MOVES.tackle);
+    move.category = "physical";
+    move.power = 250;
     const state = makeState();
 
     const result = ruleset.capLethalDamage(300, defender, attacker, move, state);
@@ -189,15 +226,20 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
   it("given Mimikyu with BUSTED Disguise in Gen 8, when hit by a 50 HP move, then full damage passes through", () => {
     // Source: Showdown — once busted, Disguise doesn't activate again
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("disguise-broken", { turnsLeft: -1 });
+    volatiles.set(DISGUISE_BROKEN, { turnsLeft: -1 });
     const defender = makeActivePokemon({
-      ability: "disguise",
+      speciesId: SPECIES.mimikyu,
+      ability: ABILITIES.disguise,
+      types: [TYPES.ghost, TYPES.fairy],
       currentHp: 200,
       maxHp: 200,
       volatiles,
     });
     const attacker = makeActivePokemon({});
-    const move = makeMoveData({ category: "physical", power: 50 });
+    // Synthetic probe: once Disguise is busted, the same physical move should pass through unchanged.
+    const move = makeMoveData(MOVES.tackle);
+    move.category = "physical";
+    move.power = 50;
     const state = makeState();
 
     const result = ruleset.capLethalDamage(50, defender, attacker, move, state);
@@ -210,13 +252,18 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     // Source: Math verification — ceil(161/8) = ceil(20.125) = 21
     // Source: Showdown data/abilities.ts — Math.ceil(pokemon.maxhp / 8)
     const defender = makeActivePokemon({
-      ability: "disguise",
+      speciesId: SPECIES.mimikyu,
+      ability: ABILITIES.disguise,
+      types: [TYPES.ghost, TYPES.fairy],
       currentHp: 161,
       maxHp: 161,
       calculatedStats: { hp: 161 },
     });
     const attacker = makeActivePokemon({});
-    const move = makeMoveData({ category: "physical", power: 80 });
+    // Synthetic probe: a non-lethal physical hit ensures the rounded chip damage stays correct.
+    const move = makeMoveData(MOVES.tackle);
+    move.category = "physical";
+    move.power = 80;
     const state = makeState();
 
     const result = ruleset.capLethalDamage(80, defender, attacker, move, state);
@@ -228,18 +275,23 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
   it("given Mimikyu with intact Disguise hit by a status move in Gen 8, when capLethalDamage fires, then Disguise does NOT activate", () => {
     // Source: Showdown data/abilities.ts — disguise only blocks damaging moves
     const defender = makeActivePokemon({
-      ability: "disguise",
+      speciesId: SPECIES.mimikyu,
+      ability: ABILITIES.disguise,
+      types: [TYPES.ghost, TYPES.fairy],
       currentHp: 200,
       maxHp: 200,
     });
     const attacker = makeActivePokemon({});
-    const move = makeMoveData({ category: "status", power: 0 });
+    // Synthetic probe: a status move should not trigger the damage-capping branch.
+    const move = makeMoveData(MOVES.tackle);
+    move.category = "status";
+    move.power = 0;
     const state = makeState();
 
     const result = ruleset.capLethalDamage(0, defender, attacker, move, state);
 
     expect(result.damage).toBe(0);
-    expect(defender.volatileStatuses.has("disguise-broken")).toBe(false);
+    expect(defender.volatileStatuses.has(DISGUISE_BROKEN)).toBe(false);
   });
 });
 
@@ -252,7 +304,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
     // Source: Showdown data/conditions.ts — dynamax: prevents choice lock during dynamax
     // Source: Bulbapedia "Dynamax" — "Choice items do not lock the user into a single move"
     const pokemon = makeActivePokemon({
-      heldItem: "choice-band",
+      heldItem: ITEMS.choiceBand,
       isDynamaxed: true,
     });
 
@@ -262,7 +314,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
   it("given a non-Dynamaxed Pokemon holding Choice Band, when isChoiceLocked is checked, then returns true", () => {
     // Normal Choice lock behavior when not Dynamaxed
     const pokemon = makeActivePokemon({
-      heldItem: "choice-band",
+      heldItem: ITEMS.choiceBand,
       isDynamaxed: false,
     });
 
@@ -272,7 +324,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
   it("given a Dynamaxed Pokemon holding Choice Specs, when isChoiceLocked is checked, then returns false", () => {
     // Source: Showdown — all Choice items (Band/Specs/Scarf) suppressed during Dynamax
     const pokemon = makeActivePokemon({
-      heldItem: "choice-specs",
+      heldItem: ITEMS.choiceSpecs,
       isDynamaxed: true,
     });
 
@@ -281,7 +333,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
 
   it("given a Dynamaxed Pokemon holding Choice Scarf, when isChoiceLocked is checked, then returns false", () => {
     const pokemon = makeActivePokemon({
-      heldItem: "choice-scarf",
+      heldItem: ITEMS.choiceScarf,
       isDynamaxed: true,
     });
 
@@ -290,7 +342,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
 
   it("given a Dynamaxed Pokemon without a Choice item, when isChoiceLocked is checked, then returns false", () => {
     const pokemon = makeActivePokemon({
-      heldItem: "leftovers",
+      heldItem: ITEMS.leftovers,
       isDynamaxed: true,
     });
 

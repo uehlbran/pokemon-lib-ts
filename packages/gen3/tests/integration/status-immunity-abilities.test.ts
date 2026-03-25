@@ -6,6 +6,7 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -14,6 +15,7 @@ import {
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
+  createGen3DataManager,
 } from "../../src";
 import {
   applyGen3Ability,
@@ -56,6 +58,16 @@ const SPECIES = GEN3_SPECIES_IDS
 const STATUSES = CORE_STATUS_IDS
 const TYPES = CORE_TYPE_IDS
 const VOLATILES = CORE_VOLATILE_IDS
+const WEATHER = CORE_WEATHER_IDS
+const DATA_MANAGER = createGen3DataManager()
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur)
+const THUNDERBOLT = DATA_MANAGER.getMove(MOVES.thunderbolt)
+const SURF = DATA_MANAGER.getMove(MOVES.surf)
+const FLAMETHROWER = DATA_MANAGER.getMove(MOVES.flamethrower)
+const EARTHQUAKE = DATA_MANAGER.getMove(MOVES.earthquake)
+const HYPER_VOICE = DATA_MANAGER.getMove(MOVES.hyperVoice)
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle)
+const FISSURE = DATA_MANAGER.getMove(MOVES.fissure)
 
 function createMockRng(nextValues: number[] = [0.5]) {
   let index = 0;
@@ -80,8 +92,11 @@ function createMockPokemon(opts: {
   status?: string | null;
   hp?: number;
   maxHp?: number;
+  speciesId?: number;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
+  const speciesId = opts.speciesId ?? SPECIES.bulbasaur;
+  const species = DATA_MANAGER.getSpecies(speciesId);
   const stats: StatBlock = {
     hp: maxHp,
     attack: 100,
@@ -93,7 +108,7 @@ function createMockPokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: SPECIES.bulbasaur,
+    speciesId,
     nickname: null,
     level: 50,
     experience: 0,
@@ -103,7 +118,7 @@ function createMockPokemon(opts: {
     currentHp: opts.hp ?? maxHp,
     moves: [],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: `${TYPES.normal}1` as const,
     heldItem: null,
     status: opts.status ?? null,
     friendship: 0,
@@ -130,7 +145,7 @@ function createMockPokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? [TYPES.normal],
+    types: opts.types ?? [...species.types],
     ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -342,7 +357,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: MOVES.thunderbolt, type: TYPES.electric, category: "special", power: 90 } as MoveData,
+        move: THUNDERBOLT,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -363,13 +378,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: {
-          id: MOVES.surf,
-          type: TYPES.water,
-          category: "special",
-          power: 90,
-          effect: { type: "damage" },
-        } as MoveData,
+        move: SURF,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -392,13 +401,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: {
-          id: MOVES.surf,
-          type: TYPES.water,
-          category: "special",
-          power: 90,
-          effect: { type: "damage" },
-        } as MoveData,
+        move: SURF,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -424,7 +427,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: MOVES.flamethrower, type: TYPES.fire, category: "special", power: 95 } as MoveData,
+        move: FLAMETHROWER,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -451,7 +454,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: MOVES.flamethrower, type: TYPES.fire, category: "special", power: 95 } as MoveData,
+        move: FLAMETHROWER,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -475,7 +478,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: GEN3_MOVE_IDS.earthquake, type: TYPES.ground, category: "physical", power: 100 } as MoveData,
+        move: EARTHQUAKE,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -495,7 +498,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: MOVES.flamethrower, type: TYPES.fire, category: "special", power: 95 } as MoveData,
+        move: FLAMETHROWER,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -519,7 +522,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: { id: MOVES.thunderbolt, type: TYPES.electric, category: "special", power: 90 } as MoveData,
+        move: THUNDERBOLT,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -543,19 +546,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: {
-          id: GEN3_MOVE_IDS.hyperVoice,
-          type: TYPES.normal,
-          category: "special",
-          power: 90,
-          flags: {
-            sound: true,
-            contact: false,
-            protect: true,
-            mirror: true,
-            bypassSubstitute: false,
-          },
-        } as MoveData,
+        move: HYPER_VOICE,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -574,19 +565,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: {
-          id: MOVES.tackle,
-          type: TYPES.normal,
-          category: "physical",
-          power: 40,
-          flags: {
-            sound: false,
-            contact: true,
-            protect: true,
-            mirror: true,
-            bypassSubstitute: false,
-          },
-        } as MoveData,
+        move: TACKLE,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -610,13 +589,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: {
-          id: GEN3_MOVE_IDS.fissure,
-          type: TYPES.ground,
-          category: "physical",
-          power: 0,
-          effect: { type: "ohko" },
-        } as MoveData,
+        move: FISSURE,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -635,13 +608,7 @@ describe("Gen 3 passive immunity abilities", () => {
         state,
         rng,
         trigger: "passive-immunity",
-        move: {
-          id: MOVES.surf,
-          type: TYPES.water,
-          category: "special",
-          power: 90,
-          effect: { type: "damage" },
-        } as MoveData,
+        move: SURF,
       };
 
       const result = applyGen3Ability("passive-immunity", context);
@@ -660,8 +627,11 @@ describe("Gen 3 on-turn-end abilities", () => {
     // Source: Bulbapedia -- "Speed Boost raises Speed by 1 stage at the end of each turn"
 
     it("given Pokemon with Speed Boost, when turn ends, then Speed is raised by 1 stage", () => {
-      const pokemon = createMockPokemon({ types: ["bug"], ability: "speed-boost" });
-      const opponent = createMockPokemon({ types: ["normal"] });
+      const pokemon = createMockPokemon({
+        speciesId: SPECIES.yanma,
+        ability: ABILITIES.speedBoost,
+      });
+      const opponent = createMockPokemon({ speciesId: SPECIES.snorlax });
       const state = createMinimalBattleState(pokemon, opponent);
       const rng = createMockRng([]);
 
@@ -689,10 +659,14 @@ describe("Gen 3 on-turn-end abilities", () => {
     // Source: Bulbapedia -- "Rain Dish heals 1/16 of max HP each turn during rain"
 
     it("given Pokemon with Rain Dish in rain, when turn ends, then heals 1/16 max HP", () => {
-      const pokemon = createMockPokemon({ types: ["water"], ability: "rain-dish", maxHp: 160 });
-      const opponent = createMockPokemon({ types: ["normal"] });
+      const pokemon = createMockPokemon({
+        speciesId: SPECIES.ludicolo,
+        ability: ABILITIES.rainDish,
+        maxHp: 160,
+      });
+      const opponent = createMockPokemon({ speciesId: SPECIES.snorlax });
       const state = createMinimalBattleState(pokemon, opponent);
-      (state as any).weather = { type: "rain", turnsLeft: 5, source: "drizzle" };
+      (state as any).weather = { type: WEATHER.rain, turnsLeft: 5, source: ABILITIES.drizzle };
       const rng = createMockRng([]);
 
       const context: AbilityContext = {
@@ -710,8 +684,11 @@ describe("Gen 3 on-turn-end abilities", () => {
     });
 
     it("given Pokemon with Rain Dish NOT in rain, when turn ends, then does not activate", () => {
-      const pokemon = createMockPokemon({ types: ["water"], ability: "rain-dish" });
-      const opponent = createMockPokemon({ types: ["normal"] });
+      const pokemon = createMockPokemon({
+        speciesId: SPECIES.ludicolo,
+        ability: ABILITIES.rainDish,
+      });
+      const opponent = createMockPokemon({ speciesId: SPECIES.snorlax });
       const state = createMinimalBattleState(pokemon, opponent);
       const rng = createMockRng([]);
 
@@ -738,7 +715,7 @@ describe("Gen 3 on-turn-end abilities", () => {
         ability: ABILITIES.shedSkin,
         status: STATUSES.paralysis,
       });
-      const opponent = createMockPokemon({ types: [TYPES.normal] });
+      const opponent = createMockPokemon({ speciesId: SPECIES.snorlax });
       const state = createMinimalBattleState(pokemon, opponent);
       const rng = createMockRng([0.2]); // < 1/3
 
@@ -761,7 +738,7 @@ describe("Gen 3 on-turn-end abilities", () => {
         ability: ABILITIES.shedSkin,
         status: STATUSES.burn,
       });
-      const opponent = createMockPokemon({ types: [TYPES.normal] });
+      const opponent = createMockPokemon({ speciesId: SPECIES.snorlax });
       const state = createMinimalBattleState(pokemon, opponent);
       const rng = createMockRng([0.5]); // >= 1/3
 
@@ -778,8 +755,12 @@ describe("Gen 3 on-turn-end abilities", () => {
     });
 
     it("given Pokemon with Shed Skin and no status, when turn ends, then does not activate", () => {
-      const pokemon = createMockPokemon({ types: ["bug"], ability: "shed-skin" });
-      const opponent = createMockPokemon({ types: ["normal"] });
+      const pokemon = createMockPokemon({
+        speciesId: SPECIES.shuckle,
+        types: [TYPES.bug],
+        ability: ABILITIES.shedSkin,
+      });
+      const opponent = createMockPokemon({ speciesId: SPECIES.snorlax });
       const state = createMinimalBattleState(pokemon, opponent);
       const rng = createMockRng([0.1]); // would trigger if status existed
 
