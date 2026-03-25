@@ -5,7 +5,6 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -24,7 +23,7 @@ const SPECIES = GEN2_SPECIES_IDS
 const STATUSES = CORE_STATUS_IDS
 const TYPES = CORE_TYPE_IDS
 const VOLATILES = CORE_VOLATILE_IDS
-const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN2_NATURE_IDS.hardy
+const DEFAULT_NATURE = GEN2_NATURE_IDS.hardy
 
 /**
  * Helper to create a minimal ActivePokemon for status tests.

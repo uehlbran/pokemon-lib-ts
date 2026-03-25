@@ -5,7 +5,6 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type {
-  MoveData,
   PokemonInstance,
   PokemonType,
   PrimaryStatus,
@@ -16,16 +15,16 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
-  CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager } from "../../src";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { applyMoveEffect, type MutableResult } from "../../src/Gen2MoveEffects";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
-import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_NATURE_IDS, GEN2_TYPES } from "../../src";
+import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_NATURE_IDS, GEN2_SPECIES_IDS, GEN2_TYPES } from "../../src";
 
 const NORMAL = CORE_TYPE_IDS.normal;
 const FIRE = CORE_TYPE_IDS.fire;
@@ -45,7 +44,6 @@ const DRAGON = CORE_TYPE_IDS.dragon;
 const DARK = CORE_TYPE_IDS.dark;
 const STEEL = CORE_TYPE_IDS.steel;
 
-const HARDY = GEN2_NATURE_IDS.hardy;
 const TACKLE = GEN2_MOVE_IDS.tackle;
 const GROWL = GEN2_MOVE_IDS.growl;
 const ENCORE = GEN2_MOVE_IDS.encore;
@@ -68,8 +66,16 @@ const DISABLE_COUNTDOWN = CORE_END_OF_TURN_EFFECT_IDS.disableCountdown;
 const CONFUSION = CORE_VOLATILE_IDS.confusion;
 const FOCUS_ENERGY = GEN2_MOVE_IDS.focusEnergy;
 const LEECH_SEED = CORE_VOLATILE_IDS.leechSeed;
-const ENCORE_VOLATILE = GEN2_MOVE_IDS.encore;
-const DISABLE_VOLATILE = GEN2_MOVE_IDS.disable;
+const DATA_MANAGER = createGen2DataManager();
+const GENERIC_SPECIES = DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.bulbasaur);
+const ENCORE_MOVE = DATA_MANAGER.getMove(ENCORE);
+const DISABLE_MOVE = DATA_MANAGER.getMove(DISABLE);
+const BATON_PASS_MOVE = DATA_MANAGER.getMove(BATON_PASS);
+const RETURN_MOVE = DATA_MANAGER.getMove(RETURN);
+const FRUSTRATION_MOVE = DATA_MANAGER.getMove(FRUSTRATION);
+const ENCORE_VOLATILE = ENCORE_MOVE.id;
+const DISABLE_VOLATILE = DISABLE_MOVE.id;
+const DEFAULT_NATURE = GEN2_NATURE_IDS.hardy;
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -117,16 +123,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? GENERIC_SPECIES.id,
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: HARDY,
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? 200,
     moves: opts.moves ?? [],
-    ability: "",
+    ability: CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -156,7 +162,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types ?? [NORMAL],
-    ability: "",
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -175,44 +181,6 @@ function createActivePokemon(opts: {
     stellarBoostedTypes: [],
     forcedMove: null,
   } as ActivePokemon;
-}
-
-/** Create a move mock with the given type and power. */
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    displayName: id,
-    type: NORMAL,
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 2,
-    ...overrides,
-  } as MoveData;
 }
 
 function createMockState(attacker: ActivePokemon, defender: ActivePokemon): BattleState {
@@ -254,32 +222,6 @@ function createNeutralTypeChart(): TypeChart {
   return chart as TypeChart;
 }
 
-/** Minimal species data mock. */
-function createSpecies() {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types: [NORMAL],
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [CORE_ABILITY_IDS.none], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
-  };
-}
-
 /** Create a fresh MutableResult for effect testing. */
 function createEmptyResult(): MutableResult {
   return {
@@ -318,11 +260,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(4); // rng.int(2, 6) returns 4 turns
 
       const result = createEmptyResult();
-      const move = createMove(ENCORE, {
-        category: "status",
-        power: null,
-        effect: { type: "volatile-status", status: ENCORE_VOLATILE, chance: 100 } as any,
-      });
+      const move = DATA_MANAGER.getMove(ENCORE);
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -352,11 +290,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove(ENCORE, {
-        category: "status",
-        power: null,
-        effect: { type: "volatile-status", status: ENCORE_VOLATILE, chance: 100 } as any,
-      });
+      const move = ENCORE_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -384,11 +318,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove(ENCORE, {
-        category: "status",
-        power: null,
-        effect: { type: "volatile-status", status: ENCORE, chance: 100 } as any,
-      });
+      const move = ENCORE_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -415,11 +345,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove(ENCORE, {
-        category: "status",
-        power: null,
-        effect: { type: "volatile-status", status: ENCORE_VOLATILE, chance: 100 } as any,
-      });
+      const move = ENCORE_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -456,12 +382,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(5); // rng.int(1, 7) returns 5 turns
 
       const result = createEmptyResult();
-      const move = createMove(DISABLE, {
-        category: "status",
-        power: null,
-        accuracy: 55,
-        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
-      });
+      const move = DISABLE_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -491,11 +412,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove(DISABLE, {
-        category: "status",
-        power: null,
-        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
-      });
+      const move = DISABLE_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -523,11 +440,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove(DISABLE, {
-        category: "status",
-        power: null,
-        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
-      });
+      const move = DISABLE_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -554,11 +467,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove(DISABLE, {
-        category: "status",
-        power: null,
-        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
-      });
+      const move = DISABLE_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -589,11 +498,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(0);
 
       const result = createEmptyResult();
-      const move = createMove(BATON_PASS, {
-        category: "status",
-        power: null,
-        effect: { type: "switch-out", target: "self" } as any,
-      });
+      const move = BATON_PASS_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -618,11 +523,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(0);
 
       const result = createEmptyResult();
-      const move = createMove(BATON_PASS, {
-        category: "status",
-        power: null,
-        effect: { type: "custom" } as any,
-      });
+      const move = BATON_PASS_MOVE;
 
       applyMoveEffect(move.effect!, move, result, {
         attacker,
@@ -717,7 +618,7 @@ describe("Gen 2 Utility Moves", () => {
       });
       const state = createMockState(attacker, defender);
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies();
+      const species = GENERIC_SPECIES;
 
       // Using max roll (255) for predictable damage
       const rng = createMockRng(255);
@@ -726,18 +627,13 @@ describe("Gen 2 Utility Moves", () => {
         {
           attacker,
           defender,
-          move: createMove(RETURN, {
-            type: NORMAL,
-            category: "physical",
-            power: null,
-            effect: { type: "custom" } as any,
-          }),
+          move: RETURN_MOVE,
           state,
           rng,
           isCrit: false,
         } as DamageContext,
         typeChart,
-        species as any,
+        species,
       );
 
       // With power=102, L50, 100 Atk vs 100 Def, no STAB, max roll (255):
@@ -766,25 +662,20 @@ describe("Gen 2 Utility Moves", () => {
       });
       const state = createMockState(attacker, defender);
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies();
+      const species = GENERIC_SPECIES;
       const rng = createMockRng(255);
 
       const result = calculateGen2Damage(
         {
           attacker,
           defender,
-          move: createMove(RETURN, {
-            type: NORMAL,
-            category: "physical",
-            power: null,
-            effect: { type: "custom" } as any,
-          }),
+          move: RETURN_MOVE,
           state,
           rng,
           isCrit: false,
         } as DamageContext,
         typeChart,
-        species as any,
+        species,
       );
 
       // With power=1, L50, 100 Atk vs 100 Def, no STAB:
@@ -813,25 +704,20 @@ describe("Gen 2 Utility Moves", () => {
       });
       const state = createMockState(attacker, defender);
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies();
+      const species = GENERIC_SPECIES;
       const rng = createMockRng(255);
 
       const result = calculateGen2Damage(
         {
           attacker,
           defender,
-          move: createMove(RETURN, {
-            type: NORMAL,
-            category: "physical",
-            power: null,
-            effect: { type: "custom" } as any,
-          }),
+          move: RETURN_MOVE,
           state,
           rng,
           isCrit: false,
         } as DamageContext,
         typeChart,
-        species as any,
+        species,
       );
 
       // With power=40, L50, 100 Atk vs 100 Def, no STAB, max roll:
@@ -861,25 +747,20 @@ describe("Gen 2 Utility Moves", () => {
       });
       const state = createMockState(attacker, defender);
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies();
+      const species = GENERIC_SPECIES;
       const rng = createMockRng(255);
 
       const result = calculateGen2Damage(
         {
           attacker,
           defender,
-          move: createMove(FRUSTRATION, {
-            type: NORMAL,
-            category: "physical",
-            power: null,
-            effect: { type: "custom" } as any,
-          }),
+          move: FRUSTRATION_MOVE,
           state,
           rng,
           isCrit: false,
         } as DamageContext,
         typeChart,
-        species as any,
+        species,
       );
 
       // Same calc as Return at max friendship: power = 102, no STAB
@@ -907,25 +788,20 @@ describe("Gen 2 Utility Moves", () => {
       });
       const state = createMockState(attacker, defender);
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies();
+      const species = GENERIC_SPECIES;
       const rng = createMockRng(255);
 
       const result = calculateGen2Damage(
         {
           attacker,
           defender,
-          move: createMove(FRUSTRATION, {
-            type: NORMAL,
-            category: "physical",
-            power: null,
-            effect: { type: "custom" } as any,
-          }),
+          move: FRUSTRATION_MOVE,
           state,
           rng,
           isCrit: false,
         } as DamageContext,
         typeChart,
-        species as any,
+        species,
       );
 
       // Power = 1, same as Return at friendship=0, no STAB
@@ -979,24 +855,24 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal — volatile statuses are cleared on switch-out
       const ruleset = new Gen2Ruleset();
       const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
-      pokemon.volatileStatuses.set(ENCORE, { turnsLeft: 3, data: { moveIndex: 0 } });
+      pokemon.volatileStatuses.set(ENCORE_VOLATILE, { turnsLeft: 3, data: { moveIndex: 0 } });
       const state = createMockState(pokemon, createActivePokemon({}));
 
       ruleset.onSwitchOut(pokemon, state);
 
-      expect(pokemon.volatileStatuses.has(ENCORE)).toBe(false);
+      expect(pokemon.volatileStatuses.has(ENCORE_VOLATILE)).toBe(false);
     });
 
     it("given Pokemon has disable volatile, when switching out normally, then disable is cleared", () => {
       // Source: pret/pokecrystal — volatile statuses are cleared on switch-out
       const ruleset = new Gen2Ruleset();
       const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
-      pokemon.volatileStatuses.set(DISABLE, { turnsLeft: 5, data: { moveId: GROWL } });
+      pokemon.volatileStatuses.set(DISABLE_VOLATILE, { turnsLeft: 5, data: { moveId: GROWL } });
       const state = createMockState(pokemon, createActivePokemon({}));
 
       ruleset.onSwitchOut(pokemon, state);
 
-      expect(pokemon.volatileStatuses.has(DISABLE)).toBe(false);
+      expect(pokemon.volatileStatuses.has(DISABLE_VOLATILE)).toBe(false);
     });
   });
 });

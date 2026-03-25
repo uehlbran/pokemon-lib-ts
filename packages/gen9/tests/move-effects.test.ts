@@ -64,7 +64,6 @@ const VOLATILES = CORE_VOLATILE_IDS;
 const GEN9_DATA = createGen9DataManager();
 const TACKLE_DATA = GEN9_DATA.getMove(MOVES.tackle);
 const POPULATION_BOMB_DATA = GEN9_DATA.getMove(MOVES.populationBomb);
-const SYNTHETIC_SHED_TAIL_SUB = "shed-tail-sub" as const;
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -144,40 +143,31 @@ function makeActivePokemon(overrides: {
 }
 
 function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    displayName: id,
-    type: TYPES.normal,
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 10,
-    priority: 0,
-    target: "self" as MoveTarget,
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 9,
-    ...overrides,
-  } as MoveData;
+  const base = (() => {
+    try {
+      return GEN9_DATA.getMove(id);
+    } catch {
+      return TACKLE_DATA;
+    }
+  })();
+  const move = { ...base, flags: { ...base.flags } } as MoveData;
+  move.id = id;
+  move.displayName = overrides?.displayName ?? base.displayName;
+  move.type = overrides?.type ?? move.type;
+  move.category = overrides?.category ?? move.category;
+  move.power = overrides?.power ?? move.power;
+  move.accuracy = overrides?.accuracy ?? move.accuracy;
+  move.pp = overrides?.pp ?? move.pp;
+  move.priority = overrides?.priority ?? move.priority;
+  move.target = (overrides?.target ?? move.target) as MoveTarget;
+  move.effect = overrides?.effect ?? move.effect ?? null;
+  move.description = overrides?.description ?? move.description;
+  move.generation = overrides?.generation ?? move.generation;
+  move.flags = {
+    ...move.flags,
+    ...overrides?.flags,
+  };
+  return move;
 }
 
 function makePokemonInstance(overrides?: Partial<PokemonInstance>): PokemonInstance {
@@ -377,7 +367,7 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
     // Source: Showdown sim/pokemon.ts -- timesAttacked incremented in hitBy()
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({ timesAttacked: 0 });
-    const move = makeMove(MOVES.tackle, { category: "physical", power: 40 });
+    const move = makeMove(MOVES.tackle);
     const state = makeState();
 
     ruleset.onDamageReceived(defender, 50, move, state);
@@ -389,7 +379,7 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
     // Source: Showdown sim/pokemon.ts -- timesAttacked tracks cumulative hits
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({ timesAttacked: 3 });
-    const move = makeMove(MOVES.tackle, { category: "physical", power: 40 });
+    const move = makeMove(MOVES.tackle);
     const state = makeState();
 
     ruleset.onDamageReceived(defender, 50, move, state);
@@ -403,7 +393,7 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
     // but timesAttacked must only increment once per move use.
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({ timesAttacked: 0 });
-    const move = makeMove(MOVES.populationBomb, { category: "physical", power: 20 });
+    const move = makeMove(MOVES.populationBomb);
     const state = { ...makeState(), turnNumber: 2 } as unknown as BattleState;
 
     // Simulate two hits of the same multi-hit move in the same turn
@@ -768,8 +758,8 @@ describe("Gen9 Shed Tail -- handleShedTail", () => {
     // Result should indicate switch-out
     expect(result.switchOut).toBe(true);
     // Should have a shed-tail-sub volatile for the incoming Pokemon
-    expect(attacker.volatileStatuses.has("shed-tail-sub" as any)).toBe(true);
-    const subData = attacker.volatileStatuses.get("shed-tail-sub" as any);
+    expect(attacker.volatileStatuses.has(VOLATILES.shedTailSub as any)).toBe(true);
+    const subData = attacker.volatileStatuses.get(VOLATILES.shedTailSub as any);
     // Sub HP should be floor(400/4) = 100
     expect(subData?.data?.substituteHp).toBe(100);
   });

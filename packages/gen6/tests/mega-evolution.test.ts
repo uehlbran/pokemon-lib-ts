@@ -9,6 +9,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen6DataManager,
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_NATURE_IDS,
@@ -21,6 +22,9 @@ const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
 const SPECIES = GEN6_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
+const DATA_MANAGER = createGen6DataManager();
+const BASE_SPECIES = DATA_MANAGER.getSpecies(SPECIES.charizard);
+const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN6_NATURE_IDS.hardy).id;
 const CHARIZARDITE_X_DATA = MEGA_STONE_DATA[ITEMS.charizarditeX];
 const CHARIZARDITE_Y_DATA = MEGA_STONE_DATA[ITEMS.charizarditeY];
 const VENUSAURITE_DATA = MEGA_STONE_DATA[ITEMS.venusaurite];
@@ -52,11 +56,11 @@ function makeActivePokemon(overrides: {
   return {
     pokemon: {
       uid: overrides.uid ?? "test-uid",
-      speciesId: overrides.speciesId ?? SPECIES.charizard,
+      speciesId: overrides.speciesId ?? BASE_SPECIES.id,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: GEN6_NATURE_IDS.hardy,
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
@@ -93,7 +97,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? [TYPES.fire, TYPES.flying],
+    types: overrides.types ?? [...BASE_SPECIES.types],
     ability: overrides.ability ?? ABILITIES.blaze,
     suppressedAbility: null,
     lastMoveUsed: null,

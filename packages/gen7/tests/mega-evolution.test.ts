@@ -6,12 +6,12 @@ import {
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
   CORE_GIMMICK_IDS,
-  NEUTRAL_NATURES,
   type NatureId,
 } from "@pokemon-lib-ts/core";
 import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import { describe, expect, it } from "vitest";
 import {
+  createGen7DataManager,
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
   GEN7_NATURE_IDS,
@@ -26,9 +26,10 @@ const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS };
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS };
 const TYPES = CORE_TYPE_IDS;
 const SPECIES = GEN7_SPECIES_IDS;
-const NATURES = { ...Object.fromEntries(NEUTRAL_NATURES.map((nature) => [nature, nature])), ...GEN7_NATURE_IDS };
 const GIMMICKS = { ...CORE_GIMMICK_IDS, ...BATTLE_GIMMICK_IDS };
-const DEFAULT_NATURE: NatureId = NATURES.hardy;
+const DATA_MANAGER = createGen7DataManager();
+const BASE_SPECIES = DATA_MANAGER.getSpecies(SPECIES.charizard);
+const DEFAULT_NATURE: NatureId = DATA_MANAGER.getNature(GEN7_NATURE_IDS.hardy).id;
 const CHARIZARDITE_X = ITEMS.charizarditeX;
 const CHARIZARDITE_Y = ITEMS.charizarditeY;
 const VENUSAURITE = ITEMS.venusaurite;
@@ -62,7 +63,7 @@ function makeActivePokemon(overrides: {
   return {
     pokemon: {
       uid: overrides.uid ?? "test-uid",
-      speciesId: overrides.speciesId ?? SPECIES.charizard,
+      speciesId: overrides.speciesId ?? BASE_SPECIES.id,
       nickname: null,
       level: 50,
       experience: 0,
@@ -103,7 +104,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? [TYPES.fire, TYPES.flying],
+    types: overrides.types ?? [...BASE_SPECIES.types],
     ability: overrides.ability ?? ABILITIES.blaze,
     suppressedAbility: null,
     lastMoveUsed: null,

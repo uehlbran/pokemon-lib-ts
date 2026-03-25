@@ -1,9 +1,9 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
 import {
+  CORE_ABILITY_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
   type PokemonType,
   type PrimaryStatus,
   type StatBlock,
@@ -11,6 +11,7 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   GEN2_ITEM_IDS,
+  GEN2_NATURE_IDS,
   GEN2_SPECIES_IDS,
   createGen2DataManager,
   applyGen2HeldItem,
@@ -46,7 +47,9 @@ const SPECIES_IDS = GEN2_SPECIES_IDS;
 const STATUS_IDS = CORE_STATUS_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const TYPE_IDS = CORE_TYPE_IDS;
-const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const DEFAULT_NATURE = GEN2_NATURE_IDS.hardy;
+const NO_ABILITY = CORE_ABILITY_IDS.none;
+const DEFAULT_POKEBALL = ITEM_IDS.pokeBall;
 
 function getRestoredHp(itemId: string): number {
   const description = dataManager.getItem(itemId).description;
@@ -93,7 +96,7 @@ function createMockPokemon(opts: {
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: "",
+    ability: NO_ABILITY,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -104,7 +107,7 @@ function createMockPokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: ITEM_IDS.pokeBall,
+    pokeball: DEFAULT_POKEBALL,
     calculatedStats: stats,
   };
 
@@ -128,7 +131,7 @@ function createMockPokemon(opts: {
     },
     volatileStatuses,
     types: opts.types ?? [TYPE_IDS.normal],
-    ability: "",
+    ability: NO_ABILITY,
     lastMoveUsed: null,
     turnsOnField: 1,
     movedThisTurn: false,

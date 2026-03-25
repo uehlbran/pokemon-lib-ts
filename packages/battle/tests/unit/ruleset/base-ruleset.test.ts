@@ -1,8 +1,14 @@
-import type { Generation, PokemonInstance, PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type {
+  Generation,
+  MoveData,
+  PokemonInstance,
+  PokemonSpeciesData,
+  PokemonType,
+  TypeChart,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
-  CORE_GIMMICK_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
@@ -22,6 +28,7 @@ import type {
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state";
 import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { BATTLE_GIMMICK_IDS } from "../../../src";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { createMockMoveSlot } from "../../helpers/move-slot";
 
@@ -56,7 +63,6 @@ const {
   weatherCountdown,
   weatherDamage,
 } = CORE_END_OF_TURN_EFFECT_IDS;
-const { mega } = CORE_GIMMICK_IDS;
 const { spikes, stealthRock, toxicSpikes } = CORE_HAZARD_IDS;
 const { blackSludge, leftovers } = CORE_ITEM_IDS;
 const { bind, focusBlast, leechSeed, perishSong, quickAttack, swift, tackle, wish } =
@@ -64,6 +70,35 @@ const { bind, focusBlast, leechSeed, perishSong, quickAttack, swift, tackle, wis
 const { badlyPoisoned, burn, paralysis, poison, sleep } = CORE_STATUS_IDS;
 const { curse, ingrain, nightmare, sleepCounter, toxicCounter } = CORE_VOLATILE_IDS;
 const TEST_DATA_MANAGER = createMockDataManager();
+const TACKLE_MOVE_DATA = TEST_DATA_MANAGER.getMove(tackle);
+
+function makeMove(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
+  const base = (() => {
+    try {
+      return TEST_DATA_MANAGER.getMove(moveId);
+    } catch {
+      return TACKLE_MOVE_DATA;
+    }
+  })();
+  const move = { ...base, flags: { ...base.flags } } as MoveData;
+  move.id = moveId;
+  move.displayName = overrides.displayName ?? move.displayName;
+  move.type = overrides.type ?? move.type;
+  move.category = overrides.category ?? move.category;
+  move.power = overrides.power ?? move.power;
+  move.accuracy = overrides.accuracy ?? move.accuracy;
+  move.pp = overrides.pp ?? move.pp;
+  move.priority = overrides.priority ?? move.priority;
+  move.target = overrides.target ?? move.target;
+  move.flags = {
+    ...move.flags,
+    ...overrides.flags,
+  };
+  move.effect = overrides.effect ?? move.effect;
+  move.description = overrides.description ?? move.description;
+  move.generation = overrides.generation ?? move.generation;
+  return move;
+}
 
 // Concrete implementation of BaseRuleset for testing
 class TestRuleset extends BaseRuleset {
@@ -228,39 +263,7 @@ describe("BaseRuleset", () => {
       const pokemon = createTestPokemon(6, 50);
       const active = createActivePokemon(pokemon, 0, [fire, flying]);
       const rng = new SeededRandom(42);
-      const move = {
-        id: tackle,
-        displayName: "Tackle",
-        type: normal as const,
-        category: "physical" as const,
-        power: 40,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = makeMove(tackle);
 
       // Act — run many times and check distribution
       let crits = 0;
@@ -419,39 +422,8 @@ describe("BaseRuleset", () => {
       const active1 = createActivePokemon(pokemon1, 0, [fire]);
       const active2 = createActivePokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
-      const move = {
-        id: swift,
-        displayName: "Swift",
-        type: normal as const,
-        category: "special" as const,
-        power: 60,
-        accuracy: null,
-        pp: 20,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = makeMove(swift);
+      move.accuracy = null;
 
       // Act
       const hits = ruleset.doesMoveHit({
@@ -473,39 +445,7 @@ describe("BaseRuleset", () => {
       const active1 = createActivePokemon(pokemon1, 0, [fire]);
       const active2 = createActivePokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
-      const move = {
-        id: tackle,
-        displayName: "Tackle",
-        type: normal as const,
-        category: "physical" as const,
-        power: 40,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = makeMove(tackle);
 
       // Act & Assert — 100% accuracy at neutral stages should always hit
       for (let i = 0; i < 100; i++) {
@@ -529,39 +469,8 @@ describe("BaseRuleset", () => {
       const active2 = createActivePokemon(pokemon2, 0, [water]);
       active1.statStages.accuracy = 6;
       const rng = new SeededRandom(42);
-      const move = {
-        id: focusBlast,
-        displayName: "Focus Blast",
-        type: fighting as const,
-        category: "special" as const,
-        power: 120,
-        accuracy: 70,
-        pp: 5,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 4 as const,
-      };
+      const move = makeMove(tackle);
+      move.accuracy = 70;
 
       // Act
       let hits = 0;
@@ -591,39 +500,7 @@ describe("BaseRuleset", () => {
       const active2 = createActivePokemon(pokemon2, 0, [water]);
       active2.statStages.evasion = 6;
       const rng = new SeededRandom(42);
-      const move = {
-        id: tackle,
-        displayName: "Tackle",
-        type: normal as const,
-        category: "physical" as const,
-        power: 40,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = makeMove(tackle);
 
       // Act
       let hits = 0;
@@ -1035,7 +912,7 @@ describe("BaseRuleset", () => {
 
   describe("getBattleGimmick", () => {
     it("given a base ruleset, when getBattleGimmick is called, then null is returned", () => {
-      expect(ruleset.getBattleGimmick(mega)).toBeNull();
+      expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega)).toBeNull();
     });
   });
 
