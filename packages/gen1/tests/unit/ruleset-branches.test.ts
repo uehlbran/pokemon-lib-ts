@@ -30,6 +30,7 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   SeededRandom,
+  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS, GEN1_TYPES } from "../../src";
@@ -58,6 +59,13 @@ const MODEST_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Modes
 const PIKACHU_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.pikachu);
 const BULBASAUR_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
 const CHARIZARD_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.charizard);
+const TACKLE = gen1DataManager.getMove(GEN1_MOVE_IDS.tackle);
+const QUICK_ATTACK = gen1DataManager.getMove(GEN1_MOVE_IDS.quickAttack);
+const THUNDER_SHOCK = gen1DataManager.getMove(GEN1_MOVE_IDS.thunderShock);
+const THUNDERBOLT = gen1DataManager.getMove(GEN1_MOVE_IDS.thunderbolt);
+const THUNDER = gen1DataManager.getMove(GEN1_MOVE_IDS.thunder);
+const HYPER_BEAM = gen1DataManager.getMove(GEN1_MOVE_IDS.hyperBeam);
+const FISSURE = gen1DataManager.getMove(GEN1_MOVE_IDS.fissure);
 const NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.normal];
 const FIRE_TYPES: PokemonType[] = [CORE_TYPE_IDS.fire];
 const WATER_TYPES: PokemonType[] = [CORE_TYPE_IDS.water];
@@ -87,22 +95,41 @@ const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   bypassSubstitute: false,
 };
 
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function makeScenarioMove(overrides: Partial<MoveData> = {}): MoveData {
+  const baseMove = TACKLE;
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: CORE_TYPE_IDS.normal as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
+    ...baseMove,
+    id: baseMove.id,
+    displayName: baseMove.displayName,
+    type: baseMove.type,
+    category: baseMove.category,
+    power: baseMove.power,
+    accuracy: baseMove.accuracy,
+    pp: baseMove.pp,
+    priority: baseMove.priority,
+    target: baseMove.target,
+    flags: { ...DEFAULT_MOVE_FLAGS, ...baseMove.flags },
+    effect: baseMove.effect,
+    description: baseMove.description,
+    generation: baseMove.generation,
     ...overrides,
+  };
+}
+
+function makeCanonicalMoveSlot(moveId: string) {
+  const move = gen1DataManager.getMove(moveId);
+  return createMoveSlot(move.id, move.pp);
+}
+
+function makeSyntheticMoveSlot(
+  reason: string,
+  overrides: { moveId: string; currentPP: number; maxPP: number; ppUps?: number },
+) {
+  void reason;
+  return {
+    ...createMoveSlot(TACKLE.id, TACKLE.pp),
+    ...overrides,
+    ppUps: overrides.ppUps ?? 0,
   };
 }
 
@@ -117,7 +144,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [makeCanonicalMoveSlot(TACKLE.id)],
       currentHp: 100,
       status: null,
       friendship: 70,
@@ -130,7 +157,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -228,7 +255,7 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
   return {
     attacker: makeActivePokemon(),
     defender: makeActivePokemon({ types: NORMAL_TYPES }),
-    move: makeMove(),
+    move: makeScenarioMove(),
     damage: 50,
     state: makeBattleState(),
     rng,
@@ -244,7 +271,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a fire-type target, when burn is inflicted, then burn is not applied (fire immunity)", () => {
     // Arrange
     const defender = makeActivePokemon({ types: FIRE_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.burn },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -257,7 +284,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given an ice-type target, when freeze is inflicted, then freeze is not applied (ice immunity)", () => {
     // Arrange
     const defender = makeActivePokemon({ types: ICE_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.freeze },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -270,7 +297,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a poison-type target, when poison is inflicted, then poison is not applied (poison immunity)", () => {
     // Arrange
     const defender = makeActivePokemon({ types: POISON_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.poison },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -283,7 +310,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a poison-type target, when badly-poisoned is inflicted, then badly-poisoned is not applied (poison immunity)", () => {
     // Arrange
     const defender = makeActivePokemon({ types: POISON_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.badlyPoisoned },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -296,7 +323,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given an electric-type target, when paralysis is inflicted, then paralysis IS applied (Gen 1 quirk)", () => {
     // Arrange: In Gen 1, Electric types CAN be paralyzed (unlike later gens)
     const defender = makeActivePokemon({ types: ELECTRIC_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.paralysis },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -309,7 +336,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a normal-type target, when sleep is inflicted, then sleep IS applied (no immunity)", () => {
     // Arrange
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.sleep },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -322,7 +349,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a non-fire target, when burn is inflicted, then burn IS applied", () => {
     // Arrange
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.burn },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -335,7 +362,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a non-ice target, when freeze is inflicted, then freeze IS applied", () => {
     // Arrange
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.freeze },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -348,7 +375,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given an unknown status type, when inflicting via status-guaranteed, then default allows infliction", () => {
     // Arrange: Cast to PrimaryStatus to test the default branch in canInflictStatus
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: "unknown-status" as PrimaryStatus },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -361,7 +388,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a non-poison target, when poison is inflicted, then poison IS applied", () => {
     // Arrange
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.poison },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -579,7 +606,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
 describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a move with no effect, when executing move effect, then returns default (no-op) result", () => {
     // Arrange
-    const move = makeMove({ effect: null });
+    const move = makeScenarioMove({ effect: null });
     const ctx = makeMoveEffectContext({ move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
@@ -597,7 +624,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a status-chance effect with 100% chance, when roll passes and target has no status, then inflicts status", () => {
     // Arrange: Use a high chance that will pass with the seeded rng
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-chance", status: CORE_STATUS_IDS.paralysis, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -610,7 +637,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a status-chance effect with 0% chance, when roll fails, then does not inflict status", () => {
     // Arrange
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 0 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -630,7 +657,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
       types: NORMAL_TYPES,
       pokemon: defenderPokemon,
     });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -643,7 +670,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a status-chance effect for burn, when target is fire-type, then status immunity prevents infliction", () => {
     // Arrange
     const defender = makeActivePokemon({ types: FIRE_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -665,7 +692,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
       types: NORMAL_TYPES,
       pokemon: defenderPokemon,
     });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.sleep },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -678,7 +705,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a status-guaranteed effect for freeze on ice-type, when executing, then immunity prevents infliction", () => {
     // Arrange
     const defender = makeActivePokemon({ types: ICE_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.freeze },
     });
     const ctx = makeMoveEffectContext({ defender, move });
@@ -692,7 +719,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a stat-change effect targeting foe, when executing, then records stat changes for defender", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: {
         type: "stat-change",
         changes: [{ stat: "attack", stages: -1 }],
@@ -714,7 +741,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a stat-change effect targeting self, when executing, then records stat changes for attacker", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: {
         type: "stat-change",
         changes: [{ stat: "defense", stages: 1 }],
@@ -736,7 +763,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a stat-change effect with multiple changes, when executing, then records all changes", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: {
         type: "stat-change",
         changes: [
@@ -758,7 +785,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a recoil effect of 1/4 damage dealt, when executing, then recoilDamage is 1/4 of damage", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "recoil", amount: 0.25 },
     });
     const ctx = makeMoveEffectContext({ move, damage: 100 });
@@ -770,7 +797,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a recoil effect with very low damage, when executing, then recoilDamage is at least 1", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "recoil", amount: 0.25 },
     });
     const ctx = makeMoveEffectContext({ move, damage: 1 });
@@ -784,7 +811,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a drain effect of 1/2 damage dealt, when executing, then healAmount is 1/2 of damage", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "drain", amount: 0.5 },
     });
     const ctx = makeMoveEffectContext({ move, damage: 80 });
@@ -796,7 +823,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a drain effect with very low damage, when executing, then healAmount is at least 1", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "drain", amount: 0.5 },
     });
     const ctx = makeMoveEffectContext({ move, damage: 1 });
@@ -823,7 +850,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
         },
       } as PokemonInstance,
     });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "heal", amount: 0.5 },
     });
     const ctx = makeMoveEffectContext({ attacker, move });
@@ -842,7 +869,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
         currentHp: 80,
       } as PokemonInstance,
     });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "heal", amount: 0.5 },
     });
     const ctx = makeMoveEffectContext({ attacker, move });
@@ -857,7 +884,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a multi effect with nested stat-change and status-chance, when executing, then both sub-effects are applied", () => {
     // Arrange
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: {
         type: "multi",
         effects: [
@@ -883,7 +910,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a fixed-damage effect, when executing, then no side-effects are recorded (handled by damage calc)", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "fixed-damage", damage: 40 },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -896,7 +923,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a level-damage effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "level-damage" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -908,7 +935,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given an ohko effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "ohko" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -920,7 +947,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a damage effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "damage" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -932,7 +959,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a volatile-status (confusion) effect, when executing, then no primary status is inflicted", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "volatile-status", status: CORE_VOLATILE_IDS.confusion, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -944,7 +971,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a weather effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "weather", weather: CORE_WEATHER_IDS.sun, turns: 5 },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -956,7 +983,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a terrain effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "terrain", terrain: CORE_TERRAIN_IDS.electric, turns: 5 },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -968,7 +995,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given an entry-hazard effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "entry-hazard", hazard: CORE_HAZARD_IDS.stealthRock },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -980,7 +1007,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a remove-hazards effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "remove-hazards", method: "spin" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -992,7 +1019,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a screen effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "screen", screen: CORE_SCREEN_IDS.reflect, turns: 5 },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -1004,7 +1031,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a multi-hit effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "multi-hit", min: 2, max: 5 },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -1016,7 +1043,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a two-turn effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "two-turn", firstTurn: "fly" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -1028,7 +1055,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a switch-out effect, when executing, then no side-effects are recorded (engine-handled)", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "switch-out", target: "self" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -1040,7 +1067,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a protect effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "protect", variant: "standard" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -1052,7 +1079,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a custom effect, when executing, then no side-effects are recorded", () => {
     // Arrange
-    const move = makeMove({
+    const move = makeScenarioMove({
       effect: { type: "custom", handler: "metronome" },
     });
     const ctx = makeMoveEffectContext({ move });
@@ -1387,7 +1414,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const slowWithQuickAttack = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: GEN1_MOVE_IDS.quickAttack, currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [makeCanonicalMoveSlot(QUICK_ATTACK.id)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1401,7 +1428,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const fastWithTackle = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [makeCanonicalMoveSlot(TACKLE.id)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1430,7 +1457,13 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const pokemonWithFakeMove = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "nonexistent-move-xyz", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [
+          makeSyntheticMoveSlot("Exercise unknown move validation.", {
+            moveId: "nonexistent-move-xyz",
+            currentPP: 30,
+            maxPP: 30,
+          }),
+        ],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1444,7 +1477,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const pokemonWithTackle = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [makeCanonicalMoveSlot(TACKLE.id)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1473,7 +1506,13 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const pokemonA = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "fake-move-a", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [
+          makeSyntheticMoveSlot("Exercise unknown move validation.", {
+            moveId: "fake-move-a",
+            currentPP: 30,
+            maxPP: 30,
+          }),
+        ],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1487,7 +1526,13 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const pokemonB = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "fake-move-b", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [
+          makeSyntheticMoveSlot("Exercise unknown move validation.", {
+            moveId: "fake-move-b",
+            currentPP: 30,
+            maxPP: 30,
+          }),
+        ],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1525,7 +1570,13 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const customMovePokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: customMoveId, currentPP: 10, maxPP: 10, ppUps: 0 }],
+        moves: [
+          makeSyntheticMoveSlot("Exercise shared data-manager custom move priority.", {
+            moveId: customMoveId,
+            currentPP: 10,
+            maxPP: 10,
+          }),
+        ],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1539,7 +1590,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const tacklePokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [makeCanonicalMoveSlot(TACKLE.id)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1617,7 +1668,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
 // ============================================================================
 
 describe("Gen1Ruleset validatePokemon", () => {
-  function makeSpecies(overrides: Partial<PokemonSpeciesData> = {}): PokemonSpeciesData {
+  function makeSyntheticSpecies(overrides: Partial<PokemonSpeciesData> = {}): PokemonSpeciesData {
     return { ...BULBASAUR_SPECIES, ...overrides } as PokemonSpeciesData;
   }
 
@@ -1631,7 +1682,7 @@ describe("Gen1Ruleset validatePokemon", () => {
       nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [makeCanonicalMoveSlot(TACKLE.id)],
       currentHp: 100,
       status: null,
       friendship: 70,
@@ -1644,7 +1695,7 @@ describe("Gen1Ruleset validatePokemon", () => {
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       ...overrides,
     } as PokemonInstance;
   }
@@ -1652,9 +1703,9 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Gen 1 Pokemon with an illegal move, when validating, then returns an error for Gen 1 move legality", () => {
     // Arrange
     const pokemon = makePokemonInstance({
-      moves: [{ moveId: GEN1_MOVE_IDS.hyperBeam, currentPP: 5, maxPP: 5, ppUps: 0 }],
+      moves: [makeCanonicalMoveSlot(HYPER_BEAM.id)],
     });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1665,9 +1716,9 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Gen 1 Pokemon with a legal move the species cannot learn, when validating, then returns an error for species move legality", () => {
     // Arrange
     const pokemon = makePokemonInstance({
-      moves: [{ moveId: GEN1_MOVE_IDS.fissure, currentPP: 5, maxPP: 5, ppUps: 0 }],
+      moves: [makeCanonicalMoveSlot(FISSURE.id)],
     });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1678,7 +1729,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Gen 1 Pokemon with an ability, when validating, then returns an error because abilities do not exist in Gen 1", () => {
     // Arrange
     const pokemon = makePokemonInstance({ ability: CORE_ABILITY_IDS.static });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1689,7 +1740,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Gen 1 Pokemon with a non-normal ability slot, when validating, then returns an error because ability slots do not exist in Gen 1", () => {
     // Arrange
     const pokemon = makePokemonInstance({ abilitySlot: "hidden" as const });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1700,7 +1751,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Gen 1 Pokemon with a non-neutral nature, when validating, then returns an error because natures do not exist in Gen 1", () => {
     // Arrange
     const pokemon = makePokemonInstance({ nature: "modest" });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1711,7 +1762,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a valid Gen 1 Pokemon, when validating, then returns valid with no errors", () => {
     // Arrange
     const pokemon = makePokemonInstance();
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1722,7 +1773,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Pokemon with level 0, when validating, then returns error for level out of range", () => {
     // Arrange
     const pokemon = makePokemonInstance({ level: 0 });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1733,7 +1784,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Pokemon with level 101, when validating, then returns error for level out of range", () => {
     // Arrange
     const pokemon = makePokemonInstance({ level: 101 });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1744,7 +1795,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Pokemon with species ID 152 (Gen 2 Chikorita), when validating, then returns error for species not in Gen 1", () => {
     // Arrange
     const pokemon = makePokemonInstance();
-    const species = makeSpecies({ id: 152, displayName: "Chikorita" });
+    const species = makeSyntheticSpecies({ id: 152, displayName: "Chikorita" });
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1755,7 +1806,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Pokemon with species ID 0, when validating, then returns error for species out of range", () => {
     // Arrange
     const pokemon = makePokemonInstance();
-    const species = makeSpecies({ id: 0, displayName: "Invalid" });
+    const species = makeSyntheticSpecies({ id: 0, displayName: "Invalid" });
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1766,7 +1817,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Pokemon with 0 moves, when validating, then returns error for wrong move count", () => {
     // Arrange
     const pokemon = makePokemonInstance({ moves: [] });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1778,14 +1829,14 @@ describe("Gen1Ruleset validatePokemon", () => {
     // Arrange
     const pokemon = makePokemonInstance({
       moves: [
-        { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: GEN1_MOVE_IDS.thunderShock, currentPP: 30, maxPP: 30, ppUps: 0 },
-        { moveId: GEN1_MOVE_IDS.quickAttack, currentPP: 30, maxPP: 30, ppUps: 0 },
-        { moveId: GEN1_MOVE_IDS.thunderbolt, currentPP: 15, maxPP: 15, ppUps: 0 },
-        { moveId: GEN1_MOVE_IDS.thunder, currentPP: 10, maxPP: 10, ppUps: 0 },
+        makeCanonicalMoveSlot(TACKLE.id),
+        makeCanonicalMoveSlot(THUNDER_SHOCK.id),
+        makeCanonicalMoveSlot(QUICK_ATTACK.id),
+        makeCanonicalMoveSlot(THUNDERBOLT.id),
+        makeCanonicalMoveSlot(THUNDER.id),
       ],
     });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1796,7 +1847,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Pokemon with a held item, when validating, then returns error for held items not available", () => {
     // Arrange
     const pokemon = makePokemonInstance({ heldItem: CORE_ITEM_IDS.leftovers });
-    const species = makeSpecies();
+    const species = makeSyntheticSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -1807,7 +1858,7 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Pokemon with multiple validation errors, when validating, then returns all errors", () => {
     // Arrange: level out of range + held item + species out of range
     const pokemon = makePokemonInstance({ level: 200, heldItem: CORE_ITEM_IDS.leftovers });
-    const species = makeSpecies({ id: 200, displayName: "Invalid" });
+    const species = makeSyntheticSpecies({ id: 200, displayName: "Invalid" });
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
@@ -2020,7 +2071,7 @@ describe("Gen 1 Quirks", () => {
     for (let i = 0; i < trials; i++) {
       const attacker = makeActivePokemon();
       const defender = makeActivePokemon();
-      const move = makeMove({ accuracy: 100 });
+      const move = makeScenarioMove({ accuracy: 100 });
       const state = makeBattleState();
       const result = ruleset.doesMoveHit({ attacker, defender, move, state, rng });
       if (!result) misses++;
@@ -2052,7 +2103,7 @@ describe("Gen 1 Quirks", () => {
       } as PokemonInstance,
       volatileStatuses: focusEnergyVolatiles,
     });
-    const move = makeMove({ category: "physical" });
+    const move = makeScenarioMove({ category: "physical" });
     const state = makeBattleState();
 
     // Act: Roll many times to compare rates
@@ -2076,7 +2127,7 @@ describe("Gen 1 Quirks", () => {
     const defender = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
-    const hyperBeam = makeMove({
+    const hyperBeam = makeScenarioMove({
       id: GEN1_MOVE_IDS.hyperBeam,
       power: 150,
       flags: { ...DEFAULT_MOVE_FLAGS, recharge: true },
@@ -2140,7 +2191,7 @@ describe("Gen 1 Quirks", () => {
         speciesId: GEN1_SPECIES_IDS.pikachu,
       } as PokemonInstance,
     });
-    const statusMove = makeMove({ category: "status" });
+    const statusMove = makeScenarioMove({ category: "status" });
     const state = makeBattleState();
     // Act / Assert
     for (let seed = 0; seed < 100; seed++) {
@@ -2332,7 +2383,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     } as PokemonInstance;
 
@@ -2379,7 +2430,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     } as PokemonInstance;
 
@@ -2420,7 +2471,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     } as PokemonInstance;
 
@@ -2465,7 +2516,7 @@ describe("Gen1Ruleset rollCritical", () => {
         speciesId: GEN1_SPECIES_IDS.pikachu, // Pikachu
       } as PokemonInstance,
     });
-    const move = makeMove({ category: "physical" });
+    const move = makeScenarioMove({ category: "physical" });
     const state = makeBattleState();
 
     // Act: Run many trials, crit rate should be roughly baseSpeed/512

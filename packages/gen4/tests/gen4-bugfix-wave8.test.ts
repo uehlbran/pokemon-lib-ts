@@ -16,6 +16,9 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   NEUTRAL_NATURES,
+  SeededRandom,
+  createMoveSlot,
+  createPokemonInstance,
   type MoveData,
   type MoveFlags,
   type PokemonInstance,
@@ -57,6 +60,7 @@ const STATUS = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const DEFAULT_SPECIES = dataManager.getSpecies(SPECIES.rattata);
 const DEFAULT_FLAGS: MoveFlags = {
   contact: false,
   sound: false,
@@ -118,49 +122,44 @@ function makePokemonInstance(overrides: {
   moves?: Array<{ moveId: string; currentPP: number; maxPP: number }>;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: "test-gen4-bugfix-wave8",
-    speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
+  const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(4), {
     nature: DEFAULT_NATURE,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: overrides.moves ?? [
-      makeMoveSlot(MOVES.tackle),
-      makeMoveSlot(MOVES.ember),
-    ],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: "normal1",
     heldItem: overrides.heldItem ?? null,
-    status: overrides.status ?? null,
-    friendship: 0,
-    gender: "genderless" as const,
+    moves: [],
     isShiny: false,
     metLocation: "",
-    metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
     pokeball: ITEMS.pokeBall,
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+  });
+
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.moves = overrides.moves ?? [makeMoveSlot(MOVES.tackle), makeMoveSlot(MOVES.ember)];
+  pokemon.ability = overrides.ability ?? pokemon.ability;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+
+  return pokemon as PokemonInstance;
 }
 
 function makeMoveSlot(moveId: string, overrides?: Partial<{ currentPP: number; maxPP: number }>) {
   const move = dataManager.getMove(moveId);
+  const slot = createMoveSlot(moveId, move.pp);
   return {
-    moveId,
-    currentPP: overrides?.currentPP ?? move.pp,
-    maxPP: overrides?.maxPP ?? move.pp,
+    ...slot,
+    currentPP: overrides?.currentPP ?? slot.currentPP,
+    maxPP: overrides?.maxPP ?? slot.maxPP,
   };
 }
 
@@ -215,8 +214,8 @@ function makeActivePokemon(overrides: {
       ...overrides.statStages,
     },
     volatileStatuses: volatiles,
-    types: overrides.types ?? [TYPES.normal],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? dataManager.getSpecies(pokemon.speciesId).types,
+    ability: overrides.ability ?? pokemon.ability,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -275,22 +274,33 @@ function makeBattleState(overrides?: Partial<BattleState>): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(overrides: Partial<MoveData>): MoveData {
-  const moveId = overrides.id ?? MOVES.tackle;
+function makeCanonicalMove(moveId: string, overrides?: Partial<MoveData>): MoveData {
   const sourceMove = dataManager.getMove(moveId);
   return {
+    ...sourceMove,
+    ...overrides,
     id: moveId,
-    displayName: overrides.displayName ?? sourceMove.displayName,
-    type: overrides.type ?? sourceMove.type,
-    category: overrides.category ?? sourceMove.category,
-    power: overrides.power ?? sourceMove.power,
-    accuracy: overrides.accuracy ?? sourceMove.accuracy,
-    pp: overrides.pp ?? sourceMove.pp,
-    priority: overrides.priority ?? 0,
-    target: overrides.target ?? "single",
-    effect: overrides.effect ?? null,
+    displayName: overrides?.displayName ?? sourceMove.displayName,
+    type: overrides?.type ?? sourceMove.type,
+    category: overrides?.category ?? sourceMove.category,
+    power: overrides?.power ?? sourceMove.power,
+    accuracy: overrides?.accuracy ?? sourceMove.accuracy,
+    pp: overrides?.pp ?? sourceMove.pp,
+    priority: overrides?.priority ?? sourceMove.priority,
+    target: overrides?.target ?? sourceMove.target,
+    effect: overrides?.effect ?? sourceMove.effect,
+    flags: overrides?.flags ?? { ...sourceMove.flags },
+    generation: overrides?.generation ?? sourceMove.generation,
+  } as MoveData;
+}
+
+function makeSyntheticMove(overrides: Partial<MoveData>): MoveData {
+  return {
+    ...makeCanonicalMove(MOVES.tackle),
+    ...overrides,
+    id: overrides.id ?? MOVES.tackle,
+    displayName: overrides.displayName ?? dataManager.getMove(MOVES.tackle).displayName,
     flags: overrides.flags ?? { ...DEFAULT_FLAGS },
-    generation: overrides.generation ?? 4,
   } as MoveData;
 }
 
@@ -325,7 +335,7 @@ describe("#258 Tangled Feet accuracy halving", () => {
       ability: ABILITIES.tangledFeet,
       volatiles: new Map([[VOLATILES.confusion, { turnsLeft: 3 }]]),
     });
-    const move = makeMove({ accuracy: 100 });
+    const move = makeSyntheticMove({ accuracy: 100 });
     const rng = createMockRng(50); // roll = 50
 
     const context: AccuracyContext = {
@@ -349,7 +359,7 @@ describe("#258 Tangled Feet accuracy halving", () => {
       ability: ABILITIES.tangledFeet,
       volatiles: new Map([[VOLATILES.confusion, { turnsLeft: 3 }]]),
     });
-    const move = makeMove({ accuracy: 100 });
+    const move = makeSyntheticMove({ accuracy: 100 });
     const rng = createMockRng(51); // roll = 51
 
     const context: AccuracyContext = {
@@ -371,7 +381,7 @@ describe("#258 Tangled Feet accuracy halving", () => {
     const defender = makeActivePokemon({
       ability: ABILITIES.tangledFeet,
     });
-    const move = makeMove({ accuracy: 100 });
+    const move = makeSyntheticMove({ accuracy: 100 });
     const rng = createMockRng(51);
 
     const context: AccuracyContext = {
@@ -428,14 +438,7 @@ describe("#261 Trick Room toggle deactivation", () => {
       trickRoom: { active: true, turnsLeft: 3 },
     });
     state.sides[0].active = [attacker];
-    const move = makeMove({
-      id: MOVES.trickRoom,
-      type: TYPES.psychic,
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: null,
-    });
+    const move = makeCanonicalMove(MOVES.trickRoom);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -457,14 +460,7 @@ describe("#261 Trick Room toggle deactivation", () => {
     const defender = makeActivePokemon({});
     const state = makeBattleState();
     state.sides[0].active = [attacker];
-    const move = makeMove({
-      id: MOVES.trickRoom,
-      type: TYPES.psychic,
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: null,
-    });
+    const move = makeCanonicalMove(MOVES.trickRoom);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -491,14 +487,7 @@ describe("#264 Perish Song volatile data with turnsLeft", () => {
     const defender = makeActivePokemon({});
     const state = makeBattleState();
     state.sides[0].active = [attacker];
-    const move = makeMove({
-      id: MOVES.perishSong,
-      type: TYPES.normal,
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: { type: "custom", id: MOVES.perishSong },
-    });
+    const move = makeCanonicalMove(MOVES.perishSong);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -522,14 +511,7 @@ describe("#264 Perish Song volatile data with turnsLeft", () => {
     const defender = makeActivePokemon({ types: [TYPES.water] });
     const state = makeBattleState();
     state.sides[0].active = [attacker];
-    const move = makeMove({
-      id: MOVES.perishSong,
-      type: TYPES.normal,
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: { type: "custom", id: MOVES.perishSong },
-    });
+    const move = makeCanonicalMove(MOVES.perishSong);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -560,14 +542,7 @@ describe("#268 Disable random duration 4-7 turns", () => {
     const state = makeBattleState();
     state.sides[0].active = [attacker];
     const rng = createMockRng(4); // int(4,7) returns 4
-    const move = makeMove({
-      id: MOVES.disable,
-      type: TYPES.normal,
-      category: "status",
-      power: null,
-      accuracy: 100,
-      effect: { type: "volatile-status", volatile: VOLATILES.disable },
-    });
+    const move = makeCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -592,14 +567,7 @@ describe("#268 Disable random duration 4-7 turns", () => {
     const state = makeBattleState();
     state.sides[0].active = [attacker];
     const rng = createMockRng(7); // int(4,7) returns 7
-    const move = makeMove({
-      id: MOVES.disable,
-      type: TYPES.normal,
-      category: "status",
-      power: null,
-      accuracy: 100,
-      effect: { type: "volatile-status", volatile: VOLATILES.disable },
-    });
+    const move = makeCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -629,14 +597,7 @@ describe("#278 Disable fails when target's last move has 0 PP", () => {
     });
     const state = makeBattleState();
     state.sides[0].active = [attacker];
-    const move = makeMove({
-      id: MOVES.disable,
-      type: TYPES.normal,
-      category: "status",
-      power: null,
-      accuracy: 100,
-      effect: { type: "volatile-status", volatile: VOLATILES.disable },
-    });
+    const move = makeCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -660,14 +621,7 @@ describe("#278 Disable fails when target's last move has 0 PP", () => {
     });
     const state = makeBattleState();
     state.sides[0].active = [attacker];
-    const move = makeMove({
-      id: MOVES.disable,
-      type: TYPES.normal,
-      category: "status",
-      power: null,
-      accuracy: 100,
-      effect: { type: "volatile-status", volatile: VOLATILES.disable },
-    });
+    const move = makeCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -700,14 +654,7 @@ describe("#277 Future Sight fails when future attack is already pending", () => 
       damage: 100,
       sourceSide: 0,
     } as any;
-    const move = makeMove({
-      id: MOVES.futureSight,
-      type: TYPES.psychic,
-      category: "special",
-      power: 80,
-      accuracy: 90,
-      effect: { type: "custom", id: MOVES.futureSight },
-    });
+    const move = makeCanonicalMove(MOVES.futureSight);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -730,14 +677,7 @@ describe("#277 Future Sight fails when future attack is already pending", () => 
     const state = makeBattleState();
     state.sides[0].active = [attacker];
     state.sides[1].futureAttack = null;
-    const move = makeMove({
-      id: MOVES.futureSight,
-      type: TYPES.psychic,
-      category: "special",
-      power: 80,
-      accuracy: 90,
-      effect: { type: "custom", id: MOVES.futureSight },
-    });
+    const move = makeCanonicalMove(MOVES.futureSight);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -796,7 +736,7 @@ describe("#273 Flash Fire does not activate when frozen", () => {
       types: [TYPES.fire],
       status: STATUS.freeze,
     });
-    const fireMove = makeMove({ id: MOVES.flamethrower, type: TYPES.fire, category: "special" });
+    const fireMove = makeCanonicalMove(MOVES.flamethrower);
     const ctx: AbilityContext = {
       pokemon,
       opponent: makeActivePokemon({}),
@@ -817,7 +757,7 @@ describe("#273 Flash Fire does not activate when frozen", () => {
       types: [TYPES.fire],
       status: null,
     });
-    const fireMove = makeMove({ id: MOVES.flamethrower, type: TYPES.fire, category: "special" });
+    const fireMove = makeCanonicalMove(MOVES.flamethrower);
     const ctx: AbilityContext = {
       pokemon,
       opponent: makeActivePokemon({}),
@@ -972,20 +912,12 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     // We verify via damage result that the boost is applied.
     const attacker = makeActivePokemon({
       speciesId: SPECIES.dialga,
-      types: [TYPES.steel, TYPES.dragon],
       heldItem: ITEMS.adamantOrb,
     });
     const defender = makeActivePokemon({
       types: [TYPES.normal],
     });
-    const move = makeMove({
-      id: MOVES.dragonPulse,
-      displayName: "Dragon Pulse",
-      type: TYPES.dragon,
-      category: "special",
-      power: 90,
-      accuracy: 100,
-    });
+    const move = makeCanonicalMove(MOVES.dragonPulse);
     const state = makeBattleState();
     const _rng = createMockRng(100); // max random roll for predictability
 
@@ -1003,7 +935,6 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     // Calculate WITHOUT Adamant Orb
     const attackerWithout = makeActivePokemon({
       speciesId: SPECIES.dialga,
-      types: [TYPES.steel, TYPES.dragon],
       heldItem: null,
     });
     const contextWithout: DamageContext = {
@@ -1034,18 +965,10 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     //   moves by 20%."
     const attacker = makeActivePokemon({
       speciesId: SPECIES.palkia,
-      types: [TYPES.water, TYPES.dragon],
       heldItem: ITEMS.lustrousOrb,
     });
     const defender = makeActivePokemon({ types: [TYPES.normal] });
-    const move = makeMove({
-      id: MOVES.surf,
-      displayName: "Surf",
-      type: TYPES.water,
-      category: "special",
-      power: 95,
-      accuracy: 100,
-    });
+    const move = makeCanonicalMove(MOVES.surf);
     const state = makeBattleState();
 
     const contextWith: DamageContext = {
@@ -1060,7 +983,6 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
 
     const attackerWithout = makeActivePokemon({
       speciesId: SPECIES.palkia,
-      types: [TYPES.water, TYPES.dragon],
       heldItem: null,
     });
     const contextWithout: DamageContext = {
@@ -1089,18 +1011,10 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     // Source: Showdown — Adamant Orb only boosts Dragon and Steel moves for Dialga
     const attacker = makeActivePokemon({
       speciesId: SPECIES.dialga,
-      types: [TYPES.steel, TYPES.dragon],
       heldItem: ITEMS.adamantOrb,
     });
     const defender = makeActivePokemon({ types: [TYPES.normal] });
-    const move = makeMove({
-      id: MOVES.flamethrower,
-      displayName: "Flamethrower",
-      type: TYPES.fire,
-      category: "special",
-      power: 95,
-      accuracy: 100,
-    });
+    const move = makeCanonicalMove(MOVES.flamethrower);
     const state = makeBattleState();
 
     const contextWith: DamageContext = {
@@ -1115,7 +1029,6 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
 
     const attackerWithout = makeActivePokemon({
       speciesId: SPECIES.dialga,
-      types: [TYPES.steel, TYPES.dragon],
       heldItem: null,
     });
     const contextWithout: DamageContext = {
@@ -1136,16 +1049,10 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     // Source: Showdown — Adamant Orb only works for Dialga (species 483)
     const attacker = makeActivePokemon({
       speciesId: SPECIES.dragonite,
-      types: [TYPES.dragon, TYPES.flying],
       heldItem: ITEMS.adamantOrb,
     });
     const defender = makeActivePokemon({ types: [TYPES.normal] });
-    const move = makeMove({
-      id: MOVES.dragonPulse,
-      type: TYPES.dragon,
-      category: "special",
-      power: 90,
-    });
+    const move = makeCanonicalMove(MOVES.dragonPulse);
     const state = makeBattleState();
 
     const contextWith: DamageContext = {
@@ -1160,7 +1067,6 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
 
     const attackerWithout = makeActivePokemon({
       speciesId: SPECIES.dragonite,
-      types: [TYPES.dragon, TYPES.flying],
       heldItem: null,
     });
     const contextWithout: DamageContext = {

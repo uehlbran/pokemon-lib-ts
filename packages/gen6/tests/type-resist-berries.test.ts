@@ -1,8 +1,21 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen6Damage, TYPE_RESIST_BERRIES } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
+import {
+  createGen6DataManager,
+  GEN6_ITEM_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+} from "../src";
 
 /**
  * Gen 6 Type Resist Berries -- damage calc integration tests.
@@ -21,6 +34,16 @@ import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as damage-calc.test.ts)
 // ---------------------------------------------------------------------------
+
+const ABILITIES = CORE_ABILITY_IDS
+const CORE_ITEMS = CORE_ITEM_IDS
+const CORE_MOVES = CORE_MOVE_IDS
+const GEN6_ITEMS = GEN6_ITEM_IDS
+const GEN6_MOVES = GEN6_MOVE_IDS
+const NATURES = GEN6_NATURE_IDS
+const SPECIES = GEN6_SPECIES_IDS
+const TYPES = CORE_TYPE_IDS
+const gen6Data = createGen6DataManager()
 
 function makeActive(overrides: {
   level?: number;
@@ -46,16 +69,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: 1,
+      speciesId: SPECIES.bulbasaur,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: NATURES.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -66,7 +89,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: GEN6_ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -80,8 +103,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -104,48 +127,19 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
+function makeMove(
+  moveId: string = CORE_MOVES.tackle,
+  overrides: {
   flags?: Partial<MoveData["flags"]>;
   effect?: MoveData["effect"];
-}): MoveData {
+} = {},
+): MoveData {
+  const move = gen6Data.getMove(moveId)
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 6,
-    critRatio: 0,
+    ...move,
+    ...overrides,
+    flags: { ...move.flags, ...overrides.flags },
+    effect: overrides.effect ?? move.effect,
   } as MoveData;
 }
 
@@ -187,7 +181,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeMove(),
     state: overrides.state ?? makeState(),
     rng: makeFixedRng(),
     isCrit: overrides.isCrit ?? false,
@@ -208,13 +202,13 @@ describe("Gen 6 type resist berries -- damage calc integration", () => {
     //   random factor with int return 0 => floor(37 * (100-0)/100) = 37
     //   no STAB, Fire vs Grass = 2x: 37*2 = 74
     //   Occa Berry: pokeRound(74, 2048) = floor((74*2048+2047)/4096) = 37
-    const attacker = makeActive({ types: ["normal"], attack: 100 });
+    const attacker = makeActive({ types: [TYPES.normal], attack: 100 });
     const defender = makeActive({
-      types: ["grass"],
+      types: [TYPES.grass],
       defense: 100,
-      heldItem: "occa-berry",
+      heldItem: CORE_ITEMS.occaBerry,
     });
-    const fireMove = makeMove({ type: "fire", power: 80, category: "physical" });
+    const fireMove = makeMove(CORE_MOVES.firePledge);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove }),
@@ -230,12 +224,12 @@ describe("Gen 6 type resist berries -- damage calc integration", () => {
   it("given Grass-type defender WITHOUT Occa Berry vs super-effective Fire move, when damage calculated, then full 2x damage applies", () => {
     // Source: Showdown data/items.ts -- without resist berry, full SE damage
     // Derivation: baseDmg = 37, Fire vs Grass = 2x: 37*2 = 74
-    const attacker = makeActive({ types: ["normal"], attack: 100 });
+    const attacker = makeActive({ types: [TYPES.normal], attack: 100 });
     const defender = makeActive({
-      types: ["grass"],
+      types: [TYPES.grass],
       defense: 100,
     });
-    const fireMove = makeMove({ type: "fire", power: 80, category: "physical" });
+    const fireMove = makeMove(CORE_MOVES.firePledge);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove }),
@@ -248,13 +242,13 @@ describe("Gen 6 type resist berries -- damage calc integration", () => {
 
   it("given Normal-type defender with Occa Berry vs neutral Fire move, when damage calculated, then Occa Berry does NOT activate (not SE)", () => {
     // Source: Showdown data/items.ts -- type resist berries only activate on SE damage
-    const attacker = makeActive({ types: ["normal"], attack: 100 });
+    const attacker = makeActive({ types: [TYPES.normal], attack: 100 });
     const defender = makeActive({
-      types: ["normal"],
+      types: [TYPES.normal],
       defense: 100,
-      heldItem: "occa-berry",
+      heldItem: CORE_ITEMS.occaBerry,
     });
-    const fireMove = makeMove({ type: "fire", power: 80, category: "physical" });
+    const fireMove = makeMove(CORE_MOVES.firePledge);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove }),
@@ -262,7 +256,7 @@ describe("Gen 6 type resist berries -- damage calc integration", () => {
     );
 
     // Berry NOT consumed
-    expect(defender.pokemon.heldItem).toBe("occa-berry");
+    expect(defender.pokemon.heldItem).toBe(CORE_ITEMS.occaBerry);
     expect(result.damage).toBe(37);
   });
 });
@@ -275,23 +269,23 @@ describe("Gen 6 Roseli Berry -- halves Fairy-type SE damage", () => {
   it("given Dragon-type defender with Roseli Berry vs SE Fairy move, when damage calculated, then damage is halved", () => {
     // Source: Bulbapedia -- Roseli Berry: "Weakens a supereffective Fairy-type attack"
     // Attacker is Normal-type to avoid STAB on Fairy move
-    // Derivation: L50, Fairy 80BP, SpA=100, SpDef=100, no STAB, Fairy vs Dragon = 2x
-    //   baseDmg = 37, Fairy vs Dragon = 2x: 74
-    //   Roseli Berry: pokeRound(74, 2048) = floor((74*2048+2047)/4096) = 37
-    const attacker = makeActive({ types: ["normal"], spAttack: 100 });
+    // Derivation using canonical Gen 6 Moonblast (95 BP), SpA=100, SpDef=100, no STAB:
+    //   pre-type damage = 43, Fairy vs Dragon = 2x => 86
+    //   Roseli Berry halves via pokeRound(86, 2048) => 43
+    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
     const defender = makeActive({
-      types: ["dragon"],
+      types: [TYPES.dragon],
       spDefense: 100,
-      heldItem: "roseli-berry",
+      heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove({ type: "fairy", power: 80, category: "special" });
+    const fairyMove = makeMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fairyMove }),
       typeChart,
     );
 
-    expect(result.damage).toBe(37);
+    expect(result.damage).toBe(43);
     expect(result.effectiveness).toBe(2);
     expect(defender.pokemon.heldItem).toBeNull();
   });
@@ -300,20 +294,20 @@ describe("Gen 6 Roseli Berry -- halves Fairy-type SE damage", () => {
     // Source: Showdown data/items.ts -- resist berries only activate when SE
     // Fairy vs Fire = 0.5x (NVE), so berry should not activate
     // Attacker is Normal-type to avoid STAB on Fairy move
-    const attacker = makeActive({ types: ["normal"], spAttack: 100 });
+    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
     const defender = makeActive({
-      types: ["fire"],
+      types: [TYPES.fire],
       spDefense: 100,
-      heldItem: "roseli-berry",
+      heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove({ type: "fairy", power: 80, category: "special" });
+    const fairyMove = makeMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fairyMove }),
       typeChart,
     );
 
-    expect(defender.pokemon.heldItem).toBe("roseli-berry");
+    expect(defender.pokemon.heldItem).toBe(GEN6_ITEMS.roseliBerry);
     // Fairy vs Fire = 0.5x (NVE)
     expect(result.effectiveness).toBe(0.5);
   });
@@ -327,15 +321,15 @@ describe("Gen 6 type resist berries -- Magic Room suppression", () => {
   it("given Dragon-type defender with Roseli Berry vs SE Fairy move under Magic Room, when damage calculated, then berry does NOT activate and full SE damage applies", () => {
     // Source: Showdown data/moves.ts -- Magic Room: "For 5 turns, held items have no effect"
     // Source: Bulbapedia -- Magic Room: "Nullifies the effect of each Pokémon's held item"
-    // Without Magic Room the same setup gives 37 (halved). Under Magic Room: full 74.
+    // Without Magic Room the same setup gives 43 (halved). Under Magic Room: full 86.
     // Attacker is Normal-type to avoid STAB on Fairy move.
-    const attacker = makeActive({ types: ["normal"], spAttack: 100 });
+    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
     const defender = makeActive({
-      types: ["dragon"],
+      types: [TYPES.dragon],
       spDefense: 100,
-      heldItem: "roseli-berry",
+      heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove({ type: "fairy", power: 80, category: "special" });
+    const fairyMove = makeMove(GEN6_MOVES.moonblast);
     const magicRoomState = {
       ...makeState(),
       magicRoom: { active: true, turnsLeft: 3 },
@@ -347,22 +341,22 @@ describe("Gen 6 type resist berries -- Magic Room suppression", () => {
     );
 
     // Berry NOT consumed — Magic Room suppresses it
-    expect(defender.pokemon.heldItem).toBe("roseli-berry");
-    // Full SE damage: Fairy vs Dragon = 2x: 74
-    expect(result.damage).toBe(74);
+    expect(defender.pokemon.heldItem).toBe(GEN6_ITEMS.roseliBerry);
+    // Full SE damage with canonical Moonblast: 43 pre-type * 2 = 86
+    expect(result.damage).toBe(86);
   });
 
   it("given Dragon-type defender with Roseli Berry vs SE Fairy move when Magic Room is inactive, when damage calculated, then berry activates normally", () => {
     // Source: Showdown data/moves.ts -- Magic Room only suppresses when active
     // Without Magic Room the berry should halve SE damage as expected.
     // Attacker is Normal-type to avoid STAB on Fairy move.
-    const attacker = makeActive({ types: ["normal"], spAttack: 100 });
+    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
     const defender = makeActive({
-      types: ["dragon"],
+      types: [TYPES.dragon],
       spDefense: 100,
-      heldItem: "roseli-berry",
+      heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove({ type: "fairy", power: 80, category: "special" });
+    const fairyMove = makeMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fairyMove }),
@@ -371,8 +365,8 @@ describe("Gen 6 type resist berries -- Magic Room suppression", () => {
 
     // Berry consumed — Magic Room not active
     expect(defender.pokemon.heldItem).toBeNull();
-    // Halved SE damage: Fairy vs Dragon = 2x: 74 -> pokeRound(74, 2048) = 37
-    expect(result.damage).toBe(37);
+    // Halved SE damage with canonical Moonblast: 86 -> pokeRound(86, 2048) = 43
+    expect(result.damage).toBe(43);
   });
 });
 
@@ -388,7 +382,7 @@ describe("Gen 6 TYPE_RESIST_BERRIES table", () => {
 
   it("given the table, then Roseli Berry maps to fairy type", () => {
     // Source: Bulbapedia -- Roseli Berry: "halves damage from Fairy-type moves"
-    expect(TYPE_RESIST_BERRIES["roseli-berry"]).toBe("fairy");
+    expect(TYPE_RESIST_BERRIES[GEN6_ITEMS.roseliBerry]).toBe(TYPES.fairy);
   });
 });
 
@@ -400,22 +394,22 @@ describe("Gen 6 type resist berries -- Klutz suppression", () => {
   it("given defender with Klutz + Roseli Berry vs SE Fairy move, when damage calculated, then Klutz suppresses berry", () => {
     // Source: Showdown data/abilities.ts -- Klutz prevents item usage
     // Attacker is Normal-type to avoid STAB on Fairy move
-    const attacker = makeActive({ types: ["normal"], spAttack: 100 });
+    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
     const defender = makeActive({
-      types: ["dragon"],
+      types: [TYPES.dragon],
       spDefense: 100,
-      heldItem: "roseli-berry",
-      ability: "klutz",
+      heldItem: GEN6_ITEMS.roseliBerry,
+      ability: ABILITIES.klutz,
     });
-    const fairyMove = makeMove({ type: "fairy", power: 80, category: "special" });
+    const fairyMove = makeMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fairyMove }),
       typeChart,
     );
 
-    // Full SE damage (no STAB, Fairy vs Dragon = 2x: 37*2 = 74), berry NOT consumed
-    expect(result.damage).toBe(74);
-    expect(defender.pokemon.heldItem).toBe("roseli-berry");
+    // Full SE damage with canonical Moonblast: 43 pre-type * 2 = 86, berry NOT consumed
+    expect(result.damage).toBe(86);
+    expect(defender.pokemon.heldItem).toBe(GEN6_ITEMS.roseliBerry);
   });
 });

@@ -76,6 +76,7 @@ export const CORE_ITEM_IDS = {
   lustrousOrb: "lustrous-orb",
   normalGem: "normal-gem",
   occaBerry: "occa-berry",
+  pokeBall: "poke-ball",
   smoothRock: "smooth-rock",
   toxicOrb: "toxic-orb",
   soulDew: "soul-dew",
