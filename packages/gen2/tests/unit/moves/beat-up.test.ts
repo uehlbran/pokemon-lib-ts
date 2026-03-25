@@ -1,36 +1,47 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  createMoveSlot,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../../src";
 import { Gen2Ruleset } from "../../../src/Gen2Ruleset";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+const GEN2_DATA = createGen2DataManager();
+const DEFAULT_SPECIES = GEN2_DATA.getSpecies(GEN2_SPECIES_IDS.bulbasaur);
+const BEAT_UP_MOVE = GEN2_DATA.getMove(GEN2_MOVE_IDS.beatUp);
+const TACKLE_MOVE = GEN2_DATA.getMove(GEN2_MOVE_IDS.tackle);
+
 function createMockActive(
   overrides: Partial<{
     level: number;
     currentHp: number;
     maxHp: number;
-    status: string | null;
-    types: string[];
+    status: PrimaryStatus | null;
+    types: PokemonType[];
     nickname: string | null;
-    moves: Array<{ moveId: string; pp: number; maxPp: number; currentPP?: number }>;
+    moves: PokemonInstance["moves"];
   }> = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      speciesId: 1,
+      speciesId: DEFAULT_SPECIES.id,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
-      status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
+      status: overrides.status ?? null,
       heldItem: null,
       nickname: overrides.nickname ?? null,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "beat-up", pp: 10, maxPp: 10, currentPP: 10 }],
+      moves: overrides.moves ?? [createMoveSlot(BEAT_UP_MOVE.id, BEAT_UP_MOVE.pp)],
       calculatedStats: {
         hp: maxHp,
         attack: 100,
@@ -52,8 +63,8 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["dark"],
-    ability: "",
+    types: (overrides.types as unknown as PokemonType[]) ?? [...DEFAULT_SPECIES.types],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -74,18 +85,18 @@ function createMockActive(
 }
 
 function createMockTeamMember(
-  overrides: Partial<{ currentHp: number; status: string | null }> = {},
+  overrides: Partial<{ currentHp: number; status: PrimaryStatus | null }> = {},
 ): PokemonInstance {
   return {
-    speciesId: 1,
+    speciesId: DEFAULT_SPECIES.id,
     level: 50,
     currentHp: overrides.currentHp ?? 200,
-    status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
+    status: overrides.status ?? null,
     heldItem: null,
     nickname: null,
     ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    moves: [{ moveId: "tackle", pp: 35, maxPp: 35, currentPP: 35 }],
+    moves: [createMoveSlot(TACKLE_MOVE.id, TACKLE_MOVE.pp)],
     calculatedStats: {
       hp: 200,
       attack: 100,
@@ -136,19 +147,6 @@ function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
 describe("Gen 2 Beat Up", () => {
   const ruleset = new Gen2Ruleset();
 
-  const beatUpMove = {
-    id: "beat-up",
-    name: "Beat Up",
-    type: "dark",
-    category: "special",
-    power: 10,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    effect: { type: "custom", handler: "beat-up" },
-    flags: {},
-  } as unknown as MoveData;
-
   it("given a team of 3 eligible Pokemon (alive, no status), when Beat Up is used, then multiHitCount is 2 (3 total hits)", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BeatUpEffect
@@ -169,7 +167,7 @@ describe("Gen 2 Beat Up", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: beatUpMove,
+      move: BEAT_UP_MOVE,
       damage: 10,
       state,
       rng: new SeededRandom(42),
@@ -188,7 +186,7 @@ describe("Gen 2 Beat Up", () => {
     const team = [
       createMockTeamMember(), // Alive, no status (eligible)
       createMockTeamMember({ currentHp: 0 }), // Fainted (ineligible)
-      createMockTeamMember({ status: "paralysis" }), // Statused (ineligible)
+      createMockTeamMember({ status: CORE_STATUS_IDS.paralysis }), // Statused (ineligible)
       createMockTeamMember(), // Alive, no status (eligible)
       createMockTeamMember({ currentHp: 0 }), // Fainted (ineligible)
       createMockTeamMember(), // Alive, no status (eligible)
@@ -202,7 +200,7 @@ describe("Gen 2 Beat Up", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: beatUpMove,
+      move: BEAT_UP_MOVE,
       damage: 10,
       state,
       rng: new SeededRandom(42),
@@ -220,7 +218,7 @@ describe("Gen 2 Beat Up", () => {
     const team = [
       createMockTeamMember(), // Active (eligible)
       createMockTeamMember({ currentHp: 0 }), // Fainted
-      createMockTeamMember({ status: "burn" }), // Burned
+      createMockTeamMember({ status: CORE_STATUS_IDS.burn }), // Burned
     ];
     const side0 = createMockSide(0, attacker, team);
     const defender = createMockActive();
@@ -231,7 +229,7 @@ describe("Gen 2 Beat Up", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: beatUpMove,
+      move: BEAT_UP_MOVE,
       damage: 10,
       state,
       rng: new SeededRandom(42),
@@ -248,7 +246,7 @@ describe("Gen 2 Beat Up", () => {
     const attacker = createMockActive({ nickname: "Sneasel" });
     const team = [
       createMockTeamMember({ currentHp: 0 }), // Fainted
-      createMockTeamMember({ status: "sleep" }), // Asleep
+      createMockTeamMember({ status: CORE_STATUS_IDS.sleep }), // Asleep
       createMockTeamMember({ currentHp: 0 }), // Fainted
     ];
     const side0 = createMockSide(0, attacker, team);
@@ -260,7 +258,7 @@ describe("Gen 2 Beat Up", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: beatUpMove,
+      move: BEAT_UP_MOVE,
       damage: 10,
       state,
       rng: new SeededRandom(42),
