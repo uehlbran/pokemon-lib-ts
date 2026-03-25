@@ -17,6 +17,37 @@ import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
 // Test helpers (same pattern as move-effects.test.ts)
 // ---------------------------------------------------------------------------
 
+const TEST_IDS = {
+  abilities: {
+    chlorophyll: "chlorophyll",
+    insomnia: "insomnia",
+    intimidate: "intimidate",
+    multitype: "multitype",
+    truant: "truant",
+    vitalSpirit: "vital-spirit",
+  },
+  items: {
+    sitrusBerry: "sitrus-berry",
+  },
+  moves: {
+    embargo: "embargo",
+    encore: "encore",
+    gastroAcid: "gastro-acid",
+    healBlock: "heal-block",
+    recover: "recover",
+    roost: "roost",
+    worrySeed: "worry-seed",
+    yawn: "yawn",
+  },
+  volatiles: {
+    embargo: "embargo",
+    encore: "encore",
+    healBlock: "heal-block",
+    sleepCounter: "sleep-counter",
+    yawn: "yawn",
+  },
+} as const;
+
 function createMockRng(intReturnValue: number) {
   return {
     next: () => 0,
@@ -206,43 +237,49 @@ describe("Yawn", () => {
     // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"], nickname: "Snorlax" });
-    const move = createMove("yawn");
+    const move = createMove(TEST_IDS.moves.yawn);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("yawn");
-    expect(result.volatileData).toEqual({ turnsLeft: 1 });
-    expect(result.messages).toContain("Snorlax grew drowsy!");
+    expect(result).toMatchObject({
+      volatileInflicted: TEST_IDS.volatiles.yawn,
+      volatileData: { turnsLeft: 1 },
+      messages: ["Snorlax grew drowsy!"],
+    });
   });
 
   it("given target is already asleep, when Yawn is used, then it fails", () => {
     // Source: Showdown Gen 4 mod — Yawn fails if target already has a primary status
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"], status: "sleep" });
-    const move = createMove("yawn");
+    const move = createMove(TEST_IDS.moves.yawn);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given target has paralysis, when Yawn is used, then it fails because target already has a status", () => {
     // Source: Showdown Gen 4 mod — Yawn fails if target has any primary status
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["electric"], status: "paralysis" });
-    const move = createMove("yawn");
+    const move = createMove(TEST_IDS.moves.yawn);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given target already has yawn volatile, when Yawn is used again, then it fails", () => {
@@ -251,42 +288,50 @@ describe("Yawn", () => {
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set("yawn", { turnsLeft: 1 });
     const defender = createActivePokemon({ types: ["normal"], volatiles });
-    const move = createMove("yawn");
+    const move = createMove(TEST_IDS.moves.yawn);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given target has Insomnia, when Yawn is used, then it fails", () => {
     // Source: Showdown Gen 4 mod — Yawn blocked by sleep-preventing abilities
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"], ability: "insomnia" });
-    const move = createMove("yawn");
+    const move = createMove(TEST_IDS.moves.yawn);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given target has Vital Spirit, when Yawn is used, then it fails", () => {
     // Source: Showdown Gen 4 mod — Vital Spirit blocks Yawn
     const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], ability: "vital-spirit" });
-    const move = createMove("yawn");
+    const defender = createActivePokemon({ types: ["normal"], ability: TEST_IDS.abilities.vitalSpirit });
+    const move = createMove(TEST_IDS.moves.yawn);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
+    expect(defender.ability).toBe(TEST_IDS.abilities.vitalSpirit);
+    expect(defender.volatileStatuses.has(TEST_IDS.volatiles.yawn)).toBe(false);
   });
 });
 
@@ -304,16 +349,17 @@ describe("Encore", () => {
       nickname: "Rattata",
       lastMoveUsed: "tackle",
     });
-    const move = createMove("encore");
+    const move = createMove(TEST_IDS.moves.encore);
     const rng = createMockRng(5); // rng.int(4,8) will return 5
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("encore");
-    expect(result.volatileData?.turnsLeft).toBe(5);
-    expect(result.volatileData?.data).toEqual({ moveId: "tackle" });
-    expect(result.messages).toContain("Rattata got an encore!");
+    expect(result).toMatchObject({
+      volatileInflicted: TEST_IDS.volatiles.encore,
+      volatileData: { turnsLeft: 5, data: { moveId: "tackle" } },
+      messages: ["Rattata got an encore!"],
+    });
   });
 
   it("given target has no last move, when Encore is used, then it fails", () => {
@@ -323,34 +369,38 @@ describe("Encore", () => {
       types: ["normal"],
       lastMoveUsed: null,
     });
-    const move = createMove("encore");
+    const move = createMove(TEST_IDS.moves.encore);
     const rng = createMockRng(5);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given target already has encore volatile, when Encore is used, then it fails", () => {
     // Source: Showdown Gen 4 mod — cannot Encore a Pokemon that is already Encored
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("encore", { turnsLeft: 3, data: { moveId: "tackle" } });
+    volatiles.set(TEST_IDS.volatiles.encore, { turnsLeft: 3, data: { moveId: "tackle" } });
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({
       types: ["normal"],
       lastMoveUsed: "tackle",
       volatiles,
     });
-    const move = createMove("encore");
+    const move = createMove(TEST_IDS.moves.encore);
     const rng = createMockRng(5);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given target used Ember last turn, when Encore is used with rng returning 8, then turnsLeft is 8", () => {
@@ -361,15 +411,16 @@ describe("Encore", () => {
       nickname: "Charmander",
       lastMoveUsed: "ember",
     });
-    const move = createMove("encore");
+    const move = createMove(TEST_IDS.moves.encore);
     const rng = createMockRng(8);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("encore");
-    expect(result.volatileData?.turnsLeft).toBe(8);
-    expect(result.volatileData?.data).toEqual({ moveId: "ember" });
+    expect(result).toMatchObject({
+      volatileInflicted: TEST_IDS.volatiles.encore,
+      volatileData: { turnsLeft: 8, data: { moveId: "ember" } },
+    });
   });
 });
 
@@ -383,21 +434,23 @@ describe("Heal Block", () => {
     // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
     const attacker = createActivePokemon({ types: ["psychic"] });
     const defender = createActivePokemon({ types: ["normal"], nickname: "Blissey" });
-    const move = createMove("heal-block");
+    const move = createMove(TEST_IDS.moves.healBlock);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("heal-block");
-    expect(result.volatileData).toEqual({ turnsLeft: 5 });
-    expect(result.messages).toContain("Blissey was prevented from healing!");
+    expect(result).toMatchObject({
+      volatileInflicted: TEST_IDS.volatiles.healBlock,
+      volatileData: { turnsLeft: 5 },
+      messages: ["Blissey was prevented from healing!"],
+    });
   });
 
   it("given target already has heal-block, when Heal Block is used again, then it fails", () => {
     // Source: Showdown Gen 4 mod — cannot stack Heal Block
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("heal-block", { turnsLeft: 3 });
+    volatiles.set(TEST_IDS.volatiles.healBlock, { turnsLeft: 3 });
     const attacker = createActivePokemon({ types: ["psychic"] });
     const defender = createActivePokemon({ types: ["normal"], volatiles });
     const move = createMove("heal-block");
@@ -406,15 +459,17 @@ describe("Heal Block", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given attacker has heal-block, when Recover is used (via data-driven heal effect), then healAmount is 0", () => {
     // Source: Showdown Gen 4 mod — heal-block volatile gates all healing
     // Source: Bulbapedia — Heal Block: "prevents the target from recovering HP"
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("heal-block", { turnsLeft: 3 });
+    volatiles.set(TEST_IDS.volatiles.healBlock, { turnsLeft: 3 });
     const attacker = createActivePokemon({
       types: ["normal"],
       currentHp: 50,
@@ -422,7 +477,7 @@ describe("Heal Block", () => {
       volatiles,
     });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("recover", {
+    const move = createMove(TEST_IDS.moves.recover, {
       category: "status",
       effect: { type: "heal", amount: 0.5 } as any,
     });
@@ -431,14 +486,16 @@ describe("Heal Block", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.healAmount).toBe(0);
-    expect(result.messages.some((m) => m.includes("blocked from healing"))).toBe(true);
+    expect(result).toMatchObject({
+      healAmount: 0,
+      messages: ["The Pokemon is blocked from healing!"],
+    });
   });
 
   it("given attacker has heal-block, when Roost is used, then healAmount is 0", () => {
     // Source: Showdown Gen 4 mod — Roost blocked by Heal Block
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("heal-block", { turnsLeft: 3 });
+    volatiles.set(TEST_IDS.volatiles.healBlock, { turnsLeft: 3 });
     const attacker = createActivePokemon({
       types: ["normal", "flying"],
       currentHp: 50,
@@ -446,7 +503,7 @@ describe("Heal Block", () => {
       volatiles,
     });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("roost", {
+    const move = createMove(TEST_IDS.moves.roost, {
       effect: { type: "heal", amount: 0.5 } as any,
     });
     const rng = createMockRng(0);
@@ -454,8 +511,10 @@ describe("Heal Block", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.healAmount).toBe(0);
-    expect(result.messages.some((m) => m.includes("blocked from healing"))).toBe(true);
+    expect(result).toMatchObject({
+      healAmount: 0,
+      messages: ["The Pokemon is blocked from healing!"],
+    });
   });
 
   it("given attacker without heal-block, when Recover is used, then healAmount is 100 (50% of 200)", () => {
@@ -467,7 +526,7 @@ describe("Heal Block", () => {
       maxHp: 200,
     });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("recover", {
+    const move = createMove(TEST_IDS.moves.recover, {
       category: "status",
       effect: { type: "heal", amount: 0.5 } as any,
     });
@@ -476,7 +535,10 @@ describe("Heal Block", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.healAmount).toBe(100);
+    expect(result).toMatchObject({
+      healAmount: 100,
+      messages: [],
+    });
   });
 });
 
@@ -490,21 +552,23 @@ describe("Embargo", () => {
     // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
     const attacker = createActivePokemon({ types: ["dark"] });
     const defender = createActivePokemon({ types: ["normal"], nickname: "Chansey" });
-    const move = createMove("embargo");
+    const move = createMove(TEST_IDS.moves.embargo);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("embargo");
-    expect(result.volatileData).toEqual({ turnsLeft: 5 });
-    expect(result.messages).toContain("Chansey can't use items!");
+    expect(result).toMatchObject({
+      volatileInflicted: TEST_IDS.volatiles.embargo,
+      volatileData: { turnsLeft: 5 },
+      messages: ["Chansey can't use items!"],
+    });
   });
 
   it("given target already has embargo, when Embargo is used again, then it fails", () => {
     // Source: Showdown Gen 4 mod — cannot stack Embargo
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("embargo", { turnsLeft: 3 });
+    volatiles.set(TEST_IDS.volatiles.embargo, { turnsLeft: 3 });
     const attacker = createActivePokemon({ types: ["dark"] });
     const defender = createActivePokemon({ types: ["normal"], volatiles });
     const move = createMove("embargo");
@@ -513,18 +577,20 @@ describe("Embargo", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result).toMatchObject({
+      volatileInflicted: null,
+      messages: ["But it failed!"],
+    });
   });
 
   it("given target has embargo volatile and holds Sitrus Berry, when item triggers, then item is blocked", () => {
     // Source: Showdown Gen 4 mod — Embargo blocks held item activation
     // Source: Bulbapedia — Embargo: "prevents the target from using its held item"
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("embargo", { turnsLeft: 3 });
+    volatiles.set(TEST_IDS.volatiles.embargo, { turnsLeft: 3 });
     const pokemon = createActivePokemon({
       types: ["normal"],
-      heldItem: "sitrus-berry",
+      heldItem: TEST_IDS.items.sitrusBerry,
       currentHp: 50,
       maxHp: 200,
       volatiles,
@@ -536,7 +602,7 @@ describe("Embargo", () => {
       rng: createMockRng(0),
     });
 
-    expect(result.activated).toBe(false);
+    expect(result).toMatchObject({ activated: false });
   });
 
   it("given target without embargo and holds Sitrus Berry below 50% HP, when item triggers, then item activates", () => {
@@ -545,7 +611,7 @@ describe("Embargo", () => {
     // Derivation: maxHp=200, 50% = 100, currentHp=90 < 100 -> triggers, heals floor(200/4) = 50
     const pokemon = createActivePokemon({
       types: ["normal"],
-      heldItem: "sitrus-berry",
+      heldItem: TEST_IDS.items.sitrusBerry,
       currentHp: 90,
       maxHp: 200,
     });
@@ -556,7 +622,7 @@ describe("Embargo", () => {
       rng: createMockRng(0),
     });
 
-    expect(result.activated).toBe(true);
+    expect(result).toMatchObject({ activated: true });
   });
 });
 
@@ -573,14 +639,16 @@ describe("Worry Seed", () => {
       nickname: "Bulbasaur",
       ability: "chlorophyll",
     });
-    const move = createMove("worry-seed");
+    const move = createMove(TEST_IDS.moves.worrySeed);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(defender.ability).toBe("insomnia");
-    expect(result.messages).toContain("Bulbasaur's ability changed to Insomnia!");
+    expect(defender.ability).toBe(TEST_IDS.abilities.insomnia);
+    expect(result).toMatchObject({
+      messages: ["Bulbasaur's ability changed to Insomnia!"],
+    });
   });
 
   it("given target already has Insomnia, when Worry Seed is used, then it fails", () => {
@@ -590,14 +658,14 @@ describe("Worry Seed", () => {
       types: ["normal"],
       ability: "insomnia",
     });
-    const move = createMove("worry-seed");
+    const move = createMove(TEST_IDS.moves.worrySeed);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.messages).toContain("But it failed!");
-    expect(defender.ability).toBe("insomnia");
+    expect(result).toMatchObject({ messages: ["But it failed!"] });
+    expect(defender.ability).toBe(TEST_IDS.abilities.insomnia);
   });
 
   it("given target has Truant, when Worry Seed is used, then it fails", () => {
@@ -607,14 +675,14 @@ describe("Worry Seed", () => {
       types: ["normal"],
       ability: "truant",
     });
-    const move = createMove("worry-seed");
+    const move = createMove(TEST_IDS.moves.worrySeed);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.messages).toContain("But it failed!");
-    expect(defender.ability).toBe("truant");
+    expect(result).toMatchObject({ messages: ["But it failed!"] });
+    expect(defender.ability).toBe(TEST_IDS.abilities.truant);
   });
 
   it("given target has Multitype (Arceus), when Worry Seed is used, then it fails", () => {
@@ -624,14 +692,14 @@ describe("Worry Seed", () => {
       types: ["normal"],
       ability: "multitype",
     });
-    const move = createMove("worry-seed");
+    const move = createMove(TEST_IDS.moves.worrySeed);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.messages).toContain("But it failed!");
-    expect(defender.ability).toBe("multitype");
+    expect(result).toMatchObject({ messages: ["But it failed!"] });
+    expect(defender.ability).toBe(TEST_IDS.abilities.multitype);
   });
 
   it("given target is asleep with Synchronize, when Worry Seed is used, then ability becomes Insomnia and target wakes up", () => {
@@ -639,7 +707,7 @@ describe("Worry Seed", () => {
     // Source: Bulbapedia — Insomnia: "Prevents the Pokemon from falling asleep"
     const attacker = createActivePokemon({ types: ["grass"] });
     const sleepVolatiles = new Map<string, { turnsLeft: number }>();
-    sleepVolatiles.set("sleep-counter", { turnsLeft: 3 });
+    sleepVolatiles.set(TEST_IDS.volatiles.sleepCounter, { turnsLeft: 3 });
     const defender = createActivePokemon({
       types: ["psychic"],
       nickname: "Alakazam",
@@ -647,16 +715,18 @@ describe("Worry Seed", () => {
       status: "sleep",
       volatiles: sleepVolatiles,
     });
-    const move = createMove("worry-seed");
+    const move = createMove(TEST_IDS.moves.worrySeed);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(defender.ability).toBe("insomnia");
+    expect(defender.ability).toBe(TEST_IDS.abilities.insomnia);
     expect(defender.pokemon.status).toBeNull();
-    expect(defender.volatileStatuses.has("sleep-counter")).toBe(false);
-    expect(result.messages).toContain("Alakazam's ability changed to Insomnia and it woke up!");
+    expect(defender.volatileStatuses.has(TEST_IDS.volatiles.sleepCounter)).toBe(false);
+    expect(result).toMatchObject({
+      messages: ["Alakazam's ability changed to Insomnia and it woke up!"],
+    });
   });
 });
 
@@ -674,14 +744,16 @@ describe("Gastro Acid", () => {
       nickname: "Gyarados",
       ability: "intimidate",
     });
-    const move = createMove("gastro-acid");
+    const move = createMove(TEST_IDS.moves.gastroAcid);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
     expect(defender.ability).toBe("");
-    expect(result.messages).toContain("Gyarados's ability was suppressed!");
+    expect(result).toMatchObject({
+      messages: ["Gyarados's ability was suppressed!"],
+    });
   });
 
   it("given target has Multitype (Arceus), when Gastro Acid is used, then it fails", () => {
@@ -691,14 +763,14 @@ describe("Gastro Acid", () => {
       types: ["normal"],
       ability: "multitype",
     });
-    const move = createMove("gastro-acid");
+    const move = createMove(TEST_IDS.moves.gastroAcid);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(defender.ability).toBe("multitype");
-    expect(result.messages).toContain("But it failed!");
+    expect(defender.ability).toBe(TEST_IDS.abilities.multitype);
+    expect(result).toMatchObject({ messages: ["But it failed!"] });
   });
 
   it("given target has Levitate, when Gastro Acid is used, then target ability becomes empty string", () => {
@@ -709,13 +781,15 @@ describe("Gastro Acid", () => {
       nickname: "Gengar",
       ability: "levitate",
     });
-    const move = createMove("gastro-acid");
+    const move = createMove(TEST_IDS.moves.gastroAcid);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
     expect(defender.ability).toBe("");
-    expect(result.messages).toContain("Gengar's ability was suppressed!");
+    expect(result).toMatchObject({
+      messages: ["Gengar's ability was suppressed!"],
+    });
   });
 });
