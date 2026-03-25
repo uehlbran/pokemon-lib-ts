@@ -1,7 +1,11 @@
 import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
-import { CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -9,6 +13,7 @@ import type { ActivePokemon, BattleState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -187,8 +192,8 @@ describe("Bug 2A: switch-in ability processing", () => {
         team1Ability: CORE_ABILITY_IDS.intimidate,
       });
 
-      ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
+      ruleset.setAbilityHandler((_trigger, ctx) => {
+        if (ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
           return {
             activated: true,
             effects: [
@@ -232,8 +237,8 @@ describe("Bug 2A: switch-in ability processing", () => {
         team2Ability: CORE_ABILITY_IDS.intimidate,
       });
 
-      ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
+      ruleset.setAbilityHandler((_trigger, ctx) => {
+        if (ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
           return {
             activated: true,
             effects: [
@@ -268,8 +273,12 @@ describe("Bug 2A: switch-in ability processing", () => {
         team1Ability: CORE_ABILITY_IDS.drizzle,
       });
 
-      ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.drizzle) {
+      ruleset.setAbilityHandler((_trigger, ctx) => {
+        if (
+          ctx.state.weather === null ||
+          (ctx.state.weather.type === null &&
+            ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.drizzle)
+        ) {
           return {
             activated: true,
             effects: [
@@ -307,8 +316,12 @@ describe("Bug 2A: switch-in ability processing", () => {
         team2Ability: CORE_ABILITY_IDS.drought,
       });
 
-      ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.drought) {
+      ruleset.setAbilityHandler((_trigger, ctx) => {
+        if (
+          ctx.state.weather === null ||
+          (ctx.state.weather.type === null &&
+            ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.drought)
+        ) {
           return {
             activated: true,
             effects: [
@@ -347,8 +360,8 @@ describe("Bug 2A: switch-in ability processing", () => {
         team2Speed: 100, // faster
       });
 
-      ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in") {
+      ruleset.setAbilityHandler((_trigger, ctx) => {
+        if (ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
           callOrder.push(ctx.pokemon.pokemon.ability ?? "unknown");
           return {
             activated: true,
@@ -408,8 +421,8 @@ describe("Bug 2A: switch-in ability processing", () => {
         seed: 1,
       };
 
-      ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in") {
+      ruleset.setAbilityHandler((_trigger, ctx) => {
+        if (ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
           callOrder.push(ctx.pokemon.pokemon.uid);
         }
         return { activated: false, effects: [], messages: [] };
@@ -473,7 +486,8 @@ describe("Bug 2B: confusion turn processing delegated to ruleset", () => {
 
     // Assert — confusion should have ended
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.confusion,
+      (e) =>
+        e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.confusion,
     );
     expect(volatileEndEvents.length).toBeGreaterThanOrEqual(1);
     // The volatile status should be removed
