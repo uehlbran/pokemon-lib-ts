@@ -22,6 +22,7 @@ Code examples for the test types used in this project. For testing philosophy, c
 - Apply the same rule to branch-driving inputs like status chances, thresholds, base power, and similar scenario literals: source them from owned data when possible, and if the test truly needs a synthetic value, give it a named derived constant plus a short justification.
 - Do not stop at swapping literals for imported ids if the surrounding payload is still duplicated. If a species, move, item, weather, hazard, or end-of-turn payload already exists in owned data/constants, import or load that payload instead of rebuilding it test-locally.
 - Apply the same rule to helper and mock surfaces. Canonical records should come directly from the owning `dataManager.get*()` surface by default instead of from wrapper helpers that restate or hide canonical payloads.
+- Prefer direct `dataManager.get*()` lookup for canonical records over adding a second facade layer for the same job. If a helper only forwards to `dataManager.get*()`, remove it and keep the source explicit.
 - If a helper or mock can return either canonical data or a synthetic variant, that distinction must be explicit in the API and the call site. Do not keep ambiguous helper surfaces that silently blur those two jobs.
 - When a test needs a synthetic variant, build it from a canonical base with an explicitly synthetic helper such as `createSyntheticMoveFrom(baseMove, overrides)` rather than a generic `makeMove(...)` helper.
 - Never mutate the object returned by `dataManager.get*()` in place. Clone first when a test needs a modified variant.
@@ -31,6 +32,7 @@ Code examples for the test types used in this project. For testing philosophy, c
 - Stat input validation should use shared generic `ValidationFailure` / `ValidationResult` naming instead of type-prefixed names like `EvValidationIssue`.
 - Validation should be explicit and reusable, but the default creation path must still reject invalid value objects rather than relying on later call sites to notice the bad state.
 - If the code needs min/max/cap values like the IV/EV/DV/Stat Exp limits, import owned constants instead of scattering literals like `31`, `252`, `510`, `15`, or `65535` through tests.
+- If a value object or bounded domain helper exists for IVs, EVs, DVs, or Stat Exp, direct raw object construction is no longer the default path in touched code. Use the validated creator and its owned constants instead.
 - Examples: type effectiveness from the exported type chart, move metadata from the generation data bundle, item metadata from the generated per-gen references, and owned fixed-point constants from core.
 - If the cleanup introduces or changes a public package export that tests rely on, add the required changeset and update the affected package README/spec docs in the same PR.
 

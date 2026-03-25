@@ -27,6 +27,7 @@ src/
 - Exception: `PokemonInstance` may carry optional per-generation team metadata or persisted cross-switch battle state when the value belongs to the individual Pokemon rather than the ruleset. Examples: `dynamaxLevel`, `teraType`, Mega form restoration data, and once-per-battle flags that must survive switching.
 - Prefer validated creation surfaces for bounded domain inputs. If IVs, EVs, DVs, Stat Exp, or similar constrained values gain dedicated helpers, the public/default path should create only valid objects and should expose reusable validators plus named min/max/cap constants instead of scattering raw literals.
 - Reuse shared `ValidationFailure` / `ValidationResult` naming for validator outputs instead of type-prefixed issue names when the validator context already identifies the domain.
+- When a core-owned bounded-domain helper exists, direct raw object-literal construction is no longer the default path in touched code. Keep validation explicit and reusable, but route normal creation through the validated helper/value-object surface.
 
 ## Stat Formulas (Quick Reference)
 

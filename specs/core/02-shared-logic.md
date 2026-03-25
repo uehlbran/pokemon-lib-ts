@@ -780,6 +780,8 @@ export function createPokemonInstance(
 Design note:
 - The current shared `createPokemonInstance(...)` surface is modern-stat-model oriented. As the cleanup progresses, generation-aware validated stat-input helpers should sit in front of it so callers do not hand-roll raw IV/EV/DV/Stat Exp bags or accidentally apply the wrong model for the target generation.
 - Those helpers should use explicit validators plus shared `ValidationFailure` / `ValidationResult` naming and owned min/max/cap constants instead of repeating literals like `31`, `252`, `510`, `15`, and `65535`.
+- Once those validated helpers exist, they become the default public creation path for bounded stat inputs in touched code. Keep the validators reusable, but do not let normal call sites keep constructing raw stat bags and hope a later validator catches the mistake.
+- The same ownership split should mirror the canonical-vs-synthetic test-fixture rule: canonical data comes directly from the owning generation data manager, while any intentionally synthetic variant must be built explicitly from that canonical base rather than through an ambiguous helper that hides the source.
 
 ### 7.2 Helper Functions
 
