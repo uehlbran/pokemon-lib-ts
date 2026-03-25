@@ -1,10 +1,18 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createDvs,
+  createFriendship,
+  createMoveSlot,
+  createStatExp,
   NEUTRAL_NATURES,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
@@ -13,8 +21,8 @@ import {
   createGen1DataManager,
   GEN1_MOVE_IDS,
   GEN1_SPECIES_IDS,
-  getGen1CritRate,
   Gen1Ruleset,
+  getGen1CritRate,
 } from "../../src";
 
 /**
@@ -29,71 +37,57 @@ import {
 
 const ruleset = new Gen1Ruleset();
 const dataManager = createGen1DataManager();
-const EOT = CORE_END_OF_TURN_EFFECT_IDS;
-const M = GEN1_MOVE_IDS;
-const P = GEN1_SPECIES_IDS;
-const S = CORE_STATUS_IDS;
-const T = CORE_TYPE_IDS;
-const V = { ...CORE_VOLATILE_IDS, focusEnergy: GEN1_MOVE_IDS.focusEnergy } as const;
-const DEFAULT_NATURE = NEUTRAL_NATURES[0];
-const DEFAULT_MOVE = dataManager.getMove(M.tackle);
-const DEFAULT_THUNDERBOLT = dataManager.getMove(M.thunderbolt);
-const DEFAULT_PIKACHU = dataManager.getSpecies(P.pikachu);
+const endOfTurnEffectIds = CORE_END_OF_TURN_EFFECT_IDS;
+const moveIds = GEN1_MOVE_IDS;
+const speciesIds = GEN1_SPECIES_IDS;
+const statusIds = CORE_STATUS_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = { ...CORE_VOLATILE_IDS, focusEnergy: GEN1_MOVE_IDS.focusEnergy } as const;
+const abilitySlots = CORE_ABILITY_SLOTS;
+const genders = CORE_GENDERS;
+const itemIds = CORE_ITEM_IDS;
+const defaultNature = NEUTRAL_NATURES[0];
+const defaultMove = dataManager.getMove(moveIds.tackle);
+const thunderboltMove = dataManager.getMove(moveIds.thunderbolt);
+const defaultPikachu = dataManager.getSpecies(speciesIds.pikachu);
 
-const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
-
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData> = {}): MoveData {
   return {
-    ...DEFAULT_MOVE,
-    flags: DEFAULT_MOVE_FLAGS,
+    ...baseMove,
     effect: null,
     ...overrides,
+    flags: {
+      ...baseMove.flags,
+      ...overrides.flags,
+    },
   };
 }
 
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+function createSyntheticOnFieldPokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
   return {
     pokemon: {
       uid: "test-uid",
-      speciesId: P.pikachu,
+      speciesId: speciesIds.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: DEFAULT_NATURE,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: DEFAULT_MOVE.id, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 }],
+      nature: defaultNature,
+      ivs: createDvs(),
+      evs: createStatExp(),
+      moves: [createMoveSlot(defaultMove.id, defaultMove.pp)],
       currentHp: 100,
       status: null,
-      friendship: 70,
+      friendship: createFriendship(70),
       heldItem: null,
       ability: "",
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
+      abilitySlot: abilitySlots.normal1,
+      gender: genders.male,
       isShiny: false,
       metLocation: "pallet-town",
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: itemIds.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -104,18 +98,9 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       },
     } as PokemonInstance,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: [...DEFAULT_PIKACHU.types] as PokemonType[],
+    types: [...defaultPikachu.types] as PokemonType[],
     ability: "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -136,7 +121,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   };
 }
 
-function makeBattleState(): BattleState {
+function createSyntheticBattleState(): BattleState {
   const rng = new SeededRandom(42);
   return {
     phase: "turn-resolve",
@@ -186,14 +171,14 @@ function makeBattleState(): BattleState {
   } as BattleState;
 }
 
-function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
+function createMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
   const rng = new SeededRandom(42);
   return {
-    attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: [T.normal] }),
-    move: makeMove(),
+    attacker: createSyntheticOnFieldPokemon(),
+    defender: createSyntheticOnFieldPokemon({ types: [typeIds.normal] }),
+    move: createSyntheticMoveFrom(defaultMove),
     damage: 0,
-    state: makeBattleState(),
+    state: createSyntheticBattleState(),
     rng,
     ...overrides,
   };
@@ -204,26 +189,26 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 // ============================================================================
 
 describe("Gen 1 Focus Energy handler", () => {
-  const focusEnergyMove = dataManager.getMove(M.focusEnergy);
+  const focusEnergyMove = dataManager.getMove(moveIds.focusEnergy);
 
   it("given Focus Energy used, when checking attacker volatiles, then focus-energy volatile is set with turnsLeft -1", () => {
     // Arrange — attacker has no focus-energy volatile
-    const attacker = makeActivePokemon();
-    const context = makeMoveEffectContext({ move: focusEnergyMove, attacker, damage: 0 });
+    const attacker = createSyntheticOnFieldPokemon();
+    const context = createMoveEffectContext({ move: focusEnergyMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
     // Source: pret/pokered — Focus Energy sets SUBSTATUS_FOCUS_ENERGY, permanent until switch/Haze
-    expect(result.selfVolatileInflicted).toBe(V.focusEnergy);
+    expect(result.selfVolatileInflicted).toBe(volatileIds.focusEnergy);
     expect(result.selfVolatileData).toEqual({ turnsLeft: -1 });
   });
 
   it("given Focus Energy already active, when used again, then fails silently (no duplicate volatile)", () => {
     // Arrange — attacker already has focus-energy
     const focusStatuses = new Map();
-    focusStatuses.set(V.focusEnergy, { turnsLeft: -1 });
-    const attacker = makeActivePokemon({ volatileStatuses: focusStatuses });
-    const context = makeMoveEffectContext({ move: focusEnergyMove, attacker, damage: 0 });
+    focusStatuses.set(volatileIds.focusEnergy, { turnsLeft: -1 });
+    const attacker = createSyntheticOnFieldPokemon({ volatileStatuses: focusStatuses });
+    const context = createMoveEffectContext({ move: focusEnergyMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — no volatile inflicted, no error messages
@@ -272,32 +257,32 @@ describe("Gen 1 Focus Energy handler", () => {
 // ============================================================================
 
 describe("Gen 1 Leech Seed handler", () => {
-  const leechSeedMove = dataManager.getMove(M.leechSeed);
+  const leechSeedMove = dataManager.getMove(moveIds.leechSeed);
 
   it("given non-Grass defender, when Leech Seed hits, then leech-seed volatile is set on defender", () => {
     // Arrange — defender is Normal type (not Grass)
-    const defender = makeActivePokemon({ types: [T.normal] });
-    const context = makeMoveEffectContext({ move: leechSeedMove, defender, damage: 0 });
+    const defender = createSyntheticOnFieldPokemon({ types: [typeIds.normal] });
+    const context = createMoveEffectContext({ move: leechSeedMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
     // Source: pret/pokered — Leech Seed sets volatile, permanent until switch/Haze
-    expect(result.volatileInflicted).toBe(V.leechSeed);
+    expect(result.volatileInflicted).toBe(volatileIds.leechSeed);
     expect(result.volatileData).toEqual({ turnsLeft: -1 });
   });
 
   it("given Grass-type defender (Bulbasaur), when Leech Seed used, then fails with immunity message", () => {
     // Arrange — defender is Grass type (immune to Leech Seed in all gens)
     // Source: pret/pokered — Grass types are immune to Leech Seed
-    const defender = makeActivePokemon({
-      types: [T.grass, T.poison] as PokemonType[],
+    const defender = createSyntheticOnFieldPokemon({
+      types: [typeIds.grass, typeIds.poison] as PokemonType[],
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        speciesId: P.bulbasaur,
+        ...createSyntheticOnFieldPokemon().pokemon,
+        speciesId: speciesIds.bulbasaur,
         nickname: "Bulbasaur",
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: leechSeedMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: leechSeedMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — Grass immunity blocks Leech Seed
@@ -308,12 +293,12 @@ describe("Gen 1 Leech Seed handler", () => {
   it("given defender already has leech-seed, when Leech Seed used again, then fails", () => {
     // Arrange — defender already seeded
     const seededStatuses = new Map();
-    seededStatuses.set(V.leechSeed, { turnsLeft: -1 });
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
+    seededStatuses.set(volatileIds.leechSeed, { turnsLeft: -1 });
+    const defender = createSyntheticOnFieldPokemon({
+      types: [typeIds.normal] as PokemonType[],
       volatileStatuses: seededStatuses,
     });
-    const context = makeMoveEffectContext({ move: leechSeedMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: leechSeedMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -325,9 +310,9 @@ describe("Gen 1 Leech Seed handler", () => {
     // Arrange — defender has leech-seed, standard drain is 1/16 max HP
     // Source: pret/pokered — Leech Seed drains 1/16 of max HP per turn
     // Calculation: floor(160/16) = 10
-    const defender = makeActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 160,
         calculatedStats: {
           hp: 160,
@@ -348,9 +333,9 @@ describe("Gen 1 Leech Seed handler", () => {
   it("given leech-seeded defender with 200 max HP, when EoT drain calculated, then drains floor(200/16)=12", () => {
     // Arrange — second triangulation case
     // Source: pret/pokered — floor(200/16) = 12
-    const defender = makeActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 200,
         calculatedStats: {
           hp: 200,
@@ -374,29 +359,29 @@ describe("Gen 1 Leech Seed handler", () => {
 // ============================================================================
 
 describe("Gen 1 Disable handler", () => {
-  const disableMove = dataManager.getMove(M.disable);
+  const disableMove = dataManager.getMove(moveIds.disable);
 
   it("given defender has moves with PP, when Disable hits, then disable volatile set with a random moveId from defender's moveset", () => {
     // Arrange — defender has tackle with PP > 0
     // Source: pret/pokered DisableEffect — picks a RANDOM move slot with PP > 0
     // (NOT the last-used move; that's a Gen 2+ behavior)
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
+    const defender = createSyntheticOnFieldPokemon({
+      types: [typeIds.normal] as PokemonType[],
     });
     const rng = new SeededRandom(42);
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.volatileInflicted).toBe(V.disable);
+    expect(result.volatileInflicted).toBe(volatileIds.disable);
     expect(result.volatileData).toEqual(
       expect.objectContaining({
         turnsLeft: expect.any(Number),
-        data: { moveId: M.tackle },
+        data: { moveId: moveIds.tackle },
       }),
     );
     // The disabled move must be from the defender's moveset (tackle is the only move)
-    expect(result.volatileData!.data).toEqual({ moveId: M.tackle });
+    expect(result.volatileData!.data).toEqual({ moveId: moveIds.tackle });
     // Source: pret/pokered — duration is 1-8 turns (`and 7; inc a`)
     expect(result.volatileData!.turnsLeft).toBeGreaterThanOrEqual(1);
     expect(result.volatileData!.turnsLeft).toBeLessThanOrEqual(8);
@@ -408,29 +393,24 @@ describe("Gen 1 Disable handler", () => {
     // Then SeededRandom(99).int(1, 8) = 7 → duration 7 turns.
     // This test would FAIL if the implementation always picks slot 0 (no-op "fix")
     // because the second triangulation test (seed 1 → thunderbolt) catches that.
-    const defender = makeActivePokemon({
-      types: [T.electric] as PokemonType[],
+    const defender = createSyntheticOnFieldPokemon({
+      types: [typeIds.electric] as PokemonType[],
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         moves: [
-          { moveId: M.tackle, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 },
-          {
-            moveId: M.thunderbolt,
-            currentPP: DEFAULT_THUNDERBOLT.pp,
-            maxPP: DEFAULT_THUNDERBOLT.pp,
-            ppUps: 0,
-          },
+          createMoveSlot(moveIds.tackle, defaultMove.pp),
+          createMoveSlot(moveIds.thunderbolt, thunderboltMove.pp),
         ],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(99);
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — seed 99 deterministically picks slot 0 = "tackle"
-    expect(result.volatileInflicted).toBe(V.disable);
+    expect(result.volatileInflicted).toBe(volatileIds.disable);
     const disabledMoveId = (result.volatileData!.data as { moveId: string }).moveId;
-    expect(disabledMoveId).toBe(M.tackle);
+    expect(disabledMoveId).toBe(moveIds.tackle);
     // Duration: SeededRandom(99) after the move-pick call gives int(1, 8) = 7
     expect(result.volatileData!.turnsLeft).toBe(7);
   });
@@ -441,29 +421,24 @@ describe("Gen 1 Disable handler", () => {
     // Then SeededRandom(1).int(1, 8) = 1 → duration 1 turn.
     // Triangulation: proves random selection actually works (seed 99 picks slot 0,
     // seed 1 picks slot 1 — an always-slot-0 impl would fail this test).
-    const defender = makeActivePokemon({
-      types: [T.electric] as PokemonType[],
+    const defender = createSyntheticOnFieldPokemon({
+      types: [typeIds.electric] as PokemonType[],
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         moves: [
-          { moveId: M.tackle, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 },
-          {
-            moveId: M.thunderbolt,
-            currentPP: DEFAULT_THUNDERBOLT.pp,
-            maxPP: DEFAULT_THUNDERBOLT.pp,
-            ppUps: 0,
-          },
+          createMoveSlot(moveIds.tackle, defaultMove.pp),
+          createMoveSlot(moveIds.thunderbolt, thunderboltMove.pp),
         ],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(1);
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — seed 1 deterministically picks slot 1 = "thunderbolt"
-    expect(result.volatileInflicted).toBe(V.disable);
+    expect(result.volatileInflicted).toBe(volatileIds.disable);
     const disabledMoveId = (result.volatileData!.data as { moveId: string }).moveId;
-    expect(disabledMoveId).toBe(M.thunderbolt);
+    expect(disabledMoveId).toBe(moveIds.thunderbolt);
     // Duration: SeededRandom(1) after the move-pick call gives int(1, 8) = 1
     expect(result.volatileData!.turnsLeft).toBe(1);
   });
@@ -471,14 +446,16 @@ describe("Gen 1 Disable handler", () => {
   it("given defender has all moves at 0 PP, when Disable used, then fails", () => {
     // Arrange — all moves at 0 PP, no valid target for Disable
     // Source: pret/pokered DisableEffect — fails if no valid move to disable
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
+    const exhaustedTackleSlot = createMoveSlot(moveIds.tackle, defaultMove.pp);
+    exhaustedTackleSlot.currentPP = 0;
+    const defender = createSyntheticOnFieldPokemon({
+      types: [typeIds.normal] as PokemonType[],
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        moves: [{ moveId: M.tackle, currentPP: 0, maxPP: DEFAULT_MOVE.pp, ppUps: 0 }],
+        ...createSyntheticOnFieldPokemon().pokemon,
+        moves: [exhaustedTackleSlot],
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -489,13 +466,13 @@ describe("Gen 1 Disable handler", () => {
   it("given defender already disabled, when Disable used again, then fails", () => {
     // Arrange — defender already has disable volatile
     const disabledStatuses = new Map();
-    disabledStatuses.set(V.disable, { turnsLeft: 3, data: { moveId: M.tackle } });
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
-      lastMoveUsed: M.tackle,
+    disabledStatuses.set(volatileIds.disable, { turnsLeft: 3, data: { moveId: moveIds.tackle } });
+    const defender = createSyntheticOnFieldPokemon({
+      types: [typeIds.normal] as PokemonType[],
+      lastMoveUsed: moveIds.tackle,
       volatileStatuses: disabledStatuses,
     });
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -508,9 +485,9 @@ describe("Gen 1 Disable handler", () => {
     // Source: pret/pokered — Disable countdown is processed end-of-turn
     const eotOrder = ruleset.getEndOfTurnOrder();
     // Assert
-    expect(eotOrder).toContain(EOT.disableCountdown);
-    const leechIdx = eotOrder.indexOf(V.leechSeed);
-    const disableIdx = eotOrder.indexOf(EOT.disableCountdown);
+    expect(eotOrder).toContain(endOfTurnEffectIds.disableCountdown);
+    const leechIdx = eotOrder.indexOf(volatileIds.leechSeed);
+    const disableIdx = eotOrder.indexOf(endOfTurnEffectIds.disableCountdown);
     expect(disableIdx).toBeGreaterThan(leechIdx);
   });
 });
@@ -520,15 +497,15 @@ describe("Gen 1 Disable handler", () => {
 // ============================================================================
 
 describe("Gen 1 Substitute handler", () => {
-  const substituteMove = dataManager.getMove(M.substitute);
+  const substituteMove = dataManager.getMove(moveIds.substitute);
 
   it("given attacker with full HP (100), when Substitute used, then substituteHp = 25 and currentHp = 75", () => {
     // Arrange
     // Source: pret/pokered SubstituteEffect — costs floor(maxHp/4)
     // maxHp=100, subHp=floor(100/4)=25, currentHp after: 100-25=75
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 100,
         calculatedStats: {
           hp: 100,
@@ -540,14 +517,18 @@ describe("Gen 1 Substitute handler", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — HP cost is communicated via customDamage for engine to process;
     // substituteHp is set directly by the ruleset
     expect(attacker.substituteHp).toBe(25);
-    expect(result.customDamage).toEqual({ target: "attacker", amount: 25, source: M.substitute });
-    expect(result.selfVolatileInflicted).toBe(V.substitute);
+    expect(result.customDamage).toEqual({
+      target: "attacker",
+      amount: 25,
+      source: moveIds.substitute,
+    });
+    expect(result.selfVolatileInflicted).toBe(volatileIds.substitute);
     expect(result.selfVolatileData).toEqual({ turnsLeft: -1 });
     expect(result.messages.some((m) => m.includes("put in a substitute"))).toBe(true);
   });
@@ -555,9 +536,9 @@ describe("Gen 1 Substitute handler", () => {
   it("given attacker with 200 max HP and full HP, when Substitute used, then substituteHp = 50 and customDamage = 50", () => {
     // Arrange — second triangulation case: maxHp=200, subHp=floor(200/4)=50
     // Source: pret/pokered SubstituteEffect
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 200,
         calculatedStats: {
           hp: 200,
@@ -569,13 +550,17 @@ describe("Gen 1 Substitute handler", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — HP cost via customDamage, substituteHp set directly
     expect(attacker.substituteHp).toBe(50);
-    expect(result.customDamage).toEqual({ target: "attacker", amount: 50, source: M.substitute });
-    expect(result.selfVolatileInflicted).toBe(V.substitute);
+    expect(result.customDamage).toEqual({
+      target: "attacker",
+      amount: 50,
+      source: moveIds.substitute,
+    });
+    expect(result.selfVolatileInflicted).toBe(volatileIds.substitute);
   });
 
   it("given attacker with exactly 25 HP out of 100, when Substitute used, then fails (boundary: currentHp <= subHp)", () => {
@@ -583,9 +568,9 @@ describe("Gen 1 Substitute handler", () => {
     // Source: pret/pokered SubstituteEffect — uses <= comparison: `cp b; jr c,.notEnoughHP`
     // where b = subCost and a = currentHP. The carry flag triggers when a <= b.
     // subHp = floor(100/4) = 25, currentHp = 25 <= 25, so it fails.
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 25,
         calculatedStats: {
           hp: 100,
@@ -597,7 +582,7 @@ describe("Gen 1 Substitute handler", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — fails: HP unchanged, no substitute created
@@ -611,9 +596,9 @@ describe("Gen 1 Substitute handler", () => {
   it("given attacker with 24 HP out of 100, when Substitute used, then fails (insufficient HP)", () => {
     // Arrange — 24 < 25 (subHp), so it should fail
     // Source: pret/pokered SubstituteEffect — fails when currentHp < subHp
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 24,
         calculatedStats: {
           hp: 100,
@@ -625,7 +610,7 @@ describe("Gen 1 Substitute handler", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — fails: HP unchanged, no substitute created
@@ -637,10 +622,10 @@ describe("Gen 1 Substitute handler", () => {
 
   it("given substitute already active, when Substitute used again, then fails", () => {
     // Arrange — attacker already has a substitute
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       substituteHp: 25,
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 100,
         calculatedStats: {
           hp: 100,
@@ -652,7 +637,7 @@ describe("Gen 1 Substitute handler", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — fails because substitute already active
@@ -673,11 +658,11 @@ describe("Gen 1 shared toxic counter bug", () => {
     // This bug only manifests when the toxic-counter volatile exists (from Toxic).
     // Pokemon has burn status + toxic-counter volatile (as if Toxic was used then status changed).
     // maxHp = 160: floor(160*1/16)=10, floor(160*2/16)=20, floor(160*3/16)=30
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 160,
-        status: S.burn,
+        status: statusIds.burn,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -689,13 +674,13 @@ describe("Gen 1 shared toxic counter bug", () => {
       } as PokemonInstance,
     });
     // Set up toxic counter at 1 (as if Toxic was used)
-    pokemon.volatileStatuses.set(V.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
-    const state = makeBattleState();
+    pokemon.volatileStatuses.set(volatileIds.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
+    const state = createSyntheticBattleState();
 
     // Act — simulate 3 EoT ticks
-    const dmg1 = ruleset.applyStatusDamage(pokemon, S.burn, state);
-    const dmg2 = ruleset.applyStatusDamage(pokemon, S.burn, state);
-    const dmg3 = ruleset.applyStatusDamage(pokemon, S.burn, state);
+    const dmg1 = ruleset.applyStatusDamage(pokemon, statusIds.burn, state);
+    const dmg2 = ruleset.applyStatusDamage(pokemon, statusIds.burn, state);
+    const dmg3 = ruleset.applyStatusDamage(pokemon, statusIds.burn, state);
 
     // Assert — damage escalates using the shared counter
     expect(dmg1).toBe(10); // floor(160*1/16) = 10
@@ -707,11 +692,11 @@ describe("Gen 1 shared toxic counter bug", () => {
     // Arrange
     // Source: gen1-ground-truth.md §8 — poison shares the same counter
     // maxHp = 160: floor(160*1/16)=10, floor(160*2/16)=20, floor(160*3/16)=30
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 160,
-        status: S.poison,
+        status: statusIds.poison,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -722,13 +707,13 @@ describe("Gen 1 shared toxic counter bug", () => {
         },
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set(V.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
-    const state = makeBattleState();
+    pokemon.volatileStatuses.set(volatileIds.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
+    const state = createSyntheticBattleState();
 
     // Act
-    const dmg1 = ruleset.applyStatusDamage(pokemon, S.poison, state);
-    const dmg2 = ruleset.applyStatusDamage(pokemon, S.poison, state);
-    const dmg3 = ruleset.applyStatusDamage(pokemon, S.poison, state);
+    const dmg1 = ruleset.applyStatusDamage(pokemon, statusIds.poison, state);
+    const dmg2 = ruleset.applyStatusDamage(pokemon, statusIds.poison, state);
+    const dmg3 = ruleset.applyStatusDamage(pokemon, statusIds.poison, state);
 
     // Assert — damage escalates using the shared counter
     expect(dmg1).toBe(10); // floor(160*1/16) = 10
@@ -740,11 +725,11 @@ describe("Gen 1 shared toxic counter bug", () => {
     // Arrange — no toxic-counter volatile, so burn deals standard flat 1/16
     // Source: pret/pokered — standard burn damage is 1/16 max HP when not sharing toxic counter
     // maxHp = 160: floor(160/16) = 10 each turn (flat, no escalation)
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 160,
-        status: S.burn,
+        status: statusIds.burn,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -755,11 +740,11 @@ describe("Gen 1 shared toxic counter bug", () => {
         },
       } as PokemonInstance,
     });
-    const state = makeBattleState();
+    const state = createSyntheticBattleState();
 
     // Act
-    const dmg1 = ruleset.applyStatusDamage(pokemon, S.burn, state);
-    const dmg2 = ruleset.applyStatusDamage(pokemon, S.burn, state);
+    const dmg1 = ruleset.applyStatusDamage(pokemon, statusIds.burn, state);
+    const dmg2 = ruleset.applyStatusDamage(pokemon, statusIds.burn, state);
 
     // Assert — flat damage, no escalation
     expect(dmg1).toBe(10); // floor(160/16) = 10
@@ -773,11 +758,11 @@ describe("Gen 1 shared toxic counter bug", () => {
     // maxHp = 160, counter starts at 1:
     //   Burn tick: uses counter=1, deals floor(160*1/16)=10, increments to 2
     //   Leech Seed: uses counter=2, drains floor(160*2/16)=20, increments to 3
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 160,
-        status: S.burn,
+        status: statusIds.burn,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -788,19 +773,19 @@ describe("Gen 1 shared toxic counter bug", () => {
         },
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set(V.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
-    pokemon.volatileStatuses.set(V.leechSeed, { turnsLeft: -1 });
-    const state = makeBattleState();
+    pokemon.volatileStatuses.set(volatileIds.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
+    pokemon.volatileStatuses.set(volatileIds.leechSeed, { turnsLeft: -1 });
+    const state = createSyntheticBattleState();
 
     // Act — burn tick first, then leech seed
-    const burnDmg = ruleset.applyStatusDamage(pokemon, S.burn, state);
+    const burnDmg = ruleset.applyStatusDamage(pokemon, statusIds.burn, state);
     const leechDrain = ruleset.calculateLeechSeedDrain(pokemon);
 
     // Assert — counter progresses: burn uses 1, leech uses 2
     expect(burnDmg).toBe(10); // floor(160*1/16) = 10
     expect(leechDrain).toBe(20); // floor(160*2/16) = 20
     // Counter should now be at 3 after both ticks
-    const counter = pokemon.volatileStatuses.get(V.toxicCounter)?.data?.counter;
+    const counter = pokemon.volatileStatuses.get(volatileIds.toxicCounter)?.data?.counter;
     expect(counter).toBe(3);
   });
 });
