@@ -37,7 +37,7 @@ describe("checkAllInvariants — valid battle", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    expect(violations).toHaveLength(0);
+    expect(violations).toEqual([]);
   });
 });
 
@@ -53,8 +53,15 @@ describe("checkAllInvariants — event framing", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const framingViolations = violations.filter((v) => v.invariant === "event-framing");
-    expect(framingViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "event-framing",
+        severity: "error",
+        turnNumber: null,
+        message: 'First event is "turn-start", expected "battle-start"',
+        eventIndex: 0,
+      },
+    ]);
   });
 
   it("given events with only battle-start and no battle-end, when checking all invariants, then returns an event-framing violation", () => {
@@ -67,8 +74,22 @@ describe("checkAllInvariants — event framing", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const framingViolations = violations.filter((v) => v.invariant === "event-framing");
-    expect(framingViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "event-framing",
+        severity: "error",
+        turnNumber: null,
+        message: 'Last event is "battle-start", expected "battle-end"',
+        eventIndex: 0,
+      },
+      {
+        invariant: "single-battle-end",
+        severity: "error",
+        turnNumber: null,
+        message: "Expected exactly 1 battle-end event, found 0",
+        eventIndex: 0,
+      },
+    ]);
   });
 
   it("given an empty event stream, when checking all invariants, then returns an event-framing violation", () => {
@@ -79,8 +100,22 @@ describe("checkAllInvariants — event framing", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const framingViolations = violations.filter((v) => v.invariant === "event-framing");
-    expect(framingViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "event-framing",
+        severity: "error",
+        turnNumber: null,
+        message: "Event stream is empty",
+        eventIndex: 0,
+      },
+      {
+        invariant: "single-battle-end",
+        severity: "error",
+        turnNumber: null,
+        message: "Expected exactly 1 battle-end event, found 0",
+        eventIndex: -1,
+      },
+    ]);
   });
 });
 
@@ -98,8 +133,15 @@ describe("checkAllInvariants — single-battle-end", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const singleEndViolations = violations.filter((v) => v.invariant === "single-battle-end");
-    expect(singleEndViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "single-battle-end",
+        severity: "error",
+        turnNumber: null,
+        message: "Expected exactly 1 battle-end event, found 2",
+        eventIndex: 3,
+      },
+    ]);
   });
 });
 
@@ -117,8 +159,15 @@ describe("checkAllInvariants — sequential-turns", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const seqViolations = violations.filter((v) => v.invariant === "sequential-turns");
-    expect(seqViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "sequential-turns",
+        severity: "error",
+        turnNumber: 3,
+        message: "Turn 3 out of order, expected 2",
+        eventIndex: 2,
+      },
+    ]);
   });
 });
 
@@ -144,8 +193,15 @@ describe("checkAllInvariants — hp-bounds", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const hpViolations = violations.filter((v) => v.invariant === "hp-bounds");
-    expect(hpViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "hp-bounds",
+        severity: "error",
+        turnNumber: 1,
+        message: "Side 0 pokemon bulbasaur: currentHp=-1 out of [0, 100]",
+        eventIndex: 2,
+      },
+    ]);
   });
 
   it("given a damage event with currentHp exceeding maxHp, when checking all invariants, then returns an hp-bounds violation", () => {
@@ -169,8 +225,15 @@ describe("checkAllInvariants — hp-bounds", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const hpViolations = violations.filter((v) => v.invariant === "hp-bounds");
-    expect(hpViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "hp-bounds",
+        severity: "error",
+        turnNumber: 1,
+        message: "Side 0 pokemon bulbasaur: currentHp=150 out of [0, 100]",
+        eventIndex: 2,
+      },
+    ]);
   });
 });
 
@@ -196,8 +259,15 @@ describe("checkAllInvariants — positive-damage", () => {
     const violations = checkAllInvariants(events, baseConfig);
 
     // Assert
-    const dmgViolations = violations.filter((v) => v.invariant === "positive-damage");
-    expect(dmgViolations.length).toBeGreaterThan(0);
+    expect(violations).toEqual([
+      {
+        invariant: "positive-damage",
+        severity: "error",
+        turnNumber: 1,
+        message: "Side 0 pokemon bulbasaur: damage amount -1 is negative",
+        eventIndex: 2,
+      },
+    ]);
   });
 });
 
@@ -227,8 +297,7 @@ describe("checkInvariants — selective", () => {
     const violations = checkInvariants(events, baseConfig, ["event-framing"]);
 
     // Assert — only event-framing ran, so no hp-bounds violation
-    const hpViolations = violations.filter((v) => v.invariant === "hp-bounds");
-    expect(hpViolations).toHaveLength(0);
+    expect(violations).toEqual([]);
   });
 
   it("given an unrecognized invariant name, when checking, then returns empty violations array", () => {
@@ -239,7 +308,7 @@ describe("checkInvariants — selective", () => {
     const violations = checkInvariants(events, baseConfig, ["does-not-exist"]);
 
     // Assert
-    expect(violations).toHaveLength(0);
+    expect(violations).toEqual([]);
   });
 });
 
@@ -253,7 +322,23 @@ describe("getRegisteredInvariants", () => {
     const invariants = getRegisteredInvariants();
 
     // Assert
-    expect(invariants).toHaveLength(15);
+    expect(invariants.map((inv) => inv.name)).toEqual([
+      "event-framing",
+      "single-battle-end",
+      "sequential-turns",
+      "no-timeout",
+      "hp-bounds",
+      "positive-damage",
+      "hp-delta-consistency",
+      "status-type-immunity",
+      "effectiveness-bounds",
+      "effectiveness-correctness",
+      "faint-at-zero",
+      "no-post-faint-action",
+      "switch-after-faint",
+      "winner-consistency",
+      "determinism",
+    ]);
   });
 
   it("given the invariant registry, when retrieving all invariants, then each has a name, description, and check function", () => {
@@ -261,12 +346,78 @@ describe("getRegisteredInvariants", () => {
     const invariants = getRegisteredInvariants();
 
     // Assert
+    expect(
+      invariants.map((inv) => ({
+        name: inv.name,
+        description: inv.description,
+      })),
+    ).toEqual([
+      {
+        name: "event-framing",
+        description: "First event must be battle-start and last must be battle-end",
+      },
+      {
+        name: "single-battle-end",
+        description: "Exactly one battle-end event must appear in the stream",
+      },
+      {
+        name: "sequential-turns",
+        description: "turn-start events must have incrementing turnNumber starting at 1",
+      },
+      {
+        name: "no-timeout",
+        description: "Battle must end within maxTurns turns",
+      },
+      {
+        name: "hp-bounds",
+        description: "currentHp must be between 0 and maxHp inclusive on all damage/heal events",
+      },
+      {
+        name: "positive-damage",
+        description:
+          "Damage amount must be non-negative (negative damage is clearly wrong; 0 is valid for floor-rounding edge cases)",
+      },
+      {
+        name: "hp-delta-consistency",
+        description:
+          "Damage must reduce HP (not increase it); declared amount must be >= actual HP drop (overkill is valid)",
+      },
+      {
+        name: "status-type-immunity",
+        description: "Type-based status immunities must be respected (Fire can't burn, etc.)",
+      },
+      {
+        name: "effectiveness-bounds",
+        description: "Type effectiveness multiplier must be one of {0, 0.25, 0.5, 1, 2, 4}",
+      },
+      {
+        name: "effectiveness-correctness",
+        description: "Effectiveness events must agree with type chart (multiplier != 1 means actually non-neutral)",
+      },
+      {
+        name: "faint-at-zero",
+        description: "A Pokemon whose HP reaches 0 via a damage event must receive a faint event before the battle ends",
+      },
+      {
+        name: "no-post-faint-action",
+        description: "A fainted Pokemon must not use moves after fainting",
+      },
+      {
+        name: "switch-after-faint",
+        description: "When a Pokemon faints and the team has reserves, a switch-in must follow",
+      },
+      {
+        name: "winner-consistency",
+        description: "Winner must have surviving Pokemon; loser must have all fainted",
+      },
+      {
+        name: "determinism",
+        description: "Running the same battle seed twice must produce identical events",
+      },
+    ]);
+
     for (const inv of invariants) {
-      expect(typeof inv.name).toBe("string");
-      expect(inv.name.length).toBeGreaterThan(0);
-      expect(typeof inv.description).toBe("string");
-      expect(inv.description.length).toBeGreaterThan(0);
-      expect(typeof inv.check).toBe("function");
+      expect(inv.check).toEqual(expect.any(Function));
     }
   });
 });
@@ -297,8 +448,15 @@ describe("hp-bounds — spot check", () => {
     const violations = checkInvariants(events, baseConfig, ["hp-bounds"]);
 
     // Assert
-    expect(violations.length).toBeGreaterThan(0);
-    expect(violations[0]?.invariant).toBe("hp-bounds");
+    expect(violations).toEqual([
+      {
+        invariant: "hp-bounds",
+        severity: "error",
+        turnNumber: 1,
+        message: "Side 1 pokemon charizard: currentHp=200 out of [0, 180]",
+        eventIndex: 2,
+      },
+    ]);
   });
 });
 
