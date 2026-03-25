@@ -1,13 +1,23 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  GEN6_ABILITY_IDS,
+  GEN6_ITEM_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+  createGen6DataManager,
+} from "../src";
 import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as damage-calc.test.ts)
 // ---------------------------------------------------------------------------
+
+const dataManager = createGen6DataManager();
 
 function makeActive(overrides: {
   level?: number;
@@ -35,16 +45,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? GEN6_SPECIES_IDS.bulbasaur,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: GEN6_NATURE_IDS.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? GEN6_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -55,7 +65,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: GEN6_ITEM_IDS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -69,8 +79,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["psychic"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [CORE_TYPE_IDS.psychic],
+    ability: overrides.ability ?? GEN6_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -91,53 +101,6 @@ function makeActive(overrides: {
     suppressedAbility: null,
     forcedMove: null,
   } as ActivePokemon;
-}
-
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  target?: string;
-}): MoveData {
-  return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 6,
-    critRatio: overrides.critRatio ?? 0,
-  } as MoveData;
 }
 
 function makeState(overrides?: {
@@ -169,7 +132,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? dataManager.getMove(GEN6_MOVE_IDS.tackle),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -186,17 +149,12 @@ const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
 describe("Tough Claws", () => {
   it("given a contact move with Tough Claws, when calculating damage, then base power is boosted by 5325/4096", () => {
     // Arrange: Tough Claws attacker using a contact physical move
-    const attacker = makeActive({ ability: "tough-claws", types: ["dragon"] });
-    const defender = makeActive({ types: ["normal"] });
-    const contactMove = makeMove({
-      id: "dragon-claw",
-      type: "dragon",
-      power: 80,
-      flags: { contact: true },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.toughClaws, types: [CORE_TYPE_IDS.dragon] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const contactMove = dataManager.getMove(GEN6_MOVE_IDS.dragonClaw);
 
     // Baseline: same setup without Tough Claws
-    const baselineAttacker = makeActive({ ability: "none", types: ["dragon"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.dragon] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: contactMove, seed: 100 }),
@@ -238,17 +196,11 @@ describe("Tough Claws", () => {
 
   it("given a non-contact move with Tough Claws, when calculating damage, then no boost is applied", () => {
     // Arrange: Tough Claws attacker using a non-contact special move
-    const attacker = makeActive({ ability: "tough-claws", types: ["dragon"] });
-    const defender = makeActive({ types: ["normal"] });
-    const nonContactMove = makeMove({
-      id: "dragon-pulse",
-      type: "dragon",
-      category: "special",
-      power: 85,
-      flags: { contact: false, pulse: false },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.toughClaws, types: [CORE_TYPE_IDS.dragon] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const nonContactMove = dataManager.getMove(GEN6_MOVE_IDS.dragonPulse);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["dragon"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.dragon] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: nonContactMove, seed: 100 }),
@@ -277,16 +229,11 @@ describe("Tough Claws", () => {
 describe("Strong Jaw", () => {
   it("given a bite move with Strong Jaw, when calculating damage, then base power is boosted by 6144/4096 (1.5x)", () => {
     // Arrange: Strong Jaw attacker using Crunch (bite move)
-    const attacker = makeActive({ ability: "strong-jaw", types: ["dark"] });
-    const defender = makeActive({ types: ["normal"] });
-    const crunch = makeMove({
-      id: "crunch",
-      type: "dark",
-      power: 80,
-      flags: { contact: true, bite: true },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.strongJaw, types: [CORE_TYPE_IDS.dark] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const crunch = dataManager.getMove(GEN6_MOVE_IDS.crunch);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["dark"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.dark] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: crunch, seed: 100 }),
@@ -312,16 +259,11 @@ describe("Strong Jaw", () => {
 
   it("given a non-bite move with Strong Jaw, when calculating damage, then no boost is applied", () => {
     // Arrange: Strong Jaw attacker using a non-bite move (Tackle)
-    const attacker = makeActive({ ability: "strong-jaw", types: ["normal"] });
-    const defender = makeActive({ types: ["normal"] });
-    const tackle = makeMove({
-      id: "tackle",
-      type: "normal",
-      power: 50,
-      flags: { contact: true, bite: false },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.strongJaw, types: [CORE_TYPE_IDS.normal] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["normal"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.normal] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -350,17 +292,11 @@ describe("Strong Jaw", () => {
 describe("Mega Launcher", () => {
   it("given a pulse move with Mega Launcher, when calculating damage, then base power is boosted by 6144/4096 (1.5x)", () => {
     // Arrange: Mega Launcher attacker using Aura Sphere (pulse move)
-    const attacker = makeActive({ ability: "mega-launcher", types: ["fighting"] });
-    const defender = makeActive({ types: ["normal"] });
-    const auraSphere = makeMove({
-      id: "aura-sphere",
-      type: "fighting",
-      category: "special",
-      power: 80,
-      flags: { contact: false, pulse: true },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.megaLauncher, types: [CORE_TYPE_IDS.fighting] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const auraSphere = dataManager.getMove(GEN6_MOVE_IDS.auraSphere);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["fighting"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.fighting] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: auraSphere, seed: 100 }),
@@ -385,17 +321,11 @@ describe("Mega Launcher", () => {
 
   it("given Dark Pulse (pulse move) with Mega Launcher, when calculating damage, then 1.5x boost is applied", () => {
     // Arrange: Mega Launcher attacker using Dark Pulse
-    const attacker = makeActive({ ability: "mega-launcher", types: ["dark"] });
-    const defender = makeActive({ types: ["normal"] });
-    const darkPulse = makeMove({
-      id: "dark-pulse",
-      type: "dark",
-      category: "special",
-      power: 80,
-      flags: { contact: false, pulse: true },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.megaLauncher, types: [CORE_TYPE_IDS.dark] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const darkPulse = dataManager.getMove(GEN6_MOVE_IDS.darkPulse);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["dark"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.dark] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: darkPulse, seed: 100 }),
@@ -427,17 +357,12 @@ describe("Aerilate", () => {
     // Arrange: Aerilate attacker using a Normal-type move against Fighting defender
     // Flying is super-effective vs Fighting (2x), Normal is neutral (1x)
     // This proves the type conversion happened
-    const attacker = makeActive({ ability: "aerilate", types: ["flying"] });
-    const defender = makeActive({ types: ["fighting"] });
-    const returnMove = makeMove({
-      id: "return",
-      type: "normal",
-      power: 102,
-      flags: { contact: true },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.aerilate, types: [CORE_TYPE_IDS.flying] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.fighting] });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const resultWithAbility = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: returnMove, seed: 100 }),
+      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -446,12 +371,12 @@ describe("Aerilate", () => {
     expect(resultWithAbility.effectiveness).toBe(2);
 
     // Verify the power boost by comparing with a baseline
-    const baselineAttacker = makeActive({ ability: "none", types: ["flying"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.flying] });
     const resultWithout = calculateGen6Damage(
       makeDamageContext({
         attacker: baselineAttacker,
         defender,
-        move: returnMove,
+        move: tackle,
         seed: 100,
       }),
       typeChart,
@@ -469,16 +394,11 @@ describe("Aerilate", () => {
 
   it("given a non-Normal move with Aerilate, when calculating damage, then no type change or boost is applied", () => {
     // Arrange: Aerilate attacker using a Fire-type move (not Normal)
-    const attacker = makeActive({ ability: "aerilate", types: ["flying", "fire"] });
-    const defender = makeActive({ types: ["normal"] });
-    const flameCharge = makeMove({
-      id: "flame-charge",
-      type: "fire",
-      power: 50,
-      flags: { contact: true },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.aerilate, types: [CORE_TYPE_IDS.flying, CORE_TYPE_IDS.fire] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const flameCharge = dataManager.getMove(GEN6_MOVE_IDS.flameCharge);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["flying", "fire"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.flying, CORE_TYPE_IDS.fire] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: flameCharge, seed: 100 }),
@@ -506,19 +426,13 @@ describe("Aerilate", () => {
 describe("Pixilate", () => {
   it("given a Normal move with Pixilate, when calculating damage, then type becomes Fairy and base power gets 1.3x boost", () => {
     // Arrange: Pixilate attacker (Fairy type) using a Normal-type move
-    const attacker = makeActive({ ability: "pixilate", types: ["fairy"] });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.pixilate, types: [CORE_TYPE_IDS.fairy] });
     // Use a Dragon defender: Fairy is super-effective vs Dragon (2x)
     // This proves the type change happened (Normal would be neutral vs Dragon)
-    const defender = makeActive({ types: ["dragon"] });
-    const hyperVoice = makeMove({
-      id: "hyper-voice",
-      type: "normal",
-      category: "special",
-      power: 90,
-      flags: { contact: false, sound: true },
-    });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.dragon] });
+    const hyperVoice = dataManager.getMove(GEN6_MOVE_IDS.hyperVoice);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["fairy"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.fairy] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: hyperVoice, seed: 100 }),
@@ -547,17 +461,11 @@ describe("Pixilate", () => {
 
   it("given a non-Normal move with Pixilate, when calculating damage, then no type change or boost is applied", () => {
     // Arrange: Pixilate attacker using a Fire-type move (not Normal)
-    const attacker = makeActive({ ability: "pixilate", types: ["fairy", "fire"] });
-    const defender = makeActive({ types: ["normal"] });
-    const flamethrower = makeMove({
-      id: "flamethrower",
-      type: "fire",
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.pixilate, types: [CORE_TYPE_IDS.fairy, CORE_TYPE_IDS.fire] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const flamethrower = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["fairy", "fire"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.fairy, CORE_TYPE_IDS.fire] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: flamethrower, seed: 100 }),
@@ -585,27 +493,22 @@ describe("Pixilate", () => {
 describe("Refrigerate", () => {
   it("given a Normal move with Refrigerate, when calculating damage, then type becomes Ice and base power gets 1.3x boost", () => {
     // Arrange: Refrigerate attacker (Ice type) using a Normal-type move
-    const attacker = makeActive({ ability: "refrigerate", types: ["ice"] });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.refrigerate, types: [CORE_TYPE_IDS.ice] });
     // Use a Dragon defender: Ice is super-effective vs Dragon (2x)
-    const defender = makeActive({ types: ["dragon"] });
-    const returnMove = makeMove({
-      id: "return",
-      type: "normal",
-      power: 102,
-      flags: { contact: true },
-    });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.dragon] });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["ice"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.ice] });
 
     const resultWithAbility = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: returnMove, seed: 100 }),
+      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const resultWithout = calculateGen6Damage(
       makeDamageContext({
         attacker: baselineAttacker,
         defender,
-        move: returnMove,
+        move: tackle,
         seed: 100,
       }),
       typeChart,
@@ -621,17 +524,11 @@ describe("Refrigerate", () => {
 
   it("given a non-Normal move with Refrigerate, when calculating damage, then no type change or boost is applied", () => {
     // Arrange: Refrigerate attacker using a Water-type move (not Normal)
-    const attacker = makeActive({ ability: "refrigerate", types: ["ice", "water"] });
-    const defender = makeActive({ types: ["normal"] });
-    const surf = makeMove({
-      id: "surf",
-      type: "water",
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.refrigerate, types: [CORE_TYPE_IDS.ice, CORE_TYPE_IDS.water] });
+    const defender = makeActive({ types: [CORE_TYPE_IDS.normal] });
+    const surf = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["ice", "water"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.ice, CORE_TYPE_IDS.water] });
 
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: surf, seed: 100 }),
@@ -660,16 +557,11 @@ describe("Refrigerate", () => {
 describe("Ability interactions", () => {
   it("given Tough Claws attacker vs Mold Breaker defender, when calculating damage with a contact move, then Tough Claws still boosts (attacker ability, not suppressed)", () => {
     // Mold Breaker only suppresses defender's abilities, not attacker's own
-    const attacker = makeActive({ ability: "tough-claws", types: ["dragon"] });
-    const defender = makeActive({ ability: "mold-breaker", types: ["normal"] });
-    const contactMove = makeMove({
-      id: "dragon-claw",
-      type: "dragon",
-      power: 80,
-      flags: { contact: true },
-    });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.toughClaws, types: [CORE_TYPE_IDS.dragon] });
+    const defender = makeActive({ ability: GEN6_ABILITY_IDS.moldBreaker, types: [CORE_TYPE_IDS.normal] });
+    const contactMove = dataManager.getMove(GEN6_MOVE_IDS.dragonClaw);
 
-    const baselineAttacker = makeActive({ ability: "none", types: ["dragon"] });
+    const baselineAttacker = makeActive({ ability: CORE_ABILITY_IDS.none, types: [CORE_TYPE_IDS.dragon] });
     const resultWithAbility = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: contactMove, seed: 100 }),
       typeChart,
