@@ -2,11 +2,11 @@ import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/ba
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
   SeededRandom,
   type MoveData,
   type PokemonType,
@@ -18,6 +18,7 @@ import {
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
   applyGen6HeldItem,
   getPinchBerryThreshold,
@@ -31,16 +32,17 @@ import { Gen6Ruleset } from "../src/Gen6Ruleset";
 // ---------------------------------------------------------------------------
 
 const dataManager = createGen6DataManager();
-const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
-const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
-const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const;
-const SPECIES_IDS = GEN6_SPECIES_IDS;
-const STATUS_IDS = CORE_STATUS_IDS;
-const TYPE_IDS = CORE_TYPE_IDS;
-const VOLATILE_IDS = CORE_VOLATILE_IDS;
-const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
+const itemIds = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const moveIds = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const;
+const speciesIds = GEN6_SPECIES_IDS;
+const statusIds = CORE_STATUS_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
+const defaultNature = GEN6_NATURE_IDS.hardy;
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -61,16 +63,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? SPECIES_IDS.bulbasaur,
+      speciesId: overrides.speciesId ?? speciesIds.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: DEFAULT_NATURE,
+      nature: defaultNature,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? ABILITY_IDS.none,
+      ability: overrides.ability ?? abilityIds.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: overrides.status ?? null,
@@ -81,7 +83,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: ITEM_IDS.pokeBall,
+      pokeball: itemIds.pokeBall,
       calculatedStats: {
         hp,
         attack: overrides.attack ?? 100,
@@ -102,8 +104,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [TYPE_IDS.normal],
-    ability: overrides.ability ?? ABILITY_IDS.none,
+    types: overrides.types ?? [typeIds.normal],
+    ability: overrides.ability ?? abilityIds.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -126,27 +128,26 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides?: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-}): MoveData {
-  const base = dataManager.getMove(overrides?.id ?? MOVE_IDS.tackle);
+function createSyntheticMoveFrom(
+  baseMove: MoveData,
+  overrides: {
+    type?: PokemonType;
+    category?: (typeof moveCategories)[keyof typeof moveCategories];
+    power?: number | null;
+    flags?: Partial<MoveData["flags"]>;
+    effect?: MoveData["effect"];
+  } = {},
+): MoveData {
   return {
-    ...base,
-    id: overrides?.id ?? base.id,
-    displayName: base.displayName,
-    type: overrides?.type ?? base.type,
-    category: overrides?.category ?? base.category,
-    power: overrides?.power ?? base.power,
+    ...baseMove,
+    type: overrides.type ?? baseMove.type,
+    category: overrides.category ?? baseMove.category,
+    power: overrides.power ?? baseMove.power,
     flags: {
-      ...base.flags,
-      ...overrides?.flags,
+      ...baseMove.flags,
+      ...overrides.flags,
     },
-    effect: overrides?.effect ?? null,
+    effect: overrides.effect ?? baseMove.effect,
   } as MoveData;
 }
 
@@ -173,7 +174,7 @@ function makeItemContext(overrides: {
   seed?: number;
 }): ItemContext {
   return {
-    pokemon: overrides.pokemon ?? makeActive({}),
+    pokemon: overrides.pokemon ?? createOnFieldPokemon({}),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     move: overrides.move,
@@ -192,9 +193,9 @@ function expectNoActivation(result: ReturnType<typeof applyGen6HeldItem>): void 
 describe("Gen 6 Items -- Klutz and Embargo suppression", () => {
   it("given a Pokemon with Klutz holding Leftovers, when end-of-turn triggers, then the item does not activate", () => {
     // Source: Showdown data/abilities.ts -- Klutz: suppresses all held item effects
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.leftovers,
-      ability: ABILITY_IDS.klutz,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.leftovers,
+      ability: abilityIds.klutz,
       hp: 200,
       currentHp: 100,
     });
@@ -206,9 +207,9 @@ describe("Gen 6 Items -- Klutz and Embargo suppression", () => {
   it("given a Pokemon under Embargo holding Leftovers, when end-of-turn triggers, then the item does not activate", () => {
     // Source: Showdown data/moves.ts -- embargo condition: suppresses held item effects
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set(VOLATILE_IDS.embargo, { turnsLeft: 3 });
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.leftovers,
+    volatiles.set(volatileIds.embargo, { turnsLeft: 3 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.leftovers,
       hp: 200,
       currentHp: 100,
       volatiles,
@@ -227,7 +228,7 @@ describe("Gen 6 Items -- Leftovers", () => {
   it("given a Pokemon holding Leftovers with 200 max HP, when end-of-turn triggers, then heals 12 HP (floor(200/16)=12)", () => {
     // Source: Showdown data/items.ts -- Leftovers: heals 1/16 max HP per turn
     // Derivation: floor(200 / 16) = 12
-    const pokemon = makeActive({ heldItem: ITEM_IDS.leftovers, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 200, currentHp: 150 });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
@@ -237,7 +238,7 @@ describe("Gen 6 Items -- Leftovers", () => {
   it("given a Pokemon holding Leftovers with 100 max HP, when end-of-turn triggers, then heals 6 HP (floor(100/16)=6)", () => {
     // Source: Showdown data/items.ts -- Leftovers: heals 1/16 max HP per turn
     // Derivation: floor(100 / 16) = 6
-    const pokemon = makeActive({ heldItem: ITEM_IDS.leftovers, hp: 100, currentHp: 80 });
+    const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 100, currentHp: 80 });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
@@ -253,11 +254,11 @@ describe("Gen 6 Items -- Life Orb", () => {
   it("given a Pokemon holding Life Orb with 200 max HP, when dealing damage on-hit, then takes 20 HP recoil (floor(200/10)=20)", () => {
     // Source: Showdown data/items.ts -- Life Orb: recoil = floor(maxHP / 10)
     // Derivation: floor(200 / 10) = 20
-    const pokemon = makeActive({ heldItem: ITEM_IDS.lifeOrb, hp: 200, currentHp: 200 });
+    const pokemon = createOnFieldPokemon({ heldItem: itemIds.lifeOrb, hp: 200, currentHp: 200 });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.tackle }),
+      move: dataManager.getMove(moveIds.tackle),
     });
     const result = applyGen6HeldItem("on-hit", ctx);
     expect(result.activated).toBe(true);
@@ -267,11 +268,11 @@ describe("Gen 6 Items -- Life Orb", () => {
   it("given a Pokemon holding Life Orb with 300 max HP, when dealing damage on-hit, then takes 30 HP recoil (floor(300/10)=30)", () => {
     // Source: Showdown data/items.ts -- Life Orb: recoil = floor(maxHP / 10)
     // Derivation: floor(300 / 10) = 30
-    const pokemon = makeActive({ heldItem: ITEM_IDS.lifeOrb, hp: 300, currentHp: 300 });
+    const pokemon = createOnFieldPokemon({ heldItem: itemIds.lifeOrb, hp: 300, currentHp: 300 });
     const ctx = makeItemContext({
       pokemon,
       damage: 80,
-      move: makeMove({ id: MOVE_IDS.tackle }),
+      move: dataManager.getMove(moveIds.tackle),
     });
     const result = applyGen6HeldItem("on-hit", ctx);
     expect(result.activated).toBe(true);
@@ -280,21 +281,20 @@ describe("Gen 6 Items -- Life Orb", () => {
 
   it("given a Pokemon with Sheer Force using a move with secondary effect, when Life Orb recoil check occurs, then recoil is suppressed", () => {
     // Source: Showdown scripts.ts -- Sheer Force suppresses Life Orb recoil
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.lifeOrb,
-      ability: ABILITY_IDS.sheerForce,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.lifeOrb,
+      ability: abilityIds.sheerForce,
       hp: 200,
       currentHp: 200,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({
-        id: MOVE_IDS.flamethrower,
-        type: TYPE_IDS.fire,
-        category: "special",
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), {
+        type: typeIds.fire,
+        category: moveCategories.special,
         // status-chance effect triggers Sheer Force
-        effect: { type: "status-chance", status: STATUS_IDS.burn, chance: 10 },
+        effect: { type: "status-chance", status: statusIds.burn, chance: 10 },
       }),
     });
     const result = applyGen6HeldItem("on-hit", ctx);
@@ -316,12 +316,12 @@ describe("Gen 6 Items -- Rocky Helmet", () => {
   it("given a defender holding Rocky Helmet and attacker has 300 max HP, when hit by contact move, then attacker takes 50 damage (floor(300/6)=50)", () => {
     // Source: Showdown data/items.ts -- Rocky Helmet: attacker takes 1/6 of its max HP
     // Derivation: floor(300 / 6) = 50
-    const defender = makeActive({
-      heldItem: ITEM_IDS.rockyHelmet,
+    const defender = createOnFieldPokemon({
+      heldItem: itemIds.rockyHelmet,
       hp: 200,
       currentHp: 200,
     });
-    const attacker = makeActive({ hp: 300, currentHp: 300 });
+    const attacker = createOnFieldPokemon({ hp: 300, currentHp: 300 });
     const state = makeState({
       sides: [
         { active: [defender], hazards: {}, screens: {} },
@@ -331,7 +331,7 @@ describe("Gen 6 Items -- Rocky Helmet", () => {
     const ctx = makeItemContext({
       pokemon: defender,
       state,
-      move: makeMove({ flags: { contact: true } }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { flags: { contact: true } }),
     });
     const result = applyGen6HeldItem("on-contact", ctx);
     expect(result.activated).toBe(true);
@@ -340,14 +340,14 @@ describe("Gen 6 Items -- Rocky Helmet", () => {
 
   it("given a defender holding Rocky Helmet, when hit by a non-contact move, then Rocky Helmet does NOT activate", () => {
     // Source: Showdown data/items.ts -- Rocky Helmet only triggers on contact moves
-    const defender = makeActive({
-      heldItem: ITEM_IDS.rockyHelmet,
+    const defender = createOnFieldPokemon({
+      heldItem: itemIds.rockyHelmet,
       hp: 200,
       currentHp: 200,
     });
     const ctx = makeItemContext({
       pokemon: defender,
-      move: makeMove({ flags: { contact: false } }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { flags: { contact: false } }),
     });
     const result = applyGen6HeldItem("on-contact", ctx);
     expectNoActivation(result);
@@ -363,23 +363,26 @@ describe("Gen 6 Items -- Weakness Policy", () => {
     // Source: Showdown data/items.ts -- weaknesspolicy: onDamagingHit: if SE, +2 Atk/SpA
     // Source: Bulbapedia "Weakness Policy" -- introduced in Gen 6
     // Water is weak to Electric (2x effectiveness)
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.weaknessPolicy,
-      types: [TYPE_IDS.water],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.weaknessPolicy,
+      types: [typeIds.water],
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 80,
-      move: makeMove({ id: MOVE_IDS.thunderbolt, type: TYPE_IDS.electric, category: "special" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.thunderbolt), {
+        type: typeIds.electric,
+        category: moveCategories.special,
+      }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack", stages: 2 },
       { type: "stat-boost", target: "self", value: "spAttack", stages: 2 },
-      { type: "consume", target: "self", value: ITEM_IDS.weaknessPolicy },
+      { type: "consume", target: "self", value: itemIds.weaknessPolicy },
     ]);
   });
 
@@ -387,38 +390,44 @@ describe("Gen 6 Items -- Weakness Policy", () => {
     // Source: Showdown data/items.ts -- Weakness Policy: activates at 2x or 4x effectiveness
     // Grass/Poison vs Psychic: Grass=1x, Poison=2x => 2x total (super-effective)
     // Actually: need a dual type that gives 4x. Fire/Grass vs Rock = Fire(2x)*Grass(2x) = 4x
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.weaknessPolicy,
-      types: [TYPE_IDS.fire, TYPE_IDS.grass],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.weaknessPolicy,
+      types: [typeIds.fire, typeIds.grass],
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 120,
-      move: makeMove({ id: MOVE_IDS.rockSlide, type: TYPE_IDS.rock, category: "physical" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.rockSlide), {
+        type: typeIds.rock,
+        category: moveCategories.physical,
+      }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack", stages: 2 },
       { type: "stat-boost", target: "self", value: "spAttack", stages: 2 },
-      { type: "consume", target: "self", value: ITEM_IDS.weaknessPolicy },
+      { type: "consume", target: "self", value: itemIds.weaknessPolicy },
     ]);
   });
 
   it("given a Water-type Pokemon holding Weakness Policy, when hit by a neutral Normal move, then Weakness Policy does NOT activate", () => {
     // Source: Showdown data/items.ts -- Weakness Policy only activates on SE hits (>= 2x)
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.weaknessPolicy,
-      types: [TYPE_IDS.water],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.weaknessPolicy,
+      types: [typeIds.water],
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.tackle, type: TYPE_IDS.normal, category: "physical" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
+        type: typeIds.normal,
+        category: moveCategories.physical,
+      }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -433,35 +442,35 @@ describe("Gen 6 Items -- Kee Berry", () => {
   it("given a Pokemon holding Kee Berry, when hit by a physical move, then gains +1 Defense and berry is consumed", () => {
     // Source: Showdown data/items.ts -- keeberry: onDamagingHit physical: boost defense +1
     // Source: Bulbapedia "Kee Berry" -- raises Defense by 1 on physical hit
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.keeBerry,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.keeBerry,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.tackle, category: "physical" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { category: moveCategories.physical }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "defense" },
-      { type: "consume", target: "self", value: ITEM_IDS.keeBerry },
+      { type: "consume", target: "self", value: itemIds.keeBerry },
     ]);
   });
 
   it("given a Pokemon holding Kee Berry, when hit by a special move, then Kee Berry does NOT activate", () => {
     // Source: Showdown data/items.ts -- Kee Berry only activates on physical hits
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.keeBerry,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.keeBerry,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.flamethrower, category: "special" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), { category: moveCategories.special }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -476,35 +485,35 @@ describe("Gen 6 Items -- Maranga Berry", () => {
   it("given a Pokemon holding Maranga Berry, when hit by a special move, then gains +1 SpDef and berry is consumed", () => {
     // Source: Showdown data/items.ts -- marangaberry: onDamagingHit special: boost spd +1
     // Source: Bulbapedia "Maranga Berry" -- raises Sp. Def by 1 on special hit
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.marangaBerry,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.marangaBerry,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.flamethrower, category: "special" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), { category: moveCategories.special }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "spDefense" },
-      { type: "consume", target: "self", value: ITEM_IDS.marangaBerry },
+      { type: "consume", target: "self", value: itemIds.marangaBerry },
     ]);
   });
 
   it("given a Pokemon holding Maranga Berry, when hit by a physical move, then Maranga Berry does NOT activate", () => {
     // Source: Showdown data/items.ts -- Maranga Berry only activates on special hits
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.marangaBerry,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.marangaBerry,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.tackle, category: "physical" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { category: moveCategories.physical }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -520,16 +529,19 @@ describe("Gen 6 Items -- Roseli Berry (moved to damage calc)", () => {
     // Type resist berries were moved from on-damage-taken to the damage calc (pre-damage)
     // to fix #622 -- the damage-boost effect was ignored by processItemResult.
     // See Gen6DamageCalc.ts for the actual resist berry logic.
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.roseliBerry,
-      types: [TYPE_IDS.dragon],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.roseliBerry,
+      types: [typeIds.dragon],
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 80,
-      move: makeMove({ id: MOVE_IDS.dazzlingGleam, type: TYPE_IDS.fairy, category: "special" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.dazzlingGleam), {
+        type: typeIds.fairy,
+        category: moveCategories.special,
+      }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -544,35 +556,38 @@ describe("Gen 6 Items -- Luminous Moss", () => {
   it("given a Pokemon holding Luminous Moss, when hit by a Water-type move, then gains +1 SpDef and item is consumed", () => {
     // Source: Showdown data/items.ts -- luminousmoss: onDamagingHit Water: boost spd +1
     // Source: Bulbapedia "Luminous Moss" -- raises Sp. Def by 1 when hit by Water
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.luminousMoss,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.luminousMoss,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.surf, type: TYPE_IDS.water, category: "special" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.surf), { type: typeIds.water, category: moveCategories.special }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "spDefense" },
-      { type: "consume", target: "self", value: ITEM_IDS.luminousMoss },
+      { type: "consume", target: "self", value: itemIds.luminousMoss },
     ]);
   });
 
   it("given a Pokemon holding Luminous Moss, when hit by a Fire-type move, then item does NOT activate", () => {
     // Source: Showdown data/items.ts -- Luminous Moss only triggers on Water moves
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.luminousMoss,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.luminousMoss,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.flamethrower, type: TYPE_IDS.fire, category: "special" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), {
+        type: typeIds.fire,
+        category: moveCategories.special,
+      }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -587,35 +602,38 @@ describe("Gen 6 Items -- Snowball", () => {
   it("given a Pokemon holding Snowball, when hit by an Ice-type move, then gains +1 Atk and item is consumed", () => {
     // Source: Showdown data/items.ts -- snowball: onDamagingHit Ice: boost atk +1
     // Source: Bulbapedia "Snowball" -- raises Atk by 1 when hit by Ice
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.snowball,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.snowball,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.iceBeam, type: TYPE_IDS.ice, category: "special" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.iceBeam), { type: typeIds.ice, category: moveCategories.special }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack" },
-      { type: "consume", target: "self", value: ITEM_IDS.snowball },
+      { type: "consume", target: "self", value: itemIds.snowball },
     ]);
   });
 
   it("given a Pokemon holding Snowball, when hit by a Normal-type move, then item does NOT activate", () => {
     // Source: Showdown data/items.ts -- Snowball only triggers on Ice moves
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.snowball,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.snowball,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({ id: MOVE_IDS.tackle, type: TYPE_IDS.normal, category: "physical" }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
+        type: typeIds.normal,
+        category: moveCategories.physical,
+      }),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -629,37 +647,37 @@ describe("Gen 6 Items -- Snowball", () => {
 describe("Gen 6 Items -- isMegaStone", () => {
   it("given Venusaurite, when checking isMegaStone, then returns true", () => {
     // Source: Showdown data/items.ts -- venusaurite has megaStone property
-    expect(isMegaStone(ITEM_IDS.venusaurite)).toBe(true);
+    expect(isMegaStone(itemIds.venusaurite)).toBe(true);
   });
 
   it("given Charizardite X, when checking isMegaStone, then returns true", () => {
     // Source: Showdown data/items.ts -- charizarditex has megaStone property
-    expect(isMegaStone(ITEM_IDS.charizarditeX)).toBe(true);
+    expect(isMegaStone(itemIds.charizarditeX)).toBe(true);
   });
 
   it("given Charizardite Y, when checking isMegaStone, then returns true", () => {
     // Source: Showdown data/items.ts -- charizarditey has megaStone property
-    expect(isMegaStone(ITEM_IDS.charizarditeY)).toBe(true);
+    expect(isMegaStone(itemIds.charizarditeY)).toBe(true);
   });
 
   it("given Blue Orb, when checking isMegaStone, then returns true (Primal Kyogre)", () => {
     // Source: Showdown data/items.ts -- blue-orb is a primal reversion item
-    expect(isMegaStone(ITEM_IDS.blueOrb)).toBe(true);
+    expect(isMegaStone(itemIds.blueOrb)).toBe(true);
   });
 
   it("given Red Orb, when checking isMegaStone, then returns true (Primal Groudon)", () => {
     // Source: Showdown data/items.ts -- red-orb is a primal reversion item
-    expect(isMegaStone(ITEM_IDS.redOrb)).toBe(true);
+    expect(isMegaStone(itemIds.redOrb)).toBe(true);
   });
 
   it("given Leftovers, when checking isMegaStone, then returns false", () => {
     // Source: Showdown data/items.ts -- leftovers is not a mega stone
-    expect(isMegaStone(ITEM_IDS.leftovers)).toBe(false);
+    expect(isMegaStone(itemIds.leftovers)).toBe(false);
   });
 
   it("given Life Orb, when checking isMegaStone, then returns false", () => {
     // Source: Showdown data/items.ts -- life-orb is not a mega stone
-    expect(isMegaStone(ITEM_IDS.lifeOrb)).toBe(false);
+    expect(isMegaStone(itemIds.lifeOrb)).toBe(false);
   });
 
   it("given empty string, when checking isMegaStone, then returns false", () => {
@@ -675,17 +693,17 @@ describe("Gen 6 Items -- Safety Goggles powder blocking", () => {
   it("given Safety Goggles and a powder move, when checking isGen6PowderBlocked, then returns true", () => {
     // Source: Showdown data/items.ts -- safetygoggles: isPowderImmune
     // Source: Bulbapedia "Safety Goggles" -- blocks powder moves
-    expect(isGen6PowderBlocked(ITEM_IDS.safetyGoggles, { powder: true })).toBe(true);
+    expect(isGen6PowderBlocked(itemIds.safetyGoggles, { powder: true })).toBe(true);
   });
 
   it("given Safety Goggles and a non-powder move, when checking isGen6PowderBlocked, then returns false", () => {
     // Source: Showdown data/items.ts -- Safety Goggles only blocks powder moves
-    expect(isGen6PowderBlocked(ITEM_IDS.safetyGoggles, { powder: false })).toBe(false);
+    expect(isGen6PowderBlocked(itemIds.safetyGoggles, { powder: false })).toBe(false);
   });
 
   it("given a non-Safety-Goggles item and a powder move, when checking isGen6PowderBlocked, then returns false", () => {
     // Source: Only Safety Goggles has isPowderImmune property
-    expect(isGen6PowderBlocked(ITEM_IDS.leftovers, { powder: true })).toBe(false);
+    expect(isGen6PowderBlocked(itemIds.leftovers, { powder: true })).toBe(false);
   });
 });
 
@@ -696,23 +714,23 @@ describe("Gen 6 Items -- Safety Goggles powder blocking", () => {
 describe("Gen 6 Items -- Status Orbs", () => {
   it("given a Normal-type Pokemon holding Flame Orb with no status, when end-of-turn triggers, then inflicts burn", () => {
     // Source: Showdown data/items.ts -- Flame Orb: inflicts burn at end of turn
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.flameOrb,
-      types: [TYPE_IDS.normal],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.flameOrb,
+      types: [typeIds.normal],
       hp: 200,
       currentHp: 200,
     });
     const ctx = makeItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: STATUS_IDS.burn }]);
+    expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: statusIds.burn }]);
   });
 
   it("given a Fire-type Pokemon holding Flame Orb, when end-of-turn triggers, then burn is NOT inflicted (Fire immunity)", () => {
     // Source: Showdown -- Fire types are immune to burn
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.flameOrb,
-      types: [TYPE_IDS.fire],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.flameOrb,
+      types: [typeIds.fire],
       hp: 200,
       currentHp: 200,
     });
@@ -723,9 +741,9 @@ describe("Gen 6 Items -- Status Orbs", () => {
 
   it("given a Normal-type Pokemon holding Toxic Orb with no status, when end-of-turn triggers, then inflicts badly-poisoned", () => {
     // Source: Showdown data/items.ts -- Toxic Orb: inflicts badly-poisoned at end of turn
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.toxicOrb,
-      types: [TYPE_IDS.normal],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.toxicOrb,
+      types: [typeIds.normal],
       hp: 200,
       currentHp: 200,
     });
@@ -733,15 +751,15 @@ describe("Gen 6 Items -- Status Orbs", () => {
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { type: "inflict-status", target: "self", status: STATUS_IDS.badlyPoisoned },
+      { type: "inflict-status", target: "self", status: statusIds.badlyPoisoned },
     ]);
   });
 
   it("given a Poison-type Pokemon holding Toxic Orb, when end-of-turn triggers, then poison is NOT inflicted (Poison immunity)", () => {
     // Source: Showdown -- Poison types are immune to poison
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.toxicOrb,
-      types: [TYPE_IDS.poison],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.toxicOrb,
+      types: [typeIds.poison],
       hp: 200,
       currentHp: 200,
     });
@@ -759,9 +777,9 @@ describe("Gen 6 Items -- Black Sludge", () => {
   it("given a Poison-type Pokemon holding Black Sludge with 200 max HP, when end-of-turn triggers, then heals 12 HP (floor(200/16)=12)", () => {
     // Source: Showdown data/items.ts -- Black Sludge: heals Poison types 1/16 max HP
     // Derivation: floor(200 / 16) = 12
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.blackSludge,
-      types: [TYPE_IDS.poison],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.blackSludge,
+      types: [typeIds.poison],
       hp: 200,
       currentHp: 150,
     });
@@ -774,9 +792,9 @@ describe("Gen 6 Items -- Black Sludge", () => {
   it("given a Normal-type Pokemon holding Black Sludge with 200 max HP, when end-of-turn triggers, then takes 25 damage (floor(200/8)=25)", () => {
     // Source: Showdown data/items.ts -- Black Sludge: damages non-Poison types 1/8 max HP
     // Derivation: floor(200 / 8) = 25
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.blackSludge,
-      types: [TYPE_IDS.normal],
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.blackSludge,
+      types: [typeIds.normal],
       hp: 200,
       currentHp: 200,
     });
@@ -796,15 +814,15 @@ describe("Gen 6 Items -- Focus Sash (moved to capLethalDamage, #784)", () => {
     // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook)
     // because handleOnDamageTaken fires post-damage, making currentHp === maxHp always false.
     // See: Gen6Ruleset.capLethalDamage and GitHub issue #784
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.focusSash,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.focusSash,
       hp: 200,
       currentHp: 200,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 250,
-      move: makeMove({}),
+      move: dataManager.getMove(moveIds.tackle),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -812,15 +830,15 @@ describe("Gen 6 Items -- Focus Sash (moved to capLethalDamage, #784)", () => {
 
   it("given a Pokemon NOT at full HP holding Focus Sash, when on-damage-taken triggers, then does NOT activate", () => {
     // Source: Showdown data/items.ts -- Focus Sash requires full HP
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.focusSash,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.focusSash,
       hp: 200,
       currentHp: 150,
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 200,
-      move: makeMove({}),
+      move: dataManager.getMove(moveIds.tackle),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expectNoActivation(result);
@@ -837,21 +855,21 @@ describe("Gen 6 Items -- Pinch Berries", () => {
     // Derivation: 25% of 200 = 50; post-damage HP = 49 < 50
     // Note: on-damage-taken fires after BattleEngine subtracts damage from currentHp,
     // so currentHp is already post-damage here.
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.liechiBerry,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.liechiBerry,
       hp: 200,
       currentHp: 49, // post-damage HP (was 200, took 151 damage)
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 151,
-      move: makeMove({}),
+      move: dataManager.getMove(moveIds.tackle),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack" },
-      { type: "consume", target: "self", value: ITEM_IDS.liechiBerry },
+      { type: "consume", target: "self", value: itemIds.liechiBerry },
     ]);
   });
 
@@ -860,22 +878,22 @@ describe("Gen 6 Items -- Pinch Berries", () => {
     // Derivation: 50% of 200 = 100; post-damage HP = 99 < 100
     // Note: on-damage-taken fires after BattleEngine subtracts damage from currentHp,
     // so currentHp is already post-damage here.
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.salacBerry,
-      ability: ABILITY_IDS.gluttony,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.salacBerry,
+      ability: abilityIds.gluttony,
       hp: 200,
       currentHp: 99, // post-damage HP (was 200, took 101 damage)
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 101,
-      move: makeMove({}),
+      move: dataManager.getMove(moveIds.tackle),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "speed" },
-      { type: "consume", target: "self", value: ITEM_IDS.salacBerry },
+      { type: "consume", target: "self", value: itemIds.salacBerry },
     ]);
   });
 });
@@ -887,12 +905,12 @@ describe("Gen 6 Items -- Pinch Berries", () => {
 describe("Gen 6 Items -- getPinchBerryThreshold", () => {
   it("given a Pokemon without Gluttony, when checking pinch threshold, then returns 0.25", () => {
     // Source: Bulbapedia -- default pinch berry threshold is 25%
-    expect(getPinchBerryThreshold({ ability: ABILITY_IDS.none }, 0.25)).toBe(0.25);
+    expect(getPinchBerryThreshold({ ability: abilityIds.none }, 0.25)).toBe(0.25);
   });
 
   it("given a Pokemon with Gluttony, when checking pinch threshold, then returns 0.5", () => {
     // Source: Bulbapedia -- Gluttony raises pinch berry threshold to 50%
-    expect(getPinchBerryThreshold({ ability: ABILITY_IDS.gluttony }, 0.25)).toBe(0.5);
+    expect(getPinchBerryThreshold({ ability: abilityIds.gluttony }, 0.25)).toBe(0.5);
   });
 });
 
@@ -902,26 +920,26 @@ describe("Gen 6 Items -- getPinchBerryThreshold", () => {
 
 describe("Gen 6 Items -- Unburden volatile on consume", () => {
   it(
-    `given a Pokemon with Unburden holding Sitrus Berry, when Sitrus Berry is consumed on damage, then "${VOLATILE_IDS.unburden}" volatile is set`,
+    `given a Pokemon with Unburden holding Sitrus Berry, when Sitrus Berry is consumed on damage, then "${volatileIds.unburden}" volatile is set`,
     () => {
     // Source: Bulbapedia -- Unburden: doubles Speed when held item is consumed
     // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem
     // Note: Focus Sash was moved to capLethalDamage (#784), so we use Sitrus Berry instead
     // to validate that Unburden still triggers on item consumption in on-damage-taken.
-    const pokemon = makeActive({
-      heldItem: ITEM_IDS.sitrusBerry,
-      ability: ABILITY_IDS.unburden,
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.sitrusBerry,
+      ability: abilityIds.unburden,
       hp: 200,
       currentHp: 80, // <= 50% of 200 HP, triggers Sitrus Berry
     });
     const ctx = makeItemContext({
       pokemon,
       damage: 50,
-      move: makeMove({}),
+      move: dataManager.getMove(moveIds.tackle),
     });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
-    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.unburden)).toBe(true);
+    expect(pokemon.volatileStatuses.has(volatileIds.unburden)).toBe(true);
   },
   );
 });
@@ -934,7 +952,7 @@ describe("Gen 6 Ruleset -- applyHeldItem wiring", () => {
   it("given Gen6Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen6 item handler", () => {
     // Verify the Gen6Ruleset.applyHeldItem override correctly delegates to applyGen6HeldItem
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActive({ heldItem: ITEM_IDS.leftovers, hp: 200, currentHp: 100 });
+    const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 200, currentHp: 100 });
     const ctx = makeItemContext({ pokemon });
     const result = ruleset.applyHeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);

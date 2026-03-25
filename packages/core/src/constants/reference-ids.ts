@@ -130,6 +130,12 @@ export const CORE_MOVE_IDS = {
   waterPledge: "water-pledge",
 } as const;
 
+export const CORE_MOVE_CATEGORIES = {
+  physical: "physical",
+  special: "special",
+  status: "status",
+} as const;
+
 export const CORE_HAZARD_IDS = {
   spikes: "spikes",
   stealthRock: "stealth-rock",
