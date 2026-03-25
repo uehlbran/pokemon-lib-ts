@@ -8,14 +8,68 @@ import type {
   MoveData,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   SeededRandom,
   StatBlock,
   TypeChart,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { applyMoveEffect, type MutableResult } from "../../src/Gen2MoveEffects";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
+import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_NATURE_IDS, GEN2_TYPES } from "../../src";
+
+const NORMAL = CORE_TYPE_IDS.normal;
+const FIRE = CORE_TYPE_IDS.fire;
+const WATER = CORE_TYPE_IDS.water;
+const ELECTRIC = CORE_TYPE_IDS.electric;
+const GRASS = CORE_TYPE_IDS.grass;
+const ICE = CORE_TYPE_IDS.ice;
+const FIGHTING = CORE_TYPE_IDS.fighting;
+const POISON = CORE_TYPE_IDS.poison;
+const GROUND = CORE_TYPE_IDS.ground;
+const FLYING = CORE_TYPE_IDS.flying;
+const PSYCHIC = CORE_TYPE_IDS.psychic;
+const BUG = CORE_TYPE_IDS.bug;
+const ROCK = CORE_TYPE_IDS.rock;
+const GHOST = CORE_TYPE_IDS.ghost;
+const DRAGON = CORE_TYPE_IDS.dragon;
+const DARK = CORE_TYPE_IDS.dark;
+const STEEL = CORE_TYPE_IDS.steel;
+
+const HARDY = GEN2_NATURE_IDS.hardy;
+const TACKLE = GEN2_MOVE_IDS.tackle;
+const GROWL = GEN2_MOVE_IDS.growl;
+const ENCORE = GEN2_MOVE_IDS.encore;
+const DISABLE = GEN2_MOVE_IDS.disable;
+const BATON_PASS = GEN2_MOVE_IDS.batonPass;
+const RETURN = GEN2_MOVE_IDS.return;
+const FRUSTRATION = GEN2_MOVE_IDS.frustration;
+const FIRE_BLAST = GEN2_MOVE_IDS.fireBlast;
+const WATER_GUN = GEN2_MOVE_IDS.waterGun;
+const HYPER_BEAM = GEN2_MOVE_IDS.hyperBeam;
+const EXPLOSION = GEN2_MOVE_IDS.explosion;
+const SELF_DESTRUCT = GEN2_MOVE_IDS.selfDestruct;
+const MYSTIC_WATER = GEN2_ITEM_IDS.mysticWater;
+const LIGHT_BALL = GEN2_ITEM_IDS.lightBall;
+const METAL_POWDER = GEN2_ITEM_IDS.metalPowder;
+const THICK_CLUB = GEN2_ITEM_IDS.thickClub;
+const POKE_BALL = GEN2_ITEM_IDS.pokeBall;
+const ENCORE_COUNTDOWN = CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown;
+const DISABLE_COUNTDOWN = CORE_END_OF_TURN_EFFECT_IDS.disableCountdown;
+const CONFUSION = CORE_VOLATILE_IDS.confusion;
+const FOCUS_ENERGY = GEN2_MOVE_IDS.focusEnergy;
+const LEECH_SEED = CORE_VOLATILE_IDS.leechSeed;
+const ENCORE_VOLATILE = GEN2_MOVE_IDS.encore;
+const DISABLE_VOLATILE = GEN2_MOVE_IDS.disable;
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -42,7 +96,7 @@ function createActivePokemon(opts: {
   spAttack?: number;
   spDefense?: number;
   types?: PokemonType[];
-  status?: "burn" | "paralysis" | "sleep" | "poison" | "freeze" | null;
+  status?: PrimaryStatus | null;
   heldItem?: string | null;
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
@@ -67,7 +121,7 @@ function createActivePokemon(opts: {
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: HARDY,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? 200,
@@ -83,7 +137,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: POKE_BALL,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -101,7 +155,7 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
+    types: opts.types ?? [NORMAL],
     ability: "",
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: 0,
@@ -128,7 +182,7 @@ function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
   return {
     id,
     displayName: id,
-    type: "normal",
+    type: NORMAL,
     category: "physical",
     power: 80,
     accuracy: 100,
@@ -189,25 +243,7 @@ function createMockState(attacker: ActivePokemon, defender: ActivePokemon): Batt
 
 /** All-neutral type chart for 17 Gen 2 types. */
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
+  const types: PokemonType[] = [...GEN2_TYPES];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
     chart[atk] = {};
@@ -224,9 +260,9 @@ function createSpecies() {
     id: 1,
     name: "test",
     displayName: "Test",
-    types: ["normal"],
+    types: [NORMAL],
     baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
+    abilities: { normal: [CORE_ABILITY_IDS.none], hidden: null },
     genderRatio: 50,
     catchRate: 45,
     baseExp: 64,
@@ -272,20 +308,20 @@ describe("Gen 2 Utility Moves", () => {
       // Encore forces the target to repeat its last used move for 2-6 turns
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
-        lastMoveUsed: "tackle",
+        lastMoveUsed: TACKLE,
         moves: [
-          { moveId: "tackle", currentPP: 35, maxPP: 35 },
-          { moveId: "growl", currentPP: 40, maxPP: 40 },
+          { moveId: TACKLE, currentPP: 35, maxPP: 35 },
+          { moveId: GROWL, currentPP: 40, maxPP: 40 },
         ],
       });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(4); // rng.int(2, 6) returns 4 turns
 
       const result = createEmptyResult();
-      const move = createMove("encore", {
+      const move = createMove(ENCORE, {
         category: "status",
         power: null,
-        effect: { type: "volatile-status", status: "encore", chance: 100 } as any,
+        effect: { type: "volatile-status", status: ENCORE_VOLATILE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -298,7 +334,7 @@ describe("Gen 2 Utility Moves", () => {
       } as MoveEffectContext);
 
       // Assert
-      expect(result.volatileInflicted).toBe("encore");
+      expect(result.volatileInflicted).toBe(ENCORE_VOLATILE);
       expect(result.volatileData).toBeDefined();
       expect(result.volatileData?.turnsLeft).toBe(4);
       expect(result.volatileData?.data?.moveIndex).toBe(0);
@@ -310,16 +346,16 @@ describe("Gen 2 Utility Moves", () => {
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
         lastMoveUsed: null,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove("encore", {
+      const move = createMove(ENCORE, {
         category: "status",
         power: null,
-        effect: { type: "volatile-status", status: "encore", chance: 100 } as any,
+        effect: { type: "volatile-status", status: ENCORE_VOLATILE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -341,17 +377,17 @@ describe("Gen 2 Utility Moves", () => {
       // Encore fails if the encored move has 0 PP
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
-        lastMoveUsed: "tackle",
-        moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35 }],
+        lastMoveUsed: TACKLE,
+        moves: [{ moveId: TACKLE, currentPP: 0, maxPP: 35 }],
       });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove("encore", {
+      const move = createMove(ENCORE, {
         category: "status",
         power: null,
-        effect: { type: "volatile-status", status: "encore", chance: 100 } as any,
+        effect: { type: "volatile-status", status: ENCORE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -372,17 +408,17 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal — Encore fails if the target no longer knows the move
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
-        lastMoveUsed: "fire-blast",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        lastMoveUsed: FIRE_BLAST,
+        moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove("encore", {
+      const move = createMove(ENCORE, {
         category: "status",
         power: null,
-        effect: { type: "volatile-status", status: "encore", chance: 100 } as any,
+        effect: { type: "volatile-status", status: ENCORE_VOLATILE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -410,21 +446,21 @@ describe("Gen 2 Utility Moves", () => {
       // Disable prevents the target from using its last-used move for 1-7 turns
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
-        lastMoveUsed: "tackle",
+        lastMoveUsed: TACKLE,
         moves: [
-          { moveId: "tackle", currentPP: 35, maxPP: 35 },
-          { moveId: "growl", currentPP: 40, maxPP: 40 },
+          { moveId: TACKLE, currentPP: 35, maxPP: 35 },
+          { moveId: GROWL, currentPP: 40, maxPP: 40 },
         ],
       });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(5); // rng.int(1, 7) returns 5 turns
 
       const result = createEmptyResult();
-      const move = createMove("disable", {
+      const move = createMove(DISABLE, {
         category: "status",
         power: null,
         accuracy: 55,
-        effect: { type: "volatile-status", status: "disable", chance: 100 } as any,
+        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -437,10 +473,10 @@ describe("Gen 2 Utility Moves", () => {
       } as MoveEffectContext);
 
       // Assert
-      expect(result.volatileInflicted).toBe("disable");
+      expect(result.volatileInflicted).toBe(DISABLE_VOLATILE);
       expect(result.volatileData).toBeDefined();
       expect(result.volatileData?.turnsLeft).toBe(5);
-      expect(result.volatileData?.data?.moveId).toBe("tackle");
+      expect(result.volatileData?.data?.moveId).toBe(TACKLE);
     });
 
     it("given defender has not used a move yet, when Disable is used, then it fails", () => {
@@ -449,16 +485,16 @@ describe("Gen 2 Utility Moves", () => {
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
         lastMoveUsed: null,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove("disable", {
+      const move = createMove(DISABLE, {
         category: "status",
         power: null,
-        effect: { type: "volatile-status", status: "disable", chance: 100 } as any,
+        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -479,18 +515,18 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal — Disable fails if the target already has a disabled move
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
-        lastMoveUsed: "tackle",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        lastMoveUsed: TACKLE,
+        moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
-      defender.volatileStatuses.set("disable", { turnsLeft: 3, data: { moveId: "growl" } });
+      defender.volatileStatuses.set(DISABLE_VOLATILE, { turnsLeft: 3, data: { moveId: GROWL } });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove("disable", {
+      const move = createMove(DISABLE, {
         category: "status",
         power: null,
-        effect: { type: "volatile-status", status: "disable", chance: 100 } as any,
+        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -511,17 +547,17 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal — Disable fails if the move has 0 PP
       const attacker = createActivePokemon({});
       const defender = createActivePokemon({
-        lastMoveUsed: "tackle",
-        moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35 }],
+        lastMoveUsed: TACKLE,
+        moves: [{ moveId: TACKLE, currentPP: 0, maxPP: 35 }],
       });
       const state = createMockState(attacker, defender);
       const rng = createMockRng(3);
 
       const result = createEmptyResult();
-      const move = createMove("disable", {
+      const move = createMove(DISABLE, {
         category: "status",
         power: null,
-        effect: { type: "volatile-status", status: "disable", chance: 100 } as any,
+        effect: { type: "volatile-status", status: DISABLE_VOLATILE, chance: 100 } as any,
       });
 
       applyMoveEffect(move.effect!, move, result, {
@@ -553,7 +589,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(0);
 
       const result = createEmptyResult();
-      const move = createMove("baton-pass", {
+      const move = createMove(BATON_PASS, {
         category: "status",
         power: null,
         effect: { type: "switch-out", target: "self" } as any,
@@ -582,7 +618,7 @@ describe("Gen 2 Utility Moves", () => {
       const rng = createMockRng(0);
 
       const result = createEmptyResult();
-      const move = createMove("baton-pass", {
+      const move = createMove(BATON_PASS, {
         category: "status",
         power: null,
         effect: { type: "custom" } as any,
@@ -606,10 +642,10 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
       // Baton Pass preserves confusion, focus-energy, leech-seed for the incoming Pokemon
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: "baton-pass" });
-      pokemon.volatileStatuses.set("confusion", { turnsLeft: 3 });
-      pokemon.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-      pokemon.volatileStatuses.set("leech-seed", { turnsLeft: -1 });
+      const pokemon = createActivePokemon({ lastMoveUsed: BATON_PASS });
+      pokemon.volatileStatuses.set(CONFUSION, { turnsLeft: 3 });
+      pokemon.volatileStatuses.set(FOCUS_ENERGY, { turnsLeft: -1 });
+      pokemon.volatileStatuses.set(LEECH_SEED, { turnsLeft: -1 });
 
       const state = createMockState(pokemon, createActivePokemon({}));
 
@@ -617,19 +653,19 @@ describe("Gen 2 Utility Moves", () => {
       ruleset.onSwitchOut(pokemon, state);
 
       // Assert: baton-passable volatiles are preserved
-      expect(pokemon.volatileStatuses.has("confusion")).toBe(true);
-      expect(pokemon.volatileStatuses.has("focus-energy")).toBe(true);
-      expect(pokemon.volatileStatuses.has("leech-seed")).toBe(true);
+      expect(pokemon.volatileStatuses.has(CONFUSION)).toBe(true);
+      expect(pokemon.volatileStatuses.has(FOCUS_ENERGY)).toBe(true);
+      expect(pokemon.volatileStatuses.has(LEECH_SEED)).toBe(true);
     });
 
     it("given normal switch, when onSwitchOut is called, then confusion and focus-energy are cleared", () => {
       // Source: pret/pokecrystal engine/battle/core.asm NewBattleMonStatus
       // Normal switch clears all non-persistent volatiles
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: "tackle" });
-      pokemon.volatileStatuses.set("confusion", { turnsLeft: 3 });
-      pokemon.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-      pokemon.volatileStatuses.set("leech-seed", { turnsLeft: -1 });
+      const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
+      pokemon.volatileStatuses.set(CONFUSION, { turnsLeft: 3 });
+      pokemon.volatileStatuses.set(FOCUS_ENERGY, { turnsLeft: -1 });
+      pokemon.volatileStatuses.set(LEECH_SEED, { turnsLeft: -1 });
 
       const state = createMockState(pokemon, createActivePokemon({}));
 
@@ -637,17 +673,17 @@ describe("Gen 2 Utility Moves", () => {
       ruleset.onSwitchOut(pokemon, state);
 
       // Assert: volatiles are cleared
-      expect(pokemon.volatileStatuses.has("confusion")).toBe(false);
-      expect(pokemon.volatileStatuses.has("focus-energy")).toBe(false);
-      expect(pokemon.volatileStatuses.has("leech-seed")).toBe(false);
+      expect(pokemon.volatileStatuses.has(CONFUSION)).toBe(false);
+      expect(pokemon.volatileStatuses.has(FOCUS_ENERGY)).toBe(false);
+      expect(pokemon.volatileStatuses.has(LEECH_SEED)).toBe(false);
     });
 
     it("given Baton Pass switch, when onSwitchOut is called, then encore/disable are still cleared", () => {
       // Source: pret/pokecrystal — encore and disable are tied to the user, not baton-passable
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: "baton-pass" });
-      pokemon.volatileStatuses.set("encore", { turnsLeft: 3, data: { moveIndex: 0 } });
-      pokemon.volatileStatuses.set("disable", { turnsLeft: 5, data: { moveId: "tackle" } });
+      const pokemon = createActivePokemon({ lastMoveUsed: BATON_PASS });
+      pokemon.volatileStatuses.set(ENCORE_VOLATILE, { turnsLeft: 3, data: { moveIndex: 0 } });
+      pokemon.volatileStatuses.set(DISABLE_VOLATILE, { turnsLeft: 5, data: { moveId: TACKLE } });
 
       const state = createMockState(pokemon, createActivePokemon({}));
 
@@ -655,8 +691,8 @@ describe("Gen 2 Utility Moves", () => {
       ruleset.onSwitchOut(pokemon, state);
 
       // Assert: encore and disable are always cleared (not baton-passable)
-      expect(pokemon.volatileStatuses.has("encore")).toBe(false);
-      expect(pokemon.volatileStatuses.has("disable")).toBe(false);
+      expect(pokemon.volatileStatuses.has(ENCORE_VOLATILE)).toBe(false);
+      expect(pokemon.volatileStatuses.has(DISABLE_VOLATILE)).toBe(false);
     });
   });
 
@@ -673,7 +709,7 @@ describe("Gen 2 Utility Moves", () => {
         level: 50,
         attack: 100,
         friendship: 255,
-        types: ["fighting"],
+        types: [FIGHTING],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -690,8 +726,8 @@ describe("Gen 2 Utility Moves", () => {
         {
           attacker,
           defender,
-          move: createMove("return", {
-            type: "normal",
+          move: createMove(RETURN, {
+            type: NORMAL,
             category: "physical",
             power: null,
             effect: { type: "custom" } as any,
@@ -722,7 +758,7 @@ describe("Gen 2 Utility Moves", () => {
         level: 50,
         attack: 100,
         friendship: 0,
-        types: ["fighting"],
+        types: [FIGHTING],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -737,8 +773,8 @@ describe("Gen 2 Utility Moves", () => {
         {
           attacker,
           defender,
-          move: createMove("return", {
-            type: "normal",
+          move: createMove(RETURN, {
+            type: NORMAL,
             category: "physical",
             power: null,
             effect: { type: "custom" } as any,
@@ -769,7 +805,7 @@ describe("Gen 2 Utility Moves", () => {
         level: 50,
         attack: 100,
         friendship: 100,
-        types: ["fighting"],
+        types: [FIGHTING],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -784,8 +820,8 @@ describe("Gen 2 Utility Moves", () => {
         {
           attacker,
           defender,
-          move: createMove("return", {
-            type: "normal",
+          move: createMove(RETURN, {
+            type: NORMAL,
             category: "physical",
             power: null,
             effect: { type: "custom" } as any,
@@ -817,7 +853,7 @@ describe("Gen 2 Utility Moves", () => {
         level: 50,
         attack: 100,
         friendship: 0,
-        types: ["fighting"],
+        types: [FIGHTING],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -832,8 +868,8 @@ describe("Gen 2 Utility Moves", () => {
         {
           attacker,
           defender,
-          move: createMove("frustration", {
-            type: "normal",
+          move: createMove(FRUSTRATION, {
+            type: NORMAL,
             category: "physical",
             power: null,
             effect: { type: "custom" } as any,
@@ -863,7 +899,7 @@ describe("Gen 2 Utility Moves", () => {
         level: 50,
         attack: 100,
         friendship: 255,
-        types: ["fighting"],
+        types: [FIGHTING],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -878,8 +914,8 @@ describe("Gen 2 Utility Moves", () => {
         {
           attacker,
           defender,
-          move: createMove("frustration", {
-            type: "normal",
+          move: createMove(FRUSTRATION, {
+            type: NORMAL,
             category: "physical",
             power: null,
             effect: { type: "custom" } as any,
@@ -912,7 +948,7 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal — Disable has a finite duration that counts down each turn
       const ruleset = new Gen2Ruleset();
       const eotOrder = ruleset.getEndOfTurnOrder();
-      expect(eotOrder).toContain("disable-countdown");
+      expect(eotOrder).toContain(DISABLE_COUNTDOWN);
     });
 
     it("given Gen2Ruleset, when getEndOfTurnOrder is called, then disable-countdown is before encore-countdown", () => {
@@ -920,18 +956,17 @@ describe("Gen 2 Utility Moves", () => {
       // Disable countdown fires before Encore (jp HandleEncore is the final call)
       const ruleset = new Gen2Ruleset();
       const eotOrder = ruleset.getEndOfTurnOrder();
-      const encoreIdx = eotOrder.indexOf("encore-countdown");
-      const disableIdx = eotOrder.indexOf("disable-countdown");
-      expect(encoreIdx).toBeGreaterThanOrEqual(0);
-      expect(disableIdx).toBeGreaterThanOrEqual(0);
-      expect(disableIdx).toBeLessThan(encoreIdx);
+      const encoreIdx = eotOrder.indexOf(ENCORE_COUNTDOWN);
+      const disableIdx = eotOrder.indexOf(DISABLE_COUNTDOWN);
+      expect(eotOrder).toEqual(expect.arrayContaining([DISABLE_COUNTDOWN, ENCORE_COUNTDOWN]));
+      expect(eotOrder.slice(disableIdx, encoreIdx + 1)).toEqual([DISABLE_COUNTDOWN, ENCORE_COUNTDOWN]);
     });
 
     it("given Gen2Ruleset, when getEndOfTurnOrder is called, then encore-countdown is the last effect", () => {
       // Source: pret/pokecrystal engine/battle/core.asm:296 — jp HandleEncore is the final call
       const ruleset = new Gen2Ruleset();
       const eotOrder = ruleset.getEndOfTurnOrder();
-      expect(eotOrder[eotOrder.length - 1]).toBe("encore-countdown");
+      expect(eotOrder[eotOrder.length - 1]).toBe(ENCORE_COUNTDOWN);
     });
   });
 
@@ -943,25 +978,25 @@ describe("Gen 2 Utility Moves", () => {
     it("given Pokemon has encore volatile, when switching out normally, then encore is cleared", () => {
       // Source: pret/pokecrystal — volatile statuses are cleared on switch-out
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: "tackle" });
-      pokemon.volatileStatuses.set("encore", { turnsLeft: 3, data: { moveIndex: 0 } });
+      const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
+      pokemon.volatileStatuses.set(ENCORE, { turnsLeft: 3, data: { moveIndex: 0 } });
       const state = createMockState(pokemon, createActivePokemon({}));
 
       ruleset.onSwitchOut(pokemon, state);
 
-      expect(pokemon.volatileStatuses.has("encore")).toBe(false);
+      expect(pokemon.volatileStatuses.has(ENCORE)).toBe(false);
     });
 
     it("given Pokemon has disable volatile, when switching out normally, then disable is cleared", () => {
       // Source: pret/pokecrystal — volatile statuses are cleared on switch-out
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: "tackle" });
-      pokemon.volatileStatuses.set("disable", { turnsLeft: 5, data: { moveId: "growl" } });
+      const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
+      pokemon.volatileStatuses.set(DISABLE, { turnsLeft: 5, data: { moveId: GROWL } });
       const state = createMockState(pokemon, createActivePokemon({}));
 
       ruleset.onSwitchOut(pokemon, state);
 
-      expect(pokemon.volatileStatuses.has("disable")).toBe(false);
+      expect(pokemon.volatileStatuses.has(DISABLE)).toBe(false);
     });
   });
 });

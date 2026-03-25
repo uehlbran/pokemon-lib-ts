@@ -1,5 +1,13 @@
 import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+import { describe, expect, it, vi } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -41,8 +49,8 @@ class ContactImmunityMockRuleset extends MockRuleset {
  * Side 1: Blastoise (speed 120) with tackle (contact) and thunderbolt (non-contact)
  */
 function createTestEngine(opts?: {
-  side0Moves?: Array<{ moveId: string; currentPP: number; maxPP: number; ppUps: number }>;
-  side1Moves?: Array<{ moveId: string; currentPP: number; maxPP: number; ppUps: number }>;
+  side0Moves?: Array<{ moveId: string; currentPP?: number; maxPP?: number; ppUps?: number }>;
+  side1Moves?: Array<{ moveId: string; currentPP?: number; maxPP?: number; ppUps?: number }>;
   side0Hp?: number;
   side1Hp?: number;
 }) {
@@ -50,14 +58,17 @@ function createTestEngine(opts?: {
   const dataManager = createMockDataManager();
   const events: BattleEvent[] = [];
 
-  const defaultMoves = [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }];
+  const defaultMoves = [createMockMoveSlot(CORE_MOVE_IDS.tackle)];
+  const makeMoves = (
+    moves: Array<{ moveId: string; currentPP?: number; maxPP?: number; ppUps?: number }>,
+  ) => moves.map((move) => createMockMoveSlot(move.moveId, move));
 
   const team1: PokemonInstance[] = [
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      ability: "blaze",
-      moves: opts?.side0Moves ?? defaultMoves,
+      ability: CORE_ABILITY_IDS.blaze,
+      moves: opts?.side0Moves ? makeMoves(opts.side0Moves) : defaultMoves,
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -74,11 +85,10 @@ function createTestEngine(opts?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      ability: "static",
-      moves: opts?.side1Moves ?? [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
-      ],
+      ability: CORE_ABILITY_IDS.static,
+      moves: opts?.side1Moves
+        ? makeMoves(opts.side1Moves)
+        : [createMockMoveSlot(CORE_MOVE_IDS.tackle), createMockMoveSlot(CORE_MOVE_IDS.thunderbolt)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -111,7 +121,9 @@ describe("on-contact ability hook", () => {
   it("given a contact move with damage > 0, when move hits defender, then on-contact trigger fires for defender", () => {
     // Source: Showdown sim/battle-actions.ts — contact abilities (Static, Flame Body, etc.)
     // fire when the attacker uses a contact move that deals damage
-    const { engine, ruleset, events } = createTestEngine();
+    const { engine, ruleset, events } = createTestEngine({
+      side1Moves: [createMockMoveSlot(CORE_MOVE_IDS.thunderbolt)],
+    });
     // MockRuleset default fixedDamage = 10 and tackle has contact: true
     ruleset.setFixedDamage(10);
 
@@ -123,7 +135,7 @@ describe("on-contact ability hook", () => {
             {
               effectType: "status-inflict" as const,
               target: "opponent" as const,
-              status: "paralysis" as const,
+              status: CORE_STATUS_IDS.paralysis,
             },
           ],
           messages: ["Blastoise's Static paralyzed Charizard!"],
@@ -142,12 +154,10 @@ describe("on-contact ability hook", () => {
 
     // Assert: on-contact was called for the defender (Blastoise)
     const contactTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-contact");
-    expect(contactTriggers.length).toBeGreaterThanOrEqual(1);
-    // At least one contact trigger should be for the defender's pokemon
-    const defenderContactTrigger = contactTriggers.find(
-      (t) => t.pokemonUid === "blastoise-1" || t.pokemonUid === "charizard-1",
-    );
-    expect(defenderContactTrigger).toBeDefined();
+    expect(contactTriggers).toHaveLength(1);
+    // The only contact trigger should be for the defender's pokemon.
+    const defenderContactTrigger = contactTriggers.find((t) => t.pokemonUid === "blastoise-1");
+    expect(defenderContactTrigger).toEqual({ trigger: "on-contact", pokemonUid: "blastoise-1" });
   });
 
   it("given a non-contact move with damage > 0, when move hits defender, then on-contact trigger does NOT fire for that attack", () => {
@@ -155,8 +165,8 @@ describe("on-contact ability hook", () => {
     // Thunderbolt has contact: false
     // Both sides use Thunderbolt (non-contact) to ensure no on-contact triggers at all
     const { engine, ruleset } = createTestEngine({
-      side0Moves: [{ moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 }],
-      side1Moves: [{ moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 }],
+      side0Moves: [createMockMoveSlot(CORE_MOVE_IDS.thunderbolt)],
+      side1Moves: [createMockMoveSlot(CORE_MOVE_IDS.thunderbolt)],
     });
     ruleset.setFixedDamage(10);
 
@@ -173,7 +183,7 @@ describe("on-contact ability hook", () => {
 
     // Assert: no on-contact triggers at all (both moves are non-contact)
     const contactTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-contact");
-    expect(contactTriggers.length).toBe(0);
+    expect(contactTriggers).toHaveLength(0);
   });
 
   it("given a contact move hitting a substitute, when move deals damage, then on-contact trigger does NOT fire", () => {
@@ -191,7 +201,7 @@ describe("on-contact ability hook", () => {
     const blastoise = engine.state.sides[1].active[0];
     expect(blastoise).not.toBeNull();
     blastoise!.substituteHp = 50;
-    blastoise!.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      blastoise!.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
 
     ruleset.triggerLog = [];
 
@@ -205,7 +215,7 @@ describe("on-contact ability hook", () => {
     const contactTriggersForBlastoise = ruleset.triggerLog.filter(
       (t) => t.trigger === "on-contact" && t.pokemonUid === "blastoise-1",
     );
-    expect(contactTriggersForBlastoise.length).toBe(0);
+    expect(contactTriggersForBlastoise).toHaveLength(0);
   });
 
   it("given a contact move that KOs the defender, when defender has 0 HP after damage, then on-contact trigger does NOT fire", () => {
@@ -239,7 +249,7 @@ describe("on-contact ability hook", () => {
     const contactTriggersForBlastoise = ruleset.triggerLog.filter(
       (t) => t.trigger === "on-contact" && t.pokemonUid === "blastoise-1",
     );
-    expect(contactTriggersForBlastoise.length).toBe(0);
+    expect(contactTriggersForBlastoise).toHaveLength(0);
   });
 });
 
@@ -286,13 +296,13 @@ describe("passive-immunity ability hook", () => {
 
     // Assert: passive-immunity trigger fired
     const immunityTriggers = ruleset.triggerLog.filter((t) => t.trigger === "passive-immunity");
-    expect(immunityTriggers.length).toBeGreaterThanOrEqual(1);
+    expect(immunityTriggers).not.toHaveLength(0);
 
     // Assert: attacker's lastMoveUsed should be set (early-return path sets it)
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
-    // After both move executions, charizard should have lastMoveUsed = "tackle"
-    expect(charizard!.lastMoveUsed).toBe("tackle");
+    // After both move executions, charizard should have lastMoveUsed = CORE_MOVE_IDS.tackle
+    expect(charizard!.lastMoveUsed).toBe(CORE_MOVE_IDS.tackle);
   });
 
   it("given damage calc returns 0 damage and 0 effectiveness, when passive-immunity handler returns NOT activated (type immunity), then move proceeds normally with no early-return", () => {
@@ -326,12 +336,12 @@ describe("passive-immunity ability hook", () => {
 
     // Assert: passive-immunity trigger fired but was not activated
     const immunityTriggers = ruleset.triggerLog.filter((t) => t.trigger === "passive-immunity");
-    expect(immunityTriggers.length).toBeGreaterThanOrEqual(1);
+    expect(immunityTriggers).not.toHaveLength(0);
 
     // Assert: the effectiveness event should still be emitted (0 !== 1)
     // since the move did NOT early-return
     const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    expect(effectivenessEvents.length).toBeGreaterThanOrEqual(1);
+    expect(effectivenessEvents).not.toHaveLength(0);
   });
 
   it("given passive-immunity activates, when move is fully absorbed, then subsequent move effects are skipped", () => {
@@ -347,13 +357,7 @@ describe("passive-immunity ability hook", () => {
       randomFactor: 1,
     });
 
-    // Track whether executeMoveEffect was called
-    let moveEffectCalled = false;
-    const originalExecuteMoveEffect = ruleset.executeMoveEffect.bind(ruleset);
-    ruleset.executeMoveEffect = (ctx) => {
-      moveEffectCalled = true;
-      return originalExecuteMoveEffect(ctx);
-    };
+    const executeMoveEffectSpy = vi.spyOn(ruleset, "executeMoveEffect");
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
       if (trigger === "passive-immunity") {
@@ -368,8 +372,6 @@ describe("passive-immunity ability hook", () => {
 
     engine.start();
     events.length = 0;
-    moveEffectCalled = false;
-
     // Both sides use Tackle. Blastoise (faster) attacks first.
     // Its damage calc returns 0/0 for Charizard.
     // Charizard's passive-immunity check fires... but wait,
@@ -385,7 +387,7 @@ describe("passive-immunity ability hook", () => {
     // and early-return, so moveEffectCalled should still be false for absorbed moves.
     // Note: moveEffectCalled tracks ALL calls. Since both moves are absorbed,
     // no move effects should fire.
-    expect(moveEffectCalled).toBe(false);
+    expect(executeMoveEffectSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -404,7 +406,7 @@ describe("processAbilityResult: status-inflict effect", () => {
             {
               effectType: "status-inflict" as const,
               target: "opponent" as const,
-              status: "paralysis" as const,
+              status: CORE_STATUS_IDS.paralysis,
             },
           ],
           messages: ["Blastoise's Static paralyzed the attacker!"],
@@ -429,9 +431,9 @@ describe("processAbilityResult: status-inflict effect", () => {
 
     // Check that at least one status-inflict event was emitted for paralysis
     const statusEvents = events.filter(
-      (e) => e.type === "status-inflict" && "status" in e && e.status === "paralysis",
+      (e) => e.type === "status-inflict" && "status" in e && e.status === CORE_STATUS_IDS.paralysis,
     );
-    expect(statusEvents.length).toBeGreaterThanOrEqual(1);
+    expect(statusEvents).not.toHaveLength(0);
   });
 
   it("given a status-inflict ability effect targeting opponent who already has a status, when processAbilityResult runs, then status is NOT overwritten", () => {
@@ -446,7 +448,7 @@ describe("processAbilityResult: status-inflict effect", () => {
             {
               effectType: "status-inflict" as const,
               target: "opponent" as const,
-              status: "paralysis" as const,
+              status: CORE_STATUS_IDS.paralysis,
             },
           ],
           messages: ["Static tried to paralyze!"],
@@ -460,7 +462,7 @@ describe("processAbilityResult: status-inflict effect", () => {
     // Give Charizard burn before the turn
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
-    charizard!.pokemon.status = "burn";
+    charizard!.pokemon.status = CORE_STATUS_IDS.burn;
 
     events.length = 0;
 
@@ -468,7 +470,7 @@ describe("processAbilityResult: status-inflict effect", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Charizard should still have burn, not paralysis
-    expect(charizard!.pokemon.status).toBe("burn");
+    expect(charizard!.pokemon.status).toBe(CORE_STATUS_IDS.burn);
   });
 });
 
@@ -490,7 +492,7 @@ describe("processAbilityResult: companion volatile initialization after status i
             {
               effectType: "status-inflict" as const,
               target: "opponent" as const,
-              status: "badly-poisoned" as const,
+              status: CORE_STATUS_IDS.badlyPoisoned,
             },
           ],
           messages: ["Toxic status inflicted!"],
@@ -508,9 +510,9 @@ describe("processAbilityResult: companion volatile initialization after status i
     // Charizard (side 0) gets badly-poisoned when attacking Blastoise (on-contact fires for defender Blastoise, targeting opponent=Charizard)
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
-    expect(charizard!.pokemon.status).toBe("badly-poisoned");
-    expect(charizard!.volatileStatuses.has("toxic-counter")).toBe(true);
-    const toxicCounter = charizard!.volatileStatuses.get("toxic-counter");
+    expect(charizard!.pokemon.status).toBe(CORE_STATUS_IDS.badlyPoisoned);
+    expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.toxicCounter)).toBe(true);
+    const toxicCounter = charizard!.volatileStatuses.get(CORE_VOLATILE_IDS.toxicCounter);
     expect(toxicCounter).toBeDefined();
     expect(toxicCounter!.turnsLeft).toBe(-1);
     expect(toxicCounter!.data).toEqual({ counter: 1 });
@@ -529,7 +531,7 @@ describe("processAbilityResult: companion volatile initialization after status i
             {
               effectType: "status-inflict" as const,
               target: "opponent" as const,
-              status: "sleep" as const,
+              status: CORE_STATUS_IDS.sleep,
             },
           ],
           messages: ["Sleep inflicted!"],
@@ -547,9 +549,9 @@ describe("processAbilityResult: companion volatile initialization after status i
     // Charizard gets sleep when it attacks Blastoise (on-contact fires for Blastoise, targeting Charizard)
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
-    expect(charizard!.pokemon.status).toBe("sleep");
-    expect(charizard!.volatileStatuses.has("sleep-counter")).toBe(true);
-    const sleepCounter = charizard!.volatileStatuses.get("sleep-counter");
+    expect(charizard!.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
+    expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(true);
+    const sleepCounter = charizard!.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     expect(sleepCounter).toBeDefined();
     // MockRuleset.rollSleepTurns returns rng.int(1, 3), so turnsLeft is 1-3
     expect(sleepCounter!.turnsLeft).toBeGreaterThanOrEqual(1);
@@ -576,7 +578,7 @@ describe("processAbilityResult: companion volatile initialization after status i
             {
               effectType: "status-inflict" as const,
               target: "opponent" as const,
-              status: "freeze" as const,
+              status: CORE_STATUS_IDS.freeze,
             },
           ],
           messages: ["Frozen via ability!"],
@@ -594,9 +596,9 @@ describe("processAbilityResult: companion volatile initialization after status i
     // Charizard gets frozen when it attacks Blastoise
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
-    expect(charizard!.pokemon.status).toBe("freeze");
-    expect(charizard!.volatileStatuses.has("just-frozen")).toBe(true);
-    const justFrozen = charizard!.volatileStatuses.get("just-frozen");
+    expect(charizard!.pokemon.status).toBe(CORE_STATUS_IDS.freeze);
+    expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.justFrozen)).toBe(true);
+    const justFrozen = charizard!.volatileStatuses.get(CORE_VOLATILE_IDS.justFrozen);
     expect(justFrozen).toBeDefined();
     expect(justFrozen!.turnsLeft).toBe(1);
   });
@@ -617,7 +619,7 @@ describe("processAbilityResult: volatile-inflict effect", () => {
             {
               effectType: "volatile-inflict" as const,
               target: "opponent" as const,
-              volatile: "infatuation" as const,
+              volatile: CORE_VOLATILE_IDS.infatuation,
             },
           ],
           messages: ["Blastoise's Cute Charm infatuated the attacker!"],
@@ -634,9 +636,12 @@ describe("processAbilityResult: volatile-inflict effect", () => {
 
     // Check that at least one volatile-start event was emitted for infatuation
     const volatileEvents = events.filter(
-      (e) => e.type === "volatile-start" && "volatile" in e && e.volatile === "infatuation",
+      (e) =>
+        e.type === "volatile-start" &&
+        "volatile" in e &&
+        e.volatile === CORE_VOLATILE_IDS.infatuation,
     );
-    expect(volatileEvents.length).toBeGreaterThanOrEqual(1);
+    expect(volatileEvents).not.toHaveLength(0);
   });
 
   it("given a volatile-inflict ability effect targeting opponent who already has that volatile, when processAbilityResult runs, then volatile is NOT duplicated", () => {
@@ -651,8 +656,8 @@ describe("processAbilityResult: volatile-inflict effect", () => {
             {
               effectType: "volatile-inflict" as const,
               target: "opponent" as const,
-              volatile: "infatuation" as const,
-              data: { source: "cute-charm" },
+              volatile: CORE_VOLATILE_IDS.infatuation,
+              data: { source: CORE_ABILITY_IDS.cuteCharm },
             },
           ],
           messages: ["Cute Charm tried to infatuate!"],
@@ -666,7 +671,7 @@ describe("processAbilityResult: volatile-inflict effect", () => {
     // Give Charizard infatuation before the turn
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
-    charizard!.volatileStatuses.set("infatuation", { turnsLeft: -1 });
+    charizard!.volatileStatuses.set(CORE_VOLATILE_IDS.infatuation, { turnsLeft: -1 });
 
     events.length = 0;
 
@@ -679,7 +684,7 @@ describe("processAbilityResult: volatile-inflict effect", () => {
       (e) =>
         e.type === "volatile-start" &&
         "volatile" in e &&
-        e.volatile === "infatuation" &&
+        e.volatile === CORE_VOLATILE_IDS.infatuation &&
         "pokemon" in e &&
         e.pokemon === "Charizard",
     );
@@ -718,20 +723,20 @@ describe("on-before-move ability hook", () => {
 
     // Assert: on-before-move was called
     const beforeMoveTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-before-move");
-    expect(beforeMoveTriggers.length).toBeGreaterThanOrEqual(1);
+    expect(beforeMoveTriggers).not.toHaveLength(0);
 
     // Assert: the loafing message was emitted
     // Source: Showdown — Truant emits a message when the ability blocks the move
     const loafingMessages = events.filter(
       (e) => e.type === "message" && "text" in e && e.text.includes("loafing"),
     );
-    expect(loafingMessages.length).toBeGreaterThanOrEqual(1);
+    expect(loafingMessages).not.toHaveLength(0);
 
     // Assert: no damage event from the blocked Pokemon
     // Because both sides fire on-before-move and both are prevented,
     // we check that no damage event was emitted at all
     const damageEvents = events.filter((e) => e.type === "damage");
-    expect(damageEvents.length).toBe(0);
+    expect(damageEvents).toHaveLength(0);
   });
 
   it("given MockRuleset returns activated=false on-before-move, when submitAction move, then move proceeds normally", () => {
@@ -752,12 +757,12 @@ describe("on-before-move ability hook", () => {
 
     // Assert: on-before-move was called but did not prevent the move
     const beforeMoveTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-before-move");
-    expect(beforeMoveTriggers.length).toBeGreaterThanOrEqual(1);
+    expect(beforeMoveTriggers).not.toHaveLength(0);
 
     // Assert: damage events were emitted (moves proceeded normally)
     // Source: both Charizard and Blastoise should deal 10 damage each
     const damageEvents = events.filter((e) => e.type === "damage");
-    expect(damageEvents.length).toBeGreaterThanOrEqual(2);
+    expect(damageEvents.length).toBe(2);
   });
 });
 
@@ -796,14 +801,14 @@ describe("on-damage-taken ability hook", () => {
 
     // Assert: on-damage-taken was called for the defender
     const damageTakenTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-damage-taken");
-    expect(damageTakenTriggers.length).toBeGreaterThanOrEqual(1);
+    expect(damageTakenTriggers).not.toHaveLength(0);
 
     // Assert: type-change message was emitted
     // Source: BattleEngine.processAbilityResult emits "type changed" messages
     const typeChangeMessages = events.filter(
       (e) => e.type === "message" && "text" in e && e.text.includes("type changed"),
     );
-    expect(typeChangeMessages.length).toBeGreaterThanOrEqual(1);
+    expect(typeChangeMessages).not.toHaveLength(0);
   });
 
   it("given damage = 0 from immunity, when ability check runs, then on-damage-taken does NOT fire", () => {
@@ -830,7 +835,7 @@ describe("on-damage-taken ability hook", () => {
 
     // Assert: on-damage-taken was NOT called (damage was 0)
     const damageTakenTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-damage-taken");
-    expect(damageTakenTriggers.length).toBe(0);
+    expect(damageTakenTriggers).toHaveLength(0);
   });
 });
 
@@ -845,7 +850,7 @@ describe("on-status-inflicted ability hook", () => {
 
     // Make executeMoveEffect inflict paralysis on the defender
     ruleset.executeMoveEffect = (_ctx) => ({
-      statusInflicted: "paralysis",
+      statusInflicted: CORE_STATUS_IDS.paralysis,
       volatileInflicted: null,
       statChanges: [],
       recoilDamage: 0,
@@ -864,7 +869,7 @@ describe("on-status-inflicted ability hook", () => {
             {
               effectType: "status-inflict" as const,
               target: "opponent" as const,
-              status: "paralysis" as const,
+              status: CORE_STATUS_IDS.paralysis,
             },
           ],
           messages: ["Synchronize activated!"],
@@ -883,13 +888,13 @@ describe("on-status-inflicted ability hook", () => {
 
     // Assert: on-status-inflicted was called
     const statusTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-status-inflicted");
-    expect(statusTriggers.length).toBeGreaterThanOrEqual(1);
+    expect(statusTriggers).not.toHaveLength(0);
 
     // Assert: Synchronize message was emitted
     const syncMessages = events.filter(
       (e) => e.type === "message" && "text" in e && e.text.includes("Synchronize"),
     );
-    expect(syncMessages.length).toBeGreaterThanOrEqual(1);
+    expect(syncMessages).not.toHaveLength(0);
   });
 });
 
@@ -900,7 +905,7 @@ describe("getPPCost integration", () => {
     // Source: pret/pokeemerald — ABILITY_PRESSURE deducts 2 PP per move use
     // Pressure doubles the PP cost of moves that target the Pressure holder.
     const { engine, ruleset, events } = createTestEngine({
-      side0Moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      side0Moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
     });
     ruleset.setFixedDamage(10);
     ruleset.setPPCost(2);
@@ -913,7 +918,7 @@ describe("getPPCost integration", () => {
     expect(charizard).not.toBeNull();
     const ppBefore = charizard!.pokemon.moves[0]!.currentPP;
     // Source: initial PP is 35 (set in createTestEngine)
-    expect(ppBefore).toBe(35);
+    expect(ppBefore).toBe(createMockMoveSlot(CORE_MOVE_IDS.tackle).currentPP);
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -927,7 +932,7 @@ describe("getPPCost integration", () => {
   it("given MockRuleset.getPPCost returns 1 (default, no Pressure), when move is used, then PP is deducted by 1", () => {
     // Source: pret/pokeemerald — standard PP deduction is 1 per move use
     const { engine, ruleset, events } = createTestEngine({
-      side0Moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      side0Moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
     });
     ruleset.setFixedDamage(10);
     // Default ppCost is 1 (no setPPCost call needed)
@@ -939,7 +944,7 @@ describe("getPPCost integration", () => {
     expect(charizard).not.toBeNull();
     const ppBefore = charizard!.pokemon.moves[0]!.currentPP;
     // Source: initial PP is 35 (set in createTestEngine)
-    expect(ppBefore).toBe(35);
+    expect(ppBefore).toBe(createMockMoveSlot(CORE_MOVE_IDS.tackle).currentPP);
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
