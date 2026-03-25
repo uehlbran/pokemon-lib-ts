@@ -53,6 +53,14 @@ function makeTestUid() {
   return `test-${nextTestUid++}`;
 }
 
+const DEFAULT_SYNTHETIC_STATS = {
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 100,
+} as const;
+
 function makePokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
@@ -88,11 +96,7 @@ function makePokemonInstance(overrides: {
     pokeball: GEN8_ITEM_IDS.pokeBall,
     calculatedStats: {
       hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
+      ...DEFAULT_SYNTHETIC_STATS,
     },
   } as PokemonInstance;
 }
@@ -362,12 +366,7 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
       state: makeBattleState(),
       rng: makeBattleState().rng as any,
       trigger: "on-before-move",
-      move: {
-        id: M.thunderbolt,
-        type: T.electric,
-        category: "special",
-        power: 90,
-      } as any,
+      move: makeMove(M.thunderbolt),
     };
     const result = handleGen8FieldAbility(A.libero, "on-before-move", ctx);
     expect(result.activated).toBe(true);
