@@ -1,6 +1,17 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen5DataManager, GEN5_ABILITY_IDS, GEN5_MOVE_IDS } from "../src";
 import {
@@ -10,13 +21,17 @@ import {
 } from "../src/Gen5MagicBounce";
 
 const dataManager = createGen5DataManager();
-const A = GEN5_ABILITY_IDS;
-const M = GEN5_MOVE_IDS;
-const V = CORE_VOLATILE_IDS;
+const abilityIds = GEN5_ABILITY_IDS;
+const moveIds = GEN5_MOVE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
+const typeIds = CORE_TYPE_IDS;
+const itemIds = CORE_ITEM_IDS;
+const abilitySlots = CORE_ABILITY_SLOTS;
+const genders = CORE_GENDERS;
 
 function getMagicBounceMessage(defender: ActivePokemon, move: MoveData): string {
   const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-  const magicBounceName = dataManager.getAbility(A.magicBounce).displayName;
+  const magicBounceName = dataManager.getAbility(abilityIds.magicBounce).displayName;
   return `${defenderName}'s ${magicBounceName} reflected ${move.displayName} back!`;
 }
 
@@ -31,7 +46,7 @@ function getMagicBounceMessage(defender: ActivePokemon, move: MoveData): string 
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -48,22 +63,22 @@ function makePokemonInstance(overrides: {
     level: 50,
     experience: 0,
     nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: overrides.currentHp ?? maxHp,
     moves: [],
     ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: abilitySlots.normal1,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: genders.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: itemIds.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -75,7 +90,7 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   speciesId?: number;
@@ -87,7 +102,7 @@ function makeActivePokemon(overrides: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createSyntheticPokemonInstance({
       ability: overrides.ability,
       speciesId: overrides.speciesId,
       nickname: overrides.nickname,
@@ -97,17 +112,9 @@ function makeActivePokemon(overrides: {
       heldItem: overrides.heldItem,
     }),
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [CORE_TYPE_IDS.normal],
+    types: overrides.types ?? [typeIds.normal],
     ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -130,7 +137,7 @@ function makeActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -147,13 +154,13 @@ function makeSide(index: 0 | 1): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 5,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -175,7 +182,7 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(id: string): MoveData {
+function createCanonicalMove(id: string): MoveData {
   return dataManager.getMove(id);
 }
 
@@ -186,67 +193,67 @@ function makeMove(id: string): MoveData {
 describe("isReflectableMove", () => {
   it("given spore, then returns true (reflectable status move)", () => {
     // Source: Showdown data/moves.ts -- spore has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.spore)).toBe(true);
+    expect(isReflectableMove(moveIds.spore)).toBe(true);
   });
 
   it("given thunder-wave, then returns true (reflectable status move)", () => {
     // Source: Showdown data/moves.ts -- thunderwave has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.thunderWave)).toBe(true);
+    expect(isReflectableMove(moveIds.thunderWave)).toBe(true);
   });
 
   it("given toxic, then returns true (reflectable status move)", () => {
     // Source: Showdown data/moves.ts -- toxic has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.toxic)).toBe(true);
+    expect(isReflectableMove(moveIds.toxic)).toBe(true);
   });
 
   it("given will-o-wisp, then returns true (reflectable status move)", () => {
     // Source: Showdown data/moves.ts -- willowisp has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.willOWisp)).toBe(true);
+    expect(isReflectableMove(moveIds.willOWisp)).toBe(true);
   });
 
   it("given taunt, then returns true (reflectable volatile status move)", () => {
     // Source: Showdown data/moves.ts -- taunt has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.taunt)).toBe(true);
+    expect(isReflectableMove(moveIds.taunt)).toBe(true);
   });
 
   it("given leech-seed, then returns true (reflectable volatile status move)", () => {
     // Source: Showdown data/moves.ts -- leechseed has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.leechSeed)).toBe(true);
+    expect(isReflectableMove(moveIds.leechSeed)).toBe(true);
   });
 
   it("given stealth-rock, then returns true (reflectable entry hazard)", () => {
     // Source: Showdown data/moves.ts -- stealthrock has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.stealthRock)).toBe(true);
+    expect(isReflectableMove(moveIds.stealthRock)).toBe(true);
   });
 
   it("given roar, then returns true (reflectable phazing move)", () => {
     // Source: Showdown data/moves.ts -- roar has flags: { reflectable: 1 }
-    expect(isReflectableMove(M.roar)).toBe(true);
+    expect(isReflectableMove(moveIds.roar)).toBe(true);
   });
 
   it("given swords-dance, then returns false (self-targeting, not reflectable)", () => {
     // Source: Showdown data/moves.ts -- swordsdance does NOT have reflectable flag
-    expect(isReflectableMove(M.swordsDance)).toBe(false);
+    expect(isReflectableMove(moveIds.swordsDance)).toBe(false);
   });
 
   it("given recover, then returns false (self-targeting heal, not reflectable)", () => {
     // Source: Showdown data/moves.ts -- recover does NOT have reflectable flag
-    expect(isReflectableMove(M.recover)).toBe(false);
+    expect(isReflectableMove(moveIds.recover)).toBe(false);
   });
 
   it("given flamethrower, then returns false (damaging move, not reflectable)", () => {
     // Source: Showdown data/moves.ts -- flamethrower does NOT have reflectable flag
-    expect(isReflectableMove(M.flamethrower)).toBe(false);
+    expect(isReflectableMove(moveIds.flamethrower)).toBe(false);
   });
 
   it("given trick, then returns false (non-reflectable opponent-targeting status)", () => {
     // Source: Showdown data/moves.ts -- trick does NOT have reflectable flag
-    expect(isReflectableMove(M.trick)).toBe(false);
+    expect(isReflectableMove(moveIds.trick)).toBe(false);
   });
 
   it("given transform, then returns false (non-reflectable opponent-targeting status)", () => {
     // Source: Showdown data/moves.ts -- transform does NOT have reflectable flag
-    expect(isReflectableMove(M.transform)).toBe(false);
+    expect(isReflectableMove(moveIds.transform)).toBe(false);
   });
 });
 
@@ -264,16 +271,16 @@ describe("GEN5_REFLECTABLE_MOVES", () => {
   it("contains all core status-inflicting reflectable moves", () => {
     // Source: Showdown data/moves.ts -- these all have reflectable: 1
     const expected = [
-      M.spore,
-      M.sleepPowder,
-      M.thunderWave,
-      M.toxic,
-      M.willOWisp,
-      M.stunSpore,
-      M.glare,
-      M.hypnosis,
-      M.darkVoid,
-      M.sing,
+      moveIds.spore,
+      moveIds.sleepPowder,
+      moveIds.thunderWave,
+      moveIds.toxic,
+      moveIds.willOWisp,
+      moveIds.stunSpore,
+      moveIds.glare,
+      moveIds.hypnosis,
+      moveIds.darkVoid,
+      moveIds.sing,
     ];
     for (const move of expected) {
       expect(GEN5_REFLECTABLE_MOVES.has(move)).toBe(true);
@@ -283,14 +290,14 @@ describe("GEN5_REFLECTABLE_MOVES", () => {
   it("contains all stat-lowering reflectable moves", () => {
     // Source: Showdown data/moves.ts -- these all have reflectable: 1
     const expected = [
-      M.growl,
-      M.leer,
-      M.charm,
-      M.screech,
-      M.fakeTears,
-      M.tailWhip,
-      M.sandAttack,
-      M.smokescreen,
+      moveIds.growl,
+      moveIds.leer,
+      moveIds.charm,
+      moveIds.screech,
+      moveIds.fakeTears,
+      moveIds.tailWhip,
+      moveIds.sandAttack,
+      moveIds.smokescreen,
     ];
     for (const move of expected) {
       expect(GEN5_REFLECTABLE_MOVES.has(move)).toBe(true);
@@ -299,23 +306,23 @@ describe("GEN5_REFLECTABLE_MOVES", () => {
 
   it("contains entry hazard moves", () => {
     // Source: Showdown data/moves.ts -- hazards have reflectable: 1
-    expect(GEN5_REFLECTABLE_MOVES.has(M.spikes)).toBe(true);
-    expect(GEN5_REFLECTABLE_MOVES.has(M.stealthRock)).toBe(true);
-    expect(GEN5_REFLECTABLE_MOVES.has(M.toxicSpikes)).toBe(true);
+    expect(GEN5_REFLECTABLE_MOVES.has(moveIds.spikes)).toBe(true);
+    expect(GEN5_REFLECTABLE_MOVES.has(moveIds.stealthRock)).toBe(true);
+    expect(GEN5_REFLECTABLE_MOVES.has(moveIds.toxicSpikes)).toBe(true);
   });
 
   it("does not contain non-reflectable opponent-targeting status moves", () => {
     // Source: Showdown data/moves.ts -- these do NOT have reflectable: 1
     const excluded = [
-      M.trick,
-      M.switcheroo,
-      M.transform,
-      M.sketch,
-      M.mimic,
-      M.painSplit,
-      M.memento,
-      M.psychUp,
-      M.heartSwap,
+      moveIds.trick,
+      moveIds.switcheroo,
+      moveIds.transform,
+      moveIds.sketch,
+      moveIds.mimic,
+      moveIds.painSplit,
+      moveIds.memento,
+      moveIds.psychUp,
+      moveIds.heartSwap,
     ];
     for (const move of excluded) {
       expect(GEN5_REFLECTABLE_MOVES.has(move)).toBe(false);
@@ -332,10 +339,13 @@ describe("shouldReflectMoveGen5", () => {
     // Source: Showdown data/abilities.ts -- magicbounce.onTryHit:
     //   reflects moves with 'reflectable' flag
     // Source: Bulbapedia -- Magic Bounce: "reflects non-damaging moves"
-    const attacker = makeActivePokemon({ ability: A.overgrow });
-    const defender = makeActivePokemon({ ability: A.magicBounce, nickname: "Espeon" });
-    const move = makeMove(M.spore);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.overgrow });
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.magicBounce,
+      nickname: "Espeon",
+    });
+    const move = createCanonicalMove(moveIds.spore);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
@@ -351,10 +361,13 @@ describe("shouldReflectMoveGen5", () => {
   it("given defender with magic-bounce, when Thunder Wave targets it, then move is reflected", () => {
     // Source: Showdown data/abilities.ts -- thunderwave has reflectable flag
     // Source: Bulbapedia -- Magic Bounce reflects status-inducing moves
-    const attacker = makeActivePokemon({ ability: A.static });
-    const defender = makeActivePokemon({ ability: A.magicBounce, nickname: "Natu" });
-    const move = makeMove(M.thunderWave);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.static });
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.magicBounce,
+      nickname: "Natu",
+    });
+    const move = createCanonicalMove(moveIds.thunderWave);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
@@ -367,119 +380,122 @@ describe("shouldReflectMoveGen5", () => {
   it("given defender with magic-bounce, when Flamethrower targets it, then move is NOT reflected (damaging)", () => {
     // Source: Showdown data/abilities.ts -- magicbounce only checks reflectable flag
     // Source: Bulbapedia -- Magic Bounce: "does not reflect damaging moves"
-    const attacker = makeActivePokemon({ ability: A.blaze });
-    const defender = makeActivePokemon({ ability: A.magicBounce });
-    const move = makeMove(M.flamethrower);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
+    const defender = createSyntheticOnFieldPokemon({ ability: abilityIds.magicBounce });
+    const move = createCanonicalMove(moveIds.flamethrower);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
     expect(result).toBeNull();
     expect(isReflectableMove(move.id)).toBe(false);
-    expect(defender.ability).toBe(A.magicBounce);
+    expect(defender.ability).toBe(abilityIds.magicBounce);
   });
 
   it("given defender WITHOUT magic-bounce, when Spore targets it, then move is NOT reflected", () => {
     // Guard test: magic-bounce only activates for the holder
-    const attacker = makeActivePokemon({ ability: A.overgrow });
-    const defender = makeActivePokemon({ ability: A.pressure });
-    const move = makeMove(M.spore);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.overgrow });
+    const defender = createSyntheticOnFieldPokemon({ ability: abilityIds.pressure });
+    const move = createCanonicalMove(moveIds.spore);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
     expect(result).toBeNull();
     expect(isReflectableMove(move.id)).toBe(true);
-    expect(defender.ability).toBe(A.pressure);
+    expect(defender.ability).toBe(abilityIds.pressure);
   });
 
   it("given defender with magic-bounce and attacker with mold-breaker, when Spore targets it, then move is NOT reflected", () => {
     // Source: Showdown data/abilities.ts -- magicbounce has { breakable: 1 }
     //   meaning Mold Breaker variants bypass it
     // Source: Bulbapedia -- Mold Breaker: "ignores abilities of other Pokemon"
-    const attacker = makeActivePokemon({ ability: A.moldBreaker });
-    const defender = makeActivePokemon({ ability: A.magicBounce });
-    const move = makeMove(M.spore);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.moldBreaker });
+    const defender = createSyntheticOnFieldPokemon({ ability: abilityIds.magicBounce });
+    const move = createCanonicalMove(moveIds.spore);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
     expect(result).toBeNull();
-    expect(attacker.ability).toBe(A.moldBreaker);
-    expect(defender.ability).toBe(A.magicBounce);
+    expect(attacker.ability).toBe(abilityIds.moldBreaker);
+    expect(defender.ability).toBe(abilityIds.magicBounce);
   });
 
   it("given defender with magic-bounce and attacker with teravolt, when Toxic targets it, then move is NOT reflected", () => {
     // Source: Showdown data/abilities.ts -- teravolt is a Mold Breaker variant
     // Source: Bulbapedia -- Teravolt: "ignores target's ability"
-    const attacker = makeActivePokemon({ ability: A.teravolt });
-    const defender = makeActivePokemon({ ability: A.magicBounce });
-    const move = makeMove(M.toxic);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.teravolt });
+    const defender = createSyntheticOnFieldPokemon({ ability: abilityIds.magicBounce });
+    const move = createCanonicalMove(moveIds.toxic);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
     expect(result).toBeNull();
-    expect(attacker.ability).toBe(A.teravolt);
-    expect(defender.ability).toBe(A.magicBounce);
+    expect(attacker.ability).toBe(abilityIds.teravolt);
+    expect(defender.ability).toBe(abilityIds.magicBounce);
   });
 
   it("given defender with magic-bounce and attacker with turboblaze, when Will-O-Wisp targets it, then move is NOT reflected", () => {
     // Source: Showdown data/abilities.ts -- turboblaze is a Mold Breaker variant
     // Source: Bulbapedia -- Turboblaze: "ignores target's ability"
-    const attacker = makeActivePokemon({ ability: A.turboblaze });
-    const defender = makeActivePokemon({ ability: A.magicBounce });
-    const move = makeMove(M.willOWisp);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.turboblaze });
+    const defender = createSyntheticOnFieldPokemon({ ability: abilityIds.magicBounce });
+    const move = createCanonicalMove(moveIds.willOWisp);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
     expect(result).toBeNull();
-    expect(attacker.ability).toBe(A.turboblaze);
-    expect(defender.ability).toBe(A.magicBounce);
+    expect(attacker.ability).toBe(abilityIds.turboblaze);
+    expect(defender.ability).toBe(abilityIds.magicBounce);
   });
 
   it("given defender with magic-bounce who is semi-invulnerable (flying), when Taunt targets it, then move is NOT reflected", () => {
     // Source: Showdown data/abilities.ts -- magicbounce checks target.isSemiInvulnerable()
-    const attacker = makeActivePokemon({ ability: A.keenEye });
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.keenEye });
     const flyingVolatiles = new Map<string, { turnsLeft: number }>();
-    flyingVolatiles.set(V.flying, { turnsLeft: 1 });
-    const defender = makeActivePokemon({
-      ability: A.magicBounce,
+    flyingVolatiles.set(volatileIds.flying, { turnsLeft: 1 });
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.magicBounce,
       volatiles: flyingVolatiles,
     });
-    const move = makeMove(M.taunt);
-    const state = makeBattleState();
+    const move = createCanonicalMove(moveIds.taunt);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
     expect(result).toBeNull();
-    expect(defender.volatileStatuses.has(V.flying)).toBe(true);
-    expect(defender.ability).toBe(A.magicBounce);
+    expect(defender.volatileStatuses.has(volatileIds.flying)).toBe(true);
+    expect(defender.ability).toBe(abilityIds.magicBounce);
   });
 
   it("given defender with magic-bounce, when a non-reflectable status move (Trick) targets it, then move is NOT reflected", () => {
     // Source: Showdown data/moves.ts -- trick does NOT have reflectable flag
     // Source: Bulbapedia -- Magic Bounce only reflects moves with the reflectable property
-    const attacker = makeActivePokemon({ ability: A.frisk });
-    const defender = makeActivePokemon({ ability: A.magicBounce });
-    const move = makeMove(M.trick);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.frisk });
+    const defender = createSyntheticOnFieldPokemon({ ability: abilityIds.magicBounce });
+    const move = createCanonicalMove(moveIds.trick);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
     expect(result).toBeNull();
     expect(isReflectableMove(move.id)).toBe(false);
-    expect(defender.ability).toBe(A.magicBounce);
+    expect(defender.ability).toBe(abilityIds.magicBounce);
   });
 
   it("given defender with magic-bounce, when Stealth Rock targets it, then move is reflected (entry hazard)", () => {
     // Source: Showdown data/moves.ts -- stealthrock has reflectable: 1
     // Source: Bulbapedia -- Magic Bounce reflects Stealth Rock
-    const attacker = makeActivePokemon({ ability: A.sturdy });
-    const defender = makeActivePokemon({ ability: A.magicBounce, nickname: "Xatu" });
-    const move = makeMove(M.stealthRock);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.sturdy });
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.magicBounce,
+      nickname: "Xatu",
+    });
+    const move = createCanonicalMove(moveIds.stealthRock);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
@@ -492,10 +508,10 @@ describe("shouldReflectMoveGen5", () => {
   it("given defender with magic-bounce, when Roar targets it, then move is reflected", () => {
     // Source: Showdown data/moves.ts -- roar has reflectable: 1
     // Source: Bulbapedia -- Magic Bounce reflects Roar
-    const attacker = makeActivePokemon({ ability: A.intimidate });
-    const defender = makeActivePokemon({ ability: A.magicBounce });
-    const move = makeMove(M.roar);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.intimidate });
+    const defender = createSyntheticOnFieldPokemon({ ability: abilityIds.magicBounce });
+    const move = createCanonicalMove(moveIds.roar);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
@@ -509,10 +525,13 @@ describe("shouldReflectMoveGen5", () => {
     // Source: Showdown data/abilities.ts -- magicbounce.onTryHit emits
     // "[target]'s Magic Bounce reflected [move] back!" (this.add '-ability', target, 'Magic Bounce')
     // Format: "{nickname}'s Magic Bounce reflected {displayName} back!"
-    const attacker = makeActivePokemon({ ability: A.chlorophyll });
-    const defender = makeActivePokemon({ ability: A.magicBounce, nickname: "Espeon" });
-    const move = makeMove(M.toxic);
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.chlorophyll });
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.magicBounce,
+      nickname: "Espeon",
+    });
+    const move = createCanonicalMove(moveIds.toxic);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
@@ -524,14 +543,14 @@ describe("shouldReflectMoveGen5", () => {
 
   it("given defender with magic-bounce but no nickname, reflection message uses speciesId", () => {
     // Verify fallback to speciesId when nickname is null
-    const attacker = makeActivePokemon({ ability: A.chlorophyll });
-    const defender = makeActivePokemon({
-      ability: A.magicBounce,
+    const attacker = createSyntheticOnFieldPokemon({ ability: abilityIds.chlorophyll });
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.magicBounce,
       nickname: null,
       speciesId: 196,
     });
-    const move = makeMove(M.encore);
-    const state = makeBattleState();
+    const move = createCanonicalMove(moveIds.encore);
+    const state = createBattleState();
 
     const result = shouldReflectMoveGen5(move, attacker, defender, state);
 
