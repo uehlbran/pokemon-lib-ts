@@ -9,6 +9,7 @@ import {
   gen1to4MultiHitRoll,
   gen1to6ConfusionSelfHitRoll,
 } from "../../src/logic/gen12-shared.js";
+import { MAX_EV, MAX_IV, MAX_TOTAL_EVS, createEvs, createIvs } from "../../src/logic/index.js";
 import * as core from "../../src/index.js";
 
 describe("core public API exports", () => {
@@ -28,5 +29,13 @@ describe("core public API exports", () => {
     expect("gen12FullParalysisCheck" in core).toBe(false);
     expect("gen14MultiHitRoll" in core).toBe(false);
     expect("gen16ConfusionSelfHitRoll" in core).toBe(false);
+  });
+
+  it("given the root barrel, when reading stat-input helpers and constants, then it re-exports them", () => {
+    expect(core.createIvs).toBe(createIvs);
+    expect(core.createEvs).toBe(createEvs);
+    expect(core.MAX_IV).toBe(MAX_IV);
+    expect(core.MAX_EV).toBe(MAX_EV);
+    expect(core.MAX_TOTAL_EVS).toBe(MAX_TOTAL_EVS);
   });
 });

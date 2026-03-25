@@ -777,6 +777,10 @@ export function createPokemonInstance(
 }
 ```
 
+Design note:
+- The current shared `createPokemonInstance(...)` surface is modern-stat-model oriented. As the cleanup progresses, generation-aware validated stat-input helpers should sit in front of it so callers do not hand-roll raw IV/EV/DV/Stat Exp bags or accidentally apply the wrong model for the target generation.
+- Those helpers should use explicit validators plus shared `ValidationFailure` / `ValidationResult` naming and owned min/max/cap constants instead of repeating literals like `31`, `252`, `510`, `15`, and `65535`.
+
 ### 7.2 Helper Functions
 
 ```typescript

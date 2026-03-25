@@ -27,6 +27,10 @@ Code examples for the test types used in this project. For testing philosophy, c
 - Never mutate the object returned by `dataManager.get*()` in place. Clone first when a test needs a modified variant.
 - In generation-scoped files, use descriptive local names like `dataManager`, `moveIds`, `speciesIds`, `itemIds`, and `typeIds`. Avoid cryptic aliases like `M`, `A`, `T`, and `dm`, and do not repeat the generation in every local variable when the file already fixes that context.
 - For battle-state fixture helpers, prefer names like `createOnFieldPokemon` over vague names like `makeActive`.
+- For stat inputs, prefer validated helper surfaces such as `createIvs`, `createEvs`, `createDvs`, and `createStatExp` over raw inline object literals when those helpers exist.
+- Stat input validation should use shared generic `ValidationFailure` / `ValidationResult` naming instead of type-prefixed names like `EvValidationIssue`.
+- Validation should be explicit and reusable, but the default creation path must still reject invalid value objects rather than relying on later call sites to notice the bad state.
+- If the code needs min/max/cap values like the IV/EV/DV/Stat Exp limits, import owned constants instead of scattering literals like `31`, `252`, `510`, `15`, or `65535` through tests.
 - Examples: type effectiveness from the exported type chart, move metadata from the generation data bundle, item metadata from the generated per-gen references, and owned fixed-point constants from core.
 - If the cleanup introduces or changes a public package export that tests rely on, add the required changeset and update the affected package README/spec docs in the same PR.
 

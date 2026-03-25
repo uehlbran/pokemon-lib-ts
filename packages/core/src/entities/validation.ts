@@ -1,4 +1,29 @@
 /**
+ * Generic validation failure for bounded domain inputs and higher-level validators.
+ *
+ * Use this for reusable runtime validation surfaces (stat inputs, Pokemon builders,
+ * move validators, etc.). Data-import validation keeps its dedicated shapes below.
+ */
+export interface ValidationFailure {
+  /** Domain field that failed validation */
+  readonly field: string;
+  /** Rejected value */
+  readonly value: unknown;
+  /** Human-readable failure message */
+  readonly message: string;
+}
+
+/**
+ * Generic validation result for reusable runtime validation surfaces.
+ */
+export interface ValidationResult {
+  /** `true` if no validation failures were found */
+  readonly valid: boolean;
+  /** Detailed validation failures */
+  readonly failures: readonly ValidationFailure[];
+}
+
+/**
  * The top-level result of a data validation pass over a generation's imported JSON.
  * Returned by the `data-importer` validation step and by `DataManager` integrity checks.
  *

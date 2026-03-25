@@ -1,8 +1,15 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_TYPE_IDS,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen6DataManager,
   GEN6_ABILITY_IDS,
   GEN6_MOVE_IDS,
   GEN6_NATURE_IDS,
@@ -25,11 +32,11 @@ import {
  * Source: Bulbapedia -- individual ability articles
  */
 
-// ---------------------------------------------------------------------------
-// Test helpers
-// ---------------------------------------------------------------------------
+const dataManager = createGen6DataManager();
+const defaultSpecies = dataManager.getSpecies(GEN6_SPECIES_IDS.bulbasaur);
+const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
-function makePokemonInstance(overrides: {
+function createPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -48,8 +55,8 @@ function makePokemonInstance(overrides: {
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
-    moves: [],
-    ability: overrides.ability ?? "",
+    moves: [createMoveSlot(tackle.id, tackle.pp)],
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
     status: null,
@@ -60,7 +67,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -72,7 +79,7 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
@@ -82,7 +89,7 @@ function makeActivePokemon(overrides: {
   statStages?: Partial<Record<string, number>>;
 }) {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createPokemonInstance({
       ability: overrides.ability,
       nickname: overrides.nickname,
       currentHp: overrides.currentHp,
@@ -99,8 +106,8 @@ function makeActivePokemon(overrides: {
       evasion: overrides.statStages?.evasion ?? 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? [CORE_TYPE_IDS.normal],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [...defaultSpecies.types],
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -123,7 +130,7 @@ function makeActivePokemon(overrides: {
   };
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -140,13 +147,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 6,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -168,46 +175,27 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(
-  type: PokemonType,
-  category: "physical" | "special" | "status" = "physical",
-  id: string = "test-move",
-): MoveData {
-  return {
-    id,
-    displayName: "Test Move",
-    type,
-    category,
-    power: category === "status" ? 0 : 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "single",
-    generation: 6,
-    flags: { contact: category !== "status" },
-    effectChance: null,
-    secondaryEffects: [],
-  } as unknown as MoveData;
-}
-
-function makeContext(opts: {
+function createAbilityContext(opts: {
   ability: string;
   trigger: string;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ReturnType<typeof createOnFieldPokemon>;
   move?: MoveData;
+  currentHp?: number;
+  maxHp?: number;
   turnsOnField?: number;
   nickname?: string;
   statStages?: Partial<Record<string, number>>;
   rngPick?: <T>(arr: readonly T[]) => T;
   statChange?: { stat: string; stages: number; source: "self" | "opponent" };
 }): AbilityContext {
-  const state = makeBattleState();
-  const pokemon = makeActivePokemon({
+  const state = createBattleState();
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname ?? "TestMon",
+    currentHp: opts.currentHp,
+    maxHp: opts.maxHp,
     turnsOnField: opts.turnsOnField,
     statStages: opts.statStages,
   });
@@ -239,8 +227,8 @@ describe("Gale Wings (Gen 6)", () => {
   it("given Gale Wings + Fly at full HP, when on-priority-check, then activates (+1 priority)", () => {
     // Source: Bulbapedia "Gale Wings" Gen 6 -- "+1 priority to Flying-type moves"
     // Source: Showdown data/mods/gen6/abilities.ts -- galeWings has no HP check
-    const flyMove = makeMove(CORE_TYPE_IDS.flying, "physical", GEN6_MOVE_IDS.fly);
-    const ctx = makeContext({
+    const flyMove = dataManager.getMove(GEN6_MOVE_IDS.fly);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.galeWings,
       trigger: "on-priority-check",
       move: flyMove,
@@ -254,31 +242,23 @@ describe("Gale Wings (Gen 6)", () => {
     // Source: Bulbapedia "Gale Wings" Gen 6 -- no HP requirement in Gen 6
     // Gen 7 added: "only when at full HP"
     // Source: Showdown data/mods/gen6/abilities.ts -- no hp check
-    const flyMove = makeMove(CORE_TYPE_IDS.flying, "physical", GEN6_MOVE_IDS.fly);
-    const ctx = makeContext({
+    const flyMove = dataManager.getMove(GEN6_MOVE_IDS.fly);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.galeWings,
       trigger: "on-priority-check",
       move: flyMove,
+      currentHp: 100,
+      maxHp: 200,
       types: [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying],
     });
-    // Modify HP to be at 50%
-    (ctx.pokemon.pokemon as any).currentHp = 100;
-    (ctx.pokemon.pokemon as any).calculatedStats = {
-      hp: 200,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    };
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given Gale Wings + Tackle (Normal, not Flying), when on-priority-check, then does not activate", () => {
     // Source: Bulbapedia "Gale Wings" -- only Flying-type moves get priority boost
-    const normalMove = makeMove(CORE_TYPE_IDS.normal, "physical", GEN6_MOVE_IDS.tackle);
-    const ctx = makeContext({
+    const normalMove = dataManager.getMove(GEN6_MOVE_IDS.tackle);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.galeWings,
       trigger: "on-priority-check",
       move: normalMove,
@@ -296,8 +276,8 @@ describe("Protean (Gen 6)", () => {
   it("given Protean + Water-type move, when on-before-move, then type changes to Water", () => {
     // Source: Bulbapedia "Protean" Gen 6 -- type changes to match move type before attacking
     // Source: Showdown data/abilities.ts -- protean: onPrepareHit
-    const waterMove = makeMove(CORE_TYPE_IDS.water, "special", GEN6_MOVE_IDS.waterPulse);
-    const ctx = makeContext({
+    const waterMove = dataManager.getMove(GEN6_MOVE_IDS.waterPulse);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.protean,
       trigger: "on-before-move",
       move: waterMove,
@@ -312,8 +292,8 @@ describe("Protean (Gen 6)", () => {
 
   it("given Protean + Fire-type move on a Fire-type Pokemon, when on-before-move, then does NOT activate", () => {
     // Source: Showdown data/abilities.ts -- protean: no change if type already matches
-    const fireMove = makeMove(CORE_TYPE_IDS.fire, "special", GEN6_MOVE_IDS.flamethrower);
-    const ctx = makeContext({
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.protean,
       trigger: "on-before-move",
       move: fireMove,
@@ -325,8 +305,8 @@ describe("Protean (Gen 6)", () => {
 
   it("given Protean + Fighting-type move on a Normal/Flying Pokemon, when on-before-move, then type changes to Fighting", () => {
     // Source: Bulbapedia "Protean" -- type changes even for dual-type Pokemon
-    const fightMove = makeMove(CORE_TYPE_IDS.fighting, "physical", GEN6_MOVE_IDS.focusPunch);
-    const ctx = makeContext({
+    const fightMove = dataManager.getMove(GEN6_MOVE_IDS.focusPunch);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.protean,
       trigger: "on-before-move",
       move: fightMove,
@@ -350,7 +330,7 @@ describe("Competitive", () => {
   it("given Competitive + Intimidate stat drop (opponent-caused), when on-stat-change, then +2 SpAtk", () => {
     // Source: Bulbapedia "Competitive" Gen 6 -- "+2 SpAtk when any stat lowered by opponent"
     // Source: Showdown data/abilities.ts -- competitive onAfterEachBoost
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.competitive,
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: -1, source: "opponent" },
@@ -367,7 +347,7 @@ describe("Competitive", () => {
 
   it("given Competitive + self-caused stat drop (Close Combat), when on-stat-change, then does NOT activate", () => {
     // Source: Showdown data/abilities.ts -- competitive: only opponent-caused drops trigger
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.competitive,
       trigger: "on-stat-change",
       statChange: { stat: "defense", stages: -1, source: "self" },
@@ -378,7 +358,7 @@ describe("Competitive", () => {
 
   it("given Competitive + stat BOOST from opponent, when on-stat-change, then does NOT activate", () => {
     // Source: Showdown data/abilities.ts -- competitive: only drops (stages < 0) trigger
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.competitive,
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: 1, source: "opponent" },
@@ -395,8 +375,8 @@ describe("Competitive", () => {
 describe("Prankster (carry-forward)", () => {
   it("given Prankster + status move, when on-priority-check, then activates", () => {
     // Source: Showdown data/abilities.ts -- Prankster: move.category === 'Status'
-    const statusMove = makeMove(CORE_TYPE_IDS.normal, "status");
-    const ctx = makeContext({
+    const statusMove = dataManager.getMove(GEN6_MOVE_IDS.growl);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.prankster,
       trigger: "on-priority-check",
       move: statusMove,
@@ -407,8 +387,8 @@ describe("Prankster (carry-forward)", () => {
 
   it("given Prankster + physical move, when on-priority-check, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Prankster only for status moves
-    const physicalMove = makeMove(CORE_TYPE_IDS.normal, "physical");
-    const ctx = makeContext({
+    const physicalMove = dataManager.getMove(GEN6_MOVE_IDS.tackle);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.prankster,
       trigger: "on-priority-check",
       move: physicalMove,
@@ -417,14 +397,14 @@ describe("Prankster (carry-forward)", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given isPranksterEligible with 'status', then returns true", () => {
+  it("given isPranksterEligible with the status move category, then returns true", () => {
     // Source: Showdown data/abilities.ts -- Prankster checks move.category === 'Status'
-    expect(isPranksterEligible("status")).toBe(true);
+    expect(isPranksterEligible(CORE_MOVE_CATEGORIES.status)).toBe(true);
   });
 
-  it("given isPranksterEligible with 'physical', then returns false", () => {
+  it("given isPranksterEligible with the physical move category, then returns false", () => {
     // Source: Showdown -- only status moves eligible
-    expect(isPranksterEligible("physical")).toBe(false);
+    expect(isPranksterEligible(CORE_MOVE_CATEGORIES.physical)).toBe(false);
   });
 });
 
@@ -436,7 +416,7 @@ describe("Defiant (carry-forward)", () => {
   it("given Defiant + opponent-caused stat drop, when on-stat-change, then +2 Attack", () => {
     // Source: Showdown data/abilities.ts -- defiant onAfterEachBoost
     // Source: Bulbapedia -- Defiant: "+2 Attack when any stat lowered by opponent"
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.defiant,
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: -1, source: "opponent" },
@@ -453,7 +433,7 @@ describe("Defiant (carry-forward)", () => {
 
   it("given Defiant + self-caused stat drop, when on-stat-change, then does not activate", () => {
     // Source: Showdown -- defiant only triggers on opponent-caused drops
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.defiant,
       trigger: "on-stat-change",
       statChange: { stat: "defense", stages: -1, source: "self" },
@@ -470,7 +450,7 @@ describe("Defiant (carry-forward)", () => {
 describe("Speed Boost (carry-forward)", () => {
   it("given Speed Boost + turnsOnField > 0, when on-turn-end, then +1 Speed", () => {
     // Source: Showdown data/abilities.ts -- Speed Boost onResidual: if activeTurns, boost spe
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.speedBoost,
       trigger: "on-turn-end",
       turnsOnField: 1,
@@ -487,7 +467,7 @@ describe("Speed Boost (carry-forward)", () => {
 
   it("given Speed Boost + turnsOnField = 0, when on-turn-end, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Speed Boost: only if activeTurns > 0
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.speedBoost,
       trigger: "on-turn-end",
       turnsOnField: 0,
@@ -505,8 +485,8 @@ describe("Weak Armor (Gen 5-6 version)", () => {
   it("given Weak Armor + physical hit, when on-damage-taken, then -1 Def and +1 Speed", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- Weak Armor Gen 5-6: spe +1, def -1
     // Gen 7+ changed to spe +2
-    const physMove = makeMove(CORE_TYPE_IDS.normal, "physical", GEN6_MOVE_IDS.tackle);
-    const ctx = makeContext({
+    const physMove = dataManager.getMove(GEN6_MOVE_IDS.tackle);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.weakArmor,
       trigger: "on-damage-taken",
       move: physMove,
@@ -521,11 +501,11 @@ describe("Weak Armor (Gen 5-6 version)", () => {
 
   it("given Weak Armor + special hit, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- Weak Armor only triggers on physical hits
-    const specMove = makeMove(CORE_TYPE_IDS.fire, "special", GEN6_MOVE_IDS.flamethrower);
-    const ctx = makeContext({
+    const specialMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.weakArmor,
       trigger: "on-damage-taken",
-      move: specMove,
+      move: specialMove,
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -539,8 +519,8 @@ describe("Weak Armor (Gen 5-6 version)", () => {
 describe("Justified (carry-forward)", () => {
   it("given Justified + Dark-type hit, when on-damage-taken, then +1 Attack", () => {
     // Source: Showdown data/abilities.ts -- Justified: if Dark-type, boost atk
-    const darkMove = makeMove(CORE_TYPE_IDS.dark, "physical", GEN6_MOVE_IDS.nightSlash);
-    const ctx = makeContext({
+    const darkMove = dataManager.getMove(GEN6_MOVE_IDS.nightSlash);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.justified,
       trigger: "on-damage-taken",
       move: darkMove,
@@ -557,8 +537,8 @@ describe("Justified (carry-forward)", () => {
 
   it("given Justified + Normal-type hit, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- only Dark-type moves trigger Justified
-    const normalMove = makeMove(CORE_TYPE_IDS.normal, "physical", GEN6_MOVE_IDS.tackle);
-    const ctx = makeContext({
+    const normalMove = dataManager.getMove(GEN6_MOVE_IDS.tackle);
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.justified,
       trigger: "on-damage-taken",
       move: normalMove,
@@ -573,12 +553,12 @@ describe("Justified (carry-forward)", () => {
 // ===========================================================================
 
 describe("Steadfast (carry-forward)", () => {
-  it("given Steadfast, when on-flinch, then +1 Speed", () => {
-    // Source: Showdown data/abilities.ts -- Steadfast: on flinch, boost spe
-    const ctx = makeContext({
-      ability: GEN6_ABILITY_IDS.steadfast,
-      trigger: "on-flinch",
-    });
+    it("given Steadfast, when on-flinch, then +1 Speed", () => {
+      // Source: Showdown data/abilities.ts -- Steadfast: on flinch, boost spe
+      const ctx = createAbilityContext({
+        ability: GEN6_ABILITY_IDS.steadfast,
+        trigger: "on-flinch",
+      });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
@@ -591,7 +571,7 @@ describe("Steadfast (carry-forward)", () => {
 
   it("given non-Steadfast ability, when on-flinch, then does not activate", () => {
     // Source: Showdown -- only Steadfast triggers on flinch in this module
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.blaze,
       trigger: "on-flinch",
     });
@@ -607,7 +587,7 @@ describe("Steadfast (carry-forward)", () => {
 describe("Contrary (carry-forward)", () => {
   it("given Contrary, when on-stat-change, then activates (signals reversal)", () => {
     // Source: Showdown data/abilities.ts -- Contrary: reverses all stat changes
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.contrary,
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: 2, source: "self" },
@@ -624,7 +604,7 @@ describe("Contrary (carry-forward)", () => {
 describe("Simple (carry-forward)", () => {
   it("given Simple, when on-stat-change, then activates (signals doubling)", () => {
     // Source: Showdown data/abilities.ts -- Simple: doubles all stat changes
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.simple,
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: 1, source: "self" },
@@ -641,8 +621,8 @@ describe("Simple (carry-forward)", () => {
 describe("Moxie (carry-forward)", () => {
   it("given Moxie + opponent fainted, when on-after-move-used, then +1 Attack", () => {
     // Source: Showdown data/abilities.ts -- Moxie onSourceAfterFaint
-    const faintedOpponent = makeActivePokemon({ currentHp: 0 });
-    const ctx = makeContext({
+    const faintedOpponent = createOnFieldPokemon({ currentHp: 0 });
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.moxie,
       trigger: "on-after-move-used",
       opponent: faintedOpponent,
@@ -659,8 +639,8 @@ describe("Moxie (carry-forward)", () => {
 
   it("given Moxie + opponent NOT fainted, when on-after-move-used, then does not activate", () => {
     // Source: Showdown -- Moxie only triggers on KO
-    const aliveOpponent = makeActivePokemon({ currentHp: 100 });
-    const ctx = makeContext({
+    const aliveOpponent = createOnFieldPokemon({ currentHp: 100 });
+    const ctx = createAbilityContext({
       ability: GEN6_ABILITY_IDS.moxie,
       trigger: "on-after-move-used",
       opponent: aliveOpponent,
