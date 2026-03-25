@@ -62,6 +62,15 @@ export function checkRawReferenceIds(ctx: FileContext): Finding[] {
       const value = match[2] ?? "";
       if (!value) continue;
       if (IGNORED_VALUES.has(value)) continue;
+      const matchIndex = match.index ?? -1;
+      const quote = match[1] ?? "";
+      const fullMatch = match[0] ?? "";
+      const matchEnd = matchIndex + fullMatch.length;
+      const previousChar = matchIndex > 0 ? line[matchIndex - 1] : "";
+      const nextChar = matchEnd < line.length ? line[matchEnd] : "";
+      if ((previousChar === "[" && nextChar === "]") || (previousChar === "." && quote === "`")) {
+        continue;
+      }
 
       const owningSurface = getOwningSurface(ctx.relativePath, value);
       if (!owningSurface) continue;
