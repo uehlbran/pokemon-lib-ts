@@ -25,6 +25,18 @@ import {
   handleGen5CombatMove,
 } from "../src/Gen5MoveEffectsCombat";
 
+const DEFAULT_TEST_HP = 200;
+
+const EMPTY_COMBAT_RESULT = {
+  statusInflicted: null,
+  volatileInflicted: null,
+  statChanges: [],
+  recoilDamage: 0,
+  healAmount: 0,
+  switchOut: false,
+  messages: [],
+};
+
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
@@ -368,6 +380,8 @@ describe("Foul Play", () => {
 
     const result = handleGen5CombatMove(ctx);
     expect(result).toBeNull();
+    expect(ctx.attacker.pokemon.currentHp).toBe(DEFAULT_TEST_HP);
+    expect(ctx.defender.pokemon.currentHp).toBe(DEFAULT_TEST_HP);
   });
 
   it("given Foul Play against a different target, when handled, then also returns null", () => {
@@ -380,6 +394,8 @@ describe("Foul Play", () => {
 
     const result = handleGen5CombatMove(ctx);
     expect(result).toBeNull();
+    expect(ctx.attacker.pokemon.calculatedStats?.attack).toBe(50);
+    expect(ctx.defender.pokemon.calculatedStats?.attack).toBe(DEFAULT_TEST_HP);
   });
 });
 
@@ -418,8 +434,17 @@ describe("Shell Smash", () => {
 
     const result = handleGen5CombatMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("Cloyster broke its shell!");
+    expect(result).toEqual({
+      ...EMPTY_COMBAT_RESULT,
+      statChanges: [
+        { target: "attacker", stat: "attack", stages: 2 },
+        { target: "attacker", stat: "spAttack", stages: 2 },
+        { target: "attacker", stat: "speed", stages: 2 },
+        { target: "attacker", stat: "defense", stages: -1 },
+        { target: "attacker", stat: "spDefense", stages: -1 },
+      ],
+      messages: ["Cloyster broke its shell!"],
+    });
   });
 });
 
@@ -600,9 +625,13 @@ describe("Hone Claws", () => {
 
     const result = handleGen5CombatMove(ctx);
 
-    expect(result).not.toBeNull();
-    const speedChange = result!.statChanges.find((c) => c.stat === "speed");
-    expect(speedChange).toBeUndefined();
+    expect(result).toEqual({
+      ...EMPTY_COMBAT_RESULT,
+      statChanges: [
+        { target: "attacker", stat: "attack", stages: 1 },
+        { target: "attacker", stat: "accuracy", stages: 1 },
+      ],
+    });
   });
 });
 
@@ -1012,8 +1041,13 @@ describe("Smack Down", () => {
 
     const result = handleGen5CombatMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("Skarmory fell straight down!");
+    // Derived from the move id: Gen 5 Smack Down applies the `smackdown` volatile.
+    const expectedVolatile = ctx.move.id.replace("-", "");
+    expect(result).toEqual({
+      ...EMPTY_COMBAT_RESULT,
+      volatileInflicted: expectedVolatile,
+      messages: [`${defender.pokemon.nickname} fell straight down!`],
+    });
   });
 });
 
@@ -1058,22 +1092,24 @@ describe("Storm Throw / Frost Breath", () => {
   it("given Storm Throw, when handled by combat move handler, then returns null (willCrit is in move data / crit calc)", () => {
     // Source: Showdown data/moves.ts -- stormthrow: willCrit: true
     // The always-crit behavior is handled by the crit calculation, not the effect handler.
-    const ctx = makeContext({
-      move: makeMove({ id: "storm-throw", type: "fighting", power: 60 }),
-    });
+    const move = makeMove({ id: "storm-throw", type: "fighting", power: 60 });
+    const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
     expect(result).toBeNull();
+    expect(ctx.move.id).toBe(move.id);
+    expect(ctx.defender.pokemon.currentHp).toBe(DEFAULT_TEST_HP);
   });
 
   it("given Frost Breath, when handled by combat move handler, then returns null (willCrit is in move data / crit calc)", () => {
     // Source: Showdown data/moves.ts -- frostbreath: willCrit: true
-    const ctx = makeContext({
-      move: makeMove({ id: "frost-breath", type: "ice", power: 60 }),
-    });
+    const move = makeMove({ id: "frost-breath", type: "ice", power: 60 });
+    const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
     expect(result).toBeNull();
+    expect(ctx.move.id).toBe(move.id);
+    expect(ctx.attacker.volatileStatuses.size).toBe(0);
   });
 });
 
@@ -1083,20 +1119,23 @@ describe("Storm Throw / Frost Breath", () => {
 
 describe("Unrecognized moves", () => {
   it("given a move not handled by this module, when called, then returns null", () => {
-    const ctx = makeContext({
-      move: makeMove({ id: "tackle" }),
-    });
+    const move = makeMove({ id: "tackle" });
+    const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
     expect(result).toBeNull();
+    expect(ctx.move.id).toBe(move.id);
+    expect(ctx.defender.volatileStatuses.size).toBe(0);
   });
 
   it("given Thunderbolt (no special Gen 5 combat effect), when called, then returns null", () => {
-    const ctx = makeContext({
-      move: makeMove({ id: "thunderbolt", type: "electric", power: 90 }),
-    });
+    const move = makeMove({ id: "thunderbolt", type: "electric", power: 90 });
+    const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
     expect(result).toBeNull();
+    expect(ctx.move.id).toBe(move.id);
+    // Source: makeActive defaults current HP to the max-HP fixture value of 200.
+    expect(ctx.attacker.pokemon.currentHp).toBe(DEFAULT_TEST_HP);
   });
 });

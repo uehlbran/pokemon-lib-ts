@@ -19,6 +19,16 @@ import {
   handleGen5StatusMove,
 } from "../src/Gen5MoveEffectsStatus";
 
+const FAILED_STATUS_RESULT = {
+  statusInflicted: null,
+  volatileInflicted: null,
+  statChanges: [],
+  recoilDamage: 0,
+  healAmount: 0,
+  switchOut: false,
+  messages: ["But it failed!"],
+};
+
 // ---------------------------------------------------------------------------
 // Helper factories (duplicated from move-effects-status.test.ts for isolation)
 // ---------------------------------------------------------------------------
@@ -259,9 +269,8 @@ describe("Simple Beam", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.defender.ability).toBe("simple");
   });
 
   it("given target has Truant, when Simple Beam is used, then fails", () => {
@@ -273,9 +282,8 @@ describe("Simple Beam", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.defender.ability).toBe("truant");
   });
 
   it("given target has Multitype (cantsuppress), when Simple Beam is used, then fails", () => {
@@ -288,9 +296,8 @@ describe("Simple Beam", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.defender.ability).toBe("multitype");
   });
 
   it("given target has Zen Mode (cantsuppress), when Simple Beam is used, then fails", () => {
@@ -303,9 +310,8 @@ describe("Simple Beam", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.defender.ability).toBe("zen-mode");
   });
 });
 
@@ -378,9 +384,8 @@ describe("Worry Seed", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.defender.ability).toBe("insomnia");
   });
 
   it("given target has Truant, when Worry Seed is used, then fails", () => {
@@ -392,9 +397,8 @@ describe("Worry Seed", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.defender.ability).toBe("truant");
   });
 
   it("given target has Multitype, when Worry Seed is used, then fails", () => {
@@ -406,9 +410,8 @@ describe("Worry Seed", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.defender.ability).toBe("multitype");
   });
 });
 
@@ -533,9 +536,9 @@ describe("Role Play", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.attacker.ability).toBe("intimidate");
+    expect(ctx.defender.ability).toBe("intimidate");
   });
 
   it("given target has Illusion (failroleplay), when Role Play is used, then fails", () => {
@@ -549,9 +552,9 @@ describe("Role Play", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.attacker.ability).toBe("synchronize");
+    expect(ctx.defender.ability).toBe("illusion");
   });
 
   it("given source has Multitype (cantsuppress), when Role Play is used, then fails", () => {
@@ -564,9 +567,9 @@ describe("Role Play", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.abilityChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.attacker.ability).toBe("multitype");
+    expect(ctx.defender.ability).toBe("overgrow");
   });
 });
 
@@ -620,8 +623,7 @@ describe("Skill Swap", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
     // Abilities should remain unchanged
     expect(ctx.attacker.ability).toBe("intimidate");
     expect(ctx.defender.ability).toBe("intimidate");
@@ -638,8 +640,7 @@ describe("Skill Swap", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
     // Abilities unchanged
     expect(ctx.attacker.ability).toBe("wonder-guard");
     expect(ctx.defender.ability).toBe("intimidate");
@@ -656,8 +657,7 @@ describe("Skill Swap", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
     expect(ctx.attacker.ability).toBe("intimidate");
     expect(ctx.defender.ability).toBe("multitype");
   });
@@ -672,8 +672,9 @@ describe("Skill Swap", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(FAILED_STATUS_RESULT);
+    expect(ctx.attacker.ability).toBe("intimidate");
+    expect(ctx.defender.ability).toBe("illusion");
   });
 });
 
