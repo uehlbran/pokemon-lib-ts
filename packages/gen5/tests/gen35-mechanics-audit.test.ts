@@ -18,13 +18,37 @@
  */
 
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  createEvs,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../src";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
 
 // ---------------------------------------------------------------------------
 // Test Helpers
 // ---------------------------------------------------------------------------
+
+const dataManager = createGen5DataManager()
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS } as const
+const itemIds = CORE_ITEM_IDS
+const speciesIds = GEN5_SPECIES_IDS
+const statusIds = CORE_STATUS_IDS
+const typeIds = CORE_TYPE_IDS
+const volatileIds = CORE_VOLATILE_IDS
+const defaultNature = dataManager.getNature(GEN5_NATURE_IDS.hardy).id
 
 function makeActivePokemon(overrides: {
   maxHp?: number;
@@ -39,15 +63,32 @@ function makeActivePokemon(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
+      uid: "test",
+      speciesId: speciesIds.bulbasaur,
+      nickname: "TestMon",
+      level: 50,
+      experience: 0,
+      nature: defaultNature,
+      ivs: createIvs(),
+      evs: createEvs(),
       calculatedStats: { hp: maxHp, speed: overrides.speed ?? 100 },
       currentHp: overrides.currentHp ?? maxHp,
       status: overrides.status ?? null,
       heldItem: overrides.heldItem ?? null,
-      speciesId: 1,
-      nickname: "TestMon",
+      moves: [],
+      ability: overrides.ability ?? abilityIds.blaze,
+      abilitySlot: "normal1" as const,
+      friendship: 0,
+      gender: "male" as const,
+      isShiny: false,
+      metLocation: "",
+      metLevel: 1,
+      originalTrainer: "",
+      originalTrainerId: 0,
+      pokeball: itemIds.pokeBall,
     },
-    ability: overrides.ability ?? "blaze",
-    types: overrides.types ?? ["normal"],
+    ability: overrides.ability ?? abilityIds.blaze,
+    types: overrides.types ?? [typeIds.normal],
     statStages: {
       attack: 0,
       defense: 0,
@@ -82,7 +123,7 @@ describe("Gen5Ruleset paralysis speed penalty", () => {
     //   par.onModifySpe: if (!quick-feet) return chainModify(0.25)
     // Gen 3-6 all use 0.25x paralysis. Gen 7+ uses 0.5x (BaseRuleset default).
     // At 100 speed, 0.25x = 25
-    const pokemon = makeActivePokemon({ speed: 100, status: "paralysis" });
+    const pokemon = makeActivePokemon({ speed: 100, status: statusIds.paralysis });
     const speed = (
       ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
     ).getEffectiveSpeed(pokemon);
@@ -92,7 +133,7 @@ describe("Gen5Ruleset paralysis speed penalty", () => {
   it("given a paralyzed Pokemon with 120 base speed in Gen5, when getEffectiveSpeed is called, then returns 30 (0.25x)", () => {
     // Source: Showdown data/mods/gen4/conditions.ts — 0.25x speed penalty for paralysis
     // Triangulation: 120 * 0.25 = 30
-    const pokemon = makeActivePokemon({ speed: 120, status: "paralysis" });
+    const pokemon = makeActivePokemon({ speed: 120, status: statusIds.paralysis });
     const speed = (
       ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
     ).getEffectiveSpeed(pokemon);
@@ -104,7 +145,11 @@ describe("Gen5Ruleset paralysis speed penalty", () => {
     //   condition. The Speed drop from paralysis is also ignored."
     // Source: Showdown data/mods/gen4/conditions.ts lines 9-13 — if Quick Feet, no halving
     // At 100 speed with Quick Feet + paralysis: 100 * 1.5 = 150
-    const pokemon = makeActivePokemon({ speed: 100, status: "paralysis", ability: "quick-feet" });
+    const pokemon = makeActivePokemon({
+      speed: 100,
+      status: statusIds.paralysis,
+      ability: abilityIds.quickFeet,
+    });
     const speed = (
       ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
     ).getEffectiveSpeed(pokemon);
@@ -123,7 +168,7 @@ describe("Gen5Ruleset burn damage (1/8 maxHP)", () => {
     // Source: Showdown sim/battle-actions.ts — Gen < 7 burn damage = floor(maxhp / 8)
     // Gen 3-6: 1/8 max HP. Gen 7+: 1/16 (BaseRuleset default which Gen5 must override).
     const pokemon = makeActivePokemon({ maxHp: 200 });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const damage = ruleset.applyStatusDamage(pokemon, statusIds.burn, makeState());
     expect(damage).toBe(25);
   });
 
@@ -131,23 +176,23 @@ describe("Gen5Ruleset burn damage (1/8 maxHP)", () => {
     // Source: Showdown sim/battle-actions.ts — Gen < 7 burn damage = floor(maxhp / 8)
     // Triangulation: floor(160/8) = 20
     const pokemon = makeActivePokemon({ maxHp: 160 });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const damage = ruleset.applyStatusDamage(pokemon, statusIds.burn, makeState());
     expect(damage).toBe(20);
   });
 
   it("given a burned Heatproof Pokemon with 200 maxHP in Gen5, when applyStatusDamage is called, then returns 12 (1/16)", () => {
     // Source: Bulbapedia -- Heatproof: "Also halves the damage the holder takes from a burn."
     // Gen 5: Heatproof halves 1/8 to 1/16. floor(200/16) = 12.
-    const pokemon = makeActivePokemon({ maxHp: 200, ability: "heatproof" });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const pokemon = makeActivePokemon({ maxHp: 200, ability: abilityIds.heatproof });
+    const damage = ruleset.applyStatusDamage(pokemon, statusIds.burn, makeState());
     expect(damage).toBe(12);
   });
 
   it("given a burned Magic Guard Pokemon in Gen5, when applyStatusDamage is called, then returns 0 (Magic Guard immunity)", () => {
     // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
     // Source: Showdown -- Magic Guard prevents burn damage
-    const pokemon = makeActivePokemon({ maxHp: 200, ability: "magic-guard" });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const pokemon = makeActivePokemon({ maxHp: 200, ability: abilityIds.magicGuard });
+    const damage = ruleset.applyStatusDamage(pokemon, statusIds.burn, makeState());
     expect(damage).toBe(0);
   });
 });
@@ -206,14 +251,14 @@ describe("Gen5Ruleset sleep counter reset on switch-in (Gen5 unique mechanic)", 
     // Gen 5 unique: switching out and back in resets the sleep counter to its original value.
     const sleepCounter = { turnsLeft: 1, data: { startTime: 3 } };
     const pokemon = makeActivePokemon({
-      status: "sleep",
-      volatileStatuses: new Map([["sleep-counter", sleepCounter]]),
+      status: statusIds.sleep,
+      volatileStatuses: new Map([[volatileIds.sleepCounter, sleepCounter]]),
     });
 
     ruleset.onSwitchIn(pokemon, makeState());
 
     const counter = pokemon.volatileStatuses.get(
-      "sleep-counter" as import("@pokemon-lib-ts/core").VolatileStatus,
+      volatileIds.sleepCounter,
     );
     expect(counter).toBeDefined();
     expect(counter!.turnsLeft).toBe(3);
@@ -224,14 +269,14 @@ describe("Gen5Ruleset sleep counter reset on switch-in (Gen5 unique mechanic)", 
     // Triangulation: minimum reset case
     const sleepCounter = { turnsLeft: 0, data: { startTime: 1 } };
     const pokemon = makeActivePokemon({
-      status: "sleep",
-      volatileStatuses: new Map([["sleep-counter", sleepCounter]]),
+      status: statusIds.sleep,
+      volatileStatuses: new Map([[volatileIds.sleepCounter, sleepCounter]]),
     });
 
     ruleset.onSwitchIn(pokemon, makeState());
 
     const counter = pokemon.volatileStatuses.get(
-      "sleep-counter" as import("@pokemon-lib-ts/core").VolatileStatus,
+      volatileIds.sleepCounter,
     );
     expect(counter!.turnsLeft).toBe(1);
   });
@@ -254,14 +299,14 @@ describe("Gen5Ruleset sleep counter reset on switch-in (Gen5 unique mechanic)", 
       data: {}, // ← as BattleEngine currently stores it (missing startTime)
     };
     const pokemon = makeActivePokemon({
-      status: "sleep",
-      volatileStatuses: new Map([["sleep-counter", sleepCounter]]),
+      status: statusIds.sleep,
+      volatileStatuses: new Map([[volatileIds.sleepCounter, sleepCounter]]),
     });
 
     ruleset.onSwitchIn(pokemon, makeState());
 
     const counter = pokemon.volatileStatuses.get(
-      "sleep-counter" as import("@pokemon-lib-ts/core").VolatileStatus,
+      volatileIds.sleepCounter,
     );
     // BUG: turnsLeft is not reset because startTime is missing from data.
     // When bug #552 is fixed (BattleEngine stores startTime), this behavior will change.
@@ -269,7 +314,7 @@ describe("Gen5Ruleset sleep counter reset on switch-in (Gen5 unique mechanic)", 
   });
 
   it("given a non-sleeping Pokemon, when onSwitchIn fires, then no change occurs to volatile statuses", () => {
-    // Source: Gen5Ruleset.onSwitchIn -- only fires if pokemon.status === 'sleep'
+    // Source: Gen5Ruleset.onSwitchIn -- only fires if pokemon.status === CORE_STATUS_IDS.sleep
     const pokemon = makeActivePokemon({ status: null });
 
     ruleset.onSwitchIn(pokemon, makeState());
@@ -386,7 +431,7 @@ describe("Gen5 weather ability permanence (permanent weather, no countdown)", ()
     // Source: Showdown data/mods/gen5/conditions.ts -- drizzle sets permanent rain (-1 turns)
     // Gen 5: weather from abilities is permanent. Gen 6+ changed to 5 turns.
     // This confirms the whole ruleset chain (applyAbility → Gen5AbilitiesSwitch) passes -1.
-    const pokemon = makeActivePokemon({ ability: "drizzle" });
+    const pokemon = makeActivePokemon({ ability: abilityIds.drizzle });
     const state = {
       weather: null,
       sides: [{ active: [pokemon] }, { active: [] }],
@@ -412,7 +457,7 @@ describe("Gen5 weather ability permanence (permanent weather, no countdown)", ()
   it("given Gen5Ruleset, when applyAbility is called with on-switch-in and sand-stream, then weatherTurns is -1 (permanent)", () => {
     // Source: Showdown Gen5 -- Sand Stream sets permanent sandstorm (weatherTurns=-1)
     // Triangulation: second weather setter
-    const pokemon = makeActivePokemon({ ability: "sand-stream" });
+    const pokemon = makeActivePokemon({ ability: abilityIds.sandStream });
     const state = {
       weather: null,
       sides: [{ active: [pokemon] }, { active: [] }],
