@@ -8,9 +8,24 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_NATURE_IDS, GEN2_TYPES } from "../../src";
+import {
+  createGen2DataManager,
+  GEN2_ITEM_IDS,
+  GEN2_MOVE_IDS,
+  GEN2_NATURE_IDS,
+  GEN2_SPECIES_IDS,
+  GEN2_TYPES,
+} from "../../src";
 import { calculateGen2Damage, isGen2PhysicalType } from "../../src/Gen2DamageCalc";
 
 /**
@@ -39,6 +54,10 @@ import { calculateGen2Damage, isGen2PhysicalType } from "../../src/Gen2DamageCal
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const dataManager = createGen2DataManager();
+const DEFAULT_SPECIES = dataManager.getSpecies(GEN2_SPECIES_IDS.bulbasaur);
+const DEFAULT_MOVE = dataManager.getMove(GEN2_MOVE_IDS.tackle);
 
 /** A mock RNG whose int() always returns a fixed value. */
 function createMockRng(intReturnValue: number) {
@@ -86,11 +105,11 @@ function createActivePokemon(opts: {
     currentHp: 200,
     moves: [],
     ability: "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1 as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male as const,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -136,66 +155,27 @@ function createActivePokemon(opts: {
 function createMove(
   type: PokemonType,
   power: number,
-  category: "physical" | "special" | "status" = "physical",
+  category: MoveData["category"] = CORE_MOVE_CATEGORIES.physical,
 ): MoveData {
   return {
-    id: GEN2_MOVE_IDS.tackle,
-    displayName: "Test Move",
+    ...DEFAULT_MOVE,
+    id: DEFAULT_MOVE.id,
+    displayName: DEFAULT_MOVE.displayName,
     type,
     category,
     power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 2,
+    power: category === CORE_MOVE_CATEGORIES.status ? 0 : power,
   } as MoveData;
 }
 
 /** Minimal species data mock. */
 function createSpecies(types: PokemonType[] = [CORE_TYPE_IDS.normal]): PokemonSpeciesData {
   return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
+    ...DEFAULT_SPECIES,
+    id: DEFAULT_SPECIES.id,
+    name: DEFAULT_SPECIES.name,
+    displayName: DEFAULT_SPECIES.displayName,
     types,
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [CORE_ABILITY_IDS.none], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
   } as PokemonSpeciesData;
 }
 
@@ -875,7 +855,7 @@ describe("Gen 2 Damage Calculation", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove(CORE_TYPE_IDS.normal, 0, "status");
+    const move = createMove(CORE_TYPE_IDS.normal, 0, CORE_MOVE_CATEGORIES.status);
     const chart = createNeutralTypeChart();
     const species = createSpecies([CORE_TYPE_IDS.normal]);
 
@@ -1352,7 +1332,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
       });
       // Special move (fire type is special in Gen 2)
-      const move = createMove(CORE_TYPE_IDS.fire, 80, "special");
+      const move = createMove(CORE_TYPE_IDS.fire, 80, CORE_MOVE_CATEGORIES.special);
       const chart = createNeutralTypeChart();
       const species = createSpecies([CORE_TYPE_IDS.electric]);
 
@@ -1418,7 +1398,7 @@ describe("Gen 2 Damage Calculation", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80, "special");
+      const move = createMove(CORE_TYPE_IDS.fire, 80, CORE_MOVE_CATEGORIES.special);
       const chart = createNeutralTypeChart();
       const species = createSpecies([CORE_TYPE_IDS.electric]);
 
@@ -1610,7 +1590,7 @@ describe("Gen 2 Damage Calculation", () => {
       (dittoNoPowder.pokemon as any).speciesId = 132;
 
       // Special move (fire type is special in Gen 2)
-      const move = createMove(CORE_TYPE_IDS.fire, 80, "special");
+      const move = createMove(CORE_TYPE_IDS.fire, 80, CORE_MOVE_CATEGORIES.special);
       const chart = createNeutralTypeChart();
       const species = createSpecies([CORE_TYPE_IDS.normal]);
 
@@ -1802,7 +1782,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
       });
       // Special move (water type is special in Gen 2)
-      const move = createMove(CORE_TYPE_IDS.water, 80, "special");
+      const move = createMove(CORE_TYPE_IDS.water, 80, CORE_MOVE_CATEGORIES.special);
       const chart = createNeutralTypeChart();
       const species = createSpecies([CORE_TYPE_IDS.electric]);
 
@@ -2172,7 +2152,7 @@ describe("Gen 2 Damage Calculation", () => {
       types: [CORE_TYPE_IDS.normal],
     });
     // Water type move → special in Gen 2 → uses spAttack/spDefense = 100
-    const move = createMove(CORE_TYPE_IDS.water, 80, "special");
+    const move = createMove(CORE_TYPE_IDS.water, 80, CORE_MOVE_CATEGORIES.special);
     const chart = createNeutralTypeChart();
     const species = createSpecies([CORE_TYPE_IDS.water]);
 
