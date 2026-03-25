@@ -1,6 +1,15 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
@@ -33,6 +42,16 @@ const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
 const MACH_PUNCH = DATA_MANAGER.getMove(MOVES.machPunch);
 const BRAVE_BIRD = DATA_MANAGER.getMove(MOVES.braveBird);
 const FLARE_BLITZ = DATA_MANAGER.getMove(MOVES.flareBlitz);
+const ZERO_IVS = createIvs({
+  hp: 0,
+  attack: 0,
+  defense: 0,
+  spAttack: 0,
+  spDefense: 0,
+  speed: 0,
+});
+const ZERO_EVS = createEvs();
+type CoreGender = (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -58,7 +77,7 @@ function createActivePokemon(opts: {
   ability?: string;
   heldItem?: string | null;
   status?: PrimaryStatus | null;
-  gender?: "male" | "female" | "genderless";
+  gender?: CoreGender;
   speciesId?: number;
 }): ActivePokemon {
   const level = opts.level ?? 50;
@@ -79,16 +98,16 @@ function createActivePokemon(opts: {
     level,
     experience: 0,
     nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: ZERO_IVS,
+    evs: ZERO_EVS,
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: opts.gender ?? ("male" as const),
+    friendship: createFriendship(0),
+    gender: opts.gender ?? CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -252,9 +271,9 @@ describe("Gen 4 Reckless", () => {
 describe("Gen 4 Rivalry", () => {
   it("given same-gender Rivalry attacker and defender, when damage is calculated, then damage is boosted", () => {
     // Source: Bulbapedia — Rivalry boosts power 25% against the same gender.
-    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: "male", attack: 100 });
-    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: "male", attack: 100 });
-    const defender = createActivePokemon({ gender: "male", defense: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.male, attack: 100 });
+    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: CORE_GENDERS.male, attack: 100 });
+    const defender = createActivePokemon({ gender: CORE_GENDERS.male, defense: 100 });
     const move = TACKLE;
     const rng = createMockRng(100);
     const state = createMockState();
@@ -273,9 +292,9 @@ describe("Gen 4 Rivalry", () => {
 
   it("given opposite-gender Rivalry attacker and defender, when damage is calculated, then damage is reduced", () => {
     // Source: Bulbapedia — Rivalry reduces power 25% against the opposite gender.
-    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: "male", attack: 100 });
-    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: "male", attack: 100 });
-    const defender = createActivePokemon({ gender: "female", defense: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.male, attack: 100 });
+    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: CORE_GENDERS.male, attack: 100 });
+    const defender = createActivePokemon({ gender: CORE_GENDERS.female, defense: 100 });
     const move = TACKLE;
     const rng = createMockRng(100);
     const state = createMockState();
@@ -294,9 +313,9 @@ describe("Gen 4 Rivalry", () => {
 
   it("given genderless defender, when Rivalry attacker uses Tackle, then damage is unchanged", () => {
     // Source: Bulbapedia — Rivalry has no effect if either Pokemon is genderless.
-    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: "male", attack: 100 });
-    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: "male", attack: 100 });
-    const defender = createActivePokemon({ gender: "genderless", defense: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.male, attack: 100 });
+    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: CORE_GENDERS.male, attack: 100 });
+    const defender = createActivePokemon({ gender: CORE_GENDERS.genderless, defense: 100 });
     const move = TACKLE;
     const rng = createMockRng(100);
     const state = createMockState();
@@ -317,15 +336,15 @@ describe("Gen 4 Rivalry", () => {
     // Source: Bulbapedia — Rivalry has no effect if either Pokemon is genderless.
     const attacker = createActivePokemon({
       ability: ABILITIES.rivalry,
-      gender: "genderless",
+      gender: CORE_GENDERS.genderless,
       attack: 100,
     });
     const noAbilityAttacker = createActivePokemon({
       ability: ABILITIES.none,
-      gender: "genderless",
+      gender: CORE_GENDERS.genderless,
       attack: 100,
     });
-    const defender = createActivePokemon({ gender: "male", defense: 100 });
+    const defender = createActivePokemon({ gender: CORE_GENDERS.male, defense: 100 });
     const move = TACKLE;
     const rng = createMockRng(100);
     const state = createMockState();
