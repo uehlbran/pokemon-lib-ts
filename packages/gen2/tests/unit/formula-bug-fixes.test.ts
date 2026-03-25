@@ -33,6 +33,7 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
+  createFriendship,
   NEUTRAL_NATURES,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
@@ -49,6 +50,7 @@ const TYPE_IDS = CORE_TYPE_IDS;
 const STATUS_IDS = CORE_STATUS_IDS;
 const SPECIES_IDS = GEN2_SPECIES_IDS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const DEFAULT_FRIENDSHIP = createFriendship(70);
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -115,7 +117,7 @@ function createSyntheticOnFieldPokemon(opts: {
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: opts.heldItem ?? null,
       status: opts.status ?? null,
-      friendship: 70,
+      friendship: DEFAULT_FRIENDSHIP,
       gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "test",

@@ -19,6 +19,7 @@ import {
   CORE_SCREEN_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
+  createFriendship,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -53,6 +54,7 @@ const SCREEN_IDS = CORE_SCREEN_IDS;
 const TYPES = CORE_TYPE_IDS;
 const WEATHER_IDS = CORE_WEATHER_IDS;
 const DEFAULT_SPECIES_ID = GEN3_SPECIES_IDS.bulbasaur;
+const DEFAULT_FRIENDSHIP = createFriendship(0);
 const DEFAULT_NATURE = GEN3_NATURE_IDS.hardy;
 const DEFAULT_POKEBALL = GEN3_ITEM_IDS.pokeBall;
 
@@ -117,7 +119,7 @@ function createActiveBattler(opts: {
     abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
+    friendship: DEFAULT_FRIENDSHIP,
     gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
