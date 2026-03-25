@@ -10,6 +10,7 @@ import type {
   PrimaryStatus,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 3 Abilities — applyAbility dispatch.
@@ -376,7 +377,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // Source: Showdown data/mods/gen3/abilities.ts — trace.onStart copies foe ability (blocks trace)
       // Source: Bulbapedia/Trace — "Trace cannot copy Trace"
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
-      const uncopyable = ["trace"]; // Trace cannot copy itself (cartridge-accurate)
+      const uncopyable = ["trace", CORE_ABILITY_IDS.none]; // Trace cannot copy itself or the repo's "no ability" sentinel
       const opponentAbility = context.opponent.ability;
       if (!opponentAbility || uncopyable.includes(opponentAbility)) {
         return { activated: false, effects: [], messages: [] };
