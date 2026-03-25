@@ -875,12 +875,10 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
 
     it("given Reckless with crash damage move, then activates", () => {
       // Source: Showdown data/abilities.ts -- reckless: move.hasCrashDamage
-      const move = createSyntheticMove({ id: MOVE_IDS.highJumpKick, type: TYPE_IDS.fighting });
-      (move as any).hasCrashDamage = true;
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.reckless,
         trigger: TRIGGER_IDS.onDamageCalc,
-        move,
+        move: createCanonicalMove(MOVE_IDS.highJumpKick),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
