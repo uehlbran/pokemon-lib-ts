@@ -1,38 +1,64 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
+import {
+  createGen7DataManager,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_SPECIES_IDS,
+} from "@pokemon-lib-ts/gen7";
 import { describe, expect, it } from "vitest";
 import { Gen7MegaEvolution } from "../src/Gen7MegaEvolution";
 import { Gen7ZMove } from "../src/Gen7ZMove";
 
-function createActivePokemon(overrides: {
-  speciesId: number;
-  heldItem: string;
+const dataManager = createGen7DataManager();
+const DEFAULT_SPECIES = dataManager.getSpecies(GEN7_SPECIES_IDS.pikachu);
+const DEFAULT_MOVE = dataManager.getMove(GEN7_MOVE_IDS.tackle);
+
+function createSyntheticBattlePokemon(overrides: {
+  speciesId?: number;
+  heldItem?: string | null;
   moveId?: string;
   isMega?: boolean;
 }): ActivePokemon {
+  const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const move = dataManager.getMove(overrides.moveId ?? DEFAULT_MOVE.id);
+
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId,
+      speciesId: species.id,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: CORE_NATURE_IDS.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
-      moves: [{ moveId: overrides.moveId ?? "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      ability: "none",
-      abilitySlot: "normal1",
-      heldItem: overrides.heldItem,
+      moves: [createMoveSlot(move.id, move.pp)],
+      ability: CORE_ABILITY_IDS.none,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      heldItem:
+        overrides.heldItem === null
+          ? null
+          : overrides.heldItem
+            ? dataManager.getItem(overrides.heldItem).id
+            : null,
       status: null,
       friendship: 0,
-      gender: "male",
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -43,18 +69,9 @@ function createActivePokemon(overrides: {
       },
     },
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
     volatileStatuses: new Map(),
-    types: ["normal"],
-    ability: "none",
+    types: [...species.types],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -77,7 +94,7 @@ function createActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function createSide(index: 0 | 1): BattleSide {
+function createSyntheticBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     active: [],
@@ -94,13 +111,13 @@ function createSide(index: 0 | 1): BattleSide {
   };
 }
 
-function createState(): BattleState {
+function createSyntheticBattleState(): BattleState {
   return {
     phase: "action-select",
     generation: 7,
     format: "singles",
     turnNumber: 1,
-    sides: [createSide(0), createSide(1)],
+    sides: [createSyntheticBattleSide(0), createSyntheticBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -119,13 +136,13 @@ function createState(): BattleState {
 describe("Gen 7 gimmick state serialization", () => {
   it("given a serialized used-side list for Z-Move, when restoreState is called, then the same side cannot use Z-Move again", () => {
     const gimmick = new Gen7ZMove();
-    const pokemon = createActivePokemon({
-      speciesId: 25,
-      heldItem: "electrium-z",
-      moveId: "thunderbolt",
+    const pokemon = createSyntheticBattlePokemon({
+      speciesId: GEN7_SPECIES_IDS.pikachu,
+      heldItem: GEN7_ITEM_IDS.electriumZ,
+      moveId: GEN7_MOVE_IDS.thunderbolt,
     });
-    const side = createSide(0);
-    const state = createState();
+    const side = createSyntheticBattleSide(0);
+    const state = createSyntheticBattleState();
 
     gimmick.restoreState({ usedBySide: [0] });
 
@@ -135,13 +152,13 @@ describe("Gen 7 gimmick state serialization", () => {
 
   it("given malformed serialized Z-Move state, when restoreState is called, then it ignores the payload and leaves usage available", () => {
     const gimmick = new Gen7ZMove();
-    const pokemon = createActivePokemon({
-      speciesId: 25,
-      heldItem: "electrium-z",
-      moveId: "thunderbolt",
+    const pokemon = createSyntheticBattlePokemon({
+      speciesId: GEN7_SPECIES_IDS.pikachu,
+      heldItem: GEN7_ITEM_IDS.electriumZ,
+      moveId: GEN7_MOVE_IDS.thunderbolt,
     });
-    const side = createSide(0);
-    const state = createState();
+    const side = createSyntheticBattleSide(0);
+    const state = createSyntheticBattleState();
 
     expect(() => gimmick.restoreState({ usedBySide: ["invalid"] })).not.toThrow();
 
@@ -151,12 +168,12 @@ describe("Gen 7 gimmick state serialization", () => {
 
   it("given a serialized used-side list for Mega Evolution, when restoreState is called, then the same side cannot mega evolve again", () => {
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = createActivePokemon({
-      speciesId: 6,
-      heldItem: "charizardite-x",
+    const pokemon = createSyntheticBattlePokemon({
+      speciesId: GEN7_SPECIES_IDS.charizard,
+      heldItem: GEN7_ITEM_IDS.charizarditeX,
     });
-    const side = createSide(0);
-    const state = createState();
+    const side = createSyntheticBattleSide(0);
+    const state = createSyntheticBattleState();
 
     gimmick.restoreState({ usedBySide: [0] });
 
@@ -166,12 +183,12 @@ describe("Gen 7 gimmick state serialization", () => {
 
   it("given malformed serialized Mega Evolution state, when restoreState is called, then it ignores the payload and leaves usage available", () => {
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = createActivePokemon({
-      speciesId: 6,
-      heldItem: "charizardite-x",
+    const pokemon = createSyntheticBattlePokemon({
+      speciesId: GEN7_SPECIES_IDS.charizard,
+      heldItem: GEN7_ITEM_IDS.charizarditeX,
     });
-    const side = createSide(0);
-    const state = createState();
+    const side = createSyntheticBattleSide(0);
+    const state = createSyntheticBattleState();
 
     expect(() => gimmick.restoreState({ usedBySide: ["invalid"] })).not.toThrow();
 
