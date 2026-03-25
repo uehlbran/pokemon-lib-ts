@@ -1,13 +1,14 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   ALL_NATURES,
   CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
@@ -27,7 +28,9 @@ const DEFAULT_SPECIES = GEN2_DATA.getSpecies(GEN2_SPECIES_IDS.mewtwo);
 const DEFAULT_MOVE = GEN2_DATA.getMove(MOVE_IDS.tackle);
 const DEFAULT_NATURE_ID = ALL_NATURES[0]!.id;
 const DEFAULT_POKEBALL = ITEM_IDS.pokeBall;
-const DEFAULT_ABILITY_SLOT = Object.keys({ normal1: null } as const)[0] as ActivePokemon["pokemon"]["abilitySlot"];
+const DEFAULT_ABILITY_SLOT = Object.keys({
+  normal1: null,
+} as const)[0] as ActivePokemon["pokemon"]["abilitySlot"];
 const COUNTER_MOVE = GEN2_DATA.getMove(MOVE_IDS.counter);
 const MIRROR_COAT_MOVE = GEN2_DATA.getMove(MOVE_IDS.mirrorCoat);
 const HYPER_BEAM_MOVE = GEN2_DATA.getMove(MOVE_IDS.hyperBeam);
@@ -198,7 +201,7 @@ describe("Gen 2 Combat Moves", () => {
       // Counter reflects 2x the physical damage taken this turn.
       const attacker = createMockActive({
         lastDamageTaken: 40,
-        lastDamageCategory: "physical",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
         lastDamageType: TYPE_IDS.normal,
       });
       const defender = createMockActive();
@@ -228,7 +231,7 @@ describe("Gen 2 Combat Moves", () => {
       // Second triangulation case with different input.
       const attacker = createMockActive({
         lastDamageTaken: 100,
-        lastDamageCategory: "physical",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
         lastDamageType: TYPE_IDS.fighting,
       });
       const defender = createMockActive();
@@ -288,7 +291,7 @@ describe("Gen 2 Combat Moves", () => {
       // Rock is type 5 (physical), so Counter should reflect Rock-type damage.
       const attacker = createMockActive({
         lastDamageTaken: 60,
-        lastDamageCategory: "physical",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
         lastDamageType: TYPE_IDS.rock,
       });
       const defender = createMockActive();
@@ -319,7 +322,7 @@ describe("Gen 2 Combat Moves", () => {
       // This is a notable edge case because Ghost was special in some fan understanding.
       const attacker = createMockActive({
         lastDamageTaken: 50,
-        lastDamageCategory: "physical",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
         lastDamageType: TYPE_IDS.ghost,
       });
       const defender = createMockActive();
@@ -349,7 +352,7 @@ describe("Gen 2 Combat Moves", () => {
       // In Gen 2, Counter works against physical-type moves only (not special).
       const attacker = createMockActive({
         lastDamageTaken: 60,
-        lastDamageCategory: "special",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.special,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -381,7 +384,7 @@ describe("Gen 2 Combat Moves", () => {
       // Mirror Coat reflects 2x the special damage taken this turn.
       const attacker = createMockActive({
         lastDamageTaken: 50,
-        lastDamageCategory: "special",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.special,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -410,7 +413,7 @@ describe("Gen 2 Combat Moves", () => {
       // Second triangulation case with different input.
       const attacker = createMockActive({
         lastDamageTaken: 75,
-        lastDamageCategory: "special",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.special,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -465,7 +468,7 @@ describe("Gen 2 Combat Moves", () => {
       // Mirror Coat only reflects special damage, not physical.
       const attacker = createMockActive({
         lastDamageTaken: 60,
-        lastDamageCategory: "physical",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -868,8 +871,8 @@ describe("Gen 2 Combat Moves", () => {
       // Assert
       expect(result.damage).toBe(51);
       expect(result.effectiveType).toBe(TYPE_IDS.dragon);
-      // Dragon is a special type in Gen 2, so effectiveCategory should be "special"
-      expect(result.effectiveCategory).toBe("special");
+      // Dragon is a special type in Gen 2, so effectiveCategory should be the shared special category id.
+      expect(result.effectiveCategory).toBe(CORE_MOVE_CATEGORIES.special);
     });
   });
 });
