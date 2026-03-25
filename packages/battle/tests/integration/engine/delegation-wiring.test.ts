@@ -1,4 +1,5 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EndOfTurnEffect } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +7,10 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const MOVE_IDS = CORE_MOVE_IDS;
+const STATUS_IDS = CORE_STATUS_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -40,7 +45,7 @@ function createEngine(opts: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -57,7 +62,7 @@ function createEngine(opts: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -94,7 +99,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
       engine.start();
 
       const blastoise = engine.state.sides[1].active[0];
-      blastoise?.volatileStatuses.set("leech-seed", { turnsLeft: 99 });
+      blastoise?.volatileStatuses.set(VOLATILE_IDS.leechSeed, { turnsLeft: 99 });
 
       // Act
       events.length = 0;
@@ -103,7 +108,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
 
       // Assert
       const drainEvents = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "leech-seed",
+        (e) => e.type === "damage" && "source" in e && e.source === VOLATILE_IDS.leechSeed,
       );
       expect(drainEvents.length).toBeGreaterThan(0);
 
@@ -121,7 +126,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
       engine.start();
 
       const blastoise = engine.state.sides[1].active[0];
-      blastoise?.volatileStatuses.set("curse", { turnsLeft: 99 });
+      blastoise?.volatileStatuses.set(VOLATILE_IDS.curse, { turnsLeft: 99 });
 
       // Act
       events.length = 0;
@@ -130,7 +135,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
 
       // Assert
       const curseEvents = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "curse",
+        (e) => e.type === "damage" && "source" in e && e.source === VOLATILE_IDS.curse,
       );
       expect(curseEvents.length).toBeGreaterThan(0);
 
@@ -149,10 +154,10 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
 
       const blastoise = engine.state.sides[1].active[0];
       if (blastoise) {
-        blastoise.pokemon.status = "sleep";
+        blastoise.pokemon.status = STATUS_IDS.sleep;
         // sleep-counter keeps processSleepTurn from immediately waking the pokemon
-        blastoise.volatileStatuses.set("sleep-counter", { turnsLeft: 5 });
-        blastoise.volatileStatuses.set("nightmare", { turnsLeft: 99 });
+        blastoise.volatileStatuses.set(VOLATILE_IDS.sleepCounter, { turnsLeft: 5 });
+        blastoise.volatileStatuses.set(VOLATILE_IDS.nightmare, { turnsLeft: 99 });
       }
 
       // Act
@@ -162,7 +167,7 @@ describe("delegation wiring — leech seed / curse / nightmare formulas", () => 
 
       // Assert
       const nightmareEvents = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "nightmare",
+        (e) => e.type === "damage" && "source" in e && e.source === VOLATILE_IDS.nightmare,
       );
       expect(nightmareEvents.length).toBeGreaterThan(0);
 
