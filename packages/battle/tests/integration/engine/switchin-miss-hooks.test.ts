@@ -1,4 +1,12 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  createMoveSlot,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
+import { GEN3_SPECIES_IDS } from "@pokemon-lib-ts/gen3";
 import { describe, expect, it, vi } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -9,24 +17,27 @@ import { MockRuleset } from "../../helpers/mock-ruleset";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const ABILITIES = CORE_ABILITY_IDS
+const MOVES = CORE_MOVE_IDS
+const STATUS = CORE_STATUS_IDS
+const VOLATILES = CORE_VOLATILE_IDS
+const SPECIES = GEN3_SPECIES_IDS
+
 function createEngine(overrides?: {
   seed?: number;
   team1?: PokemonInstance[];
   team2?: PokemonInstance[];
   ruleset?: MockRuleset;
 }) {
-  const ruleset = overrides?.ruleset ?? new MockRuleset();
+  const ruleset = (overrides?.ruleset ?? new MockRuleset()).setGenerationForTest(3);
   const dataManager = createMockDataManager();
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(SPECIES.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
-      ],
+      moves: [createMoveSlot(MOVES.tackle), createMoveSlot(MOVES.thunderbolt)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -37,10 +48,10 @@ function createEngine(overrides?: {
       },
       currentHp: 200,
     }),
-    createTestPokemon(25, 50, {
+    createTestPokemon(SPECIES.pikachu, 50, {
       uid: "pikachu-1",
       nickname: "Pikachu",
-      moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+      moves: [createMoveSlot(MOVES.quickAttack)],
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -54,10 +65,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(SPECIES.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(MOVES.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -68,10 +79,10 @@ function createEngine(overrides?: {
       },
       currentHp: 200,
     }),
-    createTestPokemon(6, 50, {
+    createTestPokemon(SPECIES.charizard, 50, {
       uid: "charizard-2",
       nickname: "Charizard2",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(MOVES.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -85,7 +96,7 @@ function createEngine(overrides?: {
   ];
 
   const config: BattleConfig = {
-    generation: 1,
+    generation: 3,
     format: "singles",
     teams: [team1, team2],
     seed: overrides?.seed ?? 12345,
@@ -155,7 +166,7 @@ describe("Bug #495: onMoveMiss called for semi-invulnerable target miss", () => 
 
     // Put Blastoise (defender, side 1) into semi-invulnerable "flying" state
     const defender = engine.state.sides[1].active[0]!;
-    defender.volatileStatuses.set("flying", { turnsLeft: 1 });
+    defender.volatileStatuses.set(VOLATILES.flying, { turnsLeft: 1 });
 
     // Side 0 uses Tackle (cannot hit flying targets), side 1 uses Tackle
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -165,7 +176,7 @@ describe("Bug #495: onMoveMiss called for semi-invulnerable target miss", () => 
     expect(onMoveMinSpy).toHaveBeenCalled();
     const call = onMoveMinSpy.mock.calls.find((c) => c[0].pokemon.uid === "charizard-1");
     expect(call).toBeDefined();
-    expect(call![1].id).toBe("tackle");
+    expect(call![1].id).toBe(MOVES.tackle);
   });
 
   it("given a second scenario where a different move misses a semi-invulnerable target, when the move executes, then onMoveMiss() is also called", () => {
@@ -179,14 +190,14 @@ describe("Bug #495: onMoveMiss called for semi-invulnerable target miss", () => 
 
     // Put Blastoise into "flying" semi-invulnerable state
     const defender = engine.state.sides[1].active[0]!;
-    defender.volatileStatuses.set("flying", { turnsLeft: 1 });
+    defender.volatileStatuses.set(VOLATILES.flying, { turnsLeft: 1 });
 
     // Side 0 uses Thunderbolt (index 1), side 1 uses Tackle
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // onMoveMiss should be called for Thunderbolt miss
-    const call = onMoveMinSpy.mock.calls.find((c) => c[1].id === "thunderbolt");
+    const call = onMoveMinSpy.mock.calls.find((c) => c[1].id === MOVES.thunderbolt);
     expect(call).toBeDefined();
     expect(call![0].pokemon.uid).toBe("charizard-1");
   });
@@ -207,10 +218,10 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     ruleset.setFixedDamage(0);
 
     const team1 = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-starter",
         nickname: "CharStarter",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -220,12 +231,12 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 120,
         },
         currentHp: 1,
-        status: "poison",
+        status: STATUS.poison,
       }),
-      createTestPokemon(25, 50, {
+      createTestPokemon(SPECIES.pikachu, 50, {
         uid: "pikachu-replacement",
         nickname: "PikaReplace",
-        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.quickAttack)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -235,15 +246,15 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 130,
         },
         currentHp: 100,
-        abilityId: "static",
+        abilityId: ABILITIES.static,
       }),
     ];
 
     const team2 = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(SPECIES.blastoise, 50, {
         uid: "blastoise-starter",
         nickname: "BlastStarter",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -253,12 +264,12 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 80,
         },
         currentHp: 1,
-        status: "poison",
+        status: STATUS.poison,
       }),
-      createTestPokemon(6, 50, {
+      createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-replacement",
         nickname: "CharReplace",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -268,7 +279,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 90,
         },
         currentHp: 200,
-        abilityId: "blaze",
+        abilityId: ABILITIES.blaze,
       }),
     ];
 
@@ -341,10 +352,10 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
 
     // Pikachu speed=130 (faster), Charizard2 speed=90 (slower)
     const team1 = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(SPECIES.charizard, 50, {
         uid: "starter-1",
         nickname: "Starter1",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -354,12 +365,12 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 120,
         },
         currentHp: 1,
-        status: "poison",
+        status: STATUS.poison,
       }),
-      createTestPokemon(25, 50, {
+      createTestPokemon(SPECIES.pikachu, 50, {
         uid: "fast-replacement",
         nickname: "FastReplace",
-        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.quickAttack)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -373,10 +384,10 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     ];
 
     const team2 = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(SPECIES.blastoise, 50, {
         uid: "starter-2",
         nickname: "Starter2",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -386,12 +397,12 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 80,
         },
         currentHp: 1,
-        status: "poison",
+        status: STATUS.poison,
       }),
-      createTestPokemon(6, 50, {
+      createTestPokemon(SPECIES.charizard, 50, {
         uid: "slow-replacement",
         nickname: "SlowReplace",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -450,10 +461,10 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     };
 
     const team1 = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(SPECIES.charizard, 50, {
         uid: "starter-1",
         nickname: "Starter1",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -463,12 +474,12 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 120,
         },
         currentHp: 1,
-        status: "poison",
+        status: STATUS.poison,
       }),
-      createTestPokemon(25, 50, {
+      createTestPokemon(SPECIES.pikachu, 50, {
         uid: "side-0-replacement",
         nickname: "Side0Replace",
-        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.quickAttack)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -482,10 +493,10 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     ];
 
     const team2 = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(SPECIES.blastoise, 50, {
         uid: "starter-2",
         nickname: "Starter2",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -495,12 +506,12 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
           speed: 80,
         },
         currentHp: 1,
-        status: "poison",
+        status: STATUS.poison,
       }),
-      createTestPokemon(6, 50, {
+      createTestPokemon(SPECIES.charizard, 50, {
         uid: "side-1-replacement",
         nickname: "Side1Replace",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
