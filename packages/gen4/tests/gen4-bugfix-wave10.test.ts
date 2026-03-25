@@ -6,7 +6,24 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { applyGen4HeldItem } from "../src/Gen4Items";
 import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
@@ -35,6 +52,16 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const DATA_MANAGER = createGen4DataManager()
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const
+const SPECIES = GEN4_SPECIES_IDS
+const STATUSES = CORE_STATUS_IDS
+const TYPES = CORE_TYPE_IDS
+const VOLATILES = CORE_VOLATILE_IDS
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy
 
 function createMockRng(intReturnValue: number, nextValue = 0) {
   return {
@@ -77,16 +104,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -97,7 +124,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -122,7 +149,7 @@ function createActivePokemon(opts: {
     statStages: defaultStages,
     volatileStatuses: volatiles,
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -143,27 +170,11 @@ function createActivePokemon(opts: {
 }
 
 function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const base = DATA_MANAGER.getMove(id)
   return {
-    id,
-    name: id,
-    type: "normal",
-    category: "status",
-    power: 0,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
+    ...base,
+    id: base.id,
+    name: base.name,
     ...overrides,
   } as MoveData;
 }
@@ -259,23 +270,23 @@ describe("Bug #397 — Normalize does not affect Struggle", () => {
     // Against a Ghost-type with Normalize, a regular Normal move does 0 damage.
     // Struggle specifically hits through immunities (typeless), so it must NOT be re-typed.
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "normalize",
+      types: [TYPES.normal],
+      ability: ABILITIES.normalize,
       attack: 100,
     });
     const defender = createActivePokemon({
-      types: ["ghost"], // Ghost is immune to Normal
+      types: [TYPES.ghost], // Ghost is immune to Normal
       defense: 100,
     });
     // Non-Struggle Normal move with Normalize against Ghost => 0 damage
-    const normalMove = createMove("tackle", { type: "normal", power: 50, category: "physical" });
+    const normalMove = createMove(MOVES.tackle, { type: TYPES.normal, power: 50, category: "physical" });
     const ctx1 = createDamageContext({ attacker, defender, move: normalMove });
     const result1 = calculateGen4Damage(ctx1, GEN4_TYPE_CHART);
     expect(result1.damage).toBe(0);
 
     // Struggle with Normalize against Ghost => Struggle is excluded from Normalize
     // In Gen 4, Struggle is typeless ("???"), so it should hit for neutral damage.
-    const struggle = createMove("struggle", { type: "normal", power: 50, category: "physical" });
+    const struggle = createMove(MOVES.struggle, { type: TYPES.normal, power: 50, category: "physical" });
     const ctx2 = createDamageContext({ attacker, defender, move: struggle });
     const result2 = calculateGen4Damage(ctx2, GEN4_TYPE_CHART);
     // Struggle bypasses type immunity — damage should be > 0
@@ -296,16 +307,20 @@ describe("Bug #397 — Normalize does not affect Struggle", () => {
     //   With Normalize: Normal vs Rock = 0.5x ... hmm, both the same
     // Better test: Fire move with Normalize => Normal type, so gets STAB from Normal attacker
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "normalize",
+      types: [TYPES.normal],
+      ability: ABILITIES.normalize,
       attack: 100,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       defense: 100,
     });
     // Flamethrower (fire) with Normalize becomes Normal type => gets STAB from Normal attacker
-    const fireMove = createMove("flamethrower", { type: "fire", power: 80, category: "special" });
+    const fireMove = createMove(MOVES.flamethrower, {
+      type: TYPES.fire,
+      power: 80,
+      category: "special",
+    });
     const ctx = createDamageContext({ attacker, defender, move: fireMove });
     const result = calculateGen4Damage(ctx, GEN4_TYPE_CHART);
     // With Normalize: fire -> normal, Normal attacker gets STAB (1.5x)
@@ -327,19 +342,19 @@ describe("Bug #391 — Griseous Orb base power boost for Giratina", () => {
     // Derivation: basePower 80 * floor(4915/4096) = floor(80 * 1.19995) = floor(95.996) = 95? No.
     //   Actually: power = floor(power * 4915 / 4096) = floor(80 * 4915 / 4096) = floor(95.996) = 95
     const attacker = createActivePokemon({
-      types: ["ghost", "dragon"],
-      speciesId: 487,
-      heldItem: "griseous-orb",
+      types: [TYPES.ghost, TYPES.dragon],
+      speciesId: SPECIES.giratina,
+      heldItem: ITEMS.griseousOrb,
       attack: 100,
       spAttack: 100,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       defense: 100,
       spDefense: 100,
     });
     // Shadow Ball: Ghost, Special, 80 BP
-    const move = createMove("shadow-ball", { type: "ghost", power: 80, category: "special" });
+    const move = createMove(MOVES.shadowBall, { type: TYPES.ghost, power: 80, category: "special" });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, GEN4_TYPE_CHART);
 
@@ -354,22 +369,22 @@ describe("Bug #391 — Griseous Orb base power boost for Giratina", () => {
     //   baseDmg = floor(floor(22 * 95 * 100 / 100) / 50) + 2 = floor(2090/50) + 2 = 41 + 2 = 43
     //   STAB (Dragon attacker, Dragon move): floor(43 * 1.5) = 64
     const attacker = createActivePokemon({
-      types: ["ghost", "dragon"],
-      speciesId: 487,
-      heldItem: "griseous-orb",
+      types: [TYPES.ghost, TYPES.dragon],
+      speciesId: SPECIES.giratina,
+      heldItem: ITEMS.griseousOrb,
       spAttack: 100,
     });
     const attackerNoOrb = createActivePokemon({
-      types: ["ghost", "dragon"],
-      speciesId: 487,
+      types: [TYPES.ghost, TYPES.dragon],
+      speciesId: SPECIES.giratina,
       heldItem: null,
       spAttack: 100,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       spDefense: 100,
     });
-    const move = createMove("dragon-pulse", { type: "dragon", power: 80, category: "special" });
+    const move = createMove(MOVES.dragonPulse, { type: TYPES.dragon, power: 80, category: "special" });
     const rng = createMockRng(100);
 
     const resultOrb = calculateGen4Damage(
@@ -392,19 +407,19 @@ describe("Bug #391 — Griseous Orb base power boost for Giratina", () => {
   it("given non-Giratina holding Griseous Orb, when calculating damage with Ghost move, then no boost", () => {
     // Source: Showdown Gen 4 mod — Griseous Orb only boosts Giratina (species 487)
     const attacker = createActivePokemon({
-      types: ["ghost"],
+      types: [TYPES.ghost],
       speciesId: 94, // Gengar, not Giratina
-      heldItem: "griseous-orb",
+      heldItem: ITEMS.griseousOrb,
       spAttack: 100,
     });
     const defender = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       spDefense: 100,
     });
-    const move = createMove("shadow-ball", { type: "ghost", power: 80, category: "special" });
+    const move = createMove(MOVES.shadowBall, { type: TYPES.ghost, power: 80, category: "special" });
 
     const attacker2 = createActivePokemon({
-      types: ["ghost"],
+      types: [TYPES.ghost],
       speciesId: 94,
       heldItem: null, // no orb
       spAttack: 100,
@@ -441,22 +456,22 @@ describe("Bug #394 — Light Ball doubles base power for Pikachu in Gen 4", () =
     // Derivation WITHOUT Light Ball: power = 80
     //   baseDmg = floor(floor(22 * 80 * 100 / 100) / 50) + 2 = 37
     const pikachu = createActivePokemon({
-      types: ["electric"],
+      types: [TYPES.electric],
       speciesId: 25,
-      heldItem: "light-ball",
+      heldItem: ITEMS.lightBall,
       attack: 100,
     });
     const pikachuNoItem = createActivePokemon({
-      types: ["electric"],
+      types: [TYPES.electric],
       speciesId: 25,
       heldItem: null,
       attack: 100,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       defense: 100,
     });
-    const move = createMove("iron-tail", { type: "steel", power: 80, category: "physical" });
+    const move = createMove(MOVES.ironTail, { type: TYPES.steel, power: 80, category: "physical" });
     const rng = createMockRng(100);
 
     const resultBall = calculateGen4Damage(
@@ -478,22 +493,26 @@ describe("Bug #394 — Light Ball doubles base power for Pikachu in Gen 4", () =
     //   Without: power = 95, baseDmg = floor(floor(22*95*100/100)/50)+2 = 43, STAB = floor(43*1.5) = 64
     //   With:    power = 190, baseDmg = floor(floor(22*190*100/100)/50)+2 = 85, STAB = floor(85*1.5) = 127
     const pikachu = createActivePokemon({
-      types: ["electric"],
+      types: [TYPES.electric],
       speciesId: 25,
-      heldItem: "light-ball",
+      heldItem: ITEMS.lightBall,
       spAttack: 100,
     });
     const pikachuNoItem = createActivePokemon({
-      types: ["electric"],
+      types: [TYPES.electric],
       speciesId: 25,
       heldItem: null,
       spAttack: 100,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       spDefense: 100,
     });
-    const move = createMove("thunderbolt", { type: "electric", power: 95, category: "special" });
+    const move = createMove(MOVES.thunderbolt, {
+      type: TYPES.electric,
+      power: 95,
+      category: "special",
+    });
     const rng = createMockRng(100);
 
     const resultBall = calculateGen4Damage(
@@ -518,9 +537,9 @@ describe("Bug #416 — Whirlwind/Roar set forcedSwitch field", () => {
   it("given Whirlwind used on non-immune target, when move effect executes, then result has forcedSwitch = true", () => {
     // Source: Showdown Gen 4 — Whirlwind/Roar force random switch
     // Bug #416: forcedSwitch field must be set for the engine to process phazing correctly
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("whirlwind", { type: "normal", category: "status", power: 0 });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.whirlwind, { type: TYPES.normal, category: "status", power: 0 });
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -532,9 +551,9 @@ describe("Bug #416 — Whirlwind/Roar set forcedSwitch field", () => {
   it("given Roar used on non-immune target, when move effect executes, then result has forcedSwitch = true", () => {
     // Triangulation: Roar should behave identically to Whirlwind
     // Source: Showdown Gen 4 — Roar and Whirlwind share the same phazing logic
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("roar", { type: "normal", category: "status", power: 0 });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.roar, { type: TYPES.normal, category: "status", power: 0 });
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -552,15 +571,15 @@ describe("Bug #417 — Whirlwind/Roar check for Ingrain", () => {
   it("given defender has Ingrain volatile, when Whirlwind is used, then forced switch is blocked", () => {
     // Source: Showdown Gen 4 — onDragOut checks Ingrain alongside Suction Cups
     // Source: Bulbapedia — Ingrain: "The user can't be switched out by Whirlwind, Roar, etc."
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
     const ingrain = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    ingrain.set("ingrain", { turnsLeft: -1 });
+    ingrain.set(VOLATILES.ingrain, { turnsLeft: -1 });
     const defender = createActivePokemon({
-      types: ["grass"],
+      types: [TYPES.grass],
       volatiles: ingrain,
       nickname: "Bulba",
     });
-    const move = createMove("whirlwind", { type: "normal", category: "status", power: 0 });
+    const move = createMove(MOVES.whirlwind, { type: TYPES.normal, category: "status", power: 0 });
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -572,15 +591,15 @@ describe("Bug #417 — Whirlwind/Roar check for Ingrain", () => {
 
   it("given defender has Ingrain volatile, when Roar is used, then forced switch is also blocked", () => {
     // Triangulation: Roar should also be blocked by Ingrain
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
     const ingrain = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    ingrain.set("ingrain", { turnsLeft: -1 });
+    ingrain.set(VOLATILES.ingrain, { turnsLeft: -1 });
     const defender = createActivePokemon({
-      types: ["grass"],
+      types: [TYPES.grass],
       volatiles: ingrain,
       nickname: "Torterra",
     });
-    const move = createMove("roar", { type: "normal", category: "status", power: 0 });
+    const move = createMove(MOVES.roar, { type: TYPES.normal, category: "status", power: 0 });
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -599,30 +618,30 @@ describe("Bug #418 — Binding move duration is 3-6 (not 4-5)", () => {
   it("given attacker uses Bind with rng.int returning 3, when executed, then binding lasts 3 turns", () => {
     // Source: Showdown Gen 4 mod — binding duration: this.random(3, 7) (exclusive upper = 3-6)
     // Our rng.int(3, 6) is inclusive on both bounds = same 3-6 range
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Target" });
-    const move = createMove("bind", { type: "normal", category: "physical", power: 15 });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Target" });
+    const move = createMove(MOVES.bind, { type: TYPES.normal, category: "physical", power: 15 });
     const rng = createMockRng(3); // min of range
     const ctx = createMoveEffectContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("bound");
+    expect(result.volatileInflicted).toBe(VOLATILES.bound);
     expect(result.volatileData).toEqual({ turnsLeft: 3 });
   });
 
   it("given attacker uses Wrap with rng.int returning 6, when executed, then binding lasts 6 turns", () => {
     // Source: Showdown Gen 4 mod — binding duration max = 6 turns
     // Triangulation: max duration without Grip Claw
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Target" });
-    const move = createMove("wrap", { type: "normal", category: "physical", power: 15 });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Target" });
+    const move = createMove(MOVES.wrap, { type: TYPES.normal, category: "physical", power: 15 });
     const rng = createMockRng(6); // max of range
     const ctx = createMoveEffectContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("bound");
+    expect(result.volatileInflicted).toBe(VOLATILES.bound);
     expect(result.volatileData).toEqual({ turnsLeft: 6 });
   });
 });
@@ -637,18 +656,18 @@ describe("Bug #419 — Rest sets exactly 2-turn sleep via selfVolatileData", () 
     // Source: Bulbapedia — Rest: "The user goes to sleep for two turns, fully restoring its HP"
     // Bug #419: Without selfVolatileData, the engine would use rollSleepTurns() for random duration
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       currentHp: 50,
       maxHp: 200,
       nickname: "Snorlax",
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("rest", { type: "psychic", category: "status", power: 0 });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.rest, { type: TYPES.psychic, category: "status", power: 0 });
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.selfStatusInflicted).toBe("sleep");
+    expect(result.selfStatusInflicted).toBe(STATUSES.sleep);
     expect(result.selfVolatileData).toEqual({ turnsLeft: 2 });
     expect(result.healAmount).toBe(200); // full heal = maxHp
   });
@@ -656,18 +675,19 @@ describe("Bug #419 — Rest sets exactly 2-turn sleep via selfVolatileData", () 
   it("given attacker with maxHp=300 uses Rest, when executed, then heals 300 and sleep is exactly 2 turns", () => {
     // Triangulation: second input to verify formula
     const attacker = createActivePokemon({
-      types: ["water"],
+      types: [TYPES.water],
       currentHp: 100,
       maxHp: 300,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("rest", { type: "psychic", category: "status", power: 0 });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.rest, { type: TYPES.psychic, category: "status", power: 0 });
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.selfStatusInflicted).toBe("sleep");
+    expect(result.selfStatusInflicted).toBe(STATUSES.sleep);
     expect(result.selfVolatileData).toEqual({ turnsLeft: 2 });
+    // Source: Rest heals to full; with maxHp=300, healAmount = 300.
     expect(result.healAmount).toBe(300);
   });
 });
@@ -682,14 +702,14 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
     // Bug #388: was using holder's maxHp; should use attacker's maxHp
     // Derivation: floor(400/8) = 50
     const holder = createActivePokemon({
-      types: ["normal"],
-      heldItem: "jaboca-berry",
+      types: [TYPES.normal],
+      heldItem: ITEMS.jabocaBerry,
       maxHp: 200,
       currentHp: 150,
       nickname: "Holder",
     });
     const opponent = createActivePokemon({
-      types: ["fighting"],
+      types: [TYPES.fighting],
       maxHp: 400,
       currentHp: 400,
     });
@@ -715,14 +735,14 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
     // Triangulation: second input to confirm formula uses attacker's maxHp
     // Derivation: floor(100/8) = 12
     const holder = createActivePokemon({
-      types: ["steel"],
-      heldItem: "jaboca-berry",
+      types: [TYPES.steel],
+      heldItem: ITEMS.jabocaBerry,
       maxHp: 300,
       currentHp: 200,
       nickname: "Registeel",
     });
     const opponent = createActivePokemon({
-      types: ["fighting"],
+      types: [TYPES.fighting],
       maxHp: 100,
       currentHp: 100,
     });
@@ -756,13 +776,13 @@ describe("Bug #396 — Custap Berry activates at 50% HP with Gluttony", () => {
     // Bug #396: Gluttony raises the threshold from 25% to 50%
     const ruleset = new Gen4Ruleset();
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "gluttony",
-      heldItem: "custap-berry",
+      types: [TYPES.normal],
+      ability: ABILITIES.gluttony,
+      heldItem: ITEMS.custapBerry,
       maxHp: 200,
       currentHp: 100, // exactly 50%
     });
-    const defender = createActivePokemon({ types: ["normal"], maxHp: 200, currentHp: 200 });
+    const defender = createActivePokemon({ types: [TYPES.normal], maxHp: 200, currentHp: 200 });
     const state = createMinimalBattleState(attacker, defender);
 
     const actions: BattleAction[] = [
@@ -783,13 +803,13 @@ describe("Bug #396 — Custap Berry activates at 50% HP with Gluttony", () => {
     // Triangulation: without Gluttony, 50% HP is not enough (needs <= 25%)
     const ruleset = new Gen4Ruleset();
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "blaze",
-      heldItem: "custap-berry",
+      types: [TYPES.normal],
+      ability: ABILITIES.blaze,
+      heldItem: ITEMS.custapBerry,
       maxHp: 200,
       currentHp: 100, // 50%, above 25% threshold without Gluttony
     });
-    const defender = createActivePokemon({ types: ["normal"], maxHp: 200, currentHp: 200 });
+    const defender = createActivePokemon({ types: [TYPES.normal], maxHp: 200, currentHp: 200 });
     const state = createMinimalBattleState(attacker, defender);
 
     const actions: BattleAction[] = [
@@ -801,7 +821,7 @@ describe("Bug #396 — Custap Berry activates at 50% HP with Gluttony", () => {
     ruleset.resolveTurnOrder(actions, state, rng as any);
 
     // Berry should NOT be consumed (not activated)
-    expect(attacker.pokemon.heldItem).toBe("custap-berry");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.custapBerry);
   });
 });
 
@@ -815,13 +835,13 @@ describe("Bug #400 — Custap Berry is consumed after activation", () => {
     // Bug #400: Custap Berry must be consumed after activation (single-use)
     const ruleset = new Gen4Ruleset();
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "blaze",
-      heldItem: "custap-berry",
+      types: [TYPES.normal],
+      ability: ABILITIES.blaze,
+      heldItem: ITEMS.custapBerry,
       maxHp: 200,
       currentHp: 50, // 25% exactly
     });
-    const defender = createActivePokemon({ types: ["normal"], maxHp: 200, currentHp: 200 });
+    const defender = createActivePokemon({ types: [TYPES.normal], maxHp: 200, currentHp: 200 });
     const state = createMinimalBattleState(attacker, defender);
 
     const actions: BattleAction[] = [
@@ -841,13 +861,13 @@ describe("Bug #400 — Custap Berry is consumed after activation", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
     const ruleset = new Gen4Ruleset();
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "klutz",
-      heldItem: "custap-berry",
+      types: [TYPES.normal],
+      ability: ABILITIES.klutz,
+      heldItem: ITEMS.custapBerry,
       maxHp: 200,
       currentHp: 50,
     });
-    const defender = createActivePokemon({ types: ["normal"], maxHp: 200, currentHp: 200 });
+    const defender = createActivePokemon({ types: [TYPES.normal], maxHp: 200, currentHp: 200 });
     const state = createMinimalBattleState(attacker, defender);
 
     const actions: BattleAction[] = [
@@ -859,6 +879,6 @@ describe("Bug #400 — Custap Berry is consumed after activation", () => {
     ruleset.resolveTurnOrder(actions, state, rng as any);
 
     // Berry NOT consumed because Klutz blocks it
-    expect(attacker.pokemon.heldItem).toBe("custap-berry");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.custapBerry);
   });
 });
