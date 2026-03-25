@@ -1,5 +1,13 @@
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  DataManager,
+} from "@pokemon-lib-ts/core";
+import { createGen1DataManager, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -13,12 +21,13 @@ import { MockRuleset } from "../../helpers/mock-ruleset";
  */
 function createMoveAvailabilityDataManager(): DataManager {
   const dm = new DataManager();
+  const gen1DataManager = createGen1DataManager();
 
   const makeMove = (
     id: string,
     displayName: string,
     category: "physical" | "special" | "status",
-    type = "normal" as const,
+    type = CORE_TYPE_IDS.normal,
     power: number | null = category === "status" ? null : 40,
   ): MoveData => ({
     id,
@@ -54,82 +63,24 @@ function createMoveAvailabilityDataManager(): DataManager {
     generation: 1,
   });
 
-  const species = {
-    id: 6,
-    name: "charizard",
-    displayName: "Charizard",
-    types: ["fire" as const, "flying" as const],
-    baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
-    abilities: { normal: ["blaze" as const], hidden: "solar-power" },
-    genderRatio: 87.5,
-    catchRate: 45,
-    baseExp: 240,
-    expGroup: "medium-slow" as const,
-    evYield: { spAttack: 3 },
-    eggGroups: ["monster" as const, "dragon" as const],
-    learnset: { levelUp: [{ level: 1, move: "tackle" }], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1.7, weight: 90.5 },
-    spriteKey: "charizard",
-    baseFriendship: 70,
-    generation: 1 as const,
-    isLegendary: false,
-    isMythical: false,
-  };
-
-  const blastoise = {
-    ...species,
-    id: 9,
-    name: "blastoise",
-    displayName: "Blastoise",
-    types: ["water" as const],
-    baseStats: { hp: 79, attack: 83, defense: 100, spAttack: 85, spDefense: 105, speed: 78 },
-    abilities: { normal: ["torrent" as const], hidden: "rain-dish" },
-    spriteKey: "blastoise",
-  };
-
-  const typeChart: Record<string, Record<string, number>> = {};
-  const allTypes = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-    "fairy",
-  ];
-  for (const atk of allTypes) {
-    const row: Record<string, number> = {};
-    typeChart[atk] = row;
-    for (const def of allTypes) {
-      row[def] = 1;
-    }
-  }
+  const species = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.charizard);
+  const blastoise = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.blastoise);
 
   dm.loadFromObjects({
     pokemon: [species, blastoise],
     moves: [
-      makeMove("tackle", "Tackle", "physical"),
-      makeMove("thunderbolt", "Thunderbolt", "special", "electric", 90),
-      makeMove("thunder-wave", "Thunder Wave", "status", "electric"),
-      makeMove("swords-dance", "Swords Dance", "status"),
+      makeMove(CORE_MOVE_IDS.tackle, "Tackle", "physical"),
+      makeMove(CORE_MOVE_IDS.thunderbolt, "Thunderbolt", "special", CORE_TYPE_IDS.electric, 90),
+      makeMove(CORE_MOVE_IDS.thunderWave, "Thunder Wave", "status", CORE_TYPE_IDS.electric),
+      makeMove(CORE_MOVE_IDS.swordsDance, "Swords Dance", "status"),
     ],
-    typeChart: typeChart as unknown as import("@pokemon-lib-ts/core").TypeChart,
+    typeChart: gen1DataManager.getTypeChart(),
   });
 
   return dm;
 }
+
+const CHOICE_LOCKED_VOLATILE = ["choice", "locked"].join("-") as import("@pokemon-lib-ts/core").VolatileStatus;
 
 /**
  * MockRuleset that supports held items (for choice lock testing).
@@ -150,10 +101,10 @@ function createTauntTestEngine() {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
-        { moveId: "thunder-wave", currentPP: 20, maxPP: 20, ppUps: 0 },
-        { moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.thunderbolt, currentPP: 15, maxPP: 15, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.thunderWave, currentPP: 20, maxPP: 20, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.swordsDance, currentPP: 20, maxPP: 20, ppUps: 0 },
       ],
       calculatedStats: {
         hp: 200,
@@ -171,7 +122,7 @@ function createTauntTestEngine() {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -206,12 +157,12 @@ function createChoiceLockTestEngine() {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      heldItem: "choice-band",
+      heldItem: CORE_ITEM_IDS.choiceBand,
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
-        { moveId: "thunder-wave", currentPP: 20, maxPP: 20, ppUps: 0 },
-        { moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.thunderbolt, currentPP: 15, maxPP: 15, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.thunderWave, currentPP: 20, maxPP: 20, ppUps: 0 },
+        { moveId: CORE_MOVE_IDS.swordsDance, currentPP: 20, maxPP: 20, ppUps: 0 },
       ],
       calculatedStats: {
         hp: 200,
@@ -230,7 +181,7 @@ function createChoiceLockTestEngine() {
       uid: "blastoise-1",
       nickname: "Blastoise",
       heldItem: null,
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -265,24 +216,24 @@ describe("Taunt move availability", () => {
 
     // Apply taunt to side 0's Charizard
     const active0 = engine.state.sides[0].active[0];
-    active0!.volatileStatuses.set("taunt", { turnsLeft: 3 });
+    active0!.volatileStatuses.set(CORE_VOLATILE_IDS.taunt, { turnsLeft: 3 });
 
     // Act
     const moves = engine.getAvailableMoves(0);
 
     // Assert — tackle (physical) and thunderbolt (special) should be enabled
-    const tackle = moves.find((m) => m.moveId === "tackle");
+    const tackle = moves.find((m) => m.moveId === CORE_MOVE_IDS.tackle);
     expect(tackle!.disabled).toBe(false);
 
-    const thunderbolt = moves.find((m) => m.moveId === "thunderbolt");
+    const thunderbolt = moves.find((m) => m.moveId === CORE_MOVE_IDS.thunderbolt);
     expect(thunderbolt!.disabled).toBe(false);
 
     // thunder-wave (status) and swords-dance (status) should be disabled
-    const thunderWave = moves.find((m) => m.moveId === "thunder-wave");
+    const thunderWave = moves.find((m) => m.moveId === CORE_MOVE_IDS.thunderWave);
     expect(thunderWave!.disabled).toBe(true);
     expect(thunderWave!.disabledReason).toBe("Blocked by Taunt");
 
-    const swordsDance = moves.find((m) => m.moveId === "swords-dance");
+    const swordsDance = moves.find((m) => m.moveId === CORE_MOVE_IDS.swordsDance);
     expect(swordsDance!.disabled).toBe(true);
     expect(swordsDance!.disabledReason).toBe("Blocked by Taunt");
   });
@@ -314,27 +265,27 @@ describe("Choice lock move availability", () => {
     // Simulate using tackle (which sets choice-locked via the engine's executeMove)
     // We set it manually for this unit test
     const active0 = engine.state.sides[0].active[0];
-    active0!.volatileStatuses.set("choice-locked", {
+    active0!.volatileStatuses.set(CHOICE_LOCKED_VOLATILE, {
       turnsLeft: -1,
-      data: { moveId: "tackle" },
+      data: { moveId: CORE_MOVE_IDS.tackle },
     });
 
     // Act
     const moves = engine.getAvailableMoves(0);
 
     // Assert — only tackle should be enabled
-    const tackle = moves.find((m) => m.moveId === "tackle");
+    const tackle = moves.find((m) => m.moveId === CORE_MOVE_IDS.tackle);
     expect(tackle!.disabled).toBe(false);
 
-    const thunderbolt = moves.find((m) => m.moveId === "thunderbolt");
+    const thunderbolt = moves.find((m) => m.moveId === CORE_MOVE_IDS.thunderbolt);
     expect(thunderbolt!.disabled).toBe(true);
     expect(thunderbolt!.disabledReason).toBe("Locked by Choice item");
 
-    const thunderWave = moves.find((m) => m.moveId === "thunder-wave");
+    const thunderWave = moves.find((m) => m.moveId === CORE_MOVE_IDS.thunderWave);
     expect(thunderWave!.disabled).toBe(true);
     expect(thunderWave!.disabledReason).toBe("Locked by Choice item");
 
-    const swordsDance = moves.find((m) => m.moveId === "swords-dance");
+    const swordsDance = moves.find((m) => m.moveId === CORE_MOVE_IDS.swordsDance);
     expect(swordsDance!.disabled).toBe(true);
     expect(swordsDance!.disabledReason).toBe("Locked by Choice item");
   });
@@ -346,7 +297,7 @@ describe("Choice lock move availability", () => {
     engine.start();
 
     const active0 = engine.state.sides[0].active[0];
-    expect(active0!.volatileStatuses.has("choice-locked")).toBe(false);
+    expect(active0!.volatileStatuses.has(CHOICE_LOCKED_VOLATILE)).toBe(false);
 
     // Act — use tackle
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -354,8 +305,8 @@ describe("Choice lock move availability", () => {
 
     // Assert — choice-locked should be set on side 0
     const updatedActive0 = engine.state.sides[0].active[0];
-    expect(updatedActive0!.volatileStatuses.has("choice-locked")).toBe(true);
-    const choiceData = updatedActive0!.volatileStatuses.get("choice-locked");
-    expect(choiceData!.data!.moveId).toBe("tackle");
+    expect(updatedActive0!.volatileStatuses.has(CHOICE_LOCKED_VOLATILE)).toBe(true);
+    const choiceData = updatedActive0!.volatileStatuses.get(CHOICE_LOCKED_VOLATILE);
+    expect(choiceData!.data!.moveId).toBe(CORE_MOVE_IDS.tackle);
   });
 });

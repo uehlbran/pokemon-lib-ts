@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DataManager } from "../../../src/data/data-manager";
+import {
+  ALL_NATURES,
+  CORE_TYPE_IDS,
+  DataManager,
+} from "../../../src";
 import type { RawDataObjects } from "../../../src/data/types";
 import type {
   AbilityData,
@@ -9,23 +13,32 @@ import type {
   PokemonSpeciesData,
   TypeChart,
 } from "../../../src/entities";
+import {
+  GEN8_ABILITY_IDS,
+  GEN8_ITEM_IDS,
+  GEN8_MOVE_IDS,
+} from "../../../../gen8/src";
 
 // --- Minimal test fixtures ---
+
+const ADAMANT_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Adamant")!;
+const HARDY_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Hardy")!;
+const TIMID_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Timid")!;
 
 const bulbasaur: PokemonSpeciesData = {
   id: 1,
   name: "bulbasaur",
   displayName: "Bulbasaur",
-  types: ["grass", "poison"],
+  types: [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison],
   baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-  abilities: { normal: ["overgrow"], hidden: "chlorophyll" },
+  abilities: { normal: [GEN8_ABILITY_IDS.overgrow], hidden: GEN8_ABILITY_IDS.chlorophyll },
   genderRatio: 87.5,
   catchRate: 45,
   baseExp: 64,
   expGroup: "medium-slow",
   evYield: { spAttack: 1 },
-  eggGroups: ["monster", "grass"],
-  learnset: { levelUp: [{ level: 1, move: "tackle" }], tm: [], egg: [], tutor: [] },
+  eggGroups: ["monster", CORE_TYPE_IDS.grass],
+  learnset: { levelUp: [{ level: 1, move: GEN8_MOVE_IDS.tackle }], tm: [], egg: [], tutor: [] },
   evolution: { from: null, to: [{ speciesId: 2, method: "level-up", level: 16 }] },
   dimensions: { height: 0.7, weight: 6.9 },
   spriteKey: "bulbasaur",
@@ -39,16 +52,16 @@ const charmander: PokemonSpeciesData = {
   id: 4,
   name: "charmander",
   displayName: "Charmander",
-  types: ["fire"],
+  types: [CORE_TYPE_IDS.fire],
   baseStats: { hp: 39, attack: 52, defense: 43, spAttack: 60, spDefense: 50, speed: 65 },
-  abilities: { normal: ["blaze"], hidden: "solar-power" },
+  abilities: { normal: [GEN8_ABILITY_IDS.blaze], hidden: GEN8_ABILITY_IDS.solarPower },
   genderRatio: 87.5,
   catchRate: 45,
   baseExp: 62,
   expGroup: "medium-slow",
   evYield: { speed: 1 },
-  eggGroups: ["monster", "dragon"],
-  learnset: { levelUp: [{ level: 1, move: "scratch" }], tm: [], egg: [], tutor: [] },
+  eggGroups: ["monster", CORE_TYPE_IDS.dragon],
+  learnset: { levelUp: [{ level: 1, move: GEN8_MOVE_IDS.scratch }], tm: [], egg: [], tutor: [] },
   evolution: { from: null, to: [{ speciesId: 5, method: "level-up", level: 16 }] },
   dimensions: { height: 0.6, weight: 8.5 },
   spriteKey: "charmander",
@@ -59,7 +72,7 @@ const charmander: PokemonSpeciesData = {
 };
 
 const tackle: MoveData = {
-  id: "tackle",
+  id: GEN8_MOVE_IDS.tackle,
   displayName: "Tackle",
   type: "normal",
   category: "physical",
@@ -93,7 +106,7 @@ const tackle: MoveData = {
 };
 
 const flamethrower: MoveData = {
-  id: "flamethrower",
+  id: GEN8_MOVE_IDS.flamethrower,
   displayName: "Flamethrower",
   type: "fire",
   category: "special",
@@ -127,7 +140,7 @@ const flamethrower: MoveData = {
 };
 
 const overgrow: AbilityData = {
-  id: "overgrow",
+  id: GEN8_ABILITY_IDS.overgrow,
   displayName: "Overgrow",
   description: "Powers up Grass-type moves when the Pokemon's HP is low.",
   triggers: ["on-hp-threshold"],
@@ -152,7 +165,7 @@ const potion: ItemData = {
 };
 
 const adamant: NatureData = {
-  id: "adamant",
+  id: ADAMANT_NATURE.id,
   displayName: "Adamant",
   increased: "attack",
   decreased: "spAttack",
@@ -161,7 +174,7 @@ const adamant: NatureData = {
 };
 
 const hardy: NatureData = {
-  id: "hardy",
+  id: HARDY_NATURE.id,
   displayName: "Hardy",
   increased: null,
   decreased: null,
@@ -666,15 +679,15 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-    it("given a loaded move id, when getMove is called, then it returns the matching move fixture", () => {
-      const move = dm.getMove("tackle");
+  it("given a loaded move id, when getMove is called, then it returns the matching move fixture", () => {
+      const move = dm.getMove(GEN8_MOVE_IDS.tackle);
       expect(move.displayName).toBe("Tackle");
       expect(move.power).toBe(tackle.power);
       expect(move.category).toBe("physical");
     });
 
-    it("returns move with effect data", () => {
-      const move = dm.getMove("flamethrower");
+  it("returns move with effect data", () => {
+      const move = dm.getMove(GEN8_MOVE_IDS.flamethrower);
       expect(move.effect).not.toBeNull();
       expect(move.effect?.type).toBe("status-chance");
     });
@@ -689,14 +702,16 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-    it("returns correct ability by id", () => {
-      const ability = dm.getAbility("overgrow");
+  it("returns correct ability by id", () => {
+      const ability = dm.getAbility(GEN8_ABILITY_IDS.overgrow);
       expect(ability.displayName).toBe("Overgrow");
       expect(ability.triggers).toContain("on-hp-threshold");
     });
 
-    it("throws for non-existent ability", () => {
-      expect(() => dm.getAbility("levitate")).toThrow('Ability "levitate" not found');
+  it("throws for non-existent ability", () => {
+      expect(() => dm.getAbility(GEN8_ABILITY_IDS.levitate)).toThrow(
+        `Ability "${GEN8_ABILITY_IDS.levitate}" not found`,
+      );
     });
   });
 
@@ -705,14 +720,16 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-    it("given a loaded item id, when getItem is called, then it returns the matching item fixture", () => {
-      const item = dm.getItem("potion");
+  it("given a loaded item id, when getItem is called, then it returns the matching item fixture", () => {
+      const item = dm.getItem(potion.id);
       expect(item.displayName).toBe("Potion");
       expect(item.price).toBe(potion.price);
     });
 
-    it("given an unknown item id, when getItem is called, then it throws a not-found error", () => {
-      expect(() => dm.getItem("master-ball")).toThrow('Item "master-ball" not found');
+  it("given an unknown item id, when getItem is called, then it throws a not-found error", () => {
+      expect(() => dm.getItem(GEN8_ITEM_IDS.masterBall)).toThrow(
+        `Item "${GEN8_ITEM_IDS.masterBall}" not found`,
+      );
     });
   });
 
@@ -721,20 +738,22 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-    it("given a loaded nature id, when getNature is called, then it returns the matching nature fixture", () => {
-      const nature = dm.getNature("adamant");
+  it("given a loaded nature id, when getNature is called, then it returns the matching nature fixture", () => {
+      const nature = dm.getNature(ADAMANT_NATURE.id);
       expect(nature.displayName).toBe("Adamant");
       expect(nature.increased).toBe("attack");
       expect(nature.decreased).toBe("spAttack");
     });
 
-    it("given a neutral nature id, when getNature is called, then both modified stats are null", () => {
-      const nature = dm.getNature("hardy");
+  it("given a neutral nature id, when getNature is called, then both modified stats are null", () => {
+      const nature = dm.getNature(HARDY_NATURE.id);
       expect(nature).toEqual(hardy);
     });
 
-    it("given an unknown nature id, when getNature is called, then it throws a not-found error", () => {
-      expect(() => dm.getNature("timid")).toThrow('Nature "timid" not found');
+  it("given an unknown nature id, when getNature is called, then it throws a not-found error", () => {
+      expect(() => dm.getNature(TIMID_NATURE.id)).toThrow(
+        `Nature "${TIMID_NATURE.id}" not found`,
+      );
     });
   });
 
@@ -769,26 +788,26 @@ describe("DataManager", () => {
   });
 
   describe("getAllMoves()", () => {
-    it("returns all loaded moves", () => {
+  it("returns all loaded moves", () => {
       dm.loadFromObjects(createFullData());
       const all = dm.getAllMoves();
       expect(all).toHaveLength(2);
       const ids = all.map((m) => m.id);
-      expect(ids).toContain("tackle");
-      expect(ids).toContain("flamethrower");
+      expect(ids).toContain(GEN8_MOVE_IDS.tackle);
+      expect(ids).toContain(GEN8_MOVE_IDS.flamethrower);
     });
   });
 
   describe("getAllAbilities()", () => {
-    it("given loaded ability data, when getAllAbilities is called, then it returns every loaded ability", () => {
+  it("given loaded ability data, when getAllAbilities is called, then it returns every loaded ability", () => {
       dm.loadFromObjects(createFullData());
       expect(dm.getAllAbilities()).toHaveLength(1);
-      expect(dm.getAllAbilities()[0].id).toBe("overgrow");
+      expect(dm.getAllAbilities()[0].id).toBe(GEN8_ABILITY_IDS.overgrow);
     });
   });
 
   describe("getAllItems()", () => {
-    it("given loaded item data, when getAllItems is called, then it returns every loaded item", () => {
+  it("given loaded item data, when getAllItems is called, then it returns every loaded item", () => {
       dm.loadFromObjects(createFullData());
       expect(dm.getAllItems()).toHaveLength(1);
       expect(dm.getAllItems()[0].id).toBe("potion");
@@ -824,7 +843,7 @@ describe("DataManager", () => {
     });
 
     it("given no loaded nature data, when getNature is called, then it throws", () => {
-      expect(() => dm.getNature(adamant.id)).toThrow();
+      expect(() => dm.getNature(ADAMANT_NATURE.id)).toThrow();
     });
 
     it("throws when getting type chart before loading", () => {

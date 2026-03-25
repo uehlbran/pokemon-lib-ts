@@ -1,4 +1,12 @@
-import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  type AbilityTrigger,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
+import { GEN2_ITEM_IDS } from "@pokemon-lib-ts/gen2";
 import { describe, expect, it } from "vitest";
 import type { AbilityContext, BattleConfig, EndOfTurnEffect } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -24,7 +32,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
       // Return multiple ability-dispatching EoT cases.
       // Before the fix, each of these would independently call
       // applyAbility("on-turn-end") for all active Pokemon.
-      return ["weather-healing", "shed-skin", "speed-boost"];
+      return ["weather-healing", CORE_ABILITY_IDS.shedSkin, CORE_ABILITY_IDS.speedBoost];
     }
 
     override hasAbilities(): boolean {
@@ -65,8 +73,8 @@ describe("Bug #484 — EoT ability deduplication", () => {
       createTestPokemon(6, 50, {
         uid: "ninjask-1",
         nickname: "Ninjask",
-        ability: "speed-boost",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        ability: CORE_ABILITY_IDS.speedBoost,
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -83,8 +91,8 @@ describe("Bug #484 — EoT ability deduplication", () => {
       createTestPokemon(9, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
-        ability: "thick-fat",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        ability: CORE_ABILITY_IDS.thickFat,
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -144,7 +152,13 @@ describe("Bug #484 — EoT ability deduplication", () => {
     // Arrange: use a ruleset that returns 5 ability-dispatching EoT cases
     class FiveAbilityCasesRuleset extends SpeedBoostMockRuleset {
       override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-        return ["weather-healing", "shed-skin", "poison-heal", "bad-dreams", "speed-boost"];
+        return [
+          "weather-healing",
+          CORE_ABILITY_IDS.shedSkin,
+          CORE_ABILITY_IDS.poisonHeal,
+          CORE_ABILITY_IDS.badDreams,
+          CORE_ABILITY_IDS.speedBoost,
+        ];
       }
     }
 
@@ -156,8 +170,8 @@ describe("Bug #484 — EoT ability deduplication", () => {
       createTestPokemon(6, 50, {
         uid: "ninjask-1",
         nickname: "Ninjask",
-        ability: "speed-boost",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        ability: CORE_ABILITY_IDS.speedBoost,
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -174,8 +188,8 @@ describe("Bug #484 — EoT ability deduplication", () => {
       createTestPokemon(9, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
-        ability: "thick-fat",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        ability: CORE_ABILITY_IDS.thickFat,
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -227,7 +241,7 @@ describe("Bug #494 — Uproar wake condition", () => {
    */
   class UproarMockRuleset extends MockRuleset {
     override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-      return ["uproar"];
+      return [CORE_VOLATILE_IDS.uproar];
     }
   }
 
@@ -241,7 +255,7 @@ describe("Bug #494 — Uproar wake condition", () => {
       createTestPokemon(6, 50, {
         uid: "exploud-1",
         nickname: "Exploud",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -259,8 +273,8 @@ describe("Bug #494 — Uproar wake condition", () => {
       createTestPokemon(9, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
-        status: "sleep",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        status: CORE_STATUS_IDS.sleep,
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -298,13 +312,13 @@ describe("Bug #494 — Uproar wake condition", () => {
 
     // Manually set up uproar volatile with 1 turn left on side 0's active Pokemon
     const side0Active = engine.getState().sides[0].active[0]!;
-    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 1 });
+    side0Active.volatileStatuses.set(CORE_VOLATILE_IDS.uproar, { turnsLeft: 1 });
 
     // Ensure side 1 is asleep with enough sleep counter turns to stay asleep
     // through the turn resolution (processSleepTurn checks this volatile)
     const side1Active = engine.getState().sides[1].active[0]!;
-    side1Active.pokemon.status = "sleep";
-    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
+    side1Active.pokemon.status = CORE_STATUS_IDS.sleep;
+    side1Active.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 5 });
 
     // Act: both sides use tackle, which triggers EoT processing
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -314,7 +328,7 @@ describe("Bug #494 — Uproar wake condition", () => {
     // by the uproar handler (sleep-cure events from normal turn processing are
     // separate; we check that no uproar-sourced wake happened)
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && e.volatile === "uproar",
+      (e) => e.type === "volatile-end" && e.volatile === CORE_VOLATILE_IDS.uproar,
     );
     expect(volatileEndEvents.length).toBe(1);
 
@@ -329,7 +343,7 @@ describe("Bug #494 — Uproar wake condition", () => {
     expect(wakeMessages.length).toBe(0);
 
     // The opponent should still be asleep (the uproar handler should not have woken it)
-    expect(side1Active.pokemon.status).toBe("sleep");
+    expect(side1Active.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
   });
 
   it("given a Pokemon with uproar (2 turns remaining) and an asleep opponent, when the turn ends (uproar still active), then the opponent IS woken up", () => {
@@ -341,12 +355,12 @@ describe("Bug #494 — Uproar wake condition", () => {
 
     // Set up uproar volatile with 2 turns left (will go to 1, still active)
     const side0Active = engine.getState().sides[0].active[0]!;
-    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 2 });
+    side0Active.volatileStatuses.set(CORE_VOLATILE_IDS.uproar, { turnsLeft: 2 });
 
     // Ensure side 1 is asleep with enough turns to stay asleep through turn processing
     const side1Active = engine.getState().sides[1].active[0]!;
-    side1Active.pokemon.status = "sleep";
-    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
+    side1Active.pokemon.status = CORE_STATUS_IDS.sleep;
+    side1Active.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 5 });
 
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -354,7 +368,7 @@ describe("Bug #494 — Uproar wake condition", () => {
 
     // Assert: uproar is still active (no volatile-end emitted)
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && e.volatile === "uproar",
+      (e) => e.type === "volatile-end" && e.volatile === CORE_VOLATILE_IDS.uproar,
     );
     expect(volatileEndEvents.length).toBe(0);
 
@@ -384,7 +398,7 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
     }
 
     override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-      return ["mystery-berry"];
+        return [GEN2_ITEM_IDS.mysteryBerry];
     }
   }
 
@@ -397,10 +411,10 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        heldItem: "mystery-berry",
+        heldItem: GEN2_ITEM_IDS.mysteryBerry,
         moves: [
-          { moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 },
-          { moveId: "growl", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: CORE_MOVE_IDS.tackle, currentPP: 0, maxPP: 35, ppUps: 0 },
+          { moveId: CORE_MOVE_IDS.growl, currentPP: 35, maxPP: 35, ppUps: 0 },
         ],
         calculatedStats: {
           hp: 200,
@@ -418,7 +432,7 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -460,7 +474,7 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
     if (itemConsumed?.type === "item-consumed") {
       expect(itemConsumed.side).toBe(0);
       expect(itemConsumed.pokemon).toBe("Charizard");
-      expect(itemConsumed.item).toBe("mystery-berry");
+      expect(itemConsumed.item).toBe(GEN2_ITEM_IDS.mysteryBerry);
     }
 
     const active = engine.state.sides[0].active[0];
@@ -497,7 +511,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
     }
 
     override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-      return ["uproar"];
+      return [CORE_VOLATILE_IDS.uproar];
     }
   }
 
@@ -511,7 +525,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -528,7 +542,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -562,12 +576,12 @@ describe("Bug #514 — Uproar + Soundproof", () => {
 
     // Set up: side 0 has uproar active, side 1 is asleep with Soundproof
     const side0Active = engine.getState().sides[0].active[0]!;
-    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 2 });
+    side0Active.volatileStatuses.set(CORE_VOLATILE_IDS.uproar, { turnsLeft: 2 });
 
     const side1Active = engine.getState().sides[1].active[0]!;
-    side1Active.pokemon.status = "sleep";
-    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
-    side1Active.ability = "soundproof";
+    side1Active.pokemon.status = CORE_STATUS_IDS.sleep;
+    side1Active.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 5 });
+    side1Active.ability = CORE_ABILITY_IDS.soundproof;
 
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -575,7 +589,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
 
     // Assert — Soundproof blocks uproar wake-up; Pokemon remains asleep
     // Source: Bulbapedia — Soundproof blocks sound-based effects including Uproar
-    expect(side1Active.pokemon.status).toBe("sleep");
+    expect(side1Active.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
 
     // No uproar-specific wake message for the Soundproof Pokemon
     const uproarWakeMessages = events.filter(
@@ -595,12 +609,12 @@ describe("Bug #514 — Uproar + Soundproof", () => {
 
     // Set up: side 0 has uproar active, side 1 is asleep without Soundproof
     const side0Active = engine.getState().sides[0].active[0]!;
-    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 2 });
+    side0Active.volatileStatuses.set(CORE_VOLATILE_IDS.uproar, { turnsLeft: 2 });
 
     const side1Active = engine.getState().sides[1].active[0]!;
-    side1Active.pokemon.status = "sleep";
-    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
-    side1Active.ability = "torrent"; // Not soundproof
+    side1Active.pokemon.status = CORE_STATUS_IDS.sleep;
+    side1Active.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 5 });
+    side1Active.ability = CORE_ABILITY_IDS.torrent; // Not soundproof
 
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -627,13 +641,13 @@ describe("Bug #514 — Uproar + Soundproof", () => {
 
     // Set up: side 0 has uproar active, side 1 is asleep
     const side0Active = engine.getState().sides[0].active[0]!;
-    side0Active.volatileStatuses.set("uproar" as any, { turnsLeft: 2 });
+    side0Active.volatileStatuses.set(CORE_VOLATILE_IDS.uproar, { turnsLeft: 2 });
 
     const side1Active = engine.getState().sides[1].active[0]!;
-    side1Active.pokemon.status = "sleep";
-    side1Active.volatileStatuses.set("sleep-counter" as any, { turnsLeft: 5 });
+    side1Active.pokemon.status = CORE_STATUS_IDS.sleep;
+    side1Active.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 5 });
     // Even if ability field is set, hasAbilities() returns false
-    side1Active.ability = "soundproof";
+    side1Active.ability = CORE_ABILITY_IDS.soundproof;
 
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

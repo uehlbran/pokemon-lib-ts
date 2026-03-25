@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ALL_NATURES, CORE_ABILITY_IDS } from "../../../src";
 import type { NatureData } from "../../../src/entities/nature";
 import type { PokemonInstance } from "../../../src/entities/pokemon";
 import type { PokemonSpeciesData } from "../../../src/entities/species";
@@ -11,39 +12,16 @@ import {
 } from "../../../src/logic/stat-calc";
 
 // --- Test Nature Data ---
-const TIMID: NatureData = {
-  id: "timid",
-  displayName: "Timid",
-  increased: "speed",
-  decreased: "attack",
-  likedFlavor: "sweet",
-  dislikedFlavor: "spicy",
-};
-
-const JOLLY: NatureData = {
-  id: "jolly",
-  displayName: "Jolly",
-  increased: "speed",
-  decreased: "spAttack",
-  likedFlavor: "sweet",
-  dislikedFlavor: "dry",
-};
-
-const HARDY: NatureData = {
-  id: "hardy",
-  displayName: "Hardy",
-  increased: null,
-  decreased: null,
-  likedFlavor: null,
-  dislikedFlavor: null,
-};
+const TIMID = ALL_NATURES.find((nature) => nature.displayName === "Timid") as NatureData;
+const JOLLY = ALL_NATURES.find((nature) => nature.displayName === "Jolly") as NatureData;
+const HARDY = ALL_NATURES.find((nature) => nature.displayName === "Hardy") as NatureData;
 
 // --- Helper: create partial PokemonInstance for stat calc ---
 function makeInstance(
   level: number,
   ivs: StatBlock,
   evs: StatBlock,
-  nature: string,
+  nature: PokemonInstance["nature"],
 ): PokemonInstance {
   return {
     uid: "test",
@@ -51,12 +29,12 @@ function makeInstance(
     nickname: null,
     level,
     experience: 0,
-    nature: nature as PokemonInstance["nature"],
+    nature,
     ivs,
     evs: { ...evs },
     currentHp: 0,
     moves: [],
-    ability: "blaze",
+    ability: CORE_ABILITY_IDS.blaze,
     abilitySlot: "normal1",
     heldItem: null,
     status: null,
@@ -238,7 +216,7 @@ describe("calculateAllStats", () => {
       50,
       ALL_31_IVS,
       { hp: 0, attack: 0, defense: 0, spAttack: 252, spDefense: 4, speed: 252 },
-      "timid",
+      TIMID.id,
     );
 
     const stats = calculateAllStats(pokemon, charizardSpecies, TIMID);
@@ -256,7 +234,7 @@ describe("calculateAllStats", () => {
       100,
       ALL_31_IVS,
       { hp: 0, attack: 0, defense: 0, spAttack: 252, spDefense: 4, speed: 252 },
-      "timid",
+      TIMID.id,
     );
 
     const stats = calculateAllStats(pokemon, charizardSpecies, TIMID);
@@ -285,7 +263,7 @@ describe("calculateAllStats", () => {
       50,
       ALL_31_IVS,
       { hp: 252, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 252 },
-      "jolly",
+      JOLLY.id,
     );
 
     const stats = calculateAllStats(pokemon, pikachuSpecies, JOLLY);
@@ -315,7 +293,7 @@ describe("calculateAllStats", () => {
       50,
       ALL_31_IVS,
       { hp: 252, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      "hardy",
+      HARDY.id,
     );
 
     const stats = calculateAllStats(pokemon, shedinjaSpecies, HARDY);
@@ -340,7 +318,7 @@ describe("calculateAllStats", () => {
       50,
       ALL_31_IVS,
       { hp: 252, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      "hardy",
+      HARDY.id,
     );
 
     const stats = calculateAllStats(pokemon, customSpecies, HARDY);

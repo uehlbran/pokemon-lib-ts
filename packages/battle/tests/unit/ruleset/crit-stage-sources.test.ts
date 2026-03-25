@@ -1,4 +1,8 @@
 import type { Generation, MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { GEN1_MOVE_IDS } from "@pokemon-lib-ts/gen1";
+import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS } from "@pokemon-lib-ts/gen4";
+import { GEN8_ITEM_IDS } from "@pokemon-lib-ts/gen8";
 import { describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
@@ -24,26 +28,7 @@ class TestRuleset extends BaseRuleset {
   }
 
   getAvailableTypes(): readonly PokemonType[] {
-    return [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
-      "fairy",
-    ];
+    return Object.values(CORE_TYPE_IDS);
   }
 
   calculateDamage(_context: DamageContext): DamageResult {
@@ -54,9 +39,9 @@ class TestRuleset extends BaseRuleset {
 /** Create a minimal MoveData with optional critRatio */
 function createTestMove(overrides?: Partial<MoveData>): MoveData {
   return {
-    id: "tackle",
+    id: CORE_MOVE_IDS.tackle,
     displayName: "Tackle",
-    type: "normal" as const,
+    type: CORE_TYPE_IDS.normal,
     category: "physical" as const,
     power: 40,
     accuracy: 100,
@@ -139,9 +124,9 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Gen 6+ crit table: [24, 8, 2, 1] — stage 1 uses rate 8.
     const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     const move = createTestMove({
-      id: "slash",
+      id: GEN1_MOVE_IDS.slash,
       displayName: "Slash",
       critRatio: 1,
     });
@@ -159,8 +144,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Scope Lens gives +1 crit stage
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(6, 50, { heldItem: "scope-lens" });
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const pokemon = createTestPokemon(6, 50, { heldItem: GEN4_ITEM_IDS.scopeLens });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     const move = createTestMove();
 
     // Act & Assert
@@ -176,8 +161,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Razor Claw gives +1 crit stage (same as Scope Lens)
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(6, 50, { heldItem: "razor-claw" });
-    const active = createActivePokemon(pokemon, 0, ["normal"]);
+    const pokemon = createTestPokemon(6, 50, { heldItem: GEN4_ITEM_IDS.razorClaw });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.normal]);
     const move = createTestMove();
 
     // Act & Assert
@@ -193,8 +178,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Super Luck gives +1 crit stage
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(6, 50, { ability: "super-luck" });
-    const active = createActivePokemon(pokemon, 0, ["dark", "flying"]);
+    const pokemon = createTestPokemon(6, 50, { ability: GEN4_ABILITY_IDS.superLuck });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.dark, CORE_TYPE_IDS.flying]);
     const move = createTestMove();
 
     // Act & Assert
@@ -210,8 +195,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Leek/Stick on Farfetch'd (speciesId=83) gives +2 crit stage
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(83, 50, { heldItem: "leek" });
-    const active = createActivePokemon(pokemon, 0, ["normal", "flying"]);
+    const pokemon = createTestPokemon(83, 50, { heldItem: GEN8_ITEM_IDS.leek });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying]);
     const move = createTestMove();
 
     // Act & Assert
@@ -227,8 +212,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Leek on Sirfetch'd (speciesId=865) gives +2 crit stage
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(865, 50, { heldItem: "leek" });
-    const active = createActivePokemon(pokemon, 0, ["fighting"]);
+    const pokemon = createTestPokemon(865, 50, { heldItem: GEN8_ITEM_IDS.leek });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fighting]);
     const move = createTestMove();
 
     // Act & Assert
@@ -244,8 +229,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown — Leek only gives bonus to Farfetch'd (83) and Sirfetch'd (865)
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(6, 50, { heldItem: "leek" });
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const pokemon = createTestPokemon(6, 50, { heldItem: GEN8_ITEM_IDS.leek });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     const move = createTestMove();
 
     // Act & Assert
@@ -261,8 +246,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown sim/battle-actions.ts — Lucky Punch on Chansey (speciesId=113) gives +2 crit stage
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(113, 50, { heldItem: "lucky-punch" });
-    const active = createActivePokemon(pokemon, 0, ["normal"]);
+    const pokemon = createTestPokemon(113, 50, { heldItem: GEN4_ITEM_IDS.luckyPunch });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.normal]);
     const move = createTestMove();
 
     // Act & Assert
@@ -278,8 +263,8 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Arrange
     // Source: Showdown — Lucky Punch only gives bonus to Chansey (speciesId=113)
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(6, 50, { heldItem: "lucky-punch" });
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const pokemon = createTestPokemon(6, 50, { heldItem: GEN4_ITEM_IDS.luckyPunch });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     const move = createTestMove();
 
     // Act & Assert
@@ -296,11 +281,11 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Source: Showdown sim/battle-actions.ts — stages stack: focus-energy (+2) + critRatio (+1) + Scope Lens (+1) = 4
     // Gen 6+ crit table: stage 3+ = rate 1 = always crit
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(6, 50, { heldItem: "scope-lens" });
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
-    active.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
+    const pokemon = createTestPokemon(6, 50, { heldItem: GEN4_ITEM_IDS.scopeLens });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
+    active.volatileStatuses.set(GEN1_MOVE_IDS.focusEnergy, { turnsLeft: -1 });
     const move = createTestMove({
-      id: "slash",
+      id: GEN1_MOVE_IDS.slash,
       displayName: "Slash",
       critRatio: 1,
     });
@@ -319,9 +304,9 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Source: Showdown — focus-energy (+2) + Super Luck (+1) = stage 3
     // Gen 6+ crit table: stage 3 = rate 1 = always crit
     const ruleset = new TestRuleset();
-    const pokemon = createTestPokemon(6, 50, { ability: "super-luck" });
-    const active = createActivePokemon(pokemon, 0, ["dark", "flying"]);
-    active.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
+    const pokemon = createTestPokemon(6, 50, { ability: GEN4_ABILITY_IDS.superLuck });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.dark, CORE_TYPE_IDS.flying]);
+    active.volatileStatuses.set(GEN1_MOVE_IDS.focusEnergy, { turnsLeft: -1 });
     const move = createTestMove();
 
     // Act & Assert
@@ -338,7 +323,7 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Source: Gen 6+ crit stage table — stage 0 uses rate 24.
     const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     const move = createTestMove();
 
     // Act & Assert
@@ -355,7 +340,7 @@ describe("rollCritical — crit stage sources (issue #86)", () => {
     // Regression test: a move without critRatio should get no crit stage bonus
     const ruleset = new TestRuleset();
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     const move = createTestMove(); // no critRatio field
 
     // Act & Assert

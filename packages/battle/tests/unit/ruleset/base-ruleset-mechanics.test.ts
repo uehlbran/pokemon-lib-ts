@@ -15,8 +15,19 @@
  *
  * Source authority: Showdown sim/battle-actions.ts, data/conditions.ts, data/moves.ts, data/items.ts
  */
-import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  type Generation,
+  type PokemonType,
+  type TypeChart,
+} from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
@@ -41,26 +52,7 @@ class TestRuleset extends BaseRuleset {
   }
 
   getAvailableTypes(): readonly PokemonType[] {
-    return [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
-      "fairy",
-    ];
+    return Object.values(CORE_TYPE_IDS);
   }
 
   calculateDamage(_context: DamageContext): DamageResult {
@@ -74,24 +66,24 @@ const emptyState = {} as unknown as BattleState;
 // Source: Showdown sim/battle-actions.ts residualOrder values from
 // data/conditions.ts, data/moves.ts, data/items.ts.
 const EXPECTED_END_OF_TURN_ORDER = [
-  "future-attack",
-  "wish",
-  "weather-damage",
-  "leftovers",
-  "black-sludge",
-  "ingrain",
-  "leech-seed",
-  "status-damage",
-  "nightmare",
-  "curse",
-  "bind",
-  "perish-song",
-  "screen-countdown",
-  "weather-countdown",
-  "terrain-countdown",
-  "tailwind-countdown",
-  "trick-room-countdown",
-  "encore-countdown",
+  CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+  CORE_END_OF_TURN_EFFECT_IDS.wish,
+  CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+  CORE_ITEM_IDS.leftovers,
+  CORE_ITEM_IDS.blackSludge,
+  CORE_VOLATILE_IDS.ingrain,
+  CORE_VOLATILE_IDS.leechSeed,
+  CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+  CORE_VOLATILE_IDS.nightmare,
+  CORE_VOLATILE_IDS.curse,
+  CORE_MOVE_IDS.bind,
+  CORE_MOVE_IDS.perishSong,
+  CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
 ] as const;
 
 function createChanceCapturingRng() {
@@ -122,7 +114,7 @@ describe("BaseRuleset — rollMultiHitCount", () => {
     //   randomChance(35,65) → 3 hits, randomChance(15,30) → 4 hits, else 5 hits
     // Distribution: 35% = 2 hits, 35% = 3 hits, 15% = 4 hits, 15% = 5 hits
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
     const counts = { 2: 0, 3: 0, 4: 0, 5: 0 };
 
@@ -148,8 +140,8 @@ describe("BaseRuleset — rollMultiHitCount", () => {
   it("given an attacker with skill-link ability, when rollMultiHitCount is called, then always returns 5 hits", () => {
     // Arrange
     // Source: Showdown — Skill Link always hits 5 times for multi-hit moves
-    const pokemon = createTestPokemon(6, 50, { ability: "skill-link" });
-    const active = createActivePokemon(pokemon, 0, ["normal"]);
+    const pokemon = createTestPokemon(6, 50, { ability: CORE_ABILITY_IDS.skillLink });
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.normal]);
     const rng = new SeededRandom(42);
 
     // Act — verify 10 consecutive calls all return 5
@@ -163,7 +155,7 @@ describe("BaseRuleset — rollMultiHitCount", () => {
     // Arrange
     // Source: multi-hit move mechanics — Clamp 2 is the minimum, 5 is the maximum
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(99999);
 
     // Act & Assert
@@ -368,7 +360,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -399,7 +391,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 130,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -419,7 +411,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
     //   finalDamage = max(1, floor(10 * 94 / 100)) = max(1, floor(9.4)) = 9
     const pokemon = createTestPokemon(6, 50, {
-      status: "burn",
+      status: CORE_STATUS_IDS.burn,
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -429,7 +421,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -457,7 +449,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     active.statStages.attack = 6;
     const rng = new SeededRandom(42);
 
@@ -494,7 +486,7 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       0,
-      ["fire"],
+      [CORE_TYPE_IDS.fire],
     );
     const defender = createActivePokemon(
       createTestPokemon(9, 50, {
@@ -508,7 +500,7 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       1,
-      ["water"],
+      [CORE_TYPE_IDS.water],
     );
 
     // Act
@@ -541,7 +533,7 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       0,
-      ["fire"],
+      [CORE_TYPE_IDS.fire],
     );
     const defender = createActivePokemon(
       createTestPokemon(9, 100, {
@@ -555,7 +547,7 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       1,
-      ["water"],
+      [CORE_TYPE_IDS.water],
     );
 
     // Act
@@ -587,7 +579,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(active, 80); // damageDealt=80 (unused in Gen 4+)
@@ -609,7 +601,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(active, 30); // damageDealt ignored in Gen 4+
@@ -631,7 +623,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act — same attacker, different damageDealt values
     const recoil1 = ruleset.calculateStruggleRecoil(active, 10);
@@ -664,7 +656,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const damage = ruleset.calculateBindDamage(active);
@@ -686,7 +678,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const damage = ruleset.calculateBindDamage(active);
@@ -708,8 +700,8 @@ describe("BaseRuleset — processPerishSong", () => {
     // Source: Showdown data/moves.ts — perishsong: duration 4, onResidualOrder 24
     //   Counter counts down from 3 to 0, faint when reaching 0
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
-    active.volatileStatuses.set("perish-song", {
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 3 },
     });
@@ -726,8 +718,8 @@ describe("BaseRuleset — processPerishSong", () => {
     // Arrange
     // Source: Bulbapedia — Perish Song counts down 3, 2, 1, 0 then faints
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
-    active.volatileStatuses.set("perish-song", {
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 2 },
     });
@@ -745,8 +737,8 @@ describe("BaseRuleset — processPerishSong", () => {
     // Source: Bulbapedia — Perish Song: at the end of the 3rd turn after use, the Pokemon faints
     //   Counter reaches 0 (from 1) → faint
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
-    active.volatileStatuses.set("perish-song", {
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 1 },
     });
@@ -762,7 +754,7 @@ describe("BaseRuleset — processPerishSong", () => {
   it("given a pokemon without perish-song volatile, when processPerishSong is called, then returns safe no-op values", () => {
     // Arrange
     const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     // No perish-song volatile set
 
     // Act
@@ -797,15 +789,15 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     id: 6,
     name: "charizard",
     displayName: "Charizard",
-    types: ["fire", "flying"] as const,
+    types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying] as const,
     baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
-    abilities: { normal: ["blaze"], hidden: "solar-power" },
+    abilities: { normal: [CORE_ABILITY_IDS.blaze], hidden: CORE_ABILITY_IDS.solarPower },
     genderRatio: 87.5,
     catchRate: 45,
     baseExp: 240,
     expGroup: "medium-slow" as const,
     evYield: { spAttack: 3 },
-    eggGroups: ["monster", "dragon"],
+    eggGroups: ["monster", CORE_TYPE_IDS.dragon],
     learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
     evolution: null,
     dimensions: { height: 1.7, weight: 90.5 },

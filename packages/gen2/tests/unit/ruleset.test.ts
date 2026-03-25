@@ -12,10 +12,80 @@ import type {
   PokemonType,
   PrimaryStatus,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GIMMICK_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
-import { createGen2DataManager } from "../../src/data";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS } from "../../src";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
+
+const {
+  bug,
+  dark,
+  dragon,
+  electric,
+  fighting,
+  fire,
+  flying,
+  ghost,
+  grass,
+  ground,
+  ice,
+  normal,
+  poison: poisonType,
+  psychic,
+  rock,
+  steel,
+  water,
+} = CORE_TYPE_IDS;
+const { freeze, burn, badlyPoisoned, paralysis, poison, sleep } = CORE_STATUS_IDS;
+const { spikes, stealthRock, toxicSpikes } = CORE_HAZARD_IDS;
+const { mega } = CORE_GIMMICK_IDS;
+const { leftovers } = CORE_ITEM_IDS;
+const { bind, leechSeed, perishSong } = CORE_MOVE_IDS;
+const { confusion, curse, flinch, nightmare, protect, sleepCounter, toxicCounter, trapped } =
+  CORE_VOLATILE_IDS;
+const {
+  defrost,
+  disableCountdown,
+  encoreCountdown,
+  futureAttack,
+  healingItems,
+  screenCountdown,
+  statBoostingItems,
+  statusDamage,
+  weatherCountdown,
+  weatherDamage,
+} = CORE_END_OF_TURN_EFFECT_IDS;
+const { charcoal, mysteryBerry, quickClaw } = GEN2_ITEM_IDS;
+const { quickAttack, tackle } = GEN2_MOVE_IDS;
+const TEST_DATA_MANAGER = createGen2DataManager();
+const GEN2_WEATHER_IDS = {
+  sand: "sand" as const,
+  rain: CORE_WEATHER_IDS.rain,
+} as const;
+
+function createGen2MoveSlot(
+  moveId: string,
+  overrides: Partial<{ pp: number; maxPp: number }> = {},
+): { moveId: string; pp: number; maxPp: number } {
+  const moveData = TEST_DATA_MANAGER.getMove(moveId);
+
+  return {
+    moveId,
+    pp: overrides.pp ?? moveData.pp,
+    maxPp: overrides.maxPp ?? moveData.pp,
+  };
+}
 
 /**
  * Helper to create a minimal ActivePokemon mock for testing.
@@ -49,7 +119,7 @@ function createMockActive(
       nickname: overrides.nickname ?? null,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: overrides.moves ?? [createGen2MoveSlot(tackle)],
       calculatedStats: {
         hp: maxHp,
         attack: overrides.attack ?? 100,
@@ -71,7 +141,7 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
+    types: (overrides.types as unknown as PokemonType[]) ?? [normal],
     ability: "",
     lastMoveUsed: null,
     turnsOnField: 0,
@@ -132,23 +202,23 @@ function createMockState(
 }
 
 const EXPECTED_GEN2_TYPES = [
-  "normal",
-  "fire",
-  "water",
-  "electric",
-  "grass",
-  "ice",
-  "fighting",
-  "poison",
-  "ground",
-  "flying",
-  "psychic",
-  "bug",
-  "rock",
-  "ghost",
-  "dragon",
-  "dark",
-  "steel",
+  normal,
+  fire,
+  water,
+  electric,
+  grass,
+  ice,
+  fighting,
+  poisonType,
+  ground,
+  flying,
+  psychic,
+  bug,
+  rock,
+  ghost,
+  dragon,
+  dark,
+  steel,
 ] as const;
 
 describe("Gen2Ruleset", () => {
@@ -224,14 +294,14 @@ describe("Gen2Ruleset", () => {
       // Act
       const hazards = ruleset.getAvailableHazards();
       // Assert
-      expect(hazards).toEqual(["spikes"]);
+      expect(hazards).toEqual([spikes]);
     });
 
     it("given Gen 2 ruleset, when requesting a battle gimmick, then it returns null because Gen 2 has none", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       // Act / Assert
-      expect(ruleset.getBattleGimmick("mega")).toEqual(null);
+      expect(ruleset.getBattleGimmick(mega)).toEqual(null);
     });
 
     it("given Gen 2 ruleset, when getting end-of-turn order, then it matches pokecrystal HandleBetweenTurnEffects phase 2", () => {
@@ -243,20 +313,20 @@ describe("Gen2Ruleset", () => {
       const order = ruleset.getEndOfTurnOrder();
       // Assert: complete decomp order including previously-missing effects
       expect(order).toEqual([
-        "future-attack",
-        "weather-damage",
-        "weather-countdown",
-        "bind",
-        "perish-song",
-        "leftovers",
-        "mystery-berry",
-        "defrost",
+        futureAttack,
+        weatherDamage,
+        weatherCountdown,
+        bind,
+        perishSong,
+        leftovers,
+        mysteryBerry,
+        defrost,
         // safeguard-countdown removed: Safeguard is stored as a ScreenType and handled by screen-countdown
-        "screen-countdown",
-        "stat-boosting-items",
-        "healing-items",
-        "disable-countdown",
-        "encore-countdown",
+        screenCountdown,
+        statBoostingItems,
+        healingItems,
+        disableCountdown,
+        encoreCountdown,
       ]);
     });
 
@@ -267,7 +337,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const order = ruleset.getPostAttackResidualOrder();
       // Assert
-      expect(order).toEqual(["status-damage", "leech-seed", "nightmare", "curse"]);
+      expect(order).toEqual([statusDamage, leechSeed, nightmare, curse]);
     });
 
     it("given Gen 2 ruleset, when getting the crit rate table, then it returns the five Gen 2 stage thresholds", () => {
@@ -302,7 +372,7 @@ describe("Gen2Ruleset", () => {
       // pre-move, so it must always return false for Gen 2.
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockActive = createMockActive({ status: "freeze" });
+      const mockActive = createMockActive({ status: freeze });
       const rng = new SeededRandom(42);
 
       // Act
@@ -316,7 +386,7 @@ describe("Gen2Ruleset", () => {
       // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockActive = createMockActive({ status: "freeze" });
+      const mockActive = createMockActive({ status: freeze });
       const rng = new SeededRandom(42);
 
       // Act
@@ -352,9 +422,9 @@ describe("Gen2Ruleset", () => {
     it("given a sleep-counter of 1 turn, when the sleep turn resolves, then the Pokemon wakes up and can act", () => {
       // Given a Pokemon that will wake up this turn (turnsLeft = 1)
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: "sleep" });
-      mockActivePokemon.pokemon.status = "sleep";
-      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+      const mockActivePokemon = createMockActive({ status: sleep });
+      mockActivePokemon.pokemon.status = sleep;
+      mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 1 });
       const mockState = createMockState(
         createMockSide(0, mockActivePokemon),
         createMockSide(1, createMockActive()),
@@ -366,15 +436,15 @@ describe("Gen2Ruleset", () => {
       // Then the Pokemon wakes up and CAN act (Gen 2 behavior)
       expect(result).toBe(true);
       expect(mockActivePokemon.pokemon.status).toBeNull();
-      expect(mockActivePokemon.volatileStatuses.has("sleep-counter")).toBe(false);
+      expect(mockActivePokemon.volatileStatuses.has(sleepCounter)).toBe(false);
     });
 
     it("given more than 1 sleep turn remaining, when the sleep turn resolves, then the Pokemon stays asleep", () => {
       // Given a Pokemon with multiple sleep turns left
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: "sleep" });
-      mockActivePokemon.pokemon.status = "sleep";
-      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+      const mockActivePokemon = createMockActive({ status: sleep });
+      mockActivePokemon.pokemon.status = sleep;
+      mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 3 });
       const mockState = createMockState(
         createMockSide(0, mockActivePokemon),
         createMockSide(1, createMockActive()),
@@ -385,16 +455,16 @@ describe("Gen2Ruleset", () => {
 
       // Then the Pokemon is still asleep and cannot act
       expect(result).toBe(false);
-      expect(mockActivePokemon.pokemon.status).toBe("sleep");
-      expect(mockActivePokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
+      expect(mockActivePokemon.pokemon.status).toBe(sleep);
+      expect(mockActivePokemon.volatileStatuses.get(sleepCounter)?.turnsLeft).toBe(2);
     });
 
     it("given exactly 1 sleep turn remaining, when the sleep turn resolves, then the Pokemon wakes up", () => {
       // Given a Pokemon with 1 turn of sleep remaining
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: "sleep" });
-      mockActivePokemon.pokemon.status = "sleep";
-      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+      const mockActivePokemon = createMockActive({ status: sleep });
+      mockActivePokemon.pokemon.status = sleep;
+      mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 1 });
       const mockState = createMockState(
         createMockSide(0, mockActivePokemon),
         createMockSide(1, createMockActive()),
@@ -411,9 +481,9 @@ describe("Gen2Ruleset", () => {
     it("given a sleep counter already at 0, when the sleep turn resolves, then the Pokemon wakes up immediately", () => {
       // Given a Pokemon with 0 turns of sleep remaining
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: "sleep" });
-      mockActivePokemon.pokemon.status = "sleep";
-      mockActivePokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
+      const mockActivePokemon = createMockActive({ status: sleep });
+      mockActivePokemon.pokemon.status = sleep;
+      mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 0 });
       const mockState = createMockState(
         createMockSide(0, mockActivePokemon),
         createMockSide(1, createMockActive()),
@@ -434,8 +504,8 @@ describe("Gen2Ruleset", () => {
     it("given one layer of Spikes, when a grounded Pokemon switches in, then it takes floor(maxHp/8) damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 320, types: ["normal"] });
-      const side = createMockSide(0, pokemon, [{ type: "spikes", layers: 1 }]);
+      const pokemon = createMockActive({ maxHp: 320, types: [normal] });
+      const side = createMockSide(0, pokemon, [{ type: spikes, layers: 1 }]);
 
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -448,8 +518,8 @@ describe("Gen2Ruleset", () => {
     it("given a Flying-type Pokemon, when it switches into Spikes, then it takes no damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 320, types: ["flying", "normal"] });
-      const side = createMockSide(0, pokemon, [{ type: "spikes", layers: 1 }]);
+      const pokemon = createMockActive({ maxHp: 320, types: [flying, normal] });
+      const side = createMockSide(0, pokemon, [{ type: spikes, layers: 1 }]);
 
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -461,8 +531,8 @@ describe("Gen2Ruleset", () => {
     it("given 1 max HP, when a grounded Pokemon switches into Spikes, then it still takes 1 damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 1, types: ["normal"] });
-      const side = createMockSide(0, pokemon, [{ type: "spikes", layers: 1 }]);
+      const pokemon = createMockActive({ maxHp: 1, types: [normal] });
+      const side = createMockSide(0, pokemon, [{ type: spikes, layers: 1 }]);
 
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -474,7 +544,7 @@ describe("Gen2Ruleset", () => {
     it("given no Spikes on the field, when a Pokemon switches in, then it takes no hazard damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 320, types: ["normal"] });
+      const pokemon = createMockActive({ maxHp: 320, types: [normal] });
       const side = createMockSide(0, pokemon);
 
       // Act
@@ -492,21 +562,21 @@ describe("Gen2Ruleset", () => {
       // Source: pret/pokecrystal — Gen 2 introduced Spikes with only a single layer.
       // Multi-layer Spikes were not introduced until Gen 3.
       const ruleset = new Gen2Ruleset();
-      expect(ruleset.getMaxHazardLayers("spikes")).toBe(1);
+      expect(ruleset.getMaxHazardLayers(spikes)).toBe(1);
     });
 
     it("given toxic-spikes in Gen 2, when querying max layers, then returns 1", () => {
       // Toxic Spikes do not exist in Gen 2 — returning 1 as a safe fallback.
       // Source: Bulbapedia — Toxic Spikes introduced in Generation IV (Diamond/Pearl).
       const ruleset = new Gen2Ruleset();
-      expect(ruleset.getMaxHazardLayers("toxic-spikes")).toBe(1);
+      expect(ruleset.getMaxHazardLayers(toxicSpikes)).toBe(1);
     });
 
     it("given stealth-rock in Gen 2, when querying max layers, then returns 1", () => {
       // Stealth Rock does not exist in Gen 2 — returning 1 as a safe fallback.
       // Source: Bulbapedia — Stealth Rock introduced in Generation IV (Diamond/Pearl).
       const ruleset = new Gen2Ruleset();
-      expect(ruleset.getMaxHazardLayers("stealth-rock")).toBe(1);
+      expect(ruleset.getMaxHazardLayers(stealthRock)).toBe(1);
     });
   });
 
@@ -518,7 +588,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 50,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 251, displayName: "Celebi" } as unknown as PokemonSpeciesData;
 
@@ -535,7 +605,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 50,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 252, displayName: "Treecko" } as unknown as PokemonSpeciesData;
 
@@ -552,8 +622,8 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 50,
-        heldItem: "leftovers",
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        heldItem: leftovers,
+        moves: [createGen2MoveSlot(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 143, displayName: "Snorlax" } as unknown as PokemonSpeciesData;
 
@@ -608,7 +678,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 0,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
@@ -629,7 +699,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
       const defender = createMockActive();
-      const move = { accuracy: 100, id: "tackle" } as unknown as MoveData;
+      const move = { accuracy: 100, id: tackle } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const int = vi.fn();
       const rng = { int } as unknown as SeededRandom;
@@ -780,10 +850,10 @@ describe("Gen2Ruleset", () => {
     it("given sandstorm and two non-immune Pokemon, when weather effects resolve, then both take damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 400, types: ["fire"] });
+      const pokemon = createMockActive({ maxHp: 400, types: [fire] });
       const side0 = createMockSide(0, pokemon);
-      const side1 = createMockSide(1, createMockActive({ types: ["water"] }));
-      const state = createMockState(side0, side1, { type: "sand", turnsLeft: 3 });
+      const side1 = createMockSide(1, createMockActive({ types: [water] }));
+      const state = createMockState(side0, side1, { type: GEN2_WEATHER_IDS.sand, turnsLeft: 3 });
 
       // Act
       const results = ruleset.applyWeatherEffects(state);
@@ -795,11 +865,11 @@ describe("Gen2Ruleset", () => {
     it("given sandstorm and Rock/Steel Pokemon, when weather effects resolve, then they take no damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const rockPokemon = createMockActive({ types: ["rock"] });
-      const steelPokemon = createMockActive({ types: ["steel"] });
+      const rockPokemon = createMockActive({ types: [rock] });
+      const steelPokemon = createMockActive({ types: [steel] });
       const side0 = createMockSide(0, rockPokemon);
       const side1 = createMockSide(1, steelPokemon);
-      const state = createMockState(side0, side1, { type: "sand", turnsLeft: 3 });
+      const state = createMockState(side0, side1, { type: GEN2_WEATHER_IDS.sand, turnsLeft: 3 });
 
       // Act
       const results = ruleset.applyWeatherEffects(state);
@@ -820,7 +890,7 @@ describe("Gen2Ruleset", () => {
         createMockSide(0, attacker),
         createMockSide(1, createMockActive()),
       );
-      const statusMove = { category: "status", id: "toxic" } as unknown as MoveData;
+      const statusMove = { category: "status", id: GEN2_MOVE_IDS.toxic } as unknown as MoveData;
 
       // Act
       for (let seed = 0; seed < 100; seed++) {
@@ -842,11 +912,11 @@ describe("Gen2Ruleset", () => {
       const rng = new SeededRandom(42);
       const active0 = createMockActive({
         speed: 50,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const active1 = createMockActive({
         speed: 200,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const side0 = createMockSide(0, active0);
       const side1 = createMockSide(1, active1);
@@ -869,7 +939,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const active0 = createMockActive({ moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }] });
+      const active0 = createMockActive({ moves: [createGen2MoveSlot(tackle)] });
       const active1 = createMockActive();
       const side0 = createMockSide(0, active0);
       const side1 = createMockSide(1, active1);
@@ -895,11 +965,11 @@ describe("Gen2Ruleset", () => {
       // quick-attack has priority +1 (Showdown-compatible scale), tackle has priority 0
       const active0 = createMockActive({
         speed: 50,
-        moves: [{ moveId: "quick-attack", pp: 30, maxPp: 30 }],
+        moves: [createGen2MoveSlot(quickAttack)],
       });
       const active1 = createMockActive({
         speed: 200,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const side0 = createMockSide(0, active0);
       const side1 = createMockSide(1, active1);
@@ -924,11 +994,11 @@ describe("Gen2Ruleset", () => {
       const rng = new SeededRandom(42);
       const slowActive = createMockActive({
         speed: 50,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const fastActive = createMockActive({
         speed: 200,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const side0 = createMockSide(0, slowActive);
       const side1 = createMockSide(1, fastActive);
@@ -952,12 +1022,12 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const slowActive = createMockActive({
         speed: 10,
-        heldItem: "quick-claw",
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        heldItem: quickClaw,
+        moves: [createGen2MoveSlot(tackle)],
       });
       const fastActive = createMockActive({
         speed: 300,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const side0 = createMockSide(0, slowActive);
       const side1 = createMockSide(1, fastActive);
@@ -983,11 +1053,11 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const active0 = createMockActive({
         speed: 100,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const active1 = createMockActive({
         speed: 100,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const side0 = createMockSide(0, active0);
       const side1 = createMockSide(1, active1);
@@ -1039,7 +1109,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const active0 = createMockActive({ moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }] });
+      const active0 = createMockActive({ moves: [createGen2MoveSlot(tackle)] });
       const side0 = createMockSide(0, active0);
       // Create a side with no active Pokemon
       const side1 = {
@@ -1106,12 +1176,12 @@ describe("Gen2Ruleset", () => {
       // Other Pokemon with 60 speed -> faster after paralysis
       const paralyzedActive = createMockActive({
         speed: 200,
-        status: "paralysis",
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        status: paralysis,
+        moves: [createGen2MoveSlot(tackle)],
       });
       const healthyActive = createMockActive({
         speed: 60,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       });
       const side0 = createMockSide(0, paralyzedActive);
       const side1 = createMockSide(1, healthyActive);
@@ -1176,7 +1246,7 @@ describe("Gen2Ruleset", () => {
       const attacker = createMockActive();
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-      const move = { id: "tackle", effect: null } as unknown as MoveData;
+      const move = { id: tackle, effect: null } as unknown as MoveData;
       const rng = new SeededRandom(42);
 
       // Act
@@ -1206,13 +1276,13 @@ describe("Gen2Ruleset", () => {
     it("given a successful status-chance effect, when executeMoveEffect runs, then it inflicts the status", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ types: ["ice"] });
-      const defender = createMockActive({ types: ["normal"] });
+      const attacker = createMockActive({ types: [ice] });
+      const defender = createMockActive({ types: [normal] });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "ice-beam",
-        type: "ice",
-        effect: { type: "status-chance", status: "freeze", chance: 100 },
+        id: GEN2_MOVE_IDS.iceBeam,
+        type: ice,
+        effect: { type: "status-chance", status: freeze, chance: 100 },
       } as unknown as MoveData;
 
       // Act — force the 0-255 roll to succeed and prove the primary status path.
@@ -1228,7 +1298,7 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(result).toEqual(
         expect.objectContaining({
-          statusInflicted: "freeze",
+          statusInflicted: freeze,
           volatileInflicted: null,
           statChanges: [],
           recoilDamage: 0,
@@ -1242,11 +1312,11 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
-      const defender = createMockActive({ status: "paralysis" });
+      const defender = createMockActive({ status: paralysis });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "thunder",
-        effect: { type: "status-chance", status: "paralysis", chance: 100 },
+        id: GEN2_MOVE_IDS.thunder,
+        effect: { type: "status-chance", status: paralysis, chance: 100 },
       } as unknown as MoveData;
 
       // Act
@@ -1276,11 +1346,11 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
-      const defender = createMockActive({ types: ["fire"] });
+      const defender = createMockActive({ types: [fire] });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "flamethrower",
-        effect: { type: "status-chance", status: "burn", chance: 100 },
+        id: GEN2_MOVE_IDS.flamethrower,
+        effect: { type: "status-chance", status: burn, chance: 100 },
       } as unknown as MoveData;
 
       // Act
@@ -1310,11 +1380,11 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
-      const defender = createMockActive({ types: ["normal"] });
+      const defender = createMockActive({ types: [normal] });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "toxic",
-        effect: { type: "status-guaranteed", status: "badly-poisoned" },
+        id: GEN2_MOVE_IDS.toxic,
+        effect: { type: "status-guaranteed", status: badlyPoisoned },
       } as unknown as MoveData;
 
       // Act
@@ -1330,7 +1400,7 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(result).toEqual(
         expect.objectContaining({
-          statusInflicted: "badly-poisoned",
+          statusInflicted: badlyPoisoned,
           volatileInflicted: null,
           statChanges: [],
           recoilDamage: 0,
@@ -1344,11 +1414,11 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
-      const defender = createMockActive({ status: "burn" });
+      const defender = createMockActive({ status: burn });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "thunder-wave",
-        effect: { type: "status-guaranteed", status: "paralysis" },
+        id: GEN2_MOVE_IDS.thunderWave,
+        effect: { type: "status-guaranteed", status: paralysis },
       } as unknown as MoveData;
 
       // Act
@@ -1381,7 +1451,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "swords-dance",
+        id: GEN2_MOVE_IDS.swordsDance,
         effect: {
           type: "stat-change",
           target: "self",
@@ -1420,7 +1490,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "psychic",
+        id: GEN2_MOVE_IDS.psychic,
         effect: {
           type: "stat-change",
           target: "opponent",
@@ -1459,7 +1529,7 @@ describe("Gen2Ruleset", () => {
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const damageDealt = 100;
       const move = {
-        id: "double-edge",
+        id: GEN2_MOVE_IDS.doubleEdge,
         effect: { type: "recoil", amount: 0.25 },
       } as unknown as MoveData;
 
@@ -1486,7 +1556,7 @@ describe("Gen2Ruleset", () => {
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const damageDealt = 80;
       const move = {
-        id: "giga-drain",
+        id: GEN2_MOVE_IDS.gigaDrain,
         effect: { type: "drain", amount: 0.5 },
       } as unknown as MoveData;
 
@@ -1513,7 +1583,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "recover",
+        id: GEN2_MOVE_IDS.recover,
         effect: { type: "heal", amount: 0.5 },
       } as unknown as MoveData;
 
@@ -1536,14 +1606,14 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
-      const defender = createMockActive({ types: ["normal"] });
+      const defender = createMockActive({ types: [normal] });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "fire-punch",
+        id: GEN2_MOVE_IDS.firePunch,
         effect: {
           type: "multi",
           effects: [
-            { type: "status-chance", status: "burn", chance: 100 },
+            { type: "status-chance", status: burn, chance: 100 },
             {
               type: "stat-change",
               target: "self",
@@ -1567,7 +1637,7 @@ describe("Gen2Ruleset", () => {
       // Assert: both sub-effects are applied
       expect(result).toEqual(
         expect.objectContaining({
-          statusInflicted: "burn",
+          statusInflicted: burn,
           statChanges: [{ target: "attacker", stat: "attack", stages: 1 }],
           volatileInflicted: null,
           recoilDamage: 0,
@@ -1584,8 +1654,8 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "confuse-ray",
-        effect: { type: "volatile-status", status: "confusion", chance: 100 },
+        id: GEN2_MOVE_IDS.confuseRay,
+        effect: { type: "volatile-status", status: confusion, chance: 100 },
       } as unknown as MoveData;
 
       // Act
@@ -1601,7 +1671,7 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(result).toEqual(
         expect.objectContaining({
-          volatileInflicted: "confusion",
+          volatileInflicted: confusion,
           statusInflicted: null,
           statChanges: [],
           recoilDamage: 0,
@@ -1618,8 +1688,8 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "headbutt",
-        effect: { type: "volatile-status", status: "flinch", chance: 1 },
+        id: GEN2_MOVE_IDS.headbutt,
+        effect: { type: "volatile-status", status: flinch, chance: 1 },
       } as unknown as MoveData;
 
       const result = ruleset.executeMoveEffect({
@@ -1651,8 +1721,8 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "rain-dance",
-        effect: { type: "weather", weather: "rain", turns: 5 },
+        id: GEN2_MOVE_IDS.rainDance,
+        effect: { type: "weather", weather: GEN2_WEATHER_IDS.rain, turns: 5 },
       } as unknown as MoveData;
 
       // Act
@@ -1668,9 +1738,9 @@ describe("Gen2Ruleset", () => {
       // Assert
       // Source: the move effect specifies a five-turn Rain Dance payload.
       expect(result.weatherSet).toEqual({
-        weather: "rain",
+        weather: GEN2_WEATHER_IDS.rain,
         turns: 5,
-        source: "rain-dance",
+        source: GEN2_MOVE_IDS.rainDance,
       });
     });
 
@@ -1683,8 +1753,8 @@ describe("Gen2Ruleset", () => {
       const side1 = createMockSide(1, defender);
       const state = createMockState(side0, side1);
       const move = {
-        id: "spikes",
-        effect: { type: "entry-hazard", hazard: "spikes" },
+        id: GEN2_MOVE_IDS.spikes,
+        effect: { type: "entry-hazard", hazard: spikes },
       } as unknown as MoveData;
 
       // Act
@@ -1699,7 +1769,7 @@ describe("Gen2Ruleset", () => {
 
       // Assert: the hazard is placed on the opponent's side (side 1)
       expect(result.hazardSet).toEqual({
-        hazard: "spikes",
+        hazard: spikes,
         targetSide: 1,
       });
     });
@@ -1711,7 +1781,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "baton-pass",
+        id: GEN2_MOVE_IDS.batonPass,
         effect: { type: "switch-out", target: "self" },
       } as unknown as MoveData;
 
@@ -1745,7 +1815,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "protect",
+        id: GEN2_MOVE_IDS.protect,
         effect: { type: "protect" },
       } as unknown as MoveData;
 
@@ -1762,7 +1832,7 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(result).toEqual(
         expect.objectContaining({
-          volatileInflicted: "protect",
+          volatileInflicted: protect,
           statusInflicted: null,
           statChanges: [],
           recoilDamage: 0,
@@ -1868,7 +1938,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "belly-drum",
+        id: GEN2_MOVE_IDS.bellyDrum,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -1906,7 +1976,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "belly-drum",
+        id: GEN2_MOVE_IDS.bellyDrum,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -1937,7 +2007,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "rapid-spin",
+        id: GEN2_MOVE_IDS.rapidSpin,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -1962,7 +2032,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "mean-look",
+        id: GEN2_MOVE_IDS.meanLook,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -1979,7 +2049,7 @@ describe("Gen2Ruleset", () => {
       // Assert
       expect(result).toEqual(
         expect.objectContaining({
-          volatileInflicted: "trapped",
+          volatileInflicted: trapped,
           statusInflicted: null,
           statChanges: [],
           recoilDamage: 0,
@@ -1996,7 +2066,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "spider-web",
+        id: GEN2_MOVE_IDS.spiderWeb,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -2011,17 +2081,17 @@ describe("Gen2Ruleset", () => {
       });
 
       // Assert
-      expect(result.volatileInflicted).toBe("trapped");
+      expect(result.volatileInflicted).toBe(trapped);
     });
 
     it("given Thief and an itemless attacker, when the defender holds an item, then the item is transferred to the attacker", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive({ heldItem: null, nickname: "Sneasel" });
-      const defender = createMockActive({ heldItem: "leftovers", nickname: "Snorlax" });
+      const defender = createMockActive({ heldItem: leftovers, nickname: "Snorlax" });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "thief",
+        id: GEN2_MOVE_IDS.thief,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -2047,11 +2117,11 @@ describe("Gen2Ruleset", () => {
     it("given Thief and an attacker that already holds an item, when executeMoveEffect runs, then no item is stolen", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ heldItem: "charcoal" });
-      const defender = createMockActive({ heldItem: "leftovers" });
+      const attacker = createMockActive({ heldItem: charcoal });
+      const defender = createMockActive({ heldItem: leftovers });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "thief",
+        id: GEN2_MOVE_IDS.thief,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -2076,7 +2146,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "baton-pass",
+        id: GEN2_MOVE_IDS.batonPass,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -2150,7 +2220,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "explosion",
+        id: GEN2_MOVE_IDS.explosion,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -2180,7 +2250,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "self-destruct",
+        id: GEN2_MOVE_IDS.selfDestruct,
         effect: { type: "custom" },
       } as unknown as MoveData;
 
@@ -2210,7 +2280,7 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "tackle",
+        id: tackle,
         effect: null,
       } as unknown as MoveData;
 
@@ -2338,7 +2408,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 101,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
@@ -2356,7 +2426,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 50,
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [createGen2MoveSlot(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 0, displayName: "MissingNo" } as unknown as PokemonSpeciesData;
 
@@ -2421,7 +2491,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
       const defender = createMockActive();
-      const move = { accuracy: 100, id: "tackle" } as any;
+      const move = { accuracy: 100, id: tackle } as any;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       // Act / Assert: floor(100 * 255 / 100) = 255, which short-circuits to hit.
@@ -2434,7 +2504,7 @@ describe("Gen2Ruleset", () => {
       const attacker = createMockActive();
       attacker.statStages.accuracy = 6;
       const defender = createMockActive();
-      const move = { accuracy: 70, id: "thunder" } as any;
+      const move = { accuracy: 70, id: GEN2_MOVE_IDS.thunder } as any;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       // Act / Assert: floor(70 * 255 / 100) = 178, * 3 = 534, capped at 255 → always hits.
@@ -2448,13 +2518,13 @@ describe("Gen2Ruleset", () => {
     it("given a 100% status-chance effect, when the RNG rolls 255, then Gen 2 still allows the 1/256 failure", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ types: ["fire"] });
-      const defender = createMockActive({ types: ["normal"] });
+      const attacker = createMockActive({ types: [fire] });
+      const defender = createMockActive({ types: [normal] });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
       const move = {
-        id: "flamethrower",
-        type: "fire",
-        effect: { type: "status-chance", status: "burn", chance: 100 },
+        id: GEN2_MOVE_IDS.flamethrower,
+        type: fire,
+        effect: { type: "status-chance", status: burn, chance: 100 },
       } as any;
       const result = ruleset.executeMoveEffect({
         attacker,
@@ -2485,8 +2555,8 @@ describe("Gen2Ruleset", () => {
     it("given badly-poisoned status and toxic-counter volatile, when the Pokemon switches out, then it clears the counter and reverts to poison", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ status: "badly-poisoned" });
-      pokemon.volatileStatuses.set("toxic-counter", 4);
+      const pokemon = createMockActive({ status: badlyPoisoned });
+      pokemon.volatileStatuses.set(toxicCounter, 4);
       const state = createMockState(
         createMockSide(0, pokemon),
         createMockSide(1, createMockActive()),
@@ -2499,8 +2569,8 @@ describe("Gen2Ruleset", () => {
       // Source: pret/pokecrystal core.asm:4078-4104 NewBattleMonStatus — zeros substatus bytes
       // (SUBSTATUS_TOXIC is in SubStatus5). The main status byte (PSN) stays, but without
       // SUBSTATUS_TOXIC the toxic counter is gone → regular poison on switch-back.
-      expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
-      expect(pokemon.pokemon.status).toBe("poison");
+      expect(pokemon.volatileStatuses.has(toxicCounter)).toBe(false);
+      expect(pokemon.pokemon.status).toBe(poison);
     });
   });
 
@@ -2605,7 +2675,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("protect").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.protect).priority;
       // Assert
       expect(priority).toBe(3);
     });
@@ -2615,7 +2685,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("detect").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.detect).priority;
       // Assert
       expect(priority).toBe(3);
     });
@@ -2625,7 +2695,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("quick-attack").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.quickAttack).priority;
       // Assert
       expect(priority).toBe(1);
     });
@@ -2635,7 +2705,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("vital-throw").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.vitalThrow).priority;
       // Assert
       expect(priority).toBe(-1);
     });
@@ -2645,7 +2715,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("counter").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.counter).priority;
       // Assert
       expect(priority).toBe(-1);
     });
@@ -2655,7 +2725,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("mirror-coat").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.mirrorCoat).priority;
       // Assert
       expect(priority).toBe(-1);
     });
@@ -2665,7 +2735,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("endure").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.endure).priority;
       // Assert
       expect(priority).toBe(3);
     });
@@ -2675,7 +2745,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("mach-punch").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.machPunch).priority;
       // Assert
       expect(priority).toBe(1);
     });
@@ -2685,7 +2755,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const priority = dm.getMove("extreme-speed").priority;
+      const priority = dm.getMove(GEN2_MOVE_IDS.extremeSpeed).priority;
       // Assert
       expect(priority).toBe(1);
     });
@@ -2695,7 +2765,7 @@ describe("Gen2Ruleset", () => {
       // Priority -6 ensures they go after all other moves including Counter/Mirror Coat (-1)
       // Reference: Bulbapedia — Roar has priority -6 in Gen 2+
       const dm = createGen2DataManager();
-      const move = dm.getMove("roar");
+      const move = dm.getMove(GEN2_MOVE_IDS.roar);
       expect(move?.priority).toBe(-6);
     });
 
@@ -2704,7 +2774,7 @@ describe("Gen2Ruleset", () => {
       // Priority -6 ensures they go after all other moves including Counter/Mirror Coat (-1)
       // Reference: Bulbapedia — Whirlwind has priority -6 in Gen 2+
       const dm = createGen2DataManager();
-      const move = dm.getMove("whirlwind");
+      const move = dm.getMove(GEN2_MOVE_IDS.whirlwind);
       expect(move?.priority).toBe(-6);
     });
   });

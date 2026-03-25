@@ -5,11 +5,11 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
+import { ALL_NATURES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen1DataManager } from "../../src/data";
-import { Gen1Ruleset } from "../../src/Gen1Ruleset";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS, Gen1Ruleset } from "../../src";
 
 /**
  * Gen 1 Tier 4 Move Handler Tests
@@ -22,6 +22,11 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 // --- Test Helpers ---
 
 const ruleset = new Gen1Ruleset();
+const dataManager = createGen1DataManager();
+const DEFAULT_MOVE = dataManager.getMove(GEN1_MOVE_IDS.tackle);
+const DEFAULT_THUNDERBOLT = dataManager.getMove(GEN1_MOVE_IDS.thunderbolt);
+const DEFAULT_PIKACHU = dataManager.getSpecies(GEN1_SPECIES_IDS.pikachu);
+const DEFAULT_HARDY_NATURE = ALL_NATURES[0]!.id;
 
 const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   contact: false,
@@ -45,19 +50,9 @@ const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
 
 function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
+    ...DEFAULT_MOVE,
     flags: DEFAULT_MOVE_FLAGS,
     effect: null,
-    description: "A test move.",
-    generation: 1,
     ...overrides,
   };
 }
@@ -66,16 +61,26 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   return {
     pokemon: {
       uid: "test-uid",
-      speciesId: 25,
+      speciesId: GEN1_SPECIES_IDS.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
+        {
+          moveId: DEFAULT_MOVE.id,
+          currentPP: DEFAULT_MOVE.pp,
+          maxPP: DEFAULT_MOVE.pp,
+          ppUps: 0,
+        },
+        {
+          moveId: DEFAULT_THUNDERBOLT.id,
+          currentPP: DEFAULT_THUNDERBOLT.pp,
+          maxPP: DEFAULT_THUNDERBOLT.pp,
+          ppUps: 0,
+        },
       ],
       currentHp: 100,
       status: null,
@@ -111,7 +116,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
+    types: [...DEFAULT_PIKACHU.types] as PokemonType[],
     ability: "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -188,7 +193,7 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
   const rng = new SeededRandom(42);
   return {
     attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: ["normal"] }),
+    defender: makeActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
     move: makeMove(),
     damage: 0,
     state: makeBattleState(),
@@ -203,27 +208,32 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 
 describe("Gen 1 Rage handler", () => {
   const rageMove = makeMove({
-    id: "rage",
+    id: GEN1_MOVE_IDS.rage,
     displayName: "Rage",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "physical",
     power: 20,
     accuracy: 100,
     pp: 20,
     target: "adjacent-foe",
     flags: { ...DEFAULT_MOVE_FLAGS, contact: true },
-    effect: { type: "custom" as const, handler: "rage" },
+    effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.rage },
   });
 
-  it("given Rage used for the first time, when checking result, then selfVolatileInflicted is 'rage' and forcedMoveSet locks into Rage", () => {
+  it("given the effect is used for the first time, when checking result, then the volatile is applied and forcedMoveSet locks the move", () => {
     // Source: pret/pokered RageEffect — first use sets the rage volatile
     // Arrange
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "rage", currentPP: 20, maxPP: 20, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.rage, currentPP: 20, maxPP: 20, ppUps: 0 },
+          {
+            moveId: DEFAULT_MOVE.id,
+            currentPP: DEFAULT_MOVE.pp,
+            maxPP: DEFAULT_MOVE.pp,
+            ppUps: 0,
+          },
         ],
       } as PokemonInstance,
     });
@@ -233,11 +243,11 @@ describe("Gen 1 Rage handler", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert
-    expect(result.selfVolatileInflicted).toBe("rage");
+    expect(result.selfVolatileInflicted).toBe(GEN1_MOVE_IDS.rage);
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "rage",
-      volatileStatus: "rage",
+      moveId: GEN1_MOVE_IDS.rage,
+      volatileStatus: GEN1_MOVE_IDS.rage,
     });
   });
 
@@ -248,12 +258,17 @@ describe("Gen 1 Rage handler", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "rage", currentPP: 20, maxPP: 20, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.rage, currentPP: 20, maxPP: 20, ppUps: 0 },
+          {
+            moveId: DEFAULT_MOVE.id,
+            currentPP: DEFAULT_MOVE.pp,
+            maxPP: DEFAULT_MOVE.pp,
+            ppUps: 0,
+          },
         ],
       } as PokemonInstance,
     });
-    attacker.volatileStatuses.set("rage", { turnsLeft: -1, data: { moveIndex: 0 } });
+    attacker.volatileStatuses.set(GEN1_MOVE_IDS.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
     const context = makeMoveEffectContext({ move: rageMove, attacker, damage: 10 });
 
     // Act
@@ -263,8 +278,8 @@ describe("Gen 1 Rage handler", () => {
     expect(result.selfVolatileInflicted).toBeUndefined();
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "rage",
-      volatileStatus: "rage",
+      moveId: GEN1_MOVE_IDS.rage,
+      volatileStatus: GEN1_MOVE_IDS.rage,
     });
   });
 
@@ -272,10 +287,10 @@ describe("Gen 1 Rage handler", () => {
     // Source: pret/pokered RageEffect — each hit boosts Attack +1 while Rage is active
     // Arrange
     const defender = makeActivePokemon();
-    defender.volatileStatuses.set("rage", { turnsLeft: -1, data: { moveIndex: 0 } });
+    defender.volatileStatuses.set(GEN1_MOVE_IDS.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
     defender.statStages.attack = 0;
     const state = makeBattleState();
-    const hitMove = makeMove({ id: "tackle" });
+    const hitMove = makeMove({ id: GEN1_MOVE_IDS.tackle });
 
     // Act
     ruleset.onDamageReceived(defender, 30, hitMove, state);
@@ -288,10 +303,10 @@ describe("Gen 1 Rage handler", () => {
     // Source: pret/pokered — stat stages cap at +6
     // Arrange
     const defender = makeActivePokemon();
-    defender.volatileStatuses.set("rage", { turnsLeft: -1, data: { moveIndex: 0 } });
+    defender.volatileStatuses.set(GEN1_MOVE_IDS.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
     defender.statStages.attack = 5;
     const state = makeBattleState();
-    const hitMove = makeMove({ id: "tackle" });
+    const hitMove = makeMove({ id: GEN1_MOVE_IDS.tackle });
 
     // Act — first hit: +5 -> +6
     ruleset.onDamageReceived(defender, 30, hitMove, state);
@@ -309,14 +324,14 @@ describe("Gen 1 Rage handler", () => {
 
 describe("Gen 1 Mimic handler", () => {
   const mimicMove = makeMove({
-    id: "mimic",
+    id: GEN1_MOVE_IDS.mimic,
     displayName: "Mimic",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "status",
     power: null,
     accuracy: null,
     target: "adjacent-foe",
-    effect: { type: "custom" as const, handler: "mimic" },
+    effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.mimic },
   });
 
   it("given defender has used Thunderbolt last, when Mimic is used, then moveSlotChange replaces Mimic's slot with Thunderbolt at PP=5", () => {
@@ -326,12 +341,12 @@ describe("Gen 1 Mimic handler", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "mimic", currentPP: 10, maxPP: 10, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.mimic, currentPP: 10, maxPP: 10, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
         ],
       } as PokemonInstance,
     });
-    const defender = makeActivePokemon({ lastMoveUsed: "thunderbolt" });
+    const defender = makeActivePokemon({ lastMoveUsed: GEN1_MOVE_IDS.thunderbolt });
     const context = makeMoveEffectContext({ move: mimicMove, attacker, defender, damage: 0 });
 
     // Act
@@ -340,9 +355,9 @@ describe("Gen 1 Mimic handler", () => {
     // Assert
     expect(result.moveSlotChange).toEqual({
       slot: 0,
-      newMoveId: "thunderbolt",
+      newMoveId: GEN1_MOVE_IDS.thunderbolt,
       newPP: 5,
-      originalMoveId: "mimic",
+      originalMoveId: GEN1_MOVE_IDS.mimic,
     });
   });
 
@@ -353,12 +368,12 @@ describe("Gen 1 Mimic handler", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-          { moveId: "mimic", currentPP: 10, maxPP: 10, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.mimic, currentPP: 10, maxPP: 10, ppUps: 0 },
         ],
       } as PokemonInstance,
     });
-    const defender = makeActivePokemon({ lastMoveUsed: "fire-blast" });
+    const defender = makeActivePokemon({ lastMoveUsed: GEN1_MOVE_IDS.fireBlast });
     const context = makeMoveEffectContext({ move: mimicMove, attacker, defender, damage: 0 });
 
     // Act
@@ -367,9 +382,9 @@ describe("Gen 1 Mimic handler", () => {
     // Assert
     expect(result.moveSlotChange).toEqual({
       slot: 1,
-      newMoveId: "fire-blast",
+      newMoveId: GEN1_MOVE_IDS.fireBlast,
       newPP: 5,
-      originalMoveId: "mimic",
+      originalMoveId: GEN1_MOVE_IDS.mimic,
     });
   });
 
@@ -379,7 +394,7 @@ describe("Gen 1 Mimic handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "mimic", currentPP: 10, maxPP: 10, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.mimic, currentPP: 10, maxPP: 10, ppUps: 0 }],
       } as PokemonInstance,
     });
     const defender = makeActivePokemon({ lastMoveUsed: null });
@@ -399,10 +414,10 @@ describe("Gen 1 Mimic handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "mimic", currentPP: 10, maxPP: 10, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.mimic, currentPP: 10, maxPP: 10, ppUps: 0 }],
       } as PokemonInstance,
     });
-    const defender = makeActivePokemon({ lastMoveUsed: "mimic" });
+    const defender = makeActivePokemon({ lastMoveUsed: GEN1_MOVE_IDS.mimic });
     const context = makeMoveEffectContext({ move: mimicMove, attacker, defender, damage: 0 });
 
     // Act
@@ -420,14 +435,14 @@ describe("Gen 1 Mimic handler", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "thunderbolt", currentPP: 5, maxPP: 5, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.thunderbolt, currentPP: 5, maxPP: 5, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
         ],
       } as PokemonInstance,
     });
     pokemon.volatileStatuses.set("mimic-slot", {
       turnsLeft: -1,
-      data: { slot: 0, originalMoveId: "mimic" },
+      data: { slot: 0, originalMoveId: GEN1_MOVE_IDS.mimic },
     });
     const state = makeBattleState();
 
@@ -436,7 +451,7 @@ describe("Gen 1 Mimic handler", () => {
 
     // Assert — mimic (PP 10) should be restored via base PP fallback
     // Source: pret/pokered — PP restored to max for the original move
-    expect(pokemon.pokemon.moves[0]!.moveId).toBe("mimic");
+    expect(pokemon.pokemon.moves[0]!.moveId).toBe(GEN1_MOVE_IDS.mimic);
     expect(pokemon.pokemon.moves[0]!.maxPP).toBe(10);
   });
 
@@ -449,8 +464,8 @@ describe("Gen 1 Mimic handler", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "thunderbolt", currentPP: 5, maxPP: 5, ppUps: 0 }, // currently mimicked move
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.thunderbolt, currentPP: 5, maxPP: 5, ppUps: 0 }, // currently mimicked move
+          { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
         ],
       } as PokemonInstance,
     });
@@ -459,7 +474,7 @@ describe("Gen 1 Mimic handler", () => {
       turnsLeft: -1,
       data: {
         slot: 0,
-        originalMoveId: "mimic",
+        originalMoveId: GEN1_MOVE_IDS.mimic,
         originalCurrentPP: 6,
         originalMaxPP: 10,
         originalPpUps: 1,
@@ -471,7 +486,7 @@ describe("Gen 1 Mimic handler", () => {
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert — original move is restored with exact PP values from before Mimic was used
-    expect(pokemon.pokemon.moves[0]!.moveId).toBe("mimic");
+    expect(pokemon.pokemon.moves[0]!.moveId).toBe(GEN1_MOVE_IDS.mimic);
     expect(pokemon.pokemon.moves[0]!.currentPP).toBe(6);
     expect(pokemon.pokemon.moves[0]!.maxPP).toBe(10);
     expect(pokemon.pokemon.moves[0]!.ppUps).toBe(1);
@@ -484,20 +499,20 @@ describe("Gen 1 Mimic handler", () => {
 
 describe("Gen 1 Mirror Move handler", () => {
   const mirrorMoveMove = makeMove({
-    id: "mirror-move",
+    id: GEN1_MOVE_IDS.mirrorMove,
     displayName: "Mirror Move",
-    type: "flying" as PokemonType,
+    type: CORE_TYPE_IDS.flying as PokemonType,
     category: "status",
     power: null,
     accuracy: null,
     target: "adjacent-foe",
-    effect: { type: "custom" as const, handler: "mirror-move" },
+    effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.mirrorMove },
   });
 
-  it("given defender last used Thunderbolt, when Mirror Move is used, then recursiveMove is 'thunderbolt'", () => {
+  it("given defender last used a move, when Mirror Move is used, then recursiveMove matches the last move used", () => {
     // Source: pret/pokered MirrorMoveEffect — executes the move the defender used last
     // Arrange
-    const defender = makeActivePokemon({ lastMoveUsed: "thunderbolt" });
+    const defender = makeActivePokemon({ lastMoveUsed: GEN1_MOVE_IDS.thunderbolt });
     const context = makeMoveEffectContext({
       move: mirrorMoveMove,
       defender,
@@ -508,14 +523,14 @@ describe("Gen 1 Mirror Move handler", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert
-    expect(result.recursiveMove).toBe("thunderbolt");
+    expect(result.recursiveMove).toBe(GEN1_MOVE_IDS.thunderbolt);
     expect(result.messages).not.toContain("But it failed!");
   });
 
-  it("given defender last used Flamethrower, when Mirror Move is used, then recursiveMove is 'flamethrower'", () => {
+  it("given defender last used a different move, when Mirror Move is used from slot 1, then recursiveMove matches the copied move", () => {
     // Source: pret/pokered MirrorMoveEffect — copies whatever the defender used
     // Arrange
-    const defender = makeActivePokemon({ lastMoveUsed: "flamethrower" });
+    const defender = makeActivePokemon({ lastMoveUsed: GEN1_MOVE_IDS.flamethrower });
     const context = makeMoveEffectContext({
       move: mirrorMoveMove,
       defender,
@@ -526,7 +541,7 @@ describe("Gen 1 Mirror Move handler", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert
-    expect(result.recursiveMove).toBe("flamethrower");
+    expect(result.recursiveMove).toBe(GEN1_MOVE_IDS.flamethrower);
   });
 
   it("given defender has not used a move, when Mirror Move is used, then it fails", () => {
@@ -550,7 +565,7 @@ describe("Gen 1 Mirror Move handler", () => {
   it("given defender last used Mirror Move, when Mirror Move is used, then it fails (cannot mirror Mirror Move)", () => {
     // Source: pret/pokered MirrorMoveEffect — Mirror Move cannot copy itself
     // Arrange
-    const defender = makeActivePokemon({ lastMoveUsed: "mirror-move" });
+    const defender = makeActivePokemon({ lastMoveUsed: GEN1_MOVE_IDS.mirrorMove });
     const context = makeMoveEffectContext({
       move: mirrorMoveMove,
       defender,
@@ -571,19 +586,19 @@ describe("Gen 1 Mirror Move handler", () => {
 
 describe("Gen 1 Metronome handler", () => {
   const metronomeMove = makeMove({
-    id: "metronome",
+    id: GEN1_MOVE_IDS.metronome,
     displayName: "Metronome",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "status",
     power: null,
     accuracy: null,
     target: "self",
-    effect: { type: "custom" as const, handler: "metronome" },
+    effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.metronome },
   });
 
-  it("given Metronome is used with seed 100, when checking result, then recursiveMove is 'body-slam'", () => {
+  it("given Metronome is used with seed 100, when checking result, then recursiveMove matches the seeded selection", () => {
     // Source: pret/pokered MetronomeEffect — picks random move excluding Metronome and Struggle
-    // With seed 100, rng.int(0, 162) = 33 which maps to 'body-slam' in the Gen 1 move pool
+    // With seed 100, rng.int(0, 162) = 33 which maps to GEN1_MOVE_IDS.bodySlam in the Gen 1 move pool
     // Arrange
     const rng = new SeededRandom(100);
     const context = makeMoveEffectContext({ move: metronomeMove, damage: 0, rng });
@@ -592,12 +607,12 @@ describe("Gen 1 Metronome handler", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert
-    expect(result.recursiveMove).toBe("body-slam");
+    expect(result.recursiveMove).toBe(GEN1_MOVE_IDS.bodySlam);
   });
 
   it("given Metronome is used with seeds 1 and 999, when checking results, then different moves are selected deterministically", () => {
     // Source: pret/pokered MetronomeEffect — random selection from all Gen 1 moves
-    // Seed 1 -> 'screech', Seed 999 -> 'conversion' (verified via SeededRandom)
+    // Seed 1 -> GEN1_MOVE_IDS.screech, Seed 999 -> GEN1_MOVE_IDS.conversion (verified via SeededRandom)
     // Arrange
     const rng1 = new SeededRandom(1);
     const rng2 = new SeededRandom(999);
@@ -609,8 +624,8 @@ describe("Gen 1 Metronome handler", () => {
     const result2 = ruleset.executeMoveEffect(context2);
 
     // Assert — exact values from deterministic PRNG
-    expect(result1.recursiveMove).toBe("screech");
-    expect(result2.recursiveMove).toBe("conversion");
+    expect(result1.recursiveMove).toBe(GEN1_MOVE_IDS.screech);
+    expect(result2.recursiveMove).toBe(GEN1_MOVE_IDS.conversion);
   });
 });
 
@@ -620,26 +635,26 @@ describe("Gen 1 Metronome handler", () => {
 
 describe("Gen 1 Transform handler", () => {
   const transformMove = makeMove({
-    id: "transform",
+    id: GEN1_MOVE_IDS.transform,
     displayName: "Transform",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "status",
     power: null,
     accuracy: null,
     target: "adjacent-foe",
-    effect: { type: "custom" as const, handler: "transform" },
+    effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.transform },
   });
 
   it("given Transform is used, when checking result, then attacker copies defender's types, stats, and moves (PP=5)", () => {
     // Source: pret/pokered TransformEffect — copies types, stat stages, calculated stats (except HP), moves (PP=5)
     // Arrange
     const attacker = makeActivePokemon({
-      types: ["electric"],
+      types: [CORE_TYPE_IDS.electric],
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "transform", currentPP: 10, maxPP: 10, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.transform, currentPP: 10, maxPP: 10, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
         ],
         calculatedStats: {
           hp: 100,
@@ -652,12 +667,12 @@ describe("Gen 1 Transform handler", () => {
       } as PokemonInstance,
     });
     const defender = makeActivePokemon({
-      types: ["fire", "flying"],
+      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "flamethrower", currentPP: 15, maxPP: 15, ppUps: 0 },
-          { moveId: "fly", currentPP: 15, maxPP: 15, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.flamethrower, currentPP: 15, maxPP: 15, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.fly, currentPP: 15, maxPP: 15, ppUps: 0 },
         ],
         calculatedStats: {
           hp: 150,
@@ -679,7 +694,7 @@ describe("Gen 1 Transform handler", () => {
     // Assert — types copied via typeChange result
     expect(result.typeChange).toEqual({
       target: "attacker",
-      types: ["fire", "flying"],
+      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
     });
     // Assert — stat stages copied directly on attacker
     expect(attacker.statStages.attack).toBe(2);
@@ -693,10 +708,10 @@ describe("Gen 1 Transform handler", () => {
     expect(attacker.pokemon.calculatedStats!.hp).toBe(100);
     // Assert — moves copied with PP=5
     expect(attacker.pokemon.moves).toHaveLength(2);
-    expect(attacker.pokemon.moves[0]!.moveId).toBe("flamethrower");
+    expect(attacker.pokemon.moves[0]!.moveId).toBe(GEN1_MOVE_IDS.flamethrower);
     expect(attacker.pokemon.moves[0]!.currentPP).toBe(5);
     expect(attacker.pokemon.moves[0]!.maxPP).toBe(5);
-    expect(attacker.pokemon.moves[1]!.moveId).toBe("fly");
+    expect(attacker.pokemon.moves[1]!.moveId).toBe(GEN1_MOVE_IDS.fly);
     // Assert — transformed flag set
     expect(attacker.transformed).toBe(true);
     // Assert — transform-data volatile stores originals
@@ -708,12 +723,12 @@ describe("Gen 1 Transform handler", () => {
     // Source: pret/pokered — Transform reverts on switch-out
     // Arrange
     const pokemon = makeActivePokemon({
-      types: ["fire", "flying"],
+      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "flamethrower", currentPP: 5, maxPP: 5, ppUps: 0 },
-          { moveId: "fly", currentPP: 5, maxPP: 5, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.flamethrower, currentPP: 5, maxPP: 5, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.fly, currentPP: 5, maxPP: 5, ppUps: 0 },
         ],
         calculatedStats: {
           hp: 100,
@@ -730,10 +745,10 @@ describe("Gen 1 Transform handler", () => {
       turnsLeft: -1,
       data: {
         originalMoves: [
-          { moveId: "transform", currentPP: 10, maxPP: 10, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.transform, currentPP: 10, maxPP: 10, ppUps: 0 },
+          { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
         ],
-        originalTypes: ["electric"],
+        originalTypes: [CORE_TYPE_IDS.electric],
         originalStats: {
           hp: 100,
           attack: 80,
@@ -750,10 +765,10 @@ describe("Gen 1 Transform handler", () => {
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert
-    expect(pokemon.pokemon.moves[0]!.moveId).toBe("transform");
+    expect(pokemon.pokemon.moves[0]!.moveId).toBe(GEN1_MOVE_IDS.transform);
     expect(pokemon.pokemon.moves[0]!.currentPP).toBe(10);
-    expect(pokemon.pokemon.moves[1]!.moveId).toBe("tackle");
-    expect(pokemon.types).toEqual(["electric"]);
+    expect(pokemon.pokemon.moves[1]!.moveId).toBe(GEN1_MOVE_IDS.tackle);
+    expect(pokemon.types).toEqual([CORE_TYPE_IDS.electric]);
     expect(pokemon.pokemon.calculatedStats!.attack).toBe(80);
     expect(pokemon.pokemon.calculatedStats!.speed).toBe(120);
     expect(pokemon.transformed).toBe(false);
@@ -766,23 +781,23 @@ describe("Gen 1 Transform handler", () => {
 
 describe("Gen 1 Bide handler", () => {
   const bideMove = makeMove({
-    id: "bide",
+    id: GEN1_MOVE_IDS.bide,
     displayName: "Bide",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "physical",
     power: null,
     accuracy: null,
     target: "self",
-    effect: { type: "custom" as const, handler: "bide" },
+    effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.bide },
   });
 
-  it("given Bide used for the first time, when checking result, then selfVolatileInflicted is 'bide' and forcedMoveSet locks into Bide", () => {
+  it("given the charge move is used for the first time, when checking result, then the volatile is applied and forcedMoveSet locks the move", () => {
     // Source: pret/pokered BideEffect — first use starts charging
     // Arrange
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "bide", currentPP: 10, maxPP: 10, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.bide, currentPP: 10, maxPP: 10, ppUps: 0 }],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42);
@@ -792,15 +807,15 @@ describe("Gen 1 Bide handler", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert
-    expect(result.selfVolatileInflicted).toBe("bide");
+    expect(result.selfVolatileInflicted).toBe(GEN1_MOVE_IDS.bide);
     expect(result.selfVolatileData?.data?.accumulatedDamage).toBe(0);
     // Source: pret/pokered BideEffect — charges for 2-3 turns
     // With SeededRandom(42), rng.int(2, 3) = 3
     expect(result.selfVolatileData!.turnsLeft).toBe(3);
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "bide",
-      volatileStatus: "bide",
+      moveId: GEN1_MOVE_IDS.bide,
+      volatileStatus: GEN1_MOVE_IDS.bide,
     });
     expect(result.messages).toContain("The user is storing energy!");
   });
@@ -811,10 +826,10 @@ describe("Gen 1 Bide handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "bide", currentPP: 10, maxPP: 10, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.bide, currentPP: 10, maxPP: 10, ppUps: 0 }],
       } as PokemonInstance,
     });
-    attacker.volatileStatuses.set("bide", {
+    attacker.volatileStatuses.set(GEN1_MOVE_IDS.bide, {
       turnsLeft: 2,
       data: { accumulatedDamage: 50 },
     });
@@ -825,7 +840,7 @@ describe("Gen 1 Bide handler", () => {
 
     // Assert
     // turnsLeft should have decremented from 2 to 1
-    const bideVol = attacker.volatileStatuses.get("bide");
+    const bideVol = attacker.volatileStatuses.get(GEN1_MOVE_IDS.bide);
     expect(bideVol!.turnsLeft).toBe(1);
     expect(result.forcedMoveSet).toBeDefined();
     expect(result.messages).toContain("The user is storing energy!");
@@ -838,10 +853,10 @@ describe("Gen 1 Bide handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "bide", currentPP: 10, maxPP: 10, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.bide, currentPP: 10, maxPP: 10, ppUps: 0 }],
       } as PokemonInstance,
     });
-    attacker.volatileStatuses.set("bide", {
+    attacker.volatileStatuses.set(GEN1_MOVE_IDS.bide, {
       turnsLeft: 1,
       data: { accumulatedDamage: 50 },
     });
@@ -854,9 +869,9 @@ describe("Gen 1 Bide handler", () => {
     expect(result.customDamage).toEqual({
       target: "defender",
       amount: 100,
-      source: "bide",
+      source: GEN1_MOVE_IDS.bide,
     });
-    expect(attacker.volatileStatuses.has("bide")).toBe(false);
+    expect(attacker.volatileStatuses.has(GEN1_MOVE_IDS.bide)).toBe(false);
     expect(result.messages).toContain("The user unleashed energy!");
   });
 
@@ -866,10 +881,10 @@ describe("Gen 1 Bide handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "bide", currentPP: 10, maxPP: 10, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.bide, currentPP: 10, maxPP: 10, ppUps: 0 }],
       } as PokemonInstance,
     });
-    attacker.volatileStatuses.set("bide", {
+    attacker.volatileStatuses.set(GEN1_MOVE_IDS.bide, {
       turnsLeft: 1,
       data: { accumulatedDamage: 0 },
     });
@@ -887,18 +902,18 @@ describe("Gen 1 Bide handler", () => {
     // Source: pret/pokered BideEffect — accumulates damage received
     // Arrange
     const defender = makeActivePokemon();
-    defender.volatileStatuses.set("bide", {
+    defender.volatileStatuses.set(GEN1_MOVE_IDS.bide, {
       turnsLeft: 2,
       data: { accumulatedDamage: 10 },
     });
     const state = makeBattleState();
-    const hitMove = makeMove({ id: "tackle" });
+    const hitMove = makeMove({ id: GEN1_MOVE_IDS.tackle });
 
     // Act
     ruleset.onDamageReceived(defender, 40, hitMove, state);
 
     // Assert
-    const bideVol = defender.volatileStatuses.get("bide");
+    const bideVol = defender.volatileStatuses.get(GEN1_MOVE_IDS.bide);
     expect((bideVol!.data as any).accumulatedDamage).toBe(50);
   });
 });
@@ -909,16 +924,16 @@ describe("Gen 1 Bide handler", () => {
 
 describe("Gen 1 Thrash handler", () => {
   const thrashMove = makeMove({
-    id: "thrash",
+    id: GEN1_MOVE_IDS.thrash,
     displayName: "Thrash",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "physical",
     power: 90,
     accuracy: 100,
     pp: 20,
     target: "random-foe",
     flags: { ...DEFAULT_MOVE_FLAGS, contact: true },
-    effect: { type: "custom" as const, handler: "thrash" },
+    effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.thrash },
   });
 
   it("given Thrash used for the first time, when checking result, then selfVolatileInflicted is 'thrash-lock' and forcedMoveSet locks into Thrash", () => {
@@ -930,7 +945,7 @@ describe("Gen 1 Thrash handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "thrash", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.thrash, currentPP: 20, maxPP: 20, ppUps: 0 }],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42);
@@ -943,7 +958,7 @@ describe("Gen 1 Thrash handler", () => {
     expect(result.selfVolatileInflicted).toBe("thrash-lock");
     // With SeededRandom(42), rng.int(2, 3) = 3, so turnsLeft = 3 - 1 = 2
     expect(result.selfVolatileData!.turnsLeft).toBe(2);
-    expect(result.forcedMoveSet!.moveId).toBe("thrash");
+    expect(result.forcedMoveSet!.moveId).toBe(GEN1_MOVE_IDS.thrash);
   });
 
   it("given Thrash lock active with turnsLeft > 1, when Thrash is used, then turnsLeft decrements and re-locks", () => {
@@ -952,10 +967,10 @@ describe("Gen 1 Thrash handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "thrash", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.thrash, currentPP: 20, maxPP: 20, ppUps: 0 }],
       } as PokemonInstance,
     });
-    attacker.volatileStatuses.set("thrash-lock", { turnsLeft: 2, data: { moveId: "thrash" } });
+    attacker.volatileStatuses.set("thrash-lock", { turnsLeft: 2, data: { moveId: GEN1_MOVE_IDS.thrash } });
     const context = makeMoveEffectContext({ move: thrashMove, attacker, damage: 30 });
 
     // Act
@@ -972,10 +987,10 @@ describe("Gen 1 Thrash handler", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "thrash", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.thrash, currentPP: 20, maxPP: 20, ppUps: 0 }],
       } as PokemonInstance,
     });
-    attacker.volatileStatuses.set("thrash-lock", { turnsLeft: 1, data: { moveId: "thrash" } });
+    attacker.volatileStatuses.set("thrash-lock", { turnsLeft: 1, data: { moveId: GEN1_MOVE_IDS.thrash } });
     const rng = new SeededRandom(42);
     const context = makeMoveEffectContext({ move: thrashMove, attacker, damage: 30, rng });
 
@@ -984,7 +999,7 @@ describe("Gen 1 Thrash handler", () => {
 
     // Assert
     expect(attacker.volatileStatuses.has("thrash-lock")).toBe(false);
-    expect(result.selfVolatileInflicted).toBe("confusion");
+    expect(result.selfVolatileInflicted).toBe(GEN1_MOVE_IDS.confusion);
     // Source: pret/pokered — random(0-3)+2 = [2,5]
     // With SeededRandom(42), rng.int(2, 5) = 4
     expect(result.selfVolatileData!.turnsLeft).toBe(4);
@@ -995,26 +1010,26 @@ describe("Gen 1 Thrash handler", () => {
     // Source: pret/pokered — Petal Dance uses the same ThrashEffect handler
     // Arrange
     const petalDanceMove = makeMove({
-      id: "petal-dance",
+      id: GEN1_MOVE_IDS.petalDance,
       displayName: "Petal Dance",
-      type: "grass" as PokemonType,
+      type: CORE_TYPE_IDS.grass as PokemonType,
       category: "special",
       power: 70,
       accuracy: 100,
       pp: 20,
       target: "random-foe",
       flags: { ...DEFAULT_MOVE_FLAGS, contact: true },
-      effect: { type: "custom" as const, handler: "thrash" },
+      effect: { type: "custom" as const, handler: GEN1_MOVE_IDS.thrash },
     });
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "petal-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.petalDance, currentPP: 20, maxPP: 20, ppUps: 0 }],
       } as PokemonInstance,
     });
     attacker.volatileStatuses.set("thrash-lock", {
       turnsLeft: 1,
-      data: { moveId: "petal-dance" },
+      data: { moveId: GEN1_MOVE_IDS.petalDance },
     });
     const rng = new SeededRandom(42);
     const context = makeMoveEffectContext({ move: petalDanceMove, attacker, damage: 25, rng });
@@ -1024,7 +1039,7 @@ describe("Gen 1 Thrash handler", () => {
 
     // Assert
     expect(attacker.volatileStatuses.has("thrash-lock")).toBe(false);
-    expect(result.selfVolatileInflicted).toBe("confusion");
+    expect(result.selfVolatileInflicted).toBe(GEN1_MOVE_IDS.confusion);
   });
 });
 
@@ -1034,9 +1049,9 @@ describe("Gen 1 Thrash handler", () => {
 
 describe("Gen 1 Hyper Beam substitute-break", () => {
   const hyperBeamMove = makeMove({
-    id: "hyper-beam",
+    id: GEN1_MOVE_IDS.hyperBeam,
     displayName: "Hyper Beam",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "physical",
     power: 150,
     accuracy: 90,
@@ -1100,7 +1115,7 @@ describe("Gen 1 Hyper Beam substitute-break", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Assert
-    expect(result.noRecharge).toBeFalsy();
+    expect(result.noRecharge).toBeUndefined();
   });
 });
 
@@ -1114,21 +1129,21 @@ describe("Gen 1 onDamageReceived", () => {
     // (edge case from Transform shenanigans or glitches)
     // Arrange
     const defender = makeActivePokemon();
-    defender.volatileStatuses.set("rage", { turnsLeft: -1, data: { moveIndex: 0 } });
-    defender.volatileStatuses.set("bide", {
+    defender.volatileStatuses.set(GEN1_MOVE_IDS.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
+    defender.volatileStatuses.set(GEN1_MOVE_IDS.bide, {
       turnsLeft: 2,
       data: { accumulatedDamage: 10 },
     });
     defender.statStages.attack = 0;
     const state = makeBattleState();
-    const hitMove = makeMove({ id: "tackle" });
+    const hitMove = makeMove({ id: GEN1_MOVE_IDS.tackle });
 
     // Act
     ruleset.onDamageReceived(defender, 25, hitMove, state);
 
     // Assert
     expect(defender.statStages.attack).toBe(1);
-    const bideVol = defender.volatileStatuses.get("bide");
+    const bideVol = defender.volatileStatuses.get(GEN1_MOVE_IDS.bide);
     expect((bideVol!.data as any).accumulatedDamage).toBe(35);
   });
 
@@ -1138,7 +1153,7 @@ describe("Gen 1 onDamageReceived", () => {
     const defender = makeActivePokemon();
     defender.statStages.attack = 3;
     const state = makeBattleState();
-    const hitMove = makeMove({ id: "tackle" });
+    const hitMove = makeMove({ id: GEN1_MOVE_IDS.tackle });
 
     // Act
     ruleset.onDamageReceived(defender, 50, hitMove, state);
@@ -1169,7 +1184,7 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
       nickname: nickname ?? null,
       level,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 999,
@@ -1215,8 +1230,8 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
     // Source: pret/pokered RageEffect — Rage locks the user into repeating, and
     // each hit boosts Attack by +1. The forcedMove mechanism forces Rage on turn 2.
     // Arrange
-    const rager = createPokemon(6, 50, ["rage", "scratch", "ember", "slash"], "Rager");
-    const hitter = createPokemon(9, 50, ["water-gun", "tackle", "bubble", "withdraw"], "Hitter");
+    const rager = createPokemon(6, 50, [GEN1_MOVE_IDS.rage, GEN1_MOVE_IDS.scratch, GEN1_MOVE_IDS.ember, GEN1_MOVE_IDS.slash], "Rager");
+    const hitter = createPokemon(9, 50, [GEN1_MOVE_IDS.waterGun, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.bubble, GEN1_MOVE_IDS.withdraw], "Hitter");
     const engine = createBattle([rager], [hitter], 42);
 
     // Act — Turn 1: Rager uses Rage (moveIndex 0), Hitter uses Water Gun (moveIndex 0)
@@ -1227,7 +1242,7 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
     // After turn 1, Rager should have rage volatile and forcedMove set
     const ragerActive = engine.getActive(0);
     expect(ragerActive).not.toBeNull();
-    expect(ragerActive!.volatileStatuses.has("rage")).toBe(true);
+    expect(ragerActive!.volatileStatuses.has(GEN1_MOVE_IDS.rage)).toBe(true);
 
     // Turn 2: Both submit actions, but Rager's is forced to Rage
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 }); // ignored, forced to rage
@@ -1246,13 +1261,13 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
     const thrasher = createPokemon(
       34,
       50,
-      ["thrash", "horn-attack", "poison-sting", "tackle"],
+      [GEN1_MOVE_IDS.thrash, GEN1_MOVE_IDS.hornAttack, GEN1_MOVE_IDS.poisonSting, GEN1_MOVE_IDS.tackle],
       "Thrasher",
     );
     const defender = createPokemon(
       9,
       50,
-      ["water-gun", "tackle", "bubble", "withdraw"],
+      [GEN1_MOVE_IDS.waterGun, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.bubble, GEN1_MOVE_IDS.withdraw],
       "Defender",
     );
     const engine = createBattle([thrasher], [defender], 42);
@@ -1280,7 +1295,7 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
     // Check the event log for confusion application
     const events = engine.getEventLog();
     const confusionEvents = events.filter(
-      (e) => e.type === "volatile-start" && (e as any).volatile === "confusion",
+      (e) => e.type === "volatile-start" && (e as any).volatile === GEN1_MOVE_IDS.confusion,
     );
     // Source: pret/pokered ThrashEffect — confusion is applied when thrash ends
     // The confusion volatile-start event should exist somewhere in the log

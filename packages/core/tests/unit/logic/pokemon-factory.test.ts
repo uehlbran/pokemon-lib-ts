@@ -1,4 +1,6 @@
+import { ALL_NATURES, CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_MOVE_IDS, CORE_TYPE_IDS } from "../../../src";
 import { describe, expect, it } from "vitest";
+import { GEN2_ITEM_IDS } from "../../../../gen2/src";
 import type { Learnset, PokemonSpeciesData } from "../../../src/entities/species";
 import {
   createMoveSlot,
@@ -75,31 +77,22 @@ function makeMockSpecies(overrides?: Partial<PokemonSpeciesData>): PokemonSpecie
       speed: 100,
     },
     abilities: {
-      normal: ["blaze"],
-      hidden: "solar-power",
+      normal: [CORE_ABILITY_IDS.blaze],
+      hidden: CORE_ABILITY_IDS.solarPower,
     },
     genderRatio: 87.5,
     catchRate: 45,
     baseExp: 240,
     expGroup: "medium-slow",
     evYield: { spAttack: 3 },
-    eggGroups: ["monster", "dragon"],
     learnset: {
       levelUp: [
-        { level: 1, move: "scratch" },
-        { level: 1, move: "growl" },
-        { level: 7, move: "ember" },
-        { level: 10, move: "smokescreen" },
-        { level: 17, move: "dragon-rage" },
-        { level: 21, move: "scary-face" },
-        { level: 28, move: "fire-fang" },
-        { level: 32, move: "flame-burst" },
-        { level: 36, move: "slash" },
-        { level: 41, move: "flamethrower" },
-        { level: 47, move: "fire-spin" },
-        { level: 56, move: "inferno" },
-        { level: 62, move: "heat-wave" },
-        { level: 71, move: "flare-blitz" },
+        { level: 1, move: CORE_MOVE_IDS.growl },
+        { level: 1, move: CORE_MOVE_IDS.tackle },
+        { level: 7, move: CORE_MOVE_IDS.surf },
+        { level: 10, move: CORE_MOVE_IDS.flamethrower },
+        { level: 17, move: CORE_MOVE_IDS.thunderbolt },
+        { level: 21, move: CORE_MOVE_IDS.swift },
       ],
       tm: [],
       egg: [],
@@ -112,9 +105,15 @@ function makeMockSpecies(overrides?: Partial<PokemonSpeciesData>): PokemonSpecie
     generation: 1,
     isLegendary: false,
     isMythical: false,
+    eggGroups: ["monster", "field"],
     ...overrides,
   };
 }
+
+const ADAMANT_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Adamant") ?? ALL_NATURES[7];
+const BOLD_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Bold") ?? ALL_NATURES[9];
+const HARDY_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Hardy") ?? ALL_NATURES[0];
+const TIMID_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Timid") ?? ALL_NATURES[13];
 
 // --- determineGender ---
 
@@ -176,13 +175,12 @@ describe("determineGender", () => {
 describe("getDefaultMoves", () => {
   const learnset: Learnset = {
     levelUp: [
-      { level: 1, move: "scratch" },
-      { level: 1, move: "growl" },
-      { level: 7, move: "ember" },
-      { level: 10, move: "smokescreen" },
-      { level: 17, move: "dragon-rage" },
-      { level: 21, move: "scary-face" },
-      { level: 28, move: "fire-fang" },
+      { level: 1, move: CORE_MOVE_IDS.growl },
+      { level: 1, move: CORE_MOVE_IDS.tackle },
+      { level: 7, move: CORE_MOVE_IDS.surf },
+      { level: 10, move: CORE_MOVE_IDS.flamethrower },
+      { level: 17, move: CORE_MOVE_IDS.thunderbolt },
+      { level: 21, move: CORE_MOVE_IDS.swift },
     ],
     tm: [],
     egg: [],
@@ -195,10 +193,10 @@ describe("getDefaultMoves", () => {
 
     // Assert
     expect(moves).toHaveLength(4);
-    expect(moves[0]?.moveId).toBe("fire-fang");
-    expect(moves[1]?.moveId).toBe("scary-face");
-    expect(moves[2]?.moveId).toBe("dragon-rage");
-    expect(moves[3]?.moveId).toBe("smokescreen");
+    expect(moves[0]?.moveId).toBe(CORE_MOVE_IDS.swift);
+    expect(moves[1]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
+    expect(moves[2]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
+    expect(moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
   });
 
   it("given a learnset and level 7, when called, then returns only 3 eligible moves", () => {
@@ -207,9 +205,9 @@ describe("getDefaultMoves", () => {
 
     // Assert
     expect(moves).toHaveLength(3);
-    expect(moves[0]?.moveId).toBe("ember");
-    expect(moves[1]?.moveId).toBe("growl");
-    expect(moves[2]?.moveId).toBe("scratch");
+    expect(moves[0]?.moveId).toBe(CORE_MOVE_IDS.surf);
+    expect(moves[1]?.moveId).toBe(CORE_MOVE_IDS.tackle);
+    expect(moves[2]?.moveId).toBe(CORE_MOVE_IDS.growl);
   });
 
   it("given a learnset and level 1, when called, then returns only level-1 moves", () => {
@@ -218,8 +216,8 @@ describe("getDefaultMoves", () => {
 
     // Assert
     expect(moves).toHaveLength(2);
-    expect(moves[0]?.moveId).toBe("growl");
-    expect(moves[1]?.moveId).toBe("scratch");
+    expect(moves[0]?.moveId).toBe(CORE_MOVE_IDS.tackle);
+    expect(moves[1]?.moveId).toBe(CORE_MOVE_IDS.growl);
   });
 
   it("given a learnset with many moves and a high level, when called, then caps at 4 moves", () => {
@@ -244,7 +242,7 @@ describe("getDefaultMoves", () => {
   it("given a level below any move's level, when called, then returns empty array", () => {
     // Arrange
     const highLevelLearnset: Learnset = {
-      levelUp: [{ level: 10, move: "ember" }],
+      levelUp: [{ level: 10, move: CORE_MOVE_IDS.flamethrower }],
       tm: [],
       egg: [],
       tutor: [],
@@ -263,10 +261,10 @@ describe("getDefaultMoves", () => {
 describe("createMoveSlot", () => {
   it("given a moveId with no PP, when called, then creates a slot with 0 PP", () => {
     // Arrange / Act
-    const slot = createMoveSlot("flamethrower");
+    const slot = createMoveSlot(CORE_MOVE_IDS.flamethrower);
 
     // Assert
-    expect(slot.moveId).toBe("flamethrower");
+    expect(slot.moveId).toBe(CORE_MOVE_IDS.flamethrower);
     expect(slot.currentPP).toBe(0);
     expect(slot.maxPP).toBe(0);
     expect(slot.ppUps).toBe(0);
@@ -274,11 +272,11 @@ describe("createMoveSlot", () => {
 
   it("given a moveId with PP specified, when called, then creates a slot with full PP", () => {
     // Arrange / Act
-    const slot = createMoveSlot("flamethrower", 15);
+    const slot = createMoveSlot(CORE_MOVE_IDS.flamethrower, 15);
 
     // Assert
     // Source: Flamethrower's canonical PP is 15 in the game data.
-    expect(slot.moveId).toBe("flamethrower");
+    expect(slot.moveId).toBe(CORE_MOVE_IDS.flamethrower);
     expect(slot.currentPP).toBe(15);
     expect(slot.maxPP).toBe(15);
     expect(slot.ppUps).toBe(0);
@@ -286,7 +284,7 @@ describe("createMoveSlot", () => {
 
   it("given a moveId with PP and 3 ppUps, when called, then increases max PP by 60%", () => {
     // Arrange / Act
-    const slot = createMoveSlot("flamethrower", 15, 3);
+    const slot = createMoveSlot(CORE_MOVE_IDS.flamethrower, 15, 3);
 
     // Assert
     // maxPP = floor(15 * (1 + 0.2 * 3)) = floor(15 * 1.6) = floor(24) = 24
@@ -297,7 +295,7 @@ describe("createMoveSlot", () => {
 
   it("given a moveId with PP and 1 ppUp, when called, then increases max PP by 20%", () => {
     // Arrange / Act
-    const slot = createMoveSlot("tackle", 35, 1);
+    const slot = createMoveSlot(CORE_MOVE_IDS.tackle, 35, 1);
 
     // Assert
     // maxPP = floor(35 * (1 + 0.2 * 1)) = floor(35 * 1.2) = floor(42) = 42
@@ -308,7 +306,7 @@ describe("createMoveSlot", () => {
 
   it("given a move with PP that produces a fractional bonus, when called, then applies floor truncation", () => {
     // Arrange / Act
-    const slot = createMoveSlot("fire-blast", 7, 1);
+    const slot = createMoveSlot(CORE_MOVE_IDS.surf, 7, 1);
 
     // Assert
     // Derived from createMoveSlot: floor(7 * (1 + 0.2 * 1)) = floor(8.4) = 8.
@@ -325,7 +323,7 @@ describe("createPokemonInstance", () => {
     const rng = makeScriptedRng({
       // Source: createPokemonInstance rolls six IVs, then determineGender, then generateUid twice.
       ints: [31, 0, 15, 20, 25, 30, 87, 0x12345678, 0x9abcdef0],
-      picks: ["adamant"],
+      picks: [ADAMANT_NATURE.id],
       chances: [false],
     });
 
@@ -344,12 +342,12 @@ describe("createPokemonInstance", () => {
     expect(instance.metLocation).toBe("unknown");
     expect(instance.originalTrainer).toBe("Player");
     expect(instance.originalTrainerId).toBe(0);
-    expect(instance.pokeball).toBe("poke-ball");
+    expect(instance.pokeball).toBe(GEN2_ITEM_IDS.pokeBall);
     expect(instance.friendship).toBe(70); // Source: mock species baseFriendship is 70.
     expect(instance.uid).toBe("123456789abcdef0");
-    expect(instance.nature).toBe("adamant");
+    expect(instance.nature).toBe(ADAMANT_NATURE.id);
     expect(instance.gender).toBe("male");
-    expect(instance.ability).toBe("blaze");
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
     expect(instance.abilitySlot).toBe("normal1");
     expect(instance.isShiny).toBe(false);
     expect(instance.ivs).toEqual({
@@ -366,7 +364,7 @@ describe("createPokemonInstance", () => {
     const species = makeMockSpecies();
     const rng = makeScriptedRng({
       ints: [5, 10, 15, 20, 25, 30, 40, 0, 1],
-      picks: ["bold"],
+      picks: [BOLD_NATURE.id],
       chances: [false],
     });
 
@@ -386,20 +384,20 @@ describe("createPokemonInstance", () => {
     const species = makeMockSpecies();
     const rng = makeScriptedRng({
       ints: [0, 0, 0, 0, 0, 0, 87, 0, 1],
-      picks: ["timid"],
+      picks: [TIMID_NATURE.id],
       chances: [false],
     });
 
     const instance = createPokemonInstance(species, 50, rng);
 
-    expect(instance.nature).toBe("timid");
+    expect(instance.nature).toBe(TIMID_NATURE.id);
   });
 
   it("given a species with 87.5% male ratio and a scripted female roll, when called, then returns female", () => {
     const species = makeMockSpecies({ genderRatio: 87.5 });
     const rng = makeScriptedRng({
       ints: [0, 0, 0, 0, 0, 0, 88, 0, 1],
-      picks: ["hardy"],
+      picks: [HARDY_NATURE.id],
       chances: [false],
     });
 
@@ -429,31 +427,31 @@ describe("createPokemonInstance", () => {
     const instance = createPokemonInstance(species, 50, rng);
 
     // Assert
-    expect(instance.ability).toBe("blaze"); // Only one normal ability
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze); // Only one normal ability
     expect(instance.abilitySlot).toBe("normal1");
   });
 
   it("given a species with two normal abilities and a true ability roll, when called, then selects normal1", () => {
     const species = makeMockSpecies({
-      abilities: { normal: ["intimidate", "moxie"], hidden: "mold-breaker" },
+      abilities: { normal: [CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.static], hidden: CORE_ABILITY_IDS.moldBreaker },
     });
     const rng = makeScriptedRng({
       ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
-      picks: ["hardy"],
+      picks: [HARDY_NATURE.id],
       chances: [true, false],
     });
 
     const instance = createPokemonInstance(species, 50, rng);
 
     expect(instance.abilitySlot).toBe("normal1");
-    expect(instance.ability).toBe("intimidate");
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.intimidate);
   });
 
   it("given a species and a false shiny roll, when called with default shiny odds, then is not shiny", () => {
     const species = makeMockSpecies();
     const rng = makeScriptedRng({
       ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
-      picks: ["hardy"],
+      picks: [HARDY_NATURE.id],
       // Source: createPokemonInstance uses rng.chance(1 / 4096) for default shiny odds.
       chances: [false],
     });
@@ -467,7 +465,7 @@ describe("createPokemonInstance", () => {
     const species = makeMockSpecies();
     const rng = makeScriptedRng({
       ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
-      picks: ["hardy"],
+      picks: [HARDY_NATURE.id],
       // Source: createPokemonInstance uses rng.chance(1 / 4096) for default shiny odds.
       chances: [true],
     });
@@ -485,12 +483,12 @@ describe("createPokemonInstance", () => {
     // Act
     const instance = createPokemonInstance(species, 36, rng);
 
-    // Assert - level 36: eligible moves up to 36: slash(36), flame-burst(32), fire-fang(28), scary-face(21)
+    // Assert - level 36: eligible moves up to 36 are swift(21), thunderbolt(17), flamethrower(10), surf(7)
     expect(instance.moves).toHaveLength(4);
-    expect(instance.moves[0]?.moveId).toBe("slash");
-    expect(instance.moves[1]?.moveId).toBe("flame-burst");
-    expect(instance.moves[2]?.moveId).toBe("fire-fang");
-    expect(instance.moves[3]?.moveId).toBe("scary-face");
+    expect(instance.moves[0]?.moveId).toBe(CORE_MOVE_IDS.swift);
+    expect(instance.moves[1]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
+    expect(instance.moves[2]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
+    expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
   });
 
   it("given a species, when called with default EVs, then all EVs are 0", () => {
@@ -514,48 +512,54 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
     const customIvs = { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 };
     const customEvs = { hp: 252, attack: 0, defense: 0, spAttack: 252, spDefense: 4, speed: 0 };
+    const customMetLocation = species.spriteKey;
 
     // Act
     const instance = createPokemonInstance(species, 100, rng, {
-      nature: "adamant",
+      nature: ADAMANT_NATURE.id,
       ivs: customIvs,
       evs: customEvs,
       gender: "female",
       isShiny: true,
       nickname: "Flame",
-      moves: ["flamethrower", "air-slash", "dragon-pulse", "roost"],
-      heldItem: "leftovers",
+      moves: [
+        CORE_MOVE_IDS.flamethrower,
+        CORE_MOVE_IDS.surf,
+        CORE_MOVE_IDS.thunderbolt,
+        CORE_MOVE_IDS.swift,
+      ],
+      heldItem: CORE_ITEM_IDS.leftovers,
       friendship: 255,
-      metLocation: "pallet-town",
+      metLocation: customMetLocation,
       originalTrainer: "Ash",
       originalTrainerId: 54321,
-      pokeball: "ultra-ball",
+      pokeball: GEN2_ITEM_IDS.ultraBall,
       abilitySlot: "hidden",
-      teraType: "dragon",
+      teraType: CORE_TYPE_IDS.dragon,
       dynamaxLevel: 10,
     });
 
     // Assert
-    expect(instance.nature).toBe("adamant");
+    expect(instance.nature).toBe(ADAMANT_NATURE.id);
     expect(instance.ivs).toEqual(customIvs);
     expect(instance.evs).toEqual(customEvs);
     expect(instance.gender).toBe("female");
     expect(instance.isShiny).toBe(true);
     expect(instance.nickname).toBe("Flame");
     expect(instance.moves).toHaveLength(4);
-    expect(instance.moves[0]?.moveId).toBe("flamethrower");
-    expect(instance.moves[1]?.moveId).toBe("air-slash");
-    expect(instance.moves[2]?.moveId).toBe("dragon-pulse");
-    expect(instance.moves[3]?.moveId).toBe("roost");
-    expect(instance.heldItem).toBe("leftovers");
+    expect(instance.moves[0]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
+    expect(instance.moves[1]?.moveId).toBe(CORE_MOVE_IDS.surf);
+    expect(instance.moves[2]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
+    expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.swift);
+    expect(instance.heldItem).toBe(CORE_ITEM_IDS.leftovers);
     expect(instance.friendship).toBe(255); // Source: friendship override is provided explicitly in the options above.
-    expect(instance.metLocation).toBe("pallet-town");
+    expect(instance.metLocation).toBe(customMetLocation);
     expect(instance.originalTrainer).toBe("Ash");
     expect(instance.originalTrainerId).toBe(54321); // Source: trainer ID override is provided explicitly in the options above.
-    expect(instance.pokeball).toBe("ultra-ball");
-    expect(instance.ability).toBe("solar-power"); // hidden ability
+    expect(instance.pokeball).toBe(GEN2_ITEM_IDS.ultraBall);
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.solarPower); // hidden ability
     expect(instance.abilitySlot).toBe("hidden");
-    expect(instance.teraType).toBe("dragon");
+    expect(instance.teraType).toBe(CORE_TYPE_IDS.dragon);
     expect(instance.dynamaxLevel).toBe(10); // Source: Dynamax Level override is provided explicitly in the options above.
   });
 
@@ -576,7 +580,7 @@ describe("createPokemonInstance", () => {
   it("given a species with no hidden ability, when abilitySlot is hidden, then falls back to normal1", () => {
     // Arrange
     const species = makeMockSpecies({
-      abilities: { normal: ["blaze"], hidden: null },
+      abilities: { normal: [CORE_ABILITY_IDS.blaze], hidden: null },
     });
     const rng = new SeededRandom(42);
 
@@ -584,13 +588,13 @@ describe("createPokemonInstance", () => {
     const instance = createPokemonInstance(species, 50, rng, { abilitySlot: "hidden" });
 
     // Assert
-    expect(instance.ability).toBe("blaze");
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
   });
 
   it("given a species with one normal ability, when abilitySlot is normal2, then falls back to normal1", () => {
     // Arrange
     const species = makeMockSpecies({
-      abilities: { normal: ["blaze"], hidden: "solar-power" },
+      abilities: { normal: [CORE_ABILITY_IDS.blaze], hidden: CORE_ABILITY_IDS.solarPower },
     });
     const rng = new SeededRandom(42);
 
@@ -598,12 +602,12 @@ describe("createPokemonInstance", () => {
     const instance = createPokemonInstance(species, 50, rng, { abilitySlot: "normal2" });
 
     // Assert
-    expect(instance.ability).toBe("blaze");
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
   });
 
   it("given a species with two normal abilities, when abilitySlot is normal2, then uses the second normal ability", () => {
     const species = makeMockSpecies({
-      abilities: { normal: ["intimidate", "moxie"], hidden: "mold-breaker" },
+      abilities: { normal: [CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.static], hidden: CORE_ABILITY_IDS.moldBreaker },
     });
     const rng = new SeededRandom(42);
 
@@ -611,7 +615,7 @@ describe("createPokemonInstance", () => {
 
     // Derived from getAbilityForSlot: normal2 maps to abilities.normal[1] when present.
     expect(instance.abilitySlot).toBe("normal2");
-    expect(instance.ability).toBe("moxie");
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.static);
   });
 
   it("given a species, when called with default teraType, then uses first species type", () => {
@@ -623,7 +627,7 @@ describe("createPokemonInstance", () => {
     const instance = createPokemonInstance(species, 50, rng);
 
     // Assert
-    expect(instance.teraType).toBe("fire");
+    expect(instance.teraType).toBe(CORE_TYPE_IDS.fire);
   });
 
   it("given a species, when called with default dynamaxLevel, then is 0", () => {

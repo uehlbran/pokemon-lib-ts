@@ -134,9 +134,13 @@ export const CORE_GIMMICK_IDS = {
 } as const;
 
 export const CORE_END_OF_TURN_EFFECT_IDS = {
+  defrost: "defrost",
+  disableCountdown: "disable-countdown",
   encoreCountdown: "encore-countdown",
   futureAttack: "future-attack",
+  healingItems: "healing-items",
   screenCountdown: "screen-countdown",
+  statBoostingItems: "stat-boosting-items",
   statusDamage: "status-damage",
   tailwindCountdown: "tailwind-countdown",
   terrainCountdown: "terrain-countdown",
@@ -203,11 +207,13 @@ export const CORE_VOLATILE_IDS = {
   flinch: "flinch",
   flying: "flying",
   mist: "mist",
+  protect: "protect",
   recharge: "recharge",
   leechSeed: "leech-seed",
   magnetRise: "magnet-rise",
   nightmare: "nightmare",
   sleepCounter: "sleep-counter",
+  trapped: "trapped",
   toxicCounter: "toxic-counter",
   yawn: "yawn",
   underground: "underground",
