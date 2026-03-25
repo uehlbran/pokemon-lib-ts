@@ -8,22 +8,24 @@ import type {
 import type {
   MoveData,
   NatureId,
-  PrimaryStatus,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
-  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createPokemonInstance,
   NEUTRAL_NATURES,
   SeededRandom,
-  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -43,7 +45,6 @@ const CORE_MOVES = CORE_MOVE_IDS;
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS };
 const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS };
 const SPECIES = GEN4_SPECIES_IDS;
-const STATUSES = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const DATA = createGen4DataManager();
@@ -102,7 +103,7 @@ function createActivePokemon(opts: {
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
   nickname?: string | null;
-  gender?: "male" | "female" | "genderless";
+  gender?: PokemonInstance["gender"];
 }): ActivePokemon {
   const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
@@ -117,8 +118,8 @@ function createActivePokemon(opts: {
   const species = DATA.getSpecies(opts.speciesId ?? DEFAULT_SPECIES.id);
   const pokemon = createPokemonInstance(species, level, new SeededRandom(4), {
     nature: DEFAULT_NATURE,
-    gender: opts.gender ?? "male",
-    abilitySlot: "normal1",
+    gender: opts.gender ?? CORE_GENDERS.male,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     moves: [],
     isShiny: false,
@@ -565,9 +566,9 @@ describe("Bug #257: Natural Gift does not set customDamage (damage goes through 
     const result = executeGen4MoveEffect(context);
 
     const fireDisplayName = `${TYPES.fire[0].toUpperCase()}${TYPES.fire.slice(1)}`;
-    expect(
-      result.messages.some((m) => m.includes(TYPES.fire) || m.includes(fireDisplayName)),
-    ).toBe(true);
+    expect(result.messages.some((m) => m.includes(TYPES.fire) || m.includes(fireDisplayName))).toBe(
+      true,
+    );
     expect(result.messages.some((m) => m.includes("60"))).toBe(true);
   });
 });
@@ -628,7 +629,7 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
       damage: 50,
     };
 
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(CORE_ABILITY_TRIGGER_IDS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
     // Should signal a transfer effect
@@ -649,7 +650,7 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
       damage: 50,
     };
 
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(CORE_ABILITY_TRIGGER_IDS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -671,7 +672,7 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
       damage: 50,
     };
 
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(CORE_ABILITY_TRIGGER_IDS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -703,7 +704,7 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
       damage: 50,
     };
 
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(CORE_ABILITY_TRIGGER_IDS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
     expect(defender.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
@@ -731,7 +732,7 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
       damage: 50,
     };
 
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(CORE_ABILITY_TRIGGER_IDS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
     expect(defender.volatileStatuses.has(VOLATILES.unburden)).toBe(false);
@@ -759,7 +760,7 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
       damage: 50,
     };
 
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(CORE_ABILITY_TRIGGER_IDS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
     expect(defender.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
