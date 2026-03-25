@@ -227,6 +227,7 @@ export const CORE_VOLATILE_IDS = {
   encore: "encore",
   curse: "curse",
   destinyBond: "destiny-bond",
+  endure: "endure",
   charging: "charging",
   choiceLocked: "choice-locked",
   embargo: "embargo",
