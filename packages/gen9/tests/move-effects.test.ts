@@ -996,9 +996,11 @@ describe("Gen9 Salt Cure -- processSaltCureDamage via Gen9Ruleset", () => {
 
   it("given a Pokemon without salt-cure, when processing salt cure EoT, then takes 0 damage", () => {
     const ruleset = new Gen9Ruleset();
+    // Source: this is a symmetric no-op case, so the max HP fixture stays at 400.
+    const MAX_HP = 400;
     const active = makeActivePokemon({
-      maxHp: 400,
-      currentHp: 400,
+      maxHp: MAX_HP,
+      currentHp: MAX_HP,
     });
 
     const damage = ruleset.processSaltCureDamage(active);
