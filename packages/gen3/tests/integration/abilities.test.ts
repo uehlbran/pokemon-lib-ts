@@ -8,18 +8,35 @@ import type {
   MoveData,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
+  VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
-import { GEN3_NATURE_IDS } from "../../src";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   applyGen3Ability,
   canInflictGen3Status,
+  createGen3DataManager,
   Gen3Ruleset,
   GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
   GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
   isGen3VolatileBlockedByAbility,
 } from "../../src";
@@ -40,8 +57,18 @@ import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const dataManager = createGen3DataManager();
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS } as const;
+const itemIds = { ...GEN3_ITEM_IDS } as const;
+const moveIds = GEN3_MOVE_IDS;
+const speciesIds = GEN3_SPECIES_IDS;
+const triggerIds = CORE_ABILITY_TRIGGER_IDS;
+const defaultSpecies = dataManager.getSpecies(speciesIds.bulbasaur);
+const defaultNature = dataManager.getNature(GEN3_NATURE_IDS.hardy).id;
+const defaultMove = dataManager.getMove(moveIds.tackle);
+
 /** A mock RNG whose int() always returns a fixed value. */
-function createMockRng(intReturnValue: number) {
+function createDeterministicRng(intReturnValue: number) {
   return {
     next: () => 0,
     int: (_min: number, _max: number) => intReturnValue,
@@ -53,15 +80,15 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
-/** Minimal ActivePokemon mock. */
-function createActivePokemon(opts: {
+/** Data-backed on-field Pokemon helper with synthetic stat overrides for calc cases. */
+function createOnFieldPokemon(opts: {
   level: number;
   attack: number;
   defense: number;
   spAttack: number;
   spDefense: number;
   types: PokemonType[];
-  status?: (typeof CORE_STATUS_IDS)[keyof typeof CORE_STATUS_IDS] | null;
+  status?: PrimaryStatus | null;
   ability?: (typeof GEN3_ABILITY_IDS)[keyof typeof GEN3_ABILITY_IDS];
   heldItem?: string | null;
   speciesId?: number;
@@ -69,6 +96,7 @@ function createActivePokemon(opts: {
   statStages?: Partial<Record<string, number>>;
   turnsOnField?: number;
 }): ActivePokemon {
+  const species = dataManager.getSpecies(opts.speciesId ?? defaultSpecies.id);
   const stats: StatBlock = {
     hp: 200,
     attack: opts.attack,
@@ -78,31 +106,27 @@ function createActivePokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = {
-    uid: "gen3-test",
-    speciesId: opts.speciesId ?? 1,
-    nickname: opts.nickname ?? null,
-    level: opts.level,
-    experience: 0,
-    nature: GEN3_NATURE_IDS.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 200,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+  const pokemon = createPokemonInstance(species, opts.level, new SeededRandom(3), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
     isShiny: false,
+    friendship: species.baseFriendship,
     metLocation: "",
-    metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
+    pokeball: itemIds.pokeBall,
+  });
+  pokemon.nickname = opts.nickname ?? null;
+  pokemon.moves = [createMoveSlot(defaultMove.id, defaultMove.pp)];
+  pokemon.currentHp = 200;
+  pokemon.ability = opts.ability ?? abilityIds.none;
+  pokemon.heldItem = opts.heldItem ?? null;
+  pokemon.status = opts.status ?? null;
+  pokemon.calculatedStats = stats;
 
   return {
     pokemon,
@@ -116,9 +140,9 @@ function createActivePokemon(opts: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: new Map(),
+    volatileStatuses: new Map<VolatileStatus, { turnsLeft: number }>(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: pokemon.ability,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -137,40 +161,19 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-/** Create a move mock with the given type and power. */
-function createMove(type: PokemonType, power: number, id = GEN3_MOVE_IDS.tackle): MoveData {
+/** Explicit synthetic move builder for damage-slice probes that real Gen 3 move data does not cover directly. */
+function createSyntheticMove(
+  type: PokemonType,
+  power: number,
+  id = moveIds.tackle,
+): MoveData {
+  const canonicalMove = dataManager.getMove(id);
   return {
+    ...canonicalMove,
     id,
-    displayName: "Test Move",
     type,
-    category: "physical", // ignored in Gen 3 (type-based split)
     power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 3,
+    // Gen 3 damage uses type-based split; tests override type/power intentionally.
   } as MoveData;
 }
 
@@ -215,13 +218,13 @@ function createTypeChart(overrides: [PokemonType, PokemonType, number][]): TypeC
 }
 
 /** Create a BattleState mock with optional weather. */
-function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
+function createSyntheticDamageState(weather?: { type: string; turnsLeft: number; source: string } | null) {
   return {
     weather: weather ?? null,
   } as DamageContext["state"];
 }
 
-function createSwitchState(): BattleState {
+function createBattleStateForSwitchOut(): BattleState {
   return {} as BattleState;
 }
 
@@ -231,7 +234,7 @@ function createDamageContext(opts: {
   defender: ActivePokemon;
   move: MoveData;
   isCrit?: boolean;
-  rng?: ReturnType<typeof createMockRng>;
+  rng?: ReturnType<typeof createDeterministicRng>;
   weather?: { type: string; turnsLeft: number; source: string } | null;
 }): DamageContext {
   return {
@@ -239,8 +242,8 @@ function createDamageContext(opts: {
     defender: opts.defender,
     move: opts.move,
     isCrit: opts.isCrit ?? false,
-    rng: opts.rng ?? createMockRng(100), // max random roll = no random penalty
-    state: createMockState(opts.weather),
+    rng: opts.rng ?? createDeterministicRng(100), // max random roll = no random penalty
+    state: createSyntheticDamageState(opts.weather),
   } as DamageContext;
 }
 
@@ -256,7 +259,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Formula derivation (L50, 80BP ground, Atk=100*2=200 vs Def=100, max roll):
       //   levelFactor = floor(2*50/5) + 2 = 22
       //   baseDamage = floor(floor(22 * 80 * 200 / 100) / 50) + 2 = floor(3520/50) + 2 = 72
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -265,7 +268,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.water],
         ability: GEN3_ABILITY_IDS.hugePower,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -274,7 +277,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
       });
       // Ground is physical type in Gen 3
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       // Without Huge Power (Atk=100): floor(floor(22*80*100/100)/50)+2 = 37
@@ -288,7 +291,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Formula derivation (L50, 80BP, Atk=150*2=300 vs Def=120, max roll):
       //   levelFactor = 22
       //   baseDamage = floor(floor(22 * 80 * 300 / 120) / 50) + 2 = floor(4400/50) + 2 = 90
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 150,
         defense: 100,
@@ -297,7 +300,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.water],
         ability: GEN3_ABILITY_IDS.hugePower,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 120,
@@ -305,7 +308,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(90);
@@ -317,7 +320,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // SpAttack = 100 (not doubled) vs SpDefense = 100
       // Formula (L50, 80BP, 100 SpAtk vs 100 SpDef, max roll):
       //   baseDamage = floor(floor(22*80*100/100)/50) + 2 = floor(1760/50) + 2 = 37
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -326,7 +329,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.water],
         ability: GEN3_ABILITY_IDS.hugePower,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -334,7 +337,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80); // Fire = special in Gen 3
+      const move = createSyntheticMove(CORE_TYPE_IDS.fire, 80); // Fire = special in Gen 3
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(37);
@@ -347,7 +350,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Attacker is CORE_TYPE_IDS.fighting type using CORE_TYPE_IDS.ground move — no STAB
       // Formula: L50, 80BP, Atk=100*2=200 vs Def=100, max roll
       //   baseDamage = floor(floor(22*80*200/100)/50) + 2 = floor(3520/50) + 2 = 72
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -356,7 +359,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.fighting],
         ability: GEN3_ABILITY_IDS.purePower,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -364,7 +367,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(72);
@@ -376,7 +379,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Formula (L50, 60BP, Atk=80*2=160 vs Def=100, max roll):
       //   levelFactor = 22
       //   floor(floor(22 * 60 * 160 / 100) / 50) + 2 = floor(2112/50) + 2 = 42 + 2 = 44
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 80,
         defense: 100,
@@ -385,7 +388,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.fighting],
         ability: GEN3_ABILITY_IDS.purePower,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -393,7 +396,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 60);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 60);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(44);
@@ -409,7 +412,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       //   levelFactor = 22
       //   baseDamage = floor(floor(22*80*150/100)/50) + 2 = floor(2640/50) + 2 = 54
       // Without Hustle (Atk=100): floor(1760/50)+2 = 37
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -418,7 +421,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.water],
         ability: GEN3_ABILITY_IDS.hustle,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -426,7 +429,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(54);
@@ -436,7 +439,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Source: pret/pokeemerald ABILITY_HUSTLE — only affects physical attack
       // Attacker is CORE_TYPE_IDS.water type using CORE_TYPE_IDS.fire (special) move — no STAB
       // SpAtk=100, 80BP → baseDamage = floor(floor(22*80*100/100)/50)+2 = 37
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -445,7 +448,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.water],
         ability: GEN3_ABILITY_IDS.hustle,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -453,7 +456,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80); // Fire = special in Gen 3
+      const move = createSyntheticMove(CORE_TYPE_IDS.fire, 80); // Fire = special in Gen 3
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       // No boost applied to special moves — same as base: 37
@@ -467,7 +470,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Without Guts + burn: Atk = floor(100/2) = 50 → floor(floor(22*80*50/100)/50)+2 = floor(880/50)+2 = 19
       // With Guts + burn: Atk = floor(100*1.5) = 150 (no burn halving) → 54
       // The key difference: burn normally halves attack, but Guts prevents that AND adds 1.5x
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -477,7 +480,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         ability: GEN3_ABILITY_IDS.guts,
         status: CORE_STATUS_IDS.burn,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -485,7 +488,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -498,7 +501,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Source: pret/pokeemerald ABILITY_GUTS — activates on any primary status, not just burn
       // With poison + Guts: Atk = floor(100 * 1.5) = 150 (no burn penalty since not burned)
       // baseDamage = floor(floor(22*80*150/100)/50) + 2 = 54
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -508,7 +511,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         ability: GEN3_ABILITY_IDS.guts,
         status: CORE_STATUS_IDS.poison,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -516,7 +519,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(54);
@@ -526,7 +529,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Source: pret/pokeemerald ABILITY_GUTS — only activates when a primary status is present
       // Without status: normal damage (Atk=100, no modifier)
       // baseDamage = floor(floor(22*80*100/100)/50) + 2 = floor(1760/50)+2 = 37
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -535,7 +538,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.guts,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -543,7 +546,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(37);
@@ -553,7 +556,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Source: pret/pokeemerald — burn halves physical attack when Guts is not active
       // Burned, no Guts: Atk = floor(100/2) = 50
       // baseDamage = floor(floor(22*80*50/100)/50)+2 = floor(880/50)+2 = 17+2 = 19
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -562,7 +565,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         status: CORE_STATUS_IDS.burn,
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -570,7 +573,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(19);
@@ -585,7 +588,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       //   Thick Fat halves SpAtk: floor(100 * 0.5) = 50
       //   levelFactor = floor(2*50/5) + 2 = 22
       //   baseDamage = floor(floor(22*80*50/100)/50) + 2 = floor(880/50) + 2 = 17 + 2 = 19
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -593,7 +596,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -602,7 +605,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.thickFat,
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.fire, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(19);
@@ -611,7 +614,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     it("given Thick Fat defender, when hit by Ice move, then damage is halved", () => {
       // Source: pret/pokeemerald ABILITY_THICK_FAT — halves damage from Fire and Ice type moves
       // Ice is special in Gen 3 — same pre-formula stat halving as Fire test above: 19
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -619,7 +622,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -628,7 +631,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.thickFat,
       });
-      const move = createMove(CORE_TYPE_IDS.ice, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ice, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(19);
@@ -637,7 +640,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     it("given Thick Fat defender, when hit by Water move, then damage is NOT halved", () => {
       // Source: pret/pokeemerald ABILITY_THICK_FAT — only affects Fire and Ice
       // Water is special in Gen 3. Normal damage: 37
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -645,7 +648,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -654,7 +657,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.thickFat,
       });
-      const move = createMove(CORE_TYPE_IDS.water, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.water, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       // Water is not affected by Thick Fat — normal damage
@@ -663,7 +666,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
 
     it("given Thick Fat defender, when breakdown is checked, then abilityMultiplier is 0.5 for Fire/Ice", () => {
       // Verify the breakdown correctly reports the ability multiplier
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -671,7 +674,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -680,7 +683,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.thickFat,
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.fire, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.breakdown?.abilityMultiplier).toBe(0.5);
@@ -691,7 +694,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     it("given Wonder Guard defender, when non-super-effective move hits (1x), then damage is 0", () => {
       // Source: pret/pokeemerald ABILITY_WONDER_GUARD — only super-effective moves hit
       // Neutral type chart: everything is 1x → Wonder Guard blocks
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -699,7 +702,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -708,7 +711,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.bug, CORE_TYPE_IDS.ghost],
         ability: GEN3_ABILITY_IDS.wonderGuard,
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(0);
@@ -718,7 +721,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
       // Source: pret/pokeemerald ABILITY_WONDER_GUARD — 2x and 4x moves land normally
       // Create chart where fire is 2x vs bug
       const typeChart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.bug, 2]]);
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -726,7 +729,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -735,7 +738,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.bug],
         ability: GEN3_ABILITY_IDS.wonderGuard,
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.fire, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, typeChart);
       // Fire is special in Gen 3, SpAtk=100 vs SpDef=100
@@ -749,7 +752,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     it("given Wonder Guard defender, when NVE move hits (0.5x), then damage is 0", () => {
       // Source: pret/pokeemerald ABILITY_WONDER_GUARD — blocks 0.5x moves too
       const typeChart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.bug, 0.5]]);
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -757,7 +760,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -766,7 +769,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.bug],
         ability: GEN3_ABILITY_IDS.wonderGuard,
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, typeChart);
       expect(result.damage).toBe(0);
@@ -778,7 +781,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
   describe("Levitate", () => {
     it("given Levitate defender, when Ground move targets it, then damage is 0 with effectiveness 0", () => {
       // Source: pret/pokeemerald ABILITY_LEVITATE — grants immunity to Ground-type moves
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -786,7 +789,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -795,7 +798,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.levitate,
       });
-      const move = createMove(CORE_TYPE_IDS.ground, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.ground, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(0);
@@ -805,7 +808,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     it("given Levitate defender, when non-Ground move targets it, then damage is normal", () => {
       // Source: pret/pokeemerald ABILITY_LEVITATE — only affects Ground-type moves
       // Attacker is CORE_TYPE_IDS.water type using CORE_TYPE_IDS.rock (physical) move — no STAB
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -813,7 +816,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.water],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -822,7 +825,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.levitate,
       });
-      const move = createMove(CORE_TYPE_IDS.rock, 80); // Rock is physical in Gen 3, no STAB with water attacker
+      const move = createSyntheticMove(CORE_TYPE_IDS.rock, 80); // Rock is physical in Gen 3, no STAB with water attacker
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       // Normal damage: floor(floor(22*80*100/100)/50)+2 = 37
@@ -833,7 +836,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
   describe("Volt Absorb", () => {
     it("given Volt Absorb defender, when Electric move targets it, then damage is 0", () => {
       // Source: pret/pokeemerald ABILITY_VOLT_ABSORB — grants immunity to Electric-type moves
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -841,7 +844,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -850,7 +853,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.voltAbsorb,
       });
-      const move = createMove(CORE_TYPE_IDS.electric, 80); // Electric is special in Gen 3
+      const move = createSyntheticMove(CORE_TYPE_IDS.electric, 80); // Electric is special in Gen 3
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(0);
@@ -860,7 +863,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     it("given Volt Absorb defender, when non-Electric move targets it, then damage is normal", () => {
       // Source: pret/pokeemerald ABILITY_VOLT_ABSORB — only affects Electric-type moves
       // Attacker is CORE_TYPE_IDS.water type using CORE_TYPE_IDS.rock (physical) move — no STAB
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -868,7 +871,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.water],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -877,7 +880,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.voltAbsorb,
       });
-      const move = createMove(CORE_TYPE_IDS.rock, 80); // Rock is physical in Gen 3, no STAB with water attacker
+      const move = createSyntheticMove(CORE_TYPE_IDS.rock, 80); // Rock is physical in Gen 3, no STAB with water attacker
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(37);
@@ -887,7 +890,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
   describe("Water Absorb", () => {
     it("given Water Absorb defender, when Water move targets it, then damage is 0", () => {
       // Source: pret/pokeemerald ABILITY_WATER_ABSORB — grants immunity to Water-type moves
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -895,7 +898,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -904,7 +907,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.waterAbsorb,
       });
-      const move = createMove(CORE_TYPE_IDS.water, 80); // Water is special in Gen 3
+      const move = createSyntheticMove(CORE_TYPE_IDS.water, 80); // Water is special in Gen 3
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(0);
@@ -913,7 +916,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
 
     it("given Water Absorb defender, when Fire move targets it, then damage is normal", () => {
       // Source: pret/pokeemerald ABILITY_WATER_ABSORB — only affects Water-type moves
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -921,7 +924,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -930,7 +933,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.waterAbsorb,
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.fire, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(37);
@@ -941,7 +944,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     it("given Flash Fire defender, when Fire move targets it, then damage is 0", () => {
       // Source: pret/pokeemerald ABILITY_FLASH_FIRE — grants immunity to Fire-type moves
       // NOTE: the boost to fire moves after absorbing one is a volatile state change, skip for now
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -949,7 +952,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -958,7 +961,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.flashFire,
       });
-      const move = createMove(CORE_TYPE_IDS.fire, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.fire, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(0);
@@ -967,7 +970,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
 
     it("given Flash Fire defender, when Water move targets it, then damage is normal", () => {
       // Source: pret/pokeemerald ABILITY_FLASH_FIRE — only affects Fire-type moves
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -975,7 +978,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         spDefense: 100,
         types: [CORE_TYPE_IDS.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -984,7 +987,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
         types: [CORE_TYPE_IDS.normal],
         ability: GEN3_ABILITY_IDS.flashFire,
       });
-      const move = createMove(CORE_TYPE_IDS.water, 80);
+      const move = createSyntheticMove(CORE_TYPE_IDS.water, 80);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
       expect(result.damage).toBe(37);
@@ -1004,7 +1007,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     opponentNickname?: string | null;
     hasOpponent?: boolean;
   }): AbilityContext {
-    const pokemon = createActivePokemon({
+    const pokemon = createOnFieldPokemon({
       level: 50,
       attack: 100,
       defense: 100,
@@ -1016,7 +1019,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
     const opponent =
       opts.hasOpponent !== false
-        ? createActivePokemon({
+        ? createOnFieldPokemon({
             level: 50,
             attack: 100,
             defense: 100,
@@ -1030,9 +1033,9 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     return {
       pokemon,
       opponent,
-      state: createMockState(),
-      rng: createMockRng(100),
-      trigger: "on-switch-in",
+      state: createSyntheticDamageState(),
+      rng: createDeterministicRng(100),
+      trigger: triggerIds.onSwitchIn,
     } as AbilityContext;
   }
 
@@ -1047,7 +1050,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonNickname: "Gyarados",
         opponentNickname: "Machamp",
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.length).toBe(1);
       expect(result.effects[0]!.effectType).toBe("stat-change");
@@ -1063,7 +1066,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonNickname: null,
         opponentNickname: null,
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toBe("1's Intimidate cut 1's Attack!");
     });
@@ -1074,7 +1077,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.intimidate,
         hasOpponent: false,
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(false);
       expect(result.effects.length).toBe(0);
     });
@@ -1087,7 +1090,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.drizzle,
         pokemonNickname: "Kyogre",
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.length).toBe(1);
       expect(result.effects[0]!.target).toBe("field");
@@ -1101,7 +1104,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.drizzle,
         pokemonNickname: null,
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toBe("1's Drizzle made it rain!");
     });
@@ -1114,7 +1117,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.drought,
         pokemonNickname: "Groudon",
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.length).toBe(1);
       expect(result.effects[0]!.target).toBe("field");
@@ -1128,7 +1131,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.drought,
         pokemonNickname: null,
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toBe("1's Drought intensified the sun's rays!");
     });
@@ -1141,7 +1144,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.sandStream,
         pokemonNickname: "Tyranitar",
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.length).toBe(1);
       expect(result.effects[0]!.target).toBe("field");
@@ -1155,7 +1158,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.sandStream,
         pokemonNickname: null,
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toBe("1's Sand Stream whipped up a sandstorm!");
     });
@@ -1174,7 +1177,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.static,
       });
 
-      const result = applyGen3Ability("on-contact", ctx);
+      const result = applyGen3Ability(triggerIds.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -1188,7 +1191,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.flameBody,
       });
 
-      const result = applyGen3Ability("on-contact", ctx);
+      const result = applyGen3Ability(triggerIds.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -1202,7 +1205,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.roughSkin,
       });
 
-      const result = applyGen3Ability("on-contact", ctx);
+      const result = applyGen3Ability(triggerIds.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -1216,7 +1219,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
         pokemonAbility: GEN3_ABILITY_IDS.poisonPoint,
       });
 
-      const result = applyGen3Ability("on-contact", ctx);
+      const result = applyGen3Ability(triggerIds.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -1226,7 +1229,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Natural Cure holder switches out, when switch-out fires, then status is cured and volatiles clear", () => {
-      const pokemon = createActivePokemon({
+      const pokemon = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -1239,7 +1242,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: 2 });
       const ruleset = new Gen3Ruleset();
 
-      ruleset.onSwitchOut(pokemon, createSwitchState());
+      ruleset.onSwitchOut(pokemon, createBattleStateForSwitchOut());
 
       expect(pokemon.pokemon.status).toBeNull();
       expect(pokemon.volatileStatuses.size).toBe(0);
@@ -1251,7 +1254,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       });
       ctx.pokemon.pokemon.status = CORE_STATUS_IDS.burn;
 
-      const result = applyGen3Ability("on-turn-end", ctx);
+      const result = applyGen3Ability(triggerIds.onTurnEnd, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -1266,7 +1269,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       });
       ctx.pokemon.turnsOnField = 1;
 
-      const result = applyGen3Ability("on-turn-end", ctx);
+      const result = applyGen3Ability(triggerIds.onTurnEnd, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -1282,7 +1285,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
   describe("Tier 3 abilities — status and volatile immunity helpers", () => {
     it("given Immunity holder, when poison is checked, then poison is blocked", () => {
-      const target = createActivePokemon({
+      const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -1296,7 +1299,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Limber holder, when paralysis is checked, then paralysis is blocked", () => {
-      const target = createActivePokemon({
+      const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -1310,7 +1313,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Insomnia holder, when sleep is checked, then sleep is blocked", () => {
-      const target = createActivePokemon({
+      const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -1324,7 +1327,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Vital Spirit holder, when sleep is checked, then sleep is blocked", () => {
-      const target = createActivePokemon({
+      const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -1338,7 +1341,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Magma Armor holder, when freeze is checked, then freeze is blocked", () => {
-      const target = createActivePokemon({
+      const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -1352,7 +1355,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Water Veil holder, when burn is checked, then burn is blocked", () => {
-      const target = createActivePokemon({
+      const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
@@ -1380,7 +1383,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.static,
       });
-      const result = applyGen3Ability("on-switch-in", ctx);
+      const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(false);
       expect(result.effects.length).toBe(0);
       expect(result.messages.length).toBe(0);
@@ -1391,7 +1394,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.static,
       });
-      const result = applyGen3Ability("on-flinch", ctx);
+      const result = applyGen3Ability(triggerIds.onFlinch, ctx);
       expect(result.activated).toBe(false);
     });
   });
