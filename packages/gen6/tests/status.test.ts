@@ -2,11 +2,13 @@ import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_STATUS_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -17,13 +19,13 @@ import {
   Gen6Ruleset,
 } from "../src";
 
-const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const
-const STATUSES = CORE_STATUS_IDS
-const dataManager = createGen6DataManager()
-const defaultSpecies = dataManager.getSpecies(GEN6_SPECIES_IDS.bulbasaur)
-const defaultLevel = 50
-const ruleset = new Gen6Ruleset(dataManager)
-const emptyBattleState = {} as unknown as BattleState
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
+const STATUSES = CORE_STATUS_IDS;
+const dataManager = createGen6DataManager();
+const defaultSpecies = dataManager.getSpecies(GEN6_SPECIES_IDS.bulbasaur);
+const defaultLevel = 50;
+const ruleset = new Gen6Ruleset(dataManager);
+const emptyBattleState = {} as unknown as BattleState;
 
 function createStatusTestPokemon(
   overrides: {
@@ -38,22 +40,22 @@ function createStatusTestPokemon(
     nature: GEN6_NATURE_IDS.hardy,
     ivs: createIvs(),
     evs: createEvs(),
-    abilitySlot: "normal1",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
-    gender: "male",
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "test",
     originalTrainer: "test",
     originalTrainerId: 0,
-  })
+  });
 
-  pokemon.currentHp = overrides.currentHp ?? maxHp
-  pokemon.status = overrides.status ?? null
-  pokemon.ability = overrides.ability ?? ABILITIES.none
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.status = overrides.status ?? null;
+  pokemon.ability = overrides.ability ?? ABILITIES.none;
   pokemon.calculatedStats = {
     ...pokemon.calculatedStats,
     hp: maxHp,
-  }
+  };
 
   return {
     pokemon,
