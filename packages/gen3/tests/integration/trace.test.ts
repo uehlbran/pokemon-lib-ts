@@ -1,7 +1,24 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { applyGen3Ability } from "../../src/Gen3Abilities";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+  applyGen3Ability,
+} from "../../src";
 
 /**
  * Gen 3 Trace ability tests.
@@ -14,27 +31,29 @@ import { applyGen3Ability } from "../../src/Gen3Abilities";
  */
 
 // ---------------------------------------------------------------------------
-// Test helpers
+// Test Helpers
 // ---------------------------------------------------------------------------
 
-function createMockRng() {
-  return {
-    next: () => 0,
-    int: (_min: number, _max: number) => 100,
-    chance: () => false,
-    pick: <T>(arr: readonly T[]) => arr[0] as T,
-    shuffle: <T>(arr: readonly T[]) => [...arr],
-    getState: () => 0,
-    setState: () => {},
-  };
-}
+const DATA_MANAGER = createGen3DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS } as const;
+const GENDERS = CORE_GENDERS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(GEN3_SPECIES_IDS.gardevoir);
+const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN3_NATURE_IDS.hardy).id;
+const TRACE_TARGETS = {
+  intimidate: DATA_MANAGER.getSpecies(GEN3_SPECIES_IDS.mightyena),
+  speedBoost: DATA_MANAGER.getSpecies(GEN3_SPECIES_IDS.ninjask),
+} as const;
+const TRACE_MOVE = createMoveSlot(DATA_MANAGER.getMove(GEN3_MOVE_IDS.tackle));
 
-function createActivePokemon(opts: {
-  types: PokemonType[];
-  ability: string;
-  nickname?: string | null;
+function createTracePokemon(opts: {
   speciesId?: number;
+  nickname?: string | null;
+  ability: string;
+  types?: PokemonType[];
 }): ActivePokemon {
+  const species = opts.speciesId ? DATA_MANAGER.getSpecies(opts.speciesId) : DEFAULT_SPECIES;
   const stats: StatBlock = {
     hp: 200,
     attack: 100,
@@ -44,30 +63,30 @@ function createActivePokemon(opts: {
     speed: 100,
   };
   const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? 1,
-    nickname: opts.nickname === undefined ? "TestMon" : opts.nickname,
+    uid: "trace-test",
+    speciesId: species.id,
+    nickname: opts.nickname ?? species.displayName,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: 200,
-    moves: [],
+    moves: [TRACE_MOVE],
     ability: opts.ability,
-    abilitySlot: "normal1" as const,
+    abilitySlot: ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
-  } as PokemonInstance;
+  };
 
   return {
     pokemon,
@@ -82,11 +101,12 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types,
+    types: opts.types ?? (species.types as PokemonType[]),
     ability: opts.ability,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
+    lastDamageCategory: null,
     turnsOnField: 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
@@ -102,24 +122,23 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createAbilityContext(opts: {
+function createTraceContext(opts: {
   pokemonAbility: string;
   pokemonNickname?: string | null;
   opponentAbility?: string;
   opponentNickname?: string | null;
   hasOpponent?: boolean;
 }): AbilityContext {
-  const pokemon = createActivePokemon({
-    types: ["psychic"],
+  const pokemon = createTracePokemon({
     ability: opts.pokemonAbility,
-    nickname: opts.pokemonNickname === undefined ? "Gardevoir" : opts.pokemonNickname,
+    nickname: opts.pokemonNickname,
   });
   const opponent =
     opts.hasOpponent !== false
-      ? createActivePokemon({
-          types: ["normal"],
-          ability: opts.opponentAbility ?? "intimidate",
-          nickname: opts.opponentNickname === undefined ? "Mightyena" : opts.opponentNickname,
+      ? createTracePokemon({
+          ability: opts.opponentAbility ?? CORE_ABILITY_IDS.none,
+          nickname: opts.opponentNickname,
+          speciesId: TRACE_TARGETS.intimidate.id,
         })
       : undefined;
 
@@ -127,8 +146,16 @@ function createAbilityContext(opts: {
     pokemon,
     opponent,
     state: { weather: null } as AbilityContext["state"],
-    rng: createMockRng(),
-    trigger: "on-switch-in",
+    rng: {
+      next: () => 0,
+      int: (_min: number, _max: number) => 100,
+      chance: () => false,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: readonly T[]) => [...arr],
+      getState: () => 0,
+      setState: () => {},
+    },
+    trigger: TRIGGERS.onSwitchIn,
   } as AbilityContext;
 }
 
@@ -140,18 +167,18 @@ describe("Gen 3 Trace", () => {
   it("given Trace Pokemon switches in against Intimidate opponent, when on-switch-in fires, then ability changes to Intimidate", () => {
     // Source: pret/pokeemerald — ABILITY_TRACE copies foe's ability on entry
     // Source: Bulbapedia — "Trace copies the opponent's Ability when entering battle"
-    const ctx = createAbilityContext({
-      pokemonAbility: "trace",
-      pokemonNickname: "Gardevoir",
-      opponentAbility: "intimidate",
-      opponentNickname: "Mightyena",
+    const ctx = createTraceContext({
+      pokemonAbility: ABILITIES.trace,
+      pokemonNickname: DEFAULT_SPECIES.displayName,
+      opponentAbility: GEN3_ABILITY_IDS.intimidate,
+      opponentNickname: TRACE_TARGETS.intimidate.displayName,
     });
-    const result = applyGen3Ability("on-switch-in", ctx);
+    const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     expect(result.effects[0]!.effectType).toBe("ability-change");
     if (result.effects[0]!.effectType === "ability-change") {
-      expect(result.effects[0]!.newAbility).toBe("intimidate");
+      expect(result.effects[0]!.newAbility).toBe(GEN3_ABILITY_IDS.intimidate);
       expect(result.effects[0]!.target).toBe("self");
     }
     expect(result.messages[0]).toBe("Gardevoir traced Mightyena's intimidate!");
@@ -160,29 +187,29 @@ describe("Gen 3 Trace", () => {
   it("given Trace Pokemon switches in against Speed Boost opponent, when on-switch-in fires, then ability changes to Speed Boost", () => {
     // Source: pret/pokeemerald — ABILITY_TRACE copies foe's ability on entry
     // Triangulation: second independent test with different ability
-    const ctx = createAbilityContext({
-      pokemonAbility: "trace",
-      pokemonNickname: "Ralts",
-      opponentAbility: "speed-boost",
-      opponentNickname: "Ninjask",
+    const ctx = createTraceContext({
+      pokemonAbility: ABILITIES.trace,
+      pokemonNickname: DEFAULT_SPECIES.displayName,
+      opponentAbility: GEN3_ABILITY_IDS.speedBoost,
+      opponentNickname: TRACE_TARGETS.speedBoost.displayName,
     });
-    const result = applyGen3Ability("on-switch-in", ctx);
+    const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     if (result.effects[0]!.effectType === "ability-change") {
-      expect(result.effects[0]!.newAbility).toBe("speed-boost");
+      expect(result.effects[0]!.newAbility).toBe(GEN3_ABILITY_IDS.speedBoost);
     }
-    expect(result.messages[0]).toBe("Ralts traced Ninjask's speed-boost!");
+    expect(result.messages[0]).toBe("Gardevoir traced Ninjask's speed-boost!");
   });
 
   it("given Trace Pokemon switches in against Trace opponent, when on-switch-in fires, then ability does NOT change", () => {
     // Source: pret/pokeemerald — ABILITY_TRACE cannot copy itself
     // Source: Bulbapedia — "Trace cannot copy Trace"
-    const ctx = createAbilityContext({
-      pokemonAbility: "trace",
-      opponentAbility: "trace",
+    const ctx = createTraceContext({
+      pokemonAbility: ABILITIES.trace,
+      opponentAbility: ABILITIES.trace,
     });
-    const result = applyGen3Ability("on-switch-in", ctx);
+    const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
     expect(result.messages.length).toBe(0);
@@ -190,22 +217,22 @@ describe("Gen 3 Trace", () => {
 
   it("given Trace Pokemon switches in against no opponent, when on-switch-in fires, then no effect", () => {
     // Edge case: no opponent on field (all fainted)
-    const ctx = createAbilityContext({
-      pokemonAbility: "trace",
+    const ctx = createTraceContext({
+      pokemonAbility: ABILITIES.trace,
       hasOpponent: false,
     });
-    const result = applyGen3Ability("on-switch-in", ctx);
+    const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
   });
 
   it("given Trace Pokemon switches in against opponent with empty ability string, when on-switch-in fires, then no effect", () => {
     // Edge case: opponent's ability is empty string (shouldn't happen but defensive)
-    const ctx = createAbilityContext({
-      pokemonAbility: "trace",
+    const ctx = createTraceContext({
+      pokemonAbility: ABILITIES.trace,
       opponentAbility: "",
     });
-    const result = applyGen3Ability("on-switch-in", ctx);
+    const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
   });

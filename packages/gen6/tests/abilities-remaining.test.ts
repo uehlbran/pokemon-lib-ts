@@ -1,6 +1,17 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen6DataManager,
@@ -42,23 +53,26 @@ import {
 // ---------------------------------------------------------------------------
 
 let nextTestUid = 0;
-function makeTestUid() {
+function createTestUid() {
   return `test-${nextTestUid++}`;
 }
 
-const A = GEN6_ABILITY_IDS;
-const CA = CORE_ABILITY_IDS;
-const CI = CORE_ITEM_IDS;
-const I = GEN6_ITEM_IDS;
-const M = GEN6_MOVE_IDS;
-const N = GEN6_NATURE_IDS;
-const P = GEN6_SPECIES_IDS;
-const T = CORE_TYPE_IDS;
-const W = CORE_WEATHER_IDS;
+const ABILITIES = GEN6_ABILITY_IDS;
+const CORE_ABILITIES = CORE_ABILITY_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
+const CORE_ITEMS = CORE_ITEM_IDS;
+const ITEMS = GEN6_ITEM_IDS;
+const MOVES = GEN6_MOVE_IDS;
+const NATURES = GEN6_NATURE_IDS;
+const SPECIES = GEN6_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
 const dataManager = createGen6DataManager();
-const DEFAULT_MOVE = dataManager.getMove(M.tackle);
+const DEFAULT_MOVE = dataManager.getMove(MOVES.tackle);
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -69,28 +83,28 @@ function makePokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
-    uid: makeTestUid(),
-    speciesId: overrides.speciesId ?? P.bulbasaur,
+    uid: createTestUid(),
+    speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: N.hardy,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: NATURES.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: overrides.currentHp ?? maxHp,
     moves: [],
-    ability: overrides.ability ?? CA.none,
-    abilitySlot: "normal1" as const,
+    ability: overrides.ability ?? CORE_ABILITIES.none,
+    abilitySlot: ABILITY_SLOTS.normal1 as const,
     heldItem: overrides.heldItem ?? null,
     status: (overrides.status as PokemonInstance["status"]) ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: GENDERS.male as const,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: I.pokeBall,
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -102,7 +116,7 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
@@ -113,7 +127,7 @@ function makeActivePokemon(overrides: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }) {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createSyntheticPokemonInstance({
       ability: overrides.ability,
       nickname: overrides.nickname,
       currentHp: overrides.currentHp,
@@ -132,8 +146,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [T.normal],
-    ability: overrides.ability ?? CA.none,
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? CORE_ABILITIES.none,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -156,7 +170,7 @@ function makeActivePokemon(overrides: {
   };
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -173,13 +187,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(weather?: { type: string } | null): BattleState {
+function createBattleState(weather?: { type: string } | null): BattleState {
   return {
     phase: "turn-end",
     generation: 6,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: weather ?? null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -201,7 +215,7 @@ function makeBattleState(weather?: { type: string } | null): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(
+function createSyntheticMoveFromCanonical(
   type: PokemonType,
   opts: {
     id?: string;
@@ -210,7 +224,7 @@ function makeMove(
 ): MoveData {
   const baseMove = (() => {
     try {
-      return dataManager.getMove(opts.id ?? M.tackle);
+      return dataManager.getMove(opts.id ?? MOVES.tackle);
     } catch {
       return DEFAULT_MOVE;
     }
@@ -232,11 +246,11 @@ function makeMove(
   } as unknown as MoveData;
 }
 
-function makeContext(opts: {
+function createAbilityContext(opts: {
   ability: string;
   trigger: string;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ReturnType<typeof createSyntheticOnFieldPokemon>;
   move?: MoveData;
   nickname?: string;
   currentHp?: number;
@@ -248,12 +262,12 @@ function makeContext(opts: {
   weather?: { type: string } | null;
   format?: "singles" | "doubles";
 }): AbilityContext {
-  const state = makeBattleState(opts.weather);
+  const state = createBattleState(opts.weather);
   if (opts.format) {
     // @ts-expect-error - override format for doubles tests
     state.format = opts.format;
   }
-  const pokemon = makeActivePokemon({
+  const pokemon = createSyntheticOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname ?? "TestMon",
@@ -291,24 +305,24 @@ describe("Zen Mode (on-turn-end)", () => {
     // Source: Showdown data/abilities.ts -- zenmode: form change below 50% HP at turn end
     // Source: Bulbapedia "Zen Mode" -- "Activates when HP drops below half at end of turn."
     // 100/300 = 33% HP, below 50% threshold (floor(300/2) = 150)
-    const ctx = makeContext({
-      ability: A.zenMode,
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: ABILITIES.zenMode,
+      trigger: TRIGGERS.onTurnEnd,
       currentHp: 100,
       maxHp: 300,
     });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
     const volatileEffect = result.effects.find((e) => e.effectType === "volatile-inflict");
-    expect(volatileEffect?.volatile).toBe(A.zenMode);
+    expect(volatileEffect?.volatile).toBe(ABILITIES.zenMode);
   });
 
   it("given Zen Mode Darmanitan above 50% HP while in Zen Form, when on-turn-end, then reverts", () => {
     // Source: Showdown data/abilities.ts -- zenmode: reverts when HP > 50% and in Zen form
-    const zenVolatiles = new Map([[A.zenMode, { turnsLeft: -1 }]]);
-    const ctx = makeContext({
-      ability: A.zenMode,
-      trigger: "on-turn-end",
+    const zenVolatiles = new Map([[ABILITIES.zenMode, { turnsLeft: -1 }]]);
+    const ctx = createAbilityContext({
+      ability: ABILITIES.zenMode,
+      trigger: TRIGGERS.onTurnEnd,
       currentHp: 250,
       maxHp: 300,
       volatiles: zenVolatiles,
@@ -316,7 +330,7 @@ describe("Zen Mode (on-turn-end)", () => {
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
     const volatileEffect = result.effects.find((e) => e.effectType === "volatile-remove");
-    expect(volatileEffect?.volatile).toBe(A.zenMode);
+    expect(volatileEffect?.volatile).toBe(ABILITIES.zenMode);
   });
 });
 
@@ -329,31 +343,31 @@ describe("Harvest (on-turn-end)", () => {
     // Source: Showdown data/abilities.ts -- harvest: 100% restore in sun
     // Source: Bulbapedia "Harvest" -- "Guaranteed in sunlight."
     const harvestVolatiles = new Map([
-      ["harvest-berry", { turnsLeft: -1, data: { berryId: I.oranBerry } }],
+      ["harvest-berry", { turnsLeft: -1, data: { berryId: ITEMS.oranBerry } }],
     ]);
-    const ctx = makeContext({
-      ability: CA.harvest,
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: CORE_ABILITIES.harvest,
+      trigger: TRIGGERS.onTurnEnd,
       heldItem: null,
       volatiles: harvestVolatiles,
-      weather: { type: W.sun },
+      weather: { type: WEATHER.sun },
       rngNext: 0.9, // Would fail 50% roll, but sun makes it 100%
     });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
     const itemEffect = result.effects.find((e) => e.effectType === "item-restore");
-    expect(itemEffect?.item).toBe(I.oranBerry);
+    expect(itemEffect?.item).toBe(ITEMS.oranBerry);
   });
 
   it("given Harvest with no sun and RNG >= 50%, when on-turn-end, then does not restore", () => {
     // Source: Showdown data/abilities.ts -- harvest: 50% chance outside sun
     // rngNext = 0.7 >= 0.5, so restore fails
     const harvestVolatiles = new Map([
-      ["harvest-berry", { turnsLeft: -1, data: { berryId: I.sitrusBerry } }],
+      ["harvest-berry", { turnsLeft: -1, data: { berryId: ITEMS.sitrusBerry } }],
     ]);
-    const ctx = makeContext({
-      ability: CA.harvest,
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: CORE_ABILITIES.harvest,
+      trigger: TRIGGERS.onTurnEnd,
       heldItem: null,
       volatiles: harvestVolatiles,
       weather: null,
@@ -368,20 +382,20 @@ describe("Harvest (on-turn-end)", () => {
     // Both regular sun and harsh sun (Desolate Land) guarantee Harvest activation.
     // Bug #673: Previously only checked for "sun", missing "harsh-sun".
     const harvestVolatiles = new Map([
-      ["harvest-berry", { turnsLeft: -1, data: { berryId: I.lumBerry } }],
+      ["harvest-berry", { turnsLeft: -1, data: { berryId: ITEMS.lumBerry } }],
     ]);
-    const ctx = makeContext({
-      ability: CA.harvest,
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: CORE_ABILITIES.harvest,
+      trigger: TRIGGERS.onTurnEnd,
       heldItem: null,
       volatiles: harvestVolatiles,
-      weather: { type: W.harshSun },
+      weather: { type: WEATHER.harshSun },
       rngNext: 0.9, // Would fail 50% roll, but harsh-sun makes it 100%
     });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
     const itemEffect = result.effects.find((e) => e.effectType === "item-restore");
-    expect(itemEffect?.item).toBe(I.lumBerry);
+    expect(itemEffect?.item).toBe(ITEMS.lumBerry);
   });
 });
 
@@ -394,17 +408,20 @@ describe("Frisk (Gen 6: reveals all foes)", () => {
     // Source: Showdown data/abilities.ts (base Gen 6+) -- frisk: reveals ALL foes
     // Source: Bulbapedia "Frisk" Gen VI -- "Checks all foes' held items."
     // In singles, there is only one foe so result is same as Gen 5 single reveal
-    const opponent = makeActivePokemon({ ability: CA.none, heldItem: CI.choiceBand });
-    const ctx = makeContext({ ability: A.frisk, trigger: "on-switch-in", opponent });
+    const opponent = createSyntheticOnFieldPokemon({
+      ability: CORE_ABILITIES.none,
+      heldItem: CORE_ITEMS.choiceBand,
+    });
+    const ctx = createAbilityContext({ ability: ABILITIES.frisk, trigger: TRIGGERS.onSwitchIn, opponent });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain(CI.choiceBand);
+    expect(result.messages[0]).toContain(CORE_ITEMS.choiceBand);
   });
 
   it("given Frisk, when opponent has no held item, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- frisk: only reveals if item exists
-    const opponent = makeActivePokemon({ ability: CA.none, heldItem: null });
-    const ctx = makeContext({ ability: A.frisk, trigger: "on-switch-in", opponent });
+    const opponent = createSyntheticOnFieldPokemon({ ability: CORE_ABILITIES.none, heldItem: null });
+    const ctx = createAbilityContext({ ability: ABILITIES.frisk, trigger: TRIGGERS.onSwitchIn, opponent });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(false);
   });
@@ -417,10 +434,13 @@ describe("Frisk (Gen 6: reveals all foes)", () => {
 describe("Oblivious (passive-immunity)", () => {
   it("given Oblivious, when targeted by Attract, then blocks infatuation", () => {
     // Source: Showdown data/abilities.ts -- oblivious: blocks Attract
-    const attractMove = makeMove(T.normal, { id: M.attract, category: "status" });
-    const ctx = makeContext({
-      ability: A.oblivious,
-      trigger: "passive-immunity",
+    const attractMove = createSyntheticMoveFromCanonical(TYPES.normal, {
+      id: MOVES.attract,
+      category: "status",
+    });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.oblivious,
+      trigger: TRIGGERS.passiveImmunity,
       move: attractMove,
     });
     const result = handleGen6RemainingAbility(ctx);
@@ -430,10 +450,13 @@ describe("Oblivious (passive-immunity)", () => {
 
   it("given Oblivious, when targeted by Captivate, then blocks it", () => {
     // Source: Showdown data/abilities.ts -- oblivious: blocks Captivate
-    const captivateMove = makeMove(T.normal, { id: M.captivate, category: "status" });
-    const ctx = makeContext({
-      ability: A.oblivious,
-      trigger: "passive-immunity",
+    const captivateMove = createSyntheticMoveFromCanonical(TYPES.normal, {
+      id: MOVES.captivate,
+      category: "status",
+    });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.oblivious,
+      trigger: TRIGGERS.passiveImmunity,
       move: captivateMove,
     });
     const result = handleGen6RemainingAbility(ctx);
@@ -450,8 +473,12 @@ describe("Serene Grace (Gen 6: no Secret Power exclusion)", () => {
   it("given Serene Grace, when used with any move, then activates and doubles secondary chance", () => {
     // Source: Showdown data/abilities.ts (base Gen 6+) -- serenegrace: no move exclusions
     // Gen 6 change: Secret Power exclusion removed (was Gen 5 specific)
-    const tbolt = makeMove(T.electric, { id: M.thunderbolt });
-    const ctx = makeContext({ ability: A.sereneGrace, trigger: "on-damage-calc", move: tbolt });
+    const tbolt = createSyntheticMoveFromCanonical(TYPES.electric, { id: MOVES.thunderbolt });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.sereneGrace,
+      trigger: TRIGGERS.onDamageCalc,
+      move: tbolt,
+    });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
   });
@@ -459,10 +486,10 @@ describe("Serene Grace (Gen 6: no Secret Power exclusion)", () => {
   it("given Serene Grace, when used with Secret Power (Gen 5 excluded it), then still activates in Gen 6", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- excluded secretpower (Gen 5 only)
     // Source: Showdown data/abilities.ts (base) -- no exclusion in Gen 6
-    const secretPower = makeMove(T.normal, { id: M.secretPower });
-    const ctx = makeContext({
-      ability: A.sereneGrace,
-      trigger: "on-damage-calc",
+    const secretPower = createSyntheticMoveFromCanonical(TYPES.normal, { id: MOVES.secretPower });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.sereneGrace,
+      trigger: TRIGGERS.onDamageCalc,
       move: secretPower,
     });
     const result = handleGen6RemainingAbility(ctx);
@@ -473,13 +500,13 @@ describe("Serene Grace (Gen 6: no Secret Power exclusion)", () => {
 describe("getSereneGraceMultiplier utility (Gen 6)", () => {
   it("given serene-grace ability, then returns 2x multiplier", () => {
     // Source: Showdown data/abilities.ts -- serenegrace: doubles secondary chance
-    expect(getSereneGraceMultiplier(A.sereneGrace)).toBe(SERENE_GRACE_CHANCE_MULTIPLIER);
-    expect(getSereneGraceMultiplier(A.sereneGrace)).toBe(SERENE_GRACE_CHANCE_MULTIPLIER);
+    expect(getSereneGraceMultiplier(ABILITIES.sereneGrace)).toBe(SERENE_GRACE_CHANCE_MULTIPLIER);
+    expect(getSereneGraceMultiplier(ABILITIES.sereneGrace)).toBe(SERENE_GRACE_CHANCE_MULTIPLIER);
   });
 
   it("given a non-Serene Grace ability, then returns 1 (no boost)", () => {
     // Source: Showdown data/abilities.ts -- only serenegrace activates this
-    expect(getSereneGraceMultiplier(CA.intimidate)).toBe(1);
+    expect(getSereneGraceMultiplier(CORE_ABILITIES.intimidate)).toBe(1);
   });
 });
 
@@ -491,9 +518,9 @@ describe("Friend Guard (on-damage-calc)", () => {
   it("given Friend Guard in doubles, when on-damage-calc, then activates damage reduction", () => {
     // Source: Showdown data/abilities.ts -- friendguard: reduces ally damage by 25% in doubles
     // Source: Bulbapedia "Friend Guard" -- "Reduces damage done to allies by 25%."
-    const ctx = makeContext({
-      ability: A.friendGuard,
-      trigger: "on-damage-calc",
+    const ctx = createAbilityContext({
+      ability: ABILITIES.friendGuard,
+      trigger: TRIGGERS.onDamageCalc,
       format: "doubles",
     });
     const result = handleGen6RemainingAbility(ctx);
@@ -503,9 +530,9 @@ describe("Friend Guard (on-damage-calc)", () => {
 
   it("given Friend Guard in singles format, when on-damage-calc, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- friendguard: no allies in singles
-    const ctx = makeContext({
-      ability: A.friendGuard,
-      trigger: "on-damage-calc",
+    const ctx = createAbilityContext({
+      ability: ABILITIES.friendGuard,
+      trigger: TRIGGERS.onDamageCalc,
       format: "singles",
     });
     const result = handleGen6RemainingAbility(ctx);
@@ -561,16 +588,16 @@ describe("Constant values", () => {
 describe("getWeightMultiplier utility", () => {
   it("given heavy-metal, then returns 2x multiplier", () => {
     // Source: Showdown data/abilities.ts -- heavymetal: doubles weight
-    expect(getWeightMultiplier(A.heavyMetal)).toBe(HEAVY_METAL_WEIGHT_MULTIPLIER);
+    expect(getWeightMultiplier(ABILITIES.heavyMetal)).toBe(HEAVY_METAL_WEIGHT_MULTIPLIER);
   });
 
   it("given light-metal, then returns 0.5x multiplier", () => {
     // Source: Showdown data/abilities.ts -- lightmetal: halves weight
-    expect(getWeightMultiplier(A.lightMetal)).toBe(LIGHT_METAL_WEIGHT_MULTIPLIER);
+    expect(getWeightMultiplier(ABILITIES.lightMetal)).toBe(LIGHT_METAL_WEIGHT_MULTIPLIER);
   });
 
   it("given a non-weight-modifying ability, then returns 1 (no change)", () => {
     // Source: Showdown data/abilities.ts -- only heavy-metal and light-metal modify weight
-    expect(getWeightMultiplier(CA.levitate)).toBe(1);
+    expect(getWeightMultiplier(CORE_ABILITIES.levitate)).toBe(1);
   });
 });

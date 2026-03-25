@@ -2,15 +2,24 @@ import type { AbilityContext } from "@pokemon-lib-ts/battle";
 import type { Gender, MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
   GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
@@ -31,16 +40,20 @@ import { applyGen4Ability } from "../src/Gen4Abilities";
 
 const DATA_MANAGER = createGen4DataManager();
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
-const ITEMS = CORE_ITEM_IDS;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
 const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
 const SPECIES = GEN4_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
+const DEFAULT_MOVE = DATA_MANAGER.getMove(MOVES.tackle);
+const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN4_NATURE_IDS.hardy).id;
 
 const FIRE_MOVE = DATA_MANAGER.getMove(MOVES.firePunch);
 const WATER_MOVE = DATA_MANAGER.getMove(MOVES.waterPulse);
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -51,41 +64,38 @@ function makePokemonInstance(overrides: {
   gender?: Gender;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: "test",
-    speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: GEN4_NATURE_IDS.hardy,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: [],
-    ability: overrides.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+  const species = DATA_MANAGER.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(4), {
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: overrides.gender ?? CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
-    status: overrides.status ?? null,
-    friendship: 0,
-    gender: (overrides.gender ?? "male") as const,
     isShiny: false,
     metLocation: "",
-    metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
     pokeball: ITEMS.pokeBall,
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+  });
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
+  pokemon.ability = overrides.ability ?? ABILITIES.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   speciesId?: number;
@@ -98,7 +108,7 @@ function makeActivePokemon(overrides: {
   hasFlashFire?: boolean;
 }) {
   const active = {
-    pokemon: makePokemonInstance({
+    pokemon: createSyntheticPokemonInstance({
       ability: overrides.ability,
       speciesId: overrides.speciesId,
       nickname: overrides.nickname,
@@ -143,14 +153,10 @@ function makeActivePokemon(overrides: {
   return active;
 }
 
-function makeMove(id: MoveData["id"]): MoveData {
-  return DATA_MANAGER.getMove(id);
-}
-
-function makeContext(opts: {
+function createAbilityContext(opts: {
   ability: string;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ReturnType<typeof createOnFieldPokemon>;
   move?: MoveData;
   hasFlashFire?: boolean;
 }): AbilityContext {
@@ -209,7 +215,7 @@ function makeContext(opts: {
     winner: null,
   };
 
-  const pokemon = makeActivePokemon({
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     hasFlashFire: opts.hasFlashFire,
@@ -219,7 +225,7 @@ function makeContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    trigger: "on-switch-in",
+    trigger: TRIGGERS.onSwitchIn,
     move: opts.move,
     rng: state.rng,
   } as unknown as AbilityContext;
@@ -235,8 +241,8 @@ describe("applyGen4Ability on-flinch -- Steadfast", () => {
   it("given a Pokemon with Steadfast at +0 Speed, when it flinches, then Speed stage effect is +1", () => {
     // Source: Bulbapedia — Steadfast raises Speed by 1 stage when the holder flinches
     // Derivation: at +0 Speed, effect should produce stages: 1 (engine applies clamped to [−6, +6])
-    const ctx = makeContext({ ability: ABILITIES.steadfast });
-    const result = applyGen4Ability("on-flinch", ctx);
+    const ctx = createAbilityContext({ ability: ABILITIES.steadfast });
+    const result = applyGen4Ability(TRIGGERS.onFlinch, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -252,10 +258,10 @@ describe("applyGen4Ability on-flinch -- Steadfast", () => {
   it("given a Pokemon with Steadfast at +2 Speed, when it flinches, then Speed stage effect is still +1", () => {
     // Source: Bulbapedia — Steadfast always raises Speed by exactly 1 stage per flinch
     // Derivation: the ability always returns stages: 1; clamping is done by the engine
-    const ctx = makeContext({ ability: ABILITIES.steadfast });
+    const ctx = createAbilityContext({ ability: ABILITIES.steadfast });
     // Simulate a Pokemon already at +2 Speed (ability returns +1 regardless)
     ctx.pokemon.statStages.speed = 2;
-    const result = applyGen4Ability("on-flinch", ctx);
+    const result = applyGen4Ability(TRIGGERS.onFlinch, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -269,8 +275,8 @@ describe("applyGen4Ability on-flinch -- Steadfast", () => {
 
   it("given a Pokemon WITHOUT Steadfast, when it flinches, then ability does not activate", () => {
     // Source: Bulbapedia — only Steadfast triggers on flinch
-    const ctx = makeContext({ ability: ABILITIES.intimidate });
-    const result = applyGen4Ability("on-flinch", ctx);
+    const ctx = createAbilityContext({ ability: ABILITIES.intimidate });
+    const result = applyGen4Ability(TRIGGERS.onFlinch, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects).toHaveLength(0);
@@ -287,9 +293,9 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
 
   it("given a Pokemon with Trace switching in against an opponent with Intimidate, then copies Intimidate", () => {
     // Source: Bulbapedia — Trace can copy any ability not on the uncopyable list
-    const opponent = makeActivePokemon({ ability: ABILITIES.intimidate });
-    const ctx = makeContext({ ability: ABILITIES.trace, opponent });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.intimidate });
+    const ctx = createAbilityContext({ ability: ABILITIES.trace, opponent });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -305,9 +311,9 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
   it("given a Pokemon with Trace switching in against an opponent with Levitate, then copies Levitate", () => {
     // Source: Bulbapedia — Trace can copy Levitate (it's not uncopyable)
     // Triangulation case: different ability than Intimidate above
-    const opponent = makeActivePokemon({ ability: ABILITIES.levitate });
-    const ctx = makeContext({ ability: ABILITIES.trace, opponent });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.levitate });
+    const ctx = createAbilityContext({ ability: ABILITIES.trace, opponent });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -321,9 +327,9 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
   it("given a Pokemon with Trace switching in against a Pokemon with Trace, then does NOT copy Trace", () => {
     // Source: Bulbapedia — Trace cannot copy Trace
     // Source: Showdown Gen 4 mod — uncopyable list includes Trace
-    const opponent = makeActivePokemon({ ability: ABILITIES.trace });
-    const ctx = makeContext({ ability: ABILITIES.trace, opponent });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.trace });
+    const ctx = createAbilityContext({ ability: ABILITIES.trace, opponent });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects).toHaveLength(0);
@@ -332,18 +338,18 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
   it("given a Pokemon with Trace switching in against Multitype, then does NOT copy Multitype", () => {
     // Source: Bulbapedia — Trace cannot copy Multitype
     // Source: Showdown Gen 4 mod — Multitype is uncopyable
-    const opponent = makeActivePokemon({ ability: ABILITIES.multitype });
-    const ctx = makeContext({ ability: ABILITIES.trace, opponent });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.multitype });
+    const ctx = createAbilityContext({ ability: ABILITIES.trace, opponent });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
   });
 
   it("given a Pokemon with Trace switching in against Forecast, then does NOT copy Forecast", () => {
     // Source: Bulbapedia — Trace cannot copy Forecast
-    const opponent = makeActivePokemon({ ability: ABILITIES.forecast });
-    const ctx = makeContext({ ability: ABILITIES.trace, opponent });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.forecast });
+    const ctx = createAbilityContext({ ability: ABILITIES.trace, opponent });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -352,9 +358,9 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
     // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
     //   Gen 4 Trace banned list is ['forecast', 'multitype', 'trace'] only.
     //   Flower Gift is copyable in Gen 4 (banned only in Gen 5+).
-    const opponent = makeActivePokemon({ ability: ABILITIES.flowerGift });
-    const ctx = makeContext({ ability: ABILITIES.trace, opponent });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.flowerGift });
+    const ctx = createAbilityContext({ ability: ABILITIES.trace, opponent });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -367,9 +373,9 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
     // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
     //   Gen 4 Trace banned list is ['forecast', 'multitype', 'trace'] only.
     //   Wonder Guard is copyable in Gen 4; e.g., Gardevoir/Porygon2 Trace vs Shedinja was a known Gen 4 mechanic.
-    const opponent = makeActivePokemon({ ability: ABILITIES.wonderGuard });
-    const ctx = makeContext({ ability: ABILITIES.trace, opponent });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.wonderGuard });
+    const ctx = createAbilityContext({ ability: ABILITIES.trace, opponent });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -380,8 +386,8 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
 
   it("given a Pokemon with Trace switching in with no opponent, then does NOT activate", () => {
     // Edge case: no opponent present
-    const ctx = makeContext({ ability: ABILITIES.trace });
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const ctx = createAbilityContext({ ability: ABILITIES.trace });
+    const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -398,11 +404,11 @@ describe("applyGen4Ability passive-immunity -- Flash Fire volatile boost", () =>
   it("given a Pokemon with Flash Fire hit by a Fire move for the first time, then sets flash-fire volatile", () => {
     // Source: Bulbapedia — Flash Fire: "The Pokemon's Fire-type moves are powered up
     //   if it's hit by a Fire-type move."
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.flashFire,
       move: FIRE_MOVE,
     });
-    const result = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability(TRIGGERS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -416,11 +422,11 @@ describe("applyGen4Ability passive-immunity -- Flash Fire volatile boost", () =>
 
   it("given a Pokemon with Flash Fire hit by a non-Fire move, then does NOT activate", () => {
     // Source: Bulbapedia — Flash Fire only triggers on Fire-type moves
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.flashFire,
       move: WATER_MOVE,
     });
-    const result = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability(TRIGGERS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects).toHaveLength(0);
@@ -428,12 +434,12 @@ describe("applyGen4Ability passive-immunity -- Flash Fire volatile boost", () =>
 
   it("given a Pokemon with Flash Fire already boosted hit by another Fire move, then blocks the move but does not add volatile again", () => {
     // Source: Bulbapedia — Flash Fire still blocks Fire moves even after activation
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.flashFire,
       move: FIRE_MOVE,
       hasFlashFire: true,
     });
-    const result = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability(TRIGGERS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(0);
