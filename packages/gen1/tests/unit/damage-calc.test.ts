@@ -17,6 +17,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen1DataManager,
   GEN1_ITEM_IDS,
   GEN1_MOVE_IDS,
   GEN1_NATURE_IDS,
@@ -44,6 +45,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const ABILITIES = CORE_ABILITY_IDS;
+const DATA_MANAGER = createGen1DataManager();
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN1_ITEM_IDS } as const;
 const MOVES = GEN1_MOVE_IDS;
 const NATURES = NEUTRAL_NATURES[0] ?? GEN1_NATURE_IDS.hardy;
@@ -168,65 +170,20 @@ function createActivePokemon(opts: {
 
 /** Minimal physical move mock. Type "normal" is physical in Gen 1. */
 function createPhysicalMove(power: number): MoveData {
+  const base = DATA_MANAGER.getMove(MOVES.tackle);
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
+    ...base,
+    id: base.id,
+    displayName: base.displayName,
+    type: TYPES.normal as PokemonType,
     category: "physical",
     power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 1,
   } as MoveData;
 }
 
 /** Minimal species data mock. */
 function createSpecies(): PokemonSpeciesData {
-  return {
-    id: SPECIES.bulbasaur,
-    name: "test",
-    displayName: "Test",
-    types: [TYPES.normal],
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [ABILITIES.none], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  } as PokemonSpeciesData;
+  return DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
 }
 
 /**
@@ -1097,37 +1054,8 @@ describe("Gen 1 Damage Calculation", () => {
     const chart = createNeutralTypeChart();
     const species = createSpecies();
     const explosionMove: MoveData = {
-      id: MOVES.explosion,
-      displayName: "Explosion",
-      type: TYPES.normal as PokemonType,
-      category: "physical",
-      power: 250,
-      accuracy: 100,
-      pp: 5,
-      priority: 0,
-      target: "adjacent-foe",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: false,
-        mirror: true,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
+      ...DATA_MANAGER.getMove(MOVES.explosion),
       effect: { type: "custom", handler: MOVES.explosion },
-      description: "",
-      generation: 1,
     };
     const normalMove = createPhysicalMove(250);
     const rng = createMockRng(255);
@@ -1200,39 +1128,7 @@ describe("Gen 1 Damage Calculation", () => {
     //   max roll (255): floor(31 * 255 / 255) = 31
     const chart = createNeutralTypeChart();
     const species = createSpecies();
-    const slashMove: MoveData = {
-      id: MOVES.slash,
-      displayName: "Slash",
-      type: TYPES.normal as PokemonType,
-      category: "physical",
-      power: 70,
-      accuracy: 100,
-      pp: 20,
-      priority: 0,
-      target: "adjacent-foe",
-      flags: {
-        contact: true,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: true,
-        mirror: true,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-      effect: null,
-      description: "",
-      generation: 1,
-    } as MoveData;
+    const slashMove: MoveData = DATA_MANAGER.getMove(MOVES.slash);
     const rng = createMockRng(255); // max roll
 
     // Burned Charizard (Fire/Flying) — non-STAB for Normal-type Slash

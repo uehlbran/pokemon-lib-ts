@@ -21,19 +21,43 @@ import type {
   BattleState,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { canInflictGen4Status } from "../src/Gen4MoveEffects";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
+
+const dataManager = createGen4DataManager();
+const MOVES = { ...GEN4_MOVE_IDS } as const;
+const SPECIES = GEN4_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+type WeatherId = (typeof WEATHER)[keyof typeof WEATHER];
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
 function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+  return new Gen4Ruleset(dataManager);
 }
 
 function makePokemonInstance(overrides: {
@@ -47,16 +71,16 @@ function makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: maxHp,
     moves: [],
-    ability: "",
+    ability: ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
@@ -67,7 +91,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: GEN4_ITEM_IDS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -97,7 +121,7 @@ function makeActivePokemon(overrides: {
     calculatedDefense: overrides.calculatedDefense,
     calculatedSpDefense: overrides.calculatedSpDefense,
   });
-  pokemon.ability = overrides.ability ?? "";
+    pokemon.ability = overrides.ability ?? ABILITIES.none;
   return {
     pokemon,
     teamSlot: 0,
@@ -111,8 +135,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -148,14 +172,14 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeStubState(weather?: { type: "sand" | "hail" | "rain" | "sun" }): BattleState {
+function makeStubState(weather?: { type: WeatherId }): BattleState {
   return {
     phase: "turn-end",
     generation: 4,
     format: "singles",
     turnNumber: 1,
     sides: [makeSide(0), makeSide(1)],
-    weather: weather ? { type: weather.type, turnsLeft: 5, source: "test" } : null,
+    weather: weather ? { type: weather.type, turnsLeft: 5, source: WEATHER.sun } : null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
     magicRoom: { active: false, turnsLeft: 0 },
@@ -182,7 +206,7 @@ function makeAbilityContext(opts: {
   status?: PokemonInstance["status"];
   volatiles?: Map<string, unknown>;
   maxHp?: number;
-  weather?: { type: "sand" | "hail" | "rain" | "sun" };
+  weather?: { type: WeatherId };
   move?: Partial<MoveData>;
 }): AbilityContext {
   const pokemon = makeActivePokemon({
@@ -233,9 +257,8 @@ function makeAccuracyCtx(opts: {
     attacker,
     defender,
     move: {
-      id: "tackle",
+      ...dataManager.getMove(MOVES.tackle),
       accuracy: opts.moveAccuracy !== undefined ? opts.moveAccuracy : 100,
-      category: "physical",
     } as AccuracyCtx["move"],
     state: makeStubState(),
     rng: new SeededRandom(opts.seed ?? 1),
@@ -252,8 +275,7 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     // Derivation: floor(62 * 50 / 7 / 1 * 1.0) = floor(442.857) = 442
     // Abra baseExp=62 verified from packages/gen4/data/pokemon.json
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const abra = dm.getSpeciesByName("abra")!;
+    const abra = dataManager.getSpecies(SPECIES.abra);
     expect(abra.baseExp).toBe(62);
 
     const result = ruleset.calculateExpGain({
@@ -275,8 +297,7 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     // Derivation: floor(64 * 30 / 7 / 1 * 1.5) = floor(274.285 * 1.5) = floor(411.428) = 411
     // Bulbasaur baseExp=64 verified from packages/gen4/data/pokemon.json
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const bulbasaur = dm.getSpeciesByName("bulbasaur")!;
+    const bulbasaur = dataManager.getSpecies(SPECIES.bulbasaur);
     expect(bulbasaur.baseExp).toBe(64);
 
     const result = ruleset.calculateExpGain({
@@ -297,8 +318,7 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     // Source: pret/pokeplatinum — EXP is split equally among all participants
     // Derivation: floor(62 * 50 / 7 / 2 * 1.0) = floor(221.428) = 221
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const abra = dm.getSpeciesByName("abra")!;
+    const abra = dataManager.getSpecies(SPECIES.abra);
 
     const result = ruleset.calculateExpGain({
       defeatedSpecies: abra,
@@ -319,9 +339,8 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     // Derivation: floor(1 * 1 / 7 / 1 * 1.0) = floor(0.142) = 0 → clamped to 1
     // We use a synthetic species with baseExp=1 to hit the clamp branch
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
     // Use Magikarp-like synthetic: get any species and override baseExp
-    const magikarp = dm.getSpeciesByName("magikarp")!;
+    const magikarp = dataManager.getSpecies(SPECIES.magikarp);
     const syntheticSpecies = { ...magikarp, baseExp: 1 };
 
     const result = ruleset.calculateExpGain({
@@ -343,8 +362,7 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     //   Without Lucky Egg: floor(62 * 50 / 7) = floor(442.857) = 442
     //   With Lucky Egg: floor(442 * 1.5) = floor(663) = 663
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const abra = dm.getSpeciesByName("abra")!;
+    const abra = dataManager.getSpecies(SPECIES.abra);
 
     const withoutLuckyEgg = ruleset.calculateExpGain({
       defeatedSpecies: abra,
@@ -381,8 +399,7 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     //   step3 = floor(274 * 1.0) = 274
     //   traded: floor(274 * 1.5) = 411
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const bulbasaur = dm.getSpeciesByName("bulbasaur")!;
+    const bulbasaur = dataManager.getSpecies(SPECIES.bulbasaur);
     expect(bulbasaur.baseExp).toBe(64);
 
     const notTradedResult = ruleset.calculateExpGain({
@@ -418,8 +435,7 @@ describe("Gen4Ruleset calculateExpGain — issue #426 fixes", () => {
     //   BattleSystem_PokemonIsOT == FALSE, MON_DATA_LANGUAGE != gGameLanguage → totalExp * 170 / 100
     // b=64 (Bulbasaur), L_d=30, s=1, t=1.0 → base=274; floor(274 * 1.7) = floor(465.8) = 465
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const bulbasaur = dm.getSpeciesByName("bulbasaur")!;
+    const bulbasaur = dataManager.getSpecies(SPECIES.bulbasaur);
 
     const result = ruleset.calculateExpGain({
       defeatedSpecies: bulbasaur,
@@ -456,10 +472,12 @@ describe("Gen4Ruleset doesMoveHit — Tangled Feet (issue #427)", () => {
 
     for (let seed = 1; seed <= trials; seed++) {
       // Defender has Tangled Feet + confusion volatile
-      const confusedVolatiles = new Map<string, unknown>([["confusion", { turnsLeft: 3 }]]);
+      const confusedVolatiles = new Map<string, unknown>([
+        [CORE_VOLATILE_IDS.confusion, { turnsLeft: 3 }],
+      ]);
       const ctxTangled = makeAccuracyCtx({
         moveAccuracy: 100,
-        defenderAbility: "tangled-feet",
+        defenderAbility: ABILITIES.tangledFeet,
         defenderVolatiles: confusedVolatiles,
         seed,
       });
@@ -487,7 +505,7 @@ describe("Gen4Ruleset doesMoveHit — Tangled Feet (issue #427)", () => {
       // Tangled Feet but NOT confused — no volatiles
       const ctx = makeAccuracyCtx({
         moveAccuracy: 100,
-        defenderAbility: "tangled-feet",
+        defenderAbility: ABILITIES.tangledFeet,
         seed,
       });
       if (!ruleset.doesMoveHit(ctx)) misses++;
@@ -507,8 +525,11 @@ describe("Gen4Ruleset onSwitchOut — Natural Cure (issue #428)", () => {
     // Source: Bulbapedia — Natural Cure: "All status conditions heal when the Pokemon switches out."
     // Source: Showdown data/abilities.ts — Natural Cure onSwitchOut: pokemon.status = null
     const ruleset = makeRuleset();
-    const pokemon = makeActivePokemon({ ability: "natural-cure", status: "burn" });
-    expect(pokemon.pokemon.status).toBe("burn");
+    const pokemon = makeActivePokemon({
+      ability: ABILITIES.naturalCure,
+      status: STATUSES.burn,
+    });
+    expect(pokemon.pokemon.status).toBe(STATUSES.burn);
 
     ruleset.onSwitchOut(pokemon, makeStubState());
 
@@ -519,8 +540,11 @@ describe("Gen4Ruleset onSwitchOut — Natural Cure (issue #428)", () => {
     // Source: Bulbapedia — Natural Cure cures ALL primary status conditions on switch-out
     // Derivation: same mechanic applies to paralysis, poison, sleep, freeze
     const ruleset = makeRuleset();
-    const pokemon = makeActivePokemon({ ability: "natural-cure", status: "paralysis" });
-    expect(pokemon.pokemon.status).toBe("paralysis");
+    const pokemon = makeActivePokemon({
+      ability: ABILITIES.naturalCure,
+      status: STATUSES.paralysis,
+    });
+    expect(pokemon.pokemon.status).toBe(STATUSES.paralysis);
 
     ruleset.onSwitchOut(pokemon, makeStubState());
 
@@ -531,18 +555,18 @@ describe("Gen4Ruleset onSwitchOut — Natural Cure (issue #428)", () => {
     // Source: Showdown — only Natural Cure triggers on switch-out for status cure
     // Other abilities do not clear status on switch-out
     const ruleset = makeRuleset();
-    const pokemon = makeActivePokemon({ ability: "blaze", status: "burn" });
-    expect(pokemon.pokemon.status).toBe("burn");
+    const pokemon = makeActivePokemon({ ability: ABILITIES.blaze, status: STATUSES.burn });
+    expect(pokemon.pokemon.status).toBe(STATUSES.burn);
 
     ruleset.onSwitchOut(pokemon, makeStubState());
 
-    expect(pokemon.pokemon.status).toBe("burn");
+    expect(pokemon.pokemon.status).toBe(STATUSES.burn);
   });
 
   it("given Pokemon with Natural Cure and no status condition, when switched out, then status remains null", () => {
     // Source: Showdown — Natural Cure does nothing if already healthy
     const ruleset = makeRuleset();
-    const pokemon = makeActivePokemon({ ability: "natural-cure" });
+    const pokemon = makeActivePokemon({ ability: ABILITIES.naturalCure });
     expect(pokemon.pokemon.status).toBeNull();
 
     ruleset.onSwitchOut(pokemon, makeStubState());
@@ -559,7 +583,7 @@ describe("applyGen4Ability — default branches coverage (issue #432)", () => {
   it("given an unrecognized trigger type, when applyGen4Ability is called, then returns activated:false", () => {
     // Exercises Gen4Abilities.ts default branch at line 91 (main switch)
     // An unrecognized trigger falls through to the top-level default case
-    const ctx = makeAbilityContext({ ability: "speed-boost" });
+    const ctx = makeAbilityContext({ ability: ABILITIES.speedBoost });
     // Cast to bypass TypeScript type-checking to exercise the runtime default branch
     const result = applyGen4Ability(
       "unknown-trigger" as Parameters<typeof applyGen4Ability>[0],
@@ -595,7 +619,7 @@ describe("applyGen4Ability — default branches coverage (issue #432)", () => {
     // An ability not handled by passive-immunity falls to default
     const ctx = makeAbilityContext({
       ability: "unknown-ability-xyz",
-      move: { type: "fire" } as MoveData,
+      move: dataManager.getMove(MOVES.flamethrower),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -623,9 +647,9 @@ describe("Gen4 canInflictGen4Status — Electric type paralysis (issue #443)", (
     // Source: Showdown Gen 4 mod — Electric paralysis immunity was introduced in Gen 6
     // Source: Gen4MoveEffects.ts GEN4_STATUS_IMMUNITIES — no entry for paralysis
     // In Gen 4, Electric types ARE susceptible to paralysis (unlike Gen 6+)
-    const electricPokemon = makeActivePokemon({ types: ["electric"] });
+    const electricPokemon = makeActivePokemon({ types: [TYPES.electric] });
 
-    const canParalyze = canInflictGen4Status("paralysis", electricPokemon);
+    const canParalyze = canInflictGen4Status(STATUSES.paralysis, electricPokemon);
 
     expect(canParalyze).toBe(true);
   });
@@ -633,9 +657,9 @@ describe("Gen4 canInflictGen4Status — Electric type paralysis (issue #443)", (
   it("given a dual Electric/Flying-type Pokemon in Gen 4, when checking if paralysis can be inflicted, then returns true", () => {
     // Source: Showdown Gen 4 mod — no type-based paralysis immunity in Gen 4
     // Derivation: GEN4_STATUS_IMMUNITIES has no entry for 'paralysis' key
-    const electricFlyingPokemon = makeActivePokemon({ types: ["electric", "flying"] });
+    const electricFlyingPokemon = makeActivePokemon({ types: [TYPES.electric, TYPES.flying] });
 
-    const canParalyze = canInflictGen4Status("paralysis", electricFlyingPokemon);
+    const canParalyze = canInflictGen4Status(STATUSES.paralysis, electricFlyingPokemon);
 
     expect(canParalyze).toBe(true);
   });
@@ -657,7 +681,7 @@ describe("Gen4Ruleset doesMoveHit — No Guard (issue #446)", () => {
     for (let seed = 1; seed <= 200; seed++) {
       const ctx = makeAccuracyCtx({
         moveAccuracy: 50,
-        attackerAbility: "no-guard",
+        attackerAbility: ABILITIES.noGuard,
         seed,
       });
       if (!ruleset.doesMoveHit(ctx)) misses++;
@@ -676,7 +700,7 @@ describe("Gen4Ruleset doesMoveHit — No Guard (issue #446)", () => {
     for (let seed = 1; seed <= 200; seed++) {
       const ctx = makeAccuracyCtx({
         moveAccuracy: 50,
-        defenderAbility: "no-guard",
+        defenderAbility: ABILITIES.noGuard,
         seed,
       });
       if (!ruleset.doesMoveHit(ctx)) misses++;
@@ -687,8 +711,8 @@ describe("Gen4Ruleset doesMoveHit — No Guard (issue #446)", () => {
   });
 
   it("given neither side has No Guard and move has 50% accuracy, when checking hit, then misses occur", () => {
-    // Control case: without No Guard a 50% accuracy move actually misses sometimes
-    // Derivation: 50% accuracy → ~50% miss rate over many seeds
+    // Control case: without No Guard a 50% accuracy move follows the seeded RNG path.
+    // SeededRandom over seeds 1..200 currently produces 101 misses for a 50%-accuracy move.
     const ruleset = makeRuleset();
 
     let misses = 0;
@@ -697,8 +721,8 @@ describe("Gen4Ruleset doesMoveHit — No Guard (issue #446)", () => {
       if (!ruleset.doesMoveHit(ctx)) misses++;
     }
 
-    // Without No Guard, a 50% accuracy move misses roughly half the time
-    expect(misses).toBeGreaterThan(0);
+    // Source: deterministic SeededRandom probe over seeds 1..200 with 50% move accuracy yields 101 misses.
+    expect(misses).toBe(101);
   });
 });
 
@@ -713,7 +737,7 @@ describe("applyGen4Ability on-switch-in — Download SpAtk scenario (issue #455)
     // When Def >= SpDef (here Def=120, SpDef=80), raisesAtk is false → raises SpAtk
     // Derivation: foe has Def=120, SpDef=80 → 120 >= 80 → +1 SpAtk (foe's SpDef is the weaker stat)
     const opponent = makeActivePokemon({ calculatedDefense: 120, calculatedSpDefense: 80 });
-    const ctx = makeAbilityContext({ ability: "download", opponent });
+    const ctx = makeAbilityContext({ ability: ABILITIES.download, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
@@ -729,7 +753,7 @@ describe("applyGen4Ability on-switch-in — Download SpAtk scenario (issue #455)
     // Source: Gen4Abilities.ts line 223 — raisesAtk = foeStats.defense < foeStats.spDefense
     // Derivation: foe has Def=80, SpDef=120 → 80 < 120 → +1 Atk (foe's Def is the weaker stat)
     const opponent = makeActivePokemon({ calculatedDefense: 80, calculatedSpDefense: 120 });
-    const ctx = makeAbilityContext({ ability: "download", opponent });
+    const ctx = makeAbilityContext({ ability: ABILITIES.download, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);

@@ -1,7 +1,7 @@
 import type { FileContext, Finding } from "../types.ts";
 
-// Matches `let varName` at describe-block scope (2–4 spaces of indentation)
-const LET_DECL_RE = /^[ \t]{2,4}let\s+(\w+)/;
+const LET_DECL_RE = /^\s*let\s+(\w+)/;
+const TEST_BLOCK_RE = /^\s*(?:it|test)\s*\(/;
 
 export function checkTestIsolation(ctx: FileContext): Finding[] {
   const findings: Finding[] = [];
@@ -11,10 +11,23 @@ export function checkTestIsolation(ctx: FileContext): Finding[] {
   // Collect all describe-scope let declarations
   const letDeclarations: Array<{ varName: string; lineIdx: number }> = [];
 
+  let braceDepth = 0;
+  let activeTestDepth: number | null = null;
+
   for (let i = 0; i < lines.length; i++) {
-    const match = LET_DECL_RE.exec(lines[i] ?? "");
+    const line = lines[i] ?? "";
+    if (activeTestDepth === null && TEST_BLOCK_RE.test(line)) {
+      activeTestDepth = braceDepth;
+    }
+
+    const match = activeTestDepth === null ? LET_DECL_RE.exec(line) : null;
     if (match) {
       letDeclarations.push({ varName: match[1] ?? "", lineIdx: i });
+    }
+
+    braceDepth += countChar(line, "{") - countChar(line, "}");
+    if (activeTestDepth !== null && braceDepth <= activeTestDepth) {
+      activeTestDepth = null;
     }
   }
 
@@ -70,4 +83,8 @@ function hasBeforeEachWithReset(content: string, varName: string): boolean {
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function countChar(line: string, needle: "{" | "}"): number {
+  return [...line].filter((char) => char === needle).length;
 }
