@@ -14,9 +14,7 @@
 
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
-  MoveData,
   PokemonInstance,
-  PokemonSpeciesData,
   PokemonType,
   StatBlock,
   TypeChart,
@@ -26,7 +24,6 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  NEUTRAL_NATURES,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -48,10 +45,11 @@ const SPECIES = GEN2_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const WEATHERS = CORE_WEATHER_IDS;
-const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN2_NATURE_IDS.hardy;
+const DEFAULT_NATURE = GEN2_NATURE_IDS.hardy;
 const gen2Data = createGen2DataManager();
 const DEFAULT_SPECIES = gen2Data.getSpecies(SPECIES.bulbasaur);
 const DEFAULT_MOVE = gen2Data.getMove(MOVES.tackle);
+const SLASH = gen2Data.getMove(MOVES.slash);
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -210,83 +208,22 @@ function createActivePokemon(opts: {
   } as unknown as ActivePokemon;
 }
 
-/** Create a minimal MoveData. */
-function createMove(opts: {
-  id?: string;
+/** Create an explicit synthetic move probe. */
+function createSyntheticMove(opts: {
   type: PokemonType;
   power?: number;
   category?: "physical" | "special" | "status";
-}): MoveData {
-  const baseMove = opts.id ? gen2Data.getMove(opts.id) : DEFAULT_MOVE;
+}) {
   return {
-    id: opts.id ?? baseMove?.id ?? MOVES.tackle,
-    displayName: baseMove?.displayName ?? "Test Move",
+    ...DEFAULT_MOVE,
+    id: "synthetic-move",
+    displayName: "Synthetic Move",
     type: opts.type,
     category: opts.category ?? "physical",
     power: opts.power ?? 80,
-    accuracy: baseMove?.accuracy ?? 100,
-    pp: baseMove?.pp ?? 35,
-    priority: baseMove?.priority ?? 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
+    flags: { ...DEFAULT_MOVE.flags },
     effect: null,
-    description: baseMove?.description ?? "",
-    generation: 2,
-  } as MoveData;
-}
-
-/** Create a minimal species data mock. */
-function createSpecies(opts: { types?: PokemonType[] } = {}): PokemonSpeciesData {
-  return {
-    ...(DEFAULT_SPECIES ?? {
-      id: SPECIES.bulbasaur,
-      name: "bulbasaur",
-      displayName: "Bulbasaur",
-      types: [TYPES.grass],
-      baseStats: {
-        hp: 45,
-        attack: 49,
-        defense: 49,
-        spAttack: 65,
-        spDefense: 65,
-        speed: 45,
-      },
-      abilities: { normal: [ABILITIES.none], hidden: null },
-      genderRatio: 50,
-      catchRate: 45,
-      baseExp: 64,
-      expGroup: "medium-slow",
-      evYield: {},
-      eggGroups: ["monster"],
-      learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-      evolution: null,
-      dimensions: { height: 1, weight: 10 },
-      spriteKey: "bulbasaur",
-      baseFriendship: 70,
-      generation: 2,
-      isLegendary: false,
-      isMythical: false,
-    }),
-    types: opts.types ?? DEFAULT_SPECIES?.types ?? [TYPES.normal],
-  } as PokemonSpeciesData;
+  };
 }
 
 /** Create a neutral type chart (all interactions = 1). */
@@ -348,7 +285,7 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
     it("when calculating crit stage, then stage is 2 (not 0)", () => {
       // Arrange — Farfetch'd is species #83
       const farfetchd = createActivePokemon({ speciesId: SPECIES.farfetchd, heldItem: ITEMS.stick });
-      const move = createMove({ type: TYPES.normal });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(farfetchd, move);
@@ -373,7 +310,7 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
         heldItem: ITEMS.stick,
         volatileStatuses: focusEnergyVolatiles,
       });
-      const highCritMove = createMove({ id: MOVES.slash, type: TYPES.normal });
+      const highCritMove = SLASH;
 
       // Act — Stick(+2) + Focus Energy(+1) + Slash(+1) = 4, clamped at 4
       const stage = getGen2CritStage(farfetchdFullStack, highCritMove);
@@ -382,13 +319,13 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
       // Source: gen2-ground-truth.md §4 — Stick (+2) + Focus Energy (+1) + Slash (+1) caps at stage 4.
       expect(stage).toBe(4);
       // With Scope Lens alone (no Stick), stage is 0+1=1
-      expect(getGen2CritStage(farfetchdWithScopeLens, createMove({ type: TYPES.normal }))).toBe(1);
+      expect(getGen2CritStage(farfetchdWithScopeLens, DEFAULT_MOVE)).toBe(1);
     });
 
     it("when a different species holds Stick, then no crit bonus is applied", () => {
       // Arrange — Stick only works for Farfetch'd (#83)
       const charizard = createActivePokemon({ speciesId: SPECIES.charizard, heldItem: ITEMS.stick });
-      const move = createMove({ type: TYPES.normal });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(charizard, move);
@@ -402,7 +339,7 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
     it("when calculating crit stage, then stage is 2 (not 0)", () => {
       // Arrange — Chansey is species #113
       const chansey = createActivePokemon({ speciesId: SPECIES.chansey, heldItem: ITEMS.luckyPunch });
-      const move = createMove({ type: TYPES.normal });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(chansey, move);
@@ -415,7 +352,7 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
     it("when a different species holds Lucky Punch, then no crit bonus is applied", () => {
       // Arrange — Lucky Punch only works for Chansey (#113)
       const blissey = createActivePokemon({ speciesId: SPECIES.blissey, heldItem: ITEMS.luckyPunch });
-      const move = createMove({ type: TYPES.normal });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(blissey, move);
@@ -427,7 +364,7 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
     it("when Chansey holds Lucky Punch and uses a high-crit move, then stage is 4 (Lucky Punch +2, Slash +2, capped at max)", () => {
       // Arrange
       const chansey = createActivePokemon({ speciesId: SPECIES.chansey, heldItem: ITEMS.luckyPunch });
-      const highCritMove = createMove({ id: MOVES.slash, type: TYPES.normal });
+      const highCritMove = SLASH;
 
       // Act — Lucky Punch(+2) + Slash(+2) = 4 (capped at max stage 4 = 128/256 = 50%)
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — "inc c; inc c" = +2 for high-crit
@@ -452,7 +389,7 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
         speciesId: SPECIES.farfetchd,
         heldItem: ITEMS.scopeLens,
       });
-      const move = createMove({ type: TYPES.normal });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stickStage = getGen2CritStage(farfetchdWithStick, move);
@@ -624,7 +561,7 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
         spDefense: 100,
         types: [TYPES.normal],
       });
-      const move = createMove({ type: TYPES.water, power: 80, category: "special" });
+      const move = createSyntheticMove({ type: TYPES.water, power: 80, category: "special" });
       // Use neutral type chart — no type effectiveness
       const typeChart = createNeutralTypeChart();
       const state = createMockState({
@@ -645,7 +582,7 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — verify the result is positive damage (non-zero)
       // base = floor(floor((floor(2*50/5)+2) * 80 * 100) / 100) / 50) = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
@@ -675,7 +612,7 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
         spDefense: 100,
         types: [TYPES.normal],
       });
-      const move = createMove({ type: TYPES.water, power: 80, category: "special" });
+      const move = createSyntheticMove({ type: TYPES.water, power: 80, category: "special" });
       const typeChart = createNeutralTypeChart();
       const state = createMockState({
         type: WEATHERS.rain,
@@ -694,7 +631,7 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — base 37 → no STAB → weather floor(37 * 1.5) = 55 → random: 55
       // With STAB the result is 82, without STAB it's 55
@@ -730,7 +667,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
         spAttack: 100,
         types: [TYPES.rock, TYPES.flying], // electric 2x vs flying, 1x vs rock
       });
-      const move = createMove({ type: TYPES.electric, power: 80, category: "special" });
+      const move = createSyntheticMove({ type: TYPES.electric, power: 80, category: "special" });
       const typeChart = createTypeChart({
         [TYPES.electric]: { [TYPES.rock]: 1, [TYPES.flying]: 2 },
       });
@@ -747,7 +684,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — sequential calculation:
       //   base = floor(floor(22*80*100)/100/50) = 35, clamped 35, +2 = 37
@@ -780,7 +717,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
         spAttack: 100,
         types: [TYPES.rock, TYPES.flying],
       });
-      const move = createMove({ type: TYPES.ground, power: 80 });
+      const move = createSyntheticMove({ type: TYPES.ground, power: 80 });
       const typeChart = createTypeChart({
         [TYPES.ground]: { [TYPES.rock]: 2, [TYPES.flying]: 0 },
       });
@@ -797,7 +734,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — immunity overrides all, result is 0 damage
       expect(result.damage).toBe(0);
@@ -827,7 +764,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
         spAttack: 100,
         types: [TYPES.fire, TYPES.rock], // water 2x vs fire, 0.5x vs rock → net 1x
       });
-      const move = createMove({ type: TYPES.water, power: 80, category: "special" });
+      const move = createSyntheticMove({ type: TYPES.water, power: 80, category: "special" });
       const typeChart = createTypeChart({
         [TYPES.water]: { [TYPES.fire]: 2, [TYPES.rock]: 0.5 },
       });
@@ -844,7 +781,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — STAB water: floor(37 * 1.5) = 55
       // SE vs fire: floor(55 * 20/10) = 110

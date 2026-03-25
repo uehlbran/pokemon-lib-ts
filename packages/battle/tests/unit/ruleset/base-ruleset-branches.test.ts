@@ -1,10 +1,13 @@
 import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
 import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+
+const DATA_MANAGER = createGen1DataManager();
 
 class TestRuleset extends BaseRuleset {
   readonly generation: Generation = 3;
@@ -23,7 +26,13 @@ class TestRuleset extends BaseRuleset {
   }
 
   getAvailableTypes(): readonly PokemonType[] {
-    return ["normal", "fire", "water", "electric", "grass"];
+    return [
+      CORE_TYPE_IDS.normal,
+      CORE_TYPE_IDS.fire,
+      CORE_TYPE_IDS.water,
+      CORE_TYPE_IDS.electric,
+      CORE_TYPE_IDS.grass,
+    ];
   }
 
   calculateDamage(_context: DamageContext): DamageResult {
@@ -41,7 +50,7 @@ describe("BaseRuleset — additional branches", () => {
   describe("applyStatusDamage — badly-poisoned", () => {
     it("given a badly-poisoned pokemon, when applyStatusDamage is called, then 1/16 damage is returned", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, {
+      const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
         calculatedStats: {
           hp: 160,
           attack: 100,
@@ -51,12 +60,12 @@ describe("BaseRuleset — additional branches", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
       // Act
       const damage = ruleset.applyStatusDamage(
         active,
-        "badly-poisoned",
+        CORE_STATUS_IDS.badlyPoisoned,
         {} as unknown as BattleState,
       );
 
@@ -66,7 +75,7 @@ describe("BaseRuleset — additional branches", () => {
 
     it("given a pokemon with low HP, when applyStatusDamage is called for burn, then minimum 1 damage", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, {
+      const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
         calculatedStats: {
           hp: 10,
           attack: 100,
@@ -76,10 +85,10 @@ describe("BaseRuleset — additional branches", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "burn", {} as unknown as BattleState);
+      const damage = ruleset.applyStatusDamage(active, CORE_STATUS_IDS.burn, {} as unknown as BattleState);
 
       // Assert — min(1, floor(10/16)=0) → max(1, 0) = 1
       expect(damage).toBe(1);
@@ -89,7 +98,7 @@ describe("BaseRuleset — additional branches", () => {
   describe("resolveTurnOrder — item before move", () => {
     it("given an item action and a move action, when resolveTurnOrder is called, then item goes first", () => {
       // Arrange
-      const pokemon1 = createTestPokemon(6, 50, {
+      const pokemon1 = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -99,7 +108,7 @@ describe("BaseRuleset — additional branches", () => {
           speed: 50,
         },
       });
-      const pokemon2 = createTestPokemon(9, 50, {
+      const pokemon2 = createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -109,8 +118,8 @@ describe("BaseRuleset — additional branches", () => {
           speed: 120,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createActivePokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
+      const active2 = createActivePokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -134,7 +143,7 @@ describe("BaseRuleset — additional branches", () => {
   describe("resolveTurnOrder — run before move", () => {
     it("given a run action and a move action, when resolveTurnOrder is called, then run goes first", () => {
       // Arrange
-      const pokemon1 = createTestPokemon(6, 50, {
+      const pokemon1 = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -144,7 +153,7 @@ describe("BaseRuleset — additional branches", () => {
           speed: 50,
         },
       });
-      const pokemon2 = createTestPokemon(9, 50, {
+      const pokemon2 = createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -154,8 +163,8 @@ describe("BaseRuleset — additional branches", () => {
           speed: 120,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createActivePokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
+      const active2 = createActivePokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -179,7 +188,7 @@ describe("BaseRuleset — additional branches", () => {
   describe("resolveTurnOrder — same speed tiebreak", () => {
     it("given two moves with same speed, when resolveTurnOrder is called, then RNG determines order", () => {
       // Arrange
-      const pokemon1 = createTestPokemon(6, 50, {
+      const pokemon1 = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -189,7 +198,7 @@ describe("BaseRuleset — additional branches", () => {
           speed: 100,
         },
       });
-      const pokemon2 = createTestPokemon(9, 50, {
+      const pokemon2 = createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -199,8 +208,8 @@ describe("BaseRuleset — additional branches", () => {
           speed: 100,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createActivePokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
+      const active2 = createActivePokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
 
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
@@ -229,44 +238,12 @@ describe("BaseRuleset — additional branches", () => {
   describe("rollCritical with focus-energy", () => {
     it("given a pokemon with focus-energy, when rollCritical is called, then higher crit stage is used", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
-      active.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
+      const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+      const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+      active.volatileStatuses.set(CORE_VOLATILE_IDS.focusEnergy, { turnsLeft: -1 });
 
       const rng = new SeededRandom(42);
-      const move = {
-        id: "tackle",
-        displayName: "Tackle",
-        type: "normal" as const,
-        category: "physical" as const,
-        power: 40,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.tackle);
 
       // Act — run many times
       let crits = 0;
