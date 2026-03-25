@@ -1,11 +1,29 @@
 import type { ActivePokemon, DamageContext, ItemContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  type PrimaryStatus,
+  type StatBlock,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen4Damage } from "../src/Gen4DamageCalc";
-import { applyGen4HeldItem } from "../src/Gen4Items";
-import { Gen4Ruleset } from "../src/Gen4Ruleset";
-import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  calculateGen4Damage,
+  applyGen4HeldItem,
+  Gen4Ruleset,
+  GEN4_TYPE_CHART,
+} from "../src";
 
 /**
  * Gen 4 Cross-System Interaction Tests
@@ -48,6 +66,17 @@ function createMockRng(intReturnValue = 100, chanceResult = false) {
   };
 }
 
+const dataManager = createGen4DataManager();
+const A = GEN4_ABILITY_IDS;
+const I = GEN4_ITEM_IDS;
+const M = GEN4_MOVE_IDS;
+const N = GEN4_NATURE_IDS;
+const S = GEN4_SPECIES_IDS;
+const T = CORE_TYPE_IDS;
+const ST = CORE_STATUS_IDS;
+const V = CORE_VOLATILE_IDS;
+const NONE = CORE_ABILITY_IDS.none;
+
 function createActivePokemon(opts: {
   level?: number;
   attack?: number;
@@ -59,7 +88,7 @@ function createActivePokemon(opts: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   speciesId?: number;
   gender?: "male" | "female" | "genderless";
 }): ActivePokemon {
@@ -76,16 +105,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? S.bulbasaur,
     nickname: null,
     level,
     experience: 0,
-    nature: "hardy",
+    nature: N.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? NONE,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -96,7 +125,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: I.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -113,8 +142,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [T.normal],
+    ability: opts.ability ?? NONE,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -143,38 +172,18 @@ function createMove(opts: {
   punch?: boolean;
   effect?: MoveData["effect"];
 }): MoveData {
+  const base = dataManager.getMove(opts.id ?? M.tackle);
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
+    ...base,
+    id: opts.id ?? base.id,
     type: opts.type,
-    category: opts.category ?? "physical",
+    category: opts.category ?? base.category,
     power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
     flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: opts.punch ?? false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...base.flags,
+      punch: opts.punch ?? base.flags.punch,
     },
-    effect: opts.effect ?? null,
-    description: "",
-    generation: 4,
+    effect: opts.effect ?? base.effect,
   } as MoveData;
 }
 
@@ -202,27 +211,27 @@ function createItemContext(opts: {
   currentHp?: number;
   maxHp?: number;
   damage?: number;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   hasConfusion?: boolean;
 }): ItemContext {
   const volatileStatuses = new Map<string, unknown>();
-  if (opts.hasConfusion) volatileStatuses.set("confusion", true);
+  if (opts.hasConfusion) volatileStatuses.set(V.confusion, true);
 
   const maxHp = opts.maxHp ?? 160;
   return {
     pokemon: {
       pokemon: {
         uid: "test",
-        speciesId: 1,
+        speciesId: S.bulbasaur,
         nickname: null,
         level: 50,
         experience: 0,
-        nature: "hardy",
+        nature: N.hardy,
         ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
         evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
         currentHp: opts.currentHp ?? maxHp,
         moves: [],
-        ability: opts.ability ?? "",
+        ability: opts.ability ?? NONE,
         abilitySlot: "normal1" as const,
         heldItem: opts.heldItem ?? null,
         status: opts.status ?? null,
@@ -233,7 +242,7 @@ function createItemContext(opts: {
         metLevel: 1,
         originalTrainer: "",
         originalTrainerId: 0,
-        pokeball: "pokeball",
+        pokeball: I.pokeBall,
         calculatedStats: {
           hp: maxHp,
           attack: 100,
@@ -243,9 +252,9 @@ function createItemContext(opts: {
           speed: 100,
         },
       } as PokemonInstance,
-      types: opts.types ?? ["normal"],
+      types: opts.types ?? [T.normal],
       volatileStatuses,
-      ability: opts.ability ?? "",
+      ability: opts.ability ?? NONE,
       teamSlot: 0,
       statStages: {
         attack: 0,
@@ -293,16 +302,15 @@ describe("Magic Guard + Life Orb interaction", () => {
     // The 1.3x damage boost is in calculateGen4Damage (not this item trigger),
     // so the holder still deals boosted damage — only the recoil is prevented.
     const ctx = createItemContext({
-      heldItem: "life-orb",
-      ability: "magic-guard",
+      heldItem: I.lifeOrb,
+      ability: A.magicGuard,
       maxHp: 200,
       damage: 80,
     });
     const result = applyGen4HeldItem("on-hit", ctx);
 
     // Magic Guard: no recoil
-    expect(result.activated).toBe(false);
-    expect(result.effects).toHaveLength(0);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 
   it("given Magic Guard holder with Life Orb, when damage calc runs, then 1.3x boost IS still applied", () => {
@@ -314,13 +322,13 @@ describe("Magic Guard + Life Orb interaction", () => {
     //   rng=100: floor(48*100/100) = 48
     // Without Life Orb: 37
     const attacker = createActivePokemon({
-      ability: "magic-guard",
-      heldItem: "life-orb",
+      ability: A.magicGuard,
+      heldItem: I.lifeOrb,
       attack: 100,
-      types: ["water"], // use non-Normal type to avoid STAB complication
+      types: [T.water], // use non-Normal type to avoid STAB complication
     });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const defender = createActivePokemon({ defense: 100, types: [T.normal] });
+    const move = createMove({ type: T.normal, power: 80, category: "physical" });
 
     const withLOResult = calculateGen4Damage(
       createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
@@ -328,10 +336,10 @@ describe("Magic Guard + Life Orb interaction", () => {
     );
 
     const noLOAttacker = createActivePokemon({
-      ability: "magic-guard",
+      ability: A.magicGuard,
       heldItem: null,
       attack: 100,
-      types: ["water"],
+      types: [T.water],
     });
     const withoutLOResult = calculateGen4Damage(
       createDamageContext({ attacker: noLOAttacker, defender, move, rng: createMockRng(100) }),
@@ -351,15 +359,18 @@ describe("Magic Guard + Life Orb interaction", () => {
     // Source: Bulbapedia — Life Orb: "deals floor(maxHP/10) recoil per hit"
     // Derivation: floor(200 / 10) = 20
     const ctx = createItemContext({
-      heldItem: "life-orb",
-      ability: "swift-swim", // non-Magic Guard ability
+      heldItem: I.lifeOrb,
+      ability: A.swiftSwim, // non-Magic Guard ability
       maxHp: 200,
       damage: 80,
     });
     const result = applyGen4HeldItem("on-hit", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "chip-damage", value: 20 });
+    expect(result).toEqual({
+      activated: true,
+      effects: [{ type: "chip-damage", target: "self", value: 20 }],
+      messages: ["Pokemon #1 is hurt by its Life Orb!"],
+    });
   });
 });
 
@@ -374,20 +385,19 @@ describe("Unburden + item consumption", () => {
     // Source: Showdown data/abilities.ts — Unburden onAfterUseItem
     // When any consume effect fires and the holder has Unburden, the volatile is set.
     const ctx = createItemContext({
-      heldItem: "sitrus-berry",
-      ability: "unburden",
+      heldItem: I.sitrusBerry,
+      ability: A.unburden,
       maxHp: 160,
       currentHp: 60, // below 50% threshold
       damage: 20, // damage that dropped HP
     });
 
-    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has("unburden")).toBe(false);
+    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has(V.unburden)).toBe(false);
     const result = applyGen4HeldItem("on-damage-taken", ctx);
 
-    expect(result.activated).toBe(true);
     expect(result.effects.some((e) => e.type === "consume")).toBe(true);
     // The Unburden volatile should now be set in the pokemon's volatileStatuses
-    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has("unburden")).toBe(true);
+    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has(V.unburden)).toBe(true);
   });
 
   it("given Unburden holder consuming Salac Berry via on-damage-taken trigger, when activated, then unburden volatile is set", () => {
@@ -396,8 +406,8 @@ describe("Unburden + item consumption", () => {
     // Salac Berry activates when hpAfterDamage <= floor(maxHp * 0.25)
     // maxHp=160, threshold=floor(160*0.25)=40; currentHp=35, damage=5 → hpAfterDamage=30 ≤ 40 → triggers
     const ctx = createItemContext({
-      heldItem: "salac-berry",
-      ability: "unburden",
+      heldItem: I.salacBerry,
+      ability: A.unburden,
       maxHp: 160,
       currentHp: 35, // above damage but will be at 30 after, which is ≤ 40 (25%)
       damage: 5,
@@ -405,16 +415,15 @@ describe("Unburden + item consumption", () => {
 
     const result = applyGen4HeldItem("on-damage-taken", ctx);
 
-    expect(result.activated).toBe(true);
     expect(result.effects.some((e) => e.type === "consume")).toBe(true);
-    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has("unburden")).toBe(true);
+    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has(V.unburden)).toBe(true);
   });
 
   it("given non-Unburden holder consuming a berry, when activated, then unburden volatile is NOT set", () => {
     // Control case: non-Unburden ability should not receive the volatile
     const ctx = createItemContext({
-      heldItem: "sitrus-berry",
-      ability: "swift-swim",
+      heldItem: I.sitrusBerry,
+      ability: A.swiftSwim,
       maxHp: 160,
       currentHp: 60,
       damage: 20,
@@ -422,7 +431,7 @@ describe("Unburden + item consumption", () => {
 
     applyGen4HeldItem("on-damage-taken", ctx);
 
-    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has("unburden")).toBe(false);
+    expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has(V.unburden)).toBe(false);
   });
 });
 
@@ -434,18 +443,18 @@ describe("Klutz + items — all triggers suppressed", () => {
   it("given Klutz holder with Leftovers, when end-of-turn triggers, then item does NOT activate", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items."
     // Source: Showdown data/abilities.ts — Klutz gates all item battle effects
-    const ctx = createItemContext({ heldItem: "leftovers", ability: "klutz", maxHp: 160 });
+    const ctx = createItemContext({ heldItem: I.leftovers, ability: A.klutz, maxHp: 160 });
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 
   it("given Klutz holder with Toxic Orb, when end-of-turn triggers, then item does NOT activate (Klutz blocks status orbs)", () => {
     // Source: Bulbapedia — Klutz prevents item use including Toxic Orb
-    const ctx = createItemContext({ heldItem: "toxic-orb", ability: "klutz", status: null });
+    const ctx = createItemContext({ heldItem: I.toxicOrb, ability: A.klutz, status: null });
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 
   it("given Klutz holder with Life Orb, when damage calc runs, then 1.3x boost is NOT applied", () => {
@@ -454,19 +463,19 @@ describe("Klutz + items — all triggers suppressed", () => {
     //   baseDmg=35+2=37; no STAB, neutral eff → 37
     //   Life Orb normally: floor(37*1.3)=48; with Klutz: remains 37
     const attacker = createActivePokemon({
-      ability: "klutz",
-      heldItem: "life-orb",
+      ability: A.klutz,
+      heldItem: I.lifeOrb,
       attack: 100,
-      types: ["water"], // no STAB so we can verify the raw 37 easily
+      types: [T.water], // no STAB so we can verify the raw 37 easily
     });
     const noItemAttacker = createActivePokemon({
-      ability: "klutz",
+      ability: A.klutz,
       heldItem: null,
       attack: 100,
-      types: ["water"],
+      types: [T.water],
     });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const defender = createActivePokemon({ defense: 100, types: [T.normal] });
+    const move = createMove({ type: T.normal, power: 80, category: "physical" });
 
     const klutzonResult = calculateGen4Damage(
       createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
@@ -486,28 +495,28 @@ describe("Klutz + items — all triggers suppressed", () => {
   it("given Klutz holder with Life Orb and damage > 0, when on-hit triggers, then NO recoil is emitted", () => {
     // Source: Bulbapedia — Klutz blocks all item effects including Life Orb recoil
     const ctx = createItemContext({
-      heldItem: "life-orb",
-      ability: "klutz",
+      heldItem: I.lifeOrb,
+      ability: A.klutz,
       maxHp: 200,
       damage: 80,
     });
     const result = applyGen4HeldItem("on-hit", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 
   it("given Klutz holder with Focus Sash at full HP, when on-damage-taken triggers with KO damage, then Focus Sash does NOT activate", () => {
     // Source: Bulbapedia — Klutz blocks Focus Sash (all item triggers suppressed)
     const ctx = createItemContext({
-      heldItem: "focus-sash",
-      ability: "klutz",
+      heldItem: I.focusSash,
+      ability: A.klutz,
       maxHp: 160,
       currentHp: 160,
       damage: 200,
     });
     const result = applyGen4HeldItem("on-damage-taken", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 });
 
@@ -523,13 +532,13 @@ describe("Technician — exact base power boundary (60 vs 61 BP)", () => {
     //   No Tech: baseDmg = floor(floor(22*60*100/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
     //   With Tech (power=90): baseDmg = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
     const techAttacker = createActivePokemon({
-      ability: "technician",
+      ability: A.technician,
       attack: 100,
-      types: ["water"],
+      types: [T.water],
     });
-    const noTechAttacker = createActivePokemon({ ability: "", attack: 100, types: ["water"] });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
-    const move60 = createMove({ type: "normal", power: 60, category: "physical" });
+    const noTechAttacker = createActivePokemon({ ability: NONE, attack: 100, types: [T.water] });
+    const defender = createActivePokemon({ defense: 100, types: [T.normal] });
+    const move60 = createMove({ type: T.normal, power: 60, category: "physical" });
 
     const techResult = calculateGen4Damage(
       createDamageContext({
@@ -563,13 +572,13 @@ describe("Technician — exact base power boundary (60 vs 61 BP)", () => {
     // Derivation: L50, power=61, Atk=100, Def=100, rng=100, no STAB (Water vs Normal)
     //   baseDmg = floor(floor(22*61*100/100)/50)+2 = floor(1342/50)+2 = 26+2 = 28
     const techAttacker = createActivePokemon({
-      ability: "technician",
+      ability: A.technician,
       attack: 100,
-      types: ["water"],
+      types: [T.water],
     });
-    const noTechAttacker = createActivePokemon({ ability: "", attack: 100, types: ["water"] });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
-    const move61 = createMove({ type: "normal", power: 61, category: "physical" });
+    const noTechAttacker = createActivePokemon({ ability: NONE, attack: 100, types: [T.water] });
+    const defender = createActivePokemon({ defense: 100, types: [T.normal] });
+    const move61 = createMove({ type: T.normal, power: 61, category: "physical" });
 
     const techResult = calculateGen4Damage(
       createDamageContext({
@@ -606,29 +615,32 @@ describe("Life Orb — no recoil when damage is 0 or absent", () => {
     // On a miss, the engine never calls on-hit at all (damage > 0 gate in BattleEngine.ts).
     // But if it does fire with damage=0, the item handler must also guard.
     const ctx = createItemContext({
-      heldItem: "life-orb",
-      ability: "",
+      heldItem: I.lifeOrb,
+      ability: NONE,
       maxHp: 200,
       damage: 0,
     });
     const result = applyGen4HeldItem("on-hit", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 
   it("given Life Orb holder with damage = 100 (normal hit) and 200 max HP, when on-hit triggers, then recoil = floor(200/10) = 20", () => {
     // Source: Bulbapedia — Life Orb: "The user loses 1/10 of its maximum HP after each attack."
     // Derivation: floor(200 / 10) = 20
     const ctx = createItemContext({
-      heldItem: "life-orb",
-      ability: "",
+      heldItem: I.lifeOrb,
+      ability: NONE,
       maxHp: 200,
       damage: 100,
     });
     const result = applyGen4HeldItem("on-hit", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "chip-damage", value: 20 });
+    expect(result).toEqual({
+      activated: true,
+      effects: [{ type: "chip-damage", target: "self", value: 20 }],
+      messages: ["Pokemon #1 is hurt by its Life Orb!"],
+    });
   });
 });
 
@@ -644,13 +656,13 @@ describe("Charti Berry — halves super-effective Rock-type damage", () => {
     //   baseDmg = floor(floor(22*80*100/100)/50)+2 = 35+2 = 37
     //   random=37, no STAB, Rock vs Flying = 2x: floor(37*2) = 74
     //   Charti Berry halves: floor(74*0.5) = 37
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [T.normal] });
     const defender = createActivePokemon({
       defense: 100,
-      types: ["flying"],
-      heldItem: "charti-berry",
+      types: [T.flying],
+      heldItem: I.chartiBerry,
     });
-    const rockMove = createMove({ type: "rock", power: 80, category: "physical" });
+    const rockMove = createMove({ type: T.rock, power: 80, category: "physical" });
 
     const withBerry = calculateGen4Damage(
       createDamageContext({ attacker, defender, move: rockMove, rng: createMockRng(100) }),
@@ -666,29 +678,30 @@ describe("Charti Berry — halves super-effective Rock-type damage", () => {
 
   it("given Flying-type defender WITHOUT Charti Berry vs Rock move (SE), when damage calculated, then full SE damage applied", () => {
     // Triangulation: without the berry, damage is the full 2x SE value
-    // Derivation: same formula → 74
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
-    const defender = createActivePokemon({ defense: 100, types: ["flying"], heldItem: null });
-    const rockMove = createMove({ type: "rock", power: 80, category: "physical" });
+    // Derivation: 37 base damage × 2 effectiveness = 74
+    const attacker = createActivePokemon({ attack: 100, types: [T.normal] });
+    const defender = createActivePokemon({ defense: 100, types: [T.flying], heldItem: null });
+    const rockMove = createMove({ type: T.rock, power: 80, category: "physical" });
 
     const withoutBerry = calculateGen4Damage(
       createDamageContext({ attacker, defender, move: rockMove, rng: createMockRng(100) }),
       GEN4_TYPE_CHART,
     );
 
+    // Source: 37 base damage × 2 effectiveness = 74
     expect(withoutBerry.damage).toBe(74);
     expect(withoutBerry.effectiveness).toBe(2);
   });
 
   it("given Ground-type defender with Charti Berry vs Normal move (neutral), when damage calculated, then berry does NOT activate (only SE)", () => {
     // Source: Bulbapedia — type-resist berries only activate against super-effective moves
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [T.normal] });
     const defender = createActivePokemon({
       defense: 100,
-      types: ["ground"],
-      heldItem: "charti-berry",
+      types: [T.ground],
+      heldItem: I.chartiBerry,
     });
-    const normalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const normalMove = createMove({ type: T.normal, power: 80, category: "physical" });
 
     calculateGen4Damage(
       createDamageContext({ attacker, defender, move: normalMove, rng: createMockRng(100) }),
@@ -696,7 +709,7 @@ describe("Charti Berry — halves super-effective Rock-type damage", () => {
     );
 
     // Berry NOT consumed when move is neutral
-    expect(defender.pokemon.heldItem).toBe("charti-berry");
+    expect(defender.pokemon.heldItem).toBe(I.chartiBerry);
   });
 });
 
@@ -710,7 +723,7 @@ describe("Skill Link — rollMultiHitCount always returns 5", () => {
     // Source: Showdown Gen 4 — Skill Link ability returns 5 hits for multi-hit moves
     // Source: pret/pokeplatinum — Gen 4 multi-hit table: [2,2,2,3,3,3,4,5]; Skill Link bypasses it
     const ruleset = new Gen4Ruleset();
-    const attacker = createActivePokemon({ ability: "skill-link" });
+    const attacker = createActivePokemon({ ability: A.skillLink });
 
     // Try 10 different seeds — all should return 5
     for (let seed = 0; seed < 10; seed++) {
@@ -724,7 +737,7 @@ describe("Skill Link — rollMultiHitCount always returns 5", () => {
     // Triangulation: without Skill Link, the Gen 1-4 weighted table can return lower values
     // Source: pret/pokeplatinum — Gen 4 multi-hit uses 8-entry table: 2,2,2,3,3,3,4,5
     const ruleset = new Gen4Ruleset();
-    const attacker = createActivePokemon({ ability: "" });
+    const attacker = createActivePokemon({ ability: NONE });
 
     // Run many seeds and confirm we see values other than 5
     const results = new Set<number>();
@@ -756,15 +769,15 @@ describe("Reckless — Struggle is NOT boosted", () => {
     //   baseDmg = floor(floor(22*50*100/100)/50)+2 = floor(1100/50)+2 = 22+2 = 24
     //   No boost (Struggle has effect:null) → 24
     const recklessAttacker = createActivePokemon({
-      ability: "reckless",
+      ability: A.reckless,
       attack: 100,
-      types: ["water"],
+      types: [T.water],
     });
-    const noAbilityAttacker = createActivePokemon({ ability: "", attack: 100, types: ["water"] });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
+    const noAbilityAttacker = createActivePokemon({ ability: NONE, attack: 100, types: [T.water] });
+    const defender = createActivePokemon({ defense: 100, types: [T.normal] });
 
     // Struggle: effect is null (no MoveEffect)
-    const struggle = createMove({ type: "normal", power: 50, id: "struggle", effect: null });
+    const struggle = createMove({ type: T.normal, power: 50, id: M.struggle, effect: null });
 
     const recklessResult = calculateGen4Damage(
       createDamageContext({
@@ -796,17 +809,17 @@ describe("Reckless — Struggle is NOT boosted", () => {
     //   No Reckless: baseDmg = floor(floor(22*120*100/100)/50)+2 = floor(2640/50)+2 = 52+2 = 54
     //   Reckless: power=floor(120*1.2)=144; baseDmg = floor(floor(22*144*100/100)/50)+2 = floor(3168/50)+2 = 63+2 = 65
     const recklessAttacker = createActivePokemon({
-      ability: "reckless",
+      ability: A.reckless,
       attack: 100,
-      types: ["water"],
+      types: [T.water],
     });
-    const noAbilityAttacker = createActivePokemon({ ability: "", attack: 100, types: ["water"] });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
+    const noAbilityAttacker = createActivePokemon({ ability: NONE, attack: 100, types: [T.water] });
+    const defender = createActivePokemon({ defense: 100, types: [T.normal] });
 
     const doubleEdge = createMove({
-      type: "normal",
+      type: T.normal,
       power: 120,
-      id: "double-edge",
+      id: M.doubleEdge,
       effect: { type: "recoil", amount: 1 / 3 },
     });
 
@@ -845,29 +858,34 @@ describe("Focus Sash — does not activate unless holder is at full HP", () => {
     //   by a move while at full HP, it will survive with 1 HP."
     // The key condition: holder must be at full HP (currentHp === maxHp).
     const ctx = createItemContext({
-      heldItem: "focus-sash",
+      heldItem: I.focusSash,
       maxHp: 160,
       currentHp: 159, // one below full
       damage: 200, // would KO
     });
     const result = applyGen4HeldItem("on-damage-taken", ctx);
 
-    expect(result.activated).toBe(false);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 
   it("given Focus Sash holder at full HP (160/160), when KO damage is taken, then survives at 1 HP and berry consumed", () => {
     // Source: Bulbapedia — Focus Sash activates only when at full HP
     const ctx = createItemContext({
-      heldItem: "focus-sash",
+      heldItem: I.focusSash,
       maxHp: 160,
       currentHp: 160, // full HP
       damage: 200, // would KO
     });
     const result = applyGen4HeldItem("on-damage-taken", ctx);
 
-    expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "survive", value: 1 });
-    expect(result.effects[1]).toMatchObject({ type: "consume", value: "focus-sash" });
+    expect(result).toEqual({
+      activated: true,
+      effects: [
+        { type: "survive", target: "self", value: 1 },
+        { type: "consume", target: "self", value: I.focusSash },
+      ],
+      messages: ["Pokemon #1 held on with its Focus Sash!"],
+    });
   });
 });
 
@@ -876,20 +894,17 @@ describe("Focus Sash — does not activate unless holder is at full HP", () => {
 // ===========================================================================
 
 describe("Lum Berry — cures all primary statuses individually", () => {
-  const statuses = ["burn", "poison", "badly-poisoned", "paralysis", "sleep", "freeze"] as const;
+  const statuses = [ST.burn, ST.poison, ST.badlyPoisoned, ST.paralysis, ST.sleep, ST.freeze] as const;
 
   for (const status of statuses) {
     it(`given Lum Berry and status=${status}, when end-of-turn triggers, then status is cured and berry consumed`, () => {
       // Source: Showdown Gen 4 mod — Lum Berry cures any primary status condition
       // Source: Bulbapedia — Lum Berry: "Cures any major status condition"
-      const ctx = createItemContext({ heldItem: "lum-berry", status });
+      const ctx = createItemContext({ heldItem: I.lumBerry, status });
       const result = applyGen4HeldItem("end-of-turn", ctx);
 
-      expect(result.activated).toBe(true);
       expect(result.effects.some((e) => e.type === "status-cure")).toBe(true);
-      expect(
-        result.effects.some((e) => e.type === "consume" && "value" in e && e.value === "lum-berry"),
-      ).toBe(true);
+      expect(result.effects.some((e) => e.type === "consume" && "value" in e && e.value === I.lumBerry)).toBe(true);
     });
   }
 });
@@ -903,16 +918,16 @@ describe("Type-resist Berry + Unburden interaction", () => {
     // Source: Bulbapedia — Unburden activates on ANY item consumption, including resist berries
     // Source: Showdown Gen 4 — type-resist berries consumed in calculateGen4Damage (direct mutation)
     //   After berry is consumed, Unburden volatile is set on defender if they have Unburden
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [T.normal] });
     const defender = createActivePokemon({
       defense: 100,
-      types: ["flying"],
-      heldItem: "charti-berry",
-      ability: "unburden",
+      types: [T.flying],
+      heldItem: I.chartiBerry,
+      ability: A.unburden,
     });
-    const rockMove = createMove({ type: "rock", power: 80, category: "physical" });
+    const rockMove = createMove({ type: T.rock, power: 80, category: "physical" });
 
-    expect(defender.volatileStatuses.has("unburden")).toBe(false);
+    expect(defender.volatileStatuses.has(V.unburden)).toBe(false);
 
     calculateGen4Damage(
       createDamageContext({ attacker, defender, move: rockMove, rng: createMockRng(100) }),
@@ -921,6 +936,6 @@ describe("Type-resist Berry + Unburden interaction", () => {
 
     // Berry consumed → Unburden volatile should be set
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(defender.volatileStatuses.has("unburden")).toBe(true);
+    expect(defender.volatileStatuses.has(V.unburden)).toBe(true);
   });
 });
