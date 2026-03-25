@@ -54,6 +54,7 @@ import {
 import { calculateGen8Damage } from "../src/Gen8DamageCalc";
 import { applyGen8HeldItem, getConsumableItemEffect } from "../src/Gen8Items";
 import {
+  createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_ITEM_IDS,
   GEN8_MOVE_IDS,
@@ -64,18 +65,21 @@ import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 
 // ---------------------------------------------------------------------------
-// Helper factories (duplicated from damage-calc.test.ts for isolation)
+// Helper factories
 // ---------------------------------------------------------------------------
 
-const A = GEN8_ABILITY_IDS;
-const I = GEN8_ITEM_IDS;
-const M = GEN8_MOVE_IDS;
-const C = CORE_ABILITY_IDS;
-const T = CORE_TYPE_IDS;
-const S = CORE_STATUS_IDS;
-const V = CORE_VOLATILE_IDS;
-const W = CORE_WEATHER_IDS;
-const SC = CORE_SCREEN_IDS;
+const gen8Data = createGen8DataManager();
+
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const;
+const NATURES = GEN8_NATURE_IDS;
+const SCREENS = CORE_SCREEN_IDS;
+const SPECIES = GEN8_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
 const G7M = GEN7_MOVE_IDS;
 
 function makeActive(overrides: {
@@ -107,17 +111,17 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: CORE_TERRAIN_IDS.testSource,
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: GEN8_NATURE_IDS.hardy,
+      nature: NATURES.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: `${CORE_TYPE_IDS.normal}1` as const,
+      ability: overrides.ability ?? ABILITIES.none,
+      abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
@@ -127,7 +131,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -141,8 +145,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [CORE_TYPE_IDS.normal],
-    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -164,8 +168,29 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
+function makeMove(
+  moveId: string = MOVES.tackle,
+  overrides: {
+    flags?: Partial<MoveData["flags"]>;
+    effect?: MoveData["effect"];
+    critRatio?: number;
+    target?: string;
+    hasCrashDamage?: boolean;
+  } = {},
+): MoveData {
+  const move = gen8Data.getMove(moveId);
+  return {
+    ...move,
+    ...overrides,
+    flags: { ...move.flags, ...overrides.flags },
+  } as MoveData;
+}
+
+function makeSyntheticMove(
+  reason: string,
+  overrides: {
+    baseMoveId?: string;
+    id?: string;
   type?: PokemonType;
   category?: "physical" | "special" | "status";
   power?: number | null;
@@ -174,42 +199,22 @@ function makeMove(overrides: {
   critRatio?: number;
   target?: string;
   hasCrashDamage?: boolean;
-}): MoveData {
+  },
+): MoveData {
+  // Intentional synthetic move setup for branch coverage that Gen 8 data does not encode directly.
+  void reason;
+  const base = makeMove(overrides.baseMoveId ?? MOVES.tackle);
   return {
-    id: overrides.id ?? CORE_MOVE_IDS.tackle,
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? CORE_TYPE_IDS.normal,
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 8,
-    critRatio: overrides.critRatio ?? 0,
-    hasCrashDamage: overrides.hasCrashDamage ?? false,
+    ...base,
+    id: overrides.id ?? base.id,
+    type: overrides.type ?? base.type,
+    category: overrides.category ?? base.category,
+    power: overrides.power ?? base.power,
+    target: overrides.target ?? base.target,
+    flags: { ...base.flags, ...overrides.flags },
+    effect: overrides.effect ?? base.effect,
+    critRatio: overrides.critRatio ?? base.critRatio,
+    hasCrashDamage: overrides.hasCrashDamage ?? base.hasCrashDamage ?? false,
   } as MoveData;
 }
 
@@ -244,7 +249,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeMove(),
     state: overrides.state ?? makeDamageState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -354,13 +359,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const noBerryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: null }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
       const berryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.occaBerry }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
 
@@ -378,13 +383,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const noBerryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.grass], heldItem: null }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
       const berryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.grass], heldItem: CORE_ITEM_IDS.occaBerry }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
 
@@ -403,13 +408,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const noBerryCtx = makeDamageContext({
         attacker: makeActive({ attack: 100 }),
         defender: makeActive({ defense: 100, types: [CORE_TYPE_IDS.normal], heldItem: null }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.normal }),
+        move: makeMove(MOVES.strength),
         seed: 42,
       });
       const berryCtx = makeDamageContext({
         attacker: makeActive({ attack: 100 }),
         defender: makeActive({ defense: 100, types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.chilanBerry }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.normal }),
+        move: makeMove(MOVES.strength),
         seed: 42,
       });
 
@@ -427,13 +432,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const noBerryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: null }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.water, category: "special" }),
+        move: makeMove(MOVES.waterPledge),
         seed: 42,
       });
       const berryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.chilanBerry }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.water, category: "special" }),
+        move: makeMove(MOVES.waterPledge),
         seed: 42,
       });
 
@@ -456,13 +461,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const defender = makeActive({
         spDefense: 100,
         types: [CORE_TYPE_IDS.grass],
-        ability: CORE_VOLATILE_IDS.unburden,
+        ability: ABILITIES.unburden,
         heldItem: CORE_ITEM_IDS.occaBerry,
       });
       const ctx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
 
@@ -471,7 +476,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Berry should be consumed
       expect(defender.pokemon.heldItem).toBe(null);
       // Unburden volatile should be set
-      expect(defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
+      expect(defender.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
     });
 
     it(`given defender with Unburden and Chilan Berry takes Normal hit, when damage calculated, then berry is consumed and ${CORE_VOLATILE_IDS.unburden} volatile set`, () => {
@@ -480,37 +485,37 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const defender = makeActive({
         defense: 100,
         types: [CORE_TYPE_IDS.normal],
-        ability: CORE_VOLATILE_IDS.unburden,
+        ability: ABILITIES.unburden,
         heldItem: CORE_ITEM_IDS.chilanBerry,
       });
       const ctx = makeDamageContext({
         attacker: makeActive({ attack: 100 }),
         defender,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.normal }),
+        move: makeMove(MOVES.strength),
         seed: 42,
       });
 
       calculateGen8Damage(ctx, typeChart);
 
       expect(defender.pokemon.heldItem).toBe(null);
-      expect(defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
+      expect(defender.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
     });
 
     it(`given defender already has ${CORE_VOLATILE_IDS.unburden} volatile and resist berry triggers, when damage calculated, then unburden is NOT set again`, () => {
       // Source: Showdown data/abilities.ts -- Unburden: only sets volatile once
       const volatiles = new Map<string, { turnsLeft: number }>();
-      volatiles.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
+      volatiles.set(VOLATILES.unburden, { turnsLeft: -1 });
       const defender = makeActive({
         spDefense: 100,
         types: [CORE_TYPE_IDS.grass],
-        ability: CORE_VOLATILE_IDS.unburden,
+        ability: ABILITIES.unburden,
         heldItem: CORE_ITEM_IDS.occaBerry,
         volatiles,
       });
       const ctx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
 
@@ -518,7 +523,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
       // Berry consumed, but unburden volatile already existed (no double-set)
       expect(defender.pokemon.heldItem).toBe(null);
-      expect(defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
+      expect(defender.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
     });
   });
 
@@ -533,13 +538,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const attacker = makeActive({
         attack: 100,
         types: [CORE_TYPE_IDS.normal],
-        ability: CORE_VOLATILE_IDS.unburden,
+        ability: ABILITIES.unburden,
         heldItem: CORE_ITEM_IDS.normalGem,
       });
       const ctx = makeDamageContext({
         attacker,
         defender: makeActive({ defense: 100 }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.normal }),
+        move: makeMove(MOVES.strength),
         seed: 42,
       });
 
@@ -548,7 +553,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Gem should be consumed
       expect(attacker.pokemon.heldItem).toBe(null);
       // Unburden volatile should be set
-      expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
+      expect(attacker.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
       // gem-used volatile should be set
       expect(attacker.volatileStatuses.has("gem-used")).toBe(true);
       // Damage should be higher than without gem (gem provides 1.3x power boost)
@@ -561,13 +566,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const attacker = makeActive({
         spAttack: 100,
         types: [CORE_TYPE_IDS.normal],
-        ability: CORE_VOLATILE_IDS.unburden,
+        ability: ABILITIES.unburden,
         heldItem: CORE_ITEM_IDS.normalGem,
       });
       const ctx = makeDamageContext({
         attacker,
         defender: makeActive({ spDefense: 100 }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
 
@@ -575,7 +580,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
       // Gem should NOT be consumed (wrong type)
       expect(attacker.pokemon.heldItem).toBe(CORE_ITEM_IDS.normalGem);
-      expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(false);
+      expect(attacker.volatileStatuses.has(VOLATILES.unburden)).toBe(false);
     });
 
     it(`given attacker with non-Unburden ability holds Normal Gem using Normal move, when damage calculated, then gem consumed but no ${CORE_VOLATILE_IDS.unburden} volatile`, () => {
@@ -589,7 +594,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeDamageContext({
         attacker,
         defender: makeActive({ defense: 100 }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.normal }),
+        move: makeMove(MOVES.strength),
         seed: 42,
       });
 
@@ -597,7 +602,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
       // Gem consumed but no Unburden (wrong ability)
       expect(attacker.pokemon.heldItem).toBe(null);
-      expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(false);
+      expect(attacker.volatileStatuses.has(VOLATILES.unburden)).toBe(false);
       expect(attacker.volatileStatuses.has("gem-used")).toBe(true);
     });
   });
@@ -612,7 +617,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const noBerryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.grass] }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
       const klutzCtx = makeDamageContext({
@@ -623,7 +628,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
           ability: CORE_ABILITY_IDS.klutz,
           heldItem: CORE_ITEM_IDS.occaBerry,
         }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
 
@@ -641,7 +646,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const noBerryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.grass] }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
       const embargoCtx = makeDamageContext({
@@ -652,7 +657,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
           heldItem: CORE_ITEM_IDS.occaBerry,
           volatiles,
         }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         seed: 42,
       });
 
@@ -667,7 +672,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const noBerryCtx = makeDamageContext({
         attacker: makeActive({ spAttack: 100 }),
         defender: makeActive({ spDefense: 100, types: [CORE_TYPE_IDS.grass] }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         state: makeDamageState({ magicRoom: { active: true, turnsLeft: 3 } }),
         seed: 42,
       });
@@ -678,7 +683,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
           types: [CORE_TYPE_IDS.grass],
           heldItem: CORE_ITEM_IDS.occaBerry,
         }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
         state: makeDamageState({ magicRoom: { active: true, turnsLeft: 3 } }),
         seed: 42,
       });
@@ -711,13 +716,13 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const klutzCtx = makeDamageContext({
         attacker: klutzAttacker,
         defender: makeActive({ defense: 100 }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.normal }),
+        move: makeMove(MOVES.strength),
         seed: 42,
       });
       const noItemCtx = makeDamageContext({
         attacker: normalAttacker,
         defender: makeActive({ defense: 100 }),
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.normal }),
+        move: makeMove(MOVES.strength),
         seed: 42,
       });
 
@@ -771,7 +776,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const pokemon = makeActive({
         hp: 200,
         currentHp: 80, // 80/200 = 40% (below 50% threshold)
-        ability: CORE_VOLATILE_IDS.unburden,
+        ability: ABILITIES.unburden,
         heldItem: GEN8_ITEM_IDS.sitrusBerry,
       });
       const ctx = makeItemContext({ pokemon });
@@ -781,7 +786,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // The consume effect should be in the effects array
       expect(result.effects.some((e: any) => e.type === "consume")).toBe(true);
       // Unburden volatile should be set by applyGen8HeldItem
-      expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
+      expect(pokemon.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
     });
 
     it(`given non-Unburden holder with Sitrus Berry at low HP, when end-of-turn triggers, then Sitrus consumed but no ${CORE_VOLATILE_IDS.unburden} volatile`, () => {
@@ -797,7 +802,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "consume")).toBe(true);
-      expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(false);
+      expect(pokemon.volatileStatuses.has(VOLATILES.unburden)).toBe(false);
     });
   });
 
@@ -852,7 +857,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.water, category: "special" }),
+        move: makeMove(MOVES.waterPledge),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
 
@@ -875,7 +880,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
 
@@ -898,7 +903,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
 
@@ -921,7 +926,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.water, category: "special" }),
+        move: makeMove(MOVES.waterPledge),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
 
@@ -944,7 +949,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.normal, category: "physical" }),
+        move: makeMove(MOVES.strength),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
 
@@ -981,12 +986,12 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const pokemon = makeActive({
         hp: 200,
         currentHp: 150,
-        heldItem: `${CORE_TYPE_IDS.rock}y-helmet`,
+        heldItem: ITEMS.rockyHelmet,
       });
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.fire, category: "special", flags: { contact: false } }),
+        move: makeMove(MOVES.firePledge),
         opponent: makeActive({ hp: 200 }),
       });
       const result = applyGen8HeldItem("on-contact", ctx);
@@ -1025,11 +1030,9 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         ability: GEN8_ABILITY_IDS.sheerForce,
         heldItem: GEN8_ITEM_IDS.lifeOrb,
       });
-      const move = makeMove({
-        power: 80,
-        type: CORE_TYPE_IDS.fire,
-        category: "special",
-        effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 10 } as MoveEffect,
+      const move = makeSyntheticMove("Exercise the Sheer Force suppression branch with a synthetic secondary effect.", {
+        baseMoveId: MOVES.firePledge,
+        effect: { type: "status-chance", status: STATUSES.burn, chance: 10 } as MoveEffect,
       });
       const ctx = makeItemContext({ pokemon, damage: 50, move });
       const result = applyGen8HeldItem("on-hit", ctx);
@@ -1045,10 +1048,8 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         ability: GEN8_ABILITY_IDS.sheerForce,
         heldItem: GEN8_ITEM_IDS.lifeOrb,
       });
-      const move = makeMove({
-        power: 80,
-        type: CORE_TYPE_IDS.fire,
-        category: "special",
+      const move = makeSyntheticMove("Remove the base move secondary effect to prove the non-Sheer Force branch.", {
+        baseMoveId: MOVES.firePledge,
         effect: null,
       });
       const ctx = makeItemContext({ pokemon, damage: 50, move });
@@ -1102,7 +1103,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const pokemon = makeActive({
         hp: 200,
         currentHp: 200,
-        types: [CORE_STATUS_IDS.poison],
+        types: [TYPES.poison],
         heldItem: CORE_ITEM_IDS.toxicOrb,
       });
       const ctx = makeItemContext({ pokemon });
@@ -1176,7 +1177,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     it("given non-Metronome item, when before-move triggers, then does NOT activate", () => {
       // Source: Gen8Items.ts -- handleBeforeMove only handles metronome
       const pokemon = makeActive({ heldItem: CORE_ITEM_IDS.leftovers });
-      const ctx = makeItemContext({ pokemon, move: makeMove({}) });
+      const ctx = makeItemContext({ pokemon, move: makeMove() });
       const result = applyGen8HeldItem("before-move", ctx);
       expect(result.activated).toBe(false);
     });
@@ -1197,7 +1198,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.water, category: "special" }),
+        move: makeMove(MOVES.waterPledge),
         opponent: makeActive({ hp: 200 }),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
@@ -1220,7 +1221,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.normal, category: "physical" }),
+        move: makeMove(MOVES.strength),
         opponent: makeActive({ hp: 200 }),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
@@ -1238,12 +1239,12 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const pokemon = makeActive({
         hp: 200,
         currentHp: 150,
-        heldItem: `${CORE_WEATHER_IDS.snow}ball`,
+        heldItem: ITEMS.snowball,
       });
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.fire, category: "physical" }),
+        move: makeMove(MOVES.fireLash),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(false);
@@ -1265,7 +1266,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ type: CORE_TYPE_IDS.fire, category: "special" }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(false);
@@ -1311,7 +1312,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeItemContext({
         pokemon,
         damage: 50,
-        move: makeMove({ flags: { contact: true } }),
+        move: makeMove(),
       });
       const result = applyGen8HeldItem("on-contact", ctx);
       expect(result.activated).toBe(false);
@@ -1373,7 +1374,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Gen8AbilitiesDamage.ts -- default case in switch returns NO_ACTIVATION
       const ctx = makeAbilityCtx({
         ability: "some-unknown-ability",
-        move: makeMove({ power: 80 }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1384,7 +1385,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Gen8AbilitiesDamage.ts -- CORE_ABILITY_IDS.none falls through to default
       const ctx = makeAbilityCtx({
         ability: CORE_ABILITY_IDS.none,
-        move: makeMove({ power: 80 }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1400,7 +1401,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Gen8AbilitiesDamage.ts -- default case in switch returns NO_ACTIVATION
       const ctx = makeAbilityCtx({
         ability: "some-unknown-ability",
-        move: makeMove({ power: 80 }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageImmunityAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1410,7 +1411,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Sturdy only blocks OHKO effect moves
       const ctx = makeAbilityCtx({
         ability: CORE_ABILITY_IDS.sturdy,
-        move: makeMove({ power: 80, effect: null }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageImmunityAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1420,7 +1421,8 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Sturdy blocks OHKO moves
       const ctx = makeAbilityCtx({
         ability: CORE_ABILITY_IDS.sturdy,
-        move: makeMove({
+        move: makeSyntheticMove("Exercise the Sturdy OHKO immunity branch with an explicit OHKO effect.", {
+          baseMoveId: MOVES.strength,
           power: null,
           effect: { type: "ohko" } as MoveEffect,
         }),
@@ -1453,7 +1455,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
     it(`given ${GEN8_ABILITY_IDS.parentalBond} with a non-multi-hit effect, when checking eligibility, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- non-multi-hit damaging moves are eligible
-      expect(isParentalBondEligible(GEN8_ABILITY_IDS.parentalBond, 80, `d${CORE_WEATHER_IDS.rain}`)).toBe(true);
+      expect(isParentalBondEligible(GEN8_ABILITY_IDS.parentalBond, 80, "drain")).toBe(true);
     });
   });
 
@@ -1496,19 +1498,19 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     });
 
     it(`given Dragon's Maw with no move, when handling damage calc, then ${GEN7_MOVE_IDS.return}s no activation`, () => {
-      const ctx = makeAbilityCtx({ ability: `${CORE_TYPE_IDS.dragon}s-maw` });
+      const ctx = makeAbilityCtx({ ability: GEN8_ABILITY_IDS.dragonsMaw });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
     });
 
     it(`given Punk Rock with no move, when handling damage calc, then ${GEN7_MOVE_IDS.return}s no activation`, () => {
-      const ctx = makeAbilityCtx({ ability: `punk-${CORE_TYPE_IDS.rock}` });
+      const ctx = makeAbilityCtx({ ability: GEN8_ABILITY_IDS.punkRock });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
     });
 
     it(`given Steelworker with no move, when handling damage calc, then ${GEN7_MOVE_IDS.return}s no activation`, () => {
-      const ctx = makeAbilityCtx({ ability: `${CORE_TYPE_IDS.steel}worker` });
+      const ctx = makeAbilityCtx({ ability: GEN8_ABILITY_IDS.steelworker });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
     });
@@ -1529,7 +1531,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Technician: power <= 60 only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.technician,
-        move: makeMove({ power: 80 }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1539,7 +1541,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Iron Fist: requires punch flag
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.ironFist,
-        move: makeMove({ power: 80, flags: { punch: false } }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1549,7 +1551,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Reckless: requires recoil or crash damage
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.reckless,
-        move: makeMove({ power: 80, effect: null, hasCrashDamage: false }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1560,7 +1562,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.adaptability,
         types: [CORE_TYPE_IDS.normal],
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1570,7 +1572,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Hustle: physical only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.hustle,
-        move: makeMove({ power: 80, category: "special" }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1580,7 +1582,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Huge Power: physical only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.hugePower,
-        move: makeMove({ power: 80, category: "special" }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1591,7 +1593,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.guts,
         status: null,
-        move: makeMove({ power: 80, category: "physical" }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1601,7 +1603,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Gorilla Tactics: physical only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.gorillaTactics,
-        move: makeMove({ power: 80, category: "special" }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1611,7 +1613,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Transistor: Electric only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.transistor,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1620,8 +1622,8 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     it(`given Dragon's Maw with non-Dragon move, when handling damage calc, then ${GEN7_MOVE_IDS.return}s no activation`, () => {
       // Source: Showdown data/abilities.ts -- Dragon's Maw: Dragon only
       const ctx = makeAbilityCtx({
-        ability: `${CORE_TYPE_IDS.dragon}s-maw`,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire }),
+        ability: GEN8_ABILITY_IDS.dragonsMaw,
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1630,8 +1632,8 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     it(`given Punk Rock with non-sound move, when handling damage calc, then ${GEN7_MOVE_IDS.return}s no activation`, () => {
       // Source: Showdown data/abilities.ts -- Punk Rock: sound flag required
       const ctx = makeAbilityCtx({
-        ability: `punk-${CORE_TYPE_IDS.rock}`,
-        move: makeMove({ power: 80, flags: { sound: false } }),
+        ability: GEN8_ABILITY_IDS.punkRock,
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1640,8 +1642,8 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     it(`given Steelworker with non-Steel move, when handling damage calc, then ${GEN7_MOVE_IDS.return}s no activation`, () => {
       // Source: Showdown data/abilities.ts -- Steelworker: Steel only
       const ctx = makeAbilityCtx({
-        ability: `${CORE_TYPE_IDS.steel}worker`,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire }),
+        ability: GEN8_ABILITY_IDS.steelworker,
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1651,7 +1653,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Pixilate: only changes Normal moves
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.pixilate,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1661,7 +1663,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Thick Fat: Fire and Ice only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.thickFat,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.water }),
+        move: makeMove(MOVES.waterPledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1672,7 +1674,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeAbilityCtx({
         ability: CORE_ABILITY_IDS.marvelScale,
         status: null,
-        move: makeMove({ power: 80 }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1682,7 +1684,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Fur Coat: physical only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.furCoat,
-        move: makeMove({ power: 80, category: "special" }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1691,8 +1693,8 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     it(`given Ice Scales with physical move, when handling damage calc, then ${GEN7_MOVE_IDS.return}s no activation`, () => {
       // Source: Showdown data/abilities.ts -- Ice Scales: special only
       const ctx = makeAbilityCtx({
-        ability: `${CORE_TYPE_IDS.ice}-scales`,
-        move: makeMove({ power: 80, category: "physical" }),
+        ability: GEN8_ABILITY_IDS.iceScales,
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1702,7 +1704,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Blaze: Fire type only
       const ctx = makeAbilityCtx({
         ability: CORE_ABILITY_IDS.blaze,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.water }),
+        move: makeMove(MOVES.waterPledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1714,7 +1716,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         ability: CORE_ABILITY_IDS.blaze,
         currentHp: 200, // full HP, way above threshold of floor(200/3) = 66
         maxHp: 200,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire }),
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1726,7 +1728,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         ability: GEN8_ABILITY_IDS.multiscale,
         currentHp: 150,
         maxHp: 200,
-        move: makeMove({ power: 80 }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1737,7 +1739,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.analytic,
         opponent: makeActive({ movedThisTurn: false }),
-        move: makeMove({ power: 80 }),
+        move: makeMove(MOVES.strength),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1748,7 +1750,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.sandForce,
         weather: null,
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.rock }),
+        move: makeMove(MOVES.rockSlide),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1758,8 +1760,8 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Sand Force: Rock, Ground, Steel only
       const ctx = makeAbilityCtx({
         ability: GEN8_ABILITY_IDS.sandForce,
-        weather: "sand",
-        move: makeMove({ power: 80, type: CORE_TYPE_IDS.fire }),
+        weather: WEATHER.sand,
+        move: makeMove(MOVES.firePledge),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);

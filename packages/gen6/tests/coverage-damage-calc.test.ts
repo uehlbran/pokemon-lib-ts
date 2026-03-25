@@ -12,6 +12,7 @@ import {
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
   GEN6_TYPE_CHART,
   createGen6DataManager,
@@ -105,13 +106,34 @@ const {
   wonderGuard,
 } = GEN6_ABILITY_IDS;
 
-const { charizard, dialga, giratina, palkia } = GEN6_SPECIES_IDS;
+const {
+  clamperl,
+  dialga,
+  giratina,
+  latias,
+  latios,
+  marowak,
+  palkia,
+  pikachu,
+} = GEN6_SPECIES_IDS;
 const { burn, badlyPoisoned, flinch, paralysis, poison, sleep } = CORE_STATUS_IDS;
 const { electric, fire, flying, ghost, grass, ground, normal, poison: poisonType, psychic, steel, water, dragon, fighting, rock } = CORE_TYPE_IDS;
 const { embargo, magnetRise, substitute } = CORE_VOLATILE_IDS;
-const { harshSun, rain, sun } = CORE_WEATHER_IDS;
-const HEAVY_RAIN = "heavy-rain";
-const GRASSY_TERRAIN = "grassy";
+const { heavyRain, harshSun, rain, sun } = CORE_WEATHER_IDS;
+const GRASSY_TERRAIN = CORE_TERRAIN_IDS.grassy;
+const ZERO_STAT_STAGES = {
+  attack: 0,
+  defense: 0,
+  spAttack: 0,
+  spDefense: 0,
+  speed: 0,
+  accuracy: 0,
+  evasion: 0,
+} as const;
+const PLUS_TWO_ATTACK_STAT_STAGES = { ...ZERO_STAT_STAGES, attack: 2 } as const;
+const PLUS_SIX_ATTACK_STAT_STAGES = { ...ZERO_STAT_STAGES, attack: 6 } as const;
+const MINUS_THREE_ATTACK_STAT_STAGES = { ...ZERO_STAT_STAGES, attack: -3 } as const;
+const PLUS_SIX_DEFENSE_STAT_STAGES = { ...ZERO_STAT_STAGES, defense: 6 } as const;
 
 function getCanonicalMove(moveId: string) {
   try {
@@ -150,11 +172,11 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? GEN6_SPECIES_IDS.bulbasaur,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: GEN6_NATURE_IDS.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
@@ -170,7 +192,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: GEN6_ITEM_IDS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -185,7 +207,7 @@ function makeActive(overrides: {
       ...overrides.statStages,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [normal],
+      types: overrides.types ?? [normal],
     ability: overrides.ability ?? GEN6_ABILITY_IDS.none,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     lastDamageTaken: 0,
@@ -308,7 +330,7 @@ describe("Weather modifiers in damage calc", () => {
     // Source: Showdown sim/battle-actions.ts -- sun boosts fire 1.5x (6144/4096)
     const attacker = makeActive({ types: [fire] });
     const defender = makeActive({ types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const sunResult = calculateGen6Damage(
       makeDamageContext({
@@ -334,7 +356,7 @@ describe("Weather modifiers in damage calc", () => {
     // Source: Showdown sim/battle-actions.ts -- sun weakens water 0.5x (2048/4096)
     const attacker = makeActive({ types: [water] });
     const defender = makeActive({ types: [normal] });
-    const waterMove = makeMove({ type: water, power: 60 });
+    const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const sunResult = calculateGen6Damage(
       makeDamageContext({
@@ -359,7 +381,7 @@ describe("Weather modifiers in damage calc", () => {
     // Source: Showdown sim/battle-actions.ts -- heavy rain nullifies fire
     const attacker = makeActive({ types: [fire] });
     const defender = makeActive({ types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
       makeDamageContext({
@@ -367,7 +389,7 @@ describe("Weather modifiers in damage calc", () => {
         defender,
         move: fireMove,
         state: makeState({
-          weather: { type: HEAVY_RAIN, turnsLeft: -1, source: GEN6_ABILITY_IDS.primordialSea },
+          weather: { type: heavyRain, turnsLeft: -1, source: GEN6_ABILITY_IDS.primordialSea },
         }),
       }),
       typeChart,
@@ -381,7 +403,7 @@ describe("Weather modifiers in damage calc", () => {
     // Source: Showdown sim/battle-actions.ts -- harsh sun nullifies water
     const attacker = makeActive({ types: [water] });
     const defender = makeActive({ types: [normal] });
-    const waterMove = makeMove({ type: water, power: 60 });
+    const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const result = calculateGen6Damage(
       makeDamageContext({
@@ -403,7 +425,7 @@ describe("Weather modifiers in damage calc", () => {
     // Source: Showdown sim/battle-actions.ts -- harsh sun boosts fire (same as regular sun)
     const attacker = makeActive({ types: [fire] });
     const defender = makeActive({ types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const harshSunResult = calculateGen6Damage(
       makeDamageContext({
@@ -430,7 +452,7 @@ describe("Weather modifiers in damage calc", () => {
     // Source: Showdown sim/battle-actions.ts -- heavy rain boosts water (same as regular rain)
     const attacker = makeActive({ types: [water] });
     const defender = makeActive({ types: [normal] });
-    const waterMove = makeMove({ type: water, power: 60 });
+    const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const heavyRainResult = calculateGen6Damage(
       makeDamageContext({
@@ -438,7 +460,7 @@ describe("Weather modifiers in damage calc", () => {
         defender,
         move: waterMove,
         state: makeState({
-          weather: { type: HEAVY_RAIN, turnsLeft: -1, source: GEN6_ABILITY_IDS.primordialSea },
+          weather: { type: heavyRain, turnsLeft: -1, source: GEN6_ABILITY_IDS.primordialSea },
         }),
         seed: 100,
       }),
@@ -462,12 +484,7 @@ describe("SolarBeam weather penalty", () => {
   it("given SolarBeam in rain, when calculating damage, then power is halved", () => {
     const attacker = makeActive({ types: [grass] });
     const defender = makeActive({ types: [normal] });
-    const solarBeam = makeMove({
-      id: GEN6_MOVE_IDS.solarBeam,
-      type: grass,
-      category: "special",
-      power: 120,
-    });
+    const solarBeam = dataManager.getMove(GEN6_MOVE_IDS.solarBeam);
 
     const rainResult = calculateGen6Damage(
       makeDamageContext({
@@ -492,12 +509,7 @@ describe("SolarBeam weather penalty", () => {
   it("given SolarBeam in sun, when calculating damage, then power is NOT halved", () => {
     const attacker = makeActive({ types: [grass] });
     const defender = makeActive({ types: [normal] });
-    const solarBeam = makeMove({
-      id: GEN6_MOVE_IDS.solarBeam,
-      type: grass,
-      category: "special",
-      power: 120,
-    });
+    const solarBeam = dataManager.getMove(GEN6_MOVE_IDS.solarBeam);
 
     const sunResult = calculateGen6Damage(
       makeDamageContext({
@@ -530,7 +542,7 @@ describe("Pinch abilities in damage calc", () => {
     // maxHP = 200, threshold = floor(200/3) = 66
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.blaze, types: [fire], hp: 200, currentHp: 66 });
     const defender = makeActive({ types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const blazeResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -552,7 +564,7 @@ describe("Pinch abilities in damage calc", () => {
     // maxHP = 200, threshold = 66, currentHp = 100 > 66
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.torrent, types: [water], hp: 200, currentHp: 100 });
     const defender = makeActive({ types: [normal] });
-    const waterMove = makeMove({ type: water, power: 60 });
+    const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const torrentResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
@@ -580,7 +592,7 @@ describe("Flash Fire volatile in damage calc", () => {
     volatiles.set(flashFire, { turnsLeft: -1 });
     const attacker = makeActive({ types: [fire], volatiles });
     const defender = makeActive({ types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const ffResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -607,7 +619,7 @@ describe("Dry Skin fire weakness in damage calc", () => {
     // Source: Showdown -- Dry Skin: fire moves deal 1.25x damage
     const attacker = makeActive({ types: [fire] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.drySkin, types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const drySkinResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -628,7 +640,7 @@ describe("Dry Skin fire weakness in damage calc", () => {
     // Source: Showdown -- Mold Breaker bypasses Dry Skin
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.moldBreaker, types: [fire] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.drySkin, types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const moldResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -655,7 +667,7 @@ describe("Technician in damage calc", () => {
     // Source: Showdown -- Technician: 1.5x power for moves with BP <= 60
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.technician, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const quickAttack = makeMove({ id: GEN6_MOVE_IDS.quickAttack, type: normal, power: 40 });
+    const quickAttack = dataManager.getMove(GEN6_MOVE_IDS.quickAttack);
 
     const techResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: quickAttack, seed: 100 }),
@@ -676,7 +688,7 @@ describe("Technician in damage calc", () => {
     // Source: Showdown -- Technician only activates for BP <= 60
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.technician, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const bodySlam = makeMove({ id: GEN6_MOVE_IDS.bodySlam, type: normal, power: 85 });
+    const bodySlam = dataManager.getMove(GEN6_MOVE_IDS.bodySlam);
 
     const techResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: bodySlam, seed: 100 }),
@@ -702,12 +714,7 @@ describe("Iron Fist in damage calc", () => {
     // Source: Showdown -- Iron Fist: 1.2x power for punching moves
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.ironFist, types: [fighting] });
     const defender = makeActive({ types: [normal] });
-    const machPunch = makeMove({
-      id: GEN6_MOVE_IDS.machPunch,
-      type: fighting,
-      power: 40,
-      flags: { punch: true },
-    });
+    const machPunch = dataManager.getMove(GEN6_MOVE_IDS.machPunch);
 
     const ifResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: machPunch, seed: 100 }),
@@ -736,12 +743,7 @@ describe("Reckless in damage calc", () => {
     const recoilEffect: MoveEffect = { type: "recoil", fraction: 1 / 3 };
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.reckless, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const doubleEdge = makeMove({
-      id: GEN6_MOVE_IDS.doubleEdge,
-      type: normal,
-      power: 120,
-      effect: recoilEffect,
-    });
+    const doubleEdge = { ...dataManager.getMove(GEN6_MOVE_IDS.doubleEdge), effect: recoilEffect } as MoveData;
 
     const recklessResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: doubleEdge, seed: 100 }),
@@ -776,12 +778,7 @@ describe("Reckless in damage calc", () => {
     };
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.reckless, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const move = makeMove({
-      id: "test-recoil-multi",
-      type: normal,
-      power: 80,
-      effect: multiEffect,
-    });
+    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), id: "test-recoil-multi", effect: multiEffect } as MoveData;
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move, seed: 100 }),
@@ -808,13 +805,7 @@ describe("Sheer Force in damage calc", () => {
     const statusChanceEffect: MoveEffect = { type: "status-chance", status: burn, chance: 10 };
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [fire] });
     const defender = makeActive({ types: [normal] });
-    const flamethrower = makeMove({
-      id: GEN6_MOVE_IDS.flamethrower,
-      type: fire,
-      category: "special",
-      power: 90,
-      effect: statusChanceEffect,
-    });
+    const flamethrower = { ...dataManager.getMove(GEN6_MOVE_IDS.flamethrower), effect: statusChanceEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: flamethrower, seed: 100 }),
@@ -841,12 +832,7 @@ describe("Sheer Force in damage calc", () => {
     };
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const headbutt = makeMove({
-      id: GEN6_MOVE_IDS.headbutt,
-      type: normal,
-      power: 70,
-      effect: flinchEffect,
-    });
+    const headbutt = { ...dataManager.getMove(GEN6_MOVE_IDS.headbutt), effect: flinchEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: headbutt, seed: 100 }),
@@ -867,13 +853,7 @@ describe("Sheer Force in damage calc", () => {
     // Source: Showdown -- Tri Attack has secondary effects via onHit, whitelisted
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const triAttack = makeMove({
-      id: GEN6_MOVE_IDS.triAttack,
-      type: normal,
-      category: "special",
-      power: 80,
-      effect: null,
-    });
+    const triAttack = dataManager.getMove(GEN6_MOVE_IDS.triAttack);
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: triAttack, seed: 100 }),
@@ -902,12 +882,7 @@ describe("Sheer Force in damage calc", () => {
     };
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [fire] });
     const defender = makeActive({ types: [normal] });
-    const flameCharge = makeMove({
-      id: GEN6_MOVE_IDS.flameCharge,
-      type: fire,
-      power: 50,
-      effect: selfBoostEffect,
-    });
+    const flameCharge = { ...dataManager.getMove(GEN6_MOVE_IDS.flameCharge), effect: selfBoostEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: flameCharge, seed: 100 }),
@@ -935,7 +910,7 @@ describe("Sheer Force in damage calc", () => {
     };
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const move = makeMove({ id: GEN6_MOVE_IDS.acid, type: normal, power: 40, effect: foeDropEffect });
+    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.acid), effect: foeDropEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move, seed: 100 }),
@@ -962,7 +937,7 @@ describe("Conditional power moves in damage calc", () => {
     const attacker = makeActive({ types: [poison] });
     const poisonedDefender = makeActive({ types: [normal], status: poison });
     const healthyDefender = makeActive({ types: [normal] });
-    const venoshock = makeMove({ id: GEN6_MOVE_IDS.venoshock, type: poison, category: "special", power: 65 });
+    const venoshock = dataManager.getMove(GEN6_MOVE_IDS.venoshock);
 
     const poisonedResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: poisonedDefender, move: venoshock, seed: 100 }),
@@ -983,7 +958,7 @@ describe("Conditional power moves in damage calc", () => {
     const attacker = makeActive({ types: [poison] });
     const badlyPoisonedTarget = makeActive({ types: [normal], status: badlyPoisoned });
     const healthyDefender = makeActive({ types: [normal] });
-    const venoshock = makeMove({ id: GEN6_MOVE_IDS.venoshock, type: poison, category: "special", power: 65 });
+    const venoshock = dataManager.getMove(GEN6_MOVE_IDS.venoshock);
 
     const bpResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: badlyPoisonedTarget, move: venoshock, seed: 100 }),
@@ -1004,13 +979,7 @@ describe("Conditional power moves in damage calc", () => {
     const attacker = makeActive({ types: [ghost] });
     const burnedDefender = makeActive({ types: [psychic], status: burn });
     const healthyDefender = makeActive({ types: [psychic] });
-    const hex = makeMove({
-      id: GEN6_MOVE_IDS.hex,
-      type: ghost,
-      category: "special",
-      power: 65,
-      flags: { contact: false },
-    });
+    const hex = dataManager.getMove(GEN6_MOVE_IDS.hex);
 
     const statusResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: burnedDefender, move: hex, seed: 100 }),
@@ -1031,12 +1000,7 @@ describe("Conditional power moves in damage calc", () => {
     const attacker = makeActive({ types: [flying], heldItem: null });
     const itemAttacker = makeActive({ types: [flying], heldItem: GEN6_ITEM_IDS.leftovers });
     const defender = makeActive({ types: [normal] });
-    const acrobatics = makeMove({
-      id: GEN6_MOVE_IDS.acrobatics,
-      type: flying,
-      power: 55,
-      flags: { contact: true },
-    });
+    const acrobatics = dataManager.getMove(GEN6_MOVE_IDS.acrobatics);
 
     const noItemResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: acrobatics, seed: 100 }),
@@ -1061,7 +1025,7 @@ describe("Normalize in damage calc", () => {
     // Source: Showdown -- Normalize makes all moves Normal type
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.normalize, types: [normal] });
     const defender = makeActive({ types: [ghost] }); // Ghost is immune to Normal
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove }),
@@ -1080,7 +1044,7 @@ describe("Normalize in damage calc", () => {
     // but we test the code path where ateBoostApplied is reset to false
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.normalize, types: [normal] });
     const defender = makeActive({ types: [fighting] }); // Fighting resists Normal
-    const normalMove = makeMove({ type: normal, power: 50 });
+    const normalMove = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: normalMove, seed: 100 }),
@@ -1102,7 +1066,7 @@ describe("Rivalry in damage calc", () => {
     // Source: Showdown -- Rivalry: same gender = 1.25x damage
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.rivalry, types: [normal], gender: "male" });
     const defender = makeActive({ types: [normal], gender: "male" });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const rivalryResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1124,7 +1088,7 @@ describe("Rivalry in damage calc", () => {
     // Source: Showdown -- Rivalry: opposite gender = 0.75x damage
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.rivalry, types: [normal], gender: "male" });
     const defender = makeActive({ types: [normal], gender: "female" });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const rivalryResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1145,7 +1109,7 @@ describe("Rivalry in damage calc", () => {
     // Source: Showdown -- Rivalry: genderless = no modifier
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.rivalry, types: [normal], gender: "male" });
     const defender = makeActive({ types: [normal], gender: "genderless" });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const rivalryResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1171,23 +1135,18 @@ describe("Legend orbs in damage calc", () => {
     // Source: Showdown data/items.ts -- Adamant Orb: 4915/4096 for Dialga's Dragon/Steel moves
     const attacker = makeActive({
       types: [steel, dragon],
-      speciesId: 483,
+      speciesId: GEN6_SPECIES_IDS.dialga,
       heldItem: GEN6_ITEM_IDS.adamantOrb,
     });
     const defender = makeActive({ types: [normal] });
-    const dragonMove = makeMove({
-      type: dragon,
-      category: "special",
-      power: 80,
-      flags: { contact: false },
-    });
+    const dragonMove = dataManager.getMove(GEN6_MOVE_IDS.dragonPulse);
 
     const orbResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: dragonMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [steel, dragon], speciesId: 483, heldItem: null });
+    const baseAttacker = makeActive({ types: [steel, dragon], speciesId: GEN6_SPECIES_IDS.dialga, heldItem: null });
     const baseResult = calculateGen6Damage(
       makeDamageContext({ attacker: baseAttacker, defender, move: dragonMove, seed: 100 }),
       typeChart,
@@ -1202,23 +1161,18 @@ describe("Legend orbs in damage calc", () => {
     // Source: Showdown data/items.ts -- Lustrous Orb: 4915/4096 for Palkia's Water/Dragon moves
     const attacker = makeActive({
       types: [water, dragon],
-      speciesId: 484,
+      speciesId: GEN6_SPECIES_IDS.palkia,
       heldItem: GEN6_ITEM_IDS.lustrousOrb,
     });
     const defender = makeActive({ types: [normal] });
-    const waterMove = makeMove({
-      type: water,
-      category: "special",
-      power: 80,
-      flags: { contact: false },
-    });
+    const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const orbResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [water, dragon], speciesId: 484, heldItem: null });
+    const baseAttacker = makeActive({ types: [water, dragon], speciesId: GEN6_SPECIES_IDS.palkia, heldItem: null });
     const baseResult = calculateGen6Damage(
       makeDamageContext({ attacker: baseAttacker, defender, move: waterMove, seed: 100 }),
       typeChart,
@@ -1232,23 +1186,18 @@ describe("Legend orbs in damage calc", () => {
     // Source: Showdown data/items.ts -- Griseous Orb: 4915/4096 for Giratina's Ghost/Dragon moves
     const attacker = makeActive({
       types: [ghost, dragon],
-      speciesId: 487,
+      speciesId: GEN6_SPECIES_IDS.giratina,
       heldItem: GEN6_ITEM_IDS.griseousOrb,
     });
     const defender = makeActive({ types: [normal] });
-    const ghostMove = makeMove({
-      type: ghost,
-      category: "special",
-      power: 80,
-      flags: { contact: false },
-    });
+    const ghostMove = dataManager.getMove(GEN6_MOVE_IDS.shadowBall);
 
     const orbResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: ghostMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [ghost, dragon], speciesId: 487, heldItem: null });
+    const baseAttacker = makeActive({ types: [ghost, dragon], speciesId: GEN6_SPECIES_IDS.giratina, heldItem: null });
     const _baseResult = calculateGen6Damage(
       makeDamageContext({ attacker: baseAttacker, defender, move: ghostMove, seed: 100 }),
       typeChart,
@@ -1263,23 +1212,18 @@ describe("Legend orbs in damage calc", () => {
     // Source: Showdown data/items.ts -- Griseous Orb for Giratina
     const attacker = makeActive({
       types: [ghost, dragon],
-      speciesId: 487,
+      speciesId: GEN6_SPECIES_IDS.giratina,
       heldItem: GEN6_ITEM_IDS.griseousOrb,
     });
     const defender = makeActive({ types: [psychic] });
-    const ghostMove = makeMove({
-      type: ghost,
-      category: "special",
-      power: 80,
-      flags: { contact: false },
-    });
+    const ghostMove = dataManager.getMove(GEN6_MOVE_IDS.shadowBall);
 
     const orbResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: ghostMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [ghost, dragon], speciesId: 487, heldItem: null });
+    const baseAttacker = makeActive({ types: [ghost, dragon], speciesId: GEN6_SPECIES_IDS.giratina, heldItem: null });
     const baseResult = calculateGen6Damage(
       makeDamageContext({ attacker: baseAttacker, defender, move: ghostMove, seed: 100 }),
       typeChart,
@@ -1299,7 +1243,7 @@ describe("Ability type immunities in damage calc", () => {
     // Source: Showdown -- Levitate: immune to ground
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: earthquake }),
@@ -1314,7 +1258,7 @@ describe("Ability type immunities in damage calc", () => {
     // Source: Showdown -- Gravity grounds Levitate users
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({
@@ -1336,7 +1280,7 @@ describe("Ability type immunities in damage calc", () => {
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal], heldItem: GEN6_ITEM_IDS.ironBall });
     const groundedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: earthquake }),
@@ -1356,7 +1300,7 @@ describe("Ability type immunities in damage calc", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.moldBreaker, types: [ground] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
     const groundedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
@@ -1377,7 +1321,7 @@ describe("Ability type immunities in damage calc", () => {
     volatiles.set(magnetRise, { turnsLeft: 5 });
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ types: [normal], volatiles });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: earthquake }),
@@ -1395,7 +1339,7 @@ describe("Ability type immunities in damage calc", () => {
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ types: [normal], volatiles });
     const groundedDefender = makeActive({ types: [normal] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({
@@ -1419,12 +1363,7 @@ describe("Ability type immunities in damage calc", () => {
     // Source: Showdown -- Volt Absorb: immune to electric
     const attacker = makeActive({ types: [electric] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.voltAbsorb, types: [normal] });
-    const thunderbolt = makeMove({
-      type: electric,
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
+    const thunderbolt = dataManager.getMove(GEN6_MOVE_IDS.thunderbolt);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: thunderbolt }),
@@ -1439,12 +1378,7 @@ describe("Ability type immunities in damage calc", () => {
     // Source: Showdown -- Sap Sipper: immune to grass
     const attacker = makeActive({ types: [grass] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.sapSipper, types: [normal] });
-    const grassMove = makeMove({
-      type: grass,
-      category: "special",
-      power: 80,
-      flags: { contact: false },
-    });
+    const grassMove = dataManager.getMove(GEN6_MOVE_IDS.energyBall);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: grassMove }),
@@ -1465,7 +1399,7 @@ describe("Scrappy in damage calc", () => {
     // Source: Showdown -- Scrappy: Normal/Fighting hit Ghost types
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.scrappy, types: [normal] });
     const defender = makeActive({ types: [ghost] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1481,7 +1415,7 @@ describe("Scrappy in damage calc", () => {
     // Source: Showdown -- Scrappy: Fighting also hits Ghost
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.scrappy, types: [fighting] });
     const defender = makeActive({ types: [ghost] });
-    const closeCombat = makeMove({ type: fighting, power: 120 });
+    const closeCombat = dataManager.getMove(GEN6_MOVE_IDS.closeCombat);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: closeCombat, seed: 100 }),
@@ -1502,7 +1436,7 @@ describe("Wonder Guard in damage calc", () => {
     // Source: Showdown -- Wonder Guard: only super-effective moves deal damage
     const attacker = makeActive({ types: [normal] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1516,7 +1450,7 @@ describe("Wonder Guard in damage calc", () => {
     // Source: Showdown -- Wonder Guard: super-effective moves hit
     const attacker = makeActive({ types: [fighting] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
-    const closeCombat = makeMove({ type: fighting, power: 120 });
+    const closeCombat = dataManager.getMove(GEN6_MOVE_IDS.closeCombat);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: closeCombat, seed: 100 }),
@@ -1532,7 +1466,7 @@ describe("Wonder Guard in damage calc", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.moldBreaker, types: [normal] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
     const unguardedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1555,9 +1489,9 @@ describe("Wonder Guard in damage calc", () => {
 describe("Tinted Lens in damage calc", () => {
   it("given Tinted Lens + not-very-effective move, when calculating damage, then damage is doubled", () => {
     // Source: Showdown -- Tinted Lens: doubles damage for NVE moves
-    const attacker = makeActive({ ability: "tinted-lens", types: [fire] });
+    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.tintedLens, types: [fire] });
     const defender = makeActive({ types: [fire] }); // Fire resists Fire
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const tintedResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -1580,7 +1514,7 @@ describe("Heatproof in damage calc", () => {
     // Source: Showdown data/abilities.ts -- Heatproof: halves fire damage
     const attacker = makeActive({ types: [fire] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.heatproof, types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const hpResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -1607,7 +1541,7 @@ describe("Final modifier items in damage calc", () => {
     // Source: Showdown data/items.ts -- Expert Belt: 4915/4096 for SE moves
     const attacker = makeActive({ types: [fire], heldItem: GEN6_ITEM_IDS.expertBelt });
     const defender = makeActive({ types: [grass] }); // Fire SE vs Grass
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const expertResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -1628,7 +1562,7 @@ describe("Final modifier items in damage calc", () => {
     // Source: Showdown data/items.ts -- Expert Belt only activates for SE
     const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.expertBelt });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const expertResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1648,7 +1582,7 @@ describe("Final modifier items in damage calc", () => {
     // Source: Showdown data/items.ts -- Muscle Band: 4505/4096 for physical
     const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.muscleBand });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50, category: "physical" });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const bandResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1669,12 +1603,7 @@ describe("Final modifier items in damage calc", () => {
     // Source: Showdown data/items.ts -- Wise Glasses: 4505/4096 for special
     const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.wiseGlasses });
     const defender = makeActive({ types: [normal] });
-    const swift = makeMove({
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const glassesResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: swift, seed: 100 }),
@@ -1704,7 +1633,7 @@ describe("Metronome item in damage calc", () => {
     volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 3 } });
     const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.metronome, volatiles });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const metResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1727,7 +1656,7 @@ describe("Metronome item in damage calc", () => {
     volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 1 } });
     const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.metronome, volatiles });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const metResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1753,7 +1682,7 @@ describe("Gem consumption and Unburden in damage calc", () => {
     // Source: Showdown -- Gem consumed after boosting, triggers Unburden
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.unburden, types: [normal], heldItem: GEN6_ITEM_IDS.normalGem });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1771,7 +1700,7 @@ describe("Gem consumption and Unburden in damage calc", () => {
   it("given attacker without Unburden + gem consumed, when calculating damage, then no Unburden volatile", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [fire], heldItem: GEN6_ITEM_IDS.fireGem });
     const defender = makeActive({ types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -1798,7 +1727,7 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
       types: [grass],
       heldItem: GEN6_ITEM_IDS.occaBerry,
     });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -1820,7 +1749,7 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
       types: [grass],
       heldItem: GEN6_ITEM_IDS.occaBerry,
     });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -1841,7 +1770,7 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
       heldItem: GEN6_ITEM_IDS.occaBerry,
       volatiles,
     });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
@@ -1855,7 +1784,7 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
     // Source: Showdown -- Chilan Berry activates on any Normal hit, no SE needed
     const attacker = makeActive({ types: [normal] });
     const defender = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.chilanBerry });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const chilanResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -1886,7 +1815,7 @@ describe("Burn + Guts in damage calc", () => {
     const burnedGuts = makeActive({ ability: GEN6_ABILITY_IDS.guts, types: [normal], status: burn });
     const burnedNoGuts = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], status: burn });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const gutsResult = calculateGen6Damage(
       makeDamageContext({ attacker: burnedGuts, defender, move: tackle, seed: 100 }),
@@ -1914,7 +1843,7 @@ describe("Attack stat modifiers in damage calc", () => {
     const hugePower = makeActive({ ability: GEN6_ABILITY_IDS.hugePower, types: [normal], attack: 100 });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], attack: 100 });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const hpResult = calculateGen6Damage(
       makeDamageContext({ attacker: hugePower, defender, move: tackle, seed: 100 }),
@@ -1935,7 +1864,7 @@ describe("Attack stat modifiers in damage calc", () => {
     const choiceBand = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.choiceBand, attack: 100 });
     const base = makeActive({ types: [normal], heldItem: null, attack: 100 });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const cbResult = calculateGen6Damage(
       makeDamageContext({ attacker: choiceBand, defender, move: tackle, seed: 100 }),
@@ -1955,12 +1884,7 @@ describe("Attack stat modifiers in damage calc", () => {
     const choiceSpecs = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.choiceSpecs, spAttack: 100 });
     const base = makeActive({ types: [normal], heldItem: null, spAttack: 100 });
     const defender = makeActive({ types: [normal] });
-    const swift = makeMove({
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const csResult = calculateGen6Damage(
       makeDamageContext({ attacker: choiceSpecs, defender, move: swift, seed: 100 }),
@@ -1979,23 +1903,18 @@ describe("Attack stat modifiers in damage calc", () => {
     // Source: Showdown sim/items.ts -- Soul Dew Gen 3-6: 1.5x SpAtk/SpDef for Lati@s
     const soulDew = makeActive({
       types: [dragon, psychic],
-      speciesId: 381,
+      speciesId: GEN6_SPECIES_IDS.latios,
       heldItem: GEN6_ITEM_IDS.soulDew,
       spAttack: 100,
     });
     const base = makeActive({
       types: [dragon, psychic],
-      speciesId: 381,
+      speciesId: GEN6_SPECIES_IDS.latios,
       heldItem: null,
       spAttack: 100,
     });
     const defender = makeActive({ types: [normal] });
-    const dragonPulse = makeMove({
-      type: dragon,
-      category: "special",
-      power: 85,
-      flags: { contact: false, pulse: false },
-    });
+    const dragonPulse = dataManager.getMove(GEN6_MOVE_IDS.dragonPulse);
 
     const sdResult = calculateGen6Damage(
       makeDamageContext({ attacker: soulDew, defender, move: dragonPulse, seed: 100 }),
@@ -2014,23 +1933,18 @@ describe("Attack stat modifiers in damage calc", () => {
     // Source: Showdown sim/items.ts -- Deep Sea Tooth: 2x SpAtk for Clamperl
     const dsTooth = makeActive({
       types: [water],
-      speciesId: 366,
+      speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: GEN6_ITEM_IDS.deepSeaTooth,
       spAttack: 100,
     });
     const base = makeActive({
       types: [water],
-      speciesId: 366,
+      speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: null,
       spAttack: 100,
     });
     const defender = makeActive({ types: [normal] });
-    const waterMove = makeMove({
-      type: water,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const dstResult = calculateGen6Damage(
       makeDamageContext({ attacker: dsTooth, defender, move: waterMove, seed: 100 }),
@@ -2049,18 +1963,18 @@ describe("Attack stat modifiers in damage calc", () => {
     // Source: Showdown sim/items.ts -- Light Ball: 2x Atk+SpAtk for Pikachu
     const lightBall = makeActive({
       types: [electric],
-      speciesId: 25,
+      speciesId: GEN6_SPECIES_IDS.pikachu,
       heldItem: GEN6_ITEM_IDS.lightBall,
       attack: 100,
     });
     const base = makeActive({
       types: [electric],
-      speciesId: 25,
+      speciesId: GEN6_SPECIES_IDS.pikachu,
       heldItem: null,
       attack: 100,
     });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const lbResult = calculateGen6Damage(
       makeDamageContext({ attacker: lightBall, defender, move: tackle, seed: 100 }),
@@ -2079,18 +1993,18 @@ describe("Attack stat modifiers in damage calc", () => {
     // Source: Showdown sim/items.ts -- Thick Club: 2x Atk for Cubone/Marowak
     const thickClub = makeActive({
       types: [ground],
-      speciesId: 105,
+      speciesId: GEN6_SPECIES_IDS.marowak,
       heldItem: GEN6_ITEM_IDS.thickClub,
       attack: 100,
     });
     const base = makeActive({
       types: [ground],
-      speciesId: 105,
+      speciesId: GEN6_SPECIES_IDS.marowak,
       heldItem: null,
       attack: 100,
     });
     const defender = makeActive({ types: [normal] });
-    const boneClub = makeMove({ type: ground, power: 65 });
+    const boneClub = dataManager.getMove(GEN6_MOVE_IDS.boneClub);
 
     const tcResult = calculateGen6Damage(
       makeDamageContext({ attacker: thickClub, defender, move: boneClub, seed: 100 }),
@@ -2117,7 +2031,7 @@ describe("Attack stat modifiers in damage calc", () => {
     });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], attack: 100 });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const ssResult = calculateGen6Damage(
       makeDamageContext({ attacker: slowStartMon, defender, move: tackle, seed: 100 }),
@@ -2149,7 +2063,7 @@ describe("Attack stat modifiers in damage calc", () => {
       attack: 100,
     });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const defResult = calculateGen6Damage(
       makeDamageContext({ attacker: defeatist, defender, move: tackle, seed: 100 }),
@@ -2174,7 +2088,7 @@ describe("Attack stat modifiers in damage calc", () => {
     });
     const noItem = makeActive({ ability: GEN6_ABILITY_IDS.klutz, types: [normal], heldItem: null, attack: 100 });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const klutzResult = calculateGen6Damage(
       makeDamageContext({ attacker: klutzCB, defender, move: tackle, seed: 100 }),
@@ -2200,22 +2114,17 @@ describe("Defense stat modifiers in damage calc", () => {
     const attacker = makeActive({ types: [normal] });
     const dsScale = makeActive({
       types: [water],
-      speciesId: 366,
+      speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: GEN6_ITEM_IDS.deepSeaScale,
       spDefense: 100,
     });
     const base = makeActive({
       types: [water],
-      speciesId: 366,
+      speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: null,
       spDefense: 100,
     });
-    const swift = makeMove({
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const scaleResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: dsScale, move: swift, seed: 100 }),
@@ -2235,12 +2144,7 @@ describe("Defense stat modifiers in damage calc", () => {
     const attacker = makeActive({ types: [normal] });
     const eviolite = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.eviolite, spDefense: 100 });
     const base = makeActive({ types: [normal], heldItem: null, spDefense: 100 });
-    const swift = makeMove({
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const evResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: eviolite, move: swift, seed: 100 }),
@@ -2260,12 +2164,7 @@ describe("Defense stat modifiers in damage calc", () => {
     const attacker = makeActive({ types: [normal] });
     const rockDef = makeActive({ types: [rock], spDefense: 100 });
     const base = makeActive({ types: [rock], spDefense: 100 });
-    const swift = makeMove({
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const sandResult = calculateGen6Damage(
       makeDamageContext({
@@ -2291,12 +2190,7 @@ describe("Defense stat modifiers in damage calc", () => {
     const attacker = makeActive({ types: [normal] });
     const flowerGift = makeActive({ ability: GEN6_ABILITY_IDS.flowerGift, types: [grass], spDefense: 100 });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [grass], spDefense: 100 });
-    const swift = makeMove({
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const fgResult = calculateGen6Damage(
       makeDamageContext({
@@ -2333,7 +2227,7 @@ describe("Defense stat modifiers in damage calc", () => {
       defense: 100,
     });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [water], status: burn, defense: 100 });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const msResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: marvelScale, move: tackle, seed: 100 }),
@@ -2353,22 +2247,17 @@ describe("Defense stat modifiers in damage calc", () => {
     const attacker = makeActive({ types: [normal] });
     const soulDewDef = makeActive({
       types: [dragon, psychic],
-      speciesId: 380,
+      speciesId: GEN6_SPECIES_IDS.latias,
       heldItem: GEN6_ITEM_IDS.soulDew,
       spDefense: 100,
     });
     const base = makeActive({
       types: [dragon, psychic],
-      speciesId: 380,
+      speciesId: GEN6_SPECIES_IDS.latias,
       heldItem: null,
       spDefense: 100,
     });
-    const swift = makeMove({
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const sdResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: soulDewDef, move: swift, seed: 100 }),
@@ -2409,18 +2298,10 @@ describe("Stat stages in damage calc", () => {
       ability: GEN6_ABILITY_IDS.none,
       types: [normal],
       attack: 100,
-      statStages: {
-        attack: 2,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
+      statStages: PLUS_TWO_ATTACK_STAT_STAGES,
     });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const simpleResult = calculateGen6Damage(
       makeDamageContext({ attacker: simple, defender, move: tackle, seed: 100 }),
@@ -2440,22 +2321,14 @@ describe("Stat stages in damage calc", () => {
     const boosted = makeActive({
       types: [normal],
       attack: 100,
-      statStages: {
-        attack: 6,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
+      statStages: PLUS_SIX_ATTACK_STAT_STAGES,
     });
     const base = makeActive({
       types: [normal],
       attack: 100,
     });
     const unawareDefender = makeActive({ ability: GEN6_ABILITY_IDS.unaware, types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const unawareResult = calculateGen6Damage(
       makeDamageContext({ attacker: boosted, defender: unawareDefender, move: tackle, seed: 100 }),
@@ -2475,19 +2348,11 @@ describe("Stat stages in damage calc", () => {
     const debuffed = makeActive({
       types: [normal],
       attack: 100,
-      statStages: {
-        attack: -3,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
+      statStages: MINUS_THREE_ATTACK_STAT_STAGES,
     });
     const base = makeActive({ types: [normal], attack: 100 });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const critResult = calculateGen6Damage(
       makeDamageContext({ attacker: debuffed, defender, move: tackle, isCrit: true, seed: 100 }),
@@ -2508,18 +2373,10 @@ describe("Stat stages in damage calc", () => {
     const boostedDef = makeActive({
       types: [normal],
       defense: 100,
-      statStages: {
-        attack: 0,
-        defense: 6,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
+      statStages: PLUS_SIX_DEFENSE_STAT_STAGES,
     });
     const baseDef = makeActive({ types: [normal], defense: 100 });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const critBoostedResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: boostedDef, move: tackle, isCrit: true, seed: 100 }),
@@ -2546,18 +2403,10 @@ describe("Chip Away / Sacred Sword in damage calc", () => {
     const boostedDef = makeActive({
       types: [normal],
       defense: 100,
-      statStages: {
-        attack: 0,
-        defense: 6,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
+      statStages: PLUS_SIX_DEFENSE_STAT_STAGES,
     });
     const baseDef = makeActive({ types: [normal], defense: 100 });
-    const sacredSword = makeMove({ id: GEN6_MOVE_IDS.sacredSword, type: fighting, power: 90 });
+    const sacredSword = dataManager.getMove(GEN6_MOVE_IDS.sacredSword);
 
     const ssResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: boostedDef, move: sacredSword, seed: 100 }),
@@ -2582,11 +2431,7 @@ describe("Spread modifier in damage calc", () => {
     // Source: Showdown -- spread moves in doubles deal 0.75x damage (3072/4096)
     const attacker = makeActive({ types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const spreadMove = makeMove({
-      type: normal,
-      power: 100,
-      target: "all-adjacent-foes",
-    });
+    const spreadMove = dataManager.getMove(GEN6_MOVE_IDS.rockSlide);
 
     const doublesResult = calculateGen6Damage(
       makeDamageContext({
@@ -2623,7 +2468,7 @@ describe("Sniper in damage calc", () => {
     const sniper = makeActive({ ability: GEN6_ABILITY_IDS.sniper, types: [normal] });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const sniperCrit = calculateGen6Damage(
       makeDamageContext({ attacker: sniper, defender, move: tackle, isCrit: true, seed: 100 }),
@@ -2650,7 +2495,7 @@ describe("Hustle in damage calc", () => {
     const hustle = makeActive({ ability: GEN6_ABILITY_IDS.hustle, types: [normal], attack: 100 });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], attack: 100 });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const hustleResult = calculateGen6Damage(
       makeDamageContext({ attacker: hustle, defender, move: tackle, seed: 100 }),
@@ -2677,7 +2522,7 @@ describe("Embargo suppressing gems in damage calc", () => {
     volatiles.set(embargo, { turnsLeft: 5 });
     const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.normalGem, volatiles });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -2698,7 +2543,7 @@ describe("Gravity / Iron Ball type effectiveness override in damage calc", () =>
     // Source: Showdown -- Gravity: Ground moves hit Flying types
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ types: [flying] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const gravityResult = calculateGen6Damage(
       makeDamageContext({
@@ -2726,7 +2571,7 @@ describe("Gravity / Iron Ball type effectiveness override in damage calc", () =>
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ types: [flying], heldItem: GEN6_ITEM_IDS.ironBall });
     const groundedDefender = makeActive({ types: [normal] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
@@ -2751,12 +2596,7 @@ describe("Terrain power modifiers in damage calc", () => {
     // Source: Bulbapedia "Electric Terrain" Gen 6 -- 1.5x Electric for grounded attacker
     const attacker = makeActive({ types: [electric] });
     const defender = makeActive({ types: [normal] });
-    const thunderbolt = makeMove({
-      type: electric,
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
+    const thunderbolt = dataManager.getMove(GEN6_MOVE_IDS.thunderbolt);
 
     const terrainResult = calculateGen6Damage(
       makeDamageContext({
@@ -2781,7 +2621,7 @@ describe("Terrain power modifiers in damage calc", () => {
     // Source: Showdown -- Grassy Terrain halves Earthquake/Bulldoze/Magnitude vs grounded targets
     const attacker = makeActive({ types: [ground] });
     const defender = makeActive({ types: [normal] });
-    const earthquake = makeMove({ id: GEN6_MOVE_IDS.earthquake, type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const grassyResult = calculateGen6Damage(
       makeDamageContext({
@@ -2813,13 +2653,7 @@ describe("Round ally boost in damage calc", () => {
     const attacker = makeActive({ types: [normal] });
     const ally = makeActive({ types: [normal], lastMoveUsed: GEN6_MOVE_IDS.round, movedThisTurn: true });
     const defender = makeActive({ types: [normal] });
-    const roundMove = makeMove({
-      id: GEN6_MOVE_IDS.round,
-      type: normal,
-      category: "special",
-      power: 60,
-      flags: { contact: false },
-    });
+    const roundMove = dataManager.getMove(GEN6_MOVE_IDS.round);
 
     const state = makeState({
       sides: [{ active: [attacker, ally] }, { active: [defender] }],
@@ -2855,7 +2689,7 @@ describe("Thick Fat in damage calc (through calculateGen6Damage)", () => {
     const attacker = makeActive({ types: [fire] });
     const thickFat = makeActive({ ability: GEN6_ABILITY_IDS.thickFat, types: [normal] });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const tfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender: thickFat, move: fireMove, seed: 100 }),
@@ -2881,7 +2715,7 @@ describe("Reckless with no effect (null)", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.reckless, types: [normal] });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50, effect: null });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const recklessResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -2914,7 +2748,7 @@ describe("Sheer Force with non-eligible effects", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const move = makeMove({ type: normal, power: 70, effect: selfBoostEffect });
+    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: selfBoostEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move, seed: 100 }),
@@ -2938,7 +2772,7 @@ describe("Sheer Force with non-eligible effects", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const move = makeMove({ type: normal, power: 50, effect: vsEffect });
+    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: vsEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move, seed: 100 }),
@@ -2965,7 +2799,7 @@ describe("Sheer Force with non-eligible effects", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const move = makeMove({ type: normal, power: 50, effect: foeDropEffect });
+    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: foeDropEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move, seed: 100 }),
@@ -2997,7 +2831,7 @@ describe("Sheer Force with non-eligible effects", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
     const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
     const defender = makeActive({ types: [normal] });
-    const move = makeMove({ type: normal, power: 50, effect: multiEffect });
+    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: multiEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move, seed: 100 }),
@@ -3022,7 +2856,7 @@ describe("Teravolt / Turboblaze as mold breaker in damage calc", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.teravolt, types: [ground] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
     const groundedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const earthquake = makeMove({ type: ground, power: 100 });
+    const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
@@ -3042,7 +2876,7 @@ describe("Teravolt / Turboblaze as mold breaker in damage calc", () => {
     const attacker = makeActive({ ability: GEN6_ABILITY_IDS.turboblaze, types: [normal] });
     const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
     const unguardedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const tackle = makeMove({ type: normal, power: 50 });
+    const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
@@ -3068,7 +2902,7 @@ describe("Not-very-effective type effectiveness math", () => {
     // Fire vs Water/Fire = 0.25x (Fire resists Fire, Water resists Fire)
     const attacker = makeActive({ types: [fire] });
     const defender = makeActive({ types: [fire, water] });
-    const fireMove = makeMove({ type: fire, power: 60 });
+    const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
