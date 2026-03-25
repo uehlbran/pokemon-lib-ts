@@ -1,12 +1,19 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
+import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   SeededRandom,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -22,18 +29,30 @@ import {
 } from "../src/Gen7MoveEffects";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
 import { createGen7DataManager } from "../src/data";
-import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "../src/data/reference-ids";
+import {
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+} from "../src/data/reference-ids";
 
-const GEN7_DATA = createGen7DataManager();
-const MOVE_IDS = GEN7_MOVE_IDS;
-const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
-const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
-const TYPE_IDS = CORE_TYPE_IDS;
-const VOLATILE_IDS = CORE_VOLATILE_IDS;
-const WEATHER_IDS = CORE_WEATHER_IDS;
-const DIVE_VOLATILE = "underwater" as const;
-const BIG_ROOT_NAME = GEN7_DATA.getItem(ITEM_IDS.bigRoot).displayName;
-const POWER_HERB_NAME = GEN7_DATA.getItem(ITEM_IDS.powerHerb).displayName;
+const dataManager = createGen7DataManager();
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
+const itemIds = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
+const moveIds = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
+const weatherIds = CORE_WEATHER_IDS;
+const defaultSpecies = dataManager.getSpecies(GEN7_SPECIES_IDS.pikachu);
+const defaultNature = dataManager.getNature(GEN7_NATURE_IDS.hardy).id;
+const defaultTackleMove = dataManager.getMove(moveIds.tackle);
+const defaultSyntheticHp = 200;
+const defaultSyntheticBattleStat = 100;
+const diveVolatile = volatileIds.underwater;
+const BIG_ROOT_NAME = dataManager.getItem(itemIds.bigRoot).displayName;
+const POWER_HERB_NAME = dataManager.getItem(itemIds.powerHerb).displayName;
 
 const EMPTY_EFFECT_RESULT = {
   statusInflicted: null,
@@ -49,7 +68,39 @@ const EMPTY_EFFECT_RESULT = {
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createSyntheticBattleStats(maxHp = defaultSyntheticHp) {
+  return {
+    hp: maxHp,
+    attack: defaultSyntheticBattleStat,
+    defense: defaultSyntheticBattleStat,
+    spAttack: defaultSyntheticBattleStat,
+    spDefense: defaultSyntheticBattleStat,
+    speed: defaultSyntheticBattleStat,
+  };
+}
+
+function createCanonicalMove(moveId: (typeof moveIds)[keyof typeof moveIds]): MoveData {
+  const move = dataManager.getMove(moveId);
+  return { ...move, flags: { ...move.flags } };
+}
+
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
+  return {
+    ...baseMove,
+    ...overrides,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : { ...baseMove.flags },
+    effect: "effect" in overrides ? overrides.effect : baseMove.effect,
+  } as MoveData;
+}
+
+function createCanonicalMoveSlots(moveIdList: readonly ((typeof moveIds)[keyof typeof moveIds])[]) {
+  return moveIdList.map((moveId) => {
+    const move = dataManager.getMove(moveId);
+    return createMoveSlot(move.id, move.pp);
+  });
+}
+
+function createOnFieldPokemon(overrides: {
   ability?: string;
   heldItem?: string | null;
   volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
@@ -58,84 +109,53 @@ function makeActivePokemon(overrides: {
   nickname?: string;
   maxHp?: number;
   currentHp?: number;
-  moves?: Array<{ moveId: string }>;
-  types?: readonly string[];
-  status?: string | null;
+  moves?: Array<{ moveId: (typeof moveIds)[keyof typeof moveIds] }>;
+  moveIds?: readonly ((typeof moveIds)[keyof typeof moveIds])[];
+  types?: readonly PokemonType[];
+  status?: PrimaryStatus | null;
   speciesId?: number;
 }): ActivePokemon {
-  const maxHp = overrides.maxHp ?? 200;
-  return {
-    pokemon: {
-      calculatedStats: {
-        hp: maxHp,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 100,
-      },
-      currentHp: overrides.currentHp ?? maxHp,
-      status: overrides.status ?? null,
-      heldItem: overrides.heldItem ?? null,
-      moves: overrides.moves ?? [{ moveId: MOVE_IDS.tackle }],
-      nickname: overrides.nickname ?? null,
-      speciesId: overrides.speciesId ?? 25,
-    },
-    ability: overrides.ability ?? ABILITY_IDS.blaze,
-    volatileStatuses: overrides.volatileStatuses ?? new Map(),
-    types: (overrides.types ?? [TYPE_IDS.normal]) as readonly string[],
-    consecutiveProtects: overrides.consecutiveProtects ?? 0,
-    turnsOnField: overrides.turnsOnField ?? 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-  } as unknown as ActivePokemon;
+  const maxHp = overrides.maxHp ?? defaultSyntheticHp;
+  const speciesRecord = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(speciesRecord, 50, new SeededRandom(7), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: "normal1",
+    gender: "male",
+    isShiny: false,
+    moves: [defaultTackleMove.id],
+    heldItem: overrides.heldItem ?? null,
+    friendship: speciesRecord.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: itemIds.pokeBall,
+  });
+
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.status = overrides.status ?? null;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  const moveIdList =
+    overrides.moveIds ?? overrides.moves?.map((move) => move.moveId) ?? [moveIds.tackle];
+  pokemon.moves = createCanonicalMoveSlots(moveIdList);
+  pokemon.ability = overrides.ability ?? abilityIds.none;
+  pokemon.calculatedStats = createSyntheticBattleStats(maxHp);
+
+  const active = createActivePokemon(
+    pokemon,
+    0,
+    [...(overrides.types ?? [...speciesRecord.types])] as PokemonType[],
+  );
+  active.ability = overrides.ability ?? abilityIds.none;
+  active.volatileStatuses = overrides.volatileStatuses ?? new Map();
+  active.consecutiveProtects = overrides.consecutiveProtects ?? 0;
+  active.turnsOnField = overrides.turnsOnField ?? 0;
+  return active;
 }
 
-function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    displayName: id,
-    type: TYPE_IDS.normal,
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 10,
-    priority: 0,
-    target: "self" as MoveTarget,
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 7,
-    ...overrides,
-  } as MoveData;
-}
-
-function makeState(overrides?: Partial<BattleState>): BattleState {
+function createBattleState(overrides?: Partial<BattleState>): BattleState {
   return {
     trickRoom: { active: false, turnsLeft: 0 },
     magicRoom: { active: false, turnsLeft: 0 },
@@ -148,25 +168,37 @@ function makeState(overrides?: Partial<BattleState>): BattleState {
   } as unknown as BattleState;
 }
 
-function makeContext(
-  moveId: string,
+function createMoveEffectContext(
+  moveId: (typeof moveIds)[keyof typeof moveIds],
   options?: {
     state?: Partial<BattleState>;
-    attacker?: Parameters<typeof makeActivePokemon>[0];
-    defender?: Parameters<typeof makeActivePokemon>[0];
+    attacker?: Parameters<typeof createOnFieldPokemon>[0];
+    defender?: Parameters<typeof createOnFieldPokemon>[0];
     moveOverrides?: Partial<MoveData>;
     damage?: number;
   },
 ): MoveEffectContext {
+  const baseMove = createCanonicalMove(moveId);
   return {
-    attacker: makeActivePokemon(options?.attacker ?? {}),
-    defender: makeActivePokemon(options?.defender ?? {}),
-    move: makeMove(moveId, options?.moveOverrides),
+    attacker: createOnFieldPokemon(options?.attacker ?? {}),
+    defender: createOnFieldPokemon(options?.defender ?? {}),
+    move: options?.moveOverrides ? createSyntheticMoveFrom(baseMove, options.moveOverrides) : baseMove,
     damage: options?.damage ?? 0,
-    state: makeState(options?.state),
+    state: createBattleState(options?.state),
     rng: new SeededRandom(42),
   } as MoveEffectContext;
 }
+
+// Transitional aliases while the remaining call sites in this file are migrated.
+const MOVE_IDS = moveIds;
+const ITEM_IDS = itemIds;
+const ABILITY_IDS = abilityIds;
+const TYPE_IDS = typeIds;
+const VOLATILE_IDS = volatileIds;
+const WEATHER_IDS = weatherIds;
+const MOVE_CATEGORIES = moveCategories;
+const getCanonicalGen7Move = createCanonicalMove;
+const makeContext = createMoveEffectContext;
 
 /** Always-succeed protect roll for testing guard moves */
 function alwaysSucceedProtect(_consecutiveProtects: number, _rng: SeededRandom): boolean {
@@ -185,19 +217,19 @@ function alwaysFailProtect(_consecutiveProtects: number, _rng: SeededRandom): bo
 describe("Gen7 King's Shield -- executeGen7MoveEffect", () => {
   it("given no consecutive protect uses, when King's Shield is used, then succeeds and sets kings-shield volatile", () => {
     // Source: Showdown data/moves.ts -- kingsshield: volatileStatus: 'kingsshield', duration: 1
-    const ctx = makeContext(MOVE_IDS.kingsShield);
+    const ctx = createMoveEffectContext(moveIds.kingsShield);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe(MOVE_IDS.kingsShield);
+    expect(result!.selfVolatileInflicted).toBe(moveIds.kingsShield);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("protected itself");
   });
 
   it("given consecutive protect uses exceeded, when King's Shield is used, then fails", () => {
     // Source: Showdown data/moves.ts -- stallingMove: true, stall counter shared with Protect
-    const ctx = makeContext(MOVE_IDS.kingsShield);
+    const ctx = createMoveEffectContext(moveIds.kingsShield);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -208,7 +240,7 @@ describe("Gen7 King's Shield -- executeGen7MoveEffect", () => {
 
   it("given attacker has consecutiveProtects=3, when King's Shield used, then passes correct count to rollProtectSuccess", () => {
     // Source: Showdown -- King's Shield shares stall counter with Protect
-    const ctx = makeContext(MOVE_IDS.kingsShield, { attacker: { consecutiveProtects: 3 } });
+    const ctx = createMoveEffectContext(moveIds.kingsShield, { attacker: { consecutiveProtects: 3 } });
     const rng = new SeededRandom(42);
 
     const protectRollObservation = { count: -1 };
@@ -226,7 +258,7 @@ describe("Gen7 isBlockedByKingsShield", () => {
   it("given physical contact move with protect flag, when checking, then blocked with -2 Attack penalty", () => {
     // Source: Showdown mods/gen7/moves.ts line 580 -- this.boost({ atk: -2 }, ...)
     // Gen 7 changed contact penalty from -1 (Gen 6) to -2.
-    const result = isBlockedByKingsShield("physical", true, true);
+    const result = isBlockedByKingsShield(moveCategories.physical, true, true);
     expect(result.blocked).toBe(true);
     expect(result.contactPenalty).toBe(true);
     expect(result.attackDropStages).toBe(-2);
@@ -234,7 +266,7 @@ describe("Gen7 isBlockedByKingsShield", () => {
 
   it("given physical non-contact move with protect flag, when checking, then blocked without penalty", () => {
     // Source: Showdown -- blocked but no contact means no boost
-    const result = isBlockedByKingsShield("physical", true, false);
+    const result = isBlockedByKingsShield(moveCategories.physical, true, false);
     expect(result.blocked).toBe(true);
     expect(result.contactPenalty).toBe(false);
     expect(result.attackDropStages).toBe(0);
@@ -243,14 +275,14 @@ describe("Gen7 isBlockedByKingsShield", () => {
   it("given status move with protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown mods/gen7/moves.ts line 567 --
     //   if (!move.flags['protect'] || move.category === 'Status') return;
-    const result = isBlockedByKingsShield("status", true, false);
+    const result = isBlockedByKingsShield(moveCategories.status, true, false);
     expect(result.blocked).toBe(false);
     expect(result.contactPenalty).toBe(false);
   });
 
   it("given special contact move with protect flag, when checking, then blocked with -2 Attack penalty", () => {
     // Source: Showdown -- only Status excluded; Special moves with contact ARE blocked
-    const result = isBlockedByKingsShield("special", true, true);
+    const result = isBlockedByKingsShield(moveCategories.special, true, true);
     expect(result.blocked).toBe(true);
     expect(result.contactPenalty).toBe(true);
     expect(result.attackDropStages).toBe(-2);
@@ -258,7 +290,7 @@ describe("Gen7 isBlockedByKingsShield", () => {
 
   it("given physical move without protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (!move.flags['protect'] || ...) return;
-    const result = isBlockedByKingsShield("physical", false, true);
+    const result = isBlockedByKingsShield(moveCategories.physical, false, true);
     expect(result.blocked).toBe(false);
   });
 });
@@ -270,19 +302,19 @@ describe("Gen7 isBlockedByKingsShield", () => {
 describe("Gen7 Spiky Shield -- executeGen7MoveEffect", () => {
   it("given no consecutive protect uses, when Spiky Shield is used, then succeeds and sets volatile", () => {
     // Source: Showdown data/moves.ts -- spikyshield: volatileStatus, duration: 1
-    const ctx = makeContext(MOVE_IDS.spikyShield);
+    const ctx = createMoveEffectContext(moveIds.spikyShield);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe(MOVE_IDS.spikyShield);
+    expect(result!.selfVolatileInflicted).toBe(moveIds.spikyShield);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("protected itself");
   });
 
   it("given stalling check fails, when Spiky Shield is used, then fails", () => {
     // Source: Showdown -- stallingMove: true
-    const ctx = makeContext(MOVE_IDS.spikyShield);
+    const ctx = createMoveEffectContext(moveIds.spikyShield);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -341,19 +373,19 @@ describe("Gen7 calculateSpikyShieldDamage", () => {
 describe("Gen7 Baneful Bunker -- executeGen7MoveEffect", () => {
   it("given no consecutive protect uses, when Baneful Bunker is used, then succeeds and sets baneful-bunker volatile", () => {
     // Source: Showdown data/moves.ts -- banefulbunker: volatileStatus: 'banefulbunker', duration: 1
-    const ctx = makeContext(MOVE_IDS.banefulBunker);
+    const ctx = createMoveEffectContext(moveIds.banefulBunker);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe(MOVE_IDS.banefulBunker);
+    expect(result!.selfVolatileInflicted).toBe(moveIds.banefulBunker);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("protected itself");
   });
 
   it("given stalling check fails, when Baneful Bunker is used, then fails", () => {
     // Source: Showdown -- stallingMove: true
-    const ctx = makeContext(MOVE_IDS.banefulBunker);
+    const ctx = createMoveEffectContext(moveIds.banefulBunker);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -364,7 +396,7 @@ describe("Gen7 Baneful Bunker -- executeGen7MoveEffect", () => {
 
   it("given attacker has consecutiveProtects=2, when Baneful Bunker used, then passes correct count", () => {
     // Source: Showdown -- Baneful Bunker shares stall counter with Protect
-    const ctx = makeContext(MOVE_IDS.banefulBunker, { attacker: { consecutiveProtects: 2 } });
+    const ctx = createMoveEffectContext(moveIds.banefulBunker, { attacker: { consecutiveProtects: 2 } });
     const rng = new SeededRandom(42);
 
     const protectRollObservation = { count: -1 };
@@ -419,19 +451,19 @@ describe("Gen7 Mat Block -- executeGen7MoveEffect", () => {
   it("given first turn (turnsOnField=0), when Mat Block is used, then succeeds and sets volatile", () => {
     // Source: Showdown data/moves.ts -- matblock: onTry checks activeMoveActions
     //   In our system, turnsOnField === 0 means first turn
-    const ctx = makeContext(MOVE_IDS.matBlock, { attacker: { turnsOnField: 0 } });
+    const ctx = createMoveEffectContext(moveIds.matBlock, { attacker: { turnsOnField: 0 } });
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe(MOVE_IDS.matBlock);
+    expect(result!.selfVolatileInflicted).toBe(moveIds.matBlock);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("Mat Block");
   });
 
   it("given second turn (turnsOnField=1), when Mat Block is used, then fails", () => {
     // Source: Showdown -- onTry: if (source.activeMoveActions > 1) return false;
-    const ctx = makeContext(MOVE_IDS.matBlock, { attacker: { turnsOnField: 1 } });
+    const ctx = createMoveEffectContext(moveIds.matBlock, { attacker: { turnsOnField: 1 } });
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -442,7 +474,7 @@ describe("Gen7 Mat Block -- executeGen7MoveEffect", () => {
 
   it("given first turn but stalling check fails, when Mat Block is used, then fails", () => {
     // Source: Showdown -- stallingMove: true; if stall check fails, move fails
-    const ctx = makeContext(MOVE_IDS.matBlock, { attacker: { turnsOnField: 0 } });
+    const ctx = createMoveEffectContext(moveIds.matBlock, { attacker: { turnsOnField: 0 } });
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -455,22 +487,22 @@ describe("Gen7 Mat Block -- executeGen7MoveEffect", () => {
 describe("Gen7 isBlockedByMatBlock", () => {
   it("given physical move with protect flag, when checking, then blocked", () => {
     // Source: Showdown -- blocks damaging moves with protect flag
-    expect(isBlockedByMatBlock("physical", true, TYPE_IDS.normal)).toBe(true);
+    expect(isBlockedByMatBlock(moveCategories.physical, true, typeIds.normal)).toBe(true);
   });
 
   it("given status move with protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (move.target === 'self' || move.category === 'Status') return;
-    expect(isBlockedByMatBlock("status", true, TYPE_IDS.normal)).toBe(false);
+    expect(isBlockedByMatBlock(moveCategories.status, true, typeIds.normal)).toBe(false);
   });
 
   it("given self-targeting move with protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (move.target === 'self' || ...) return;
-    expect(isBlockedByMatBlock("physical", true, "self")).toBe(false);
+    expect(isBlockedByMatBlock(moveCategories.physical, true, "self")).toBe(false);
   });
 
   it("given move without protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (!move.flags['protect']) return;
-    expect(isBlockedByMatBlock("physical", false, TYPE_IDS.normal)).toBe(false);
+    expect(isBlockedByMatBlock(moveCategories.physical, false, typeIds.normal)).toBe(false);
   });
 });
 
@@ -482,12 +514,12 @@ describe("Gen7 Crafty Shield -- executeGen7MoveEffect", () => {
   it("given Crafty Shield used, when called, then succeeds without stall check and sets volatile", () => {
     // Source: Showdown data/moves.ts -- craftyshield has no stallingMove property
     // It succeeds even when protect roll would fail
-    const ctx = makeContext(MOVE_IDS.craftyShield, { attacker: { nickname: "Klefki" } });
+    const ctx = createMoveEffectContext(moveIds.craftyShield, { attacker: { nickname: "Klefki" } });
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysFailProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe(MOVE_IDS.craftyShield);
+    expect(result!.selfVolatileInflicted).toBe(moveIds.craftyShield);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("Crafty Shield");
   });
@@ -496,40 +528,40 @@ describe("Gen7 Crafty Shield -- executeGen7MoveEffect", () => {
 describe("Gen7 isBlockedByCraftyShield", () => {
   it("given status move targeting normal, when checking, then blocked", () => {
     // Source: Showdown -- blocks status moves that don't target self or all
-    expect(isBlockedByCraftyShield("status", TYPE_IDS.normal)).toBe(true);
+    expect(isBlockedByCraftyShield(moveCategories.status, typeIds.normal)).toBe(true);
   });
 
   it("given status move targeting self, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (['self', 'all'].includes(move.target)) return;
-    expect(isBlockedByCraftyShield("status", "self")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, "self")).toBe(false);
   });
 
   it("given status move targeting entire-field, when checking, then NOT blocked", () => {
     // Source: Showdown -- 'all' maps to our 'entire-field' for field-wide moves
-    expect(isBlockedByCraftyShield("status", "entire-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, "entire-field")).toBe(false);
   });
 
   it("given physical move targeting normal, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (... move.category !== 'Status') return;
-    expect(isBlockedByCraftyShield("physical", TYPE_IDS.normal)).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.physical, typeIds.normal)).toBe(false);
   });
 
   it("given stealth-rock (target foe-field), when checking, then NOT blocked", () => {
     // Source: Bulbapedia -- Crafty Shield does not protect against entry hazards
     // Source: Showdown data/moves.ts -- stealth-rock target: foeSide (maps to foe-field)
-    expect(isBlockedByCraftyShield("status", "foe-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, "foe-field")).toBe(false);
   });
 
   it("given spikes (target foe-field), when checking, then NOT blocked", () => {
     // Source: Bulbapedia -- entry hazard moves pass through Crafty Shield
     // Source: Showdown data/moves.ts -- spikes target: foeSide
-    expect(isBlockedByCraftyShield("status", "foe-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, "foe-field")).toBe(false);
   });
 
   it("given user-field targeting status move, when checking, then NOT blocked", () => {
     // Source: Showdown -- user-field hazards (e.g. Sticky Web vs opponent side) are side-condition setters
     // that should pass through Crafty Shield per Bulbapedia ruling
-    expect(isBlockedByCraftyShield("status", "user-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, "user-field")).toBe(false);
   });
 });
 
@@ -541,13 +573,8 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
   it("given Giga Drain dealing 100 damage with 50% drain, when handling, then heals 50 HP", () => {
     // Source: Showdown data/moves.ts -- gigadrain: { drain: [1, 2] } = 50%
     // 100 * 0.5 = 50
-    const ctx = makeContext(MOVE_IDS.gigaDrain, {
+    const ctx = createMoveEffectContext(moveIds.gigaDrain, {
       damage: 100,
-      moveOverrides: {
-        category: "special",
-        power: 75,
-        effect: { type: "drain", amount: 0.5 },
-      },
     });
     const result = handleDrainEffect(ctx);
 
@@ -559,13 +586,8 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
   it("given Draining Kiss dealing 80 damage with 75% drain, when handling, then heals 60 HP", () => {
     // Source: Showdown data/moves.ts -- drainingkiss: { drain: [3, 4] } = 75%
     // floor(80 * 0.75) = 60
-    const ctx = makeContext(MOVE_IDS.drainingKiss, {
+    const ctx = createMoveEffectContext(moveIds.drainingKiss, {
       damage: 80,
-      moveOverrides: {
-        category: "special",
-        power: 50,
-        effect: { type: "drain", amount: 0.75 },
-      },
     });
     const result = handleDrainEffect(ctx);
 
@@ -577,14 +599,9 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     // Source: Showdown data/items.ts -- bigroot: this.chainModify([5324, 4096]) ~= 1.3x
     // Source: Bulbapedia -- "Big Root increases the amount of HP recovered by 30%"
     // Base: 100 * 0.5 = 50. With Big Root: floor(50 * 1.3) = 65
-    const ctx = makeContext(MOVE_IDS.gigaDrain, {
+    const ctx = createMoveEffectContext(moveIds.gigaDrain, {
       damage: 100,
-      attacker: { heldItem: ITEM_IDS.bigRoot },
-      moveOverrides: {
-        category: "special",
-        power: 75,
-        effect: { type: "drain", amount: 0.5 },
-      },
+      attacker: { heldItem: itemIds.bigRoot },
     });
     const result = handleDrainEffect(ctx);
 
@@ -596,14 +613,9 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     // Source: Showdown data/abilities.ts -- liquidooze: return -heal
     // Source: Bulbapedia -- "Liquid Ooze causes the attacker to lose HP instead of gaining it"
     // Base drain: 100 * 0.5 = 50. Instead of healing 50, take 50 damage.
-    const ctx = makeContext(MOVE_IDS.gigaDrain, {
+    const ctx = createMoveEffectContext(moveIds.gigaDrain, {
       damage: 100,
-      defender: { ability: ABILITY_IDS.liquidOoze },
-      moveOverrides: {
-        category: "special",
-        power: 75,
-        effect: { type: "drain", amount: 0.5 },
-      },
+      defender: { ability: abilityIds.liquidOoze },
     });
     const result = handleDrainEffect(ctx);
 
@@ -617,14 +629,9 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     // Source: Showdown data/abilities.ts -- liquidooze: return -heal
     // When ctx.damage is 0 (e.g., move dealt 0 damage), healAmount=0 and recoil must also be 0.
     // Previously Math.max(1, 0)=1 caused phantom 1-damage recoil even on a 0-damage drain.
-    const ctx = makeContext(MOVE_IDS.gigaDrain, {
+    const ctx = createMoveEffectContext(moveIds.gigaDrain, {
       damage: 0,
-      defender: { ability: ABILITY_IDS.liquidOoze },
-      moveOverrides: {
-        category: "special",
-        power: 75,
-        effect: { type: "drain", amount: 0.5 },
-      },
+      defender: { ability: abilityIds.liquidOoze },
     });
     const result = handleDrainEffect(ctx);
 
@@ -633,17 +640,13 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     // Source: Showdown sim/battle-actions.ts -- drain only triggers when damage > 0
     expect(result).toBeNull();
     expect(ctx.attacker.pokemon.heldItem).toBeNull();
-    expect(ctx.defender.ability).toBe(ABILITY_IDS.liquidOoze);
+    expect(ctx.defender.ability).toBe(abilityIds.liquidOoze);
   });
 
   it("given move without drain effect, when handling, then returns null", () => {
     // Non-drain moves should fall through
-    const ctx = makeContext(MOVE_IDS.tackle, {
+    const ctx = createMoveEffectContext(moveIds.tackle, {
       damage: 50,
-      moveOverrides: {
-        category: "physical",
-        power: 40,
-      },
     });
     const result = handleDrainEffect(ctx);
 
@@ -657,13 +660,8 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     // Source: Showdown data/moves.ts -- leechlife: { drain: [1, 2] } = 50%
     // Gen 7 buffed Leech Life to 80 BP (was 20 in Gen 1-6)
     // floor(120 * 0.5) = 60
-    const ctx = makeContext(MOVE_IDS.leechLife, {
+    const ctx = createMoveEffectContext(moveIds.leechLife, {
       damage: 120,
-      moveOverrides: {
-        category: "physical",
-        power: 80,
-        effect: { type: "drain", amount: 0.5 },
-      },
     });
     const result = handleDrainEffect(ctx);
 
@@ -680,14 +678,10 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it("given Fly with no charge volatile, when used (charge turn), then sets flying volatile and forcedMoveSet", () => {
     // Source: Showdown data/moves.ts -- fly: condition.onInvulnerability: false
     //   First turn: charge, become semi-invulnerable (flying)
-    const ctx = makeContext(MOVE_IDS.fly, {
+    const ctx = createMoveEffectContext(moveIds.fly, {
       attacker: {
         nickname: "Pidgeot",
-        moves: [{ moveId: MOVE_IDS.fly }, { moveId: MOVE_IDS.tackle }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 90,
+        moveIds: [moveIds.fly, moveIds.tackle],
       },
     });
     const rng = new SeededRandom(42);
@@ -696,8 +690,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.fly,
-      volatileStatus: VOLATILE_IDS.flying,
+      moveId: moveIds.fly,
+      volatileStatus: volatileIds.flying,
     });
     expect(result!.messages[0]).toBe("Pidgeot flew up high!");
   });
@@ -705,16 +699,12 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it("given Fly with flying volatile already set, when used (attack turn), then returns null for engine damage handling", () => {
     // Source: Showdown -- if (attacker.removeVolatile(move.id)) return; (attack turn)
     const chargeVolatiles = new Map<string, { turnsLeft: number }>();
-    chargeVolatiles.set(VOLATILE_IDS.flying, { turnsLeft: 1 });
+    chargeVolatiles.set(volatileIds.flying, { turnsLeft: 1 });
 
-    const ctx = makeContext(MOVE_IDS.fly, {
+    const ctx = createMoveEffectContext(moveIds.fly, {
       attacker: {
         volatileStatuses: chargeVolatiles,
-        moves: [{ moveId: MOVE_IDS.fly }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 90,
+        moveIds: [moveIds.fly],
       },
     });
     const rng = new SeededRandom(42);
@@ -722,20 +712,16 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
 
     // null means "not handled -- let engine handle normal damage"
     expect(result).toBeNull();
-    expect(ctx.attacker.volatileStatuses.has(VOLATILE_IDS.flying)).toBe(true);
+    expect(ctx.attacker.volatileStatuses.has(volatileIds.flying)).toBe(true);
     expect(ctx.attacker.pokemon.heldItem).toBeNull();
   });
 
   it("given Dig on charge turn, when used, then sets underground volatile and forcedMoveSet", () => {
-    // Source: Showdown data/moves.ts -- dig: condition volatile VOLATILE_IDS.underground
-    const ctx = makeContext(MOVE_IDS.dig, {
+    // Source: Showdown data/moves.ts -- dig: condition volatile volatileIds.underground
+    const ctx = createMoveEffectContext(moveIds.dig, {
       attacker: {
         nickname: "Dugtrio",
-        moves: [{ moveId: MOVE_IDS.dig }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 80,
+        moveIds: [moveIds.dig],
       },
     });
     const rng = new SeededRandom(42);
@@ -744,22 +730,18 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.dig,
-      volatileStatus: VOLATILE_IDS.underground,
+      moveId: moveIds.dig,
+      volatileStatus: volatileIds.underground,
     });
     expect(result!.messages[0]).toBe("Dugtrio dug underground!");
   });
 
   it("given Dive on charge turn, when used, then sets underwater volatile and forcedMoveSet", () => {
     // Source: Showdown data/moves.ts -- dive sets the underwater volatile
-    const ctx = makeContext(MOVE_IDS.dive, {
+    const ctx = createMoveEffectContext(moveIds.dive, {
       attacker: {
         nickname: "Gyarados",
-        moves: [{ moveId: MOVE_IDS.dive }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 80,
+        moveIds: [moveIds.dive],
       },
     });
     const rng = new SeededRandom(42);
@@ -768,8 +750,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.dive,
-      volatileStatus: DIVE_VOLATILE,
+      moveId: moveIds.dive,
+      volatileStatus: diveVolatile,
     });
     expect(result!.messages[0]).toBe("Gyarados dived underwater!");
   });
@@ -777,14 +759,10 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it("given Solar Beam on charge turn WITHOUT sun, when used, then sets charging volatile and forcedMoveSet", () => {
     // Source: Showdown data/moves.ts -- solarbeam: two-turn move, charge unless sun
     // Source: Bulbapedia -- "Solar Beam requires a turn to charge unless in harsh sunlight."
-    const ctx = makeContext(MOVE_IDS.solarBeam, {
+    const ctx = createMoveEffectContext(moveIds.solarBeam, {
       attacker: {
         nickname: "Venusaur",
-        moves: [{ moveId: MOVE_IDS.solarBeam }],
-      },
-      moveOverrides: {
-        category: "special",
-        power: 120,
+        moveIds: [moveIds.solarBeam],
       },
     });
     const rng = new SeededRandom(42);
@@ -793,8 +771,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.solarBeam,
-      volatileStatus: VOLATILE_IDS.charging,
+      moveId: moveIds.solarBeam,
+      volatileStatus: volatileIds.charging,
     });
     expect(result!.messages[0]).toBe("Venusaur is absorbing sunlight!");
   });
@@ -802,16 +780,12 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it("given Solar Beam on charge turn WITH sun, when used, then fires immediately (no forcedMoveSet)", () => {
     // Source: Showdown data/moves.ts -- solarbeam: fires immediately in sun
     // Source: Bulbapedia -- "In harsh sunlight, Solar Beam can be used without a charging turn."
-    const ctx = makeContext(MOVE_IDS.solarBeam, {
+    const ctx = createMoveEffectContext(moveIds.solarBeam, {
       attacker: {
         nickname: "Venusaur",
-        moves: [{ moveId: MOVE_IDS.solarBeam }],
+        moveIds: [moveIds.solarBeam],
       },
-      state: { weather: { type: WEATHER_IDS.sun, turnsLeft: 5, source: ABILITY_IDS.drought } },
-      moveOverrides: {
-        category: "special",
-        power: 120,
-      },
+      state: { weather: { type: weatherIds.sun, turnsLeft: 5, source: abilityIds.drought } },
     });
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
@@ -822,16 +796,12 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it("given Solar Blade on charge turn WITH sun, when used, then fires immediately (no forcedMoveSet)", () => {
     // Source: Showdown data/moves.ts -- solarblade: same behavior as solarbeam in sun
     // Source: Bulbapedia -- "Solar Blade executes immediately in harsh sunlight."
-    const ctx = makeContext(MOVE_IDS.solarBlade, {
+    const ctx = createMoveEffectContext(moveIds.solarBlade, {
       attacker: {
         nickname: "Lurantis",
-        moves: [{ moveId: MOVE_IDS.solarBlade }],
+        moveIds: [moveIds.solarBlade],
       },
-      state: { weather: { type: WEATHER_IDS.sun, turnsLeft: 5, source: ABILITY_IDS.drought } },
-      moveOverrides: {
-        category: "physical",
-        power: 125,
-      },
+      state: { weather: { type: weatherIds.sun, turnsLeft: 5, source: abilityIds.drought } },
     });
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
@@ -841,14 +811,10 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
 
   it("given Solar Blade on charge turn WITHOUT sun, when used, then sets charging volatile", () => {
     // Source: Showdown data/moves.ts -- solarblade requires charge without sun
-    const ctx = makeContext(MOVE_IDS.solarBlade, {
+    const ctx = createMoveEffectContext(moveIds.solarBlade, {
       attacker: {
         nickname: "Lurantis",
-        moves: [{ moveId: MOVE_IDS.solarBlade }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 125,
+        moveIds: [moveIds.solarBlade],
       },
     });
     const rng = new SeededRandom(42);
@@ -857,22 +823,18 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.solarBlade,
-      volatileStatus: VOLATILE_IDS.charging,
+      moveId: moveIds.solarBlade,
+      volatileStatus: volatileIds.charging,
     });
     expect(result!.messages[0]).toBe("Lurantis is absorbing sunlight!");
   });
 
   it("given Phantom Force on charge turn, when used, then sets shadow-force-charging and forcedMoveSet", () => {
     // Source: Showdown data/moves.ts -- phantomforce shares shadow-force-charging volatile
-    const ctx = makeContext(MOVE_IDS.phantomForce, {
+    const ctx = createMoveEffectContext(moveIds.phantomForce, {
       attacker: {
         nickname: "Trevenant",
-        moves: [{ moveId: MOVE_IDS.phantomForce }, { moveId: MOVE_IDS.tackle }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 90,
+        moveIds: [moveIds.phantomForce, moveIds.tackle],
       },
     });
     const rng = new SeededRandom(42);
@@ -881,8 +843,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.phantomForce,
-      volatileStatus: VOLATILE_IDS.shadowForceCharging,
+      moveId: moveIds.phantomForce,
+      volatileStatus: volatileIds.shadowForceCharging,
     });
     expect(result!.messages[0]).toBe("Trevenant vanished!");
   });
@@ -890,36 +852,28 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it("given Phantom Force with shadow-force-charging volatile, when used (attack turn), then returns null", () => {
     // Source: Showdown -- attack turn: removeVolatile and proceed with damage
     const chargeVolatiles = new Map<string, { turnsLeft: number }>();
-    chargeVolatiles.set(VOLATILE_IDS.shadowForceCharging, { turnsLeft: 1 });
+    chargeVolatiles.set(volatileIds.shadowForceCharging, { turnsLeft: 1 });
 
-    const ctx = makeContext(MOVE_IDS.phantomForce, {
+    const ctx = createMoveEffectContext(moveIds.phantomForce, {
       attacker: {
         volatileStatuses: chargeVolatiles,
-        moves: [{ moveId: MOVE_IDS.phantomForce }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 90,
+        moveIds: [moveIds.phantomForce],
       },
     });
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).toBeNull();
-    expect(ctx.attacker.volatileStatuses.has(VOLATILE_IDS.shadowForceCharging)).toBe(true);
+    expect(ctx.attacker.volatileStatuses.has(volatileIds.shadowForceCharging)).toBe(true);
     expect(ctx.attacker.pokemon.heldItem).toBeNull();
   });
 
   it("given Shadow Force on charge turn, when used, then sets shadow-force-charging volatile", () => {
-    // Source: Showdown data/moves.ts -- shadowforce: condition volatile VOLATILE_IDS.shadowForceCharging
-    const ctx = makeContext(MOVE_IDS.shadowForce, {
+    // Source: Showdown data/moves.ts -- shadowforce: condition volatile volatileIds.shadowForceCharging
+    const ctx = createMoveEffectContext(moveIds.shadowForce, {
       attacker: {
         nickname: "Giratina",
-        moves: [{ moveId: MOVE_IDS.shadowForce }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 120,
+        moveIds: [moveIds.shadowForce],
       },
     });
     const rng = new SeededRandom(42);
@@ -928,22 +882,18 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.shadowForce,
-      volatileStatus: VOLATILE_IDS.shadowForceCharging,
+      moveId: moveIds.shadowForce,
+      volatileStatus: volatileIds.shadowForceCharging,
     });
     expect(result!.messages[0]).toBe("Giratina vanished!");
   });
 
   it("given Sky Attack on charge turn, when used, then sets charging volatile", () => {
     // Source: Showdown data/moves.ts -- skyattack: two-turn move, not semi-invulnerable
-    const ctx = makeContext(MOVE_IDS.skyAttack, {
+    const ctx = createMoveEffectContext(moveIds.skyAttack, {
       attacker: {
         nickname: "Moltres",
-        moves: [{ moveId: MOVE_IDS.skyAttack }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 140,
+        moveIds: [moveIds.skyAttack],
       },
     });
     const rng = new SeededRandom(42);
@@ -952,8 +902,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.skyAttack,
-      volatileStatus: VOLATILE_IDS.charging,
+      moveId: moveIds.skyAttack,
+      volatileStatus: volatileIds.charging,
     });
     expect(result!.messages[0]).toBe("Moltres is glowing!");
   });
@@ -961,15 +911,11 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it(`given Fly on charge turn with ${POWER_HERB_NAME}, when used, then fires immediately and skips charge`, () => {
     // Source: Showdown data/items.ts -- powerherb: skip charge turn, consume
     // Source: Bulbapedia -- "Power Herb allows the holder to skip the charge turn"
-    const ctx = makeContext(MOVE_IDS.fly, {
+    const ctx = createMoveEffectContext(moveIds.fly, {
       attacker: {
         nickname: "Pidgeot",
-        heldItem: ITEM_IDS.powerHerb,
-        moves: [{ moveId: MOVE_IDS.fly }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 90,
+        heldItem: itemIds.powerHerb,
+        moveIds: [moveIds.fly],
       },
     });
     const rng = new SeededRandom(42);
@@ -986,14 +932,10 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
 
   it("given Bounce on charge turn, when used, then sets flying volatile", () => {
     // Source: Showdown data/moves.ts -- bounce shares flying volatile with fly
-    const ctx = makeContext(MOVE_IDS.bounce, {
+    const ctx = createMoveEffectContext(moveIds.bounce, {
       attacker: {
         nickname: "Lopunny",
-        moves: [{ moveId: MOVE_IDS.bounce }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 85,
+        moveIds: [moveIds.bounce],
       },
     });
     const rng = new SeededRandom(42);
@@ -1002,8 +944,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     expect(result).not.toBeNull();
     expect(result!.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: MOVE_IDS.bounce,
-      volatileStatus: VOLATILE_IDS.flying,
+      moveId: moveIds.bounce,
+      volatileStatus: volatileIds.flying,
     });
     expect(result!.messages[0]).toBe("Lopunny sprang up!");
   });
@@ -1011,15 +953,11 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
   it("given Fly used when move is not in moveset (Mirror Move scenario), when charging, then returns null", () => {
     // Source: Showdown -- two-turn moves invoked via Mirror Move/Metronome won't be in moveset
     // When findIndex() returns -1, return null to avoid defaulting to slot 0 (wrong move).
-    const ctx = makeContext(MOVE_IDS.fly, {
+    const ctx = createMoveEffectContext(moveIds.fly, {
       attacker: {
         nickname: "Pidgeot",
         // Moveset does NOT contain fly -- simulates Mirror Move / Metronome scenario
-        moves: [{ moveId: MOVE_IDS.tackle }, { moveId: MOVE_IDS.roost }],
-      },
-      moveOverrides: {
-        category: "physical",
-        power: 90,
+        moveIds: [moveIds.tackle, moveIds.roost],
       },
     });
     const rng = new SeededRandom(42);
@@ -1028,7 +966,7 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     // Should return null (no forced charge) to prevent slot-0 fallback executing wrong move
     expect(result).toBeNull();
     expect(ctx.attacker.volatileStatuses.size).toBe(0);
-    expect(ctx.attacker.pokemon.moves).toEqual([{ moveId: MOVE_IDS.tackle }, { moveId: MOVE_IDS.roost }]);
+    expect(ctx.attacker.pokemon.moves).toEqual(createCanonicalMoveSlots([moveIds.tackle, moveIds.roost]));
   });
 });
 
@@ -1041,138 +979,32 @@ describe("Gen7 Grass-type Powder Immunity -- isGen7GrassPowderBlocked", () => {
     // Source: Showdown data/moves.ts -- sleeppowder: flags: { powder: 1 }
     // Source: Bulbapedia -- "As of Generation VI, Grass-type Pokemon are immune to
     //   powder and spore moves."
-    const move = makeMove(MOVE_IDS.sleepPowder, {
-      category: "status",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: true,
-        protect: true,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-    });
-    expect(isGen7GrassPowderBlocked(move, [TYPE_IDS.grass])).toBe(true);
+    const move = createCanonicalMove(moveIds.sleepPowder);
+    expect(isGen7GrassPowderBlocked(move, [typeIds.grass])).toBe(true);
   });
 
   it("given a powder-immune target and Spore, when checking, then blocked", () => {
     // Source: Showdown data/moves.ts -- spore: flags: { powder: 1 }
-    const move = makeMove(MOVE_IDS.spore, {
-      category: "status",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: true,
-        protect: true,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-    });
-    expect(isGen7GrassPowderBlocked(move, [TYPE_IDS.grass])).toBe(true);
+    const move = createCanonicalMove(moveIds.spore);
+    expect(isGen7GrassPowderBlocked(move, [typeIds.grass])).toBe(true);
   });
 
   it("given non-Grass target and Sleep Powder, when checking, then NOT blocked", () => {
     // Source: Only Grass types are immune; other types are affected normally
-    const move = makeMove(MOVE_IDS.sleepPowder, {
-      category: "status",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: true,
-        protect: true,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-    });
-    expect(isGen7GrassPowderBlocked(move, [TYPE_IDS.normal])).toBe(false);
+    const move = createCanonicalMove(moveIds.sleepPowder);
+    expect(isGen7GrassPowderBlocked(move, [typeIds.normal])).toBe(false);
   });
 
   it("given a powder-immune target and a non-powder move, when checking, then it is not blocked", () => {
     // Source: Only moves with the powder flag are blocked, not all Grass-type moves
-    const move = makeMove(MOVE_IDS.razorLeaf, {
-      category: "physical",
-      power: 55,
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: true,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-    });
-    expect(isGen7GrassPowderBlocked(move, [TYPE_IDS.grass])).toBe(false);
+    const move = createCanonicalMove(moveIds.razorLeaf);
+    expect(isGen7GrassPowderBlocked(move, [typeIds.grass])).toBe(false);
   });
 
   it("given a dual-type target that includes the powder-immune type, when checking Stun Spore, then it is blocked", () => {
     // Source: Any Pokemon with Grass as one of its types is immune
-    const move = makeMove(MOVE_IDS.stunSpore, {
-      category: "status",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: true,
-        protect: true,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-    });
-    expect(isGen7GrassPowderBlocked(move, [TYPE_IDS.grass, TYPE_IDS.poison])).toBe(true);
+    const move = createCanonicalMove(moveIds.stunSpore);
+    expect(isGen7GrassPowderBlocked(move, [typeIds.grass, typeIds.poison])).toBe(true);
   });
 });
 
@@ -1183,24 +1015,24 @@ describe("Gen7 Grass-type Powder Immunity -- isGen7GrassPowderBlocked", () => {
 describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
   it("given unrecognized move, when dispatch called, then returns null", () => {
     // Unrecognized moves should fall through to BaseRuleset
-    const ctx = makeContext(MOVE_IDS.thunderbolt);
+    const ctx = createMoveEffectContext(moveIds.thunderbolt);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).toBeNull();
     expect(ctx.attacker.volatileStatuses.size).toBe(0);
-    expect(ctx.move.id).toBe(MOVE_IDS.thunderbolt);
+    expect(ctx.move.id).toBe(moveIds.thunderbolt);
   });
 
   it("given the shield move handled by the engine/BaseRuleset, when dispatch called, then returns null", () => {
     // Protect is handled by the engine directly, not Gen7MoveEffects
-    const ctx = makeContext(MOVE_IDS.protect);
+    const ctx = createMoveEffectContext(moveIds.protect);
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).toBeNull();
     expect(ctx.attacker.volatileStatuses.size).toBe(0);
-    expect(ctx.move.id).toBe(MOVE_IDS.protect);
+    expect(ctx.move.id).toBe(moveIds.protect);
   });
 });
 
@@ -1213,23 +1045,23 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
 
   it("given Gen7Ruleset, when executing King's Shield, then returns kings-shield volatile", () => {
     // Source: Showdown mods/gen7/moves.ts -- kingsshield
-    const ctx = makeContext(MOVE_IDS.kingsShield);
+    const ctx = createMoveEffectContext(moveIds.kingsShield);
     const result = ruleset.executeMoveEffect(ctx);
 
-    expect(result.selfVolatileInflicted).toBe(MOVE_IDS.kingsShield);
+    expect(result.selfVolatileInflicted).toBe(moveIds.kingsShield);
   });
 
   it("given Gen7Ruleset, when executing Baneful Bunker, then returns baneful-bunker volatile", () => {
     // Source: Showdown data/moves.ts -- banefulbunker: volatileStatus
-    const ctx = makeContext(MOVE_IDS.banefulBunker);
+    const ctx = createMoveEffectContext(moveIds.banefulBunker);
     const result = ruleset.executeMoveEffect(ctx);
 
-    expect(result.selfVolatileInflicted).toBe(MOVE_IDS.banefulBunker);
+    expect(result.selfVolatileInflicted).toBe(moveIds.banefulBunker);
   });
 
   it("given Gen7Ruleset, when executing unrecognized move, then falls through to BaseRuleset", () => {
     // Source: Gen7Ruleset.executeMoveEffect falls through to super.executeMoveEffect
-    const ctx = makeContext(MOVE_IDS.tackle);
+    const ctx = createMoveEffectContext(moveIds.tackle);
     const result = ruleset.executeMoveEffect(ctx);
 
     // BaseRuleset returns default empty result for unrecognized moves
@@ -1243,30 +1075,8 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
     // Source: Bulbapedia -- "As of Generation VI, Grass-type Pokemon are immune to
     //   powder and spore moves."
 
-    const ctx = makeContext(MOVE_IDS.sleepPowder, {
-      defender: { types: [TYPE_IDS.grass, TYPE_IDS.poison], nickname: "Bulbasaur" },
-      moveOverrides: {
-        category: "status",
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: true,
-          protect: true,
-          mirror: false,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-      },
+    const ctx = createMoveEffectContext(moveIds.sleepPowder, {
+      defender: { types: [typeIds.grass, typeIds.poison], nickname: "Bulbasaur" },
     });
     const result = ruleset.executeMoveEffect(ctx);
 
@@ -1279,30 +1089,8 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
   it("given Gen7Ruleset, when executing Sleep Powder against non-Grass, then NOT blocked", () => {
     // Source: Powder immunity only applies to Grass types
 
-    const ctx = makeContext(MOVE_IDS.sleepPowder, {
-      defender: { types: [TYPE_IDS.normal] },
-      moveOverrides: {
-        category: "status",
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: true,
-          protect: true,
-          mirror: false,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-      },
+    const ctx = createMoveEffectContext(moveIds.sleepPowder, {
+      defender: { types: [typeIds.normal] },
     });
     const result = ruleset.executeMoveEffect(ctx);
 
