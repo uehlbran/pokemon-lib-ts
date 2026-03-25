@@ -379,20 +379,90 @@ describe("Gen 1 Reflect and Light Screen", () => {
     expect(result.screenSet?.turnsLeft).toBe(-1);
   });
 
-  it.todo(
-    "given Reflect is active and a physical move hits, then damage dealt is halved (damage calc screen effect not yet in calculateGen1Damage)",
-  );
+  it("given Reflect is active on the defender side, when a physical move hits, then the doubled defense stat reduces damage from 48 to 25", () => {
+    // Source: gen1-ground-truth.md §7 — Reflect doubles the defender's Defense stat in Gen 1.
+    // With L50, Power 80, Attack 80, Defense 60, no STAB, neutral typing, and max random roll:
+    // No Reflect: floor(floor((22 * 80 * 80) / 60) / 50) + 2 = 48
+    // Reflect: defense doubles to 120, so floor(floor((22 * 80 * 80) / 120) / 50) + 2 = 25
+    const attacker = makeActivePokemon({
+      types: ["electric"] as PokemonType[],
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const defender = makeActivePokemon({
+      types: ["normal"] as PokemonType[],
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const move = makeMove({
+      id: "body-slam",
+      type: "normal" as const,
+      category: "physical" as const,
+      power: 80,
+      accuracy: 100,
+    });
+    const noScreenState = makeBattleState({ side0Active: attacker, side1Active: defender });
+    const reflectState = makeBattleState({ side0Active: attacker, side1Active: defender });
+    reflectState.sides[1].screens = [{ type: "reflect", turnsLeft: -1 }];
+    const maxRollRng = { int: (_min: number, max: number) => max } as unknown as SeededRandom;
 
-  it("given Reflect is active and pokemon switches out, when switch occurs, then bound volatile is cleared", () => {
-    // Arrange — onSwitchOut clears 'bound' volatile (Gen 1 behavior).
-    // Screens themselves are tracked on the BattleSide, not on the ActivePokemon volatiles.
+    const noReflect = ruleset.calculateDamage({
+      attacker,
+      defender,
+      move,
+      rng: maxRollRng,
+      state: noScreenState,
+      isCrit: false,
+    });
+    const withReflect = ruleset.calculateDamage({
+      attacker,
+      defender,
+      move,
+      rng: maxRollRng,
+      state: reflectState,
+      isCrit: false,
+    });
+
+    expect(noReflect.damage).toBe(48);
+    expect(withReflect.damage).toBe(25);
+  });
+
+  it("given a screen setter switches out, when onSwitchOut runs, then bound is cleared, sleep persists, and side screens are removed", () => {
+    // Source: gen1-ground-truth.md §8 — sleep counter persists through switching, while bound and side screens do not.
     const pokemon = makeActivePokemon();
     pokemon.volatileStatuses.set("bound", { turnsLeft: 3 });
-    const state = makeBattleState();
-    // Act
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    pokemon.pokemon.status = "sleep";
+    const state = makeBattleState({ side0Active: pokemon });
+    state.sides[0].screens = [
+      { type: "reflect", turnsLeft: -1 },
+      { type: "light-screen", turnsLeft: -1 },
+    ];
+
     ruleset.onSwitchOut(pokemon, state);
-    // Assert — bound is cleared on switch-out
+
     expect(pokemon.volatileStatuses.has("bound")).toBe(false);
+    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(3);
+    expect(pokemon.pokemon.status).toBe("sleep");
+    expect(state.sides[0].screens).toEqual([]);
   });
 });
 
@@ -401,10 +471,9 @@ describe("Gen 1 Reflect and Light Screen", () => {
 // ============================================================================
 
 describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
-  it("given attacker speed > defender speed, when OHKO doesMoveHit is checked with a guaranteed roll, then result depends only on accuracy roll", () => {
-    // Arrange — doesMoveHit in Gen1Ruleset does NOT implement speed-based OHKO check;
-    // it only does accuracy roll. With a SeededRandom(0) that gives roll < threshold
-    // for 30% accuracy, this should still have a chance to hit based on the roll.
+  it("given attacker speed >= defender speed, when an OHKO move rolls below the converted threshold, then doesMoveHit returns true", () => {
+    // Source: pret/pokered engine/battle/core.asm — OHKO moves first require user Speed >= target Speed.
+    // Source: Gen1Ruleset.doesMoveHit — 30% accuracy converts to floor(30 * 255 / 100) = 76, so roll 0 hits.
     const attacker = makeActivePokemon({
       pokemon: {
         uid: "attacker",
@@ -486,16 +555,20 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
       effect: { type: "ohko" as const },
     });
     const state = makeBattleState();
-    // Use SeededRandom(0): first int(0,255) determines hit/miss
-    const rng = new SeededRandom(0);
-    // Act — doesMoveHit runs the accuracy roll only (no speed check in current impl)
-    const result = ruleset.doesMoveHit({ attacker, defender, move: fissureMove, state, rng });
-    // Assert — the result is a boolean; we just verify it doesn't throw and returns boolean
-    expect(typeof result).toBe("boolean");
+    const guaranteedHitRng = { int: () => 0 } as unknown as SeededRandom;
+
+    const result = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: fissureMove,
+      state,
+      rng: guaranteedHitRng,
+    });
+    expect(result).toBe(true);
   });
 
-  it("given attacker speed < defender speed, when OHKO move accuracy is well below 100, then doesMoveHit may return false", () => {
-    // Arrange
+  it("given attacker speed < defender speed, when an OHKO move is checked, then doesMoveHit auto-fails before the accuracy roll", () => {
+    // Source: pret/pokered engine/battle/core.asm — OHKO fails automatically if the user is slower.
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
@@ -528,13 +601,16 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
       effect: { type: "ohko" as const },
     });
     const state = makeBattleState();
-    // Use a high-seed RNG that rolls near 255 to guarantee a miss with 30% accuracy
-    // threshold = floor(30 * 255 / 100) = 76; roll >= 76 misses
-    const rng = new SeededRandom(999);
-    // Act
-    const result = ruleset.doesMoveHit({ attacker, defender, move: fissureMove, state, rng });
-    // Assert — result is a boolean (may be true or false depending on rng; assert type)
-    expect(typeof result).toBe("boolean");
+    const guaranteedHitRng = { int: () => 0 } as unknown as SeededRandom;
+
+    const result = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: fissureMove,
+      state,
+      rng: guaranteedHitRng,
+    });
+    expect(result).toBe(false);
   });
 
   it("given OHKO effect move, when executeMoveEffect is called, then customDamage equals defender's current HP", () => {

@@ -26,6 +26,11 @@ export interface AuditReport {
   summary: AuditSummary;
 }
 
+export interface AuditTarget {
+  name: string;
+  testDir: string;
+}
+
 export interface FileContext {
   filePath: string;
   relativePath: string;

@@ -173,15 +173,13 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — should NOT see a "fast asleep" message followed by no move execution.
-    // Sleep Talk should proceed (PP deducted = evidence of move executing).
-    // Since the MockRuleset executeMoveEffect is a no-op, we mainly confirm the move
-    // was not blocked. We look for PP deduction on sleep-talk.
-    const team = engine.state.sides[0].team;
-    const sleepTalkSlot = team[0].moves.find((m) => m.moveId === "sleep-talk");
-    // Source: Showdown — PP is deducted when a move is selected and executed, even while asleep
-    // If the move was blocked, PP would not be deducted
-    expect(sleepTalkSlot!.currentPP).toBe(9); // 10 - 1 = 9; move executed
+    // Assert — sleep talk reaches the move-start stage even though the user remains asleep.
+    expect(
+      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "sleep-talk"),
+    ).toBe(true);
+    expect(
+      events.some((e) => e.type === "move-fail" && e.side === 0 && e.move === "sleep-talk"),
+    ).toBe(false);
   });
 
   it("given a sleeping Pokemon using Snore, when canExecuteMove runs, then the move is NOT blocked by sleep", () => {
@@ -201,10 +199,15 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert
-    const team = engine.state.sides[0].team;
-    const snoreSlot = team[0].moves.find((m) => m.moveId === "snore");
-    // Source: Showdown — PP deducted on execution, proving the move was not blocked
-    expect(snoreSlot!.currentPP).toBe(14); // 15 - 1 = 14; move executed
+    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "snore")).toBe(
+      true,
+    );
+    expect(
+      events.some((e) => e.type === "damage" && e.side === 1 && e.source === "snore"),
+    ).toBe(true);
+    expect(
+      events.some((e) => e.type === "move-fail" && e.side === 0 && e.move === "snore"),
+    ).toBe(false);
   });
 
   it("given a sleeping Pokemon using Tackle, when canExecuteMove runs, then the move IS blocked by sleep", () => {
@@ -223,17 +226,24 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 2 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — Tackle should be blocked; PP should NOT be deducted
-    const team = engine.state.sides[0].team;
-    const tackleSlot = team[0].moves.find((m) => m.moveId === "tackle");
-    // Source: Showdown — PP is not deducted when a move is blocked by sleep
-    expect(tackleSlot!.currentPP).toBe(35); // unchanged; move was blocked
+    // Assert — Tackle never reaches move-start and the battle reports the sleep block.
+    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "tackle")).toBe(
+      false,
+    );
+    expect(
+      events.some(
+        (e) => e.type === "message" && "text" in e && e.text.includes("fast asleep"),
+      ),
+    ).toBe(true);
+    expect(events.some((e) => e.type === "damage" && e.side === 1 && e.source === "tackle")).toBe(
+      false,
+    );
   });
 
   it("given a Pokemon that wakes up, when using Sleep Talk, then the move proceeds normally (wake-up still allows move)", () => {
     // Arrange
     // Source: Showdown — if processSleepTurn returns true (woke up), the move executes regardless
-    const { engine, ruleset } = createSleepTestEngine();
+    const { engine, ruleset, events } = createSleepTestEngine();
 
     ruleset.processSleepTurn = (pokemon, _state) => {
       // Pokemon wakes up this turn
@@ -248,9 +258,12 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — move should execute (PP deducted)
-    const team = engine.state.sides[0].team;
-    const sleepTalkSlot = team[0].moves.find((m) => m.moveId === "sleep-talk");
-    expect(sleepTalkSlot!.currentPP).toBe(9);
+    // Assert — waking up clears the sleep status and allows the move to execute.
+    expect(
+      events.some((e) => e.type === "status-cure" && e.side === 0 && e.status === "sleep"),
+    ).toBe(true);
+    expect(
+      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "sleep-talk"),
+    ).toBe(true);
   });
 });

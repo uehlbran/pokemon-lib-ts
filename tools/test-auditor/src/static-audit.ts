@@ -1,18 +1,13 @@
 import { ALL_CHECKS } from "./checks/index.ts";
 import type { AuditReport, AuditSummary, Finding, PackageAudit, Severity } from "./types.ts";
-import { ALL_PACKAGES, discoverTestFiles, loadFile, resolvePackageTestDir } from "./utils.ts";
+import { discoverAuditTargets, discoverTestFiles, loadFile } from "./utils.ts";
 
 function runChecksOnFile(ctx: ReturnType<typeof loadFile>): Finding[] {
   return ALL_CHECKS.flatMap((check) => check.run(ctx));
 }
 
-function auditPackage(packageName: string): PackageAudit {
-  const testDir = resolvePackageTestDir(packageName);
+function auditTarget(targetName: string, testDir: string): PackageAudit {
   const findings: Finding[] = [];
-
-  if (!testDir) {
-    return { packageName, findings };
-  }
 
   const files = discoverTestFiles(testDir);
   for (const filePath of files) {
@@ -20,7 +15,7 @@ function auditPackage(packageName: string): PackageAudit {
     findings.push(...runChecksOnFile(ctx));
   }
 
-  return { packageName, findings };
+  return { packageName: targetName, findings };
 }
 
 function buildSummary(packages: PackageAudit[], totalFiles: number): AuditSummary {
@@ -89,17 +84,15 @@ function main(): void {
   const pkgIdx = args.indexOf("--package");
   const singlePkg = pkgIdx !== -1 ? (args[pkgIdx + 1] ?? null) : null;
 
-  const packagesToAudit = isAll ? ALL_PACKAGES : singlePkg ? [singlePkg] : ALL_PACKAGES;
+  const targets = discoverAuditTargets();
+  const packagesToAudit = isAll ? targets : singlePkg ? targets.filter((t) => t.name === singlePkg) : targets;
 
   let totalFiles = 0;
   const audited: PackageAudit[] = [];
 
-  for (const pkg of packagesToAudit) {
-    const testDir = resolvePackageTestDir(pkg);
-    if (testDir) {
-      totalFiles += discoverTestFiles(testDir).length;
-    }
-    audited.push(auditPackage(pkg));
+  for (const target of packagesToAudit) {
+    totalFiles += discoverTestFiles(target.testDir).length;
+    audited.push(auditTarget(target.name, target.testDir));
   }
 
   const summary = buildSummary(audited, totalFiles);

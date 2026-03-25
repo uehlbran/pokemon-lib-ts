@@ -55,6 +55,7 @@ Read CLAUDE.md at the repo root for full architecture details. Key points:
 - Property-based tests for formulas (stats always positive, type effectiveness in {0, 0.25, 0.5, 1, 2, 4})
 - Determinism tests for PRNG (same seed = same sequence)
 - 80% coverage threshold
+- Tests-first is mandatory. If behavior changed without tests landing first or with the code, flag it as a review issue.
 
 ### Performance
 - Unnecessary allocations in hot paths (battle loop, damage calc)

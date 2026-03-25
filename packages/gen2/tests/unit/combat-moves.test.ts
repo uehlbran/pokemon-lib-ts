@@ -841,7 +841,7 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Hidden Power damage calc", () => {
-    it("given attacker with all DVs=15, when calculateDamage is called with hidden-power, then returns non-zero damage", () => {
+    it("given attacker with all DVs=15, when calculateDamage is called with hidden-power, then returns Dark-type damage 45", () => {
       // Arrange
       // Source: Bulbapedia — "Hidden Power (move)/Generation II"
       // All DVs=15 → type=Dark, power=70 (capped from 71)
@@ -883,13 +883,14 @@ describe("Gen 2 Combat Moves", () => {
         isCrit: false,
       });
 
-      // Assert -- damage should be non-zero since power is overridden to 70 by DV calc
-      expect(result.damage).toBeGreaterThan(0);
+      // Assert
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm — all DVs 15 produce Dark-type Hidden Power.
+      expect(result.damage).toBe(45);
       // And the effective type should be Dark (all DVs=15 → type index 15 → "dark")
       expect(result.effectiveType).toBe("dark");
     });
 
-    it("given attacker with DVs producing Dragon type, when calculateDamage is called with hidden-power, then effectiveType is dragon", () => {
+    it("given attacker with DVs producing Dragon type, when calculateDamage is called with hidden-power, then returns Dragon-type damage 51", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
       // typeIndex = (atkDv & 3) * 4 + (defDv & 3)
@@ -931,7 +932,7 @@ describe("Gen 2 Combat Moves", () => {
       });
 
       // Assert
-      expect(result.damage).toBeGreaterThan(0);
+      expect(result.damage).toBe(51);
       expect(result.effectiveType).toBe("dragon");
       // Dragon is a special type in Gen 2, so effectiveCategory should be "special"
       expect(result.effectiveCategory).toBe("special");

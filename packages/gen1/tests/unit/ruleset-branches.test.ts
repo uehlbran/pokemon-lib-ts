@@ -2075,9 +2075,26 @@ describe("Gen 1 Quirks", () => {
 
   // --- Hyper Beam Recharge Skip on KO ---
 
-  it.todo(
-    "given Hyper Beam KOs the target, when checking recharge, then recharge is skipped (Gen 1 quirk not yet implemented in engine)",
-  );
+  it("given Hyper Beam KOs the target, when executeMoveEffect runs, then the result sets noRecharge", () => {
+    // Source: gen1-ground-truth.md §7 — Hyper Beam skips recharge after a KO in Gen 1.
+    const defender = makeActivePokemon({
+      pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
+    });
+    const hyperBeam = makeMove({
+      id: "hyper-beam",
+      power: 150,
+      flags: { ...DEFAULT_MOVE_FLAGS, recharge: true },
+    });
+    const context = makeMoveEffectContext({
+      defender,
+      move: hyperBeam,
+      damage: 120,
+    });
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.noRecharge).toBe(true);
+  });
 
   // --- Permanent Freeze ---
 
@@ -2098,9 +2115,24 @@ describe("Gen 1 Quirks", () => {
 
   // --- Sleep Counter Reset on Switch-In ---
 
-  it.todo(
-    "given a sleeping Pokemon switches in, when checking sleep counter, then counter resets (Gen 1 quirk handled by engine)",
-  );
+  it("given a sleeping Pokemon switches out, when onSwitchOut runs, then the sleep counter and sleep status persist", () => {
+    // Source: gen1-ground-truth.md §8 — sleep duration is stored in party data and does not reset on switch.
+    const pokemon = makeActivePokemon({
+      pokemon: {
+        ...makeActivePokemon().pokemon,
+        status: "sleep" as PrimaryStatus,
+      } as PokemonInstance,
+    });
+    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 4 });
+    const state = makeBattleState({ side0Active: pokemon });
+    state.sides[0].screens = [{ type: "reflect", turnsLeft: -1 }];
+
+    ruleset.onSwitchOut(pokemon, state);
+
+    expect(pokemon.pokemon.status).toBe("sleep");
+    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(4);
+    expect(state.sides[0].screens).toEqual([]);
+  });
 
   // --- Gen 1 Crit Formula: BaseSpeed/512 (normal), BaseSpeed/64 (high-crit) ---
 

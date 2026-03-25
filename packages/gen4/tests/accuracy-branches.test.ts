@@ -138,106 +138,64 @@ function makeCtx(overrides: {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset doesMoveHit — weather ability branches", () => {
-  it("given defender with Sand Veil in sandstorm and a 100% accuracy move, when checking hit, then accuracy is reduced", () => {
+  it("given defender with Sand Veil in sandstorm and a 100% accuracy move, when checking hit for seed 4, then Sand Veil causes the miss while no ability still hits", () => {
     // Source: pret/pokeplatinum — Sand Veil: evasion +20% in sandstorm
     // Derivation: base calc = 100; Sand Veil: floor(100 * 80 / 100) = 80
-    // With calc=80 and any roll > 80, the move misses.
-    // We test that Sand Veil + sandstorm activates the branch by checking the
-    // effective threshold is reduced from 100 to 80.
     const ruleset = makeRuleset();
+    const sandVeilCtx = makeCtx({
+      moveAccuracy: 100,
+      defenderAbility: "sand-veil",
+      weather: "sand",
+      seed: 4,
+    });
+    const noAbilityCtx = makeCtx({ moveAccuracy: 100, weather: "sand", seed: 4 });
 
-    // Seed that rolls > 80 but <= 100 will only miss if Sand Veil applies
-    // We use many seeds to verify Sand Veil actually causes misses on some rolls
-    let sandVeilMisses = 0;
-    let noAbilityMisses = 0;
-    const trials = 200;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxSandVeil = makeCtx({
-        moveAccuracy: 100,
-        defenderAbility: "sand-veil",
-        weather: "sand",
-        seed,
-      });
-      const ctxNoAbility = makeCtx({ moveAccuracy: 100, weather: "sand", seed });
-
-      if (!ruleset.doesMoveHit(ctxSandVeil)) sandVeilMisses++;
-      if (!ruleset.doesMoveHit(ctxNoAbility)) noAbilityMisses++;
-    }
-
-    // Sand Veil should cause more misses than having no ability (reduces hit threshold)
-    // Without Sand Veil: 100% accuracy = always hit (0 misses expected)
-    // With Sand Veil: 80% accuracy = ~20% misses
-    expect(noAbilityMisses).toBe(0);
-    expect(sandVeilMisses).toBeGreaterThan(0);
+    // Source: deterministic seed 4 exercises the Sand Veil miss branch.
+    expect(ruleset.doesMoveHit(sandVeilCtx)).toBe(false);
+    expect(ruleset.doesMoveHit(noAbilityCtx)).toBe(true);
   });
 
-  it("given defender with Snow Cloak in hail and a 100% accuracy move, when checking hit, then accuracy is reduced", () => {
+  it("given defender with Snow Cloak in hail and a 100% accuracy move, when checking hit for seed 4, then Snow Cloak causes the miss while no ability still hits", () => {
     // Source: Bulbapedia — Snow Cloak: evasion +20% in hail (analogous to Sand Veil in sandstorm)
-    // This is NEW in Gen 4 vs Gen 3
     // Derivation: base calc = 100; Snow Cloak: floor(100 * 80 / 100) = 80
     const ruleset = makeRuleset();
+    const snowCloakCtx = makeCtx({
+      moveAccuracy: 100,
+      defenderAbility: "snow-cloak",
+      weather: "hail",
+      seed: 4,
+    });
+    const noAbilityCtx = makeCtx({ moveAccuracy: 100, weather: "hail", seed: 4 });
 
-    let snowCloakMisses = 0;
-    let noAbilityMisses = 0;
-    const trials = 200;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxSnowCloak = makeCtx({
-        moveAccuracy: 100,
-        defenderAbility: "snow-cloak",
-        weather: "hail",
-        seed,
-      });
-      const ctxNoAbility = makeCtx({ moveAccuracy: 100, weather: "hail", seed });
-
-      if (!ruleset.doesMoveHit(ctxSnowCloak)) snowCloakMisses++;
-      if (!ruleset.doesMoveHit(ctxNoAbility)) noAbilityMisses++;
-    }
-
-    // Snow Cloak should cause misses; no ability should not (100% acc always hits)
-    expect(noAbilityMisses).toBe(0);
-    expect(snowCloakMisses).toBeGreaterThan(0);
+    // Source: deterministic seed 4 exercises the Snow Cloak miss branch.
+    expect(ruleset.doesMoveHit(snowCloakCtx)).toBe(false);
+    expect(ruleset.doesMoveHit(noAbilityCtx)).toBe(true);
   });
 
   it("given Sand Veil in non-sandstorm weather, when doesMoveHit, then Sand Veil branch is NOT applied", () => {
     // Source: pret/pokeplatinum — Sand Veil only activates in sandstorm, not other weather
-    // 100% accuracy move with Sand Veil but no sand = still 100% effective
     const ruleset = makeRuleset();
-    const trials = 20;
-    let misses = 0;
+    const ctx = makeCtx({
+      moveAccuracy: 100,
+      defenderAbility: "sand-veil",
+      weather: "rain", // not sandstorm
+      seed: 4,
+    });
 
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveAccuracy: 100,
-        defenderAbility: "sand-veil",
-        weather: "rain", // not sandstorm
-        seed,
-      });
-      if (!ruleset.doesMoveHit(ctx)) misses++;
-    }
-
-    // No misses expected — Sand Veil doesn't activate outside sandstorm
-    expect(misses).toBe(0);
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
   it("given Snow Cloak outside hail, when doesMoveHit, then Snow Cloak branch is NOT applied", () => {
     // Source: Bulbapedia — Snow Cloak only activates in hail
     const ruleset = makeRuleset();
-    const trials = 20;
-    let misses = 0;
+    const ctx = makeCtx({
+      moveAccuracy: 100,
+      defenderAbility: "snow-cloak",
+      weather: "sand", // not hail
+      seed: 4,
+    });
 
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveAccuracy: 100,
-        defenderAbility: "snow-cloak",
-        weather: "sand", // not hail
-        seed,
-      });
-      if (!ruleset.doesMoveHit(ctx)) misses++;
-    }
-
-    expect(misses).toBe(0);
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 });
 
@@ -251,48 +209,30 @@ describe("Gen4Ruleset doesMoveHit — Hustle accuracy penalty", () => {
     // Gen 4 uses per-move category (physical/special split)
     // Derivation: base 100% accuracy; Hustle: floor(100 * 80/100) = 80
     const ruleset = makeRuleset();
+    const hustleCtx = makeCtx({
+      moveAccuracy: 100,
+      attackerAbility: "hustle",
+      moveCategory: "physical",
+      seed: 4,
+    });
+    const noHustleCtx = makeCtx({ moveAccuracy: 100, moveCategory: "physical", seed: 4 });
 
-    let hustleMisses = 0;
-    let noHustleMisses = 0;
-    const trials = 200;
-
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctxHustle = makeCtx({
-        moveAccuracy: 100,
-        attackerAbility: "hustle",
-        moveCategory: "physical",
-        seed,
-      });
-      const ctxNoHustle = makeCtx({ moveAccuracy: 100, moveCategory: "physical", seed });
-
-      if (!ruleset.doesMoveHit(ctxHustle)) hustleMisses++;
-      if (!ruleset.doesMoveHit(ctxNoHustle)) noHustleMisses++;
-    }
-
-    // Hustle should cause misses; no hustle with 100% move should not miss
-    expect(noHustleMisses).toBe(0);
-    expect(hustleMisses).toBeGreaterThan(0);
+    // Source: deterministic seed 4 exercises the Hustle miss branch.
+    expect(ruleset.doesMoveHit(hustleCtx)).toBe(false);
+    expect(ruleset.doesMoveHit(noHustleCtx)).toBe(true);
   });
 
   it("given attacker with Hustle using a special move, when accuracy is checked, then accuracy is NOT reduced", () => {
     // Source: pret/pokeplatinum — Hustle only penalizes physical moves
-    // Special moves are unaffected by Hustle
     const ruleset = makeRuleset();
-    const trials = 20;
-    let misses = 0;
+    const ctx = makeCtx({
+      moveAccuracy: 100,
+      attackerAbility: "hustle",
+      moveCategory: "special", // special move — not penalized
+      seed: 4,
+    });
 
-    for (let seed = 1; seed <= trials; seed++) {
-      const ctx = makeCtx({
-        moveAccuracy: 100,
-        attackerAbility: "hustle",
-        moveCategory: "special", // special move — not penalized
-        seed,
-      });
-      if (!ruleset.doesMoveHit(ctx)) misses++;
-    }
-
-    // No misses expected — Hustle doesn't affect special moves
-    expect(misses).toBe(0);
+    expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 });
 

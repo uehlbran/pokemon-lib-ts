@@ -432,12 +432,9 @@ describe("Issue #363 — Pursuit double power on switch-out", () => {
       species,
     );
 
-    // Assert: doubled power yields exactly 2x damage (before random factor, same roll)
-    // The ratio may not be exactly 2 due to integer arithmetic, but should be approximately 2x
-    expect(doubledDmg.damage).toBeGreaterThan(normalDmg.damage);
-    // Dark is special in Gen 2 — but the formula still scales linearly with power
-    // For same stats and deterministic RNG, doubled power should give roughly 2x damage
-    expect(doubledDmg.damage / normalDmg.damage).toBeCloseTo(2, 0);
+    // Assert: doubled power yields the observed deterministic damage increase.
+    expect(normalDmg.damage).toBe(28);
+    expect(doubledDmg.damage).toBe(55);
   });
 
   it("given Pursuit used normally (no switch), when calculating damage, then uses standard BP (40)", () => {
@@ -508,7 +505,6 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
   it("given Rain weather is active, when Thunder is used, then accuracy check always returns true (bypassed)", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:1286-1290
     // "ld a, BATTLE_WEATHER_RAIN ; cp [wBattleWeather] ; ret z" — if rain, skip accuracy check (always hits)
-    // Arrange
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
@@ -516,22 +512,17 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
       turnsLeft: 4,
     });
 
-    // Act: test across 1000 seeds — every trial should hit
-    let misses = 0;
-    for (let seed = 0; seed < 1000; seed++) {
-      const rng = new SeededRandom(seed);
-      const hit = ruleset.doesMoveHit({
-        attacker,
-        defender,
-        move: thunderMove,
-        state,
-        rng,
-      } as unknown as AccuracyContext);
-      if (!hit) misses++;
-    }
+    // Act: even the highest possible accuracy roll is bypassed in rain.
+    const rngMaxRoll = { int: (_min: number, max: number) => max } as SeededRandom;
+    const hitResult = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: thunderMove,
+      state,
+      rng: rngMaxRoll,
+    } as unknown as AccuracyContext);
 
-    // Assert: Thunder always hits in rain
-    expect(misses).toBe(0);
+    expect(hitResult).toBe(true);
   });
 
   it("given no weather and roll=177, when Thunder is used, then hits (177 < 178 accuracy threshold)", () => {
@@ -768,27 +759,21 @@ describe("Issue #365 — OHKO moves level-based accuracy formula", () => {
   it("given attacker L40 vs defender L50 (lower level), when checking OHKO accuracy, then auto-miss (always false)", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:5428-5432 BattleCommand_OHKO
     // "cp [wEnemyMonLevel] ; jp c, .fail" — if attacker level < defender level, OHKO always fails.
-    // Arrange
     const attacker = createMockActive({ level: 40 });
     const defender = createMockActive({ level: 50 });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
-    // Act: test across many seeds
-    let anyHit = false;
-    for (let seed = 0; seed < 500; seed++) {
-      const rng = new SeededRandom(seed);
-      const hit = ruleset.doesMoveHit({
-        attacker,
-        defender,
-        move: fissureMove,
-        state,
-        rng,
-      } as unknown as AccuracyContext);
-      if (hit) anyHit = true;
-    }
+    // Act: even the lowest possible roll still auto-misses before the RNG matters.
+    const rngZero = { int: (_min: number, _max: number) => 0 } as SeededRandom;
+    const hitResult = ruleset.doesMoveHit({
+      attacker,
+      defender,
+      move: fissureMove,
+      state,
+      rng: rngZero,
+    } as unknown as AccuracyContext);
 
-    // Assert: OHKO always fails when attacker level < defender level
-    expect(anyHit).toBe(false);
+    expect(hitResult).toBe(false);
   });
 
   it("given attacker L100 vs defender L50 and roll=129, when checking OHKO accuracy, then hits (129 < 130 threshold)", () => {
@@ -1155,8 +1140,10 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
       species,
     );
 
-    // Assert: effective category should be "physical" for Fighting-type HP
+    // Assert: Fighting-type Hidden Power is physical in Gen 2 and its damage is deterministic here.
     expect(dmgLowDef.effectiveCategory).toBe("physical");
+    expect(dmgLowDef.damage).toBe(112);
+    expect(dmgHighDef.damage).toBe(30);
     // Physical move uses Defense stat: low defense → more damage, high defense → less damage
     expect(dmgLowDef.damage).toBeGreaterThan(dmgHighDef.damage);
   });
@@ -1201,8 +1188,9 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
       species,
     );
 
-    // Assert: Fire type → special category
+    // Assert: Fire type → special category, with deterministic damage.
     expect(result.effectiveCategory).toBe("special");
+    expect(result.damage).toBe(43);
   });
 
   it("given all Gen 2 physical HP types, when checking effectiveCategory, then all return 'physical'", () => {
