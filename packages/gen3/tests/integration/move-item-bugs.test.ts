@@ -7,6 +7,11 @@ import type {
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  type CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -96,25 +101,24 @@ function createActivePokemon(opts: {
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
-    moves:
-      opts.moves?.map((move) => ({
-        moveId: move.moveId,
-        currentPP: move.pp,
-        maxPP: move.maxPp,
-        ppUps: 0,
-      })) ?? [{ moveId: M.tackle, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 }],
+    moves: opts.moves?.map((move) => ({
+      moveId: move.moveId,
+      currentPP: move.pp,
+      maxPP: move.maxPp,
+      ppUps: 0,
+    })) ?? [{ moveId: M.tackle, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 }],
     ability: opts.ability ?? A.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -137,7 +141,10 @@ function createActivePokemon(opts: {
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: opts.lastDamageTaken ?? 0,
     lastDamageType: null,
-    lastDamageCategory: (opts.lastDamageCategory as "physical" | "special" | null) ?? null,
+    lastDamageCategory:
+      (opts.lastDamageCategory as
+        | (typeof CORE_MOVE_CATEGORIES)[keyof typeof CORE_MOVE_CATEGORIES]
+        | null) ?? null,
     turnsOnField: 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
@@ -155,7 +162,7 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function createSyntheticMove(id: string, overrides?: Partial<MoveData>): MoveData {
   const baseMove: MoveData = (() => {
     try {
       return dataManager.getMove(id);
@@ -533,7 +540,7 @@ describe("#348 — BrightPowder accuracy reduction", () => {
     // So the move needs roll <= 90 to hit (instead of <= 100)
     const attacker = createActivePokemon({ types: [T.normal] });
     const defender = createActivePokemon({ types: [T.normal], heldItem: I.brightPowder });
-    const move = createMove(M.tackle, { accuracy: 100 });
+    const move = dataManager.getMove(M.tackle);
     const state = createMinimalBattleState(attacker, defender);
     // RNG returns 95 which is > 90 (should miss with BrightPowder) but <= 100 (would hit without)
     const rng = createMockRng(95);
@@ -555,7 +562,7 @@ describe("#348 — BrightPowder accuracy reduction", () => {
     // With 100 accuracy + BrightPowder: calc = 90. Roll 50 <= 90 = hit
     const attacker = createActivePokemon({ types: [T.normal] });
     const defender = createActivePokemon({ types: [T.normal], heldItem: I.brightPowder });
-    const move = createMove(M.tackle, { accuracy: 100 });
+    const move = dataManager.getMove(M.tackle);
     const state = createMinimalBattleState(attacker, defender);
     const rng = createMockRng(50);
 
@@ -577,7 +584,7 @@ describe("#348 — Lax Incense accuracy reduction", () => {
     // Source: Showdown data/mods/gen3/items.ts — Lax Incense: 0.9x accuracy
     const attacker = createActivePokemon({ types: [T.normal] });
     const defender = createActivePokemon({ types: [T.normal], heldItem: I.laxIncense });
-    const move = createMove(M.tackle, { accuracy: 100 });
+    const move = dataManager.getMove(M.tackle);
     const state = createMinimalBattleState(attacker, defender);
     const rng = createMockRng(95);
 
@@ -597,7 +604,7 @@ describe("#348 — Lax Incense accuracy reduction", () => {
     // Source: pret/pokeemerald — same as BrightPowder
     const attacker = createActivePokemon({ types: [T.normal] });
     const defender = createActivePokemon({ types: [T.normal], heldItem: I.laxIncense });
-    const move = createMove(M.tackle, { accuracy: 100 });
+    const move = dataManager.getMove(M.tackle);
     const state = createMinimalBattleState(attacker, defender);
     const rng = createMockRng(50);
 
@@ -747,7 +754,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       heldItem: I.kingsRock,
       nickname: "Attacker",
     });
-    const move = createMove(M.tackle, { effect: null });
+    const move = dataManager.getMove(M.tackle);
     const context: ItemContext = {
       pokemon,
       state: {} as BattleState,
@@ -756,7 +763,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       damage: 50,
     };
 
-    const result = applyGen3HeldItem("on-hit", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -771,14 +778,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       heldItem: I.kingsRock,
     });
     // Bite has a volatile-status flinch effect with 30% chance
-    const move = createMove(M.bite, {
-      type: T.dark,
-      effect: {
-        type: "volatile-status",
-        status: V.flinch,
-        chance: 30,
-      },
-    });
+    const move = dataManager.getMove(M.bite);
     const context: ItemContext = {
       pokemon,
       state: {} as BattleState,
@@ -787,7 +787,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       damage: 50,
     };
 
-    const result = applyGen3HeldItem("on-hit", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
 
     expect(result.activated).toBe(false);
   });
@@ -799,7 +799,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       heldItem: I.kingsRock,
     });
     // A multi-effect move where one sub-effect is flinch
-    const move = createMove("headbutt-like", {
+    const move = createSyntheticMove("headbutt-like", {
       effect: {
         type: "multi",
         effects: [{ type: "damage" }, { type: "volatile-status", status: V.flinch, chance: 30 }],
@@ -813,7 +813,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       damage: 50,
     };
 
-    const result = applyGen3HeldItem("on-hit", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
 
     expect(result.activated).toBe(false);
   });
