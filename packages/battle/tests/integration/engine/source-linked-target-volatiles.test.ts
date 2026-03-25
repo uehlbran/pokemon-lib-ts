@@ -1,4 +1,5 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_VOLATILE_IDS, type PokemonInstance } from "@pokemon-lib-ts/core";
+import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -19,10 +20,10 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -33,10 +34,10 @@ function createEngine(overrides?: {
       },
       currentHp: 200,
     }),
-    createTestPokemon(25, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
       uid: "pikachu-1",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -50,10 +51,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -64,10 +65,10 @@ function createEngine(overrides?: {
       },
       currentHp: 200,
     }),
-    createTestPokemon(6, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       uid: "charizard-2",
       nickname: "Charizard2",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -120,7 +121,7 @@ describe("BattleEngine - source-linked target volatile lifecycle", () => {
           switchOut: false,
           messages: [],
           targetVolatileInflicted: {
-            volatile: "trapped",
+            volatile: CORE_VOLATILE_IDS.trapped,
             turnsLeft: 2,
             sourcePokemonUid: context.attacker.pokemon.uid,
             blocksAction: true,
@@ -136,7 +137,7 @@ describe("BattleEngine - source-linked target volatile lifecycle", () => {
           healAmount: 0,
           switchOut: false,
           messages: [],
-          volatilesToClear: [{ target: "defender", volatile: "trapped" }],
+          volatilesToClear: [{ target: "defender", volatile: CORE_VOLATILE_IDS.trapped }],
         } as MoveEffectResult;
       }
       return originalExecute(context);
@@ -148,7 +149,9 @@ describe("BattleEngine - source-linked target volatile lifecycle", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const linkedVolatile = engine.state.sides[1].active[0]?.volatileStatuses.get("trapped");
+    const linkedVolatile = engine.state.sides[1].active[0]?.volatileStatuses.get(
+      CORE_VOLATILE_IDS.trapped,
+    );
     expect(linkedVolatile).toEqual({
       turnsLeft: 2,
       sourcePokemonUid: "charizard-1",
@@ -167,7 +170,9 @@ describe("BattleEngine - source-linked target volatile lifecycle", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const clearedVolatile = engine.state.sides[1].active[0]?.volatileStatuses.get("trapped");
+    const clearedVolatile = engine.state.sides[1].active[0]?.volatileStatuses.get(
+      CORE_VOLATILE_IDS.trapped,
+    );
     expect(clearedVolatile).toBeUndefined();
 
     const targetMoveStarts = events.filter(
@@ -176,7 +181,10 @@ describe("BattleEngine - source-linked target volatile lifecycle", () => {
     expect(targetMoveStarts).toHaveLength(1);
 
     const volatileEndEvents = events.filter(
-      (event) => event.type === "volatile-end" && event.side === 1 && event.volatile === "trapped",
+      (event) =>
+        event.type === "volatile-end" &&
+        event.side === 1 &&
+        event.volatile === CORE_VOLATILE_IDS.trapped,
     );
     expect(volatileEndEvents).toHaveLength(1);
   });
@@ -188,17 +196,22 @@ describe("BattleEngine - source-linked target volatile lifecycle", () => {
     engine.start();
 
     engine.state.sides[1].active[0]!.volatileStatuses.set(
-      "trapped",
+      CORE_VOLATILE_IDS.trapped,
       createLinkedVolatile("charizard-1"),
     );
 
     engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(engine.state.sides[1].active[0]?.volatileStatuses.has("trapped")).toBe(false);
+    expect(engine.state.sides[1].active[0]?.volatileStatuses.has(CORE_VOLATILE_IDS.trapped)).toBe(
+      false,
+    );
 
     const volatileEndEvents = events.filter(
-      (event) => event.type === "volatile-end" && event.side === 1 && event.volatile === "trapped",
+      (event) =>
+        event.type === "volatile-end" &&
+        event.side === 1 &&
+        event.volatile === CORE_VOLATILE_IDS.trapped,
     );
     expect(volatileEndEvents).toHaveLength(1);
 
@@ -233,20 +246,25 @@ describe("BattleEngine - source-linked target volatile lifecycle", () => {
     engine.start();
 
     engine.state.sides[1].active[0]!.volatileStatuses.set(
-      "trapped",
+      CORE_VOLATILE_IDS.trapped,
       createLinkedVolatile("charizard-1"),
     );
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(engine.state.sides[1].active[0]?.volatileStatuses.has("trapped")).toBe(false);
+    expect(engine.state.sides[1].active[0]?.volatileStatuses.has(CORE_VOLATILE_IDS.trapped)).toBe(
+      false,
+    );
 
     const faintEvents = events.filter((event) => event.type === "faint" && event.side === 0);
     expect(faintEvents).toHaveLength(1);
 
     const volatileEndEvents = events.filter(
-      (event) => event.type === "volatile-end" && event.side === 1 && event.volatile === "trapped",
+      (event) =>
+        event.type === "volatile-end" &&
+        event.side === 1 &&
+        event.volatile === CORE_VOLATILE_IDS.trapped,
     );
     expect(volatileEndEvents).toHaveLength(1);
 
