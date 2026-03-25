@@ -214,6 +214,15 @@ function makeAccuracyContext(overrides: Partial<AccuracyContext> = {}): Accuracy
   };
 }
 
+function findSeed(limit: number, predicate: (seed: number) => boolean, failureMessage: string): number {
+  for (let seed = 0; seed < limit; seed++) {
+    if (predicate(seed)) {
+      return seed;
+    }
+  }
+  throw new Error(failureMessage);
+}
+
 // ============================================================================
 // #129 — Per-attack residual processing
 // ============================================================================
@@ -249,18 +258,11 @@ describe("#283 — rollCatchAttempt uses Gen 1 BallThrowCalc algorithm", () => {
     // Source: pokered ItemUseBall — if status modifier > Rand1, caught immediately.
     // Pidgey catchRate=255, status=sleep (25). We use a seed where rand1 < 25.
     // Arrange
-    // Need a seed where rng.int(0, 255) < 25. Try seed 100.
-    const _rng = new SeededRandom(100);
-    const _firstRoll = new SeededRandom(100).int(0, 255);
-    // Find a seed where first roll < 25
-    let testSeed = 0;
-    for (let s = 0; s < 1000; s++) {
-      const r = new SeededRandom(s).int(0, 255);
-      if (r < 25) {
-        testSeed = s;
-        break;
-      }
-    }
+    const testSeed = findSeed(
+      1000,
+      (seed) => new SeededRandom(seed).int(0, 255) < 25,
+      "Expected to find a seed where the initial catch roll is below the sleep modifier.",
+    );
     const testRng = new SeededRandom(testSeed);
 
     // Act
@@ -282,14 +284,11 @@ describe("#283 — rollCatchAttempt uses Gen 1 BallThrowCalc algorithm", () => {
     // Source: pokered ItemUseBall — if (rand1 - status) > catchRate, fail immediately.
     // Mewtwo: catchRate=3, no status. With high rand1, adjustedRand1 > 3 always.
     // Arrange — find a seed with high rand1 (> 3)
-    let testSeed = 0;
-    for (let s = 0; s < 1000; s++) {
-      const r = new SeededRandom(s).int(0, 255);
-      if (r > 50) {
-        testSeed = s;
-        break;
-      }
-    }
+    const testSeed = findSeed(
+      1000,
+      (seed) => new SeededRandom(seed).int(0, 255) > 50,
+      "Expected to find a seed where the initial catch roll exceeds Mewtwo's catch rate.",
+    );
     const testRng = new SeededRandom(testSeed);
 
     // Act
@@ -317,20 +316,19 @@ describe("#283 — rollCatchAttempt uses Gen 1 BallThrowCalc algorithm", () => {
     // W = floor(floor(200*255/12)/25) = floor(floor(4250)/25) = floor(170) = 170
     // X = min(255, 170) = 170
     // Arrange — find a seed where rand1 < catchRate and rand2 > X for a miss
-    let testSeed = 0;
-    for (let s = 0; s < 10000; s++) {
-      const rngTest = new SeededRandom(s);
-      const r1 = rngTest.int(0, 150); // Ultra Ball randMax=150
-      if (r1 <= 100) {
-        // r1 - 0 <= catchRate=100, passes step 5
-        const r2 = rngTest.int(0, 255);
-        if (r2 > 170) {
-          // rand2 > X => fail
-          testSeed = s;
-          break;
+    const testSeed = findSeed(
+      10000,
+      (seed) => {
+        const rngTest = new SeededRandom(seed);
+        const r1 = rngTest.int(0, 150); // Ultra Ball randMax=150
+        if (r1 > 100) {
+          return false;
         }
-      }
-    }
+        const r2 = rngTest.int(0, 255);
+        return r2 > 170;
+      },
+      "Expected to find an Ultra Ball seed that passes rand1 and fails rand2.",
+    );
     const testRng = new SeededRandom(testSeed);
 
     // Act
@@ -398,15 +396,11 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
       effect: { type: "multi-hit" as const, min: 2, max: 5 },
     });
     // Arrange — find seed where rollMultiHitCount returns 2
-    let testSeed = 0;
-    for (let s = 0; s < 1000; s++) {
-      const testRng = new SeededRandom(s);
-      const hitCount = ruleset.rollMultiHitCount(makeActivePokemon(), testRng);
-      if (hitCount === 2) {
-        testSeed = s;
-        break;
-      }
-    }
+    const testSeed = findSeed(
+      1000,
+      (seed) => ruleset.rollMultiHitCount(makeActivePokemon(), new SeededRandom(seed)) === 2,
+      "Expected to find a seed that produces exactly two total hits for a multi-hit move.",
+    );
     const rng = new SeededRandom(testSeed);
     const context = makeMoveEffectContext({ move: pinMissileMove, damage: 14, rng });
     // Act
@@ -419,15 +413,11 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
     // Source: pokered multi-hit — 12.5% chance of 5 hits.
     // multiHitCount = 5 - 1 = 4.
     // Arrange — find seed where rollMultiHitCount returns 5
-    let testSeed = 0;
-    for (let s = 0; s < 10000; s++) {
-      const testRng = new SeededRandom(s);
-      const hitCount = ruleset.rollMultiHitCount(makeActivePokemon(), testRng);
-      if (hitCount === 5) {
-        testSeed = s;
-        break;
-      }
-    }
+    const testSeed = findSeed(
+      10000,
+      (seed) => ruleset.rollMultiHitCount(makeActivePokemon(), new SeededRandom(seed)) === 5,
+      "Expected to find a seed that produces exactly five total hits for a multi-hit move.",
+    );
     const rng = new SeededRandom(testSeed);
     const context = makeMoveEffectContext({
       move: furyAttackMove,
@@ -612,19 +602,18 @@ describe("#304 — Rage miss loop: rage-miss-lock volatile causes auto-miss", ()
   it("given attacker does NOT have rage-miss-lock, when using Rage with 100% accuracy, then doesMoveHit can return true", () => {
     // Source: pokered — normal Rage without miss lock follows standard accuracy check.
     // Arrange — use a seed where the accuracy roll passes
-    let testSeed = 0;
-    for (let s = 0; s < 1000; s++) {
-      const testRng = new SeededRandom(s);
-      const ctx = makeAccuracyContext({
-        attacker: makeActivePokemon(),
-        move: rageMove,
-        rng: testRng,
-      });
-      if (ruleset.doesMoveHit(ctx)) {
-        testSeed = s;
-        break;
-      }
-    }
+    const testSeed = findSeed(
+      1000,
+      (seed) =>
+        ruleset.doesMoveHit(
+          makeAccuracyContext({
+            attacker: makeActivePokemon(),
+            move: rageMove,
+            rng: new SeededRandom(seed),
+          }),
+        ),
+      "Expected to find a Rage seed that produces a hit without rage-miss-lock.",
+    );
     const rng = new SeededRandom(testSeed);
     const attacker = makeActivePokemon(); // no rage-miss-lock
     const context = makeAccuracyContext({ attacker, move: rageMove, rng });
@@ -676,14 +665,11 @@ describe("#305 — Thrash first use stores turnsLeft = (randomTurns - 1)", () =>
   it("given Thrash used for first time with seed producing 2 turns, when executeMoveEffect is called, then turnsLeft is 1 (2-1)", () => {
     // Source: pret/pokered ThrashEffect — 2 turns: turnsLeft = 2 - 1 = 1.
     // Arrange — find seed where rng.int(2,3) = 2
-    let testSeed = 0;
-    for (let s = 0; s < 1000; s++) {
-      const r = new SeededRandom(s).int(2, 3);
-      if (r === 2) {
-        testSeed = s;
-        break;
-      }
-    }
+    const testSeed = findSeed(
+      1000,
+      (seed) => new SeededRandom(seed).int(2, 3) === 2,
+      "Expected to find a Thrash seed that produces the minimum two-turn duration.",
+    );
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
@@ -816,7 +802,8 @@ describe("#404 — Disable targets a random move slot, not the last-used move", 
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toContain("But it failed!");
+    expect(result.volatileData).toBeUndefined();
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 });
 
@@ -880,7 +867,7 @@ describe("#406 — Mirror Move only blocks copying Mirror Move itself", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.recursiveMove).toBeUndefined();
-    expect(result.messages).toContain("But it failed!");
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 });
 
@@ -1074,20 +1061,19 @@ describe("#410 — Struggle accuracy check (uses standard accuracy formula)", ()
     // The engine now calls doesMoveHit for Struggle, passing it through
     // the same 1/256 miss glitch as any other move.
     // Arrange — find seed where the move hits
-    let testSeed = 0;
-    for (let s = 0; s < 1000; s++) {
-      const testRng = new SeededRandom(s);
-      const ctx = makeAccuracyContext({
-        attacker: makeActivePokemon(),
-        defender: makeActivePokemon({ types: ["normal"] as PokemonType[] }),
-        move: struggleMove,
-        rng: testRng,
-      });
-      if (ruleset.doesMoveHit(ctx)) {
-        testSeed = s;
-        break;
-      }
-    }
+    const testSeed = findSeed(
+      1000,
+      (seed) =>
+        ruleset.doesMoveHit(
+          makeAccuracyContext({
+            attacker: makeActivePokemon(),
+            defender: makeActivePokemon({ types: ["normal"] as PokemonType[] }),
+            move: struggleMove,
+            rng: new SeededRandom(seed),
+          }),
+        ),
+      "Expected to find a Struggle seed that still hits through the normal Gen 1 accuracy path.",
+    );
     const rng = new SeededRandom(testSeed);
     const context = makeAccuracyContext({ move: struggleMove, rng });
     // Act
@@ -1100,64 +1086,56 @@ describe("#410 — Struggle accuracy check (uses standard accuracy formula)", ()
     // Source: pokered — Struggle follows standard accuracy/evasion mechanics.
     // With +6 evasion, the effective accuracy drops significantly, making misses likely.
     // Arrange — find seed where the move misses
-    let testSeed = 0;
-    let found = false;
-    for (let s = 0; s < 10000; s++) {
-      const testRng = new SeededRandom(s);
-      const evasiveDefender = makeActivePokemon({
-        types: ["normal"] as PokemonType[],
-        statStages: {
-          hp: 0,
-          attack: 0,
-          defense: 0,
-          spAttack: 0,
-          spDefense: 0,
-          speed: 0,
-          accuracy: 0,
-          evasion: 6,
-        },
-      });
-      const ctx = makeAccuracyContext({
-        attacker: makeActivePokemon(),
-        defender: evasiveDefender,
-        move: struggleMove,
-        rng: testRng,
-      });
-      if (!ruleset.doesMoveHit(ctx)) {
-        testSeed = s;
-        found = true;
-        break;
-      }
-    }
-    // Only run assertion if we found a missing seed
-    if (found) {
-      const rng = new SeededRandom(testSeed);
-      const evasiveDefender = makeActivePokemon({
-        types: ["normal"] as PokemonType[],
-        statStages: {
-          hp: 0,
-          attack: 0,
-          defense: 0,
-          spAttack: 0,
-          spDefense: 0,
-          speed: 0,
-          accuracy: 0,
-          evasion: 6,
-        },
-      });
-      const context = makeAccuracyContext({
-        defender: evasiveDefender,
-        move: struggleMove,
-        rng,
-      });
-      // Act
-      const hit = ruleset.doesMoveHit(context);
-      // Assert — Struggle can miss against high evasion
-      expect(hit).toBe(false);
-    } else {
-      // If no miss found in 10000 seeds, this should not happen with +6 evasion
-      expect(found).toBe(true);
-    }
+    const testSeed = findSeed(
+      10000,
+      (seed) => {
+        const evasiveDefender = makeActivePokemon({
+          types: ["normal"] as PokemonType[],
+          statStages: {
+            hp: 0,
+            attack: 0,
+            defense: 0,
+            spAttack: 0,
+            spDefense: 0,
+            speed: 0,
+            accuracy: 0,
+            evasion: 6,
+          },
+        });
+        return !ruleset.doesMoveHit(
+          makeAccuracyContext({
+            attacker: makeActivePokemon(),
+            defender: evasiveDefender,
+            move: struggleMove,
+            rng: new SeededRandom(seed),
+          }),
+        );
+      },
+      "Expected to find a Struggle seed that misses against a +6 evasion defender.",
+    );
+    const rng = new SeededRandom(testSeed);
+    const evasiveDefender = makeActivePokemon({
+      types: ["normal"] as PokemonType[],
+      statStages: {
+        hp: 0,
+        attack: 0,
+        defense: 0,
+        spAttack: 0,
+        spDefense: 0,
+        speed: 0,
+        accuracy: 0,
+        evasion: 6,
+      },
+    });
+    const context = makeAccuracyContext({
+      defender: evasiveDefender,
+      move: struggleMove,
+      rng,
+    });
+    // Act
+    const hit = ruleset.doesMoveHit(context);
+    // Assert — Struggle can miss against high evasion
+    expect(hit).toBe(false);
   });
 });
 
