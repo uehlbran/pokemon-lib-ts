@@ -2,12 +2,15 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
   createMoveSlot,
+  NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -63,6 +66,22 @@ function createMockRng(intReturnValue: number, nextValue = 0) {
   };
 }
 
+function createStatStages(
+  overrides?: Partial<ActivePokemon["statStages"]>,
+): ActivePokemon["statStages"] {
+  return {
+    hp: 0,
+    attack: 0,
+    defense: 0,
+    spAttack: 0,
+    spDefense: 0,
+    speed: 0,
+    accuracy: 0,
+    evasion: 0,
+    ...overrides,
+  };
+}
+
 function createActivePokemon(opts: {
   types: PokemonType[];
   status?: PokemonInstance["status"];
@@ -76,7 +95,7 @@ function createActivePokemon(opts: {
   moves?: PokemonInstance["moves"];
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   statStages?: Partial<ActivePokemon["statStages"]>;
-  gender?: string;
+  gender?: PokemonInstance["gender"];
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
   const stats: StatBlock = {
@@ -98,16 +117,13 @@ function createActivePokemon(opts: {
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
-    moves: opts.moves ?? [
-      createMoveSlot(TACKLE.id, TACKLE.pp),
-      createMoveSlot(EMBER.id, EMBER.pp),
-    ],
+    moves: opts.moves ?? [createMoveSlot(TACKLE.id, TACKLE.pp), createMoveSlot(EMBER.id, EMBER.pp)],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: (opts.gender ?? "male") as "male" | "female" | "genderless",
+    gender: opts.gender ?? CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -120,22 +136,10 @@ function createActivePokemon(opts: {
   const volatiles =
     opts.volatiles ?? new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
 
-  const defaultStages = {
-    hp: 0,
-    attack: 0,
-    defense: 0,
-    spAttack: 0,
-    spDefense: 0,
-    speed: 0,
-    accuracy: 0,
-    evasion: 0,
-    ...(opts.statStages ?? {}),
-  };
-
   return {
     pokemon,
     teamSlot: 0,
-    statStages: defaultStages,
+    statStages: createStatStages(opts.statStages),
     volatileStatuses: volatiles,
     types: opts.types,
     ability: opts.ability ?? ABILITIES.none,
@@ -301,17 +305,17 @@ describe("Acupressure", () => {
 
   it("given all stats are at +6, when Acupressure is used, then it fails", () => {
     // Source: Showdown Gen 4 mod -- Acupressure fails when all stats maxed
+    const maxedStatStages = createStatStages();
+    maxedStatStages.attack = 6;
+    maxedStatStages.defense = 6;
+    maxedStatStages.spAttack = 6;
+    maxedStatStages.spDefense = 6;
+    maxedStatStages.speed = 6;
+    maxedStatStages.accuracy = 6;
+    maxedStatStages.evasion = 6;
     const attacker = createActivePokemon({
       types: [TYPES.normal],
-      statStages: {
-        attack: 6,
-        defense: 6,
-        spAttack: 6,
-        spDefense: 6,
-        speed: 6,
-        accuracy: 6,
-        evasion: 6,
-      },
+      statStages: maxedStatStages,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = createMove(MOVES.acupressure);
@@ -326,17 +330,17 @@ describe("Acupressure", () => {
 
   it("given only speed is below +6, when Acupressure is used, then speed is boosted by +2", () => {
     // Source: Showdown Gen 4 mod -- only non-maxed stats are eligible
+    const speedOnlyBelowMaxStatStages = createStatStages();
+    speedOnlyBelowMaxStatStages.attack = 6;
+    speedOnlyBelowMaxStatStages.defense = 6;
+    speedOnlyBelowMaxStatStages.spAttack = 6;
+    speedOnlyBelowMaxStatStages.spDefense = 6;
+    speedOnlyBelowMaxStatStages.speed = 4;
+    speedOnlyBelowMaxStatStages.accuracy = 6;
+    speedOnlyBelowMaxStatStages.evasion = 6;
     const attacker = createActivePokemon({
       types: [TYPES.normal],
-      statStages: {
-        attack: 6,
-        defense: 6,
-        spAttack: 6,
-        spDefense: 6,
-        speed: 4,
-        accuracy: 6,
-        evasion: 6,
-      },
+      statStages: speedOnlyBelowMaxStatStages,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = createMove(MOVES.acupressure);
@@ -585,7 +589,7 @@ describe("Sticky Barb", () => {
     const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
       state,
       rng,
@@ -608,7 +612,7 @@ describe("Sticky Barb", () => {
     const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
       state,
       rng,
@@ -637,7 +641,7 @@ describe("Berry Juice", () => {
     const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
       state,
       rng,
@@ -662,7 +666,7 @@ describe("Berry Juice", () => {
     const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
       state,
       rng,
@@ -862,7 +866,7 @@ describe("Unburden", () => {
     const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
-    applyGen4HeldItem("end-of-turn", { pokemon, state, rng });
+    applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, { pokemon, state, rng });
 
     expect(pokemon.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
   });
