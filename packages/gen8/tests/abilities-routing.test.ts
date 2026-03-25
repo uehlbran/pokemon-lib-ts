@@ -31,6 +31,7 @@ import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
   Gen8Ruleset,
 } from "../src";
@@ -43,11 +44,19 @@ const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;
 const EOT = CORE_END_OF_TURN_EFFECT_IDS;
 const ITEMS = CORE_ITEM_IDS;
 const MOVES = GEN8_MOVE_IDS;
+const NATURES = GEN8_NATURE_IDS;
 const SPECIES = GEN8_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const dataManager = createGen8DataManager();
-const DEFAULT_MOVE = dataManager.getMove(MOVES.tackle);
+const CANONICAL_TACKLE = () => makeCanonicalMove(MOVES.tackle);
+const CANONICAL_THUNDERBOLT = () => makeCanonicalMove(MOVES.thunderbolt);
+const CANONICAL_CRUNCH = () => makeCanonicalMove(MOVES.crunch);
+const CANONICAL_SHEER_COLD = () => makeCanonicalMove(MOVES.sheerCold);
+const CANONICAL_THUNDER_WAVE = () => makeCanonicalMove(MOVES.thunderWave);
+const CANONICAL_FLAMETHROWER = () => makeCanonicalMove(MOVES.flamethrower);
+const CANONICAL_SURF = () => makeCanonicalMove(MOVES.surf);
+const CANONICAL_WILL_O_WISP = () => makeCanonicalMove(MOVES.willOWisp);
 
 function makeActive(overrides: {
   level?: number;
@@ -59,10 +68,10 @@ function makeActive(overrides: {
   hp?: number;
   currentHp?: number;
   types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  status?: string | null;
-  speciesId?: number;
+  ability?: (typeof ABILITIES)[keyof typeof ABILITIES];
+  heldItem?: (typeof ITEMS)[keyof typeof ITEMS] | null;
+  status?: ActivePokemon["pokemon"]["status"];
+  speciesId?: (typeof SPECIES)[keyof typeof SPECIES];
   nickname?: string | null;
   movedThisTurn?: boolean;
   turnsOnField?: number;
@@ -81,13 +90,13 @@ function makeActive(overrides: {
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: NEUTRAL_NATURES[0],
+      nature: NATURES.hardy ?? NEUTRAL_NATURES[0],
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? ABILITIES.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: `${TYPES.normal}1` as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
@@ -97,7 +106,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -135,26 +144,16 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-}): MoveData {
-  const baseMove = dataManager.getMove(overrides.id ?? MOVES.tackle);
+function makeCanonicalMove(
+  moveId: (typeof MOVES)[keyof typeof MOVES],
+  overrides?: Partial<MoveData>,
+): MoveData {
+  const baseMove = dataManager.getMove(moveId);
   return {
     ...baseMove,
-    id: overrides.id ?? baseMove.id,
-    type: overrides.type ?? baseMove.type,
-    category: overrides.category ?? baseMove.category,
-    power: overrides.power ?? baseMove.power,
-    flags: {
-      ...baseMove.flags,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? baseMove.effect,
+    ...overrides,
+    flags: overrides?.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
   } as MoveData;
 }
 
@@ -174,8 +173,8 @@ function makeState(): BattleState {
 }
 
 function makeCtx(overrides: {
-  ability: string;
-  trigger: string;
+  ability: (typeof ABILITIES)[keyof typeof ABILITIES];
+  trigger: AbilityContext["trigger"];
   move?: MoveData;
   currentHp?: number;
   maxHp?: number;
@@ -223,7 +222,7 @@ describe("Gen 8 applyAbility dispatch (Bug C1)", () => {
       ability: ABILITIES.voltAbsorb,
       trigger: "passive-immunity",
       types: [TYPES.water],
-      move: makeMove({ type: TYPES.electric }),
+      move: CANONICAL_THUNDERBOLT(),
     });
     const result = ruleset.applyAbility("passive-immunity", ctx);
     // The stat handler dispatches passive-immunity; Volt Absorb is not handled by
@@ -238,7 +237,7 @@ describe("Gen 8 applyAbility dispatch (Bug C1)", () => {
     const ctx = makeCtx({
       ability: ABILITIES.justified,
       trigger: "on-damage-taken",
-      move: makeMove({ type: TYPES.dark }),
+      move: CANONICAL_CRUNCH(),
     });
     const result = ruleset.applyAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -254,7 +253,7 @@ describe("Gen 8 applyAbility dispatch (Bug C1)", () => {
     const ctx = makeCtx({
       ability: ABILITIES.justified,
       trigger: "on-damage-taken",
-      move: makeMove({ type: TYPES.normal }),
+      move: CANONICAL_TACKLE(),
     });
     const result = ruleset.applyAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(false);
@@ -268,11 +267,7 @@ describe("Gen 8 applyAbility dispatch (Bug C1)", () => {
       ability: ABILITIES.sturdy,
       trigger: "on-damage-taken",
       nickname: "Defender",
-      move: makeMove({
-        id: MOVES.sheerCold,
-        type: TYPES.ice,
-        effect: { type: "ohko" } as any,
-      }),
+      move: CANONICAL_SHEER_COLD(),
     });
     const result = ruleset.applyAbility("on-damage-taken", ctx);
     expect(result).toEqual({
@@ -351,7 +346,7 @@ describe("Gen 8 applyAbility dispatch (Bug C1)", () => {
     const ctx = makeCtx({
       ability: ABILITIES.prankster,
       trigger: "on-priority-check",
-      move: makeMove({ category: "status", id: MOVES.thunderWave }),
+      move: CANONICAL_THUNDER_WAVE(),
     });
     const result = ruleset.applyAbility("on-priority-check", ctx);
     expect(result.activated).toBe(true);
@@ -402,7 +397,7 @@ describe("Gen 8 applyAbility dispatch (Bug C1)", () => {
     const ctx = makeCtx({
       ability: ABILITIES.weakArmor,
       trigger: "on-damage-taken",
-      move: makeMove({ category: "physical" }),
+      move: CANONICAL_TACKLE(),
     });
     const result = ruleset.applyAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -519,7 +514,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
       nickname: "Defender",
     });
     const attacker = makeActive({});
-    const move = makeMove({ category: "special", power: 200, type: TYPES.fire });
+    const move = CANONICAL_FLAMETHROWER();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -532,7 +527,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     // Source: Showdown data/abilities.ts -- sturdy only works at full HP
     const defender = makeActive({ ability: ABILITIES.sturdy, hp: 200, currentHp: 150 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 200 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -544,7 +539,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     // Source: Showdown data/abilities.ts -- sturdy only triggers on lethal damage
     const defender = makeActive({ ability: ABILITIES.sturdy, hp: 200, currentHp: 200 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 50 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(100, defender, attacker, move, state);
@@ -564,7 +559,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
       nickname: "Defender",
     });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 100 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -577,7 +572,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     // Source: Showdown data/abilities.ts -- disguise: Math.ceil(pokemon.maxhp / 8)
     const defender = makeActive({ ability: ABILITIES.disguise, hp: 161, currentHp: 161 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "special", power: 100 });
+    const move = CANONICAL_SURF();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
@@ -595,7 +590,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
       volatiles,
     });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 100 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -607,7 +602,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     // Source: Showdown data/abilities.ts -- disguise: only blocks damaging moves
     const defender = makeActive({ ability: ABILITIES.disguise, hp: 200, currentHp: 200 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "status", id: MOVES.willOWisp, power: null });
+    const move = CANONICAL_WILL_O_WISP();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(0, defender, attacker, move, state);
@@ -622,7 +617,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     // Bug H3: capLethalDamage must set the volatile so the next hit goes through
     const defender = makeActive({ ability: ABILITIES.disguise, hp: 200, currentHp: 200 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 100 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -636,7 +631,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     // Disguise always checks first; this test uses disguise ability
     const defender = makeActive({ ability: ABILITIES.disguise, hp: 200, currentHp: 200 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 200 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -659,7 +654,7 @@ describe("Gen 8 capLethalDamage — Focus Sash (#784)", () => {
     // Source: Bulbapedia -- Focus Sash: "If the holder has full HP, it will survive a hit that would KO it with 1 HP"
     const defender = makeActive({ heldItem: ITEMS.focusSash, hp: 200, currentHp: 200 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 200 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
@@ -673,7 +668,7 @@ describe("Gen 8 capLethalDamage — Focus Sash (#784)", () => {
     // Source: Showdown data/items.ts -- Focus Sash requires full HP (currentHp === maxHp)
     const defender = makeActive({ heldItem: ITEMS.focusSash, hp: 200, currentHp: 150 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 200 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(200, defender, attacker, move, state);
@@ -692,7 +687,7 @@ describe("Gen 8 capLethalDamage — Focus Sash (#784)", () => {
       currentHp: 200,
     });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 200 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
@@ -711,7 +706,7 @@ describe("Gen 8 capLethalDamage — Focus Sash (#784)", () => {
       volatiles: new Map([[VOLATILES.embargo, { turnsLeft: 5 }]]),
     });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 200 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(300, defender, attacker, move, state);
@@ -725,7 +720,7 @@ describe("Gen 8 capLethalDamage — Focus Sash (#784)", () => {
     // Source: Showdown data/items.ts -- Focus Sash is an item effect, suppressed by Magic Room
     const defender = makeActive({ heldItem: ITEMS.focusSash, hp: 200, currentHp: 200 });
     const attacker = makeActive({});
-    const move = makeMove({ category: "physical", power: 200 });
+    const move = CANONICAL_TACKLE();
     const state = makeState();
     state.magicRoom = { active: true, turnsLeft: 3 };
 
