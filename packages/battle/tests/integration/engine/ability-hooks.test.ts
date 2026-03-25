@@ -1,6 +1,7 @@
 import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
@@ -42,6 +43,8 @@ class ContactImmunityMockRuleset extends MockRuleset {
     return { activated: false, effects: [], messages: [] };
   }
 }
+
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS
 
 /**
  * Creates an engine with two teams using the ContactImmunityMockRuleset.
@@ -128,7 +131,7 @@ describe("on-contact ability hook", () => {
     ruleset.setFixedDamage(10);
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -153,11 +156,14 @@ describe("on-contact ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: on-contact was called for the defender (Blastoise)
-    const contactTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-contact");
+    const contactTriggers = ruleset.triggerLog.filter((t) => t.trigger === TRIGGERS.onContact);
     expect(contactTriggers).toHaveLength(1);
     // The only contact trigger should be for the defender's pokemon.
     const defenderContactTrigger = contactTriggers.find((t) => t.pokemonUid === "blastoise-1");
-    expect(defenderContactTrigger).toEqual({ trigger: "on-contact", pokemonUid: "blastoise-1" });
+    expect(defenderContactTrigger).toEqual({
+      trigger: TRIGGERS.onContact,
+      pokemonUid: "blastoise-1",
+    });
   });
 
   it("given a non-contact move with damage > 0, when move hits defender, then on-contact trigger does NOT fire for that attack", () => {
@@ -182,7 +188,7 @@ describe("on-contact ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: no on-contact triggers at all (both moves are non-contact)
-    const contactTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-contact");
+    const contactTriggers = ruleset.triggerLog.filter((t) => t.trigger === TRIGGERS.onContact);
     expect(contactTriggers).toHaveLength(0);
   });
 
@@ -213,7 +219,7 @@ describe("on-contact ability hook", () => {
     // Note: Blastoise also uses Tackle on Charizard which COULD trigger on-contact on Charizard
     // but we only check defender-side contact from the Charizard->Blastoise attack
     const contactTriggersForBlastoise = ruleset.triggerLog.filter(
-      (t) => t.trigger === "on-contact" && t.pokemonUid === "blastoise-1",
+      (t) => t.trigger === TRIGGERS.onContact && t.pokemonUid === "blastoise-1",
     );
     expect(contactTriggersForBlastoise).toHaveLength(0);
   });
@@ -247,7 +253,7 @@ describe("on-contact ability hook", () => {
 
     // Assert: no on-contact trigger for fainted Blastoise
     const contactTriggersForBlastoise = ruleset.triggerLog.filter(
-      (t) => t.trigger === "on-contact" && t.pokemonUid === "blastoise-1",
+      (t) => t.trigger === TRIGGERS.onContact && t.pokemonUid === "blastoise-1",
     );
     expect(contactTriggersForBlastoise).toHaveLength(0);
   });
@@ -270,7 +276,7 @@ describe("passive-immunity ability hook", () => {
     });
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "passive-immunity") {
+      if (trigger === TRIGGERS.passiveImmunity) {
         return {
           activated: true,
           effects: [
@@ -295,7 +301,9 @@ describe("passive-immunity ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: passive-immunity trigger fired
-    const immunityTriggers = ruleset.triggerLog.filter((t) => t.trigger === "passive-immunity");
+    const immunityTriggers = ruleset.triggerLog.filter(
+      (t) => t.trigger === TRIGGERS.passiveImmunity,
+    );
     expect(immunityTriggers).not.toHaveLength(0);
 
     // Assert: attacker's lastMoveUsed should be set (early-return path sets it)
@@ -319,7 +327,7 @@ describe("passive-immunity ability hook", () => {
     });
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "passive-immunity") {
+      if (trigger === TRIGGERS.passiveImmunity) {
         // Type immunity, not ability immunity — do not activate
         return { activated: false, effects: [], messages: [] };
       }
@@ -335,7 +343,9 @@ describe("passive-immunity ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: passive-immunity trigger fired but was not activated
-    const immunityTriggers = ruleset.triggerLog.filter((t) => t.trigger === "passive-immunity");
+    const immunityTriggers = ruleset.triggerLog.filter(
+      (t) => t.trigger === TRIGGERS.passiveImmunity,
+    );
     expect(immunityTriggers).not.toHaveLength(0);
 
     // Assert: the effectiveness event should still be emitted (0 !== 1)
@@ -360,7 +370,7 @@ describe("passive-immunity ability hook", () => {
     const executeMoveEffectSpy = vi.spyOn(ruleset, "executeMoveEffect");
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "passive-immunity") {
+      if (trigger === TRIGGERS.passiveImmunity) {
         return {
           activated: true,
           effects: [],
@@ -399,7 +409,7 @@ describe("processAbilityResult: status-inflict effect", () => {
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -441,7 +451,7 @@ describe("processAbilityResult: status-inflict effect", () => {
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -485,7 +495,7 @@ describe("processAbilityResult: companion volatile initialization after status i
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -524,7 +534,7 @@ describe("processAbilityResult: companion volatile initialization after status i
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -571,7 +581,7 @@ describe("processAbilityResult: companion volatile initialization after status i
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -612,7 +622,7 @@ describe("processAbilityResult: volatile-inflict effect", () => {
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -649,7 +659,7 @@ describe("processAbilityResult: volatile-inflict effect", () => {
     const { engine, ruleset, events } = createTestEngine();
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-contact") {
+      if (trigger === TRIGGERS.onContact) {
         return {
           activated: true,
           effects: [
@@ -702,7 +712,7 @@ describe("on-before-move ability hook", () => {
     ruleset.setFixedDamage(10);
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-before-move") {
+      if (trigger === TRIGGERS.onBeforeMove) {
         return {
           activated: true,
           messages: ["Charizard is loafing around!"],
@@ -722,7 +732,9 @@ describe("on-before-move ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: on-before-move was called
-    const beforeMoveTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-before-move");
+    const beforeMoveTriggers = ruleset.triggerLog.filter(
+      (t) => t.trigger === TRIGGERS.onBeforeMove,
+    );
     expect(beforeMoveTriggers).not.toHaveLength(0);
 
     // Assert: the loafing message was emitted
@@ -756,7 +768,9 @@ describe("on-before-move ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: on-before-move was called but did not prevent the move
-    const beforeMoveTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-before-move");
+    const beforeMoveTriggers = ruleset.triggerLog.filter(
+      (t) => t.trigger === TRIGGERS.onBeforeMove,
+    );
     expect(beforeMoveTriggers).not.toHaveLength(0);
 
     // Assert: damage events were emitted (moves proceeded normally)
@@ -776,7 +790,7 @@ describe("on-damage-taken ability hook", () => {
     ruleset.setFixedDamage(10);
 
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-damage-taken") {
+      if (trigger === TRIGGERS.onDamageTaken) {
         return {
           activated: true,
           effects: [
@@ -800,7 +814,9 @@ describe("on-damage-taken ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: on-damage-taken was called for the defender
-    const damageTakenTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-damage-taken");
+    const damageTakenTriggers = ruleset.triggerLog.filter(
+      (t) => t.trigger === TRIGGERS.onDamageTaken,
+    );
     expect(damageTakenTriggers).not.toHaveLength(0);
 
     // Assert: type-change message was emitted
@@ -834,7 +850,9 @@ describe("on-damage-taken ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: on-damage-taken was NOT called (damage was 0)
-    const damageTakenTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-damage-taken");
+    const damageTakenTriggers = ruleset.triggerLog.filter(
+      (t) => t.trigger === TRIGGERS.onDamageTaken,
+    );
     expect(damageTakenTriggers).toHaveLength(0);
   });
 });
@@ -861,7 +879,7 @@ describe("on-status-inflicted ability hook", () => {
 
     // When on-status-inflicted fires, mirror the status to the opponent
     ruleset.setAbilityHandler((trigger, _ctx) => {
-      if (trigger === "on-status-inflicted") {
+      if (trigger === TRIGGERS.onStatusInflicted) {
         // The status-inflicted pokemon mirrors the status to the opponent
         return {
           activated: true,
@@ -887,7 +905,9 @@ describe("on-status-inflicted ability hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert: on-status-inflicted was called
-    const statusTriggers = ruleset.triggerLog.filter((t) => t.trigger === "on-status-inflicted");
+    const statusTriggers = ruleset.triggerLog.filter(
+      (t) => t.trigger === TRIGGERS.onStatusInflicted,
+    );
     expect(statusTriggers).not.toHaveLength(0);
 
     // Assert: Synchronize message was emitted

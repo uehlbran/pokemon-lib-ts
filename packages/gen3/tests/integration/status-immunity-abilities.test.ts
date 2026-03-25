@@ -1,12 +1,23 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  SeededRandom,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -59,6 +70,7 @@ const STATUSES = CORE_STATUS_IDS
 const TYPES = CORE_TYPE_IDS
 const VOLATILES = CORE_VOLATILE_IDS
 const WEATHER = CORE_WEATHER_IDS
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS
 const DATA_MANAGER = createGen3DataManager()
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur)
 const THUNDERBOLT = DATA_MANAGER.getMove(MOVES.thunderbolt)
@@ -106,64 +118,31 @@ function createMockPokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = {
-    uid: "test-mon",
-    speciesId,
-    nickname: null,
-    level: 50,
-    experience: 0,
-    nature: NATURES.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: opts.hp ?? maxHp,
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(speciesId), {
+    nature: CORE_NATURE_IDS.hardy,
+    ivs: createIvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+    evs: createEvs(),
     moves: [],
-    ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: `${TYPES.normal}1` as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     heldItem: null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    friendship: createFriendship(0),
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: ITEMS.pokeBall,
-    calculatedStats: stats,
-  };
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
 
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: opts.types ?? [...species.types],
-    ability: opts.ability ?? ABILITIES.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 1,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as unknown as ActivePokemon;
+  pokemon.uid = `test-${speciesId}`;
+  pokemon.currentHp = opts.hp ?? maxHp;
+  pokemon.ability = opts.ability ?? ABILITIES.none;
+  pokemon.status = (opts.status ?? null) as typeof pokemon.status;
+  pokemon.calculatedStats = stats;
+
+  const activePokemon = createOnFieldPokemon(pokemon, 0, [...(opts.types ?? species.types)]);
+  activePokemon.ability = pokemon.ability;
+  activePokemon.turnsOnField = 1;
+  return activePokemon;
 }
 
 function createMinimalBattleState(
@@ -356,11 +335,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: THUNDERBOLT,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(true);
       // floor(200/4) = 50
       expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 50 });
@@ -377,11 +356,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: SURF,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(false);
     });
   });
@@ -400,11 +379,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: SURF,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(true);
       // floor(160/4) = 40
       expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 40 });
@@ -426,11 +405,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: FLAMETHROWER,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(true);
       expect(result.effects).toHaveLength(1);
       expect(result.effects[0]).toEqual({
@@ -453,11 +432,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: FLAMETHROWER,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(true);
       expect(result.effects).toHaveLength(0); // no new volatile, just immunity
     });
@@ -477,11 +456,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: EARTHQUAKE,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(true);
       expect(result.effects).toHaveLength(0); // just immunity, no effect
     });
@@ -497,11 +476,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: FLAMETHROWER,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(false);
     });
   });
@@ -521,11 +500,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: THUNDERBOLT,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(false);
     });
   });
@@ -545,11 +524,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: HYPER_VOICE,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(true);
     });
 
@@ -564,11 +543,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: TACKLE,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(false);
     });
   });
@@ -588,11 +567,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: FISSURE,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(true);
     });
 
@@ -607,11 +586,11 @@ describe("Gen 3 passive immunity abilities", () => {
         opponent: attacker,
         state,
         rng,
-        trigger: "passive-immunity",
+        trigger: TRIGGERS.passiveImmunity,
         move: SURF,
       };
 
-      const result = applyGen3Ability("passive-immunity", context);
+      const result = applyGen3Ability(TRIGGERS.passiveImmunity, context);
       expect(result.activated).toBe(false);
     });
   });
@@ -640,10 +619,10 @@ describe("Gen 3 on-turn-end abilities", () => {
         opponent,
         state,
         rng,
-        trigger: "on-turn-end",
+        trigger: TRIGGERS.onTurnEnd,
       };
 
-      const result = applyGen3Ability("on-turn-end", context);
+      const result = applyGen3Ability(TRIGGERS.onTurnEnd, context);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
         effectType: "stat-change",
@@ -674,10 +653,10 @@ describe("Gen 3 on-turn-end abilities", () => {
         opponent,
         state,
         rng,
-        trigger: "on-turn-end",
+        trigger: TRIGGERS.onTurnEnd,
       };
 
-      const result = applyGen3Ability("on-turn-end", context);
+      const result = applyGen3Ability(TRIGGERS.onTurnEnd, context);
       expect(result.activated).toBe(true);
       // floor(160/16) = 10
       expect(result.effects[0]).toEqual({ effectType: "heal", target: "self", value: 10 });
@@ -697,10 +676,10 @@ describe("Gen 3 on-turn-end abilities", () => {
         opponent,
         state,
         rng,
-        trigger: "on-turn-end",
+        trigger: TRIGGERS.onTurnEnd,
       };
 
-      const result = applyGen3Ability("on-turn-end", context);
+      const result = applyGen3Ability(TRIGGERS.onTurnEnd, context);
       expect(result.activated).toBe(false);
     });
   });
@@ -724,10 +703,10 @@ describe("Gen 3 on-turn-end abilities", () => {
         opponent,
         state,
         rng,
-        trigger: "on-turn-end",
+        trigger: TRIGGERS.onTurnEnd,
       };
 
-      const result = applyGen3Ability("on-turn-end", context);
+      const result = applyGen3Ability(TRIGGERS.onTurnEnd, context);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({ effectType: "status-cure", target: "self" });
     });
@@ -747,10 +726,10 @@ describe("Gen 3 on-turn-end abilities", () => {
         opponent,
         state,
         rng,
-        trigger: "on-turn-end",
+        trigger: TRIGGERS.onTurnEnd,
       };
 
-      const result = applyGen3Ability("on-turn-end", context);
+      const result = applyGen3Ability(TRIGGERS.onTurnEnd, context);
       expect(result.activated).toBe(false);
     });
 
@@ -769,10 +748,10 @@ describe("Gen 3 on-turn-end abilities", () => {
         opponent,
         state,
         rng,
-        trigger: "on-turn-end",
+        trigger: TRIGGERS.onTurnEnd,
       };
 
-      const result = applyGen3Ability("on-turn-end", context);
+      const result = applyGen3Ability(TRIGGERS.onTurnEnd, context);
       expect(result.activated).toBe(false);
     });
   });
