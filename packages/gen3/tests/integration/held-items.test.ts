@@ -1266,32 +1266,164 @@ describe("Gen 3 Held Items", () => {
   });
 
   // =========================================================================
-  // Stubs (items that require engine support not yet available)
+  // Pinch berries and Lansat Berry
   // =========================================================================
 
-  // =========================================================================
-  // Accuracy-reducing items — engine-limited stubs
-  // =========================================================================
+  describe("Pinch berries", () => {
+    it("given Liechi Berry and HP drops to 25% from damage, when on-damage-taken fires, then Attack rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Liechi Berry triggers at 1/4 max HP or less.
+      // 200 HP -> 50 HP after damage is exactly the threshold.
+      const context = createItemContext({
+        heldItem: "liechi-berry",
+        currentHp: 120,
+        maxHp: 200,
+        damage: 70,
+      });
 
-  // BrightPowder/Lax Incense accuracy reduction: implemented in Gen3Ruleset.doesMoveHit
-  // Tests in move-item-bugs.test.ts
+      const result = applyGen3HeldItem("on-damage-taken", context);
 
-  // White Herb: implemented in Gen3Items.ts handleStatBoostBetweenTurns
-  // Tests in move-item-bugs.test.ts
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "attack" },
+          { type: "consume", target: "self", value: "liechi-berry" },
+        ],
+        messages: ["Pokemon #1's Liechi Berry raised its Attack!"],
+      });
+    });
 
-  describe("Stubbed items (engine support not available)", () => {
-    it.todo("Salac Berry boosts Speed +1 stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo("Petaya Berry boosts SpAtk +1 stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo("Apicot Berry boosts SpDef +1 stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo(
-      "Liechi Berry boosts Attack +1 stage at <= 25% HP (requires engine stat-boost support)",
-    );
-    it.todo(
-      "Ganlon Berry boosts Defense +1 stage at <= 25% HP (requires engine stat-boost support)",
-    );
-    it.todo("Lansat Berry boosts crit stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo(
-      "Type-resist berries halve SE damage once, consumed (requires DamageContext to carry item consumption info)",
-    );
+    it("given Ganlon Berry and HP is already at 25%, when stat-boost-between-turns fires, then Defense rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Ganlon Berry triggers at 1/4 max HP or less.
+      const context = createItemContext({
+        heldItem: "ganlon-berry",
+        currentHp: 50,
+        maxHp: 200,
+      });
+
+      const result = applyGen3HeldItem("stat-boost-between-turns", context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "defense" },
+          { type: "consume", target: "self", value: "ganlon-berry" },
+        ],
+        messages: ["Pokemon #1's Ganlon Berry raised its Defense!"],
+      });
+    });
+
+    it("given Salac Berry and HP drops to 20% from damage, when on-damage-taken fires, then Speed rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Salac Berry triggers at 1/4 max HP or less.
+      const context = createItemContext({
+        heldItem: "salac-berry",
+        currentHp: 90,
+        maxHp: 200,
+        damage: 50,
+      });
+
+      const result = applyGen3HeldItem("on-damage-taken", context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "speed" },
+          { type: "consume", target: "self", value: "salac-berry" },
+        ],
+        messages: ["Pokemon #1's Salac Berry raised its Speed!"],
+      });
+    });
+
+    it("given Petaya Berry and HP is already at 10%, when stat-boost-between-turns fires, then Sp. Atk rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Petaya Berry triggers at 1/4 max HP or less.
+      const context = createItemContext({
+        heldItem: "petaya-berry",
+        currentHp: 20,
+        maxHp: 200,
+      });
+
+      const result = applyGen3HeldItem("stat-boost-between-turns", context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "spAttack" },
+          { type: "consume", target: "self", value: "petaya-berry" },
+        ],
+        messages: ["Pokemon #1's Petaya Berry raised its Sp. Atk!"],
+      });
+    });
+
+    it("given Apicot Berry and HP drops to 25% from damage, when on-damage-taken fires, then Sp. Def rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Apicot Berry triggers at 1/4 max HP or less.
+      // 200 HP -> 50 HP after damage is exactly the threshold.
+      const context = createItemContext({
+        heldItem: "apicot-berry",
+        currentHp: 80,
+        maxHp: 200,
+        damage: 30,
+      });
+
+      const result = applyGen3HeldItem("on-damage-taken", context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "spDefense" },
+          { type: "consume", target: "self", value: "apicot-berry" },
+        ],
+        messages: ["Pokemon #1's Apicot Berry raised its Sp. Def!"],
+      });
+    });
+
+    it("given Liechi Berry and HP stays above 25%, when either stat-boost trigger checks it, then it does not activate", () => {
+      // 200 HP -> 60 HP is above the 25% threshold of 50 HP.
+      const damageContext = createItemContext({
+        heldItem: "liechi-berry",
+        currentHp: 120,
+        maxHp: 200,
+        damage: 60,
+      });
+      const residualContext = createItemContext({
+        heldItem: "liechi-berry",
+        currentHp: 60,
+        maxHp: 200,
+      });
+
+      expect(applyGen3HeldItem("on-damage-taken", damageContext)).toEqual({
+        activated: false,
+        effects: [],
+        messages: [],
+      });
+      expect(applyGen3HeldItem("stat-boost-between-turns", residualContext)).toEqual({
+        activated: false,
+        effects: [],
+        messages: [],
+      });
+    });
   });
+
+  describe("Lansat Berry", () => {
+    it("given Lansat Berry and HP drops to 25% or less, when the item triggers, then focus-energy is set and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Lansat Berry grants the Focus Energy effect at 1/4 max HP or less.
+      const context = createItemContext({
+        heldItem: "lansat-berry",
+        currentHp: 100,
+        maxHp: 200,
+        damage: 60,
+      });
+
+      const result = applyGen3HeldItem("on-damage-taken", context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ type: "consume", target: "self", value: "lansat-berry" }],
+        messages: ["Pokemon #1's Lansat Berry raised its critical-hit ratio!"],
+      });
+      expect(context.pokemon.volatileStatuses.get("focus-energy")).toEqual({ turnsLeft: -1 });
+    });
+  });
+
+  // BrightPowder/Lax Incense accuracy reduction is covered in move-item-bugs.test.ts.
+  // White Herb restoration is covered in move-item-bugs.test.ts.
+  // Type-resist berries are Gen 4+ items and are not part of the Gen 3 item data.
 });

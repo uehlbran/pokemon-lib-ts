@@ -319,7 +319,15 @@ describe("Gen 3 executeMoveEffect — Knock Off", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(result.messages).toContain("Snorlax lost its leftovers!");
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: ["Snorlax lost its leftovers!"],
+    });
   });
 
   it("given Knock Off vs Pokemon with no item, when executeMoveEffect called, then no effect", () => {
@@ -332,7 +340,15 @@ describe("Gen 3 executeMoveEffect — Knock Off", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.messages.length).toBe(0);
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 });
 
@@ -349,7 +365,15 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBe("burn");
+    expect(result).toEqual({
+      statusInflicted: "burn",
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 
   it("given Flamethrower (10% burn chance) and roll fails, when executeMoveEffect called, then statusInflicted = null", () => {
@@ -362,7 +386,15 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBeNull();
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 
   it("given Fire-type defender, when Flamethrower burn chance succeeds, then burn NOT inflicted (type immunity)", () => {
@@ -375,7 +407,15 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBeNull();
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 
   it("given Electric-type defender, when Thunderbolt paralysis chance succeeds, then paralysis IS inflicted (no Electric immunity in Gen 3)", () => {
@@ -390,7 +430,15 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBe("paralysis");
+    expect(result).toEqual({
+      statusInflicted: "paralysis",
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 
   it("given Toxic used on non-immune target, when executeMoveEffect called, then statusInflicted = 'badly-poisoned'", () => {
@@ -403,7 +451,15 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBe("badly-poisoned");
+    expect(result).toEqual({
+      statusInflicted: "badly-poisoned",
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 
   it("given Toxic used on Steel-type, when executeMoveEffect called, then statusInflicted = null (type immunity)", () => {
@@ -416,7 +472,15 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBeNull();
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 
   it("given defender already has a status, when status-guaranteed move used, then no new status inflicted", () => {
@@ -429,7 +493,15 @@ describe("Gen 3 executeMoveEffect — Status Infliction", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.statusInflicted).toBeNull();
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
   });
 });
 
@@ -655,7 +727,23 @@ describe("Gen 3 canInflictGen3Status — Type Immunities", () => {
 });
 
 describe("Gen 3 executeMoveEffect — Pursuit", () => {
-  it.todo(
-    "Pursuit doubled damage on switch-out is handled at engine level, not in executeMoveEffect",
-  );
+  it("given Pursuit in move-effect dispatch, when executeMoveEffect called, then no secondary effect is applied at this layer", () => {
+    const attacker = createActivePokemon({ types: ["dark"] });
+    const defender = createActivePokemon({ types: ["normal"] });
+    const move = dataManager.getMove("pursuit");
+    const rng = createMockRng(0);
+    const context = createContext(attacker, defender, move, 60, rng);
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+    });
+  });
 });

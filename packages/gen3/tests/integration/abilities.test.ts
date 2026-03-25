@@ -1,4 +1,9 @@
-import type { AbilityContext, ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleState,
+  DamageContext,
+} from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonInstance,
@@ -7,7 +12,12 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { applyGen3Ability } from "../../src/Gen3Abilities";
+import {
+  applyGen3Ability,
+  canInflictGen3Status,
+  Gen3Ruleset,
+  isGen3VolatileBlockedByAbility,
+} from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 
 /**
@@ -52,6 +62,7 @@ function createActivePokemon(opts: {
   speciesId?: number;
   nickname?: string | null;
   statStages?: Partial<Record<string, number>>;
+  turnsOnField?: number;
 }): ActivePokemon {
   const stats: StatBlock = {
     hp: 200,
@@ -106,7 +117,7 @@ function createActivePokemon(opts: {
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
-    turnsOnField: 0,
+    turnsOnField: opts.turnsOnField ?? 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
     substituteHp: 0,
@@ -203,6 +214,10 @@ function createMockState(weather?: { type: string; turnsLeft: number; source: st
   return {
     weather: weather ?? null,
   } as DamageContext["state"];
+}
+
+function createSwitchState(): BattleState {
+  return {} as BattleState;
 }
 
 /** Create a full DamageContext for calculateGen3Damage. */
@@ -1145,79 +1160,213 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
   // with Abomasnow. Do not add a Snow Warning test or implementation here.
 
   // ---------------------------------------------------------------------------
-  // Tier 2 abilities — require engine hooks not yet implemented
-  // These will be enabled once BattleEngine calls the appropriate triggers.
-  // Engine limitation: BattleEngine only calls applyAbility("on-switch-in") and
-  // discards the return value. It does NOT call on-contact, on-turn-end, or
-  // on-switch-out. See packages/battle/src/engine/BattleEngine.ts.
+  // Tier 2 abilities — implemented contact / turn-end / switch-out handlers
   // ---------------------------------------------------------------------------
 
-  describe("Tier 2 abilities — engine-limited stubs (on-contact / on-turn-end / on-switch-out)", () => {
-    // Source: pret/pokeemerald — all of these abilities exist in Gen 3 but require
-    // engine hooks that BattleEngine does not yet call.
+  describe("Tier 2 abilities — implemented trigger handlers", () => {
+    it("given Static holder and contact move, when on-contact fires, then attacker is paralyzed", () => {
+      const ctx = createAbilityContext({
+        pokemonAbility: "static",
+      });
 
-    it.todo(
-      "given Static holder and physical contact move, when on-contact fires, then 30% chance to paralyze attacker (requires engine on-contact hook)",
-    );
-    it.todo(
-      "given Flame Body holder and physical contact move, when on-contact fires, then 30% chance to burn attacker (requires engine on-contact hook)",
-    );
-    it.todo(
-      "given Rough Skin holder and contact move, when on-contact fires, then attacker takes 1/16 max HP damage (requires engine on-contact hook)",
-    );
-    it.todo(
-      "given Poison Point holder and contact move, when on-contact fires, then 30% chance to poison attacker (requires engine on-contact hook)",
-    );
-    it.todo(
-      "given Natural Cure holder switches out, when on-switch-out fires, then status is cured (requires engine on-switch-out hook consuming AbilityResult)",
-    );
-    it.todo(
-      "given Shed Skin holder at turn end, when on-turn-end fires, then 1/3 chance to cure status (requires engine on-turn-end hook)",
-    );
-    it.todo(
-      "given Speed Boost holder at turn end, when on-turn-end fires, then Speed +1 stage (requires engine on-turn-end hook)",
-    );
-    it.todo(
-      "given Flash Fire holder hit by Fire move, when absorb activates, then subsequent Fire moves get 1.5x boost (requires volatile state tracking)",
-    );
-    it.todo(
-      "given Hustle holder uses a move, when accuracy is calculated, then accuracy is 0.8x (requires engine to call accuracy check)",
-    );
+      const result = applyGen3Ability("on-contact", ctx);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        messages: [],
+      });
+    });
+
+    it("given Flame Body holder and contact move, when on-contact fires, then attacker is burned", () => {
+      const ctx = createAbilityContext({
+        pokemonAbility: "flame-body",
+      });
+
+      const result = applyGen3Ability("on-contact", ctx);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        messages: [],
+      });
+    });
+
+    it("given Rough Skin holder and contact move, when on-contact fires, then attacker takes 1/16 max HP chip damage", () => {
+      const ctx = createAbilityContext({
+        pokemonAbility: "rough-skin",
+      });
+
+      const result = applyGen3Ability("on-contact", ctx);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ effectType: "chip-damage", target: "opponent", value: 12 }],
+        messages: [],
+      });
+    });
+
+    it("given Poison Point holder and contact move, when on-contact fires, then attacker is poisoned", () => {
+      const ctx = createAbilityContext({
+        pokemonAbility: "poison-point",
+      });
+
+      const result = applyGen3Ability("on-contact", ctx);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        messages: [],
+      });
+    });
+
+    it("given Natural Cure holder switches out, when switch-out fires, then status is cured and volatiles clear", () => {
+      const pokemon = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        ability: "natural-cure",
+        status: "burn",
+      });
+      pokemon.volatileStatuses.set("confusion", { turnsLeft: 2 });
+      const ruleset = new Gen3Ruleset();
+
+      ruleset.onSwitchOut(pokemon, createSwitchState());
+
+      expect(pokemon.pokemon.status).toBeNull();
+      expect(pokemon.volatileStatuses.size).toBe(0);
+    });
+
+    it("given Shed Skin holder at turn end and a successful roll, then status is cured", () => {
+      const ctx = createAbilityContext({
+        pokemonAbility: "shed-skin",
+      });
+      ctx.pokemon.pokemon.status = "burn";
+
+      const result = applyGen3Ability("on-turn-end", ctx);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ effectType: "status-cure", target: "self" }],
+        messages: ["Attacker's Shed Skin cured its status!"],
+      });
+    });
+
+    it("given Speed Boost holder at turn end after the switch-in turn, then Speed rises by 1 stage", () => {
+      const ctx = createAbilityContext({
+        pokemonAbility: "speed-boost",
+      });
+      ctx.pokemon.turnsOnField = 1;
+
+      const result = applyGen3Ability("on-turn-end", ctx);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        messages: ["Attacker's Speed Boost raised its Speed!"],
+      });
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Tier 3 abilities — status immunity, require passive-immunity engine hook
-  // These abilities passively block status conditions being inflicted.
-  // Engine limitation: BattleEngine does not call applyAbility("passive-immunity")
-  // or applyAbility("on-status-inflicted"). Until it does, these cannot activate.
-  // Source: pret/pokeemerald — each of these abilities exists in Gen 3.
+  // Tier 3 abilities — implemented immunity helpers
   // ---------------------------------------------------------------------------
 
-  describe("Tier 3 abilities — status immunity stubs (passive-immunity / on-status-inflicted)", () => {
-    it.todo(
-      "given Immunity holder, when poison is inflicted, then poison is blocked (requires engine passive-immunity hook)",
-    );
-    it.todo(
-      "given Limber holder, when paralysis is inflicted, then paralysis is blocked (requires engine passive-immunity hook)",
-    );
-    it.todo(
-      "given Insomnia holder, when sleep is inflicted, then sleep is blocked (requires engine passive-immunity hook)",
-    );
-    it.todo(
-      "given Vital Spirit holder, when sleep is inflicted, then sleep is blocked (requires engine passive-immunity hook)",
-    );
-    it.todo(
-      "given Magma Armor holder, when freeze is inflicted, then freeze is blocked (requires engine passive-immunity hook)",
-    );
-    it.todo(
-      "given Water Veil holder, when burn is inflicted, then burn is blocked (requires engine passive-immunity hook)",
-    );
-    it.todo(
-      "given Own Tempo holder, when confusion is inflicted, then confusion is blocked (requires engine passive-immunity hook)",
-    );
-    it.todo(
-      "given Oblivious holder, when infatuation or taunt is inflicted, then it is blocked (requires engine passive-immunity hook)",
-    );
+  describe("Tier 3 abilities — status and volatile immunity helpers", () => {
+    it("given Immunity holder, when poison is checked, then poison is blocked", () => {
+      const target = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        ability: "immunity",
+      });
+
+      expect(canInflictGen3Status("poison", target)).toBe(false);
+    });
+
+    it("given Limber holder, when paralysis is checked, then paralysis is blocked", () => {
+      const target = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        ability: "limber",
+      });
+
+      expect(canInflictGen3Status("paralysis", target)).toBe(false);
+    });
+
+    it("given Insomnia holder, when sleep is checked, then sleep is blocked", () => {
+      const target = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        ability: "insomnia",
+      });
+
+      expect(canInflictGen3Status("sleep", target)).toBe(false);
+    });
+
+    it("given Vital Spirit holder, when sleep is checked, then sleep is blocked", () => {
+      const target = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        ability: "vital-spirit",
+      });
+
+      expect(canInflictGen3Status("sleep", target)).toBe(false);
+    });
+
+    it("given Magma Armor holder, when freeze is checked, then freeze is blocked", () => {
+      const target = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        ability: "magma-armor",
+      });
+
+      expect(canInflictGen3Status("freeze", target)).toBe(false);
+    });
+
+    it("given Water Veil holder, when burn is checked, then burn is blocked", () => {
+      const target = createActivePokemon({
+        level: 50,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        types: ["normal"],
+        ability: "water-veil",
+      });
+
+      expect(canInflictGen3Status("burn", target)).toBe(false);
+    });
+
+    it("given Own Tempo holder, when confusion is checked, then confusion is blocked", () => {
+      expect(isGen3VolatileBlockedByAbility("own-tempo", "confusion")).toBe(true);
+    });
+
+    it("given Oblivious holder, when infatuation is checked, then infatuation is blocked", () => {
+      expect(isGen3VolatileBlockedByAbility("oblivious", "infatuation")).toBe(true);
+    });
   });
 
   describe("Unimplemented abilities", () => {
@@ -1233,7 +1382,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given an unsupported trigger (e.g., on-flinch), when dispatched, then returns activated=false", () => {
-      // on-flinch is not implemented for Gen 3 (Gen 4+ only)
+      // Gen 3 ability dispatch does not define an on-flinch handler.
       const ctx = createAbilityContext({
         pokemonAbility: "static",
       });
