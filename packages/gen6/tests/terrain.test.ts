@@ -10,6 +10,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -31,6 +32,7 @@ const ABILITIES = CORE_ABILITY_IDS;
 const ITEMS = CORE_ITEM_IDS;
 const MOVES = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS };
 const SPECIES = GEN6_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
 const TERRAINS = CORE_TERRAIN_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
@@ -57,7 +59,7 @@ function makeActive(overrides: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: PrimaryStatus | null
+  status?: PrimaryStatus | null;
   speciesId?: number;
   gender?: "male" | "female" | "genderless";
   volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
@@ -84,7 +86,7 @@ function makeActive(overrides: {
       ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
       gender: (overrides.gender ?? "male") as any,
       isShiny: false,
@@ -584,9 +586,9 @@ describe("applyGen6TerrainEffects", () => {
     it("given Grassy Terrain active + grounded Pokemon at 80% HP (320/400), heals 25 HP (floor(400/16))", () => {
       // Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal at EoT for grounded
       // floor(400 / 16) = 25
-      const pokemon = makeActive({ hp: 400, currentHp: 320, types: ["normal"] });
+      const pokemon = makeActive({ hp: 400, currentHp: 320, types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -604,9 +606,9 @@ describe("applyGen6TerrainEffects", () => {
     it("given Grassy Terrain active + different max HP (160), heals 10 HP (floor(160/16))", () => {
       // Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal
       // floor(160 / 16) = 10
-      const pokemon = makeActive({ hp: 160, currentHp: 80, types: ["fire"] });
+      const pokemon = makeActive({ hp: 160, currentHp: 80, types: [TYPES.fire] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 3, source: "grassy-terrain" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 3, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -621,9 +623,9 @@ describe("applyGen6TerrainEffects", () => {
 
     it("given Grassy Terrain active + Flying-type (not grounded), no healing", () => {
       // Source: Bulbapedia "Grassy Terrain" -- only grounded Pokemon are healed
-      const pokemon = makeActive({ hp: 400, currentHp: 320, types: ["flying"] });
+      const pokemon = makeActive({ hp: 400, currentHp: 320, types: [TYPES.flying] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -636,9 +638,9 @@ describe("applyGen6TerrainEffects", () => {
 
     it("given Grassy Terrain active + Pokemon at full HP, no healing", () => {
       // Source: Bulbapedia -- already at full HP, no healing needed
-      const pokemon = makeActive({ hp: 400, currentHp: 400, types: ["normal"] });
+      const pokemon = makeActive({ hp: 400, currentHp: 400, types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -651,9 +653,9 @@ describe("applyGen6TerrainEffects", () => {
 
     it("given Grassy Terrain active + fainted Pokemon (0 HP), no healing", () => {
       // Source: fainted Pokemon should not be healed
-      const pokemon = makeActive({ hp: 400, currentHp: 0, types: ["normal"] });
+      const pokemon = makeActive({ hp: 400, currentHp: 0, types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -686,9 +688,9 @@ describe("applyGen6TerrainEffects", () => {
 
     it("given Grassy Terrain active + Gravity, Flying-type IS grounded and gets healed", () => {
       // Source: Bulbapedia -- Gravity grounds everything, including Flying-types
-      const pokemon = makeActive({ hp: 400, currentHp: 320, types: ["flying"] });
+      const pokemon = makeActive({ hp: 400, currentHp: 320, types: [TYPES.flying] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         gravity: { active: true, turnsLeft: 3 },
         sides: [
           { index: 0, active: [pokemon] },
@@ -703,10 +705,10 @@ describe("applyGen6TerrainEffects", () => {
 
     it("given Grassy Terrain active + both sides have grounded Pokemon, both are healed", () => {
       // Source: Bulbapedia -- terrain effects apply to all Pokemon on the field
-      const pokemon1 = makeActive({ hp: 400, currentHp: 200, types: ["normal"] });
-      const pokemon2 = makeActive({ hp: 200, currentHp: 100, types: ["fire"] });
+      const pokemon1 = makeActive({ hp: 400, currentHp: 200, types: [TYPES.normal] });
+      const pokemon2 = makeActive({ hp: 200, currentHp: 100, types: [TYPES.fire] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon1] },
           { index: 1, active: [pokemon2] },
@@ -726,9 +728,9 @@ describe("applyGen6TerrainEffects", () => {
     it("given Grassy Terrain active + heal amount minimum is 1 (for low max HP)", () => {
       // Source: Showdown -- Math.max(1, floor(maxHP / 16))
       // A Pokemon with maxHP=10: floor(10/16)=0, but min is 1
-      const pokemon = makeActive({ hp: 10, currentHp: 5, types: ["normal"] });
+      const pokemon = makeActive({ hp: 10, currentHp: 5, types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -744,9 +746,9 @@ describe("applyGen6TerrainEffects", () => {
   describe("Non-Grassy terrains", () => {
     it("given Electric Terrain, returns no healing results", () => {
       // Source: Electric Terrain has no EoT healing effect
-      const pokemon = makeActive({ hp: 400, currentHp: 320, types: ["normal"] });
+      const pokemon = makeActive({ hp: 400, currentHp: 320, types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -759,9 +761,9 @@ describe("applyGen6TerrainEffects", () => {
 
     it("given Misty Terrain, returns no healing results", () => {
       // Source: Misty Terrain has no EoT healing effect
-      const pokemon = makeActive({ hp: 400, currentHp: 320, types: ["normal"] });
+      const pokemon = makeActive({ hp: 400, currentHp: 320, types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
@@ -792,151 +794,151 @@ describe("canInflictStatusWithTerrain", () => {
   describe("Electric Terrain", () => {
     it("given Electric Terrain active + grounded target, cannot fall asleep", () => {
       // Source: Bulbapedia "Electric Terrain" Gen 6 -- grounded sleep immunity
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
       });
 
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(false);
     });
 
     it("given Electric Terrain active + grounded target, CAN be paralyzed", () => {
       // Source: Bulbapedia "Electric Terrain" -- only prevents sleep
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
       });
 
-      expect(canInflictStatusWithTerrain("paralysis", target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.paralysis, target, state)).toBe(true);
     });
 
     it("given Electric Terrain active + grounded target, CAN be burned", () => {
       // Source: Bulbapedia "Electric Terrain" -- only prevents sleep
-      const target = makeActive({ types: ["fire"] });
+      const target = makeActive({ types: [TYPES.fire] });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
       });
 
-      expect(canInflictStatusWithTerrain("burn", target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.burn, target, state)).toBe(true);
     });
 
     it("given Electric Terrain active + Flying-type target (not grounded), CAN fall asleep", () => {
       // Source: Bulbapedia "Electric Terrain" -- only grounded Pokemon are protected
-      const target = makeActive({ types: ["flying"] });
+      const target = makeActive({ types: [TYPES.flying] });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
       });
 
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(true);
     });
 
     it("given Electric Terrain active + Levitate Pokemon (not grounded), CAN fall asleep", () => {
       // Source: Bulbapedia -- Levitate makes the Pokemon non-grounded
-      const target = makeActive({ types: ["psychic"], ability: "levitate" });
+      const target = makeActive({ types: [TYPES.psychic], ability: ABILITIES.levitate });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
       });
 
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(true);
     });
 
     it("given Electric Terrain + Gravity, Flying-type IS grounded and cannot fall asleep", () => {
       // Source: Bulbapedia -- Gravity grounds everything
-      const target = makeActive({ types: ["flying"] });
+      const target = makeActive({ types: [TYPES.flying] });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
         gravity: { active: true, turnsLeft: 3 },
       });
 
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(false);
     });
   });
 
   describe("Misty Terrain", () => {
     it("given Misty Terrain active + grounded target, cannot be burned", () => {
       // Source: Bulbapedia "Misty Terrain" Gen 6 -- grounded status immunity (all)
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
-      expect(canInflictStatusWithTerrain("burn", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.burn, target, state)).toBe(false);
     });
 
     it("given Misty Terrain active + grounded target, cannot be paralyzed", () => {
       // Source: Bulbapedia "Misty Terrain" -- blocks all status for grounded
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
-      expect(canInflictStatusWithTerrain("paralysis", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.paralysis, target, state)).toBe(false);
     });
 
     it("given Misty Terrain active + grounded target, cannot fall asleep", () => {
       // Source: Bulbapedia "Misty Terrain" -- blocks all status for grounded
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(false);
     });
 
     it("given Misty Terrain active + grounded target, cannot be poisoned", () => {
       // Source: Bulbapedia "Misty Terrain" -- blocks all status for grounded
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
-      expect(canInflictStatusWithTerrain("poison", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.poison, target, state)).toBe(false);
     });
 
     it("given Misty Terrain active + grounded target, cannot be badly poisoned", () => {
       // Source: Bulbapedia "Misty Terrain" -- blocks all status for grounded
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
-      expect(canInflictStatusWithTerrain("badly-poisoned", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.badlyPoisoned, target, state)).toBe(false);
     });
 
     it("given Misty Terrain active + grounded target, cannot be frozen", () => {
       // Source: Bulbapedia "Misty Terrain" -- blocks all status for grounded
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
-      expect(canInflictStatusWithTerrain("freeze", target, state)).toBe(false);
+      expect(canInflictStatusWithTerrain(STATUSES.freeze, target, state)).toBe(false);
     });
 
     it("given Misty Terrain active + Flying-type target (not grounded), CAN be statused", () => {
       // Source: Bulbapedia "Misty Terrain" -- only grounded Pokemon are protected
-      const target = makeActive({ types: ["flying"] });
+      const target = makeActive({ types: [TYPES.flying] });
       const state = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
-      expect(canInflictStatusWithTerrain("burn", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("paralysis", target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.burn, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.paralysis, target, state)).toBe(true);
     });
   });
 
   describe("Grassy Terrain", () => {
     it("given Grassy Terrain, no status immunity (Grassy only heals)", () => {
       // Source: Bulbapedia "Grassy Terrain" -- no status immunity effect
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
       });
 
-      expect(canInflictStatusWithTerrain("burn", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("paralysis", target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.burn, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.paralysis, target, state)).toBe(true);
     });
   });
 
@@ -944,14 +946,14 @@ describe("canInflictStatusWithTerrain", () => {
     it("given no active terrain, all status can be inflicted", () => {
       // Source: Bulbapedia "Electric Terrain" / "Misty Terrain" -- status immunity only while
       // terrain is active. No terrain = no immunity = all statuses return true.
-      const target = makeActive({ types: ["normal"] });
+      const target = makeActive({ types: [TYPES.normal] });
       const state = makeState({ terrain: null });
 
-      expect(canInflictStatusWithTerrain("burn", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("sleep", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("paralysis", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("poison", target, state)).toBe(true);
-      expect(canInflictStatusWithTerrain("freeze", target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.burn, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.sleep, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.paralysis, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.poison, target, state)).toBe(true);
+      expect(canInflictStatusWithTerrain(STATUSES.freeze, target, state)).toBe(true);
     });
   });
 });
@@ -965,44 +967,44 @@ describe("Gen6Ruleset.checkTerrainStatusImmunity", () => {
 
   it("given Electric Terrain + grounded target + sleep, returns immune=true with message", () => {
     // Source: Bulbapedia "Electric Terrain" -- grounded sleep immunity
-    const target = makeActive({ types: ["normal"] });
+    const target = makeActive({ types: [TYPES.normal] });
     const state = makeState({
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
     });
 
-    const result = ruleset.checkTerrainStatusImmunity("sleep", target, state);
+    const result = ruleset.checkTerrainStatusImmunity(STATUSES.sleep, target, state);
     expect(result.immune).toBe(true);
     expect(result.message).toContain("Electric Terrain");
   });
 
   it("given Misty Terrain + grounded target + burn, returns immune=true with message", () => {
     // Source: Bulbapedia "Misty Terrain" -- grounded status immunity
-    const target = makeActive({ types: ["fire"] });
+    const target = makeActive({ types: [TYPES.fire] });
     const state = makeState({
-      terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+      terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
     });
 
-    const result = ruleset.checkTerrainStatusImmunity("burn", target, state);
+    const result = ruleset.checkTerrainStatusImmunity(STATUSES.burn, target, state);
     expect(result.immune).toBe(true);
     expect(result.message).toContain("Misty Terrain");
   });
 
   it("given no terrain, returns immune=false", () => {
-    const target = makeActive({ types: ["normal"] });
+    const target = makeActive({ types: [TYPES.normal] });
     const state = makeState({ terrain: null });
 
-    const result = ruleset.checkTerrainStatusImmunity("sleep", target, state);
+    const result = ruleset.checkTerrainStatusImmunity(STATUSES.sleep, target, state);
     expect(result.immune).toBe(false);
   });
 
   it("given Electric Terrain + non-grounded target + sleep, returns immune=false", () => {
     // Source: Bulbapedia "Electric Terrain" -- only grounded Pokemon protected
-    const target = makeActive({ types: ["flying"] });
+    const target = makeActive({ types: [TYPES.flying] });
     const state = makeState({
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
     });
 
-    const result = ruleset.checkTerrainStatusImmunity("sleep", target, state);
+    const result = ruleset.checkTerrainStatusImmunity(STATUSES.sleep, target, state);
     expect(result.immune).toBe(false);
   });
 });
@@ -1016,9 +1018,9 @@ describe("Gen6Ruleset.applyTerrainEffects", () => {
 
   it("given Grassy Terrain + grounded Pokemon, delegates to applyGen6TerrainEffects", () => {
     // Source: Bulbapedia "Grassy Terrain" -- 1/16 max HP heal at EoT
-    const pokemon = makeActive({ hp: 400, currentHp: 320, types: ["normal"] });
+    const pokemon = makeActive({ hp: 400, currentHp: 320, types: [TYPES.normal] });
     const state = makeState({
-      terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+      terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
       sides: [
         { index: 0, active: [pokemon] },
         { index: 1, active: [] },
