@@ -1,7 +1,19 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  createMoveSlot,
+  createPokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 
 /**
@@ -15,6 +27,15 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 // --- Test Helpers ---
 
 const ruleset = new Gen1Ruleset();
+const ITEMS = CORE_ITEM_IDS;
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN1_MOVE_IDS } as const;
+const STATUS_IDS = CORE_STATUS_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const GEN1_DATA = createGen1DataManager();
+const DEFAULT_SPECIES = GEN1_DATA.getSpecies(GEN1_SPECIES_IDS.pikachu);
+const DEFAULT_MOVE = GEN1_DATA.getMove(MOVE_IDS.tackle);
+const DEFAULT_NATURE = ALL_NATURES[0]!.id;
 
 const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   contact: false,
@@ -36,59 +57,75 @@ const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   bypassSubstitute: false,
 };
 
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function makeSyntheticMove(overrides: Partial<MoveData> = {}): MoveData {
+  const baseMove = GEN1_DATA.getMove(MOVE_IDS.tackle);
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
+    ...baseMove,
+    id: overrides.id ?? "test-move",
+    displayName: overrides.displayName ?? baseMove.displayName,
+    type: overrides.type ?? baseMove.type,
+    category: overrides.category ?? baseMove.category,
+    power: overrides.power ?? baseMove.power,
+    accuracy: overrides.accuracy ?? baseMove.accuracy,
+    pp: overrides.pp ?? baseMove.pp,
+    priority: overrides.priority ?? baseMove.priority,
+    target: overrides.target ?? baseMove.target,
+    flags: overrides.flags ?? DEFAULT_MOVE_FLAGS,
+    effect: overrides.effect ?? baseMove.effect,
+    description: overrides.description ?? baseMove.description,
+    generation: overrides.generation ?? baseMove.generation,
     ...overrides,
   };
 }
 
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+function makeCanonicalMove(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
+  const move = GEN1_DATA.getMove(moveId);
   return {
-    pokemon: {
-      uid: "test-uid",
-      speciesId: 25,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      currentHp: 100,
-      status: null,
-      friendship: 70,
-      heldItem: null,
-      ability: "",
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "pallet-town",
-      metLevel: 5,
-      originalTrainer: "Red",
-      originalTrainerId: 12345,
-      pokeball: "poke-ball",
-      calculatedStats: {
-        hp: 100,
-        attack: 80,
-        defense: 60,
-        spAttack: 80,
-        spDefense: 60,
-        speed: 120,
-      },
-    } as PokemonInstance,
+    ...move,
+    ...overrides,
+    id: moveId,
+    displayName: overrides.displayName ?? move.displayName,
+    type: overrides.type ?? move.type,
+    category: overrides.category ?? move.category,
+    power: overrides.power ?? move.power,
+    accuracy: overrides.accuracy ?? move.accuracy,
+    pp: overrides.pp ?? move.pp,
+    priority: overrides.priority ?? move.priority,
+    target: overrides.target ?? move.target,
+    flags: overrides.flags ?? move.flags,
+    effect: overrides.effect ?? move.effect,
+    description: overrides.description ?? move.description,
+    generation: overrides.generation ?? move.generation,
+  };
+}
+
+function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+  const species = GEN1_DATA.getSpecies(DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(1), {
+    nature: DEFAULT_NATURE,
+    gender: "male",
+    abilitySlot: "normal1",
+    heldItem: null,
+    moves: [],
+    isShiny: false,
+    metLocation: "pallet-town",
+    originalTrainer: "Red",
+    originalTrainerId: 12345,
+    pokeball: ITEMS.pokeBall,
+  });
+  pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.currentHp = 100;
+  pokemon.calculatedStats = {
+    hp: 100,
+    attack: 80,
+    defense: 60,
+    spAttack: 80,
+    spDefense: 60,
+    speed: 120,
+  };
+  return {
+    pokemon: pokemon as PokemonInstance,
     teamSlot: 0,
     statStages: {
       hp: 0,
@@ -101,8 +138,8 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "",
+    types: DEFAULT_SPECIES.types,
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -176,8 +213,8 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
   const rng = new SeededRandom(42);
   return {
     attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: ["normal"] }),
-    move: makeMove(),
+    defender: makeActivePokemon({ types: [TYPE_IDS.normal] }),
+    move: makeSyntheticMove(),
     damage: 0,
     state: makeBattleState(),
     rng,
@@ -190,16 +227,7 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 // ============================================================================
 
 describe("Gen 1 Rest handler", () => {
-  const restMove = makeMove({
-    id: "rest",
-    displayName: "Rest",
-    type: "psychic" as PokemonType,
-    category: "status",
-    power: null,
-    accuracy: null,
-    target: "self",
-    effect: { type: "custom" as const, handler: "rest" },
-  });
+  const restMove = makeCanonicalMove(MOVE_IDS.rest);
 
   it('given attacker is at full HP and has no status, when rest is used, then messages includes "But it failed!"', () => {
     // Arrange — full HP (currentHp === calculatedStats.hp), no status
@@ -246,7 +274,7 @@ describe("Gen 1 Rest handler", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.selfStatusInflicted).toBeFalsy();
+    expect(result.selfStatusInflicted).toBeUndefined();
   });
 
   it("given attacker is at half HP with no status, when rest is used, then statusCuredOnly=attacker + healAmount=maxHp + selfStatusInflicted=sleep + sleepTurns=2", () => {
@@ -272,7 +300,7 @@ describe("Gen 1 Rest handler", () => {
     // Assert
     expect(result.statusCuredOnly).toEqual({ target: "attacker" });
     expect(result.healAmount).toBe(100); // heals to max HP
-    expect(result.selfStatusInflicted).toBe("sleep");
+    expect(result.selfStatusInflicted).toBe(STATUS_IDS.sleep);
     expect(result.selfVolatileData).toEqual({ turnsLeft: 2 });
   });
 
@@ -282,7 +310,7 @@ describe("Gen 1 Rest handler", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         currentHp: 60,
-        status: "poison",
+        status: STATUS_IDS.poison,
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -298,7 +326,7 @@ describe("Gen 1 Rest handler", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert — should cure poison and apply sleep
     expect(result.statusCuredOnly).toEqual({ target: "attacker" });
-    expect(result.selfStatusInflicted).toBe("sleep");
+    expect(result.selfStatusInflicted).toBe(STATUS_IDS.sleep);
     expect(result.selfVolatileData).toEqual({ turnsLeft: 2 });
     expect(result.messages).not.toContain("But it failed!");
   });
@@ -309,7 +337,7 @@ describe("Gen 1 Rest handler", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         currentHp: 100,
-        status: "poison",
+        status: STATUS_IDS.poison,
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -324,7 +352,7 @@ describe("Gen 1 Rest handler", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — success because has status (even at full HP)
-    expect(result.selfStatusInflicted).toBe("sleep");
+    expect(result.selfStatusInflicted).toBe(STATUS_IDS.sleep);
     expect(result.messages).not.toContain("But it failed!");
   });
 });
@@ -334,16 +362,7 @@ describe("Gen 1 Rest handler", () => {
 // ============================================================================
 
 describe("Gen 1 Mist handler", () => {
-  const mistMove = makeMove({
-    id: "mist",
-    displayName: "Mist",
-    type: "ice" as PokemonType,
-    category: "status",
-    power: null,
-    accuracy: null,
-    target: "self",
-    effect: { type: "custom" as const, handler: "mist" },
-  });
+  const mistMove = makeCanonicalMove(MOVE_IDS.mist);
 
   it("given attacker has no mist volatile, when mist is used, then selfVolatileInflicted=mist and turnsLeft=-1 (permanent)", () => {
     // Arrange
@@ -355,7 +374,7 @@ describe("Gen 1 Mist handler", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.selfVolatileInflicted).toBe("mist");
+    expect(result.selfVolatileInflicted).toBe(VOLATILE_IDS.mist);
     expect(result.selfVolatileData).toEqual({ turnsLeft: -1 });
     expect(result.messages).not.toContain("But it failed!");
   });
@@ -363,7 +382,7 @@ describe("Gen 1 Mist handler", () => {
   it('given attacker already has mist volatile, when mist is used, then messages includes "But it failed!"', () => {
     // Arrange — mist already active (permanent in Gen 1, turnsLeft: -1)
     const mistStatuses = new Map();
-    mistStatuses.set("mist", { turnsLeft: -1 });
+    mistStatuses.set(VOLATILE_IDS.mist, { turnsLeft: -1 });
     const attacker = makeActivePokemon({
       volatileStatuses: mistStatuses,
     });
@@ -372,7 +391,7 @@ describe("Gen 1 Mist handler", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.messages).toContain("But it failed!");
-    expect(result.selfVolatileInflicted).toBeFalsy();
+    expect(result.selfVolatileInflicted).toBeUndefined();
   });
 
   it("given mist is used successfully, when executeMoveEffect called, then no statusInflicted on defender", () => {
@@ -391,44 +410,35 @@ describe("Gen 1 Mist handler", () => {
 // ============================================================================
 
 describe("Gen 1 Conversion handler", () => {
-  const conversionMove = makeMove({
-    id: "conversion",
-    displayName: "Conversion",
-    type: "normal" as PokemonType,
-    category: "status",
-    power: null,
-    accuracy: null,
-    target: "adjacent-foe",
-    effect: { type: "custom" as const, handler: "conversion" },
-  });
+  const conversionMove = makeCanonicalMove(MOVE_IDS.conversion);
 
   it("given defender is Water type, when conversion is used, then typeChange target=attacker types=[water]", () => {
     // Arrange
     const defender = makeActivePokemon({
-      types: ["water"] as PokemonType[],
+      types: [TYPE_IDS.water],
     });
     const context = makeMoveEffectContext({ move: conversionMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.typeChange).toEqual({ target: "attacker", types: ["water"] });
+    expect(result.typeChange).toEqual({ target: "attacker", types: [TYPE_IDS.water] });
   });
 
   it("given defender is Fire/Flying dual type, when conversion is used, then typeChange types=[fire, flying]", () => {
     // Arrange
     const defender = makeActivePokemon({
-      types: ["fire", "flying"] as PokemonType[],
+      types: [TYPE_IDS.fire, TYPE_IDS.flying],
     });
     const context = makeMoveEffectContext({ move: conversionMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.typeChange).toEqual({ target: "attacker", types: ["fire", "flying"] });
+    expect(result.typeChange).toEqual({ target: "attacker", types: [TYPE_IDS.fire, TYPE_IDS.flying] });
   });
 
   it("given conversion is used, when executeMoveEffect called, then no status or stat changes", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["grass"] as PokemonType[] });
+    const defender = makeActivePokemon({ types: [TYPE_IDS.grass] });
     const context = makeMoveEffectContext({ move: conversionMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -443,27 +453,14 @@ describe("Gen 1 Conversion handler", () => {
 // ============================================================================
 
 describe("Gen 1 Mist enforcement — block foe-targeted stat drops", () => {
-  const growlMove = makeMove({
-    id: "growl",
-    displayName: "Growl",
-    type: "normal" as PokemonType,
-    category: "status",
-    power: null,
-    accuracy: 100,
-    target: "adjacent-foe",
-    effect: {
-      type: "stat-change" as const,
-      target: "foe",
-      changes: [{ stat: "attack" as const, stages: -1 }],
-    },
-  });
+  const growlMove = makeCanonicalMove(MOVE_IDS.growl);
 
   it("given defender has mist, when growl is used (foe attack drop), then stat change is blocked", () => {
     // Arrange — defender protected by Mist
     const mistStatuses = new Map();
-    mistStatuses.set("mist", { turnsLeft: 4 });
+    mistStatuses.set(VOLATILE_IDS.mist, { turnsLeft: 4 });
     const defender = makeActivePokemon({
-      types: ["normal"] as PokemonType[],
+      types: [TYPE_IDS.normal],
       volatileStatuses: mistStatuses,
     });
     const context = makeMoveEffectContext({ move: growlMove, defender, damage: 0 });
@@ -476,20 +473,20 @@ describe("Gen 1 Mist enforcement — block foe-targeted stat drops", () => {
   it("given defender has mist, when growl is used, then message includes protection by mist", () => {
     // Arrange
     const mistStatuses = new Map();
-    mistStatuses.set("mist", { turnsLeft: 4 });
+    mistStatuses.set(VOLATILE_IDS.mist, { turnsLeft: 4 });
     const defender = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
         nickname: "Rattata",
       } as PokemonInstance,
-      types: ["normal"] as PokemonType[],
+      types: [TYPE_IDS.normal],
       volatileStatuses: mistStatuses,
     });
     const context = makeMoveEffectContext({ move: growlMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.messages.some((m) => m.includes("mist"))).toBe(true);
+    expect(result.messages.some((m) => m.includes(VOLATILE_IDS.mist))).toBe(true);
   });
 
   it("given defender has no mist, when growl is used, then stat drop is applied normally", () => {
@@ -505,15 +502,15 @@ describe("Gen 1 Mist enforcement — block foe-targeted stat drops", () => {
   it("given defender has mist, when a self-stat-drop move is used (target=self), then it is NOT blocked by mist", () => {
     // Arrange — Mist only blocks FOE stat drops, not self-inflicted drops
     const mistStatuses = new Map();
-    mistStatuses.set("mist", { turnsLeft: 4 });
+    mistStatuses.set(VOLATILE_IDS.mist, { turnsLeft: 4 });
     const attacker = makeActivePokemon({
       volatileStatuses: mistStatuses,
     });
     // A move that drops attacker's own defense (e.g., Close Combat — but we simulate it)
-    const selfDropMove = makeMove({
+    const selfDropMove = makeSyntheticMove({
       id: "self-drop-test",
       displayName: "Self Drop",
-      type: "normal" as PokemonType,
+      type: TYPE_IDS.normal,
       category: "status",
       target: "self",
       effect: {

@@ -15,13 +15,11 @@ import type {
 import type {
   MoveData,
   PokemonInstance,
-  PokemonSpeciesData,
   PokemonType,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
-  ALL_NATURES,
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_GIMMICK_IDS,
@@ -36,7 +34,7 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS, GEN1_TYPES } from "../../src";
+import { GEN1_MOVE_IDS, GEN1_NATURE_IDS, GEN1_SPECIES_IDS, GEN1_TYPES } from "../../src";
 import { createGen1DataManager } from "../../src/data";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
@@ -47,10 +45,22 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 
 const ruleset = new Gen1Ruleset();
 const gen1DataManager = createGen1DataManager();
-const HARDY_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Hardy")!.id;
-const MODEST_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Modest")!.id;
+const HARDY_NATURE = GEN1_NATURE_IDS.hardy;
+const MODEST_NATURE = GEN1_NATURE_IDS.modest;
 const PIKACHU_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.pikachu);
 const CHARIZARD_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.charizard);
+const TACKLE_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.tackle);
+const AMNESIA_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.amnesia);
+const GROWTH_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.growth);
+const SWORDS_DANCE_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.swordsDance);
+const STRENGTH_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.strength);
+const MEGA_DRAIN_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.megaDrain);
+const FIRE_BLAST_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.fireBlast);
+const PSYCHIC_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.psychic);
+const GROWL_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.growl);
+const WRAP_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.wrap);
+const HYPER_BEAM_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.hyperBeam);
+const DAMAGE_CALC_SPECIES = PIKACHU_SPECIES;
 const NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.normal];
 const FIRE_TYPES: PokemonType[] = [CORE_TYPE_IDS.fire];
 const WATER_TYPES: PokemonType[] = [CORE_TYPE_IDS.water];
@@ -61,42 +71,11 @@ const WATER_ROCK_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock
 const WATER_NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.normal];
 const FIRE_FLYING_TYPES: PokemonType[] = [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying];
 
-const DEFAULT_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
-
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function makeSyntheticMove(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: CORE_TYPE_IDS.normal as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
+    ...baseMove,
     ...overrides,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
   };
 }
 
@@ -123,7 +102,14 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [
+        {
+          moveId: TACKLE_MOVE.id,
+          currentPP: TACKLE_MOVE.pp,
+          maxPP: TACKLE_MOVE.pp,
+          ppUps: 0,
+        },
+      ],
       currentHp: 200,
       status: null,
       friendship: 70,
@@ -136,7 +122,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: makeStats(),
     } as PokemonInstance,
     teamSlot: 0,
@@ -231,7 +217,7 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
   return {
     attacker,
     defender,
-    move: makeMove(),
+    move: TACKLE_MOVE,
     damage: 50,
     state: makeBattleStateFull(attacker, defender),
     rng: new SeededRandom(42),
@@ -265,39 +251,6 @@ function fixedRng(intValue: number): SeededRandom {
   } as unknown as SeededRandom;
 }
 
-/** Minimal species data for damage calc tests. */
-function makeSpecies(): PokemonSpeciesData {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types: NORMAL_TYPES,
-    baseStats: {
-      hp: 100,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-    abilities: { normal: [CORE_ABILITY_IDS.none], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  } as PokemonSpeciesData;
-}
-
 // ============================================================================
 // Bug #94 — Special stat not unified (Amnesia / Growth must affect both sides)
 // Source: gen1-ground-truth.md §1 — Unified Special Stat
@@ -306,19 +259,7 @@ function makeSpecies(): PokemonSpeciesData {
 describe("Bug #94 — Amnesia/Growth unified special stat", () => {
   it("given Amnesia (+2 spDefense self), when executeMoveEffect is called, then BOTH spAttack and spDefense stat changes are returned", () => {
     // Arrange — Amnesia effect targets self and changes spDefense by +2
-    const amnesia = makeMove({
-      id: GEN1_MOVE_IDS.amnesia,
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spDefense", stages: 2 }],
-        target: "self",
-        chance: 100,
-      },
-    });
-    const context = makeMoveEffectContext({ move: amnesia });
+    const context = makeMoveEffectContext({ move: AMNESIA_MOVE });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -339,19 +280,7 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
 
   it("given Growth (+1 spAttack self), when executeMoveEffect is called, then BOTH spAttack and spDefense increase by 1", () => {
     // Arrange — Growth targets self and changes spAttack by +1
-    const growth = makeMove({
-      id: GEN1_MOVE_IDS.growth,
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spAttack", stages: 1 }],
-        target: "self",
-        chance: 100,
-      },
-    });
-    const context = makeMoveEffectContext({ move: growth });
+    const context = makeMoveEffectContext({ move: GROWTH_MOVE });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -370,19 +299,7 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
 
   it("given a non-special stat-change move (Swords Dance +2 attack), when executeMoveEffect is called, then only attack changes (no duplication)", () => {
     // Arrange
-    const swordsDance = makeMove({
-      id: GEN1_MOVE_IDS.swordsDance,
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "attack", stages: 2 }],
-        target: "self",
-        chance: 100,
-      },
-    });
-    const context = makeMoveEffectContext({ move: swordsDance });
+    const context = makeMoveEffectContext({ move: SWORDS_DANCE_MOVE });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -402,13 +319,13 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
 describe("Bug #55 — Sequential type effectiveness with per-type floor", () => {
   it("given a dual-typed defender (Water/Rock) hit by a 2x each type move at max roll, when calculating damage, then floors are applied per type sequentially", () => {
     // Arrange — use a chart where normal is 2x vs water AND 2x vs rock
-    // Level 50, Power 60, Attack 100, Defense 100:
+    // Level 50, Strength (Power 80), Attack 100, Defense 100:
     //   levelFactor = floor(100/5)+2 = 22
-    //   baseDamage = min(997, floor(floor(22*60*100)/100/50))+2 = min(997, 26)+2 = 28
+    //   baseDamage = min(997, floor(floor(22*80*100)/100/50))+2 = min(997, 35)+2 = 37
     // No STAB (attacker is fire type).
-    // 2x vs Water: floor(28 * 20/10) = 56
-    // 2x vs Rock:  floor(56 * 20/10) = 112
-    // Max roll (255): floor(112 * 255/255) = 112
+    // 2x vs Water: floor(37 * 20/10) = 74
+    // 2x vs Rock:  floor(74 * 20/10) = 148
+    // Max roll (255): floor(148 * 255/255) = 148
     const chart = makeNeutralTypeChart() as Record<string, Record<string, number>>;
     (chart[CORE_TYPE_IDS.normal] as Record<string, number>)[CORE_TYPE_IDS.water] = 2;
     (chart[CORE_TYPE_IDS.normal] as Record<string, number>)[CORE_TYPE_IDS.rock] = 2;
@@ -417,32 +334,31 @@ describe("Bug #55 — Sequential type effectiveness with per-type floor", () => 
     const defender = makeActivePokemon({ types: WATER_ROCK_TYPES });
     defender.pokemon.calculatedStats = makeStats({ defense: 100 });
 
-    const move = makeMove({ type: CORE_TYPE_IDS.normal, power: 60, category: "physical" });
     const state = makeBattleStateFull(attacker, defender);
 
     const context: DamageContext = {
       attacker,
       defender,
-      move,
+      move: STRENGTH_MOVE,
       state,
       rng: fixedRng(255),
       isCrit: false,
     };
 
     // Act
-    const result = calculateGen1Damage(context, chart as TypeChart, makeSpecies());
+    const result = calculateGen1Damage(context, chart as TypeChart, DAMAGE_CALC_SPECIES);
 
-    // Assert — sequential floor: 28 → 56 → 112 → final 112 (at max roll)
+    // Assert — sequential floor: 37 → 74 → 148 → final 148 (at max roll)
     expect(result.effectiveness).toBe(4); // combined effectiveness is 4
-    expect(result.damage).toBe(112);
+    expect(result.damage).toBe(148);
   });
 
   it("given a dual-typed defender hit by 2x + 1x effectiveness at max roll, when calculating damage, then only one floor is applied", () => {
-    // Water/Normal defender hit by Grass (2x vs Water, 1x vs Normal)
-    // baseDamage (Power 50, Atk 100, Def 100, Level 50): floor(floor(22*50*100)/100/50)+2 = 22+2 = 24
-    // 2x vs Water: floor(24 * 20/10) = 48
-    // 1x vs Normal: no change → 48
-    // Max roll: floor(48 * 255/255) = 48
+    // Water/Normal defender hit by Mega Drain (2x vs Water, 1x vs Normal)
+    // baseDamage (Power 40, Atk 100, Def 100, Level 50): floor(floor(22*40*100)/100/50)+2 = 17+2 = 19
+    // 2x vs Water: floor(19 * 20/10) = 38
+    // 1x vs Normal: no change → 38
+    // Max roll: floor(38 * 255/255) = 38
     const chart = makeNeutralTypeChart() as Record<string, Record<string, number>>;
     (chart[CORE_TYPE_IDS.grass] as Record<string, number>)[CORE_TYPE_IDS.water] = 2;
 
@@ -450,23 +366,20 @@ describe("Bug #55 — Sequential type effectiveness with per-type floor", () => 
     const defender = makeActivePokemon({ types: WATER_NORMAL_TYPES });
     defender.pokemon.calculatedStats = makeStats({ spDefense: 100 });
     attacker.pokemon.calculatedStats = makeStats({ spAttack: 100 });
-
-    // Grass is a special type in Gen 1
-    const move = makeMove({ type: CORE_TYPE_IDS.grass, power: 50, category: "special" });
     const state = makeBattleStateFull(attacker, defender);
 
     const context: DamageContext = {
       attacker,
       defender,
-      move,
+      move: MEGA_DRAIN_MOVE,
       state,
       rng: fixedRng(255),
       isCrit: false,
     };
 
-    const result = calculateGen1Damage(context, chart as TypeChart, makeSpecies());
+    const result = calculateGen1Damage(context, chart as TypeChart, DAMAGE_CALC_SPECIES);
 
-    expect(result.damage).toBe(48);
+    expect(result.damage).toBe(38);
     expect(result.effectiveness).toBe(2);
   });
 });
@@ -585,20 +498,32 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
     const stateWithReflect = makeBattleStateFull(attacker, defender);
     stateWithReflect.sides[1].screens.push({ type: CORE_SCREEN_IDS.reflect, turnsLeft: -1 });
 
-    const move = makeMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = makeNeutralTypeChart();
-    const species = makeSpecies();
 
     // Act
     const damageNoReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateNoReflect, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateNoReflect,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     const damageWithReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithReflect, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateWithReflect,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
 
     // Assert
@@ -609,8 +534,12 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
 
   it("given Light Screen is active on defender's side, when a special move hits (non-crit), then damage is reduced compared to no Light Screen", () => {
     // Source: gen1-ground-truth.md §7 — Light Screen doubles SpDefense for special moves.
+    // L50, Fire Blast (Power 120), SpA100, SpD100, no STAB:
+    //   baseDamage = min(997, floor(floor(22*120*100)/100/50))+2 = 52+2 = 54
+    // With Light Screen (SpD 200):
+    //   baseDamage = min(997, floor(floor(22*120*100)/200/50))+2 = 26+2 = 28
     // Arrange
-    const attacker = makeActivePokemon({ types: FIRE_TYPES });
+    const attacker = makeActivePokemon({ types: NORMAL_TYPES });
     attacker.pokemon.calculatedStats = makeStats({ spAttack: 100 });
     const defender = makeActivePokemon({ types: NORMAL_TYPES });
     defender.pokemon.calculatedStats = makeStats({ spDefense: 100 });
@@ -619,25 +548,37 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
     const stateWithScreen = makeBattleStateFull(attacker, defender);
     stateWithScreen.sides[1].screens.push({ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: -1 });
 
-    // Fire is a special type in Gen 1
-    const move = makeMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = makeNeutralTypeChart();
-    const species = makeSpecies();
 
     // Act
     const damageNoScreen = calculateGen1Damage(
-      { attacker, defender, move, state: stateNoScreen, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: FIRE_BLAST_MOVE,
+        state: stateNoScreen,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     const damageWithScreen = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithScreen, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: FIRE_BLAST_MOVE,
+        state: stateWithScreen,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
 
     // Assert — Light Screen reduces special damage
-    expect(damageWithScreen).toBeLessThan(damageNoScreen);
+    expect(damageNoScreen).toBe(54);
+    expect(damageWithScreen).toBe(28);
   });
 
   it("given Reflect is active and the move is a critical hit, when calculating damage, then Reflect is ignored (crit bypasses screens)", () => {
@@ -653,20 +594,32 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
 
     const stateNoReflect = makeBattleStateFull(attacker, defender);
 
-    const move = makeMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = makeNeutralTypeChart();
-    const species = makeSpecies();
 
     // Act — critical hits: Reflect should be ignored
     const critWithReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithReflect, rng: fixedRng(255), isCrit: true },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateWithReflect,
+        rng: fixedRng(255),
+        isCrit: true,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     const critNoReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateNoReflect, rng: fixedRng(255), isCrit: true },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateNoReflect,
+        rng: fixedRng(255),
+        isCrit: true,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
 
     // Assert — crit damage is the same regardless of Reflect
@@ -674,9 +627,16 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
 
     // And non-crit WITH Reflect should be lower than crit (crit doubles level)
     const nonCritWithReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithReflect, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateWithReflect,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     expect(critWithReflect).toBeGreaterThan(nonCritWithReflect);
   });
@@ -694,20 +654,8 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
     // 33% → threshold = floor(33 * 256 / 100) = 84
     // rng.int(0,255) returns 200 (>= 84) → effect skipped
     // Arrange
-    const psychic = makeMove({
-      id: GEN1_MOVE_IDS.psychic,
-      type: CORE_TYPE_IDS.psychic,
-      category: "special",
-      power: 90,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spDefense", stages: -1 }],
-        target: "foe",
-        chance: 33,
-      },
-    });
     const context: MoveEffectContext = {
-      ...makeMoveEffectContext({ move: psychic }),
+      ...makeMoveEffectContext({ move: PSYCHIC_MOVE }),
       rng: fixedRng(200), // 200 >= 84 → secondary does NOT apply
     };
 
@@ -721,20 +669,8 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
   it("given Psychic (33% SpDef drop) and RNG rolls below threshold, when executeMoveEffect is called, then the stat drop DOES occur", () => {
     // 33% → threshold = 84; rng.int(0,255) returns 10 (< 84) → effect applies
     // Arrange
-    const psychic = makeMove({
-      id: GEN1_MOVE_IDS.psychic,
-      type: CORE_TYPE_IDS.psychic,
-      category: "special",
-      power: 90,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spDefense", stages: -1 }],
-        target: "foe",
-        chance: 33,
-      },
-    });
     const context: MoveEffectContext = {
-      ...makeMoveEffectContext({ move: psychic }),
+      ...makeMoveEffectContext({ move: PSYCHIC_MOVE }),
       rng: fixedRng(10), // 10 < 84 → secondary applies
     };
 
@@ -754,20 +690,8 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
   it("given a 100% chance stat-change (Growl), when executeMoveEffect is called, then the stat change always applies", () => {
     // 100% chance → threshold = floor(100 * 256 / 100) = 256; all rolls 0-255 < 256 → always applied
     // Arrange
-    const growl = makeMove({
-      id: GEN1_MOVE_IDS.growl,
-      category: "status",
-      power: null,
-      accuracy: 100,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "attack", stages: -1 }],
-        target: "foe",
-        chance: 100,
-      },
-    });
     const context: MoveEffectContext = {
-      ...makeMoveEffectContext({ move: growl }),
+      ...makeMoveEffectContext({ move: GROWL_MOVE }),
       rng: fixedRng(255), // highest possible roll; still applies at 100%
     };
 
@@ -792,12 +716,13 @@ describe(`Bug #101 — Trapping moves use ${CORE_VOLATILE_IDS.bound} volatile ke
     // Source: gen1-ground-truth.md §7 — Trapping Moves target is immobilized.
     // The engine checks CORE_VOLATILE_IDS.bound for immobilization; the volatile key must match.
     // Arrange
-    const wrap = makeMove({
-      id: GEN1_MOVE_IDS.wrap,
-      power: 15,
-      effect: { type: "volatile-status", status: CORE_VOLATILE_IDS.bound, chance: 100 },
+    // Synthetic branch driver: Gen 1 move data does not encode the bound volatile payload directly,
+    // but executeMoveEffect applies it at runtime when a trapping effect is present.
+    const context = makeMoveEffectContext({
+      move: makeSyntheticMove(WRAP_MOVE, {
+        effect: { type: "volatile-status", status: CORE_VOLATILE_IDS.bound, chance: 100 },
+      }),
     });
-    const context = makeMoveEffectContext({ move: wrap });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -868,14 +793,7 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
     const defender = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
-    const hyperBeam = makeMove({
-      id: GEN1_MOVE_IDS.hyperBeam,
-      type: CORE_TYPE_IDS.normal,
-      power: 150,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-      effect: null,
-    });
-    const context = makeMoveEffectContext({ move: hyperBeam, damage: 50, defender });
+    const context = makeMoveEffectContext({ move: HYPER_BEAM_MOVE, damage: 50, defender });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -890,14 +808,7 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
     const defender = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
-    const hyperBeam = makeMove({
-      id: GEN1_MOVE_IDS.hyperBeam,
-      type: CORE_TYPE_IDS.normal,
-      power: 150,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-      effect: null,
-    });
-    const context = makeMoveEffectContext({ move: hyperBeam, damage: 50, defender });
+    const context = makeMoveEffectContext({ move: HYPER_BEAM_MOVE, damage: 50, defender });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -913,14 +824,7 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
     const defender = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, currentHp: 150 } as PokemonInstance,
     });
-    const hyperBeam = makeMove({
-      id: GEN1_MOVE_IDS.hyperBeam,
-      type: CORE_TYPE_IDS.normal,
-      power: 150,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-      effect: null,
-    });
-    const context = makeMoveEffectContext({ move: hyperBeam, damage: 50, defender });
+    const context = makeMoveEffectContext({ move: HYPER_BEAM_MOVE, damage: 50, defender });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
