@@ -18,9 +18,9 @@ import type { ActivePokemon, BattleState, ItemContext, ItemResult } from "@pokem
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_SLOTS,
-  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_IDS,
   CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   SeededRandom,
@@ -56,7 +56,7 @@ const abilityIds = {
   ...GEN8_ABILITY_IDS,
 };
 
-const triggerIds = CORE_ABILITY_TRIGGER_IDS;
+const itemTriggers = CORE_ITEM_TRIGGER_IDS;
 const itemIds = GEN8_ITEM_IDS;
 const moveIds = GEN8_MOVE_IDS;
 const statusIds = CORE_STATUS_IDS;
@@ -303,7 +303,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
       // Source: Showdown data/items.ts — Toxic Orb onResidual: skip if pokemon already
       //   has a status condition
       const ctx = createItemContext({ heldItem: itemIds.toxicOrb, status: statusIds.paralysis });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -313,7 +313,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Toxic Orb immune check: steel and poison types
       const ctx = createItemContext({ heldItem: itemIds.toxicOrb, types: [typeIds.steel] });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -323,7 +323,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Toxic Orb immune check: steel and poison types
       const ctx = createItemContext({ heldItem: itemIds.toxicOrb, types: [typeIds.poison] });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -334,7 +334,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
       // Source: Showdown data/items.ts — Flame Orb onResidual: skip if pokemon already
       //   has a status condition
       const ctx = createItemContext({ heldItem: itemIds.flameOrb, status: statusIds.burn });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -344,7 +344,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Flame Orb immune check: fire types
       const ctx = createItemContext({ heldItem: itemIds.flameOrb, types: [typeIds.fire] });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -355,7 +355,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
       // Source: Showdown data/items.ts — Sitrus Berry onUpdate: activates at <= 50% HP
       // 120/200 = 60% > 50%, so no activation
       const ctx = createItemContext({ heldItem: itemIds.sitrusBerry, hp: 200, currentHp: 120 });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -365,7 +365,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Oran Berry activates at <= 50% HP
       const ctx = createItemContext({ heldItem: itemIds.oranBerry, hp: 200, currentHp: 120 });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -375,7 +375,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Lum Berry onUpdate: requires status or confusion
       const ctx = createItemContext({ heldItem: itemIds.lumBerry });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -385,7 +385,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Cheri Berry cures paralysis only
       const ctx = createItemContext({ heldItem: itemIds.cheriBerry, status: statusIds.burn });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -395,7 +395,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Chesto Berry cures sleep only
       const ctx = createItemContext({ heldItem: itemIds.chestoBerry, status: statusIds.paralysis });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -405,7 +405,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Pecha Berry cures poison and badly-poisoned only
       const ctx = createItemContext({ heldItem: itemIds.pechaBerry, status: statusIds.burn });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -415,7 +415,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Rawst Berry cures burn only
       const ctx = createItemContext({ heldItem: itemIds.rawstBerry, status: statusIds.paralysis });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -425,7 +425,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Aspear Berry cures freeze only
       const ctx = createItemContext({ heldItem: itemIds.aspearBerry, status: statusIds.sleep });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -435,7 +435,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Persim Berry cures confusion volatile only
       const ctx = createItemContext({ heldItem: itemIds.persimBerry });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 
@@ -446,7 +446,7 @@ describe("handleEndOfTurn — NO_ACTIVATION paths", () => {
       // Source: Showdown data/items.ts — Mental Herb onUpdate: requires one of the
       //   mental volatiles (infatuation, taunt, encore, disable, torment, heal-block)
       const ctx = createItemContext({ heldItem: itemIds.mentalHerb });
-      expectNoActivation(applyGen8HeldItem("end-of-turn", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.endOfTurn, ctx));
     },
   );
 });
@@ -460,13 +460,13 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
     // Source: Showdown data/items.ts — Sitrus Berry activates at <= 50% HP
     // 150/200 = 75% HP, still above threshold
     const ctx = createItemContext({ heldItem: itemIds.sitrusBerry, hp: 200, currentHp: 150, damage: 10 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given oran-berry, when damage taken but HP stays above 50%, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Oran Berry activates at <= 50% HP
     const ctx = createItemContext({ heldItem: itemIds.oranBerry, hp: 200, currentHp: 150, damage: 10 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it(
@@ -476,32 +476,32 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
       // Source: Showdown data/items.ts — Liechi Berry activates at <= 25% HP
       // 120/200 = 60% HP, above threshold
       const ctx = createItemContext({ heldItem: itemIds.liechiBerry, hp: 200, currentHp: 120, damage: 10 });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
   it("given ganlon-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Ganlon Berry activates at <= 25% HP
     const ctx = createItemContext({ heldItem: itemIds.ganlonBerry, hp: 200, currentHp: 120, damage: 10 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given salac-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Salac Berry activates at <= 25% HP
     const ctx = createItemContext({ heldItem: itemIds.salacBerry, hp: 200, currentHp: 120, damage: 10 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given petaya-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Petaya Berry activates at <= 25% HP
     const ctx = createItemContext({ heldItem: itemIds.petayaBerry, hp: 200, currentHp: 120, damage: 10 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given apicot-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Apicot Berry activates at <= 25% HP
     const ctx = createItemContext({ heldItem: itemIds.apicotBerry, hp: 200, currentHp: 120, damage: 10 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it(
@@ -514,7 +514,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.surf),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
@@ -528,7 +528,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.tackle),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
@@ -542,20 +542,20 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.surf),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
   it("given red-card and damage = 0, " + "when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Red Card requires actual damage dealt (> 0)
     const ctx = createItemContext({ heldItem: itemIds.redCard, damage: 0 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given eject-button and damage = 0, " + "when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Eject Button requires actual damage dealt (> 0)
     const ctx = createItemContext({ heldItem: itemIds.ejectButton, damage: 0 });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it(
@@ -567,7 +567,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.flamethrower),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
@@ -578,7 +578,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
       damage: 50,
       move: createCanonicalMove(moveIds.surf),
     });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it(
@@ -593,7 +593,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.tackle),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
@@ -607,7 +607,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.surf),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
@@ -621,7 +621,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.tackle),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
@@ -632,7 +632,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
       damage: 50,
       move: createCanonicalMove(moveIds.flamethrower),
     });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given snowball and a fire move, " + "when on-damage-taken, then NO_ACTIVATION", () => {
@@ -642,7 +642,7 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
       damage: 50,
       move: createCanonicalMove(moveIds.flamethrower),
     });
-    expectNoActivation(applyGen8HeldItem(triggerIds.onDamageTaken, ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 });
 
@@ -655,14 +655,14 @@ describe("handleOnHit — NO_ACTIVATION paths", () => {
     // Source: Showdown data/items.ts — Shell Bell onAfterMoveSecondarySelf:
     //   requires damageDealt > 0
     const ctx = createItemContext({ heldItem: itemIds.shellBell, damage: 0 });
-    expectNoActivation(applyGen8HeldItem("on-hit", ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
   });
 
   it("given life-orb attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Life Orb onAfterMoveSecondarySelf:
     //   requires damageDealt > 0
     const ctx = createItemContext({ heldItem: itemIds.lifeOrb, damage: 0 });
-    expectNoActivation(applyGen8HeldItem("on-hit", ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
   });
 
   it(
@@ -672,14 +672,14 @@ describe("handleOnHit — NO_ACTIVATION paths", () => {
       // Source: Showdown data/items.ts — King's Rock: 10% flinch via RNG chance
       // createRng(false) means chance() always returns false → no flinch
       const ctx = createItemContext({ heldItem: itemIds.kingsRock, damage: 50, rng: createRng(false) });
-      expectNoActivation(applyGen8HeldItem("on-hit", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
     },
   );
 
   it("given kings-rock attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — King's Rock: damage guard check before RNG
     const ctx = createItemContext({ heldItem: itemIds.kingsRock, damage: 0 });
-    expectNoActivation(applyGen8HeldItem("on-hit", ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
   });
 
   it(
@@ -688,14 +688,14 @@ describe("handleOnHit — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Razor Fang: 10% flinch via RNG chance
       const ctx = createItemContext({ heldItem: itemIds.razorFang, damage: 50, rng: createRng(false) });
-      expectNoActivation(applyGen8HeldItem("on-hit", ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
     },
   );
 
   it("given razor-fang attacker with damage = 0, " + "when on-hit, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Razor Fang: damage guard check before RNG
     const ctx = createItemContext({ heldItem: itemIds.razorFang, damage: 0 });
-    expectNoActivation(applyGen8HeldItem("on-hit", ctx));
+    expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
   });
 });
 
@@ -712,7 +712,7 @@ describe("handleOnContact — NO_ACTIVATION paths", () => {
         heldItem: itemIds.rockyHelmet,
         move: createCanonicalMove(moveIds.surf),
       });
-      expectNoActivation(applyGen8HeldItem(triggerIds.onContact, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onContact, ctx));
     },
   );
 
@@ -731,7 +731,7 @@ describe("handleOnContact — NO_ACTIVATION paths", () => {
         move: createCanonicalMove(moveIds.tackle),
         opponent: undefined,
       } as ItemContext;
-      expectNoActivation(applyGen8HeldItem(triggerIds.onContact, ctx));
+      expectNoActivation(applyGen8HeldItem(itemTriggers.onContact, ctx));
     },
   );
 });
@@ -748,7 +748,7 @@ describe("handleEndOfTurn — activation (true branches)", () => {
       // Source: Showdown data/items.ts — Toxic Orb inflicts badly-poisoned at end of turn
       // Source: Gen8Items.ts line ~851 — effects: [{ type: "inflict-status", status: "badly-poisoned" }]
       const ctx = createItemContext({ heldItem: itemIds.toxicOrb, types: [typeIds.normal] });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(itemTriggers.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "inflict-status", target: "self", status: statusIds.badlyPoisoned },
@@ -763,7 +763,7 @@ describe("handleEndOfTurn — activation (true branches)", () => {
       // Source: Showdown data/items.ts — Flame Orb inflicts burn at end of turn
       // Source: Gen8Items.ts line ~866 — effects: [{ type: "inflict-status", status: "burn" }]
       const ctx = createItemContext({ heldItem: itemIds.flameOrb, types: [typeIds.normal] });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(itemTriggers.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "inflict-status", target: "self", status: statusIds.burn },
@@ -779,7 +779,7 @@ describe("handleEndOfTurn — activation (true branches)", () => {
       // 80/200 = 40% HP, below 50% threshold. healAmount = floor(200/4) = 50
       // Source: Gen8Items.ts line ~877 — effects: [{ type: "heal", value: 50 }, { type: "consume" }]
       const ctx = createItemContext({ heldItem: itemIds.sitrusBerry, hp: 200, currentHp: 80 });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(itemTriggers.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "heal", target: "self", value: 50 },
@@ -795,7 +795,7 @@ describe("handleEndOfTurn — activation (true branches)", () => {
       // Source: Showdown data/items.ts — Cheri Berry cures paralysis at end of turn
       // Source: Gen8Items.ts line ~932 — effects: [{ type: "status-cure" }, { type: "consume" }]
       const ctx = createItemContext({ heldItem: itemIds.cheriBerry, status: statusIds.paralysis });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(itemTriggers.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "status-cure", target: "self" },
@@ -813,7 +813,7 @@ describe("handleOnHit — activation (true branches)", () => {
       // Source: Showdown data/items.ts — King's Rock: 10% flinch chance on damaging hits
       // Source: Gen8Items.ts line ~1518 — effects: [{ type: "flinch", target: "opponent" }]
       const ctx = createItemContext({ heldItem: itemIds.kingsRock, damage: 50, rng: createRng(true) });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(itemTriggers.onHit, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([{ type: "flinch", target: "opponent" }]);
     },
@@ -827,7 +827,7 @@ describe("handleOnHit — activation (true branches)", () => {
       // floor(80/8) = 10 HP heal
       // Source: Gen8Items.ts line ~1552 — effects: [{ type: "heal", target: "self", value: 10 }]
       const ctx = createItemContext({ heldItem: itemIds.shellBell, damage: 80 });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(itemTriggers.onHit, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([{ type: "heal", target: "self", value: 10 }]);
     },
@@ -846,7 +846,7 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.tackle),
       });
-      const result = applyGen8HeldItem(triggerIds.onDamageTaken, ctx);
+      const result = applyGen8HeldItem(itemTriggers.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "stat-boost", target: "self", value: "defense" },
@@ -866,7 +866,7 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.surf),
       });
-      const result = applyGen8HeldItem(triggerIds.onDamageTaken, ctx);
+      const result = applyGen8HeldItem(itemTriggers.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "stat-boost", target: "self", value: "spDefense" },
@@ -886,7 +886,7 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.surf),
       });
-      const result = applyGen8HeldItem(triggerIds.onDamageTaken, ctx);
+      const result = applyGen8HeldItem(itemTriggers.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "stat-boost", target: "self", value: "spAttack" },
@@ -906,7 +906,7 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.iceBeam),
       });
-      const result = applyGen8HeldItem(triggerIds.onDamageTaken, ctx);
+      const result = applyGen8HeldItem(itemTriggers.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "stat-boost", target: "self", value: "attack" },
@@ -928,7 +928,7 @@ describe("handleOnDamageTaken — activation (true branches)", () => {
         damage: 50,
         move: createCanonicalMove(moveIds.thunderbolt),
       });
-      const result = applyGen8HeldItem(triggerIds.onDamageTaken, ctx);
+      const result = applyGen8HeldItem(itemTriggers.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
         { type: "stat-boost", target: "self", value: "attack", stages: 2 },
