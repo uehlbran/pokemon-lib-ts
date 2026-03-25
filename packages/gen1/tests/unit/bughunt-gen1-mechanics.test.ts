@@ -1,20 +1,23 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createMoveSlot,
   NEUTRAL_NATURES,
   SeededRandom,
-  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_NATURE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { getGen1CritRate } from "../../src/Gen1CritCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
-import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_NATURE_IDS, GEN1_SPECIES_IDS } from "../../src";
 
 /**
  * Gen 1 Mechanics Regression Tests — Bughunt Audit
@@ -42,36 +45,17 @@ const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN1_NATURE_IDS.hardy;
 
 const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
 const HYPER_BEAM = DATA_MANAGER.getMove(MOVES.hyperBeam);
+const SWIFT = DATA_MANAGER.getMove(MOVES.swift);
 
-const DEFAULT_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
-
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData> = {}): MoveData {
   return {
-    ...TACKLE,
-    flags: DEFAULT_FLAGS,
+    ...baseMove,
     ...overrides,
+    flags: { ...baseMove.flags, ...overrides.flags },
   };
 }
 
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+function createSyntheticOnFieldPokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
   return {
     pokemon: {
       uid: "test-uid",
@@ -88,8 +72,8 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       friendship: 70,
       heldItem: null,
       ability: ABILITIES.none,
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "pallet-town",
       metLevel: 5,
@@ -106,16 +90,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       },
     } as PokemonInstance,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
     types: [TYPES.electric] as PokemonType[],
     ability: ABILITIES.none,
@@ -138,7 +113,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   const rng = new SeededRandom(42);
   return {
     phase: "turn-resolve",
@@ -253,10 +228,10 @@ describe("Gen 1 1/256 miss bug", () => {
     //   100% accuracy → threshold = 255 (stored as 0xFF)
     //   Hit check: random(0..255) < 255 → miss when random = 255
     //   This is 1/256 chance to miss even for 100% accurate moves.
-    const attacker = makeActivePokemon();
-    const defender = makeActivePokemon();
-    const move = makeMove({ accuracy: 100, target: "adjacent-foe" });
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMoveFrom(TACKLE, { accuracy: 100, target: "adjacent-foe" });
+    const state = createBattleState();
 
     // Mock RNG that always returns 255 — the only roll that causes a miss for 100% accuracy
     const rng = { int: () => 255, chance: () => false } as unknown as SeededRandom;
@@ -267,10 +242,10 @@ describe("Gen 1 1/256 miss bug", () => {
 
   it("given a 100% accuracy move, when the RNG roll is 254, then the move HITS", () => {
     // Source: pret/pokered — random(0..255) < 255 → hit for all rolls 0..254 (255/256 probability)
-    const attacker = makeActivePokemon();
-    const defender = makeActivePokemon();
-    const move = makeMove({ accuracy: 100, target: "adjacent-foe" });
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMoveFrom(TACKLE, { accuracy: 100, target: "adjacent-foe" });
+    const state = createBattleState();
 
     const rng = { int: () => 254, chance: () => false } as unknown as SeededRandom;
 
@@ -281,10 +256,10 @@ describe("Gen 1 1/256 miss bug", () => {
   it("given a self-targeting 100% accuracy move, when the RNG roll is 255, then the move HITS (self-targeting exempt)", () => {
     // Source: Showdown gen1 scripts.ts — self-targeting moves get +1 threshold (256), making
     // roll < 256 always true. This exempts moves like Recover, Agility from the 1/256 bug.
-    const attacker = makeActivePokemon();
-    const defender = makeActivePokemon();
-    const move = makeMove({ accuracy: 100, target: "self" });
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMoveFrom(TACKLE, { accuracy: 100, target: "self" });
+    const state = createBattleState();
 
     const rng = { int: () => 255, chance: () => false } as unknown as SeededRandom;
 
@@ -294,10 +269,10 @@ describe("Gen 1 1/256 miss bug", () => {
 
   it("given a move with null accuracy (Swift), when doesMoveHit is called, then always returns true (no RNG roll)", () => {
     // Source: pret/pokered — Swift uses EFFECT_SWIFT which skips the hit check entirely
-    const attacker = makeActivePokemon();
-    const defender = makeActivePokemon();
-    const swiftMove = makeMove({ accuracy: null });
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon();
+    const swiftMove = SWIFT;
+    const state = createBattleState();
 
     // RNG that would normally cause a miss — irrelevant for Swift
     const rng = { int: () => 255, chance: () => false } as unknown as SeededRandom;
@@ -316,9 +291,9 @@ describe("Gen 1 permanent freeze", () => {
     // Source: pret/pokered — there is no thaw check in Gen 1. Frozen Pokemon remain frozen
     // until hit by a Fire-type damaging move or cured by an item (or Haze).
     // IsFrozenText is printed and the Pokemon cannot act — no random thaw check.
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.freeze,
       } as PokemonInstance,
     });
@@ -333,9 +308,9 @@ describe("Gen 1 permanent freeze", () => {
   it("given a frozen Pokemon, when processEndOfTurnDefrost is called, then always returns false (no EoT defrost in Gen 1)", () => {
     // Source: pret/pokered — Gen 1 has no end-of-turn defrost step.
     // The getEndOfTurnOrder() for Gen 1 does not include 'defrost'.
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.freeze,
       } as PokemonInstance,
     });
@@ -363,12 +338,15 @@ describe("Gen 1 sleep counter — cannot act on wake turn", () => {
     //   dec a (decrement counter) → jumps to .wokeUp when counter hits 0
     //   .sleepDone: sets 'enemy can't move this turn' → cannot act
     // Gen 1: wake turn wastes the action. Return false = cannot act.
-    const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: STATUS.sleep } as PokemonInstance,
+    const pokemon = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: STATUS.sleep,
+      } as PokemonInstance,
     });
     pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
 
-    const state = makeBattleState();
+    const state = createBattleState();
     const canAct = ruleset.processSleepTurn(pokemon, state);
 
     expect(canAct).toBe(false);
@@ -379,12 +357,15 @@ describe("Gen 1 sleep counter — cannot act on wake turn", () => {
   it("given a Pokemon with sleep-counter turnsLeft=3, when processSleepTurn is called, then returns false (still asleep) and decrements counter", () => {
     // Source: pret/pokered — dec a decrements the sleep counter before the zero check
     // Returning false means the Pokemon cannot act this turn.
-    const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: STATUS.sleep } as PokemonInstance,
+    const pokemon = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: STATUS.sleep,
+      } as PokemonInstance,
     });
     pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
 
-    const state = makeBattleState();
+    const state = createBattleState();
     const canAct = ruleset.processSleepTurn(pokemon, state);
 
     expect(canAct).toBe(false);
@@ -419,9 +400,9 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
   it("given a badly-poisoned Pokemon with toxic-counter at 1, when applyStatusDamage is called, then takes 1/16 max HP", () => {
     // Source: gen1-ground-truth.md §8 — Toxic deals N/16 max HP where N = counter value
     // Counter starts at 1 on the first EoT tick.
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.badlyPoisoned,
         calculatedStats: {
           hp: 160,
@@ -435,7 +416,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     });
     pokemon.volatileStatuses.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
 
-    const state = makeBattleState();
+    const state = createBattleState();
     const damage = ruleset.applyStatusDamage(pokemon, STATUS.badlyPoisoned, state);
 
     // 1/16 of 160 = 10
@@ -445,9 +426,9 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
   it("given a badly-poisoned Pokemon with toxic-counter at 3, when applyStatusDamage is called, then takes 3/16 max HP", () => {
     // Source: gen1-ground-truth.md §8 — counter escalates each EoT by 1
     // At counter=3: 3/16 of 160 = 30
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.badlyPoisoned,
         calculatedStats: {
           hp: 160,
@@ -461,7 +442,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     });
     pokemon.volatileStatuses.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 3 } });
 
-    const state = makeBattleState();
+    const state = createBattleState();
     const damage = ruleset.applyStatusDamage(pokemon, STATUS.badlyPoisoned, state);
 
     // 3/16 of 160 = 30
@@ -470,9 +451,9 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
 
   it("given a badly-poisoned Pokemon with toxic-counter present, when applyStatusDamage is called, then counter increments for next turn", () => {
     // Source: gen1-ground-truth.md §8 — counter is incremented each turn within applyStatusDamage
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.badlyPoisoned,
         calculatedStats: {
           hp: 160,
@@ -487,7 +468,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     const counterState = { turnsLeft: -1, data: { counter: 2 } };
     pokemon.volatileStatuses.set(VOLATILES.toxicCounter, counterState);
 
-    const state = makeBattleState();
+    const state = createBattleState();
     ruleset.applyStatusDamage(pokemon, STATUS.badlyPoisoned, state);
 
     // Counter should have incremented to 3
@@ -496,9 +477,9 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
 
   it("given a poisoned Pokemon without toxic-counter volatile, when applyStatusDamage is called, then deals standard 1/16 max HP", () => {
     // Source: gen1-ground-truth.md §8 — regular poison (without toxic-counter) deals 1/16 max HP per turn
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.poison,
         calculatedStats: {
           hp: 160,
@@ -512,7 +493,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     });
     // No toxic-counter volatile
 
-    const state = makeBattleState();
+    const state = createBattleState();
     const damage = ruleset.applyStatusDamage(pokemon, STATUS.poison, state);
 
     // Standard poison: 1/16 of 160 = 10
@@ -528,15 +509,15 @@ describe("Gen 1 Toxic counter reset on switch-out", () => {
   it("given a badly-poisoned Pokemon that switches out, when onSwitchOut is called, then status reverts to regular poison", () => {
     // Source: gen1-ground-truth.md §8 — Toxic reverts to regular poison on switch-out
     // The toxic-counter volatile is also cleared (part of full volatile clear).
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.badlyPoisoned,
       } as PokemonInstance,
     });
     pokemon.volatileStatuses.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 5 } });
 
-    const state = makeBattleState();
+    const state = createBattleState();
     ruleset.onSwitchOut(pokemon, state);
 
     expect(pokemon.pokemon.status).toBe(STATUS.poison);
@@ -545,14 +526,14 @@ describe("Gen 1 Toxic counter reset on switch-out", () => {
 
   it("given a burned Pokemon that switches out, when onSwitchOut is called, then burn status is preserved (burn does not reset on switch)", () => {
     // Source: pret/pokered — burn persists through switch-out (status byte in party data)
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         status: STATUS.burn,
       } as PokemonInstance,
     });
 
-    const state = makeBattleState();
+    const state = createBattleState();
     ruleset.onSwitchOut(pokemon, state);
 
     expect(pokemon.pokemon.status).toBe(STATUS.burn);
@@ -568,8 +549,11 @@ describe("Gen 1 paralysis full-para chance", () => {
     // Source: pret/pokered engine/battle/core.asm:3454 — cp 25 PERCENT (= 63 out of 256)
     // The check is: BattleRandom; cp 25PERCENT; ret nc — paralysis if A < 63
     const rng = new SeededRandom(777);
-    const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: STATUS.paralysis } as PokemonInstance,
+    const pokemon = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: STATUS.paralysis,
+      } as PokemonInstance,
     });
 
     let paralyzedCount = 0;
@@ -596,25 +580,22 @@ describe("Gen 1 Hyper Beam recharge skip on KO", () => {
     // Source: gen1-ground-truth.md §7 — Hyper Beam: if the target faints, attacker skips recharge.
     // Implementation: brokeSubstitute check also triggers noRecharge (Gen 1 specific).
     // Source: pret/pokered — HyperBeam skips recharge on KO AND on miss AND on breaking substitute.
-    const attacker = makeActivePokemon();
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 0, // Already at 0 = KO
       } as PokemonInstance,
     });
 
-    const hyperBeamMove = makeMove({
-      ...HYPER_BEAM,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-    });
+    const hyperBeamMove = HYPER_BEAM;
 
     const context = {
       attacker,
       defender,
       move: hyperBeamMove,
       damage: 100, // damage > 0 required for noRecharge to trigger
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: new SeededRandom(42),
       brokeSubstitute: false,
     };
@@ -625,25 +606,22 @@ describe("Gen 1 Hyper Beam recharge skip on KO", () => {
 
   it("given Hyper Beam hits but defender survives, when executeMoveEffect is called, then noRecharge is not set", () => {
     // Source: gen1-ground-truth.md §7 — Hyper Beam recharge only skipped on KO or Substitute break
-    const attacker = makeActivePokemon();
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 50, // Survived
       } as PokemonInstance,
     });
 
-    const hyperBeamMove = makeMove({
-      ...HYPER_BEAM,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-    });
+    const hyperBeamMove = HYPER_BEAM;
 
     const context = {
       attacker,
       defender,
       move: hyperBeamMove,
       damage: 40,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: new SeededRandom(42),
       brokeSubstitute: false,
     };
@@ -655,25 +633,22 @@ describe("Gen 1 Hyper Beam recharge skip on KO", () => {
   it("given Hyper Beam breaks defender's Substitute, when executeMoveEffect is called, then noRecharge is true (Gen 1 only)", () => {
     // Source: gen1-ground-truth.md §7 — Gen 1 Hyper Beam also skips recharge on Substitute break.
     // This differs from Gen 2+ where only KO skips recharge.
-    const attacker = makeActivePokemon();
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 80, // Survived — did not KO
       } as PokemonInstance,
     });
 
-    const hyperBeamMove = makeMove({
-      ...HYPER_BEAM,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-    });
+    const hyperBeamMove = HYPER_BEAM;
 
     const context = {
       attacker,
       defender,
       move: hyperBeamMove,
       damage: 50,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: new SeededRandom(42),
       brokeSubstitute: true, // Broke a substitute — Gen 1 skips recharge
     };
@@ -693,9 +668,9 @@ describe("Gen 1 confusion self-hit formula correctness", () => {
     //   levelFactor = floor(2*50/5) + 2 = 22
     //   base = floor(floor(22 * 40 * 80) / 60 / 50) + 2 = floor(1173.3/50) + 2 = 23 + 2 = 25
     // The result must NOT be maxHP/8 (which would be 37 for 300 HP).
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         level: 50,
         calculatedStats: {
           hp: 300,
@@ -707,7 +682,7 @@ describe("Gen 1 confusion self-hit formula correctness", () => {
         },
       } as PokemonInstance,
     });
-    const state = makeBattleState();
+    const state = createBattleState();
     const rng = new SeededRandom(42);
 
     const damage = ruleset.calculateConfusionDamage(pokemon, state, rng);
