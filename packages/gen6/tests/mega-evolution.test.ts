@@ -1,11 +1,18 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  MEGA_STONE_DATA as CORE_MEGA_STONE_DATA,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  MEGA_STONE_DATA as CORE_MEGA_STONE_DATA,
+  createEvs,
+  createFriendship,
+  createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -22,21 +29,22 @@ const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
 const SPECIES = GEN6_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
 const DATA_MANAGER = createGen6DataManager();
 const BASE_SPECIES = DATA_MANAGER.getSpecies(SPECIES.charizard);
 const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN6_NATURE_IDS.hardy).id;
 const CHARIZARDITE_X_DATA = MEGA_STONE_DATA[ITEMS.charizarditeX];
 const CHARIZARDITE_Y_DATA = MEGA_STONE_DATA[ITEMS.charizarditeY];
 const VENUSAURITE_DATA = MEGA_STONE_DATA[ITEMS.venusaurite];
-const MEWTWONITE_X_DATA = MEGA_STONE_DATA[ITEMS.mewtwoniteX];
-const MEWTWONITE_Y_DATA = MEGA_STONE_DATA[ITEMS.mewtwoniteY];
 const AGGRONITE_DATA = MEGA_STONE_DATA[ITEMS.aggronite];
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   uid?: string;
   speciesId?: number;
   heldItem?: string | null;
@@ -61,16 +69,16 @@ function makeActivePokemon(overrides: {
       level: 50,
       experience: 0,
       nature: DEFAULT_NATURE,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: 200,
       moves: [],
       ability: overrides.ability ?? ABILITIES.blaze,
-      abilitySlot: "normal1" as const,
+      abilitySlot: ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: null,
-      friendship: 0,
-      gender: "male" as any,
+      friendship: createFriendship(0),
+      gender: GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -87,15 +95,7 @@ function makeActivePokemon(overrides: {
       },
     },
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
     types: overrides.types ?? [...BASE_SPECIES.types],
     ability: overrides.ability ?? ABILITIES.blaze,
@@ -121,7 +121,7 @@ function makeActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeSide(overrides: { gimmickUsed?: boolean; index?: 0 | 1 } = {}): BattleSide {
+function createBattleSide(overrides: { gimmickUsed?: boolean; index?: 0 | 1 } = {}): BattleSide {
   return {
     index: overrides.index ?? 0,
     trainer: null,
@@ -138,7 +138,7 @@ function makeSide(overrides: { gimmickUsed?: boolean; index?: 0 | 1 } = {}): Bat
   } as BattleSide;
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -275,9 +275,9 @@ describe("Gen6MegaEvolution -- canUse()", () => {
     // Source: Bulbapedia "Mega Evolution" — can activate if holding correct Mega Stone
     // Source: Showdown sim/battle.ts — canMegaEvo check: holding mega stone + gimmick not used
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(true);
   });
@@ -285,9 +285,9 @@ describe("Gen6MegaEvolution -- canUse()", () => {
   it("given a Pokemon holding charizardite-x but gimmick already used, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" — only one Mega Evolution per trainer per battle
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
-    const side = makeSide({ gimmickUsed: true });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
+    const side = createBattleSide({ gimmickUsed: true });
+    const state = createBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -295,9 +295,9 @@ describe("Gen6MegaEvolution -- canUse()", () => {
   it("given a Pokemon that has already mega evolved, when calling canUse, then returns false", () => {
     // Source: Showdown sim/battle.ts — pokemon.isMega blocks re-activation
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: true });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: ITEMS.charizarditeX, isMega: true });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -305,9 +305,9 @@ describe("Gen6MegaEvolution -- canUse()", () => {
   it("given a Pokemon holding a non-mega-stone item, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" — requires a Mega Stone to activate
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: ITEMS.leftovers, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: ITEMS.leftovers, isMega: false });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -315,9 +315,9 @@ describe("Gen6MegaEvolution -- canUse()", () => {
   it("given a Pokemon holding no item, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" — requires holding a Mega Stone
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: null, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: null, isMega: false });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -329,9 +329,9 @@ describe("Gen6MegaEvolution -- canUse()", () => {
     // Source: Showdown sim/battle.ts — formeChange only permitted when species matches stone
     const gimmick = new Gen6MegaEvolution();
     // makeActivePokemon defaults speciesId: 6 (Charizard); venusaurite.baseSpeciesId = 3 (Venusaur)
-    const pokemon = makeActivePokemon({ heldItem: ITEMS.venusaurite, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: ITEMS.venusaurite, isMega: false });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -346,14 +346,14 @@ describe("Gen6MegaEvolution -- activate()", () => {
     // Source: Bulbapedia "Charizardite X" — evolves into Mega Charizard X
     // Source: Showdown sim/battle.ts — mega-evolve event emitted with form key
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       uid: "charizard-1",
       heldItem: ITEMS.charizarditeX,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false, index: 0 });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false, index: 0 });
+    const state = createBattleState();
 
     const events = gimmick.activate(pokemon, side, state);
 
@@ -369,13 +369,13 @@ describe("Gen6MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then types change to Fire/Dragon", () => {
     // Source: Bulbapedia "Charizardite X" — Mega Charizard X is Fire/Dragon type
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       heldItem: ITEMS.charizarditeX,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -385,13 +385,13 @@ describe("Gen6MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then ability changes to Tough Claws", () => {
     // Source: Bulbapedia "Charizardite X" — Mega Charizard X has Tough Claws
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       heldItem: ITEMS.charizarditeX,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -410,7 +410,7 @@ describe("Gen6MegaEvolution -- activate()", () => {
     //   spdef: floor((floor((170+31+0)*50/100)+5)*1.0) = floor((floor(10050/100)+5)) = floor(100+5) = 105
     //   spe:   floor((floor((200+31+0)*50/100)+5)*1.0) = floor((floor(11550/100)+5)) = floor(115+5) = 120
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       heldItem: ITEMS.charizarditeX,
       calculatedStats: {
         hp: 200,
@@ -421,8 +421,8 @@ describe("Gen6MegaEvolution -- activate()", () => {
         speed: 100,
       },
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -440,9 +440,9 @@ describe("Gen6MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then pokemon.isMega is set to true", () => {
     // Source: Showdown sim/battle.ts — pokemon.isMega = true after activation
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(pokemon.isMega).toBe(false);
     gimmick.activate(pokemon, side, state);
@@ -453,9 +453,9 @@ describe("Gen6MegaEvolution -- activate()", () => {
     // Source: Bulbapedia "Mega Evolution" — one Mega Evolution per trainer per battle
     // Source: Showdown sim/battle.ts — side.gimmickUsed = true after activation
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: ITEMS.charizarditeX });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(side.gimmickUsed).toBe(false);
     gimmick.activate(pokemon, side, state);
@@ -465,15 +465,15 @@ describe("Gen6MegaEvolution -- activate()", () => {
   it("given Venusaur holding venusaurite, when activate is called, then emits mega-evolve event for mega-venusaur", () => {
     // Source: Bulbapedia "Venusaurite" — Venusaur mega evolves to Mega Venusaur (Grass/Poison, Thick Fat)
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       uid: "venusaur-1",
       speciesId: SPECIES.venusaur,
       heldItem: ITEMS.venusaurite,
       types: [TYPES.grass, TYPES.poison],
       ability: GEN6_ABILITY_IDS.chlorophyll,
     });
-    const side = makeSide({ gimmickUsed: false, index: 1 });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false, index: 1 });
+    const state = createBattleState();
 
     const events = gimmick.activate(pokemon, side, state);
 
@@ -489,14 +489,14 @@ describe("Gen6MegaEvolution -- activate()", () => {
   it("given Aggron holding aggronite, when activate is called, then types change to pure Steel", () => {
     // Source: Bulbapedia "Aggronite" — Mega Aggron loses Rock type, becomes pure Steel
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       speciesId: SPECIES.aggron,
       heldItem: ITEMS.aggronite,
       types: [TYPES.steel, TYPES.rock],
       ability: ABILITIES.sturdy,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -506,9 +506,9 @@ describe("Gen6MegaEvolution -- activate()", () => {
   it("given a Pokemon holding no item, when activate is called, then returns empty events array", () => {
     // Source: defensive — activate with no mega stone data returns []
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: null });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: null });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     const events = gimmick.activate(pokemon, side, state);
 
@@ -522,13 +522,13 @@ describe("Gen6MegaEvolution -- activate()", () => {
     // Source: pret/pokeemerald CALC_STAT — L50, 31 IVs, 0 EVs, Hardy (1.0):
     //   spatk: floor((floor((318+31+0)*50/100)+5)*1.0) = floor((floor(17450/100)+5)) = floor(174+5) = 179
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       heldItem: ITEMS.charizarditeY,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     const events = gimmick.activate(pokemon, side, state);
 
@@ -606,22 +606,22 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
     // Source: Showdown sim/battle-actions.ts — runMegaEvo calls pokemon.setAbility() which
     //   triggers ability on-start effects for entry abilities like Drought.
     // After mega evolution, actor.isMega === true. The BattleEngine checks `actor.isMega`
-    // after gimmick activation to decide whether to invoke applyAbility("on-switch-in").
+    // after gimmick activation to decide whether to invoke applyAbility(ABILITY_TRIGGERS.onSwitchIn).
     // This test verifies the isMega flag is correctly set, which is the engine's gate condition.
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       heldItem: ITEMS.charizarditeY,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
       isMega: false,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     expect(pokemon.isMega).toBe(false);
     gimmick.activate(pokemon, side, state);
 
-    // isMega is set — the engine will invoke applyAbility("on-switch-in") after gimmick
+    // isMega is set — the engine will invoke applyAbility(ABILITY_TRIGGERS.onSwitchIn) after gimmick
     // activation, which triggers Drought to set 5-turn sun weather.
     expect(pokemon.isMega).toBe(true);
     // Ability updated to drought — on-switch-in will set 5-turn sun (Gen 6 weather duration)
@@ -632,25 +632,25 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
     // Source: Bulbapedia "Drought" Gen VI — "Summons sunlight for 5 turns on entry."
     // Source: Showdown data/mods/gen6/abilities.ts — drought weatherTurns: 5
     // This test verifies the full chain: mega evolve → ability changes to Drought →
-    // engine calls applyAbility("on-switch-in") → sun is set for 5 turns.
+    // engine calls applyAbility(ABILITY_TRIGGERS.onSwitchIn) → sun is set for 5 turns.
     const ruleset = new Gen6Ruleset();
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       heldItem: ITEMS.charizarditeY,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
       isMega: false,
     });
-    const opponent = makeActivePokemon({ heldItem: null });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const opponent = createSyntheticOnFieldPokemon({ heldItem: null });
+    const side = createBattleSide({ gimmickUsed: false });
+    const state = createBattleState();
 
     // Step 1: Mega evolve — ability changes to Drought, isMega set to true
     gimmick.activate(pokemon, side, state);
     expect(pokemon.ability).toBe(CHARIZARDITE_Y_DATA.ability);
 
     // Step 2: Engine's ability hook fires on-switch-in with the new mega ability
-    const abilityResult = ruleset.applyAbility("on-switch-in", {
+    const abilityResult = ruleset.applyAbility(ABILITY_TRIGGERS.onSwitchIn, {
       pokemon,
       opponent,
       state,
@@ -663,7 +663,7 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
         getState: () => 0,
         setState: () => {},
       } as unknown as import("@pokemon-lib-ts/core").SeededRandom,
-      trigger: "on-switch-in",
+      trigger: ABILITY_TRIGGERS.onSwitchIn,
     });
 
     // Drought ability fires → activated = true, weather-set effect in effects array
