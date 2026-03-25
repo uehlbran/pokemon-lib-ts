@@ -1,8 +1,35 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
+import { CORE_END_OF_TURN_EFFECT_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { isGen1PhysicalType } from "../../src/Gen1DamageCalc";
+import { GEN1_TYPES, isGen1PhysicalType } from "../../src";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
+
+const createOnFieldPokemon = (): ActivePokemon => {
+  // Synthetic probe: these Gen 1 ruleset methods only require a typed placeholder.
+  return {} as ActivePokemon;
+};
+
+const GEN1_PHYSICAL_TYPES = [
+  CORE_TYPE_IDS.normal,
+  CORE_TYPE_IDS.fighting,
+  CORE_TYPE_IDS.flying,
+  CORE_TYPE_IDS.poison,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.bug,
+  CORE_TYPE_IDS.ghost,
+] as const;
+
+const GEN1_SPECIAL_TYPES = [
+  CORE_TYPE_IDS.fire,
+  CORE_TYPE_IDS.water,
+  CORE_TYPE_IDS.grass,
+  CORE_TYPE_IDS.electric,
+  CORE_TYPE_IDS.ice,
+  CORE_TYPE_IDS.psychic,
+  CORE_TYPE_IDS.dragon,
+] as const;
 
 /**
  * Gen1Ruleset Tests
@@ -100,7 +127,7 @@ describe("Gen1Ruleset", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     // Act
-    const gimmick = ruleset.getBattleGimmick("mega");
+    const gimmick = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega);
     // Assert: Gen 1 has no gimmick (Mega Evolution is Gen 6, Z-Moves Gen 7, etc.)
     expect(gimmick).toBeNull();
   });
@@ -113,26 +140,10 @@ describe("Gen1Ruleset", () => {
     // Act
     const types = ruleset.getAvailableTypes();
     // Assert
-    expect(types.length).toBe(15);
-    expect(types).toContain("normal");
-    expect(types).toContain("fire");
-    expect(types).toContain("water");
-    expect(types).toContain("electric");
-    expect(types).toContain("grass");
-    expect(types).toContain("ice");
-    expect(types).toContain("fighting");
-    expect(types).toContain("poison");
-    expect(types).toContain("ground");
-    expect(types).toContain("flying");
-    expect(types).toContain("psychic");
-    expect(types).toContain("bug");
-    expect(types).toContain("rock");
-    expect(types).toContain("ghost");
-    expect(types).toContain("dragon");
-    // Should NOT contain later gen types
-    expect(types).not.toContain("dark");
-    expect(types).not.toContain("steel");
-    expect(types).not.toContain("fairy");
+    expect(types).toEqual(GEN1_TYPES);
+    expect(types).not.toContain(CORE_TYPE_IDS.dark);
+    expect(types).not.toContain(CORE_TYPE_IDS.steel);
+    expect(types).not.toContain(CORE_TYPE_IDS.fairy);
   });
 
   it("given Gen1Ruleset, when getting type chart, then returns a valid type chart", () => {
@@ -142,8 +153,7 @@ describe("Gen1Ruleset", () => {
     const chart = ruleset.getTypeChart();
     // Assert
     expect(chart).toBeDefined();
-    const types = Object.keys(chart);
-    expect(types.length).toBe(15);
+    expect(Object.keys(chart)).toEqual([...GEN1_TYPES]);
   });
 
   // --- Freeze Thaw ---
@@ -155,9 +165,8 @@ describe("Gen1Ruleset", () => {
     // Act / Assert: In Gen 1, frozen Pokemon NEVER thaw naturally
     // They can only be thawed by a Fire-type move hitting them or items
     // Run many checks to verify it always returns false
-    const mockActivePokemon = {} as unknown as ActivePokemon; // The function should return false regardless
     for (let i = 0; i < 100; i++) {
-      const thaws = ruleset.checkFreezeThaw(mockActivePokemon, rng);
+      const thaws = ruleset.checkFreezeThaw(createOnFieldPokemon(), rng);
       expect(thaws).toBe(false);
     }
   });
@@ -193,7 +202,7 @@ describe("Gen1Ruleset", () => {
     // Assert: Should see most values from 1-7
     expect(seenValues.has(1)).toBe(true);
     expect(seenValues.has(7)).toBe(true);
-    expect(seenValues.size).toBeGreaterThanOrEqual(5); // Should see at least 5 different values
+    expect(seenValues.size).toBeGreaterThanOrEqual(5);
   });
 
   // --- Critical Hit ---
@@ -226,12 +235,13 @@ describe("Gen1Ruleset", () => {
     // Act
     const order = ruleset.getEndOfTurnOrder();
     // Assert: Gen 1 has a simpler set of end-of-turn effects than later gens
-    expect(Array.isArray(order)).toBe(true);
-    // Should include status damage at minimum
-    expect(order).toContain("status-damage");
-    // Should NOT include weather or terrain effects
-    expect(order).not.toContain("weather-damage");
-    expect(order).not.toContain("terrain-countdown");
+    expect(order).toEqual([
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_VOLATILE_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+    ]);
+    expect(order).not.toContain(CORE_END_OF_TURN_EFFECT_IDS.weatherDamage);
+    expect(order).not.toContain(CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown);
   });
 
   // --- Weather Effects (no-op) ---
@@ -264,26 +274,17 @@ describe("Gen1Ruleset", () => {
     // Source: pret/pokered data/type_names.asm — Gen 1 physical types: Normal, Fighting, Flying,
     // Poison, Ground, Rock, Bug, Ghost. Poison IS physical in Gen 1 (common misconception).
     // These types use Attack/Defense stats in the damage formula.
-    expect(isGen1PhysicalType("normal")).toBe(true);
-    expect(isGen1PhysicalType("fighting")).toBe(true);
-    expect(isGen1PhysicalType("flying")).toBe(true);
-    expect(isGen1PhysicalType("poison")).toBe(true); // Poison IS physical in Gen 1
-    expect(isGen1PhysicalType("ground")).toBe(true);
-    expect(isGen1PhysicalType("rock")).toBe(true);
-    expect(isGen1PhysicalType("bug")).toBe(true);
-    expect(isGen1PhysicalType("ghost")).toBe(true);
+    for (const type of GEN1_PHYSICAL_TYPES) {
+      expect(isGen1PhysicalType(type)).toBe(true);
+    }
   });
 
   it("given isGen1PhysicalType, when checking special types, then Fire/Water/Grass/Electric/Ice/Psychic/Dragon return false", () => {
     // Source: pret/pokered data/type_names.asm — Gen 1 special types use the unified Special stat
     // for both offense (SpAttack) and defense (SpDefense).
-    expect(isGen1PhysicalType("fire")).toBe(false);
-    expect(isGen1PhysicalType("water")).toBe(false);
-    expect(isGen1PhysicalType("grass")).toBe(false);
-    expect(isGen1PhysicalType("electric")).toBe(false);
-    expect(isGen1PhysicalType("ice")).toBe(false);
-    expect(isGen1PhysicalType("psychic")).toBe(false);
-    expect(isGen1PhysicalType("dragon")).toBe(false);
+    for (const type of GEN1_SPECIAL_TYPES) {
+      expect(isGen1PhysicalType(type)).toBe(false);
+    }
   });
 
   // --- Struggle Recoil ---
@@ -292,7 +293,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=100, when calculating recoil, then returns 50", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as unknown as ActivePokemon;
+      const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
       // Assert: floor(100 / 2) = 50
@@ -302,7 +303,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=1, when calculating recoil, then returns 1 (min 1)", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as unknown as ActivePokemon;
+      const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
       // Assert: max(1, floor(1/2)) = max(1, 0) = 1
@@ -312,7 +313,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=0, when calculating recoil, then returns 1 (max of 1 and floor(0/2))", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as unknown as ActivePokemon;
+      const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
       // Assert: max(1, floor(0/2)) = max(1, 0) = 1
@@ -322,7 +323,7 @@ describe("Gen1Ruleset", () => {
     it("given damage=101, when calculating recoil, then returns 50 (floor(101/2)=50)", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
-      const mockAttacker = {} as unknown as ActivePokemon;
+      const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
       // Assert: floor(101 / 2) = 50
@@ -337,7 +338,7 @@ describe("Gen1Ruleset", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
       const rng = new SeededRandom(0);
-      const mockAttacker = {} as unknown as ActivePokemon;
+      const mockAttacker = createOnFieldPokemon();
       // Act
       const count = ruleset.rollMultiHitCount(mockAttacker, rng);
       // Assert: must be one of the values in the weighted array
@@ -348,7 +349,7 @@ describe("Gen1Ruleset", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
       const rng = new SeededRandom(42);
-      const mockAttacker = {} as unknown as ActivePokemon;
+      const mockAttacker = createOnFieldPokemon();
       // Act / Assert
       for (let i = 0; i < 100; i++) {
         const count = ruleset.rollMultiHitCount(mockAttacker, rng);
@@ -360,7 +361,7 @@ describe("Gen1Ruleset", () => {
       // Arrange
       const ruleset = new Gen1Ruleset();
       const rng = new SeededRandom(42);
-      const mockAttacker = {} as unknown as ActivePokemon;
+      const mockAttacker = createOnFieldPokemon();
       const counts = new Set<number>();
       // Act
       for (let i = 0; i < 100; i++) {

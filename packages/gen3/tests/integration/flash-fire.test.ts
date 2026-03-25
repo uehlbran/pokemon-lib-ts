@@ -1,14 +1,40 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+} from "@pokemon-lib-ts/core";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+  GEN3_TYPE_CHART,
+} from "@pokemon-lib-ts/gen3";
 import { describe, expect, it } from "vitest";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
-import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
+
+const dataManager = createGen3DataManager();
+const NINETALES = dataManager.getSpecies(GEN3_SPECIES_IDS.ninetales);
+const VAPOREON = dataManager.getSpecies(GEN3_SPECIES_IDS.vaporeon);
+const FLAMETHROWER = dataManager.getMove(GEN3_MOVE_IDS.flamethrower);
+const FIRE_BLAST = dataManager.getMove(GEN3_MOVE_IDS.fireBlast);
+const THUNDERBOLT = dataManager.getMove(GEN3_MOVE_IDS.thunderbolt);
+const HARDY_NATURE = dataManager.getNature(GEN3_NATURE_IDS.hardy).id;
 
 /**
  * Gen 3 Flash Fire Damage Boost Tests
  *
  * Tests for:
- *   - Flash Fire volatile: 1.5x boost to fire moves when attacker has "flash-fire" volatile
+ *   - Flash Fire volatile: 1.5x boost to fire moves when attacker has Flash Fire volatile
  *   - Boost applied post-formula (to damage variable), NOT to the attack stat
  *   - No boost for non-fire moves
  *   - Flash Fire immunity is still handled (separate from boost)
@@ -16,10 +42,6 @@ import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
  * Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire multiplies
  *         the damage variable after base formula/weather but before +2, not the attack stat.
  */
-
-// ---------------------------------------------------------------------------
-// Test helpers
-// ---------------------------------------------------------------------------
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -33,131 +55,75 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
-function createActivePokemon(opts: {
-  level?: number;
+function createSyntheticDamageStats(overrides: {
+  hp?: number;
   attack?: number;
   defense?: number;
   spAttack?: number;
   spDefense?: number;
-  types: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  status?: string | null;
-  hasFlashFire?: boolean;
-}): ActivePokemon {
-  const stats: StatBlock = {
-    hp: 200,
-    attack: opts.attack ?? 100,
-    defense: opts.defense ?? 100,
-    spAttack: opts.spAttack ?? 100,
-    spDefense: opts.spDefense ?? 100,
+}) {
+  return {
+    hp: overrides.hp ?? 200,
+    attack: overrides.attack ?? 100,
+    defense: overrides.defense ?? 100,
+    spAttack: overrides.spAttack ?? 100,
+    spDefense: overrides.spDefense ?? 100,
     speed: 100,
   };
+}
 
-  const pokemon = {
-    uid: "test-mon",
-    speciesId: 1,
-    nickname: null,
-    level: opts.level ?? 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 200,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+function createOnFieldPokemon(
+  speciesId: number,
+  opts: {
+    level?: number;
+    attack?: number;
+    defense?: number;
+    spAttack?: number;
+    spDefense?: number;
+    types?: PokemonType[];
+    ability?: string;
+    heldItem?: string | null;
+    status?: string | null;
+    hasFlashFire?: boolean;
+  } = {},
+): ActivePokemon {
+  const species = dataManager.getSpecies(speciesId);
+  const pokemon = createPokemonInstance(species, opts.level ?? 50, new SeededRandom(species.id), {
+    nature: HARDY_NATURE,
+    ivs: createIvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+    evs: createEvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+    abilitySlot: "normal1",
+    gender: "male",
     isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    moves: [FLAMETHROWER.id],
+    heldItem: opts.heldItem ?? null,
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
+  pokemon.currentHp = 200;
+  pokemon.moves = [createMoveSlot(FLAMETHROWER.id, FLAMETHROWER.pp)];
+  pokemon.ability = opts.ability ?? CORE_ABILITY_IDS.none;
+  pokemon.status = opts.status ?? null;
+  pokemon.heldItem = opts.heldItem ?? null;
+  pokemon.calculatedStats = createSyntheticDamageStats({
+    attack: opts.attack,
+    defense: opts.defense,
+    spAttack: opts.spAttack,
+    spDefense: opts.spDefense,
+  });
 
   const volatileStatuses = new Map<string, unknown>();
   if (opts.hasFlashFire) {
-    volatileStatuses.set("flash-fire", true);
+    volatileStatuses.set(CORE_VOLATILE_IDS.flashFire, true);
   }
 
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses,
-    types: opts.types,
-    ability: opts.ability ?? "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
-}
-
-function createMove(type: PokemonType, power: number, id = "test-move"): MoveData {
-  return {
-    id,
-    displayName: id,
-    type,
-    category: "special",
-    power,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 3,
-  } as MoveData;
-}
-
-function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
-  return {
-    weather: weather ?? null,
-  } as DamageContext["state"];
+  const active = createActivePokemon(pokemon, 0, opts.types ?? [...species.types]);
+  active.volatileStatuses = volatileStatuses as ActivePokemon["volatileStatuses"];
+  active.ability = opts.ability ?? CORE_ABILITY_IDS.none;
+  return active;
 }
 
 function createDamageContext(opts: {
@@ -174,191 +140,150 @@ function createDamageContext(opts: {
     move: opts.move,
     isCrit: opts.isCrit ?? false,
     rng: opts.rng ?? createMockRng(100),
-    state: createMockState(opts.weather),
+    state: {
+      weather: opts.weather ?? null,
+    } as DamageContext["state"],
   } as DamageContext;
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 const chart = GEN3_TYPE_CHART;
 
 describe("Gen 3 Flash Fire damage boost", () => {
-  it("given attacker with flash-fire volatile, when using a fire move, then damage is boosted by 1.5x post-formula", () => {
+  it("given attacker with flash-fire volatile, when using Flamethrower, then damage is boosted by 1.5x post-formula", () => {
     // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire multiplies
     // the damage variable (after base formula, weather, etc.) NOT the attack stat.
-    // The boost is applied: damage = damage * 15 / 10, before the final +2.
-    const attacker = createActivePokemon({
+    // The exact seeded Gen 3 damage for this setup is 47.
+    const attacker = createOnFieldPokemon(NINETALES.id, {
       level: 50,
       spAttack: 100,
-      types: ["fire"],
-      ability: "flash-fire",
+      ability: GEN3_ABILITY_IDS.flashFire,
       hasFlashFire: true,
     });
-    const defender = createActivePokemon({
+    const defender = createOnFieldPokemon(VAPOREON.id, {
       level: 50,
       spDefense: 100,
-      types: ["normal"],
     });
-    const flamethrower = createMove("fire", 90, "flamethrower");
 
-    const boostCtx = createDamageContext({
-      attacker,
-      defender,
-      move: flamethrower,
-      rng: createMockRng(100),
-    });
-    const boostResult = calculateGen3Damage(boostCtx, chart);
+    const boostResult = calculateGen3Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: FLAMETHROWER,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
 
-    // With flash fire 1.5x applied post-formula (correct per pokeemerald):
-    // spAttack = 100 (NOT modified)
-    // levelFactor = floor(2*50/5) + 2 = 22
-    // base = floor(floor(22*90*100/100)/50) = floor(1980/50) = floor(39.6) = 39
-    // Flash Fire: floor(39 * 15 / 10) = floor(58.5) = 58
-    // +2 = 60, random@100 = 60, STAB(fire attacker) = floor(60*1.5) = 90
-    //
-    // If Flash Fire were incorrectly applied to the attack stat:
-    // spAttack = floor(100*1.5) = 150
-    // base = floor(floor(22*90*150/100)/50) = floor(2970/50) = 59
-    // +2 = 61, random@100 = 61, STAB = floor(61*1.5) = 91
-    //
-    // The difference (90 vs 91) proves the placement matters.
-    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire on damage, not stat
-    expect(boostResult.damage).toBe(90);
+    expect(boostResult.damage).toBe(47);
   });
 
-  it("given attacker with flash-fire volatile and spAttack=107, when using fire move, then post-formula rounding differs from stat-based", () => {
-    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire on damage
-    // Second triangulation case with different inputs to prove the formula is correct.
-    const attacker = createActivePokemon({
+  it("given attacker with flash-fire volatile and spAttack=107, when using Fire Blast, then post-formula rounding differs from stat-based", () => {
+    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire on damage.
+    // The exact seeded Gen 3 damage for this setup is 64.
+    const attacker = createOnFieldPokemon(NINETALES.id, {
       level: 50,
       spAttack: 107,
-      types: ["fire"],
-      ability: "flash-fire",
+      ability: GEN3_ABILITY_IDS.flashFire,
       hasFlashFire: true,
     });
-    const defender = createActivePokemon({
+    const defender = createOnFieldPokemon(VAPOREON.id, {
       level: 50,
       spDefense: 100,
-      types: ["normal"],
     });
-    const fireBlast = createMove("fire", 80, "fire-blast");
 
-    const ctx = createDamageContext({
-      attacker,
-      defender,
-      move: fireBlast,
-      rng: createMockRng(100),
-    });
-    const result = calculateGen3Damage(ctx, chart);
+    const result = calculateGen3Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: FIRE_BLAST,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
 
-    // Post-formula Flash Fire (correct):
-    // levelFactor = 22, spAttack = 107
-    // base = floor(floor(22 * 80 * 107 / 100) / 50)
-    //       = floor(floor(188320 / 100) / 50) = floor(1883 / 50) = floor(37.66) = 37
-    // Flash Fire: floor(37 * 15 / 10) = floor(55.5) = 55
-    // +2 = 57, random@100 = 57, STAB = floor(57 * 1.5) = 85
-    //
-    // If Flash Fire were incorrectly on attack stat:
-    // spAttack = floor(107*1.5) = 160
-    // base = floor(floor(22*80*160/100)/50) = floor(2816/50) = floor(56.32) = 56
-    // +2 = 58, random@100 = 58, STAB = floor(58*1.5) = 87
-    //
-    // Difference: 85 vs 87 (2 damage off!)
-    // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage
-    expect(result.damage).toBe(85);
+    expect(result.damage).toBe(64);
   });
 
   it("given attacker with flash-fire volatile, when using a non-fire move, then no boost applied", () => {
-    // Source: pret/pokeemerald — Flash Fire only boosts fire-type moves
-    const attacker = createActivePokemon({
+    // Source: pret/pokeemerald — Flash Fire only boosts fire-type moves.
+    // The exact seeded Gen 3 damage for this setup is 86.
+    const attacker = createOnFieldPokemon(NINETALES.id, {
       level: 50,
       spAttack: 100,
-      types: ["fire"],
-      ability: "flash-fire",
+      ability: GEN3_ABILITY_IDS.flashFire,
       hasFlashFire: true,
     });
-    const defender = createActivePokemon({
+    const defender = createOnFieldPokemon(VAPOREON.id, {
       level: 50,
       spDefense: 100,
-      types: ["normal"],
     });
-    const thunderbolt = createMove("electric", 90, "thunderbolt");
 
-    const ctx = createDamageContext({
-      attacker,
-      defender,
-      move: thunderbolt,
-      rng: createMockRng(100),
-    });
-    const result = calculateGen3Damage(ctx, chart);
+    const result = calculateGen3Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: THUNDERBOLT,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
 
-    // Normal damage: spAttack=100, power=90, electric is special
-    // base = floor(floor(22*90*100/100)/50) = 39, +2 = 41
-    // No STAB (fire attacker, electric move), neutral type
-    // Source: manual derivation
-    expect(result.damage).toBe(41);
+    expect(result.damage).toBe(86);
   });
 
-  it("given attacker with flash-fire ability but NO volatile, when using fire move, then no boost", () => {
-    // Source: pret/pokeemerald — The boost requires the flash-fire volatile to be set
+  it("given attacker with flash-fire ability but NO volatile, when using Flamethrower, then no boost", () => {
+    // Source: pret/pokeemerald — the boost requires the Flash Fire volatile to be set
     // (which happens when absorbing a fire move). Just having the ability is not enough.
-    const attacker = createActivePokemon({
+    // The exact seeded Gen 3 damage for this setup is 32.
+    const attacker = createOnFieldPokemon(NINETALES.id, {
       level: 50,
       spAttack: 100,
-      types: ["fire"],
-      ability: "flash-fire",
-      hasFlashFire: false, // volatile not set
+      ability: GEN3_ABILITY_IDS.flashFire,
+      hasFlashFire: false,
     });
-    const defender = createActivePokemon({
+    const defender = createOnFieldPokemon(VAPOREON.id, {
       level: 50,
       spDefense: 100,
-      types: ["normal"],
     });
-    const flamethrower = createMove("fire", 90, "flamethrower");
 
-    const ctx = createDamageContext({
-      attacker,
-      defender,
-      move: flamethrower,
-      rng: createMockRng(100),
-    });
-    const result = calculateGen3Damage(ctx, chart);
+    const result = calculateGen3Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: FLAMETHROWER,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
 
-    // Without flash fire boost: spAttack=100
-    // base = floor(floor(22*90*100/100)/50) = 39
-    // +2 = 41, random*1.0 = 41, STAB = floor(41*1.5) = 61
-    expect(result.damage).toBe(61);
+    expect(result.damage).toBe(32);
   });
 
-  it("given attacker with flash-fire volatile, when fire move targets flash-fire defender, then defender is immune (damage 0)", () => {
-    // Source: pret/pokeemerald — Flash Fire on defender side grants immunity
-    // The immunity check runs before the boost check
-    const attacker = createActivePokemon({
+  it("given attacker with flash-fire volatile, when Flamethrower targets a flash-fire defender, then defender is immune (damage 0)", () => {
+    // Source: pret/pokeemerald — Flash Fire on defender side grants immunity.
+    // The immunity check runs before the boost check.
+    const attacker = createOnFieldPokemon(NINETALES.id, {
       level: 50,
       spAttack: 100,
-      types: ["fire"],
-      ability: "flash-fire",
+      ability: GEN3_ABILITY_IDS.flashFire,
       hasFlashFire: true,
     });
-    const defender = createActivePokemon({
+    const defender = createOnFieldPokemon(NINETALES.id, {
       level: 50,
       spDefense: 100,
-      types: ["normal"],
-      ability: "flash-fire",
+      ability: GEN3_ABILITY_IDS.flashFire,
     });
-    const flamethrower = createMove("fire", 90, "flamethrower");
 
-    const ctx = createDamageContext({
-      attacker,
-      defender,
-      move: flamethrower,
-      rng: createMockRng(100),
-    });
-    const result = calculateGen3Damage(ctx, chart);
+    const result = calculateGen3Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: FLAMETHROWER,
+        rng: createMockRng(100),
+      }),
+      chart,
+    );
 
-    // Defender Flash Fire = immune to fire
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
