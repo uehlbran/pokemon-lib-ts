@@ -25,6 +25,7 @@ Code examples for the test types used in this project. For testing philosophy, c
 - Prefer direct `dataManager.get*()` lookup for canonical records over adding a second facade layer for the same job. If a helper only forwards to `dataManager.get*()`, remove it and keep the source explicit.
 - If a helper or mock can return either canonical data or a synthetic variant, that distinction must be explicit in the API and the call site. Do not keep ambiguous helper surfaces that silently blur those two jobs.
 - When a test needs a synthetic variant, build it from a canonical base with an explicitly synthetic helper such as `createSyntheticMoveFrom(baseMove, overrides)` rather than a generic `makeMove(...)` helper.
+- Do not introduce vague fixture-builder names like `makeMove`, `makeState`, `makeSide`, `makePokemonInstance`, or `makeActivePokemon` in touched tests. Use explicit names like `getCanonicalMove`, `createBattleState`, `createBattleSide`, `createSyntheticPokemonInstance`, and `createSyntheticOnFieldPokemon`.
 - Never mutate the object returned by `dataManager.get*()` in place. Clone first when a test needs a modified variant.
 - In generation-scoped files, use descriptive local names like `dataManager`, `moveIds`, `speciesIds`, `itemIds`, and `typeIds`. Avoid cryptic aliases like `M`, `A`, `T`, and `dm`, and do not repeat the generation in every local variable when the file already fixes that context.
 - For battle-state fixture helpers, prefer names like `createOnFieldPokemon` over vague names like `makeActive`.

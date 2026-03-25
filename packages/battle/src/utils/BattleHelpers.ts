@@ -1,3 +1,12 @@
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import type { BattleStat, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import type { PokemonSnapshot } from "../events";
 import type { ActivePokemon } from "../state";
@@ -32,11 +41,11 @@ export function createDefaultStatStages(): Record<BattleStat, number> {
   };
 }
 
-/** Create an ActivePokemon wrapper from a PokemonInstance */
-export function createActivePokemon(
+/** Create an on-field battle wrapper from a PokemonInstance. */
+export function createOnFieldPokemon(
   pokemon: PokemonInstance,
   teamSlot: number,
-  types: PokemonType[],
+  baseTypes: PokemonType[],
 ): ActivePokemon {
   // If this Pokemon previously mega-evolved (megaTypes and megaAbility are set on the
   // PokemonInstance), restore them. Volatile state (stat stages, etc.) is reset as normal
@@ -45,7 +54,7 @@ export function createActivePokemon(
   // Source: Showdown sim/battle.ts — formeChange is permanent; forme is restored on sendOut.
   const isMega = !!(pokemon.megaTypes && pokemon.megaAbility);
   const resolvedTypes =
-    isMega && pokemon.megaTypes ? ([...pokemon.megaTypes] as PokemonType[]) : types;
+    isMega && pokemon.megaTypes ? ([...pokemon.megaTypes] as PokemonType[]) : baseTypes;
   const resolvedAbility = isMega && pokemon.megaAbility ? pokemon.megaAbility : pokemon.ability;
 
   // If this Pokemon previously Terastallized (terastallized flag set on the PokemonInstance),
@@ -138,26 +147,12 @@ export function createTestPokemon(
     nickname: null,
     level,
     experience: 0,
-    nature: "adamant",
-    ivs: {
-      hp: 31,
-      attack: 31,
-      defense: 31,
-      spAttack: 31,
-      spDefense: 31,
-      speed: 31,
-    },
-    evs: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-    },
+    nature: CORE_NATURE_IDS.adamant,
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: 200,
-    moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-    ability: "blaze",
+    moves: [createMoveSlot(CORE_MOVE_IDS.tackle, 35)],
+    ability: CORE_ABILITY_IDS.blaze,
     abilitySlot: "normal1",
     heldItem: null,
     status: null,
@@ -168,7 +163,7 @@ export function createTestPokemon(
     metLevel: level,
     originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "poke-ball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: {
       hp: 200,
       attack: 100,

@@ -4,7 +4,7 @@ import {
   type BattleSide,
   type BattleState,
 } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_STATUS_IDS,
   createEvs,
@@ -137,7 +137,7 @@ function createOnFieldPokemon(overrides: {
     maxHp: overrides.maxHp,
   });
 
-  return createActivePokemon(pokemon, 0, [...speciesRecord.types]);
+  return createBattleOnFieldPokemon(pokemon, 0, [...speciesRecord.types]);
 }
 
 /**

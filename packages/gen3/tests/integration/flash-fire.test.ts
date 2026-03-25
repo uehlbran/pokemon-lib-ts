@@ -1,5 +1,5 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -120,7 +120,7 @@ function createOnFieldPokemon(
     volatileStatuses.set(CORE_VOLATILE_IDS.flashFire, true);
   }
 
-  const active = createActivePokemon(pokemon, 0, opts.types ?? [...species.types]);
+  const active = createBattleOnFieldPokemon(pokemon, 0, opts.types ?? [...species.types]);
   active.volatileStatuses = volatileStatuses as ActivePokemon["volatileStatuses"];
   active.ability = opts.ability ?? CORE_ABILITY_IDS.none;
   return active;

@@ -10,7 +10,7 @@
  */
 
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import { createActivePokemon, createTestPokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon, createTestPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   PokemonInstance,
@@ -462,7 +462,7 @@ function makeDamageActivePokemon(opts: {
     status: opts.status ?? null,
     calculatedStats: opts.stats,
   });
-  return createActivePokemon(pokemon, 0, [...opts.types]);
+  return createBattleOnFieldPokemon(pokemon, 0, [...opts.types]);
 }
 
 function neutralTypeChart(): TypeChart {

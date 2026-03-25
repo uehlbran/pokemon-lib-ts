@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -98,7 +98,7 @@ function createOnFieldPokemon(
     spDefense: 100,
   };
 
-  const active = createActivePokemon(
+  const active = createBattleOnFieldPokemon(
     pokemon,
     0,
     overrides.types ?? [...(speciesRecord.types as PokemonType[])],

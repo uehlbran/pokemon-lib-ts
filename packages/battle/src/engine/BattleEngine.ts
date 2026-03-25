@@ -37,7 +37,7 @@ import type {
 } from "../state";
 import {
   clonePokemonInstance,
-  createActivePokemon,
+  createOnFieldPokemon,
   createDefaultStatStages,
   createPokemonSnapshot,
   getPokemonName,
@@ -1402,7 +1402,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
     const types = [...species.types];
 
-    const active = createActivePokemon(pokemon, teamSlot, types);
+    const active = createOnFieldPokemon(pokemon, teamSlot, types);
     this.applyBatonPassState(active, batonPassState);
     side.active[0] = active;
 

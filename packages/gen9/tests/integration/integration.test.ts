@@ -21,7 +21,7 @@
  */
 
 import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -203,7 +203,7 @@ function createOnFieldPokemon(overrides: {
   pokemon.teraType = overrides.teraType ?? null;
   pokemon.timesAttacked = overrides.timesAttacked ?? 0;
 
-  const active = createActivePokemon(
+  const active = createBattleOnFieldPokemon(
     pokemon,
     overrides.teamSlot ?? 0,
     overrides.types ?? [...(speciesRecord.types as PokemonType[])],

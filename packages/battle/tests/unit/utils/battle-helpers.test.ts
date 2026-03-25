@@ -1,14 +1,18 @@
+import { CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import type { PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
-  createActivePokemon,
   createDefaultStatStages,
+  createOnFieldPokemon,
   createPokemonSnapshot,
   createTestPokemon,
   getPokemonName,
 } from "../../../src/utils";
 
 describe("BattleHelpers", () => {
+  const fireFlyingTypes: PokemonType[] = [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]
+  const fireMonotype: PokemonType[] = [CORE_TYPE_IDS.fire]
+
   describe("createDefaultStatStages", () => {
     it("given no arguments, when createDefaultStatStages is called, then all stages are 0", () => {
       // Act
@@ -40,7 +44,7 @@ describe("BattleHelpers", () => {
       expect(pokemon.level).toBe(level);
       expect(pokemon.currentHp).toBe(expectedCurrentHp);
       expect(pokemon.moves).toHaveLength(1);
-      expect(pokemon.moves[0]?.moveId).toBe("tackle");
+      expect(pokemon.moves[0]?.moveId).toBe(CORE_MOVE_IDS.tackle);
     });
 
     it("given repeated calls with the same species and level, when createTestPokemon is called, then each Pokemon has a unique uid", () => {
@@ -72,18 +76,18 @@ describe("BattleHelpers", () => {
     });
   });
 
-  describe("createActivePokemon", () => {
-    it("given a PokemonInstance, when createActivePokemon is called, then an ActivePokemon wrapper is returned", () => {
+  describe("createOnFieldPokemon", () => {
+    it("given a PokemonInstance, when createOnFieldPokemon is called, then an ActivePokemon wrapper is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
 
       // Act
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireFlyingTypes);
 
       // Assert
       expect(active.pokemon).toBe(pokemon);
       expect(active.teamSlot).toBe(0);
-      expect(active.types).toEqual(["fire", "flying"]);
+      expect(active.types).toEqual(fireFlyingTypes);
       expect(active.statStages.attack).toBe(0);
       expect(active.volatileStatuses.size).toBe(0);
       expect(active.turnsOnField).toBe(0);
@@ -93,19 +97,19 @@ describe("BattleHelpers", () => {
       expect(active.stellarBoostedTypes).toEqual([]);
     });
 
-    it("given a caller-owned types array, when createActivePokemon is called, then the ActivePokemon gets its own copy", () => {
+    it("given a caller-owned base types array, when createOnFieldPokemon is called, then the ActivePokemon gets its own copy", () => {
       const pokemon = createTestPokemon(6, 50);
-      const types: PokemonType[] = ["fire", "flying"];
+      const types: PokemonType[] = [...fireFlyingTypes];
 
-      const active = createActivePokemon(pokemon, 0, types);
+      const active = createOnFieldPokemon(pokemon, 0, types);
 
-      expect(active.types).toEqual(["fire", "flying"]);
+      expect(active.types).toEqual(fireFlyingTypes);
       expect(active.types).not.toBe(types);
 
       active.types[0] = "water";
 
-      expect(types).toEqual(["fire", "flying"]);
-      expect(active.types).toEqual(["water", "flying"]);
+      expect(types).toEqual(fireFlyingTypes);
+      expect(active.types).toEqual([CORE_TYPE_IDS.water, CORE_TYPE_IDS.flying]);
     });
   });
 
@@ -129,7 +133,7 @@ describe("BattleHelpers", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireFlyingTypes);
 
       // Act
       const snapshot = createPokemonSnapshot(active);
@@ -150,7 +154,7 @@ describe("BattleHelpers", () => {
     it("given a pokemon with a nickname, when getPokemonName is called, then nickname is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { nickname: "Char" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireMonotype);
 
       // Act
       const name = getPokemonName(active);
@@ -162,7 +166,7 @@ describe("BattleHelpers", () => {
     it("given a pokemon without a nickname, when getPokemonName is called, then species-based fallback is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { nickname: null });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireMonotype);
 
       // Act
       const name = getPokemonName(active);

@@ -1,6 +1,6 @@
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
@@ -122,7 +122,7 @@ function createOnFieldPokemon(
     spDefense: 100,
   }
 
-  const active = createActivePokemon(
+  const active = createBattleOnFieldPokemon(
     pokemon,
     0,
     overrides.types ?? [...(defaultSpecies.types as PokemonType[])],
@@ -132,7 +132,7 @@ function createOnFieldPokemon(
   return active
 }
 
-function makeSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
+function createBattleSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
   return {
     index,
     trainer: null,
@@ -149,7 +149,7 @@ function makeSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeBattleState(sideA: BattleSide, sideB: BattleSide): BattleState {
+function createBattleState(sideA: BattleSide, sideB: BattleSide): BattleState {
   return {
     phase: "turn-end",
     generation: 8,
@@ -215,9 +215,9 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
         moves: [createScenarioMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [pranksterUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createBattleSide(0, [pranksterUser]);
+      const sideB = createBattleSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -250,9 +250,9 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
         moves: [createScenarioMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [pranksterUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createBattleSide(0, [pranksterUser]);
+      const sideB = createBattleSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -295,9 +295,9 @@ describe("Gen8Ruleset.resolveTurnOrder -- Gale Wings priority boost (#783)", () 
         moves: [createScenarioMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [galeWingsUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createBattleSide(0, [galeWingsUser]);
+      const sideB = createBattleSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -332,9 +332,9 @@ describe("Gen8Ruleset.resolveTurnOrder -- Gale Wings priority boost (#783)", () 
         moves: [createScenarioMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [galeWingsUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createBattleSide(0, [galeWingsUser]);
+      const sideB = createBattleSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -376,9 +376,9 @@ describe("Gen8Ruleset.resolveTurnOrder -- Triage priority boost (#783)", () => {
         moves: [createScenarioMoveSlot(moveIds.quickAttack)],
       });
 
-      const sideA = makeSide(0, [triageUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createBattleSide(0, [triageUser]);
+      const sideB = createBattleSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -410,9 +410,9 @@ describe("Gen8Ruleset.resolveTurnOrder -- Triage priority boost (#783)", () => {
         moves: [createScenarioMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [triageUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createBattleSide(0, [triageUser]);
+      const sideB = createBattleSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },

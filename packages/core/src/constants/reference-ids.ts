@@ -136,6 +136,34 @@ export const CORE_MOVE_CATEGORIES = {
   status: "status",
 } as const;
 
+export const CORE_NATURE_IDS = {
+  adamant: "adamant",
+  bashful: "bashful",
+  bold: "bold",
+  brave: "brave",
+  calm: "calm",
+  careful: "careful",
+  docile: "docile",
+  gentle: "gentle",
+  hardy: "hardy",
+  hasty: "hasty",
+  impish: "impish",
+  jolly: "jolly",
+  lax: "lax",
+  lonely: "lonely",
+  mild: "mild",
+  modest: "modest",
+  naive: "naive",
+  naughty: "naughty",
+  quiet: "quiet",
+  quirky: "quirky",
+  rash: "rash",
+  relaxed: "relaxed",
+  sassy: "sassy",
+  serious: "serious",
+  timid: "timid",
+} as const;
+
 export const CORE_HAZARD_IDS = {
   spikes: "spikes",
   stealthRock: "stealth-rock",

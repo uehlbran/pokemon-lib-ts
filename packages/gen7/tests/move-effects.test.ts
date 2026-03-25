@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -143,7 +143,7 @@ function createOnFieldPokemon(overrides: {
   pokemon.ability = overrides.ability ?? abilityIds.none;
   pokemon.calculatedStats = createSyntheticBattleStats(maxHp);
 
-  const active = createActivePokemon(
+  const active = createBattleOnFieldPokemon(
     pokemon,
     0,
     [...(overrides.types ?? [...speciesRecord.types])] as PokemonType[],

@@ -1,6 +1,6 @@
 export {
   clonePokemonInstance,
-  createActivePokemon,
+  createOnFieldPokemon,
   createDefaultStatStages,
   createPokemonSnapshot,
   createTestPokemon,

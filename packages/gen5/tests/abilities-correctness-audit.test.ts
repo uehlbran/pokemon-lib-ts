@@ -6,7 +6,7 @@ import type {
   DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   MoveEffect,
@@ -85,7 +85,7 @@ const DEFAULT_TACKLE = dataManager.getMove(M.tackle);
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -132,7 +132,7 @@ function makePokemonInstance(overrides: {
   return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   speciesId?: number;
   ability?: string;
   types?: PokemonType[];
@@ -152,7 +152,7 @@ function makeActivePokemon(overrides: {
   substituteHp?: number;
   itemKnockedOff?: boolean;
 }): ActivePokemon {
-  const pokemon = makePokemonInstance({
+  const pokemon = createSyntheticPokemonInstance({
     speciesId: overrides.speciesId,
     ability: overrides.ability,
     nickname: overrides.nickname,
@@ -165,7 +165,7 @@ function makeActivePokemon(overrides: {
     defense: overrides.defense,
     spDefense: overrides.spDefense,
   });
-  const active = createActivePokemon(
+  const active = createBattleOnFieldPokemon(
     pokemon,
     0,
     overrides.types ?? [...dataManager.getSpecies(pokemon.speciesId).types] ?? [DEFAULT_TYPE],
@@ -188,7 +188,7 @@ function makeActivePokemon(overrides: {
   return active;
 }
 
-function makeSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
+function createBattleSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
   return {
     index,
     trainer: null,
@@ -205,7 +205,7 @@ function makeSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeBattleState(overrides?: {
+function createBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number } | null;
   format?: "singles" | "doubles";
   sides?: [BattleSide, BattleSide];
@@ -215,7 +215,7 @@ function makeBattleState(overrides?: {
     generation: 5,
     format: overrides?.format ?? "singles",
     turnNumber: 1,
-    sides: overrides?.sides ?? [makeSide(0), makeSide(1)],
+    sides: overrides?.sides ?? [createBattleSide(0), createBattleSide(1)],
     weather: overrides?.weather ?? null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -237,7 +237,7 @@ function makeBattleState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeMove(moveId: string): MoveData {
+function getCanonicalMove(moveId: string): MoveData {
   return dataManager.getMove(moveId);
 }
 
@@ -268,7 +268,7 @@ function makeAbilityContext(opts: {
     setState: (s: number) => void;
   };
 }): AbilityContext {
-  const pokemon = makeActivePokemon({
+  const pokemon = createSyntheticOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname ?? "TestMon",
@@ -285,7 +285,7 @@ function makeAbilityContext(opts: {
   return {
     pokemon,
     opponent: opts.opponent,
-    state: opts.state ?? makeBattleState(),
+    state: opts.state ?? createBattleState(),
     trigger: opts.trigger,
     move: opts.move,
     statChange: opts.statChange,
@@ -313,7 +313,7 @@ function makeItemContext(opts: {
   rng?: SeededRandom;
   types?: PokemonType[];
 }): ItemContext {
-  const pokemon = makeActivePokemon({
+  const pokemon = createSyntheticOnFieldPokemon({
     ability: opts.ability ?? NONE_ABILITY,
     heldItem: opts.heldItem,
     currentHp: opts.currentHp,
@@ -327,7 +327,7 @@ function makeItemContext(opts: {
     pokemon,
     move: opts.move,
     damage: opts.damage,
-    state: opts.state ?? makeBattleState(),
+    state: opts.state ?? createBattleState(),
     rng: opts.rng ?? new SeededRandom(42),
   } as unknown as ItemContext;
 }
@@ -443,7 +443,7 @@ describe("Prankster -- Dark-type immunity is Gen 6+, NOT Gen 5", () => {
     const ctx = makeAbilityContext({
       ability: A.prankster,
       trigger: "on-priority-check",
-      move: makeMove(M.taunt),
+      move: getCanonicalMove(M.taunt),
       nickname: "Sableye",
     });
     const result = handleGen5StatAbility(ctx);
@@ -459,11 +459,11 @@ describe("Prankster -- Dark-type immunity is Gen 6+, NOT Gen 5", () => {
     () => {
       // Source: Showdown data/mods/gen5/abilities.ts -- no Dark immunity override for Gen 5
       // Source: Bulbapedia -- Prankster: Dark-type immunity was added in Gen 7
-      const darkOpponent = makeActivePokemon({ types: [CORE_TYPE_IDS.dark] });
+      const darkOpponent = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.dark] });
       const ctx = makeAbilityContext({
         ability: A.prankster,
         trigger: "on-priority-check",
-        move: makeMove(M.taunt),
+        move: getCanonicalMove(M.taunt),
         opponent: darkOpponent,
         nickname: "Sableye",
       });
@@ -606,7 +606,7 @@ describe("Moxie -- +1 Attack after KOing a Pokemon", () => {
     () => {
       // Source: Showdown data/abilities.ts -- Moxie onSourceAfterFaint:
       //   this.boost({atk: 1}, source)
-      const faintedOpponent = makeActivePokemon({ currentHp: 0, maxHp: 200 });
+      const faintedOpponent = createSyntheticOnFieldPokemon({ currentHp: 0, maxHp: 200 });
       const ctx = makeAbilityContext({
         ability: A.moxie,
         trigger: "on-after-move-used",
@@ -628,7 +628,7 @@ describe("Moxie -- +1 Attack after KOing a Pokemon", () => {
       "when on-after-move-used fires, then does NOT activate",
     () => {
       // Triangulation: Moxie only triggers on KO (HP === 0)
-      const livingOpponent = makeActivePokemon({ currentHp: 50, maxHp: 200 });
+      const livingOpponent = createSyntheticOnFieldPokemon({ currentHp: 50, maxHp: 200 });
       const ctx = makeAbilityContext({
         ability: A.moxie,
         trigger: "on-after-move-used",
@@ -681,7 +681,7 @@ describe("Magic Bounce -- REGRESSION #543: ability not implemented in Gen 5", ()
       const ctx = makeAbilityContext({
         ability: A.magicBounce,
         trigger: "passive-immunity",
-        move: makeMove(M.stealthRock),
+        move: getCanonicalMove(M.stealthRock),
       });
       const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
@@ -825,7 +825,7 @@ describe("Healer -- 30% chance to cure ally status; no-op in singles (not a bug)
     const ctx = makeAbilityContext({
       ability: A.healer,
       trigger: "on-turn-end",
-      state: makeBattleState({ format: "singles" }),
+      state: createBattleState({ format: "singles" }),
     });
     expect(handleGen5RemainingAbility(ctx).activated).toBe(false);
   });
@@ -869,7 +869,7 @@ describe("Unburden -- REGRESSION #541: stolen item does not trigger Unburden vol
       // BUG #541: Gen5Items.ts only checks `result.effects.some(e => e.type === 'consume')`.
       // Knock Off sets itemKnockedOff = true and nulls the item, emitting no "consume" effect.
       // The unburden volatile is therefore never set for stolen items.
-      const pokemon = makeActivePokemon({
+      const pokemon = createSyntheticOnFieldPokemon({
         ability: A.unburden,
         heldItem: I.choiceBand,
         itemKnockedOff: false,
@@ -919,19 +919,19 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
       } as BattleState;
 
       // Ember: base power 40, Fire type, special
-      const fireMove = makeMove(M.ember);
+      const fireMove = getCanonicalMove(M.ember);
 
-      const attacker = makeActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.charmander,
         types: [CORE_TYPE_IDS.fire],
         heldItem: null,
       });
-      const attackerWithGem = makeActivePokemon({
+      const attackerWithGem = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.charmander,
         types: [CORE_TYPE_IDS.fire],
         heldItem: I.fireGem,
       });
-      const defender = makeActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.squirtle,
         types: [CORE_TYPE_IDS.water],
       });
@@ -996,14 +996,14 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
         winner: null,
       } as BattleState;
 
-      const waterMove = makeMove(M.waterGun);
+      const waterMove = getCanonicalMove(M.waterGun);
 
-      const attackerWithFireGem = makeActivePokemon({
+      const attackerWithFireGem = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.squirtle,
         types: [CORE_TYPE_IDS.water],
         heldItem: I.fireGem,
       });
-      const defender2 = makeActivePokemon({
+      const defender2 = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.pikachu,
         types: [CORE_TYPE_IDS.electric],
       });
@@ -1041,7 +1041,7 @@ describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
       // floor(200 / 6) = 33.
       const ctx = makeItemContext({
         heldItem: I.rockyHelmet,
-        move: makeMove(M.tackle),
+        move: getCanonicalMove(M.tackle),
         damage: 50,
       });
       const result = applyGen5HeldItem("on-contact", ctx);
@@ -1063,7 +1063,7 @@ describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
       // Triangulation: only contact moves trigger Rocky Helmet
       const ctx = makeItemContext({
         heldItem: I.rockyHelmet,
-        move: makeMove(M.ember),
+        move: getCanonicalMove(M.ember),
         damage: 50,
       });
       expect(applyGen5HeldItem("on-contact", ctx).activated).toBe(false);
@@ -1115,7 +1115,7 @@ describe("Klutz -- suppresses all held item effects", () => {
     const ctx = makeItemContext({
       ability: A.klutz,
       heldItem: I.rockyHelmet,
-      move: makeMove(M.tackle),
+      move: getCanonicalMove(M.tackle),
       damage: 50,
     });
     expect(applyGen5HeldItem("on-contact", ctx).activated).toBe(false);
@@ -1187,19 +1187,19 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
       } as BattleState;
 
       // Tackle: base power 50, Normal type, physical
-      const tackle = makeMove(M.tackle);
+      const tackle = getCanonicalMove(M.tackle);
 
-      const attacker = makeActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.charmander,
         types: [CORE_TYPE_IDS.fire],
         heldItem: null,
       });
-      const defenderNoItem = makeActivePokemon({
+      const defenderNoItem = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.charmander,
         types: [CORE_TYPE_IDS.fire],
         heldItem: null,
       });
-      const defenderEviolite = makeActivePokemon({
+      const defenderEviolite = createSyntheticOnFieldPokemon({
         speciesId: GEN5_SPECIES_IDS.charmander,
         types: [CORE_TYPE_IDS.fire],
         heldItem: I.eviolite,

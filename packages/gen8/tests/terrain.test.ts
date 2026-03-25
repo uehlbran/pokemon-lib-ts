@@ -1,5 +1,5 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonType, PrimaryStatus, TerrainType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -114,7 +114,7 @@ function createOnFieldPokemon(overrides: {
     speed: overrides.speed ?? 100,
   }
 
-  const active = createActivePokemon(
+  const active = createBattleOnFieldPokemon(
     pokemon,
     0,
     overrides.types ?? [...(species.types as PokemonType[])],
