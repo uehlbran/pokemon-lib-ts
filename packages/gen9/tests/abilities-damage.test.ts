@@ -51,6 +51,17 @@ import {
 import { calculateGen9Damage, pokeRound } from "../src/Gen9DamageCalc";
 import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
 
+// Source: Showdown damage engine fixed-point arithmetic uses 4096 as the identity modifier.
+const FIXED_POINT_IDENTITY = 4096;
+// Source: Showdown data/abilities.ts -- Gen 7+ -ate abilities use chainModify([4915, 4096]).
+const GEN7_PLUS_ATE_MODIFIER = 4915 / FIXED_POINT_IDENTITY;
+// Source: the local makeActive helper defaults max HP to 200 unless overridden.
+const DEFAULT_HP_FIXTURE = 200;
+const TEST_ABILITY_IDS = {
+  blaze: "blaze",
+  sturdy: "sturdy",
+} as const;
+
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as damage-calc.test.ts)
 // ---------------------------------------------------------------------------
@@ -282,15 +293,22 @@ describe("Supreme Overlord", () => {
     });
 
     it("given non-Supreme Overlord ability, when getting modifier, then returns 4096 (no effect)", () => {
-      const mod = getSupremeOverlordModifier("blaze", 5);
-      expect(mod).toBe(4096);
+      const mod = getSupremeOverlordModifier(TEST_ABILITY_IDS.blaze, 5);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
 
   describe("SUPREME_OVERLORD_TABLE", () => {
     it("has exactly 6 entries matching Showdown powMod array", () => {
       // Source: Showdown data/abilities.ts:4649 -- const powMod = [4096, 4506, 4915, 5325, 5734, 6144]
-      expect(SUPREME_OVERLORD_TABLE).toEqual([4096, 4506, 4915, 5325, 5734, 6144]);
+      expect(SUPREME_OVERLORD_TABLE).toEqual([
+        FIXED_POINT_IDENTITY,
+        4506,
+        4915,
+        5325,
+        5734,
+        6144,
+      ]);
     });
   });
 
@@ -504,17 +522,17 @@ describe("Hadron Engine", () => {
 
     it("given no terrain + Hadron Engine, when getting modifier, then returns 4096 (no boost)", () => {
       const mod = getHadronEngineSpAModifier("hadron-engine", null);
-      expect(mod).toBe(4096);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given Grassy Terrain + Hadron Engine, when getting modifier, then returns 4096 (wrong terrain)", () => {
       const mod = getHadronEngineSpAModifier("hadron-engine", "grassy");
-      expect(mod).toBe(4096);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given non-Hadron Engine ability on Electric Terrain, when getting modifier, then returns 4096", () => {
-      const mod = getHadronEngineSpAModifier("blaze", "electric");
-      expect(mod).toBe(4096);
+      const mod = getHadronEngineSpAModifier(TEST_ABILITY_IDS.blaze, "electric");
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
 
@@ -739,12 +757,12 @@ describe("Fluffy", () => {
 
     it("given Fluffy defender hit by non-fire non-contact move, when getting modifier, then returns 4096 (no effect)", () => {
       const mod = getFluffyModifier("fluffy", "normal", false);
-      expect(mod).toBe(4096);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given non-Fluffy defender, when getting modifier, then returns 4096 regardless", () => {
-      const mod = getFluffyModifier("blaze", "fire", true);
-      expect(mod).toBe(4096);
+      const mod = getFluffyModifier(TEST_ABILITY_IDS.blaze, "fire", true);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
 
@@ -792,12 +810,12 @@ describe("Ice Scales", () => {
 
     it("given Ice Scales defender hit by physical move, when getting modifier, then returns 4096 (no effect)", () => {
       const mod = getIceScalesModifier("ice-scales", "physical");
-      expect(mod).toBe(4096);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given non-Ice Scales ability hit by special move, when getting modifier, then returns 4096", () => {
-      const mod = getIceScalesModifier("blaze", "special");
-      expect(mod).toBe(4096);
+      const mod = getIceScalesModifier(TEST_ABILITY_IDS.blaze, "special");
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
 
@@ -1075,8 +1093,11 @@ describe("-ate abilities (Gen 9: 1.2x)", () => {
     });
 
     it("given Pixilate with non-Normal move, when checking override, then returns null", () => {
-      const result = getAteAbilityOverride("pixilate", "fire");
-      expect(result).toBeNull();
+      expect(getAteAbilityOverride("pixilate", "fire")).toBeNull();
+      expect(getAteAbilityOverride("pixilate", "normal")).toEqual({
+        type: "fairy",
+        multiplier: GEN7_PLUS_ATE_MODIFIER,
+      });
     });
 
     it("given Normalize with Fire-type move, when checking override, then returns normal + 1.2x", () => {
@@ -1096,8 +1117,11 @@ describe("-ate abilities (Gen 9: 1.2x)", () => {
     });
 
     it("given Liquid Voice with non-sound move, when checking override, then returns null", () => {
-      const result = getAteAbilityOverride("liquid-voice", "normal", false);
-      expect(result).toBeNull();
+      expect(getAteAbilityOverride("liquid-voice", "normal", false)).toBeNull();
+      expect(getAteAbilityOverride("liquid-voice", "normal", true)).toEqual({
+        type: "water",
+        multiplier: 1,
+      });
     });
   });
 });
@@ -1195,7 +1219,9 @@ describe("Sturdy", () => {
   describe("getSturdyDamageCap", () => {
     it("given Sturdy at full HP with lethal damage, when capping, then returns maxHp - 1", () => {
       // Source: Showdown data/abilities.ts -- sturdy onDamage: maxhp - 1
-      expect(getSturdyDamageCap("sturdy", 200, 200, 200)).toBe(199);
+      expect(getSturdyDamageCap("sturdy", DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE)).toBe(
+        DEFAULT_HP_FIXTURE - 1,
+      );
     });
 
     it("given Sturdy at full HP with non-lethal damage, when capping, then returns original damage", () => {
@@ -1203,11 +1229,21 @@ describe("Sturdy", () => {
     });
 
     it("given Sturdy NOT at full HP with lethal damage, when capping, then returns original damage (no cap)", () => {
-      expect(getSturdyDamageCap("sturdy", 200, 150, 200)).toBe(200);
+      // Source: Sturdy only caps at full HP; once currentHp differs from maxHp the damage passes through unchanged.
+      expect(getSturdyDamageCap("sturdy", DEFAULT_HP_FIXTURE, 150, DEFAULT_HP_FIXTURE)).toBe(
+        DEFAULT_HP_FIXTURE,
+      );
     });
 
     it("given non-Sturdy ability, when capping, then returns original damage", () => {
-      expect(getSturdyDamageCap("blaze", 200, 200, 200)).toBe(200);
+      expect(
+        getSturdyDamageCap(
+          TEST_ABILITY_IDS.blaze,
+          DEFAULT_HP_FIXTURE,
+          DEFAULT_HP_FIXTURE,
+          DEFAULT_HP_FIXTURE,
+        ),
+      ).toBe(DEFAULT_HP_FIXTURE);
     });
   });
 
@@ -1222,7 +1258,7 @@ describe("Sturdy", () => {
     });
 
     it("given non-Sturdy and OHKO move, when checking, then returns false", () => {
-      expect(sturdyBlocksOHKO("blaze", { type: "ohko" })).toBe(false);
+      expect(sturdyBlocksOHKO(TEST_ABILITY_IDS.blaze, { type: "ohko" })).toBe(false);
     });
   });
 });
