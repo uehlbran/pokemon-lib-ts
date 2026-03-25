@@ -16,15 +16,17 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
 import {
+  CORE_ABILITY_SLOTS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
-  SeededRandom,
   type MoveData,
+  NEUTRAL_NATURES,
   type PokemonInstance,
   type PokemonType,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS, Gen1Ruleset } from "../../src";
@@ -35,24 +37,22 @@ import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS, Gen1Ruleset } f
 
 const ruleset = new Gen1Ruleset();
 const dataManager = createGen1DataManager();
-const M = GEN1_MOVE_IDS;
-const P = GEN1_SPECIES_IDS;
-const S = CORE_STATUS_IDS;
-const T = CORE_TYPE_IDS;
-const V = CORE_VOLATILE_IDS;
-const EOT = CORE_END_OF_TURN_EFFECT_IDS;
+const MOVE_IDS = GEN1_MOVE_IDS;
+const SPECIES_IDS = GEN1_SPECIES_IDS;
+const STATUS_IDS = CORE_STATUS_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const END_OF_TURN_IDS = CORE_END_OF_TURN_EFFECT_IDS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
-const DEFAULT_MOVE = dataManager.getMove(M.tackle);
-const DEFAULT_THUNDERBOLT = dataManager.getMove(M.thunderbolt);
-const DEFAULT_PIKACHU = dataManager.getSpecies(P.pikachu);
+const DEFAULT_MOVE = dataManager.getMove(MOVE_IDS.tackle);
+const DEFAULT_THUNDERBOLT = dataManager.getMove(MOVE_IDS.thunderbolt);
+const DEFAULT_PIKACHU = dataManager.getSpecies(SPECIES_IDS.pikachu);
 const TEST_UID = "test-uid";
 const TEST_LOCATION = "pallet-town";
 const TEST_TRAINER = "Red";
 const TEST_POKEBALL = ["poke", "ball"].join("-");
-const RAGE_MISS_LOCK = `${V.rage}-miss-lock`;
-const THRASH_LOCK = `${M.thrash}-lock`;
-const DEFAULT_ABILITY_SLOT = "normal1" as const;
-const DEFAULT_GENDER = "male" as const;
+const RAGE_MISS_LOCK = `${VOLATILE_IDS.rage}-miss-lock`;
+const THRASH_LOCK = `${MOVE_IDS.thrash}-lock`;
 
 const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   contact: false,
@@ -74,20 +74,21 @@ const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   bypassSubstitute: false,
 };
 
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function createMove(moveId: MoveData["id"], overrides: Partial<MoveData> = {}): MoveData {
+  const move = dataManager.getMove(moveId);
   return {
-    ...DEFAULT_MOVE,
+    ...move,
     flags: DEFAULT_MOVE_FLAGS,
     effect: null,
     ...overrides,
   };
 }
 
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+function createActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
   return {
     pokemon: {
       uid: TEST_UID,
-      speciesId: P.pikachu,
+      speciesId: SPECIES_IDS.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
@@ -95,16 +96,21 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [
-        { moveId: M.tackle, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 },
-        { moveId: M.thunderbolt, currentPP: DEFAULT_THUNDERBOLT.pp, maxPP: DEFAULT_THUNDERBOLT.pp, ppUps: 0 },
+        { moveId: MOVE_IDS.tackle, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 },
+        {
+          moveId: MOVE_IDS.thunderbolt,
+          currentPP: DEFAULT_THUNDERBOLT.pp,
+          maxPP: DEFAULT_THUNDERBOLT.pp,
+          ppUps: 0,
+        },
       ],
       currentHp: 100,
       status: null,
       friendship: 70,
       heldItem: null,
       ability: "",
-      abilitySlot: DEFAULT_ABILITY_SLOT,
-      gender: DEFAULT_GENDER,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: TEST_LOCATION,
       metLevel: 5,
@@ -155,7 +161,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   } as ActivePokemon;
 }
 
-function makeBattleState(
+function createBattleState(
   overrides: { side0Active?: ActivePokemon | null; side1Active?: ActivePokemon | null } = {},
 ): BattleState {
   const rng = new SeededRandom(42);
@@ -207,32 +213,36 @@ function makeBattleState(
   } as BattleState;
 }
 
-function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
+function createMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
   const rng = new SeededRandom(42);
   return {
-    attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: [T.normal] as PokemonType[] }),
-    move: makeMove(),
+    attacker: createActivePokemon(),
+    defender: createActivePokemon({ types: [TYPE_IDS.normal] as PokemonType[] }),
+    move: createMove(MOVE_IDS.tackle),
     damage: 0,
-    state: makeBattleState(),
+    state: createBattleState(),
     rng,
     ...overrides,
   };
 }
 
-function makeAccuracyContext(overrides: Partial<AccuracyContext> = {}): AccuracyContext {
+function createAccuracyContext(overrides: Partial<AccuracyContext> = {}): AccuracyContext {
   const rng = new SeededRandom(42);
   return {
-    attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: [T.normal] as PokemonType[] }),
-    move: makeMove(),
-    state: makeBattleState(),
+    attacker: createActivePokemon(),
+    defender: createActivePokemon({ types: [TYPE_IDS.normal] as PokemonType[] }),
+    move: createMove(MOVE_IDS.tackle),
+    state: createBattleState(),
     rng,
     ...overrides,
   };
 }
 
-function findSeed(limit: number, predicate: (seed: number) => boolean, failureMessage: string): number {
+function findSeed(
+  limit: number,
+  predicate: (seed: number) => boolean,
+  failureMessage: string,
+): number {
   for (let seed = 0; seed < limit; seed++) {
     if (predicate(seed)) {
       return seed;
@@ -252,7 +262,7 @@ describe("#129 — getPostAttackResidualOrder returns status-damage and leech-se
     // Arrange / Act
     const order = ruleset.getPostAttackResidualOrder();
     // Assert
-    expect(order).toEqual([EOT.statusDamage, V.leechSeed]);
+    expect(order).toEqual([END_OF_TURN_IDS.statusDamage, VOLATILE_IDS.leechSeed]);
   });
 
   it("given Gen 1 ruleset, when getPostAttackResidualOrder is called, then does NOT include disable-countdown (only end-of-turn)", () => {
@@ -262,8 +272,8 @@ describe("#129 — getPostAttackResidualOrder returns status-damage and leech-se
     const postAttackOrder = ruleset.getPostAttackResidualOrder();
     const endOfTurnOrder = ruleset.getEndOfTurnOrder();
     // Assert
-    expect(postAttackOrder).not.toContain(EOT.disableCountdown);
-    expect(endOfTurnOrder).toContain(EOT.disableCountdown);
+    expect(postAttackOrder).not.toContain(END_OF_TURN_IDS.disableCountdown);
+    expect(endOfTurnOrder).toContain(END_OF_TURN_IDS.disableCountdown);
   });
 });
 
@@ -288,7 +298,7 @@ describe("#283 — rollCatchAttempt uses Gen 1 BallThrowCalc algorithm", () => {
       255, // catchRate (Pidgey)
       100, // maxHp
       100, // currentHp (full)
-      S.sleep, // frozen/sleep => statusValue=25
+      STATUS_IDS.sleep, // frozen/sleep => statusValue=25
       1.0, // Poke Ball
       testRng,
     );
@@ -372,7 +382,7 @@ describe("#283 — rollCatchAttempt uses Gen 1 BallThrowCalc algorithm", () => {
 // ============================================================================
 
 describe("#297 — Multi-hit moves set multiHitCount in result", () => {
-  const furyAttackMove = dataManager.getMove(M.furyAttack);
+  const furyAttackMove = dataManager.getMove(MOVE_IDS.furyAttack);
 
   it("given Fury Attack hits, when executeMoveEffect is called, then multiHitCount is set to (total hits - 1)", () => {
     // Source: pokered multi-hit distribution — 37.5/37.5/12.5/12.5% for 2/3/4/5 hits.
@@ -380,7 +390,7 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
     // The first hit is already dealt by the engine; multiHitCount = additional hits.
     // Arrange
     const rng = new SeededRandom(42);
-    const context = makeMoveEffectContext({ move: furyAttackMove, damage: 15, rng });
+    const context = createMoveEffectContext({ move: furyAttackMove, damage: 15, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — multiHitCount should be >= 1 (at least 2 total hits means 1 additional)
@@ -392,15 +402,15 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
     // Source: pokered multi-hit — 37.5% chance of 2 hits.
     // multiHitCount = totalHits - 1 = 2 - 1 = 1.
     // Find a seed where gen1to4MultiHitRoll returns 2.
-    const pinMissileMove = dataManager.getMove(M.pinMissile);
+    const pinMissileMove = dataManager.getMove(MOVE_IDS.pinMissile);
     // Arrange — find seed where rollMultiHitCount returns 2
     const testSeed = findSeed(
       1000,
-      (seed) => ruleset.rollMultiHitCount(makeActivePokemon(), new SeededRandom(seed)) === 2,
+      (seed) => ruleset.rollMultiHitCount(createActivePokemon(), new SeededRandom(seed)) === 2,
       "Expected to find a seed that produces exactly two total hits for a multi-hit move.",
     );
     const rng = new SeededRandom(testSeed);
-    const context = makeMoveEffectContext({ move: pinMissileMove, damage: 14, rng });
+    const context = createMoveEffectContext({ move: pinMissileMove, damage: 14, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — 2 total hits, so 1 additional
@@ -413,11 +423,11 @@ describe("#297 — Multi-hit moves set multiHitCount in result", () => {
     // Arrange — find seed where rollMultiHitCount returns 5
     const testSeed = findSeed(
       10000,
-      (seed) => ruleset.rollMultiHitCount(makeActivePokemon(), new SeededRandom(seed)) === 5,
+      (seed) => ruleset.rollMultiHitCount(createActivePokemon(), new SeededRandom(seed)) === 5,
       "Expected to find a seed that produces exactly five total hits for a multi-hit move.",
     );
     const rng = new SeededRandom(testSeed);
-    const context = makeMoveEffectContext({
+    const context = createMoveEffectContext({
       move: furyAttackMove,
       damage: 15,
       rng,
@@ -460,16 +470,16 @@ describe("#299 — confusionSelfHitTargetsOpponentSub returns true for Gen 1", (
 // ============================================================================
 
 describe("#300 — Substitute fails when currentHp <= subCost (not <)", () => {
-  const substituteMove = dataManager.getMove(M.substitute);
+  const substituteMove = dataManager.getMove(MOVE_IDS.substitute);
 
   it("given attacker with 25 HP and 100 maxHP, when Substitute is used, then fails because 25 <= floor(100/4)=25", () => {
     // Source: pret/pokered SubstituteEffect — uses <= comparison.
     // The Game Boy `cp b` + `jr c` triggers when a <= b (carry set when a < b, zero when equal).
     // subCost = floor(100/4) = 25, currentHP = 25, so 25 <= 25 is true => fail.
     // Arrange
-    const attacker = makeActivePokemon({
+    const attacker = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createActivePokemon().pokemon,
         currentHp: 25,
         calculatedStats: {
           hp: 100,
@@ -481,7 +491,7 @@ describe("#300 — Substitute fails when currentHp <= subCost (not <)", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -493,9 +503,9 @@ describe("#300 — Substitute fails when currentHp <= subCost (not <)", () => {
     // Source: pret/pokered SubstituteEffect — 26 > 25 so it passes the <= check.
     // subCost = 25, currentHP = 26, 26 > 25 => succeed.
     // Arrange
-    const attacker = makeActivePokemon({
+    const attacker = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createActivePokemon().pokemon,
         currentHp: 26,
         calculatedStats: {
           hp: 100,
@@ -507,21 +517,25 @@ describe("#300 — Substitute fails when currentHp <= subCost (not <)", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(attacker.substituteHp).toBe(25);
-    expect(result.customDamage).toEqual({ target: "attacker", amount: 25, source: M.substitute });
+    expect(result.customDamage).toEqual({
+      target: "attacker",
+      amount: 25,
+      source: MOVE_IDS.substitute,
+    });
   });
 
   it("given attacker with 50 HP and 200 maxHP, when Substitute is used, then fails because 50 <= floor(200/4)=50", () => {
     // Source: pret/pokered SubstituteEffect — second triangulation case.
     // subCost = floor(200/4) = 50, currentHP = 50 <= 50 => fail.
     // Arrange
-    const attacker = makeActivePokemon({
+    const attacker = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createActivePokemon().pokemon,
         currentHp: 50,
         calculatedStats: {
           hp: 200,
@@ -533,7 +547,7 @@ describe("#300 — Substitute fails when currentHp <= subCost (not <)", () => {
         },
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
+    const context = createMoveEffectContext({ move: substituteMove, attacker, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -547,15 +561,15 @@ describe("#300 — Substitute fails when currentHp <= subCost (not <)", () => {
 // ============================================================================
 
 describe("#304 — Rage miss loop: rage-miss-lock volatile causes auto-miss", () => {
-  const rageMove = dataManager.getMove(M.rage);
+  const rageMove = dataManager.getMove(MOVE_IDS.rage);
 
   it("given attacker has rage-miss-lock volatile, when using Rage, then doesMoveHit returns false", () => {
     // Source: pokered RageEffect — once Rage misses, all subsequent Rage uses auto-miss.
     // This replicates the cartridge infinite miss loop when Rage misses.
     // Arrange
-    const attacker = makeActivePokemon();
+    const attacker = createActivePokemon();
     attacker.volatileStatuses.set(RAGE_MISS_LOCK, { turnsLeft: -1 });
-    const context = makeAccuracyContext({ attacker, move: rageMove });
+    const context = createAccuracyContext({ attacker, move: rageMove });
     // Act
     const hit = ruleset.doesMoveHit(context);
     // Assert
@@ -566,11 +580,11 @@ describe("#304 — Rage miss loop: rage-miss-lock volatile causes auto-miss", ()
     // Source: pokered — rage-miss-lock only affects Rage, not other moves.
     // If the rage volatile is removed (e.g., by switching), other moves should work normally.
     // Arrange
-    const attacker = makeActivePokemon();
+    const attacker = createActivePokemon();
     attacker.volatileStatuses.set(RAGE_MISS_LOCK, { turnsLeft: -1 });
     // Use a move with null accuracy so it always hits (Swift)
-    const swiftMove = dataManager.getMove(M.swift);
-    const context = makeAccuracyContext({ attacker, move: swiftMove });
+    const swiftMove = dataManager.getMove(MOVE_IDS.swift);
+    const context = createAccuracyContext({ attacker, move: swiftMove });
     // Act
     const hit = ruleset.doesMoveHit(context);
     // Assert — Swift has null accuracy so always hits, rage-miss-lock doesn't affect it
@@ -584,8 +598,8 @@ describe("#304 — Rage miss loop: rage-miss-lock volatile causes auto-miss", ()
       1000,
       (seed) =>
         ruleset.doesMoveHit(
-          makeAccuracyContext({
-            attacker: makeActivePokemon(),
+          createAccuracyContext({
+            attacker: createActivePokemon(),
             move: rageMove,
             rng: new SeededRandom(seed),
           }),
@@ -593,8 +607,8 @@ describe("#304 — Rage miss loop: rage-miss-lock volatile causes auto-miss", ()
       "Expected to find a Rage seed that produces a hit without rage-miss-lock.",
     );
     const rng = new SeededRandom(testSeed);
-    const attacker = makeActivePokemon(); // no rage-miss-lock
-    const context = makeAccuracyContext({ attacker, move: rageMove, rng });
+    const attacker = createActivePokemon(); // no rage-miss-lock
+    const context = createAccuracyContext({ attacker, move: rageMove, rng });
     // Act
     const hit = ruleset.doesMoveHit(context);
     // Assert
@@ -607,21 +621,28 @@ describe("#304 — Rage miss loop: rage-miss-lock volatile causes auto-miss", ()
 // ============================================================================
 
 describe("#305 — Thrash first use stores turnsLeft = (randomTurns - 1)", () => {
-  const thrashMove = dataManager.getMove(M.thrash);
+  const thrashMove = dataManager.getMove(MOVE_IDS.thrash);
 
   it("given Thrash used for first time with seed producing 3 turns, when executeMoveEffect is called, then turnsLeft is 2 (3-1)", () => {
     // Source: pret/pokered ThrashEffect — locks for 2-3 turns total.
     // The engine deals damage BEFORE calling executeMoveEffect, so the first turn
     // is already consumed. turnsLeft = randomTurns - 1 = 3 - 1 = 2.
     // Arrange — SeededRandom(42) rng.int(2,3) = 3
-    const attacker = makeActivePokemon({
+    const attacker = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        moves: [{ moveId: M.thrash, currentPP: dataManager.getMove(M.thrash).pp, maxPP: dataManager.getMove(M.thrash).pp, ppUps: 0 }],
+        ...createActivePokemon().pokemon,
+        moves: [
+          {
+            moveId: MOVE_IDS.thrash,
+            currentPP: dataManager.getMove(MOVE_IDS.thrash).pp,
+            maxPP: dataManager.getMove(MOVE_IDS.thrash).pp,
+            ppUps: 0,
+          },
+        ],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42);
-    const context = makeMoveEffectContext({ move: thrashMove, attacker, damage: 30, rng });
+    const context = createMoveEffectContext({ move: thrashMove, attacker, damage: 30, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -637,40 +658,54 @@ describe("#305 — Thrash first use stores turnsLeft = (randomTurns - 1)", () =>
       (seed) => new SeededRandom(seed).int(2, 3) === 2,
       "Expected to find a Thrash seed that produces the minimum two-turn duration.",
     );
-    const attacker = makeActivePokemon({
+    const attacker = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        moves: [{ moveId: M.thrash, currentPP: dataManager.getMove(M.thrash).pp, maxPP: dataManager.getMove(M.thrash).pp, ppUps: 0 }],
+        ...createActivePokemon().pokemon,
+        moves: [
+          {
+            moveId: MOVE_IDS.thrash,
+            currentPP: dataManager.getMove(MOVE_IDS.thrash).pp,
+            maxPP: dataManager.getMove(MOVE_IDS.thrash).pp,
+            ppUps: 0,
+          },
+        ],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(testSeed);
-    const context = makeMoveEffectContext({ move: thrashMove, attacker, damage: 30, rng });
+    const context = createMoveEffectContext({ move: thrashMove, attacker, damage: 30, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.selfVolatileInflicted).toBe(THRASH_LOCK);
     expect(result.selfVolatileData!.turnsLeft).toBe(1);
-    expect(result.forcedMoveSet!.moveId).toBe(M.thrash);
+    expect(result.forcedMoveSet!.moveId).toBe(MOVE_IDS.thrash);
   });
 
   it("given Petal Dance used for first time with seed producing 3 turns, when executeMoveEffect is called, then turnsLeft is 2 (3-1)", () => {
     // Source: pret/pokered — Petal Dance uses the same ThrashEffect handler.
     // Arrange
-    const petalDanceMove = dataManager.getMove(M.petalDance);
-    const attacker = makeActivePokemon({
+    const petalDanceMove = dataManager.getMove(MOVE_IDS.petalDance);
+    const attacker = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        moves: [{ moveId: M.petalDance, currentPP: dataManager.getMove(M.petalDance).pp, maxPP: dataManager.getMove(M.petalDance).pp, ppUps: 0 }],
+        ...createActivePokemon().pokemon,
+        moves: [
+          {
+            moveId: MOVE_IDS.petalDance,
+            currentPP: dataManager.getMove(MOVE_IDS.petalDance).pp,
+            maxPP: dataManager.getMove(MOVE_IDS.petalDance).pp,
+            ppUps: 0,
+          },
+        ],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42); // rng.int(2,3) = 3
-    const context = makeMoveEffectContext({ move: petalDanceMove, attacker, damage: 30, rng });
+    const context = createMoveEffectContext({ move: petalDanceMove, attacker, damage: 30, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
     expect(result.selfVolatileInflicted).toBe(THRASH_LOCK);
     expect(result.selfVolatileData!.turnsLeft).toBe(2);
-    expect(result.forcedMoveSet!.moveId).toBe(M.petalDance);
+    expect(result.forcedMoveSet!.moveId).toBe(MOVE_IDS.petalDance);
   });
 });
 
@@ -679,72 +714,102 @@ describe("#305 — Thrash first use stores turnsLeft = (randomTurns - 1)", () =>
 // ============================================================================
 
 describe("#404 — Disable targets a random move slot, not the last-used move", () => {
-  const disableMove = dataManager.getMove(M.disable);
+  const disableMove = dataManager.getMove(MOVE_IDS.disable);
 
   it("given defender has 2 moves with PP, when Disable is used, then disabled move is from the defender's moveset (not lastMoveUsed)", () => {
     // Source: pret/pokered DisableEffect — picks a RANDOM move slot with PP > 0.
     // Gen 1 Disable does NOT target the last-used move (that's Gen 2+).
     // Arrange
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
-      lastMoveUsed: M.thunderbolt, // This should be IGNORED
+    const defender = createActivePokemon({
+      types: [TYPE_IDS.normal] as PokemonType[],
+      lastMoveUsed: MOVE_IDS.thunderbolt, // This should be IGNORED
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createActivePokemon().pokemon,
         moves: [
-          { moveId: M.tackle, currentPP: dataManager.getMove(M.tackle).pp, maxPP: dataManager.getMove(M.tackle).pp, ppUps: 0 },
-          { moveId: M.scratch, currentPP: dataManager.getMove(M.scratch).pp, maxPP: dataManager.getMove(M.scratch).pp, ppUps: 0 },
+          {
+            moveId: MOVE_IDS.tackle,
+            currentPP: dataManager.getMove(MOVE_IDS.tackle).pp,
+            maxPP: dataManager.getMove(MOVE_IDS.tackle).pp,
+            ppUps: 0,
+          },
+          {
+            moveId: MOVE_IDS.scratch,
+            currentPP: dataManager.getMove(MOVE_IDS.scratch).pp,
+            maxPP: dataManager.getMove(MOVE_IDS.scratch).pp,
+            ppUps: 0,
+          },
         ],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42);
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — disabled move must be from the actual moveset, not lastMoveUsed
-    expect(result.volatileInflicted).toBe(M.disable);
+    expect(result.volatileInflicted).toBe(MOVE_IDS.disable);
     const disabledMoveId = (result.volatileData!.data as { moveId: string }).moveId;
-    expect([M.tackle, M.scratch]).toContain(disabledMoveId);
+    expect([MOVE_IDS.tackle, MOVE_IDS.scratch]).toContain(disabledMoveId);
     // lastMoveUsed was "thunderbolt" which is NOT in the moveset, so can never be disabled
-    expect(disabledMoveId).not.toBe(M.thunderbolt);
+    expect(disabledMoveId).not.toBe(MOVE_IDS.thunderbolt);
   });
 
   it("given defender has only 1 move with PP, when Disable is used, then that move is always disabled", () => {
     // Source: pret/pokered DisableEffect — if only one valid slot, it's always picked.
     // Arrange
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
+    const defender = createActivePokemon({
+      types: [TYPE_IDS.normal] as PokemonType[],
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createActivePokemon().pokemon,
         moves: [
-          { moveId: M.bodySlam, currentPP: dataManager.getMove(M.bodySlam).pp, maxPP: dataManager.getMove(M.bodySlam).pp, ppUps: 0 },
-          { moveId: M.tackle, currentPP: 0, maxPP: dataManager.getMove(M.tackle).pp, ppUps: 0 }, // 0 PP, not valid
+          {
+            moveId: MOVE_IDS.bodySlam,
+            currentPP: dataManager.getMove(MOVE_IDS.bodySlam).pp,
+            maxPP: dataManager.getMove(MOVE_IDS.bodySlam).pp,
+            ppUps: 0,
+          },
+          {
+            moveId: MOVE_IDS.tackle,
+            currentPP: 0,
+            maxPP: dataManager.getMove(MOVE_IDS.tackle).pp,
+            ppUps: 0,
+          }, // 0 PP, not valid
         ],
       } as PokemonInstance,
     });
     const rng = new SeededRandom(99);
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.volatileInflicted).toBe(M.disable);
+    expect(result.volatileInflicted).toBe(MOVE_IDS.disable);
     const disabledMoveId = (result.volatileData!.data as { moveId: string }).moveId;
-    expect(disabledMoveId).toBe(M.bodySlam);
+    expect(disabledMoveId).toBe(MOVE_IDS.bodySlam);
   });
 
   it("given defender has all moves at 0 PP, when Disable is used, then it fails", () => {
     // Source: pret/pokered DisableEffect — fails if no valid move to disable.
     // Arrange
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
+    const defender = createActivePokemon({
+      types: [TYPE_IDS.normal] as PokemonType[],
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createActivePokemon().pokemon,
         moves: [
-          { moveId: M.tackle, currentPP: 0, maxPP: dataManager.getMove(M.tackle).pp, ppUps: 0 },
-          { moveId: M.scratch, currentPP: 0, maxPP: dataManager.getMove(M.scratch).pp, ppUps: 0 },
+          {
+            moveId: MOVE_IDS.tackle,
+            currentPP: 0,
+            maxPP: dataManager.getMove(MOVE_IDS.tackle).pp,
+            ppUps: 0,
+          },
+          {
+            moveId: MOVE_IDS.scratch,
+            currentPP: 0,
+            maxPP: dataManager.getMove(MOVE_IDS.scratch).pp,
+            ppUps: 0,
+          },
         ],
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: disableMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: disableMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -759,21 +824,21 @@ describe("#404 — Disable targets a random move slot, not the last-used move", 
 // ============================================================================
 
 describe("#406 — Mirror Move only blocks copying Mirror Move itself", () => {
-  const mirrorMoveMove = dataManager.getMove(M.mirrorMove);
+  const mirrorMoveMove = dataManager.getMove(MOVE_IDS.mirrorMove);
 
   it("given defender's last move was Metronome, when Mirror Move is used, then it succeeds (recursiveMove = metronome)", () => {
     // Source: pret/pokered MirrorMoveEffect — only Mirror Move itself is blocked.
     // Metronome is a valid target for Mirror Move despite being a special move.
     // Arrange
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
-      lastMoveUsed: M.metronome,
+    const defender = createActivePokemon({
+      types: [TYPE_IDS.normal] as PokemonType[],
+      lastMoveUsed: MOVE_IDS.metronome,
     });
-    const context = makeMoveEffectContext({ move: mirrorMoveMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: mirrorMoveMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.recursiveMove).toBe(M.metronome);
+    expect(result.recursiveMove).toBe(MOVE_IDS.metronome);
     expect(result.messages).not.toContain("But it failed!");
   });
 
@@ -781,26 +846,26 @@ describe("#406 — Mirror Move only blocks copying Mirror Move itself", () => {
     // Source: pret/pokered MirrorMoveEffect — Struggle is not in the cannot-mirror set.
     // Only Mirror Move itself is blocked from being copied.
     // Arrange
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
-      lastMoveUsed: M.struggle,
+    const defender = createActivePokemon({
+      types: [TYPE_IDS.normal] as PokemonType[],
+      lastMoveUsed: MOVE_IDS.struggle,
     });
-    const context = makeMoveEffectContext({ move: mirrorMoveMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: mirrorMoveMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.recursiveMove).toBe(M.struggle);
+    expect(result.recursiveMove).toBe(MOVE_IDS.struggle);
     expect(result.messages).not.toContain("But it failed!");
   });
 
   it("given defender's last move was Mirror Move, when Mirror Move is used, then it fails (cannot mirror Mirror Move)", () => {
     // Source: pret/pokered MirrorMoveEffect — Mirror Move itself IS blocked.
     // Arrange
-    const defender = makeActivePokemon({
-      types: [T.normal] as PokemonType[],
-      lastMoveUsed: M.mirrorMove,
+    const defender = createActivePokemon({
+      types: [TYPE_IDS.normal] as PokemonType[],
+      lastMoveUsed: MOVE_IDS.mirrorMove,
     });
-    const context = makeMoveEffectContext({ move: mirrorMoveMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: mirrorMoveMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -823,21 +888,19 @@ describe("#408 — Self-Destruct/Explosion move properties for engine faint hand
     // The engine checks for self-destruct/explosion moveId after accuracy check
     // to faint the user even on miss.
     // Arrange
-    const selfDestructMove = makeMove({
-      ...dataManager.getMove(M.selfDestruct),
-    });
+    const selfDestructMove = dataManager.getMove(MOVE_IDS.selfDestruct);
     // Act / Assert
-    expect(selfDestructMove.id).toBe(M.selfDestruct);
-    expect(selfDestructMove.effect).toEqual(dataManager.getMove(M.selfDestruct).effect);
+    expect(selfDestructMove.id).toBe(MOVE_IDS.selfDestruct);
+    expect(selfDestructMove.effect).toEqual(dataManager.getMove(MOVE_IDS.selfDestruct).effect);
   });
 
   it("given Explosion move data, when checking effect type, then it also uses the explosion handler", () => {
     // Source: pokered ExplosionEffect — Explosion and Self-Destruct share the same effect.
     // Arrange
-    const explosionMove = dataManager.getMove(M.explosion);
+    const explosionMove = dataManager.getMove(MOVE_IDS.explosion);
     // Act / Assert
-    expect(explosionMove.id).toBe(M.explosion);
-    expect(explosionMove.effect).toEqual(dataManager.getMove(M.explosion).effect);
+    expect(explosionMove.id).toBe(MOVE_IDS.explosion);
+    expect(explosionMove.effect).toEqual(dataManager.getMove(MOVE_IDS.explosion).effect);
   });
 });
 
@@ -861,23 +924,24 @@ describe("#408 — Self-Destruct/Explosion move properties for engine faint hand
 // ============================================================================
 
 describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () => {
-    const ruleset = new Gen1Ruleset();
+  const ruleset = new Gen1Ruleset();
 
   // Helper: minimal Gen 1 PokemonInstance
   let uidSeq = 0;
-  function makeGen1Pokemon(
+  function createGen1Pokemon(
     speciesId: number,
     level: number,
     moveIds: string[],
     _speedOverride?: number,
   ): PokemonInstance {
+    const species = dataManager.getSpecies(speciesId);
     const moves = moveIds.map((id) => {
       const mv = dataManager.getMove(id);
       return { moveId: id, currentPP: mv.pp, maxPP: mv.pp, ppUps: 0 };
     });
     return {
       uid: `test-${++uidSeq}`,
-      speciesId,
+      speciesId: species.id,
       nickname: null,
       level,
       experience: 0,
@@ -887,11 +951,11 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
       currentHp: 200,
       moves,
       ability: "",
-      abilitySlot: DEFAULT_ABILITY_SLOT,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: null,
       status: null,
       friendship: 70,
-      gender: "male" as const,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: TEST_LOCATION,
       metLevel: level,
@@ -923,9 +987,9 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
       teams: [
         // Side 0: attacker knows Explosion (move index 0)
         // Using Weezing (#110) — learns Explosion in Gen 1
-        [makeGen1Pokemon(P.weezing, 50, [M.explosion, M.tackle])],
+        [createGen1Pokemon(SPECIES_IDS.weezing, 50, [MOVE_IDS.explosion, MOVE_IDS.tackle])],
         // Side 1: defender knows a legal Gen 1 move and stays slower than Weezing
-        [makeGen1Pokemon(P.pidgey, 50, [M.gust])], // Pidgey
+        [createGen1Pokemon(SPECIES_IDS.pidgey, 50, [MOVE_IDS.gust])], // Pidgey
       ],
       seed: 491,
     };
@@ -966,16 +1030,7 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
 // ============================================================================
 
 describe("#410 — Struggle accuracy check (uses standard accuracy formula)", () => {
-  const struggleMove = makeMove({
-    id: M.struggle,
-    displayName: dataManager.getMove(M.struggle).displayName,
-    type: T.normal as PokemonType,
-    category: dataManager.getMove(M.struggle).category,
-    power: dataManager.getMove(M.struggle).power,
-    accuracy: dataManager.getMove(M.struggle).accuracy,
-    pp: dataManager.getMove(M.struggle).pp,
-    target: dataManager.getMove(M.struggle).target,
-  });
+  const struggleMove = createMove(MOVE_IDS.struggle);
 
   it("given a normal accuracy context with 100% accuracy, when doesMoveHit is called for Struggle, then it can hit (1/256 miss chance aside)", () => {
     // Source: pokered — Struggle uses the normal accuracy check in Gen 1.
@@ -986,9 +1041,9 @@ describe("#410 — Struggle accuracy check (uses standard accuracy formula)", ()
       1000,
       (seed) =>
         ruleset.doesMoveHit(
-          makeAccuracyContext({
-            attacker: makeActivePokemon(),
-            defender: makeActivePokemon({ types: [T.normal] as PokemonType[] }),
+          createAccuracyContext({
+            attacker: createActivePokemon(),
+            defender: createActivePokemon({ types: [TYPE_IDS.normal] as PokemonType[] }),
             move: struggleMove,
             rng: new SeededRandom(seed),
           }),
@@ -996,21 +1051,20 @@ describe("#410 — Struggle accuracy check (uses standard accuracy formula)", ()
       "Expected to find a Struggle seed that still hits through the normal Gen 1 accuracy path.",
     );
     const rng = new SeededRandom(testSeed);
-    const context = makeAccuracyContext({ move: struggleMove, rng });
+    const context = createAccuracyContext({ move: struggleMove, rng });
     // Act
     const hit = ruleset.doesMoveHit(context);
     // Assert
     expect(hit).toBe(true);
   });
-
 });
 
 // ============================================================================
 // #413 — Rage miss: rage volatile must NOT be cleared when Rage misses
 // ============================================================================
 
-describe(`#413 — ${V.rage} miss: ${V.rage} volatile survives a miss`, () => {
-  it(`given Pokemon has '${V.rage}' volatile and Rage move misses, when processBoundTurn is irrelevant and doesMoveHit returns false, then ${V.rage} volatile is preserved (not cleared on miss)`, () => {
+describe(`#413 — ${VOLATILE_IDS.rage} miss: ${VOLATILE_IDS.rage} volatile survives a miss`, () => {
+  it(`given Pokemon has '${VOLATILE_IDS.rage}' volatile and Rage move misses, when processBoundTurn is irrelevant and doesMoveHit returns false, then ${VOLATILE_IDS.rage} volatile is preserved (not cleared on miss)`, () => {
     // Source: pret/pokered RageEffect — the 'rage' volatile accumulates Attack boosts
     // each time the raging Pokemon is hit. Clearing the rage volatile on a miss would
     // lose all accumulated boosts (regression).
@@ -1020,18 +1074,13 @@ describe(`#413 — ${V.rage} miss: ${V.rage} volatile survives a miss`, () => {
     // mutate the rage volatile.
 
     // Arrange — attacker is raging (already set the volatile)
-    const attacker = makeActivePokemon();
-    attacker.volatileStatuses.set(V.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
+    const attacker = createActivePokemon();
+    attacker.volatileStatuses.set(VOLATILE_IDS.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
     attacker.statStages.attack = 3; // Accumulated +3 via Rage boosts
 
-    const defender = makeActivePokemon({ types: [T.normal] as PokemonType[] });
+    const defender = createActivePokemon({ types: [TYPE_IDS.normal] as PokemonType[] });
 
-    const rageMove = makeMove({
-      id: M.rage,
-      category: "physical" as const,
-      power: 20,
-      accuracy: 100,
-    });
+    const rageMove = dataManager.getMove(MOVE_IDS.rage);
 
     // Use a seeded rng that will produce a hit (not the 1/256 miss)
     // Seed=1 gives a roll well above 0, so 100% accuracy moves hit
@@ -1041,7 +1090,7 @@ describe(`#413 — ${V.rage} miss: ${V.rage} volatile survives a miss`, () => {
       attacker,
       defender,
       move: rageMove,
-      state: makeBattleState({ side0Active: attacker, side1Active: defender }),
+      state: createBattleState({ side0Active: attacker, side1Active: defender }),
       rng,
     } as AccuracyContext;
 
@@ -1049,44 +1098,44 @@ describe(`#413 — ${V.rage} miss: ${V.rage} volatile survives a miss`, () => {
     ruleset.doesMoveHit(ctx);
 
     // Assert — rage volatile is still present regardless of hit/miss
-    expect(attacker.volatileStatuses.has(V.rage)).toBe(true);
+    expect(attacker.volatileStatuses.has(VOLATILE_IDS.rage)).toBe(true);
     // Accumulated attack boosts are also preserved
     expect(attacker.statStages.attack).toBe(3);
   });
 
-  it(`given Pokemon has '${V.rage}' volatile with accumulated boosts, when Rage misses (1/256 glitch), then ${V.rage} volatile and attack boosts are not cleared`, () => {
+  it(`given Pokemon has '${VOLATILE_IDS.rage}' volatile with accumulated boosts, when Rage misses (1/256 glitch), then ${VOLATILE_IDS.rage} volatile and attack boosts are not cleared`, () => {
     // Regression: pret/pokered — Gen 1 miss while in Rage sets a miss-lock volatile
     // but must NOT clear the rage volatile or reset the Attack stage.
     // The engine adds rage-miss-lock; it must not delete 'rage'.
 
     // Arrange — attacker is raging with +4 attack boosts
-    const attacker = makeActivePokemon();
-    attacker.volatileStatuses.set(V.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
+    const attacker = createActivePokemon();
+    attacker.volatileStatuses.set(VOLATILE_IDS.rage, { turnsLeft: -1, data: { moveIndex: 0 } });
     attacker.statStages.attack = 4;
 
     // The doesMoveHit method on the ruleset itself does not mutate volatile statuses.
     // We test that the volatile map is unmodified after calling doesMoveHit.
-    const defender = makeActivePokemon({ types: [T.normal] as PokemonType[] });
-    const rageMove = dataManager.getMove(M.rage);
+    const defender = createActivePokemon({ types: [TYPE_IDS.normal] as PokemonType[] });
+    const rageMove = dataManager.getMove(MOVE_IDS.rage);
     const rng = new SeededRandom(42);
 
     const ctx = {
       attacker,
       defender,
       move: rageMove,
-      state: makeBattleState({ side0Active: attacker, side1Active: defender }),
+      state: createBattleState({ side0Active: attacker, side1Active: defender }),
       rng,
     } as AccuracyContext;
 
     // Capture the volatile map state before the call
-    const rageVolatileBefore = attacker.volatileStatuses.has(V.rage);
+    const rageVolatileBefore = attacker.volatileStatuses.has(VOLATILE_IDS.rage);
 
     // Act
     ruleset.doesMoveHit(ctx);
 
     // Assert — rage volatile was NOT cleared by doesMoveHit
     expect(rageVolatileBefore).toBe(true);
-    expect(attacker.volatileStatuses.has(V.rage)).toBe(true);
+    expect(attacker.volatileStatuses.has(VOLATILE_IDS.rage)).toBe(true);
     expect(attacker.statStages.attack).toBe(4);
   });
 });
@@ -1117,9 +1166,9 @@ describe("#414 — Substitute + confusion: confusion self-hit bypasses Substitut
     //   /50 = floor(1173/50) = floor(23.46) = 23
     //   baseDamage = min(997, 23) + 2 = 25
     //
-    // The default makeActivePokemon() has level=50, attack=80, defense=60.
-    const pokemon = makeActivePokemon();
-    const state = makeBattleState();
+    // The default createActivePokemon() has level=50, attack=80, defense=60.
+    const pokemon = createActivePokemon();
+    const state = createBattleState();
     const rng = new SeededRandom(0);
 
     // Act
@@ -1139,9 +1188,9 @@ describe("#414 — Substitute + confusion: confusion self-hit bypasses Substitut
     //   /100 = floor(168000/100) = 1680
     //   /50 = floor(1680/50) = 33
     //   baseDamage = min(997, 33) + 2 = 35
-    const pokemon = makeActivePokemon({
+    const pokemon = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createActivePokemon().pokemon,
         level: 100,
         calculatedStats: {
           hp: 300,
@@ -1153,7 +1202,7 @@ describe("#414 — Substitute + confusion: confusion self-hit bypasses Substitut
         },
       } as PokemonInstance,
     });
-    const state = makeBattleState();
+    const state = createBattleState();
     const rng = new SeededRandom(0);
 
     // Act
@@ -1178,14 +1227,14 @@ describe("#415 — Sleep wake-turn: Pokemon cannot act on the turn it wakes up (
     // This is different from Gen 2+ where the Pokemon CAN act on the wake turn.
 
     // Arrange
-    const pokemon = makeActivePokemon({
+    const pokemon = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        status: S.sleep as const,
+        ...createActivePokemon().pokemon,
+        status: STATUS_IDS.sleep as const,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set(V.sleepCounter, { turnsLeft: 1 });
-    const state = makeBattleState();
+    pokemon.volatileStatuses.set(VOLATILE_IDS.sleepCounter, { turnsLeft: 1 });
+    const state = createBattleState();
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, state);
@@ -1194,7 +1243,7 @@ describe("#415 — Sleep wake-turn: Pokemon cannot act on the turn it wakes up (
     expect(canAct).toBe(false);
     // And the status is cleared (Pokemon actually woke up)
     expect(pokemon.pokemon.status).toBeNull();
-    expect(pokemon.volatileStatuses.has(V.sleepCounter)).toBe(false);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.sleepCounter)).toBe(false);
   });
 
   it("given sleeping Pokemon with 3 turns remaining, when processSleepTurn is called, then decrements counter and still cannot act (still asleep)", () => {
@@ -1202,22 +1251,22 @@ describe("#415 — Sleep wake-turn: Pokemon cannot act on the turn it wakes up (
     // processSleepTurn() returns false when still sleeping (counter still positive after decrement).
 
     // Arrange
-    const pokemon = makeActivePokemon({
+    const pokemon = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        status: S.sleep as const,
+        ...createActivePokemon().pokemon,
+        status: STATUS_IDS.sleep as const,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set(V.sleepCounter, { turnsLeft: 3 });
-    const state = makeBattleState();
+    pokemon.volatileStatuses.set(VOLATILE_IDS.sleepCounter, { turnsLeft: 3 });
+    const state = createBattleState();
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, state);
 
     // Assert — still sleeping after decrement (3 → 2)
     expect(canAct).toBe(false);
-    expect(pokemon.pokemon.status).toBe(S.sleep);
-    expect(pokemon.volatileStatuses.get(V.sleepCounter)?.turnsLeft).toBe(2);
+    expect(pokemon.pokemon.status).toBe(STATUS_IDS.sleep);
+    expect(pokemon.volatileStatuses.get(VOLATILE_IDS.sleepCounter)?.turnsLeft).toBe(2);
   });
 
   it("given sleeping Pokemon with 0 turns already remaining, when processSleepTurn is called, then wakes up and returns false (wake turn is also skipped)", () => {
@@ -1226,14 +1275,14 @@ describe("#415 — Sleep wake-turn: Pokemon cannot act on the turn it wakes up (
     // This handles the case where the counter reached 0 before processSleepTurn runs.
 
     // Arrange
-    const pokemon = makeActivePokemon({
+    const pokemon = createActivePokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        status: S.sleep as const,
+        ...createActivePokemon().pokemon,
+        status: STATUS_IDS.sleep as const,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set(V.sleepCounter, { turnsLeft: 0 });
-    const state = makeBattleState();
+    pokemon.volatileStatuses.set(VOLATILE_IDS.sleepCounter, { turnsLeft: 0 });
+    const state = createBattleState();
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, state);
