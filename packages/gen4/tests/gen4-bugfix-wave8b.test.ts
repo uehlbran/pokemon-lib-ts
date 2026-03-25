@@ -810,7 +810,8 @@ describe("Bug #275: Fire Fang bypasses Wonder Guard in Gen 4", () => {
     //   Fire vs Bug = 2x, Fire vs Ghost = 1x => effectiveness = 2x (super effective)
     //   But even if it WEREN'T super effective, Fire Fang should still hit.
     //   Use a neutral type chart to demonstrate the bypass:
-    //     base=floor(floor(22*65*100/100)/50)=28, +2=30; final=30
+    //     base=floor(floor(22*65*100/100)/50)=28, +2=30
+    //     STAB: floor(30 * 1.5) = 45; final=45
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
@@ -835,8 +836,8 @@ describe("Bug #275: Fire Fang bypasses Wonder Guard in Gen 4", () => {
       chart,
     );
 
-    // Fire Fang bypasses Wonder Guard — should deal damage even though not SE
-    expect(result.damage).toBeGreaterThan(0);
+    // Fire Fang bypasses Wonder Guard in the neutral-chart scenario above.
+    expect(result.damage).toBe(45);
     expect(result.effectiveness).toBe(1); // neutral
   });
 
