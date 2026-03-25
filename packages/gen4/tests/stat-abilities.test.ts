@@ -7,8 +7,8 @@ import {
   CORE_GENDERS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  DataManager,
   createMoveSlot,
+  DataManager,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -43,23 +43,23 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const GEN4_DATA = createGen4DataManager()
-const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS }
-const ITEMS = GEN4_ITEM_IDS
-const MOVES = GEN4_MOVE_IDS
-const NATURES = GEN4_NATURE_IDS
-const SPECIES = GEN4_SPECIES_IDS
-const TYPES = CORE_TYPE_IDS
-const WEATHER = CORE_WEATHER_IDS
+const GEN4_DATA = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS };
+const ITEMS = GEN4_ITEM_IDS;
+const MOVES = GEN4_MOVE_IDS;
+const NATURES = GEN4_NATURE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
 
-const TACKLE = GEN4_DATA.getMove(MOVES.tackle)
-const EMBER = GEN4_DATA.getMove(MOVES.ember)
-const FLAME_WHEEL = GEN4_DATA.getMove(MOVES.flameWheel)
-const FLAMETHROWER = GEN4_DATA.getMove(MOVES.flamethrower)
-const WATER_PULSE = GEN4_DATA.getMove(MOVES.waterPulse)
-const SURF = GEN4_DATA.getMove(MOVES.surf)
-const BRICK_BREAK = GEN4_DATA.getMove(MOVES.brickBreak)
-const BULBASAUR = GEN4_DATA.getSpecies(SPECIES.bulbasaur)
+const TACKLE = GEN4_DATA.getMove(MOVES.tackle);
+const EMBER = GEN4_DATA.getMove(MOVES.ember);
+const FLAME_WHEEL = GEN4_DATA.getMove(MOVES.flameWheel);
+const FLAMETHROWER = GEN4_DATA.getMove(MOVES.flamethrower);
+const WATER_PULSE = GEN4_DATA.getMove(MOVES.waterPulse);
+const SURF = GEN4_DATA.getMove(MOVES.surf);
+const BRICK_BREAK = GEN4_DATA.getMove(MOVES.brickBreak);
+const BULBASAUR = GEN4_DATA.getSpecies(SPECIES.bulbasaur);
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -159,9 +159,7 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMockState(
-  weather?: { type: string; turnsLeft: number; source: string } | null,
-) {
+function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
   return {
     weather: weather ?? null,
     gravity: { active: false, turnsLeft: 0 },
@@ -401,7 +399,10 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
   it("given Flower Gift defender in sun attacked by Mold Breaker attacker, when damage is calculated, then SpDef boost is ignored", () => {
     // Source: Showdown data/abilities.ts — Mold Breaker ignores Flower Gift SpDef boost
     // Triangulation: second case for the Mold Breaker bypass path added in Gen4DamageCalc
-    const moldBreakerAttacker = createActivePokemon({ ability: ABILITIES.moldBreaker, spAttack: 100 });
+    const moldBreakerAttacker = createActivePokemon({
+      ability: ABILITIES.moldBreaker,
+      spAttack: 100,
+    });
     const flowerGiftDefender = createActivePokemon({
       ability: ABILITIES.flowerGift,
       spDefense: 100,
@@ -740,7 +741,11 @@ describe("Gen4 Normalize — all moves become Normal type", () => {
     const waterMove = WATER_PULSE;
 
     const rng = createMockRng(100);
-    const rainState = createMockState({ type: WEATHER.rain, turnsLeft: 5, source: MOVES.rainDance });
+    const rainState = createMockState({
+      type: WEATHER.rain,
+      turnsLeft: 5,
+      source: MOVES.rainDance,
+    });
 
     const normalizeResult = calculateGen4Damage(
       {
@@ -992,7 +997,9 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
     };
 
     fastPokemon.pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)] as PokemonInstance["moves"];
-    slowerPokemon.pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)] as PokemonInstance["moves"];
+    slowerPokemon.pokemon.moves = [
+      createMoveSlot(TACKLE.id, TACKLE.pp),
+    ] as PokemonInstance["moves"];
 
     const state = {
       weather: null,

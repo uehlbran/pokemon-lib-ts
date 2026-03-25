@@ -1,12 +1,11 @@
 import {
+  type AbilityTrigger,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
-  type AbilityTrigger,
   type DamageContext,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type {
   AbilityContext,
   BattleConfig,
@@ -18,6 +17,7 @@ import { BattleEngine } from "../../../src/engine";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 const defaultMoveEffectResult: MoveEffectResult = {
   statusInflicted: null,
@@ -101,7 +101,10 @@ class RecursiveHookRuleset extends MockRuleset {
     }
 
     const base = { ...defaultMoveEffectResult };
-    if (context.move.id !== CORE_MOVE_IDS.swordsDance || context.attacker.pokemon.uid !== "charizard-1") {
+    if (
+      context.move.id !== CORE_MOVE_IDS.swordsDance ||
+      context.attacker.pokemon.uid !== "charizard-1"
+    ) {
       return base;
     }
 

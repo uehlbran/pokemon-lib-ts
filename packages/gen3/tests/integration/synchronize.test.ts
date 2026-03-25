@@ -1,23 +1,21 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType, PrimaryStatus, StatBlock } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
 } from "@pokemon-lib-ts/core";
 import {
+  applyGen3Ability,
   createGen3DataManager,
   GEN3_ABILITY_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
-  Gen3Ruleset,
-  applyGen3Ability,
 } from "@pokemon-lib-ts/gen3";
 import { describe, expect, it } from "vitest";
 
@@ -25,7 +23,7 @@ const dataManager = createGen3DataManager();
 const ESPEON = dataManager.getSpecies(GEN3_SPECIES_IDS.espeon);
 const AZUMARILL = dataManager.getSpecies(GEN3_SPECIES_IDS.azumarill);
 const MIGHTYENA = dataManager.getSpecies(GEN3_SPECIES_IDS.mightyena);
-const HARDY_NATURE = dataManager.getNature(GEN3_NATURE_IDS.hardy).id;
+const HARDY_NATURE_ID = dataManager.getNature(GEN3_NATURE_IDS.hardy).id;
 
 /**
  * Gen 3 Synchronize ability tests.
@@ -37,10 +35,6 @@ const HARDY_NATURE = dataManager.getNature(GEN3_NATURE_IDS.hardy).id;
  * Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
  * Source: Bulbapedia — "Synchronize passes burn, paralysis, and poison to the opponent"
  */
-
-function createRuleset(): Gen3Ruleset {
-  return new Gen3Ruleset(dataManager);
-}
 
 function createOnFieldPokemon(opts: {
   speciesId?: number;
@@ -65,7 +59,7 @@ function createOnFieldPokemon(opts: {
     nickname: opts.nickname === undefined ? species.displayName : opts.nickname,
     level: 50,
     experience: 0,
-    nature: HARDY_NATURE,
+    nature: HARDY_NATURE_ID,
     ivs: createIvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
     evs: createEvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
     currentHp: 200,
@@ -148,7 +142,7 @@ function createStatusContext(opts: {
     opponent,
     state: { weather: null } as AbilityContext["state"],
     rng: createMockRng(),
-    trigger: "on-status-inflicted",
+    trigger: CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
   } as AbilityContext;
 }
 
@@ -172,7 +166,7 @@ describe("Gen 3 Synchronize", () => {
       pokemonNickname: ESPEON.displayName,
       opponentNickname: MIGHTYENA.displayName,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
@@ -193,7 +187,7 @@ describe("Gen 3 Synchronize", () => {
       pokemonNickname: ESPEON.displayName,
       opponentNickname: MIGHTYENA.displayName,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
@@ -210,7 +204,7 @@ describe("Gen 3 Synchronize", () => {
     const ctx = createStatusContext({
       pokemonStatus: CORE_STATUS_IDS.poison,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     if (result.effects[0]!.effectType === "status-inflict") {
@@ -223,7 +217,7 @@ describe("Gen 3 Synchronize", () => {
     const ctx = createStatusContext({
       pokemonStatus: CORE_STATUS_IDS.badlyPoisoned,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     if (result.effects[0]!.effectType === "status-inflict") {
@@ -236,7 +230,7 @@ describe("Gen 3 Synchronize", () => {
     const ctx = createStatusContext({
       pokemonStatus: CORE_STATUS_IDS.sleep,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -247,7 +241,7 @@ describe("Gen 3 Synchronize", () => {
     const ctx = createStatusContext({
       pokemonStatus: CORE_STATUS_IDS.freeze,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -259,7 +253,7 @@ describe("Gen 3 Synchronize", () => {
       pokemonStatus: CORE_STATUS_IDS.paralysis,
       opponentStatus: CORE_STATUS_IDS.burn,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -270,7 +264,7 @@ describe("Gen 3 Synchronize", () => {
       pokemonStatus: CORE_STATUS_IDS.paralysis,
       hasOpponent: false,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -280,7 +274,7 @@ describe("Gen 3 Synchronize", () => {
     const ctx = createStatusContext({
       pokemonStatus: null,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -306,10 +300,10 @@ describe("Gen 3 Synchronize", () => {
       opponent,
       state: { weather: null } as AbilityContext["state"],
       rng: createMockRng(),
-      trigger: "on-status-inflicted",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
     } as AbilityContext;
 
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
   });

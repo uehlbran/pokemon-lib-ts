@@ -29,12 +29,12 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import {
+  createGen5DataManager,
   GEN5_ABILITY_IDS,
   GEN5_ITEM_IDS,
   GEN5_MOVE_IDS,
   GEN5_NATURE_IDS,
   GEN5_SPECIES_IDS,
-  createGen5DataManager,
 } from "@pokemon-lib-ts/gen5";
 import { describe, expect, it } from "vitest";
 import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
@@ -251,7 +251,11 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   // Source: Showdown data/moves.ts -- thief.onAfterHit:
   //   steals target's item if user has no item and target has one
   it("given user with no item and target with leftovers, when Thief deals damage, then returns itemTransfer from defender to attacker", () => {
-    const attacker = createSyntheticBattlePokemon({ heldItem: null, nickname: "Sneasel", speciesId: GEN5_SPECIES_IDS.sneasel });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
     const defender = createSyntheticBattlePokemon({
       heldItem: GEN5_ITEM_IDS.leftovers,
       nickname: "Blissey",
@@ -293,8 +297,16 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   // Source: Showdown data/moves.ts -- thief.onAfterHit:
   //   `let yourItem = target.takeItem(source); if (!yourItem) return;` -- target has no item
   it("given target with no item, when Thief deals damage, then does not steal", () => {
-    const attacker = createSyntheticBattlePokemon({ heldItem: null, nickname: "Sneasel", speciesId: GEN5_SPECIES_IDS.sneasel });
-    const defender = createSyntheticBattlePokemon({ heldItem: null, nickname: "Blissey", speciesId: GEN5_SPECIES_IDS.blissey });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
     const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
     const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50 });
 
@@ -308,7 +320,11 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   // Source: Showdown data/moves.ts -- thief uses onAfterHit (not onHit):
   //   onAfterHit only fires when damage > 0
   it("given damage is 0 (type immunity), when Thief is used, then does not steal", () => {
-    const attacker = createSyntheticBattlePokemon({ heldItem: null, nickname: "Sneasel", speciesId: GEN5_SPECIES_IDS.sneasel });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
     const defender = createSyntheticBattlePokemon({
       heldItem: GEN5_ITEM_IDS.leftovers,
       nickname: "Sableye",
@@ -332,7 +348,11 @@ describe("Gen 5 Thief -- item theft after damage", () => {
 describe("Gen 5 Covet -- item theft after damage (same logic as Thief)", () => {
   // Source: Showdown data/moves.ts -- covet.onAfterHit: identical steal logic to thief
   it("given user with no item and target with berry, when Covet deals damage, then returns itemTransfer", () => {
-    const attacker = createSyntheticBattlePokemon({ heldItem: null, nickname: "Cinccino", speciesId: GEN5_SPECIES_IDS.cinccino });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Cinccino",
+      speciesId: GEN5_SPECIES_IDS.cinccino,
+    });
     const defender = createSyntheticBattlePokemon({
       heldItem: GEN5_ITEM_IDS.sitrusBerry,
       nickname: "Chansey",
@@ -380,7 +400,11 @@ describe("Gen 5 Thief/Covet -- Unburden interaction", () => {
   // Source: Showdown data/abilities.ts -- Unburden: activates when item is lost by any means
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
   it("given target has Unburden ability, when Thief steals its item, then sets unburden volatile on target", () => {
-    const attacker = createSyntheticBattlePokemon({ heldItem: null, nickname: "Sneasel", speciesId: GEN5_SPECIES_IDS.sneasel });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
     const defender = createSyntheticBattlePokemon({
       heldItem: GEN5_ITEM_IDS.leftovers,
       ability: GEN5_ABILITY_IDS.unburden,
@@ -401,7 +425,11 @@ describe("Gen 5 Thief/Covet -- Unburden interaction", () => {
   // Source: Showdown data/abilities.ts -- Unburden volatile is permanent once set
   it("given target already has unburden volatile, when Covet steals item, then does not duplicate the volatile", () => {
     const existingVolatiles = new Map([[GEN5_ABILITY_IDS.unburden, { turnsLeft: -1 }]]);
-    const attacker = createSyntheticBattlePokemon({ heldItem: null, nickname: "Cinccino", speciesId: GEN5_SPECIES_IDS.cinccino });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Cinccino",
+      speciesId: GEN5_SPECIES_IDS.cinccino,
+    });
     const defender = createSyntheticBattlePokemon({
       heldItem: GEN5_ITEM_IDS.focusSash,
       ability: GEN5_ABILITY_IDS.unburden,
@@ -557,7 +585,13 @@ describe("Gen 5 Thief/Covet -- cannot steal through Substitute", () => {
     defender.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
     const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
     // brokeSubstitute: true -- the hit destroyed the sub
-    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50, brokeSubstitute: true });
+    const ctx = createSyntheticMoveContext({
+      attacker,
+      defender,
+      move,
+      damage: 50,
+      brokeSubstitute: true,
+    });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -582,7 +616,13 @@ describe("Gen 5 Thief/Covet -- cannot steal through Substitute", () => {
     defender.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
     // substituteHp > 0 simulated by the volatile still being present and brokeSubstitute: false
     const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
-    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 30, brokeSubstitute: false });
+    const ctx = createSyntheticMoveContext({
+      attacker,
+      defender,
+      move,
+      damage: 30,
+      brokeSubstitute: false,
+    });
 
     const result = handleGen5BehaviorMove(ctx);
 
