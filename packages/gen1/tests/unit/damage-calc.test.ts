@@ -7,9 +7,22 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  NEUTRAL_NATURES,
+  getStatStageMultiplier,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
+import {
+  GEN1_ITEM_IDS,
+  GEN1_MOVE_IDS,
+  GEN1_NATURE_IDS,
+  GEN1_SPECIES_IDS,
+  calculateGen1Damage,
+} from "../../src";
 
 /**
  * Gen 1 Damage Formula Tests
@@ -29,6 +42,31 @@ import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 // ---------------------------------------------------------------------------
 // Test helpers — build minimal mocks matching the real interfaces
 // ---------------------------------------------------------------------------
+
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN1_ITEM_IDS } as const;
+const MOVES = GEN1_MOVE_IDS;
+const NATURES = NEUTRAL_NATURES[0] ?? GEN1_NATURE_IDS.hardy;
+const SPECIES = GEN1_SPECIES_IDS;
+const STATUS = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const GEN1_TYPES: PokemonType[] = [
+  TYPES.normal,
+  TYPES.fire,
+  TYPES.water,
+  TYPES.electric,
+  TYPES.grass,
+  TYPES.ice,
+  TYPES.fighting,
+  TYPES.poison,
+  TYPES.ground,
+  TYPES.flying,
+  TYPES.psychic,
+  TYPES.bug,
+  TYPES.rock,
+  TYPES.ghost,
+  TYPES.dragon,
+];
 
 /** A mock RNG whose int() always returns a fixed value. */
 function createMockRng(intReturnValue: number) {
@@ -58,7 +96,7 @@ function createActivePokemon(opts: {
   spAttack: number;
   spDefense: number;
   types: PokemonType[];
-  status?: "burn" | null;
+  status?: string | null;
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
   const stats: StatBlock = {
@@ -72,16 +110,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: null,
     level: opts.level,
     experience: 0,
-    nature: "hardy",
+    nature: NATURES,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
     moves: [],
-    ability: "",
+    ability: ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: null,
     status: opts.status ?? null,
@@ -92,7 +130,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -111,7 +149,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: "",
+    ability: ABILITIES.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -168,12 +206,12 @@ function createPhysicalMove(power: number): MoveData {
 /** Minimal species data mock. */
 function createSpecies(): PokemonSpeciesData {
   return {
-    id: 1,
+    id: SPECIES.bulbasaur,
     name: "test",
     displayName: "Test",
-    types: ["normal"],
+    types: [TYPES.normal],
     baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
+    abilities: { normal: [ABILITIES.none], hidden: null },
     genderRatio: 50,
     catchRate: 45,
     baseExp: 64,
@@ -196,28 +234,11 @@ function createSpecies(): PokemonSpeciesData {
  * Override specific entries when testing type effectiveness.
  */
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-  ];
   const chart = {} as Record<string, Record<string, number>>;
-  for (const atk of types) {
+  for (const atk of GEN1_TYPES) {
     chart[atk] = {};
     const row = chart[atk] as Record<string, number>;
-    for (const def of types) {
+    for (const def of GEN1_TYPES) {
       row[def] = 1;
     }
   }
@@ -235,12 +256,12 @@ function createTypeChartWithEffectiveness(effectiveness: number): {
   const chart = createNeutralTypeChart();
   if (effectiveness === 1.0) {
     // Everything is already neutral
-    return { chart, defenderTypes: ["normal"] };
+    return { chart, defenderTypes: [TYPES.normal] };
   }
   // Use "water" as the defender type and set normal -> water to the desired value
   const normalRow = (chart as Record<string, Record<string, number>>).normal;
   if (normalRow) normalRow.water = effectiveness;
-  return { chart, defenderTypes: ["water"] };
+  return { chart, defenderTypes: [TYPES.water] };
 }
 
 /**
@@ -261,7 +282,7 @@ function buildContext(params: {
   const { chart, defenderTypes } = createTypeChartWithEffectiveness(params.typeEffectiveness);
 
   // STAB: if stab is true, attacker types include the move's type ("normal")
-  const attackerTypes: PokemonType[] = params.stab ? ["normal"] : ["fire"];
+  const attackerTypes: PokemonType[] = params.stab ? [TYPES.normal] : [TYPES.fire];
 
   const attacker = createActivePokemon({
     level: params.level,
@@ -607,7 +628,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const attackerBurned = createActivePokemon({
       level: 50,
@@ -615,8 +636,8 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["fire"],
-      status: "burn",
+      types: [TYPES.fire],
+      status: STATUS.burn,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -624,7 +645,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
 
     const ctxNormal = {
@@ -847,7 +868,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -855,7 +876,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
 
     const context = {
@@ -903,7 +924,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["fire"], // non-STAB for "normal"-type move
+      types: [TYPES.fire], // non-STAB for "normal"-type move
     });
     const defender = createActivePokemon({
       level: 50,
@@ -911,7 +932,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
 
     const context = {
@@ -975,7 +996,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 255,
       spDefense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -983,7 +1004,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 1,
       spAttack: 1,
       spDefense: 1,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
 
     const context = {
@@ -1018,7 +1039,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 300,
       spDefense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const attackerNormal = createActivePokemon({
       level: 100,
@@ -1026,7 +1047,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 75,
       spDefense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1034,7 +1055,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100, // floor(100/4)%256 = 25 after overflow
       spAttack: 100,
       spDefense: 25, // pre-overflowed to match
-      types: ["normal"],
+      types: [TYPES.normal],
     });
     const defenderOverflowed = createActivePokemon({
       level: 50,
@@ -1042,7 +1063,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 25,
       spAttack: 100,
       spDefense: 25,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
 
     const ctxOverflow = {
@@ -1076,9 +1097,9 @@ describe("Gen 1 Damage Calculation", () => {
     const chart = createNeutralTypeChart();
     const species = createSpecies();
     const explosionMove: MoveData = {
-      id: "explosion",
+      id: MOVES.explosion,
       displayName: "Explosion",
-      type: "normal" as PokemonType,
+      type: TYPES.normal as PokemonType,
       category: "physical",
       power: 250,
       accuracy: 100,
@@ -1104,7 +1125,7 @@ describe("Gen 1 Damage Calculation", () => {
         charge: false,
         bypassSubstitute: false,
       },
-      effect: { type: "custom", handler: "explosion" },
+      effect: { type: "custom", handler: MOVES.explosion },
       description: "",
       generation: 1,
     };
@@ -1117,7 +1138,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1125,7 +1146,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 200,
       spAttack: 100,
       spDefense: 200,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
 
     const ctxExplosion = {
@@ -1180,9 +1201,9 @@ describe("Gen 1 Damage Calculation", () => {
     const chart = createNeutralTypeChart();
     const species = createSpecies();
     const slashMove: MoveData = {
-      id: "slash",
+      id: MOVES.slash,
       displayName: "Slash",
-      type: "normal" as PokemonType,
+      type: TYPES.normal as PokemonType,
       category: "physical",
       power: 70,
       accuracy: 100,
@@ -1221,8 +1242,8 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 78,
       spAttack: 109,
       spDefense: 85,
-      types: ["fire", "flying"],
-      status: "burn",
+      types: [TYPES.fire, TYPES.flying],
+      status: STATUS.burn,
     });
 
     // Non-burned Charizard for comparison
@@ -1232,7 +1253,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 78,
       spAttack: 109,
       spDefense: 85,
-      types: ["fire", "flying"],
+      types: [TYPES.fire, TYPES.flying],
     });
 
     const blastoise = createActivePokemon({
@@ -1241,7 +1262,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 105,
       spAttack: 85,
       spDefense: 105,
-      types: ["water"],
+      types: [TYPES.water],
     });
 
     // Critical hit with burn — should NOT halve attack
@@ -1294,8 +1315,8 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["fire"],
-      status: "burn",
+      types: [TYPES.fire],
+      status: STATUS.burn,
     });
     const normalAttacker = createActivePokemon({
       level: 50,
@@ -1303,7 +1324,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1311,7 +1332,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
 
     const ctxBurned = {
