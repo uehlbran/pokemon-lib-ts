@@ -154,6 +154,7 @@ describe("Gen2Weather", () => {
       const modifier = getWeatherDamageModifier(moveType, "rain");
 
       // Assert
+      // Source: Gen 2 rain dance boosts Water moves to 1.5x.
       expect(modifier).toBe(1.5);
     });
 
@@ -165,6 +166,7 @@ describe("Gen2Weather", () => {
       const modifier = getWeatherDamageModifier(moveType, "rain");
 
       // Assert
+      // Source: Gen 2 rain dance weakens Fire moves to 0.5x.
       expect(modifier).toBe(0.5);
     });
 
@@ -203,6 +205,7 @@ describe("Gen2Weather", () => {
       const modifier = getWeatherDamageModifier(moveType, "sun");
 
       // Assert
+      // Source: Gen 2 sunny day boosts Fire moves to 1.5x.
       expect(modifier).toBe(1.5);
     });
 
@@ -214,6 +217,7 @@ describe("Gen2Weather", () => {
       const modifier = getWeatherDamageModifier(moveType, "sun");
 
       // Assert
+      // Source: Gen 2 sunny day weakens Water moves to 0.5x.
       expect(modifier).toBe(0.5);
     });
 
@@ -285,7 +289,9 @@ describe("Gen2Weather", () => {
 
       // Assert — 1/8 of 200 = 25
       expect(results.length).toBe(2);
+      // Source: Gen 2 sandstorm damage is floor(maxHp / 8); 200 / 8 = 25.
       expect(results[0]?.damage).toBe(25);
+      // Source: Gen 2 sandstorm damage is floor(maxHp / 8); 200 / 8 = 25.
       expect(results[1]?.damage).toBe(25);
     });
 
@@ -375,7 +381,7 @@ describe("Gen2Weather", () => {
       // Assert — Only damage results, no SpDef boost results
       // Rock type (side 1) should not have any result
       const side1Results = results.filter((r) => r.side === 1);
-      expect(side1Results).toHaveLength(0);
+      expect(side1Results).toEqual([]);
       // Only non-immune Pokemon get results (damage only)
       for (const result of results) {
         expect(result.damage).toBeGreaterThan(0);
@@ -511,6 +517,7 @@ describe("Gen2Weather", () => {
 
       // Assert: only the non-null active should get damage
       expect(results.length).toBe(1);
+      // Source: Gen 2 sandstorm damage is floor(maxHp / 8); 200 / 8 = 25.
       expect(results[0]?.damage).toBe(25);
     });
   });
@@ -561,6 +568,7 @@ describe("Gen2Weather", () => {
 
       // Assert: should use currentHp (160) as max: floor(160/8) = 20
       expect(results.length).toBe(1);
+      // Source: Gen 2 sandstorm damage falls back to currentHp when calculatedStats.hp is absent; 160 / 8 = 20.
       expect(results[0]?.damage).toBe(20);
     });
   });

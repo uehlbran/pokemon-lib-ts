@@ -710,22 +710,15 @@ describe("Gen5Ruleset.capLethalDamage -- Focus Band (authoritative handler)", ()
   it("given Focus Band at reduced HP and lucky RNG, when lethal damage is dealt, then survives with damage capped to currentHp - 1", () => {
     // Source: Showdown data/items.ts -- Focus Band 10% activation
     // Fix: damage capped to currentHp - 1 (not maxHp - 1) to leave exactly 1 HP
-    // Verification: currentHp=60, maxHp=200, damage=300 -> capped damage = 59 (leaves 1 HP)
-    let luckyResult: { damage: number; survived: boolean; messages: string[] } | undefined;
+    // Verification: seed 7 deterministically passes the 10% check in this ruleset path.
+    // currentHp=60, maxHp=200, damage=300 -> capped damage = 59 (leaves 1 HP)
     const ruleset = new Gen5Ruleset();
-    for (let seed = 0; seed < 1000; seed++) {
-      const defender = makeActive({ heldItem: "focus-band", hp: 200, currentHp: 60 });
-      const state = { ...makeState(), rng: new SeededRandom(seed) } as unknown as BattleState;
-      const result = ruleset.capLethalDamage(300, defender, defender, makeMove(), state);
-      if (result.survived) {
-        luckyResult = result;
-        break;
-      }
-    }
-    expect(luckyResult).toBeDefined();
-    expect(luckyResult!.survived).toBe(true);
-    expect(luckyResult!.damage).toBe(59); // currentHp - 1 = 60 - 1 = 59; HP after = 60 - 59 = 1
-    expect(luckyResult!.messages[0]).toContain("Focus Band");
+    const defender = makeActive({ heldItem: "focus-band", hp: 200, currentHp: 60 });
+    const state = { ...makeState(), rng: new SeededRandom(7) } as unknown as BattleState;
+    const luckyResult = ruleset.capLethalDamage(300, defender, defender, makeMove(), state);
+    expect(luckyResult.survived).toBe(true);
+    expect(luckyResult.damage).toBe(59); // currentHp - 1 = 60 - 1 = 59; HP after = 60 - 59 = 1
+    expect(luckyResult.messages[0]).toContain("Focus Band");
   });
 
   it("given Focus Band and unlucky RNG, when lethal damage is dealt, then does not survive", () => {
@@ -802,52 +795,43 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
   it("given a Pokemon with Klutz holding Focus Band, when taking lethal damage with lucky RNG, then Focus Band does NOT activate", () => {
     // Source: Showdown data/abilities.ts -- klutz: suppresses all held item effects for the holder
     // Source: Showdown data/items.ts -- Focus Band: not activated when items are suppressed
+    // Verification: seed 7 is a lucky Focus Band seed without suppression, so using it here
+    // proves Klutz blocks the activation rather than relying on an unlucky roll.
     const ruleset = new Gen5Ruleset();
-    // Try many seeds to ensure none activates Focus Band under Klutz
-    let anyActivated = false;
-    for (let seed = 0; seed < 200; seed++) {
-      const defender = makeActive({
-        heldItem: "focus-band",
-        ability: "klutz",
-        hp: 100,
-        currentHp: 100,
-      });
-      const state = {
-        ...makeState(),
-        rng: new SeededRandom(seed),
-      } as unknown as BattleState;
-      const result = ruleset.capLethalDamage(200, defender, defender, makeMove(), state);
-      if (result.survived) {
-        anyActivated = true;
-        break;
-      }
-    }
-    expect(anyActivated).toBe(false);
+    const defender = makeActive({
+      heldItem: "focus-band",
+      ability: "klutz",
+      hp: 100,
+      currentHp: 100,
+    });
+    const state = {
+      ...makeState(),
+      rng: new SeededRandom(7),
+    } as unknown as BattleState;
+    const result = ruleset.capLethalDamage(200, defender, defender, makeMove(), state);
+    expect(result.survived).toBe(false);
+    expect(result.damage).toBe(200);
   });
 
   it("given a Pokemon under Embargo holding Focus Band, when taking lethal damage with lucky RNG, then Focus Band does NOT activate", () => {
     // Source: Showdown data/moves.ts -- embargo: target's item is unusable
+    // Verification: seed 7 is a lucky Focus Band seed without suppression, so using it here
+    // proves Embargo blocks the activation rather than relying on an unlucky roll.
     const ruleset = new Gen5Ruleset();
-    let anyActivated = false;
-    for (let seed = 0; seed < 200; seed++) {
-      const volatiles = new Map<string, { turnsLeft: number }>([["embargo", { turnsLeft: 5 }]]);
-      const defender = makeActive({
-        heldItem: "focus-band",
-        hp: 100,
-        currentHp: 100,
-        volatiles,
-      });
-      const state = {
-        ...makeState(),
-        rng: new SeededRandom(seed),
-      } as unknown as BattleState;
-      const result = ruleset.capLethalDamage(200, defender, defender, makeMove(), state);
-      if (result.survived) {
-        anyActivated = true;
-        break;
-      }
-    }
-    expect(anyActivated).toBe(false);
+    const volatiles = new Map<string, { turnsLeft: number }>([["embargo", { turnsLeft: 5 }]]);
+    const defender = makeActive({
+      heldItem: "focus-band",
+      hp: 100,
+      currentHp: 100,
+      volatiles,
+    });
+    const state = {
+      ...makeState(),
+      rng: new SeededRandom(7),
+    } as unknown as BattleState;
+    const result = ruleset.capLethalDamage(200, defender, defender, makeMove(), state);
+    expect(result.survived).toBe(false);
+    expect(result.damage).toBe(200);
   });
 
   it("given no suppression and a full-HP Pokemon with Focus Sash, when taking lethal damage, then Focus Sash still works normally", () => {
@@ -1174,34 +1158,20 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
   it("given a Pokemon with King's Rock using any damaging move with lucky RNG, when on-hit triggers, then it causes flinch", () => {
     // Source: Showdown data/items.ts -- Gen 5+ King's Rock applies to ALL damaging moves
     // (no more affectedByKingsRock whitelist)
-    let flinchResult: ReturnType<typeof applyGen5HeldItem> | undefined;
-    for (let seed = 0; seed < 1000; seed++) {
-      const pokemon = makeActive({ heldItem: "kings-rock" });
-      const ctx = makeItemContext({ pokemon, damage: 50, seed });
-      const r = applyGen5HeldItem("on-hit", ctx);
-      if (r.activated) {
-        flinchResult = r;
-        break;
-      }
-    }
-    expect(flinchResult).toBeDefined();
-    expect(flinchResult!.effects).toEqual([{ type: "flinch", target: "opponent" }]);
+    // Verification: seed 7 deterministically hits the King's Rock flinch branch.
+    const pokemon = makeActive({ heldItem: "kings-rock" });
+    const flinchResult = applyGen5HeldItem("on-hit", makeItemContext({ pokemon, damage: 50, seed: 7 }));
+    expect(flinchResult.activated).toBe(true);
+    expect(flinchResult.effects).toEqual([{ type: "flinch", target: "opponent" }]);
   });
 
   it("given a Pokemon with Razor Fang dealing damage, when on-hit triggers with lucky RNG, then it causes flinch", () => {
     // Source: Showdown data/items.ts -- Razor Fang: same 10% flinch chance as King's Rock, applies to all damaging moves in Gen 5
-    let flinchResult: ReturnType<typeof applyGen5HeldItem> | undefined;
-    for (let seed = 0; seed < 1000; seed++) {
-      const pokemon = makeActive({ heldItem: "razor-fang" });
-      const ctx = makeItemContext({ pokemon, damage: 50, seed });
-      const r = applyGen5HeldItem("on-hit", ctx);
-      if (r.activated) {
-        flinchResult = r;
-        break;
-      }
-    }
-    expect(flinchResult).toBeDefined();
-    expect(flinchResult!.effects).toEqual([{ type: "flinch", target: "opponent" }]);
+    // Verification: seed 7 deterministically hits the Razor Fang flinch branch.
+    const pokemon = makeActive({ heldItem: "razor-fang" });
+    const flinchResult = applyGen5HeldItem("on-hit", makeItemContext({ pokemon, damage: 50, seed: 7 }));
+    expect(flinchResult.activated).toBe(true);
+    expect(flinchResult.effects).toEqual([{ type: "flinch", target: "opponent" }]);
   });
 
   it("given a Pokemon with King's Rock dealing 0 damage, when on-hit triggers, then it does not activate", () => {

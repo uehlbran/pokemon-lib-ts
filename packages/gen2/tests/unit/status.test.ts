@@ -170,6 +170,7 @@ describe("Gen2Status", () => {
       const damage = calculateGen2StatusDamage(pokemon, "burn", state);
 
       // Assert — 1/8 of 200 = 25
+      // Source: Gen 2 status damage is floor(maxHP / 8); floor(200 / 8) = 25.
       expect(damage).toBe(25);
     });
 
@@ -230,6 +231,7 @@ describe("Gen2Status", () => {
       const damage = calculateGen2StatusDamage(pokemon, "poison", state);
 
       // Assert — 1/8 of 200 = 25
+      // Source: Gen 2 status damage is floor(maxHP / 8); floor(200 / 8) = 25.
       expect(damage).toBe(25);
     });
 
@@ -277,6 +279,7 @@ describe("Gen2Status", () => {
       const damage = calculateGen2StatusDamage(pokemon, "badly-poisoned", state);
 
       // Assert — 1/16 of 160 = 10
+      // Source: Gen 2 Toxic starts at 1/16 max HP; floor(160 / 16) = 10.
       expect(damage).toBe(10);
     });
 
@@ -295,6 +298,7 @@ describe("Gen2Status", () => {
       const damage = calculateGen2StatusDamage(pokemon, "badly-poisoned", state);
 
       // Assert — 3/16 of 160 = 30
+      // Source: Gen 2 Toxic increments by 1/16 per turn; floor(160 * 3 / 16) = 30.
       expect(damage).toBe(30);
     });
 
@@ -313,6 +317,7 @@ describe("Gen2Status", () => {
       const damage = calculateGen2StatusDamage(pokemon, "badly-poisoned", state);
 
       // Assert
+      // Source: Gen 2 Toxic damage is floor(maxHP * counter / 16); floor(100 * 2 / 16) = 12.
       expect(damage).toBe(12);
     });
 
@@ -520,11 +525,11 @@ describe("Comprehensive status mechanics", () => {
     const rng = new SeededRandom(12345);
     const ruleset = new Gen2Ruleset();
     const pokemon = createMockActivePokemon({ status: "freeze" });
-    let thawCount = 0;
     // Act
-    for (let i = 0; i < 100; i++) {
-      if (ruleset.checkFreezeThaw(pokemon, rng)) thawCount++;
-    }
+    const thawCount = Array.from({ length: 100 }).reduce(
+      (count) => count + (ruleset.checkFreezeThaw(pokemon, rng) ? 1 : 0),
+      0,
+    );
     // Assert — pre-move thaw NEVER happens in Gen 2
     expect(thawCount).toBe(0);
   });
@@ -642,16 +647,11 @@ describe("Gen 2 processEndOfTurnDefrost", () => {
     const ruleset = new Gen2Ruleset();
     // Use a seeded RNG where we can verify the first int(0,255) call returns >= 25.
     // We'll run 256 deterministic seeds and find at least one that does NOT thaw.
-    let foundNoThaw = false;
-    for (let seed = 100; seed < 400; seed++) {
+    const foundNoThaw = Array.from({ length: 300 }, (_, index) => index + 100).some((seed) => {
       const rng = new SeededRandom(seed);
       const pokemon = createMockActivePokemon({ status: "freeze" });
-      const result = ruleset.processEndOfTurnDefrost(pokemon, rng);
-      if (!result) {
-        foundNoThaw = true;
-        break;
-      }
-    }
+      return !ruleset.processEndOfTurnDefrost(pokemon, rng);
+    });
 
     // Assert — with 300 seeds, we must find at least one non-thaw (probability overwhelmingly certain)
     expect(foundNoThaw).toBe(true);

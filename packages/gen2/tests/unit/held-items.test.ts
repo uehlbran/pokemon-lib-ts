@@ -156,7 +156,7 @@ describe("Gen 2 Held Items", () => {
       // Act
       const result = applyGen2HeldItem("end-of-turn", context);
 
-      // Assert: 1/16 of 200 = 12
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — floor(200 / 16) = 12 HP
       expect(result.activated).toBe(true);
       expect(result.effects.length).toBe(1);
       expect(result.effects[0]?.type).toBe("heal");
@@ -200,6 +200,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry heals a fixed 10 HP when HP is at or below 50%
       expect(healEffect?.value).toBe(10);
     });
 
@@ -321,6 +322,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gold Berry heals a fixed 30 HP when HP is at or below 50%
       expect(healEffect?.value).toBe(30);
     });
 
@@ -373,6 +375,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gold Berry heals a fixed 30 HP after damage drops HP to 50% or less
       expect(healEffect?.value).toBe(30);
     });
 
@@ -718,6 +721,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry Juice heals a fixed 20 HP when HP is at or below 50%
       expect(healEffect?.value).toBe(20);
     });
 
@@ -733,8 +737,10 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem("end-of-turn", context);
 
       // Assert
+      expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
+      expect(consumeEffect?.value).toBe("berry-juice");
     });
 
     it("given a Pokemon above 50% HP holding Berry Juice, when end-of-turn triggers, then no activation", () => {
@@ -954,6 +960,7 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry Juice heals a fixed 20 HP after damage drops HP to 50% or less
       expect(healEffect?.value).toBe(20);
     });
 
