@@ -12,10 +12,21 @@ import type {
   BattleState,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonType, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type {
+  MoveData,
+  PokemonType,
+  PrimaryStatus,
+  TerrainType,
+  WeatherType,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
@@ -23,6 +34,9 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   SeededRandom,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -45,6 +59,7 @@ const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const STATUS_IDS = CORE_STATUS_IDS;
+const TRIGGER_IDS = CORE_ABILITY_TRIGGER_IDS;
 const TYPE_IDS = CORE_TYPE_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const WEATHER_IDS = CORE_WEATHER_IDS satisfies Record<string, WeatherType>;
@@ -54,28 +69,25 @@ const TERRAIN_IDS = {
   misty: CORE_TERRAIN_IDS.misty,
   psychic: CORE_TERRAIN_IDS.psychic,
 } satisfies Record<string, TerrainType>;
-const GENDER_IDS = {
-  male: ["ma", "le"].join("") as Gender,
-  female: ["fe", "male"].join("") as Gender,
-  genderless: ["gender", "less"].join("") as Gender,
-} as const;
+const GENDER_IDS = CORE_GENDERS;
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const DATA_MANAGER = createGen7DataManager();
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(GEN7_SPECIES_IDS.bulbasaur);
 const DEFAULT_MOVE = DATA_MANAGER.getMove(MOVE_IDS.tackle);
 const DEFAULT_NATURE_ID = DATA_MANAGER.getNature(GEN7_NATURE_IDS.hardy).id;
 const DEFAULT_POKEBALL = ITEM_IDS.pokeBall;
-const DEFAULT_ABILITY_SLOT = Object.keys({ normal1: null } as const)[0] as ActivePokemon["pokemon"]["abilitySlot"];
+const DEFAULT_ABILITY_SLOT = CORE_ABILITY_SLOTS.normal1;
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as abilities-nerfs.test.ts)
 // ---------------------------------------------------------------------------
 
 let nextTestUid = 0;
-function makeTestUid() {
+function createTestUid() {
   return `test-${nextTestUid++}`;
 }
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -85,126 +97,110 @@ function makeActive(overrides: {
   hp?: number;
   currentHp?: number;
   types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  status?: string | null;
-  speciesId?: number;
+  ability?: (typeof ABILITY_IDS)[keyof typeof ABILITY_IDS];
+  heldItem?: (typeof ITEM_IDS)[keyof typeof ITEM_IDS] | null;
+  status?: PrimaryStatus | null;
+  speciesId?: (typeof GEN7_SPECIES_IDS)[keyof typeof GEN7_SPECIES_IDS];
   nickname?: string | null;
   movedThisTurn?: boolean;
   turnsOnField?: number;
   volatileStatuses?: Map<string, unknown>;
-  gender?: string;
-  suppressedAbility?: string | null;
+  gender?: (typeof GENDER_IDS)[keyof typeof GENDER_IDS];
+  suppressedAbility?: (typeof ABILITY_IDS)[keyof typeof ABILITY_IDS] | null;
 }): ActivePokemon {
-  const hp = overrides.hp ?? 200;
-  const attack = overrides.attack ?? 100;
-  const defense = overrides.defense ?? 100;
-  const spAttack = overrides.spAttack ?? 100;
-  const spDefense = overrides.spDefense ?? 100;
-  const speed = overrides.speed ?? 100;
-  return {
-    pokemon: {
-      uid: makeTestUid(),
-      speciesId: overrides.speciesId ?? DEFAULT_SPECIES.id,
-      nickname: overrides.nickname ?? null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: DEFAULT_NATURE_ID,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? ABILITY_IDS.none,
-      abilitySlot: DEFAULT_ABILITY_SLOT,
-      heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: (overrides.gender ?? GENDER_IDS.male) as Gender,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: DEFAULT_POKEBALL,
-      calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
-    },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatileStatuses ?? new Map(),
-    types: overrides.types ?? [TYPE_IDS.normal],
-    ability: overrides.ability ?? ABILITY_IDS.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: overrides.turnsOnField ?? 0,
-    movedThisTurn: overrides.movedThisTurn ?? false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: overrides.suppressedAbility ?? null,
-    forcedMove: null,
-  } as ActivePokemon;
+  const maxHp = overrides.hp ?? 200;
+  const species = DATA_MANAGER.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(7), {
+    nature: DEFAULT_NATURE_ID,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: DEFAULT_ABILITY_SLOT,
+    gender: overrides.gender ?? GENDER_IDS.male,
+    isShiny: false,
+    moves: [],
+    heldItem: overrides.heldItem ?? null,
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: DEFAULT_POKEBALL,
+  });
+
+  pokemon.uid = createTestUid();
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.ability = overrides.ability ?? ABILITY_IDS.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: overrides.attack ?? 100,
+    defense: overrides.defense ?? 100,
+    spAttack: overrides.spAttack ?? 100,
+    spDefense: overrides.spDefense ?? 100,
+    speed: overrides.speed ?? 100,
+  };
+
+  const activePokemon = createBattleOnFieldPokemon(
+    pokemon,
+    0,
+    overrides.types ?? [...(species.types as PokemonType[])],
+  );
+  activePokemon.volatileStatuses = overrides.volatileStatuses ?? new Map();
+  activePokemon.ability = overrides.ability ?? ABILITY_IDS.none;
+  activePokemon.turnsOnField = overrides.turnsOnField ?? 0;
+  activePokemon.movedThisTurn = overrides.movedThisTurn ?? false;
+  activePokemon.suppressedAbility = overrides.suppressedAbility ?? null;
+  return activePokemon;
 }
 
 function resolveRepresentativeGen7MoveId(overrides: {
-  id?: string;
+  id?: (typeof MOVE_IDS)[keyof typeof MOVE_IDS];
   type?: PokemonType;
-  category?: "physical" | "special" | "status";
-}): string {
+  category?: MoveData["category"];
+}): (typeof MOVE_IDS)[keyof typeof MOVE_IDS] {
   if (overrides.id) return overrides.id;
 
-  switch (`${String(overrides.type ?? TYPE_IDS.normal)}|${overrides.category ?? "physical"}`) {
-    case `${TYPE_IDS.bug}|physical`:
+  switch (
+    `${String(overrides.type ?? TYPE_IDS.normal)}|${overrides.category ?? MOVE_CATEGORIES.physical}`
+  ) {
+    case `${TYPE_IDS.bug}|${MOVE_CATEGORIES.physical}`:
       return MOVE_IDS.xScissor;
-    case `${TYPE_IDS.dark}|physical`:
+    case `${TYPE_IDS.dark}|${MOVE_CATEGORIES.physical}`:
       return MOVE_IDS.crunch;
-    case `${TYPE_IDS.electric}|special`:
+    case `${TYPE_IDS.electric}|${MOVE_CATEGORIES.special}`:
       return MOVE_IDS.thunderbolt;
-    case `${TYPE_IDS.fire}|physical`:
+    case `${TYPE_IDS.fire}|${MOVE_CATEGORIES.physical}`:
       return MOVE_IDS.flameCharge;
-    case `${TYPE_IDS.fire}|special`:
+    case `${TYPE_IDS.fire}|${MOVE_CATEGORIES.special}`:
       return MOVE_IDS.flamethrower;
-    case `${TYPE_IDS.fighting}|physical`:
+    case `${TYPE_IDS.fighting}|${MOVE_CATEGORIES.physical}`:
       return MOVE_IDS.machPunch;
-    case `${TYPE_IDS.fighting}|special`:
+    case `${TYPE_IDS.fighting}|${MOVE_CATEGORIES.special}`:
       return MOVE_IDS.auraSphere;
-    case `${TYPE_IDS.ghost}|special`:
+    case `${TYPE_IDS.ghost}|${MOVE_CATEGORIES.special}`:
       return MOVE_IDS.shadowBall;
-    case `${TYPE_IDS.ice}|physical`:
+    case `${TYPE_IDS.ice}|${MOVE_CATEGORIES.physical}`:
       return MOVE_IDS.headbutt;
-    case `${TYPE_IDS.ice}|special`:
+    case `${TYPE_IDS.ice}|${MOVE_CATEGORIES.special}`:
       return MOVE_IDS.iceBeam;
-    case `${TYPE_IDS.normal}|status`:
+    case `${TYPE_IDS.normal}|${MOVE_CATEGORIES.status}`:
       return MOVE_IDS.growl;
-    case `${TYPE_IDS.psychic}|special`:
+    case `${TYPE_IDS.psychic}|${MOVE_CATEGORIES.special}`:
       return MOVE_IDS.psychic;
-    case `${TYPE_IDS.rock}|physical`:
+    case `${TYPE_IDS.rock}|${MOVE_CATEGORIES.physical}`:
       return MOVE_IDS.rockSlide;
-    case `${TYPE_IDS.water}|special`:
+    case `${TYPE_IDS.water}|${MOVE_CATEGORIES.special}`:
       return MOVE_IDS.surf;
     default:
       return DEFAULT_MOVE.id;
   }
 }
 
-function makeCanonicalMove(moveId: string, overrides?: Partial<MoveData>): MoveData {
+function createCanonicalMove(
+  moveId: (typeof MOVE_IDS)[keyof typeof MOVE_IDS],
+  overrides?: Partial<MoveData>,
+): MoveData {
   const baseMove = DATA_MANAGER.getMove(moveId);
   return {
     ...baseMove,
@@ -214,16 +210,16 @@ function makeCanonicalMove(moveId: string, overrides?: Partial<MoveData>): MoveD
   } as MoveData;
 }
 
-function makeScenarioMove(overrides: {
-  id?: string;
+function createSyntheticMove(overrides: {
+  id?: (typeof MOVE_IDS)[keyof typeof MOVE_IDS];
   type?: PokemonType;
-  category?: "physical" | "special" | "status";
+  category?: MoveData["category"];
   power?: number | null;
   flags?: Partial<MoveData["flags"]>;
   effect?: MoveData["effect"];
   priority?: number;
 }): MoveData {
-  const baseMove = makeCanonicalMove(resolveRepresentativeGen7MoveId(overrides));
+  const baseMove = createCanonicalMove(resolveRepresentativeGen7MoveId(overrides));
 
   return {
     ...baseMove,
@@ -248,7 +244,7 @@ function makeScenarioMove(overrides: {
   } as MoveData;
 }
 
-function makeState(overrides?: Partial<BattleState>): BattleState {
+function createBattleState(overrides?: Partial<BattleState>): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -267,9 +263,9 @@ function makeState(overrides?: Partial<BattleState>): BattleState {
   } as unknown as BattleState;
 }
 
-function makeAbilityCtx(overrides: {
-  ability: string;
-  trigger: string;
+function createAbilityContext(overrides: {
+  ability: (typeof ABILITY_IDS)[keyof typeof ABILITY_IDS];
+  trigger: AbilityContext["trigger"];
   move?: MoveData;
   currentHp?: number;
   maxHp?: number;
@@ -283,17 +279,17 @@ function makeAbilityCtx(overrides: {
   speed?: number;
   turnsOnField?: number;
   movedThisTurn?: boolean;
-  status?: string | null;
-  heldItem?: string | null;
+  status?: PrimaryStatus | null;
+  heldItem?: (typeof ITEM_IDS)[keyof typeof ITEM_IDS] | null;
   statChange?: { stat: string; stages: number; source: "self" | "opponent" };
   state?: BattleState;
-  speciesId?: number;
-  gender?: string;
+  speciesId?: (typeof GEN7_SPECIES_IDS)[keyof typeof GEN7_SPECIES_IDS];
+  gender?: (typeof GENDER_IDS)[keyof typeof GENDER_IDS];
   volatileStatuses?: Map<string, unknown>;
 }): AbilityContext {
   const hp = overrides.maxHp ?? 200;
   return {
-    pokemon: makeActive({
+    pokemon: createOnFieldPokemon({
       ability: overrides.ability,
       currentHp: overrides.currentHp ?? hp,
       hp: hp,
@@ -312,22 +308,22 @@ function makeAbilityCtx(overrides: {
       gender: overrides.gender,
       volatileStatuses: overrides.volatileStatuses,
     }),
-    opponent: overrides.opponent ?? makeActive({}),
-    state: overrides.state ?? makeState(),
+    opponent: overrides.opponent ?? createOnFieldPokemon({}),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
-    trigger: overrides.trigger as any,
+    trigger: overrides.trigger,
     move: overrides.move,
     statChange: overrides.statChange as any,
   };
 }
 
-function makeItemCtx(overrides: {
-  item: string;
+function createItemContext(overrides: {
+  item: (typeof ITEM_IDS)[keyof typeof ITEM_IDS];
   currentHp?: number;
   maxHp?: number;
   types?: PokemonType[];
-  ability?: string;
-  status?: string | null;
+  ability?: (typeof ABILITY_IDS)[keyof typeof ABILITY_IDS];
+  status?: PrimaryStatus | null;
   nickname?: string | null;
   damage?: number;
   move?: MoveData;
@@ -337,7 +333,7 @@ function makeItemCtx(overrides: {
 }): ItemContext {
   const hp = overrides.maxHp ?? 200;
   return {
-    pokemon: makeActive({
+    pokemon: createOnFieldPokemon({
       ability: overrides.ability ?? ABILITY_IDS.none,
       currentHp: overrides.currentHp ?? hp,
       hp: hp,
@@ -348,7 +344,7 @@ function makeItemCtx(overrides: {
       volatileStatuses: overrides.volatileStatuses,
     }),
     opponent: overrides.opponent,
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
     move: overrides.move,
     damage: overrides.damage,
@@ -364,9 +360,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Defiant (on-stat-change)", () => {
     it("given Defiant and opponent-caused stat drop, then +2 Attack", () => {
       // Source: Showdown data/abilities.ts -- Defiant onAfterEachBoost: +2 Attack
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.defiant,
-        trigger: "on-stat-change",
+        trigger: TRIGGER_IDS.onStatChange,
         statChange: { stat: "defense", stages: -1, source: "opponent" },
       });
       const result = handleGen7StatAbility(ctx);
@@ -376,9 +372,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Defiant and self-caused stat drop, then no activation", () => {
       // Source: Showdown -- Defiant only triggers on opponent-caused drops
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.defiant,
-        trigger: "on-stat-change",
+        trigger: TRIGGER_IDS.onStatChange,
         statChange: { stat: "defense", stages: -1, source: "self" },
       });
       const result = handleGen7StatAbility(ctx);
@@ -387,9 +383,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Defiant and stat raise from opponent, then no activation", () => {
       // Source: Showdown -- Defiant only triggers on drops (stages < 0)
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.defiant,
-        trigger: "on-stat-change",
+        trigger: TRIGGER_IDS.onStatChange,
         statChange: { stat: "attack", stages: 1, source: "opponent" },
       });
       const result = handleGen7StatAbility(ctx);
@@ -401,9 +397,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Competitive (on-stat-change)", () => {
     it("given Competitive and opponent-caused stat drop, then +2 Special Attack", () => {
       // Source: Showdown data/abilities.ts -- Competitive onAfterEachBoost: +2 SpAtk
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.competitive,
-        trigger: "on-stat-change",
+        trigger: TRIGGER_IDS.onStatChange,
         statChange: { stat: "speed", stages: -1, source: "opponent" },
       });
       const result = handleGen7StatAbility(ctx);
@@ -413,9 +409,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Competitive and self-caused stat drop, then no activation", () => {
       // Source: Showdown -- Competitive only triggers on opponent-caused drops
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.competitive,
-        trigger: "on-stat-change",
+        trigger: TRIGGER_IDS.onStatChange,
         statChange: { stat: "speed", stages: -1, source: "self" },
       });
       const result = handleGen7StatAbility(ctx);
@@ -427,9 +423,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Contrary (on-stat-change)", () => {
     it("given Contrary on stat change, then activated (reversal marker)", () => {
       // Source: Showdown data/abilities.ts -- Contrary onChangeBoost
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.contrary,
-        trigger: "on-stat-change",
+        trigger: TRIGGER_IDS.onStatChange,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -440,9 +436,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Simple (on-stat-change)", () => {
     it("given Simple on stat change, then activated (doubling marker)", () => {
       // Source: Showdown data/abilities.ts -- Simple onChangeBoost
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.simple,
-        trigger: "on-stat-change",
+        trigger: TRIGGER_IDS.onStatChange,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -453,10 +449,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Justified (on-damage-taken)", () => {
     it("given Justified hit by Dark-type move, then +1 Attack", () => {
       // Source: Showdown data/abilities.ts -- Justified onDamagingHit
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.justified,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.dark, category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.dark, category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -465,10 +461,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Justified hit by non-Dark-type move, then no activation", () => {
       // Source: Showdown -- Justified only triggers on Dark-type moves
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.justified,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -480,10 +476,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
     it("given Weak Armor hit by physical move, then -1 Def and +2 Speed (Gen 7)", () => {
       // Source: Showdown data/abilities.ts -- Weak Armor Gen 7: spe +2 (was +1 in Gen 5-6)
       // Source: Bulbapedia "Weak Armor" -- "+2 Speed in Gen 7"
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.weakArmor,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.normal, category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.normal, category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -494,10 +490,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Weak Armor hit by special move, then no activation", () => {
       // Source: Showdown -- Weak Armor only triggers on physical hits
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.weakArmor,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -508,10 +504,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Stamina (on-damage-taken)", () => {
     it("given Stamina hit by special move, then +1 Defense", () => {
       // Source: Showdown data/abilities.ts -- Stamina onDamagingHit: any damaging move
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.stamina,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -520,10 +516,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Stamina with no move (status), then no activation", () => {
       // Source: Showdown -- Stamina only triggers on damaging moves (not status)
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.stamina,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ category: "status", power: null }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.status, power: null }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -534,10 +530,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Rattled (on-damage-taken)", () => {
     it("given Rattled hit by Bug-type move, then +1 Speed", () => {
       // Source: Showdown data/abilities.ts -- Rattled onDamagingHit: Bug/Ghost/Dark
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.rattled,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.bug, category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.bug, category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -546,10 +542,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Rattled hit by Ghost-type move, then +1 Speed", () => {
       // Source: Showdown -- Rattled triggers on Ghost-type
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.rattled,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.ghost, category: "special" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.ghost, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -557,10 +553,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Rattled hit by Fire-type move, then no activation", () => {
       // Source: Showdown -- Rattled only triggers on Bug/Ghost/Dark
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.rattled,
-        trigger: "on-damage-taken",
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        trigger: TRIGGER_IDS.onDamageTaken,
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -571,9 +567,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Speed Boost (on-turn-end)", () => {
     it("given Speed Boost at turnsOnField > 0, then +1 Speed", () => {
       // Source: Showdown data/abilities.ts -- Speed Boost onResidual
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.speedBoost,
-        trigger: "on-turn-end",
+        trigger: TRIGGER_IDS.onTurnEnd,
         turnsOnField: 1,
       });
       const result = handleGen7StatAbility(ctx);
@@ -583,9 +579,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Speed Boost at turnsOnField = 0 (just switched in), then no activation", () => {
       // Source: Showdown -- Speed Boost does not trigger on the turn of switch-in
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.speedBoost,
-        trigger: "on-turn-end",
+        trigger: TRIGGER_IDS.onTurnEnd,
         turnsOnField: 0,
       });
       const result = handleGen7StatAbility(ctx);
@@ -597,9 +593,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Moody (on-turn-end)", () => {
     it("given Moody, then raises one stat and lowers another", () => {
       // Source: Showdown data/mods/gen7/abilities.ts -- Moody onResidual
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.moody,
-        trigger: "on-turn-end",
+        trigger: TRIGGER_IDS.onTurnEnd,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -619,9 +615,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Steadfast (on-flinch)", () => {
     it("given Steadfast on flinch, then +1 Speed", () => {
       // Source: Showdown data/abilities.ts -- Steadfast onFlinch
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.steadfast,
-        trigger: "on-flinch",
+        trigger: TRIGGER_IDS.onFlinch,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -629,9 +625,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
     });
 
     it("given non-Steadfast on flinch, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.innerFocus,
-        trigger: "on-flinch",
+        trigger: TRIGGER_IDS.onFlinch,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -642,9 +638,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Unnerve (on-item-use)", () => {
     it("given Unnerve on item use, then prevents Berry consumption", () => {
       // Source: Showdown data/abilities.ts -- Unnerve onFoeTryEatItem
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.unnerve,
-        trigger: "on-item-use",
+        trigger: TRIGGER_IDS.onItemUse,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -652,9 +648,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
     });
 
     it("given non-Unnerve on item use, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.none,
-        trigger: "on-item-use",
+        trigger: TRIGGER_IDS.onItemUse,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -666,11 +662,11 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
     it("given Protean using Fire move as Normal type, then type changes to Fire", () => {
       // Source: Showdown data/abilities.ts -- protean: onPrepareHit
       // Source: Bulbapedia "Protean" -- "changes type to match move type before using it"
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.protean,
-        trigger: "on-before-move",
+        trigger: TRIGGER_IDS.onBeforeMove,
         types: [TYPE_IDS.normal],
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -684,20 +680,20 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
 
     it("given Protean using Fire move as Fire type, then no activation (already that type)", () => {
       // Source: Showdown -- Protean does not activate if already the move's type
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.protean,
-        trigger: "on-before-move",
+        trigger: TRIGGER_IDS.onBeforeMove,
         types: [TYPE_IDS.fire],
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given Protean with no move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.protean,
-        trigger: "on-before-move",
+        trigger: TRIGGER_IDS.onBeforeMove,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -708,9 +704,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("passive-immunity trigger", () => {
     it("given any ability on passive-immunity, returns inactive", () => {
       // Source: Gen7AbilitiesStat.ts -- handlePassiveImmunity always returns INACTIVE
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.levitate,
-        trigger: "passive-immunity",
+        trigger: TRIGGER_IDS.passiveImmunity,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -720,9 +716,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   // --- unknown trigger ---
   describe("unknown trigger", () => {
     it("given unknown trigger, returns inactive", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.none,
-        trigger: "on-damage-calc" as any,
+        trigger: TRIGGER_IDS.onDamageCalc,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -733,13 +729,13 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("isPranksterEligible", () => {
     it("given status category, returns true", () => {
       // Source: Showdown -- Prankster checks move.category === 'Status'
-      expect(isPranksterEligible("status")).toBe(true);
+      expect(isPranksterEligible(MOVE_CATEGORIES.status)).toBe(true);
     });
     it("given physical category, returns false", () => {
-      expect(isPranksterEligible("physical")).toBe(false);
+      expect(isPranksterEligible(MOVE_CATEGORIES.physical)).toBe(false);
     });
     it("given special category, returns false", () => {
-      expect(isPranksterEligible("special")).toBe(false);
+      expect(isPranksterEligible(MOVE_CATEGORIES.special)).toBe(false);
     });
   });
 
@@ -747,10 +743,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
   describe("Moxie (on-after-move-used)", () => {
     it("given Moxie and opponent fainted, then +1 Attack", () => {
       // Source: Showdown data/abilities.ts -- Moxie onSourceAfterFaint
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.moxie,
-        trigger: "on-after-move-used",
-        opponent: makeActive({ currentHp: 0, hp: 100 }),
+        trigger: TRIGGER_IDS.onAfterMoveUsed,
+        opponent: createOnFieldPokemon({ currentHp: 0, hp: 100 }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -758,10 +754,10 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
     });
 
     it("given Moxie and opponent alive, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.moxie,
-        trigger: "on-after-move-used",
-        opponent: makeActive({ currentHp: 50, hp: 100 }),
+        trigger: TRIGGER_IDS.onAfterMoveUsed,
+        opponent: createOnFieldPokemon({ currentHp: 50, hp: 100 }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -778,22 +774,22 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Analytic", () => {
     it("given Analytic and opponent moved this turn, then activates", () => {
       // Source: Showdown data/abilities.ts -- analytic onBasePower
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.analytic,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.psychic, category: "special" }),
-        opponent: makeActive({ movedThisTurn: true }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.psychic, category: MOVE_CATEGORIES.special }),
+        opponent: createOnFieldPokemon({ movedThisTurn: true }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Analytic and opponent has NOT moved, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.analytic,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.psychic, category: "special" }),
-        opponent: makeActive({ movedThisTurn: false }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.psychic, category: MOVE_CATEGORIES.special }),
+        opponent: createOnFieldPokemon({ movedThisTurn: false }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -804,32 +800,32 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Sand Force", () => {
     it("given Sand Force in sand with Rock move, then activates", () => {
       // Source: Showdown data/abilities.ts -- sandforce onBasePower
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.sandForce,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.rock, category: "physical" }),
-        state: makeState({ weather: { type: WEATHER_IDS.sand, turnsLeft: 5 } }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.rock, category: MOVE_CATEGORIES.physical }),
+        state: createBattleState({ weather: { type: WEATHER_IDS.sand, turnsLeft: 5 } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Sand Force in sand with Fire move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.sandForce,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
-        state: makeState({ weather: { type: WEATHER_IDS.sand, turnsLeft: 5 } }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
+        state: createBattleState({ weather: { type: WEATHER_IDS.sand, turnsLeft: 5 } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given Sand Force without sand, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.sandForce,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.rock, category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.rock, category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -840,20 +836,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Iron Fist", () => {
     it("given Iron Fist with punch move, then activates", () => {
       // Source: Showdown data/abilities.ts -- ironfist: move.flags['punch']
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.ironFist,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ id: MOVE_IDS.machPunch, type: TYPE_IDS.fighting, flags: { punch: true } }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ id: MOVE_IDS.machPunch, type: TYPE_IDS.fighting, flags: { punch: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Iron Fist with non-punch move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.ironFist,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ id: MOVE_IDS.tackle, type: TYPE_IDS.normal }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ id: MOVE_IDS.tackle, type: TYPE_IDS.normal }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -864,10 +860,10 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Reckless", () => {
     it("given Reckless with recoil move, then activates", () => {
       // Source: Showdown data/abilities.ts -- reckless: move.recoil
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.reckless,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({
           id: MOVE_IDS.doubleEdge,
           type: TYPE_IDS.normal,
           effect: { type: "recoil", percent: 33 } as any,
@@ -879,11 +875,11 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
 
     it("given Reckless with crash damage move, then activates", () => {
       // Source: Showdown data/abilities.ts -- reckless: move.hasCrashDamage
-      const move = makeScenarioMove({ id: MOVE_IDS.highJumpKick, type: TYPE_IDS.fighting });
+      const move = createSyntheticMove({ id: MOVE_IDS.highJumpKick, type: TYPE_IDS.fighting });
       (move as any).hasCrashDamage = true;
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.reckless,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         move,
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -895,22 +891,22 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Adaptability", () => {
     it("given Adaptability with STAB move, then activates", () => {
       // Source: Showdown data/abilities.ts -- adaptability onModifySTAB
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.adaptability,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         types: [TYPE_IDS.water],
-        move: makeScenarioMove({ type: TYPE_IDS.water, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.water, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Adaptability with non-STAB move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.adaptability,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         types: [TYPE_IDS.water],
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -921,20 +917,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Hustle", () => {
     it("given Hustle with physical move, then activates", () => {
       // Source: Showdown data/abilities.ts -- hustle onModifyAtk
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.hustle,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Hustle with special move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.hustle,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ category: "special" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -945,20 +941,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Huge Power / Pure Power", () => {
     it("given Huge Power with physical move, then activates", () => {
       // Source: Showdown data/abilities.ts -- hugepower onModifyAtk
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.hugePower,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Pure Power with special move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.purePower,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ category: "special" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -969,21 +965,21 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Guts", () => {
     it("given Guts with status and physical move, then activates", () => {
       // Source: Showdown data/abilities.ts -- guts onModifyAtk
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.guts,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         status: STATUS_IDS.burn,
-        move: makeScenarioMove({ category: "physical" }),
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Guts without status, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.guts,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -995,12 +991,12 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
     it("given Blaze at low HP with Fire move, then activates", () => {
       // Source: Showdown data/abilities.ts -- blaze: hp <= floor(maxHP/3)
       // floor(200/3) = 66. 66 <= 66 -> activates
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.blaze,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         currentHp: 66,
         maxHp: 200,
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1008,12 +1004,12 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
 
     it("given Torrent at high HP with Water move, then no activation", () => {
       // Source: Showdown -- only triggers at <= 1/3 HP
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.torrent,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         currentHp: 200,
         maxHp: 200,
-        move: makeScenarioMove({ type: TYPE_IDS.water, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.water, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1024,9 +1020,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Sniper", () => {
     it("given Sniper, then always activates (signal for damage calc)", () => {
       // Source: Showdown data/abilities.ts -- sniper onModifyDamage
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.sniper,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1037,9 +1033,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Tinted Lens", () => {
     it("given Tinted Lens, then always activates", () => {
       // Source: Showdown data/abilities.ts -- tintedlens onModifyDamage
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.tintedLens,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1050,20 +1046,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Tough Claws", () => {
     it("given Tough Claws with contact move, then activates", () => {
       // Source: Showdown data/abilities.ts -- toughclaws: move.flags['contact']
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.toughClaws,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ flags: { contact: true } }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ flags: { contact: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Tough Claws with non-contact move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.toughClaws,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ flags: { contact: false } }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ flags: { contact: false } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1074,20 +1070,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Strong Jaw", () => {
     it("given Strong Jaw with bite move, then activates", () => {
       // Source: Showdown data/abilities.ts -- strongjaw: move.flags[MOVE_IDS.bite]
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.strongJaw,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ id: MOVE_IDS.crunch, flags: { bite: true } }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ id: MOVE_IDS.crunch, flags: { bite: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Strong Jaw with non-bite move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.strongJaw,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ id: MOVE_IDS.tackle }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ id: MOVE_IDS.tackle }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1098,20 +1094,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Mega Launcher", () => {
     it("given Mega Launcher with pulse move, then activates", () => {
       // Source: Showdown data/abilities.ts -- megalauncher: move.flags['pulse']
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.megaLauncher,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ id: MOVE_IDS.auraSphere, flags: { pulse: true } }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ id: MOVE_IDS.auraSphere, flags: { pulse: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Mega Launcher with non-pulse move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.megaLauncher,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ id: MOVE_IDS.tackle }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ id: MOVE_IDS.tackle }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1122,30 +1118,30 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Thick Fat", () => {
     it("given Thick Fat hit by Fire move, then activates", () => {
       // Source: Showdown data/abilities.ts -- thickfat: onSourceModifyAtk
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.thickFat,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Thick Fat hit by Ice move, then activates", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.thickFat,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.ice, category: "special" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.ice, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Thick Fat hit by Water move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.thickFat,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.water, category: "special" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.water, category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1156,9 +1152,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Marvel Scale", () => {
     it("given Marvel Scale with status, then activates", () => {
       // Source: Showdown data/abilities.ts -- marvelscale onModifyDef
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.marvelScale,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         status: STATUS_IDS.burn,
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -1166,9 +1162,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
     });
 
     it("given Marvel Scale without status, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.marvelScale,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1179,20 +1175,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Fur Coat", () => {
     it("given Fur Coat hit by physical move, then activates", () => {
       // Source: Showdown data/abilities.ts -- furcoat: onModifyDef, chainModify(2)
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.furCoat,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ category: "physical" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.physical }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Fur Coat hit by special move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.furCoat,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ category: "special" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.special }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1203,18 +1199,18 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Solid Rock / Filter / Prism Armor", () => {
     it("given Solid Rock, then activates", () => {
       // Source: Showdown data/abilities.ts -- solidrock onSourceModifyDamage
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.solidRock,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Filter, then activates", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.filter,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1222,9 +1218,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
 
     it("given Prism Armor, then activates with message", () => {
       // Source: Showdown data/abilities.ts -- prismarmor: isBreakable: false
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.prismArmor,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         nickname: "Necrozma",
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -1237,9 +1233,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Multiscale / Shadow Shield", () => {
     it("given Multiscale at full HP, then activates", () => {
       // Source: Showdown data/abilities.ts -- multiscale onSourceModifyDamage
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.multiscale,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         currentHp: 200,
         maxHp: 200,
       });
@@ -1249,9 +1245,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
 
     it("given Shadow Shield at full HP, then activates", () => {
       // Source: Showdown -- Shadow Shield same as Multiscale
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.shadowShield,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         currentHp: 200,
         maxHp: 200,
       });
@@ -1260,9 +1256,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
     });
 
     it("given Multiscale below full HP, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.multiscale,
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
         currentHp: 199,
         maxHp: 200,
       });
@@ -1275,10 +1271,10 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Sturdy (DamageImmunity)", () => {
     it("given Sturdy and OHKO move, then blocks the move", () => {
       // Source: Showdown data/abilities.ts -- sturdy onTryHit
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.sturdy,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ effect: { type: "ohko" } as any }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ effect: { type: "ohko" } as any }),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1286,20 +1282,20 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
     });
 
     it("given Sturdy and non-OHKO move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.sturdy,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({}),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({}),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given non-Sturdy and OHKO move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.none,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ effect: { type: "ohko" } as any }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ effect: { type: "ohko" } as any }),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1310,10 +1306,10 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Galvanize", () => {
     it("given Galvanize with Normal move, then type becomes Electric", () => {
       // Source: Showdown data/abilities.ts -- galvanize: onModifyType + onBasePower
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.galvanize,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ type: TYPE_IDS.normal }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ type: TYPE_IDS.normal }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1327,30 +1323,30 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   describe("Parental Bond", () => {
     it("given Parental Bond with valid move, then activates", () => {
       // Source: Showdown data/abilities.ts -- parentalbond
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.parentalBond,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ power: 80 }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ power: 80 }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given Parental Bond with multi-hit move, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.parentalBond,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ power: 80, effect: { type: "multi-hit", minHits: 2, maxHits: 5 } as any }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ power: 80, effect: { type: "multi-hit", minHits: 2, maxHits: 5 } as any }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given Parental Bond with status move (power 0), then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.parentalBond,
-        trigger: "on-damage-calc",
-        move: makeScenarioMove({ power: 0, category: "status" }),
+        trigger: TRIGGER_IDS.onDamageCalc,
+        move: createSyntheticMove({ power: 0, category: MOVE_CATEGORIES.status }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1360,9 +1356,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
   // --- Unknown ability ---
   describe("unknown ability", () => {
     it("given unknown ability on damage-calc, returns inactive", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: "made-up-ability",
-        trigger: "on-damage-calc",
+        trigger: TRIGGER_IDS.onDamageCalc,
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1379,7 +1375,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Cheri Berry (end-of-turn)", () => {
     it("given Cheri Berry and paralysis status, then cures paralysis", () => {
       // Source: Showdown data/items.ts -- Cheri Berry cures paralysis
-      const ctx = makeItemCtx({ item: ITEM_IDS.cheriBerry, status: STATUS_IDS.paralysis });
+      const ctx = createItemContext({ item: ITEM_IDS.cheriBerry, status: STATUS_IDS.paralysis });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "status-cure")).toBe(true);
@@ -1387,7 +1383,7 @@ describe("Gen7Items coverage gaps", () => {
     });
 
     it("given Cheri Berry without paralysis, then no activation", () => {
-      const ctx = makeItemCtx({ item: ITEM_IDS.cheriBerry, status: null });
+      const ctx = createItemContext({ item: ITEM_IDS.cheriBerry, status: null });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(false);
     });
@@ -1396,14 +1392,14 @@ describe("Gen7Items coverage gaps", () => {
   describe("Chesto Berry (end-of-turn)", () => {
     it("given Chesto Berry and sleep, then cures sleep", () => {
       // Source: Showdown data/items.ts -- Chesto Berry cures sleep
-      const ctx = makeItemCtx({ item: ITEM_IDS.chestoBerry, status: STATUS_IDS.sleep });
+      const ctx = createItemContext({ item: ITEM_IDS.chestoBerry, status: STATUS_IDS.sleep });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Chesto Berry");
     });
 
     it("given Chesto Berry and burn, then no activation", () => {
-      const ctx = makeItemCtx({ item: ITEM_IDS.chestoBerry, status: STATUS_IDS.burn });
+      const ctx = createItemContext({ item: ITEM_IDS.chestoBerry, status: STATUS_IDS.burn });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(false);
     });
@@ -1412,7 +1408,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Pecha Berry (end-of-turn)", () => {
     it("given Pecha Berry and poison, then cures poison", () => {
       // Source: Showdown data/items.ts -- Pecha Berry cures poison
-      const ctx = makeItemCtx({ item: ITEM_IDS.pechaBerry, status: STATUS_IDS.poison });
+      const ctx = createItemContext({ item: ITEM_IDS.pechaBerry, status: STATUS_IDS.poison });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Pecha Berry");
@@ -1420,7 +1416,7 @@ describe("Gen7Items coverage gaps", () => {
 
     it("given Pecha Berry and badly-poisoned, then cures it", () => {
       // Source: Showdown -- Pecha Berry also cures badly-poisoned
-      const ctx = makeItemCtx({ item: ITEM_IDS.pechaBerry, status: STATUS_IDS.badlyPoisoned });
+      const ctx = createItemContext({ item: ITEM_IDS.pechaBerry, status: STATUS_IDS.badlyPoisoned });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
     });
@@ -1429,7 +1425,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Rawst Berry (end-of-turn)", () => {
     it("given Rawst Berry and burn, then cures burn", () => {
       // Source: Showdown data/items.ts -- Rawst Berry cures burn
-      const ctx = makeItemCtx({ item: ITEM_IDS.rawstBerry, status: STATUS_IDS.burn });
+      const ctx = createItemContext({ item: ITEM_IDS.rawstBerry, status: STATUS_IDS.burn });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Rawst Berry");
@@ -1439,7 +1435,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Aspear Berry (end-of-turn)", () => {
     it("given Aspear Berry and freeze, then thaws out", () => {
       // Source: Showdown data/items.ts -- Aspear Berry cures freeze
-      const ctx = makeItemCtx({ item: ITEM_IDS.aspearBerry, status: STATUS_IDS.freeze });
+      const ctx = createItemContext({ item: ITEM_IDS.aspearBerry, status: STATUS_IDS.freeze });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Aspear Berry");
@@ -1451,7 +1447,7 @@ describe("Gen7Items coverage gaps", () => {
       // Source: Showdown data/items.ts -- Persim Berry cures confusion
       const volatiles = new Map<string, unknown>();
       volatiles.set(VOLATILE_IDS.confusion, true);
-      const ctx = makeItemCtx({ item: ITEM_IDS.persimBerry, volatileStatuses: volatiles });
+      const ctx = createItemContext({ item: ITEM_IDS.persimBerry, volatileStatuses: volatiles });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Persim Berry");
@@ -1464,7 +1460,7 @@ describe("Gen7Items coverage gaps", () => {
       // Source: Showdown data/items.ts -- Mental Herb cures infatuation/taunt/encore/etc
       const volatiles = new Map<string, unknown>();
       volatiles.set(VOLATILE_IDS.taunt, true);
-      const ctx = makeItemCtx({ item: ITEM_IDS.mentalHerb, volatileStatuses: volatiles });
+      const ctx = createItemContext({ item: ITEM_IDS.mentalHerb, volatileStatuses: volatiles });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(
@@ -1473,7 +1469,7 @@ describe("Gen7Items coverage gaps", () => {
     });
 
     it("given Mental Herb with no mental volatiles, then no activation", () => {
-      const ctx = makeItemCtx({ item: ITEM_IDS.mentalHerb });
+      const ctx = createItemContext({ item: ITEM_IDS.mentalHerb });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(false);
     });
@@ -1483,7 +1479,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Sticky Barb (end-of-turn)", () => {
     it("given Sticky Barb end-of-turn, then deals 1/8 max HP", () => {
       // Source: Showdown data/items.ts -- Sticky Barb onResidual: 1/8 max HP
-      const ctx = makeItemCtx({ item: ITEM_IDS.stickyBarb, maxHp: 200, currentHp: 200 });
+      const ctx = createItemContext({ item: ITEM_IDS.stickyBarb, maxHp: 200, currentHp: 200 });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       // 1/8 of 200 = 25
@@ -1498,14 +1494,14 @@ describe("Gen7Items coverage gaps", () => {
   describe("Berry Juice (end-of-turn)", () => {
     it("given Berry Juice at <=50% HP, then heals 20 HP", () => {
       // Source: Showdown data/items.ts -- Berry Juice: heals 20 HP
-      const ctx = makeItemCtx({ item: ITEM_IDS.berryJuice, maxHp: 200, currentHp: 100 });
+      const ctx = createItemContext({ item: ITEM_IDS.berryJuice, maxHp: 200, currentHp: 100 });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "heal" && e.value === 20)).toBe(true);
     });
 
     it("given Berry Juice above 50% HP, then no activation", () => {
-      const ctx = makeItemCtx({ item: ITEM_IDS.berryJuice, maxHp: 200, currentHp: 150 });
+      const ctx = createItemContext({ item: ITEM_IDS.berryJuice, maxHp: 200, currentHp: 150 });
       const result = applyGen7HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(false);
     });
@@ -1515,13 +1511,13 @@ describe("Gen7Items coverage gaps", () => {
   describe("Jaboca Berry (on-damage-taken)", () => {
     it("given Jaboca Berry hit by physical move, then deals 1/8 attacker max HP", () => {
       // Source: Showdown data/items.ts -- Jaboca Berry onDamagingHit: physical
-      const opponent = makeActive({ hp: 200, currentHp: 200 });
-      const ctx = makeItemCtx({
+      const opponent = createOnFieldPokemon({ hp: 200, currentHp: 200 });
+      const ctx = createItemContext({
         item: ITEM_IDS.jabocaBerry,
         damage: 50,
-        move: makeScenarioMove({ category: "physical" }),
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.physical }),
         opponent,
-        state: makeState(),
+        state: createBattleState(),
       });
       // Need sides with active for getOpponentMaxHp
       const state = ctx.state as any;
@@ -1529,7 +1525,7 @@ describe("Gen7Items coverage gaps", () => {
         { index: 0, active: [ctx.pokemon] },
         { index: 1, active: [opponent] },
       ];
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       // 1/8 of 200 = 25
       expect(result.effects.some((e: any) => e.type === "chip-damage" && e.value === 25)).toBe(
@@ -1538,12 +1534,12 @@ describe("Gen7Items coverage gaps", () => {
     });
 
     it("given Jaboca Berry hit by special move, then no activation", () => {
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.jabocaBerry,
         damage: 50,
-        move: makeScenarioMove({ category: "special" }),
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.special }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1552,20 +1548,20 @@ describe("Gen7Items coverage gaps", () => {
   describe("Rowap Berry (on-damage-taken)", () => {
     it("given Rowap Berry hit by special move, then deals 1/8 attacker max HP", () => {
       // Source: Showdown data/items.ts -- Rowap Berry onDamagingHit: special
-      const opponent = makeActive({ hp: 160, currentHp: 160 });
-      const ctx = makeItemCtx({
+      const opponent = createOnFieldPokemon({ hp: 160, currentHp: 160 });
+      const ctx = createItemContext({
         item: ITEM_IDS.rowapBerry,
         damage: 50,
-        move: makeScenarioMove({ category: "special" }),
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.special }),
         opponent,
-        state: makeState(),
+        state: createBattleState(),
       });
       const state = ctx.state as any;
       state.sides = [
         { index: 0, active: [ctx.pokemon] },
         { index: 1, active: [opponent] },
       ];
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       // 1/8 of 160 = 20
       expect(result.effects.some((e: any) => e.type === "chip-damage" && e.value === 20)).toBe(
@@ -1578,8 +1574,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Red Card (on-damage-taken)", () => {
     it("given Red Card and damage > 0, then forces switch and consumed", () => {
       // Source: Showdown data/items.ts -- Red Card onAfterMoveSecondary
-      const ctx = makeItemCtx({ item: ITEM_IDS.redCard, damage: 50 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.redCard, damage: 50 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "force-switch")).toBe(true);
       expect(result.effects.some((e: any) => e.type === "consume")).toBe(true);
@@ -1589,8 +1585,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Eject Button (on-damage-taken)", () => {
     it("given Eject Button and damage > 0, then holder switches out", () => {
       // Source: Showdown data/items.ts -- Eject Button onAfterMoveSecondary
-      const ctx = makeItemCtx({ item: ITEM_IDS.ejectButton, damage: 50 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.ejectButton, damage: 50 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Eject Button");
     });
@@ -1599,12 +1595,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Absorb Bulb (on-damage-taken)", () => {
     it("given Absorb Bulb hit by Water move, then +1 SpAtk", () => {
       // Source: Showdown data/items.ts -- Absorb Bulb onDamagingHit Water
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.absorbBulb,
         damage: 50,
-        move: makeScenarioMove({ type: TYPE_IDS.water, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.water, category: MOVE_CATEGORIES.special }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(
         result.effects.some((e: any) => e.type === "stat-boost" && e.value === "spAttack"),
@@ -1612,12 +1608,12 @@ describe("Gen7Items coverage gaps", () => {
     });
 
     it("given Absorb Bulb hit by Fire move, then no activation", () => {
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.absorbBulb,
         damage: 50,
-        move: makeScenarioMove({ type: TYPE_IDS.fire, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.fire, category: MOVE_CATEGORIES.special }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1625,12 +1621,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Cell Battery (on-damage-taken)", () => {
     it("given Cell Battery hit by Electric move, then +1 Attack", () => {
       // Source: Showdown data/items.ts -- Cell Battery onDamagingHit Electric
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.cellBattery,
         damage: 50,
-        move: makeScenarioMove({ type: TYPE_IDS.electric, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.electric, category: MOVE_CATEGORIES.special }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
         true,
@@ -1641,12 +1637,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Kee Berry (on-damage-taken)", () => {
     it("given Kee Berry hit by physical move, then +1 Defense", () => {
       // Source: Showdown data/items.ts -- keeberry: onDamagingHit physical
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.keeBerry,
         damage: 50,
-        move: makeScenarioMove({ category: "physical" }),
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.physical }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(
         result.effects.some((e: any) => e.type === "stat-boost" && e.value === "defense"),
@@ -1657,12 +1653,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Maranga Berry (on-damage-taken)", () => {
     it("given Maranga Berry hit by special move, then +1 SpDef", () => {
       // Source: Showdown data/items.ts -- marangaberry: onDamagingHit special
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.marangaBerry,
         damage: 50,
-        move: makeScenarioMove({ category: "special" }),
+        move: createSyntheticMove({ category: MOVE_CATEGORIES.special }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(
         result.effects.some((e: any) => e.type === "stat-boost" && e.value === "spDefense"),
@@ -1673,12 +1669,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Luminous Moss (on-damage-taken)", () => {
     it("given Luminous Moss hit by Water move, then +1 SpDef", () => {
       // Source: Showdown data/items.ts -- luminousmoss: onDamagingHit Water
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.luminousMoss,
         damage: 50,
-        move: makeScenarioMove({ type: TYPE_IDS.water, category: "special" }),
+        move: createSyntheticMove({ type: TYPE_IDS.water, category: MOVE_CATEGORIES.special }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
     });
   });
@@ -1686,12 +1682,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Snowball (on-damage-taken)", () => {
     it("given Snowball hit by Ice move, then +1 Attack", () => {
       // Source: Showdown data/items.ts -- snowball: onDamagingHit Ice
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.snowball,
         damage: 50,
-        move: makeScenarioMove({ type: TYPE_IDS.ice, category: "physical" }),
+        move: createSyntheticMove({ type: TYPE_IDS.ice, category: MOVE_CATEGORIES.physical }),
       });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
         true,
@@ -1704,7 +1700,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given King's Rock and damage dealt, then 10% flinch chance", () => {
       // Source: Showdown data/items.ts -- King's Rock onModifyMovePriority
       // Use seed that gives us a low enough roll
-      const ctx = makeItemCtx({ item: ITEM_IDS.kingsRock, damage: 50 });
+      const ctx = createItemContext({ item: ITEM_IDS.kingsRock, damage: 50 });
       // Need to test both outcomes -- use different seeds
       const result1 = applyGen7HeldItem("on-hit", {
         ...ctx,
@@ -1718,7 +1714,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Razor Fang (on-hit)", () => {
     it("given Razor Fang and damage dealt, then 10% flinch chance", () => {
       // Source: Showdown data/items.ts -- Razor Fang onModifyMovePriority
-      const ctx = makeItemCtx({ item: ITEM_IDS.razorFang, damage: 50 });
+      const ctx = createItemContext({ item: ITEM_IDS.razorFang, damage: 50 });
       const result = applyGen7HeldItem("on-hit", {
         ...ctx,
         rng: new SeededRandom(1),
@@ -1730,7 +1726,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Shell Bell (on-hit)", () => {
     it("given Shell Bell and 80 damage dealt, then heals 10 HP (floor(80/8))", () => {
       // Source: Showdown data/items.ts -- Shell Bell onAfterMoveSecondarySelf
-      const ctx = makeItemCtx({ item: ITEM_IDS.shellBell, damage: 80 });
+      const ctx = createItemContext({ item: ITEM_IDS.shellBell, damage: 80 });
       const result = applyGen7HeldItem("on-hit", ctx);
       expect(result.activated).toBe(true);
       // floor(80/8) = 10
@@ -1738,7 +1734,7 @@ describe("Gen7Items coverage gaps", () => {
     });
 
     it("given Shell Bell and 0 damage dealt, then no activation", () => {
-      const ctx = makeItemCtx({ item: ITEM_IDS.shellBell, damage: 0 });
+      const ctx = createItemContext({ item: ITEM_IDS.shellBell, damage: 0 });
       const result = applyGen7HeldItem("on-hit", ctx);
       expect(result.activated).toBe(false);
     });
@@ -1748,8 +1744,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Liechi Berry (on-damage-taken)", () => {
     it("given Liechi Berry at <=25% HP, then +1 Attack", () => {
       // Source: Showdown data/items.ts -- Liechi Berry at pinch threshold
-      const ctx = makeItemCtx({ item: ITEM_IDS.liechiBerry, maxHp: 200, currentHp: 50, damage: 10 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.liechiBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
         true,
@@ -1760,8 +1756,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Ganlon Berry (on-damage-taken)", () => {
     it("given Ganlon Berry at <=25% HP, then +1 Defense", () => {
       // Source: Showdown data/items.ts -- Ganlon Berry at pinch threshold
-      const ctx = makeItemCtx({ item: ITEM_IDS.ganlonBerry, maxHp: 200, currentHp: 50, damage: 10 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.ganlonBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "defense")).toBe(true);
     });
@@ -1770,8 +1766,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Salac Berry (on-damage-taken)", () => {
     it("given Salac Berry at <=25% HP, then +1 Speed", () => {
       // Source: Showdown data/items.ts -- Salac Berry at pinch threshold
-      const ctx = makeItemCtx({ item: ITEM_IDS.salacBerry, maxHp: 200, currentHp: 50, damage: 10 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.salacBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "speed")).toBe(true);
     });
@@ -1780,8 +1776,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Petaya Berry (on-damage-taken)", () => {
     it("given Petaya Berry at <=25% HP, then +1 Sp. Atk", () => {
       // Source: Showdown data/items.ts -- Petaya Berry at pinch threshold
-      const ctx = makeItemCtx({ item: ITEM_IDS.petayaBerry, maxHp: 200, currentHp: 50, damage: 10 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.petayaBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "spAttack")).toBe(true);
     });
@@ -1790,8 +1786,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Apicot Berry (on-damage-taken)", () => {
     it("given Apicot Berry at <=25% HP, then +1 Sp. Def", () => {
       // Source: Showdown data/items.ts -- Apicot Berry at pinch threshold
-      const ctx = makeItemCtx({ item: ITEM_IDS.apicotBerry, maxHp: 200, currentHp: 50, damage: 10 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.apicotBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "spDefense")).toBe(true);
     });
@@ -1801,8 +1797,8 @@ describe("Gen7Items coverage gaps", () => {
   describe("Air Balloon (on-damage-taken)", () => {
     it("given Air Balloon and damage > 0, then pops", () => {
       // Source: Showdown data/items.ts -- Air Balloon onDamagingHit: useItem()
-      const ctx = makeItemCtx({ item: ITEM_IDS.airBalloon, damage: 30 });
-      const result = applyGen7HeldItem("on-damage-taken", ctx);
+      const ctx = createItemContext({ item: ITEM_IDS.airBalloon, damage: 30 });
+      const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Air Balloon popped");
     });
@@ -1812,19 +1808,19 @@ describe("Gen7Items coverage gaps", () => {
   describe("Rocky Helmet (on-contact)", () => {
     it("given Rocky Helmet and contact move, then deals 1/6 attacker HP", () => {
       // Source: Showdown data/items.ts -- Rocky Helmet onDamagingHit: 1/6 max HP
-      const opponent = makeActive({ hp: 300, currentHp: 300 });
-      const ctx = makeItemCtx({
+      const opponent = createOnFieldPokemon({ hp: 300, currentHp: 300 });
+      const ctx = createItemContext({
         item: ITEM_IDS.rockyHelmet,
-        move: makeScenarioMove({ flags: { contact: true } }),
+        move: createSyntheticMove({ flags: { contact: true } }),
         opponent,
-        state: makeState(),
+        state: createBattleState(),
       });
       const state = ctx.state as any;
       state.sides = [
         { index: 0, active: [ctx.pokemon] },
         { index: 1, active: [opponent] },
       ];
-      const result = applyGen7HeldItem("on-contact", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(true);
       // 1/6 of 300 = 50
       expect(result.effects.some((e: any) => e.type === "chip-damage" && e.value === 50)).toBe(
@@ -1833,11 +1829,11 @@ describe("Gen7Items coverage gaps", () => {
     });
 
     it("given Rocky Helmet and non-contact move, then no activation", () => {
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.rockyHelmet,
-        move: makeScenarioMove({ flags: { contact: false } }),
+        move: createSyntheticMove({ flags: { contact: false } }),
       });
-      const result = applyGen7HeldItem("on-contact", ctx);
+      const result = applyGen7HeldItem(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1846,7 +1842,7 @@ describe("Gen7Items coverage gaps", () => {
   describe("Life Orb (on-hit)", () => {
     it("given Life Orb and damage dealt, then deals 1/10 max HP recoil", () => {
       // Source: Showdown data/items.ts -- Life Orb onAfterMoveSecondarySelf
-      const ctx = makeItemCtx({ item: ITEM_IDS.lifeOrb, maxHp: 200, damage: 80 });
+      const ctx = createItemContext({ item: ITEM_IDS.lifeOrb, maxHp: 200, damage: 80 });
       const result = applyGen7HeldItem("on-hit", ctx);
       expect(result.activated).toBe(true);
       // 1/10 of 200 = 20
@@ -1857,15 +1853,15 @@ describe("Gen7Items coverage gaps", () => {
 
     it("given Life Orb with Sheer Force suppressing recoil, then no activation", () => {
       // Source: Showdown -- Sheer Force suppresses Life Orb recoil
-      const ctx = makeItemCtx({
+      const ctx = createItemContext({
         item: ITEM_IDS.lifeOrb,
         maxHp: 200,
         damage: 80,
         ability: ABILITY_IDS.sheerForce,
-        move: makeScenarioMove({
+        move: createSyntheticMove({
           id: MOVE_IDS.flamethrower,
           type: TYPE_IDS.fire,
-          category: "special",
+          category: MOVE_CATEGORIES.special,
           effect: { type: "status-chance", status: STATUS_IDS.burn, chance: 10 } as any,
         }),
       });
@@ -1884,23 +1880,23 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Stance Change (on-switch-in)", () => {
     it("given Aegislash (speciesId 681) with Stance Change, then activates", () => {
       // Source: Showdown data/abilities.ts -- Stance Change: resets to Shield Forme on entry
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.stanceChange,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         speciesId: GEN7_SPECIES_IDS.aegislash,
       });
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given non-Aegislash with Stance Change, then no activation", () => {
       // Source: Showdown -- Stance Change only works for Aegislash
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.stanceChange,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         speciesId: GEN7_SPECIES_IDS.bulbasaur,
       });
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1909,12 +1905,12 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Imposter (on-switch-in)", () => {
     it("given Imposter with opponent present, then transforms", () => {
       // Source: Showdown data/abilities.ts -- Imposter: transforms into opponent
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.imposter,
-        trigger: "on-switch-in",
-        opponent: makeActive({ nickname: "Target" }),
+        trigger: TRIGGER_IDS.onSwitchIn,
+        opponent: createOnFieldPokemon({ nickname: "Target" }),
       });
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("transformed");
     });
@@ -1924,11 +1920,11 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Illusion (on-switch-in)", () => {
     it("given Illusion on switch-in, then sets illusion volatile", () => {
       // Source: Showdown data/abilities.ts -- Illusion: sets volatile on switch-in
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.illusion,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
       });
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual(
         expect.objectContaining({ effectType: "volatile-inflict", volatile: ABILITY_IDS.illusion }),
@@ -1940,11 +1936,11 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Receiver / Power of Alchemy (on-switch-in)", () => {
     it("given Receiver on switch-in (singles), then no activation", () => {
       // Source: Showdown -- Receiver only triggers on ally faint (doubles)
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.receiver,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
       });
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1953,12 +1949,12 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Regenerator (on-switch-out)", () => {
     it("given Regenerator on switch-out, then heals 1/3 max HP", () => {
       // Source: Showdown data/abilities.ts -- Regenerator onSwitchOut
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.regenerator,
-        trigger: "on-switch-out",
+        trigger: TRIGGER_IDS.onSwitchOut,
         maxHp: 300,
       });
-      const result = handleGen7SwitchAbility("on-switch-out", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchOut, ctx);
       expect(result.activated).toBe(true);
       // floor(300/3) = 100
       expect(result.effects[0]).toEqual(
@@ -1971,22 +1967,22 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Natural Cure (on-switch-out)", () => {
     it("given Natural Cure with status, then cures status", () => {
       // Source: Showdown data/abilities.ts -- Natural Cure onSwitchOut
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.naturalCure,
-        trigger: "on-switch-out",
+        trigger: TRIGGER_IDS.onSwitchOut,
         status: STATUS_IDS.paralysis,
       });
-      const result = handleGen7SwitchAbility("on-switch-out", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchOut, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual(expect.objectContaining({ effectType: "status-cure" }));
     });
 
     it("given Natural Cure without status, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.naturalCure,
-        trigger: "on-switch-out",
+        trigger: TRIGGER_IDS.onSwitchOut,
       });
-      const result = handleGen7SwitchAbility("on-switch-out", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchOut, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1996,14 +1992,14 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
     it("given Cute Charm with opposite genders, then 30% infatuation chance", () => {
       // Source: Showdown data/abilities.ts -- Cute Charm onDamagingHit: 30% infatuation
       // We need opposite genders and a lucky roll
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.cuteCharm,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         gender: GENDER_IDS.female,
-        opponent: makeActive({ gender: GENDER_IDS.male }),
+        opponent: createOnFieldPokemon({ gender: GENDER_IDS.male }),
       });
       // With seed 42, we need to check what happens
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       // Result depends on RNG -- just verify it handles without error
       expect(result.activated === true || result.activated === false).toBe(true);
     });
@@ -2011,14 +2007,14 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
     it("given Cute Charm with same genders, then no infatuation", () => {
       // Source: Showdown -- same gender means no Cute Charm activation
       // Need RNG that would normally trigger (< 0.3) to prove gender blocks it
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.cuteCharm,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         gender: GENDER_IDS.male,
-        opponent: makeActive({ gender: GENDER_IDS.male }),
+        opponent: createOnFieldPokemon({ gender: GENDER_IDS.male }),
       });
       // Even if RNG would trigger, same gender blocks it
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -2027,13 +2023,13 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Aftermath (on-contact)", () => {
     it("given Aftermath with fainted holder, then deals 1/4 attacker HP", () => {
       // Source: Showdown data/abilities.ts -- Aftermath: 1/4 attacker HP if holder fainted
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.aftermath,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         currentHp: 0,
-        opponent: makeActive({ hp: 200, currentHp: 200 }),
+        opponent: createOnFieldPokemon({ hp: 200, currentHp: 200 }),
       });
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(true);
       // 1/4 of 200 = 50
       expect(result.effects[0]).toEqual(
@@ -2042,13 +2038,13 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
     });
 
     it("given Aftermath with alive holder, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.aftermath,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         currentHp: 100,
-        opponent: makeActive({}),
+        opponent: createOnFieldPokemon({}),
       });
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -2057,25 +2053,25 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Pickpocket (on-contact)", () => {
     it("given Pickpocket without item and opponent has item, then steals it", () => {
       // Source: Showdown data/abilities.ts -- Pickpocket: steals attacker's item
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.pickpocket,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         heldItem: null,
-        opponent: makeActive({ heldItem: ITEM_IDS.leftovers, nickname: "Target" }),
+        opponent: createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers, nickname: "Target" }),
       });
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Pickpocket");
     });
 
     it("given Pickpocket already holding an item, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.pickpocket,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         heldItem: ITEM_IDS.lifeOrb,
-        opponent: makeActive({ heldItem: ITEM_IDS.leftovers }),
+        opponent: createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers }),
       });
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -2084,12 +2080,12 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Mummy (on-contact)", () => {
     it("given Mummy and opponent has suppressable ability, then changes opponent to Mummy", () => {
       // Source: Showdown data/abilities.ts -- Mummy: contact changes attacker's ability
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.mummy,
-        trigger: "on-contact",
-        opponent: makeActive({ ability: ABILITY_IDS.intimidate, nickname: "Attacker" }),
+        trigger: TRIGGER_IDS.onContact,
+        opponent: createOnFieldPokemon({ ability: ABILITY_IDS.intimidate, nickname: "Attacker" }),
       });
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual(
         expect.objectContaining({ effectType: "ability-change", newAbility: ABILITY_IDS.mummy }),
@@ -2097,23 +2093,23 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
     });
 
     it("given Mummy and opponent already has Mummy, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.mummy,
-        trigger: "on-contact",
-        opponent: makeActive({ ability: ABILITY_IDS.mummy }),
+        trigger: TRIGGER_IDS.onContact,
+        opponent: createOnFieldPokemon({ ability: ABILITY_IDS.mummy }),
       });
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given Mummy and opponent has unsuppressable ability, then no activation", () => {
       // Source: Showdown -- multitype/stance-change/schooling etc. cannot be overwritten
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.mummy,
-        trigger: "on-contact",
-        opponent: makeActive({ ability: ABILITY_IDS.schooling }),
+        trigger: TRIGGER_IDS.onContact,
+        opponent: createOnFieldPokemon({ ability: ABILITY_IDS.schooling }),
       });
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -2122,13 +2118,13 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   describe("Synchronize (on-status-inflicted)", () => {
     it("given Synchronize with burn, then spreads burn to opponent", () => {
       // Source: Showdown data/abilities.ts -- Synchronize onAfterSetStatus
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.synchronize,
-        trigger: "on-status-inflicted",
+        trigger: TRIGGER_IDS.onStatusInflicted,
         status: STATUS_IDS.burn,
-        opponent: makeActive({}),
+        opponent: createOnFieldPokemon({}),
       });
-      const result = handleGen7SwitchAbility("on-status-inflicted", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onStatusInflicted, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual(
         expect.objectContaining({ effectType: "status-inflict", status: STATUS_IDS.burn }),
@@ -2137,24 +2133,24 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
 
     it("given Synchronize with sleep, then no activation (only burn/paralysis/poison)", () => {
       // Source: Showdown -- Synchronize does NOT spread sleep or freeze
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.synchronize,
-        trigger: "on-status-inflicted",
+        trigger: TRIGGER_IDS.onStatusInflicted,
         status: STATUS_IDS.sleep,
-        opponent: makeActive({}),
+        opponent: createOnFieldPokemon({}),
       });
-      const result = handleGen7SwitchAbility("on-status-inflicted", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onStatusInflicted, ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given Synchronize but opponent already statused, then no activation", () => {
-      const ctx = makeAbilityCtx({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.synchronize,
-        trigger: "on-status-inflicted",
+        trigger: TRIGGER_IDS.onStatusInflicted,
         status: STATUS_IDS.paralysis,
-        opponent: makeActive({ status: STATUS_IDS.burn }),
+        opponent: createOnFieldPokemon({ status: STATUS_IDS.burn }),
       });
-      const result = handleGen7SwitchAbility("on-status-inflicted", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onStatusInflicted, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -2162,8 +2158,8 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   // --- Unknown trigger ---
   describe("unknown trigger", () => {
     it("given unknown trigger, returns inactive", () => {
-      const ctx = makeAbilityCtx({ ability: ABILITY_IDS.none, trigger: "on-damage-calc" });
-      const result = handleGen7SwitchAbility("on-damage-calc" as any, ctx);
+      const ctx = createAbilityContext({ ability: ABILITY_IDS.none, trigger: TRIGGER_IDS.onDamageCalc });
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onDamageCalc as any, ctx);
       expect(result.activated).toBe(false);
     });
   });
