@@ -1,7 +1,10 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { Gender, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   DataManager,
@@ -56,6 +59,7 @@ const FLAMETHROWER = GEN4_DATA.getMove(MOVES.flamethrower)
 const WATER_PULSE = GEN4_DATA.getMove(MOVES.waterPulse)
 const SURF = GEN4_DATA.getMove(MOVES.surf)
 const BRICK_BREAK = GEN4_DATA.getMove(MOVES.brickBreak)
+const BULBASAUR = GEN4_DATA.getSpecies(SPECIES.bulbasaur)
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -81,7 +85,7 @@ function createActivePokemon(opts: {
   ability?: string;
   heldItem?: string | null;
   status?: PokemonInstance["status"];
-  gender?: "male" | "female" | "genderless";
+  gender?: Gender;
   speciesId?: number;
   volatiles?: Map<string, { turnsLeft: number }>;
 }): ActivePokemon {
@@ -98,8 +102,8 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
-    nickname: null,
+    speciesId: opts.speciesId ?? BULBASAUR.id,
+    nickname: BULBASAUR.displayName,
     level,
     experience: 0,
     nature: NATURES.hardy,
@@ -108,11 +112,11 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? maxHp,
     moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: opts.gender ?? ("male" as const),
+    gender: opts.gender ?? CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -1134,11 +1138,11 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
       pokemon,
       opponent,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -1159,11 +1163,11 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
       pokemon,
       opponent,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -1185,11 +1189,11 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
       pokemon,
       opponent,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -1207,11 +1211,11 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
     const ctx = {
       pokemon,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
   });
