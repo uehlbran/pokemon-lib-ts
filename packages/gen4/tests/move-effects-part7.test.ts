@@ -8,10 +8,14 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createFriendship,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN4_MOVE_IDS, GEN4_NATURE_IDS, GEN4_SPECIES_IDS, Gen4Ruleset } from "../src";
@@ -51,6 +55,7 @@ const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const SPECIES = GEN4_SPECIES_IDS;
+const DEFAULT_FRIENDSHIP = createFriendship(0);
 
 function createMoveSlot(moveId: string) {
   const move = dataManager.getMove(moveId);
@@ -92,11 +97,11 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: DEFAULT_FRIENDSHIP,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -207,7 +212,7 @@ describe("Gen 4 executeMoveEffect — Counter", () => {
     const attacker = createActivePokemon({
       types: [TYPES.normal],
       lastDamageTaken: 50,
-      lastDamageCategory: "physical",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = dataManager.getMove(MOVES.counter);
@@ -228,7 +233,7 @@ describe("Gen 4 executeMoveEffect — Counter", () => {
     const attacker = createActivePokemon({
       types: [TYPES.fighting],
       lastDamageTaken: 75,
-      lastDamageCategory: "physical",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = dataManager.getMove(MOVES.counter);
@@ -246,7 +251,7 @@ describe("Gen 4 executeMoveEffect — Counter", () => {
     const attacker = createActivePokemon({
       types: [TYPES.normal],
       lastDamageTaken: 60,
-      lastDamageCategory: "special",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.special,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = dataManager.getMove(MOVES.counter);
@@ -287,7 +292,7 @@ describe("Gen 4 executeMoveEffect — Mirror Coat", () => {
     const attacker = createActivePokemon({
       types: [TYPES.psychic],
       lastDamageTaken: 60,
-      lastDamageCategory: "special",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.special,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = dataManager.getMove(MOVES.mirrorCoat);
@@ -308,7 +313,7 @@ describe("Gen 4 executeMoveEffect — Mirror Coat", () => {
     const attacker = createActivePokemon({
       types: [TYPES.water],
       lastDamageTaken: 40,
-      lastDamageCategory: "special",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.special,
     });
     const defender = createActivePokemon({ types: [TYPES.fire] });
     const move = dataManager.getMove(MOVES.mirrorCoat);
@@ -326,7 +331,7 @@ describe("Gen 4 executeMoveEffect — Mirror Coat", () => {
     const attacker = createActivePokemon({
       types: [TYPES.psychic],
       lastDamageTaken: 50,
-      lastDamageCategory: "physical",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = dataManager.getMove(MOVES.mirrorCoat);
