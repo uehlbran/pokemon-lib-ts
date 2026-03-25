@@ -9,6 +9,7 @@ import {
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "../src";
 import {
   applyGen8EntryHazards,
   applyGen8GMaxSteelsurge,
@@ -19,7 +20,6 @@ import {
   hasHeavyDutyBoots,
 } from "../src/Gen8EntryHazards";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
-import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "../src";
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -106,7 +106,10 @@ describe("Gen 8 Entry Hazards", () => {
 
     it("given a Fire/Flying with 300 HP (Rock 4x), when applying Stealth Rock, then deals 150 damage (floor(300 * 4 / 8))", () => {
       // Source: Showdown data/moves.ts -- stealthrock: damage = floor(maxhp * effectiveness / 8)
-      const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying], maxHp: 300 });
+      const mon = createSyntheticOnFieldPokemon({
+        types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
+        maxHp: 300,
+      });
       const result = applyGen8StealthRock(mon, GEN8_TYPE_CHART);
       expect(result).not.toBeNull();
       expect(result!.damage).toBe(150);
@@ -127,7 +130,10 @@ describe("Gen 8 Entry Hazards", () => {
     });
 
     it("given a Ground/Steel with 200 HP (Rock 0.25x), when applying Stealth Rock, then deals 6 damage (floor(200 * 0.25 / 8))", () => {
-      const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.steel], maxHp: 200 });
+      const mon = createSyntheticOnFieldPokemon({
+        types: [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.steel],
+        maxHp: 200,
+      });
       const result = applyGen8StealthRock(mon, GEN8_TYPE_CHART);
       expect(result).not.toBeNull();
       expect(result!.damage).toBe(6);
@@ -265,15 +271,17 @@ describe("Gen 8 Entry Hazards", () => {
       );
     });
 
-    it("given Sticky Web and a Pokemon with Clear Body, when applying, then still applies Sticky Web", () => {
+    it("given Sticky Web and a Pokemon with Clear Body, when applying, then the speed drop is blocked", () => {
       const mon = createSyntheticOnFieldPokemon({
         types: [CORE_TYPE_IDS.normal],
         maxHp: 200,
-        ability: CORE_ABILITY_IDS.clearBody,
+        ability: GEN8_ABILITY_IDS.clearBody,
       });
       const result = applyGen8StickyWeb(mon, false);
-      expect(result.applied).toBe(true);
-      expect(result.messages).toEqual(["TestMon was caught in a sticky web!"]);
+      expect(result.applied).toBe(false);
+      expect(result.messages).toEqual(
+        expect.arrayContaining([expect.stringContaining("Clear Body prevents stat loss")]),
+      );
     });
   });
 
@@ -300,7 +308,10 @@ describe("Gen 8 Entry Hazards", () => {
     });
 
     it("given an Ice/Rock with 200 HP (Steel 4x), when applying G-Max Steelsurge, then deals 100 damage (floor(200 * 4 / 8))", () => {
-      const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.ice, CORE_TYPE_IDS.rock], maxHp: 200 });
+      const mon = createSyntheticOnFieldPokemon({
+        types: [CORE_TYPE_IDS.ice, CORE_TYPE_IDS.rock],
+        maxHp: 200,
+      });
       const result = applyGen8GMaxSteelsurge(mon, GEN8_TYPE_CHART);
       expect(result).not.toBeNull();
       expect(result!.damage).toBe(100);
