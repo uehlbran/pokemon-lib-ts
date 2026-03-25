@@ -1,6 +1,13 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_FIXED_POINT as TEST_FIXED_POINT,
+  CORE_ITEM_IDS as TEST_ITEM_IDS,
+  CORE_TERRAIN_IDS as TEST_TERRAIN_IDS,
+  CORE_VOLATILE_IDS as TEST_VOLATILE_IDS,
+  CORE_WEATHER_IDS as TEST_WEATHER_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen7Damage, pokeRound } from "../src/Gen7DamageCalc";
 import { GEN7_TYPE_CHART } from "../src/Gen7TypeChart";
@@ -177,6 +184,23 @@ function makeDamageContext(overrides: {
     isCrit: overrides.isCrit ?? false,
     hitThroughProtect: overrides.hitThroughProtect,
   };
+}
+
+function expectSpreadPenaltyMatchesSingleTarget(
+  spreadResult: ReturnType<typeof calculateGen7Damage>,
+  singleTargetResult: ReturnType<typeof calculateGen7Damage>,
+): void {
+  const singleBaseDamage = singleTargetResult.breakdown?.baseDamage;
+  expect(singleBaseDamage).toBeDefined();
+
+  expect(spreadResult.effectiveness).toBe(singleTargetResult.effectiveness);
+  expect(spreadResult.breakdown).toEqual(
+    expect.objectContaining({
+      baseDamage: pokeRound(singleBaseDamage as number, TEST_FIXED_POINT.spreadModifier),
+      finalDamage: spreadResult.damage,
+    }),
+  );
+  expect(spreadResult.damage).toBeLessThan(singleTargetResult.damage);
 }
 
 // Use the Gen7 type chart for all tests
@@ -1480,7 +1504,9 @@ describe("Gen 7 Darkest Lariat", () => {
 
 describe("Gen 7 type-resist berries", () => {
   it("given a Yache Berry holder taking a super-effective Ice hit, when calculating, then damage halved and berry consumed", () => {
-    // Source: Showdown data/items.ts -- Yache Berry: halves SE Ice damage, then consumed
+    // Source: Showdown data/items.ts -- Yache Berry halves super-effective Ice damage, then consumes.
+    // Derivation: seed 42 fixes randomMultiplier at 0.94 here, so the neutral path yields 44 damage
+    // and the berry path yields 22 with itemMultiplier = 0.5.
     const noItemCtx = makeDamageContext({
       attacker: makeActive({ attack: 100 }),
       defender: makeActive({ defense: 100, types: ["dragon"] }),
@@ -1489,7 +1515,11 @@ describe("Gen 7 type-resist berries", () => {
     });
     const berryCtx = makeDamageContext({
       attacker: makeActive({ attack: 100 }),
-      defender: makeActive({ defense: 100, types: ["dragon"], heldItem: "yache-berry" }),
+      defender: makeActive({
+        defense: 100,
+        types: ["dragon"],
+        heldItem: TEST_ITEM_IDS.yacheBerry,
+      }),
       move: makeMove({ power: 50, type: "ice" }),
       seed: 42,
     });
@@ -1497,13 +1527,19 @@ describe("Gen 7 type-resist berries", () => {
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withBerry = calculateGen7Damage(berryCtx, typeChart);
 
-    expect(withBerry.damage).toBeLessThan(noItem.damage);
-    // Berry should be consumed
+    expect(noItem.damage).toBe(44);
+    expect(noItem.effectiveness).toBe(2);
+    expect(noItem.breakdown?.itemMultiplier).toBe(1);
+    expect(withBerry.damage).toBe(22);
+    expect(withBerry.effectiveness).toBe(2);
+    expect(withBerry.breakdown?.itemMultiplier).toBe(0.5);
     expect(berryCtx.defender.pokemon.heldItem).toBeNull();
   });
 
   it("given a Chilan Berry holder taking a Normal-type hit (neutral), when calculating, then damage halved", () => {
-    // Source: Showdown data/items.ts -- Chilan Berry activates on any Normal hit (no SE required)
+    // Source: Showdown data/items.ts -- Chilan Berry halves Normal-type damage even without super-effectiveness.
+    // Derivation: with the shared seed-42 random factor, the no-item path yields 22 and the berry path
+    // yields 11 with itemMultiplier = 0.5.
     const noItemCtx = makeDamageContext({
       attacker: makeActive({ attack: 100 }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
@@ -1512,7 +1548,11 @@ describe("Gen 7 type-resist berries", () => {
     });
     const chilanCtx = makeDamageContext({
       attacker: makeActive({ attack: 100 }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: "chilan-berry" }),
+      defender: makeActive({
+        defense: 100,
+        types: ["normal"],
+        heldItem: TEST_ITEM_IDS.chilanBerry,
+      }),
       move: makeMove({ power: 50, type: "normal" }),
       seed: 42,
     });
@@ -1520,7 +1560,12 @@ describe("Gen 7 type-resist berries", () => {
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withChilan = calculateGen7Damage(chilanCtx, typeChart);
 
-    expect(withChilan.damage).toBeLessThan(noItem.damage);
+    expect(noItem.damage).toBe(22);
+    expect(noItem.effectiveness).toBe(1);
+    expect(noItem.breakdown?.itemMultiplier).toBe(1);
+    expect(withChilan.damage).toBe(11);
+    expect(withChilan.effectiveness).toBe(1);
+    expect(withChilan.breakdown?.itemMultiplier).toBe(0.5);
     expect(chilanCtx.defender.pokemon.heldItem).toBeNull();
   });
 });
@@ -1540,17 +1585,31 @@ describe("Gen 7 Normal Gem", () => {
       seed: 42,
     });
     const gemCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], heldItem: "normal-gem" }),
+      attacker: makeActive({
+        attack: 100,
+        types: ["normal"],
+        heldItem: TEST_ITEM_IDS.normalGem,
+      }),
       defender: makeActive({ defense: 100 }),
       move: makeMove({ power: 50, type: "normal" }),
+      seed: 42,
+    });
+    const gemPowerControlCtx = makeDamageContext({
+      attacker: makeActive({ attack: 100, types: ["normal"] }),
+      defender: makeActive({ defense: 100 }),
+      move: makeMove({
+        power: pokeRound(50, TEST_FIXED_POINT.gemBoost),
+        type: "normal",
+      }),
       seed: 42,
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withGem = calculateGen7Damage(gemCtx, typeChart);
+    const gemPowerControl = calculateGen7Damage(gemPowerControlCtx, typeChart);
 
-    expect(withGem.damage).toBeGreaterThan(noItem.damage);
-    // Gem consumed
+    expect(withGem).toEqual(gemPowerControl);
+    expect(withGem).not.toEqual(noItem);
     expect(gemCtx.attacker.pokemon.heldItem).toBeNull();
   });
 
@@ -2565,81 +2624,147 @@ describe("Gen 7 Fur Coat", () => {
 describe("Gen 7 isGen7Grounded coverage", () => {
   it("given attacker in Gravity, when calculating terrain boost, then attacker is grounded", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded(): gravity overrides everything
+    // Derivation: Electric Terrain raises 60 BP to the grounded path's 90 BP. With seed 42,
+    // the grounded path yields baseDamage 41 and final damage 38; the airborne control stays at 26.
+    const airborneCtx = makeDamageContext({
+      attacker: makeActive({ types: ["flying"], ability: "levitate" }),
+      defender: makeActive({}),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
+      state: makeState({
+        terrain: {
+          type: TEST_TERRAIN_IDS.electric,
+          turnsLeft: 5,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
+      }),
+    });
     const ctx = makeDamageContext({
       attacker: makeActive({ types: ["flying"], ability: "levitate" }),
       defender: makeActive({}),
-      move: makeMove({ type: "electric", power: 60 }),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
       state: {
         ...makeState({
-          terrain: { type: "electric", turnsLeft: 5, source: "test" },
+          terrain: {
+            type: TEST_TERRAIN_IDS.electric,
+            turnsLeft: 5,
+            source: TEST_TERRAIN_IDS.testSource,
+          },
         }),
         gravity: { active: true, turnsLeft: 5 },
       } as any,
     });
+    const airborne = calculateGen7Damage(airborneCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
-    // Electric Terrain should apply because gravity grounds the attacker
-    // even though it has Flying type + Levitate
-    expect(result.damage).toBeGreaterThan(0);
+    expect(airborne).toMatchObject({
+      damage: 26,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 28, finalDamage: 26 }),
+    });
+    expect(result).toMatchObject({
+      damage: 38,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 41, finalDamage: 38 }),
+    });
   });
 
   it("given attacker with Ingrain volatile, when calculating terrain boost, then attacker is grounded", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded(): ingrain grounds
-    const vols = new Map<string, any>();
-    vols.set("ingrain", { turnsLeft: -1 });
+    // Derivation: same Electric Terrain branch as the Gravity case; grounded path is 38 damage at seed 42.
+    const vols = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+    vols.set(TEST_VOLATILE_IDS.ingrain, { turnsLeft: -1 });
     const ctx = makeDamageContext({
       attacker: makeActive({ types: ["flying"], volatiles: vols }),
       defender: makeActive({}),
-      move: makeMove({ type: "electric", power: 60 }),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
       state: makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "test" },
+        terrain: {
+          type: TEST_TERRAIN_IDS.electric,
+          turnsLeft: 5,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result).toMatchObject({
+      damage: 38,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 41, finalDamage: 38 }),
+    });
   });
 
   it("given attacker with Iron Ball held, when calculating terrain boost, then attacker is grounded", () => {
     // Source: Showdown data/items.ts -- Iron Ball: onIsGrounded
     const ctx = makeDamageContext({
-      attacker: makeActive({ types: ["flying"], heldItem: "iron-ball" }),
+      attacker: makeActive({ types: ["flying"], heldItem: TEST_ITEM_IDS.ironBall }),
       defender: makeActive({}),
-      move: makeMove({ type: "electric", power: 60 }),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
       state: makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "test" },
+        terrain: {
+          type: TEST_TERRAIN_IDS.electric,
+          turnsLeft: 5,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result).toMatchObject({
+      damage: 38,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 41, finalDamage: 38 }),
+    });
+    expect(ctx.attacker.pokemon.heldItem).toBe(TEST_ITEM_IDS.ironBall);
   });
 
   it("given attacker with Smack Down volatile, when calculating terrain boost, then attacker is grounded", () => {
     // Source: Showdown data/moves.ts -- Smack Down: volatileStatus: 'smackdown'
-    const vols = new Map<string, any>();
-    vols.set("smackdown", { turnsLeft: -1 });
+    const vols = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+    vols.set(TEST_VOLATILE_IDS.smackDown, { turnsLeft: -1 });
     const ctx = makeDamageContext({
       attacker: makeActive({ types: ["flying"], volatiles: vols }),
       defender: makeActive({}),
-      move: makeMove({ type: "electric", power: 60 }),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
       state: makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "test" },
+        terrain: {
+          type: TEST_TERRAIN_IDS.electric,
+          turnsLeft: 5,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result).toMatchObject({
+      damage: 38,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 41, finalDamage: 38 }),
+    });
   });
 
   it("given attacker with Air Balloon at 0 HP, when calculating terrain boost, then attacker is grounded", () => {
     // Source: Showdown data/items.ts -- Air Balloon: pops when hit (0 HP = dead, should be grounded)
     const ctx = makeDamageContext({
-      attacker: makeActive({ types: ["normal"], heldItem: "air-balloon", currentHp: 0, hp: 100 }),
+      attacker: makeActive({
+        types: ["normal"],
+        heldItem: TEST_ITEM_IDS.airBalloon,
+        currentHp: 0,
+        hp: 100,
+      }),
       defender: makeActive({}),
-      move: makeMove({ type: "electric", power: 60 }),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
       state: makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "test" },
+        terrain: {
+          type: TEST_TERRAIN_IDS.electric,
+          turnsLeft: 5,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result).toMatchObject({
+      damage: 38,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 41, finalDamage: 38 }),
+    });
+    expect(ctx.attacker.pokemon.heldItem).toBe(TEST_ITEM_IDS.airBalloon);
   });
 
   it("given attacker with Telekinesis volatile (Flying), when calculating terrain boost, then not grounded", () => {
@@ -3070,7 +3195,7 @@ describe("Gen 7 spread move targets", () => {
     });
     const spread = calculateGen7Damage(ctx, typeChart);
     const single = calculateGen7Damage(ctxSingle, typeChart);
-    expect(spread.damage).toBeLessThan(single.damage);
+    expectSpreadPenaltyMatchesSingleTarget(spread, single);
   });
 
   it("given a move targeting all-foes in doubles, then 0.75x spread modifier applied", () => {
@@ -3089,7 +3214,7 @@ describe("Gen 7 spread move targets", () => {
     });
     const spread = calculateGen7Damage(ctx, typeChart);
     const single = calculateGen7Damage(ctxSingle, typeChart);
-    expect(spread.damage).toBeLessThan(single.damage);
+    expectSpreadPenaltyMatchesSingleTarget(spread, single);
   });
 });
 
@@ -3100,16 +3225,32 @@ describe("Gen 7 Harsh Sun water negation", () => {
       attacker: makeActive({ types: ["water"] }),
       defender: makeActive({ types: ["normal"] }),
       move: makeMove({ type: "water", power: 80 }),
-      state: makeState({ weather: { type: "harsh-sun", turnsLeft: -1, source: "test" } }),
+      state: makeState({
+        weather: {
+          type: TEST_WEATHER_IDS.harshSun,
+          turnsLeft: -1,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
+      }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBe(0);
+    expect(result).toEqual({
+      damage: 0,
+      effectiveness: 0,
+      isCrit: false,
+      randomFactor: 1,
+    });
   });
 });
 
 describe("Gen 7 Gravity + Ground vs Flying", () => {
   it("given Gravity active, when Ground move hits Flying-type, then type immunity bypassed", () => {
     // Source: Showdown sim/pokemon.ts -- Gravity: Ground hits Flying
+    const controlCtx = makeDamageContext({
+      attacker: makeActive({ types: ["ground"] }),
+      defender: makeActive({ types: ["flying"] }),
+      move: makeMove({ type: "ground", power: 80, category: "physical" }),
+    });
     const ctx = makeDamageContext({
       attacker: makeActive({ types: ["ground"] }),
       defender: makeActive({ types: ["flying"] }),
@@ -3119,21 +3260,37 @@ describe("Gen 7 Gravity + Ground vs Flying", () => {
         gravity: { active: true, turnsLeft: 5 },
       } as any,
     });
+    const control = calculateGen7Damage(controlCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
-    expect(result.effectiveness).toBeGreaterThan(0);
+    expect(control).toMatchObject({ damage: 0, effectiveness: 0 });
+    expect(result).toMatchObject({
+      damage: 51,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 37, typeMultiplier: 1, finalDamage: 51 }),
+    });
   });
 
   it("given Iron Ball on Flying defender, when Ground move hits, then type immunity bypassed", () => {
     // Source: Showdown data/items.ts -- Iron Ball: grounds Flying types for Ground moves
-    const ctx = makeDamageContext({
+    const controlCtx = makeDamageContext({
       attacker: makeActive({ types: ["ground"] }),
-      defender: makeActive({ types: ["flying"], heldItem: "iron-ball" }),
+      defender: makeActive({ types: ["flying"] }),
       move: makeMove({ type: "ground", power: 80, category: "physical" }),
     });
+    const ctx = makeDamageContext({
+      attacker: makeActive({ types: ["ground"] }),
+      defender: makeActive({ types: ["flying"], heldItem: TEST_ITEM_IDS.ironBall }),
+      move: makeMove({ type: "ground", power: 80, category: "physical" }),
+    });
+    const control = calculateGen7Damage(controlCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
-    expect(result.effectiveness).toBeGreaterThan(0);
+    expect(control).toMatchObject({ damage: 0, effectiveness: 0 });
+    expect(result).toMatchObject({
+      damage: 51,
+      effectiveness: 1,
+      breakdown: expect.objectContaining({ baseDamage: 37, typeMultiplier: 1, finalDamage: 51 }),
+    });
+    expect(ctx.defender.pokemon.heldItem).toBe(TEST_ITEM_IDS.ironBall);
   });
 });
 
@@ -3446,7 +3603,7 @@ describe("Gen 7 Embargo suppresses items", () => {
   it("given attacker with Embargo volatile, when holding Life Orb, then no boost", () => {
     // Source: Showdown data/conditions.ts -- Embargo: suppresses item effects
     const vols = new Map<string, any>();
-    vols.set("embargo", { turnsLeft: 5 });
+    vols.set(TEST_VOLATILE_IDS.embargo, { turnsLeft: 5 });
     const _ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, heldItem: "life-orb", volatiles: vols }),
       defender: makeActive({}),
@@ -3457,7 +3614,7 @@ describe("Gen 7 Embargo suppresses items", () => {
     // for grounding. Let's check gem consumption is blocked:
     const atkWithEmbargo = makeActive({
       types: ["normal"],
-      heldItem: "normal-gem",
+      heldItem: TEST_ITEM_IDS.normalGem,
       volatiles: vols,
     });
     const ctxGem = makeDamageContext({
@@ -3465,40 +3622,81 @@ describe("Gen 7 Embargo suppresses items", () => {
       defender: makeActive({}),
       move: makeMove({ type: "normal", power: 50 }),
     });
+    const atkNoItem = makeActive({
+      types: ["normal"],
+      volatiles: vols,
+    });
+    const ctxNoItem = makeDamageContext({
+      attacker: atkNoItem,
+      defender: makeActive({}),
+      move: makeMove({ type: "normal", power: 50 }),
+    });
     const atkNoEmbargo = makeActive({
       types: ["normal"],
-      heldItem: "normal-gem",
+      heldItem: TEST_ITEM_IDS.normalGem,
     });
     const ctxNoEmbargo = makeDamageContext({
       attacker: atkNoEmbargo,
       defender: makeActive({}),
       move: makeMove({ type: "normal", power: 50 }),
     });
+    const ctxGemPowerControl = makeDamageContext({
+      attacker: makeActive({ types: ["normal"] }),
+      defender: makeActive({}),
+      move: makeMove({
+        type: "normal",
+        power: pokeRound(50, TEST_FIXED_POINT.gemBoost),
+      }),
+    });
     const withEmbargo = calculateGen7Damage(ctxGem, typeChart);
+    const noItem = calculateGen7Damage(ctxNoItem, typeChart);
     const noEmbargo = calculateGen7Damage(ctxNoEmbargo, typeChart);
-    // Embargo should prevent gem activation
-    expect(noEmbargo.damage).toBeGreaterThan(withEmbargo.damage);
+    const gemPowerControl = calculateGen7Damage(ctxGemPowerControl, typeChart);
+    expect(withEmbargo).toEqual(noItem);
+    expect(noEmbargo).toEqual(gemPowerControl);
   });
 });
 
-describe("Gen 7 Klutz suppresses Iron Ball grounding", () => {
-  it("given defender with Klutz holding Iron Ball, then Iron Ball grounding is suppressed", () => {
-    // Source: Showdown data/abilities.ts -- Klutz suppresses item effects (including Iron Ball)
+describe("Gen 7 defender Klutz and Iron Ball", () => {
+  it("given defender with Klutz holding Iron Ball under Electric Terrain, then unrelated attacker terrain boost is unchanged", () => {
+    // Source: Showdown data/abilities.ts -- Klutz suppresses the holder's item effects.
+    // This control proves the defender-side Klutz/Iron Ball state does not leak into the unrelated
+    // attacker-side Electric Terrain boost path. The grounded Electric attacker should still deal 57.
+    const controlCtx = makeDamageContext({
+      attacker: makeActive({ types: ["electric"] }),
+      defender: makeActive({ types: ["normal"] }),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
+      state: makeState({
+        terrain: {
+          type: TEST_TERRAIN_IDS.electric,
+          turnsLeft: 5,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
+      }),
+    });
     const ctx = makeDamageContext({
       attacker: makeActive({ types: ["electric"] }),
       defender: makeActive({
         types: ["normal"],
         ability: "klutz",
-        heldItem: "iron-ball",
+        heldItem: TEST_ITEM_IDS.ironBall,
       }),
-      move: makeMove({ type: "electric", power: 60 }),
+      move: makeMove({ type: TEST_TERRAIN_IDS.electric, power: 60 }),
       state: makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "test" },
+        terrain: {
+          type: TEST_TERRAIN_IDS.electric,
+          turnsLeft: 5,
+          source: TEST_TERRAIN_IDS.testSource,
+        },
       }),
     });
-    // With Klutz, Iron Ball doesn't ground, so terrain grounding for defender depends on type
+    const control = calculateGen7Damage(controlCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    expect(control.damage).toBe(57);
+    expect(control.breakdown?.baseDamage).toBe(41);
+    expect(result.damage).toBe(57);
+    expect(result.breakdown?.baseDamage).toBe(41);
+    expect(ctx.defender.pokemon.heldItem).toBe(TEST_ITEM_IDS.ironBall);
   });
 });
 
