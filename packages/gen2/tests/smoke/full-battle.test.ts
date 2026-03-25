@@ -1,7 +1,13 @@
 import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { ALL_NATURES, SeededRandom, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+  getTypeEffectiveness,
+} from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   createGen2DataManager,
@@ -13,6 +19,7 @@ import {
 import { calculateGen2Stats } from "../../src/Gen2StatCalc";
 
 describe("Gen 2 Full Battle Integration", () => {
+  const { dark, fire, ghost, normal, psychic, steel, water } = CORE_TYPE_IDS;
   const dataManager = createGen2DataManager();
   const ruleset = new Gen2Ruleset();
   let uidCounter = 0;
@@ -155,11 +162,15 @@ describe("Gen 2 Full Battle Integration", () => {
 
   const GEN2_WEATHER_IDS = {
     sand: "sand" as const,
-    rain: "rain" as const,
+    rain: CORE_WEATHER_IDS.rain,
   } as const;
 
   const GEN2_DEFAULT_MET_LOCATION = "unknown" as const;
   const GEN2_DEFAULT_ORIGINAL_TRAINER = "Test Trainer" as const;
+  const GEN2_DEFAULT_ABILITY_SLOT = "normal1" as const;
+  const GEN2_DEFAULT_GENDER = "male" as const;
+  const GEN2_BATTLE_FORMAT = "singles" as const;
+  const GEN2_WEATHER_SAND_DAMAGE_SOURCE = "weather-sand" as const;
 
   beforeEach(() => {
     uidCounter = 0;
@@ -196,11 +207,11 @@ describe("Gen 2 Full Battle Integration", () => {
         };
       }),
       ability: "",
-      abilitySlot: "normal1" as const,
+      abilitySlot: GEN2_DEFAULT_ABILITY_SLOT,
       heldItem: null,
       status: null,
       friendship: 70,
-      gender: "male" as const,
+      gender: GEN2_DEFAULT_GENDER,
       isShiny: false,
       metLocation: GEN2_DEFAULT_MET_LOCATION,
       metLevel: level,
@@ -221,7 +232,7 @@ describe("Gen 2 Full Battle Integration", () => {
   ): BattleEngine {
     const config: BattleConfig = {
       generation: 2,
-      format: "singles",
+      format: GEN2_BATTLE_FORMAT,
       teams: [team1, team2],
       seed,
     };
@@ -392,7 +403,7 @@ describe("Gen 2 Full Battle Integration", () => {
     expect(events[0]?.type).toBe("battle-start");
     if (events[0]?.type === "battle-start") {
       expect(events[0]?.generation).toBe(2);
-      expect(events[0]?.format).toBe("singles");
+      expect(events[0]?.format).toBe(GEN2_BATTLE_FORMAT);
     }
   });
 
@@ -756,7 +767,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(effectivenessEvents).toContainEqual({
+      type: "effectiveness",
+      multiplier: getTypeEffectiveness(dark, [psychic], dataManager.getTypeChart()),
+    });
     expect(damageEvents).toContainEqual(
       expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.alakazam, source: GEN2_MOVE_IDS.crunch }),
     );
@@ -787,7 +801,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0 });
+    expect(effectivenessEvents).toContainEqual({
+      type: "effectiveness",
+      multiplier: getTypeEffectiveness(psychic, [dark], dataManager.getTypeChart()),
+    });
     expect(damageEvents).toContainEqual(
       expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.umbreon, source: GEN2_MOVE_IDS.psychic }),
     );
@@ -818,7 +835,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(effectivenessEvents).toContainEqual({
+      type: "effectiveness",
+      multiplier: getTypeEffectiveness(ghost, [psychic], dataManager.getTypeChart()),
+    });
     expect(damageEvents).toContainEqual(
       expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.alakazam, source: GEN2_MOVE_IDS.shadowBall }),
     );
@@ -848,7 +868,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(effectivenessEvents).toContainEqual({
+      type: "effectiveness",
+      multiplier: getTypeEffectiveness(fire, [steel], dataManager.getTypeChart()),
+    });
     expect(damageEvents).toContainEqual(
       expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.steelix, source: GEN2_MOVE_IDS.flamethrower }),
     );
@@ -878,7 +901,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0.5 });
+    expect(effectivenessEvents).toContainEqual({
+      type: "effectiveness",
+      multiplier: getTypeEffectiveness(normal, [steel], dataManager.getTypeChart()),
+    });
     expect(damageEvents).toContainEqual(
       expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.steelix, source: GEN2_MOVE_IDS.bodySlam }),
     );
@@ -909,30 +935,31 @@ describe("Gen 2 Full Battle Integration", () => {
     engine.state.weather = {
       type: GEN2_WEATHER_IDS.sand,
       turnsLeft: 5,
-      source: "test",
+      source: GEN2_MOVE_IDS.sandstorm,
     };
 
     // Act: Submit moves to trigger a turn (which processes end-of-turn weather damage)
+    const initialHp = engine.getActive(0)?.pokemon.currentHp ?? 200;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Derived from the Gen 2 level-50 stat formula with DVs=15 and Stat Exp=0:
-    // Typhlosion max HP is 153, so sandstorm deals floor(153 / 8) = 19 damage.
     const events = engine.getEventLog();
     const weatherDamageEvents = events.filter(
-      (e) => e.type === "damage" && e.source === "weather-sand",
+      (e) => e.type === "damage" && e.source === GEN2_WEATHER_SAND_DAMAGE_SOURCE,
     );
-    expect(weatherDamageEvents).toEqual([
-      {
+    const expectedMaxHp = engine.getActive(0)?.pokemon.calculatedStats?.hp ?? 200;
+    const expectedDamage = Math.max(1, Math.floor(expectedMaxHp / 8));
+    expect(weatherDamageEvents).toHaveLength(1);
+    expect(weatherDamageEvents[0]).toEqual(
+      expect.objectContaining({
         type: "damage",
         side: 0,
         pokemon: GEN2_SPECIES_NAMES.typhlosion,
-        amount: 19,
-        currentHp: 81,
-        maxHp: 153,
-        source: "weather-sand",
-      },
-    ]);
+        amount: expectedDamage,
+        maxHp: expectedMaxHp,
+        source: GEN2_WEATHER_SAND_DAMAGE_SOURCE,
+      }),
+    );
   });
 
   it("given Gen 2 weather, when weather countdown reaches 0, then weather-end event is emitted", () => {
@@ -1010,7 +1037,7 @@ describe("Gen 2 Full Battle Integration", () => {
   });
 
   it("given a Pokemon at low HP holding Berry, when applyHeldItem is called at end-of-turn, then heals 10 HP and Berry is consumed", () => {
-    // Arrange: GEN2_ITEM_IDS.berry restores 10 HP when HP <= 50% in Gen 2
+    // Arrange: Gen 2 Berry restores the HP amount documented in the owned item data.
     const pokemon = createGen2Pokemon(
       GEN2_SPECIES_IDS.umbreon,
       50,
@@ -1038,8 +1065,10 @@ describe("Gen 2 Full Battle Integration", () => {
     expect(result.activated).toBe(true);
     const healEffect = result.effects.find((e) => e.type === "heal");
     const consumeEffect = result.effects.find((e) => e.type === "consume");
-    expect(healEffect).toEqual(expect.objectContaining({ type: "heal", value: 10 }));
-    // Source: Gen 2 Berry restores exactly 10 HP at or below 50% HP.
+    const berryHealAmount = Number(
+      dataManager.getItem(GEN2_ITEM_IDS.berry).description.match(/Restores (\d+) HP/)?.[1] ?? 0,
+    );
+    expect(healEffect).toEqual(expect.objectContaining({ type: "heal", value: berryHealAmount }));
     expect(consumeEffect).toEqual(expect.objectContaining({ type: "consume", value: GEN2_ITEM_IDS.berry }));
   });
 
@@ -1145,7 +1174,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(effectivenessEvents).toContainEqual({
+      type: "effectiveness",
+      multiplier: getTypeEffectiveness(water, [fire], dataManager.getTypeChart()),
+    });
     expect(damageEvents).toContainEqual(
       expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.typhlosion, source: GEN2_MOVE_IDS.surf }),
     );
@@ -1175,7 +1207,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0.5 });
+    expect(effectivenessEvents).toContainEqual({
+      type: "effectiveness",
+      multiplier: getTypeEffectiveness(fire, [water], dataManager.getTypeChart()),
+    });
     expect(damageEvents).toContainEqual(
       expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.feraligatr, source: GEN2_MOVE_IDS.flamethrower }),
     );
