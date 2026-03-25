@@ -17,6 +17,7 @@ import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "../src/data/refe
 import { describe, expect, it } from "vitest";
 import { calculateGen7Damage, pokeRound } from "../src/Gen7DamageCalc";
 import { GEN7_TYPE_CHART } from "../src/Gen7TypeChart";
+import { createGen7DataManager } from "../src/data";
 
 const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
 const ITEM_IDS = { ...TEST_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
