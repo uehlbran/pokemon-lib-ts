@@ -22,9 +22,12 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   NEUTRAL_NATURES,
+  SeededRandom,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen4DataManager,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
@@ -43,6 +46,8 @@ const SPECIES = GEN4_SPECIES_IDS;
 const STATUSES = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
+const DATA = createGen4DataManager();
+const DEFAULT_SPECIES = DATA.getSpecies(SPECIES.rattata);
 const DEFAULT_NATURE: NatureId = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
 
 /**
@@ -109,35 +114,28 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
-    nickname: opts.nickname ?? null,
-    level,
-    experience: 0,
+  const species = DATA.getSpecies(opts.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, level, new SeededRandom(4), {
     nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    gender: opts.gender ?? "male",
+    abilitySlot: "normal1",
     heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: opts.gender ?? ("male" as const),
+    moves: [],
     isShiny: false,
     metLocation: "",
-    metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
     pokeball: ITEMS.pokeBall,
-    calculatedStats: stats,
-  } as PokemonInstance;
+  });
+  pokemon.nickname = opts.nickname ?? null;
+  pokemon.currentHp = opts.currentHp ?? maxHp;
+  pokemon.ability = opts.ability ?? ABILITIES.none;
+  pokemon.heldItem = opts.heldItem ?? null;
+  pokemon.status = opts.status ?? null;
+  pokemon.calculatedStats = stats;
 
   return {
-    pokemon,
+    pokemon: pokemon as PokemonInstance,
     teamSlot: 0,
     statStages: {
       attack: opts.statStages?.attack ?? 0,
@@ -149,8 +147,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? [TYPES.normal],
-    ability: opts.ability ?? "",
+    types: opts.types ?? species.types,
+    ability: opts.ability ?? pokemon.ability,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -169,7 +167,29 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(opts: {
+function createCanonicalMove(moveId: string, overrides?: Partial<MoveData>): MoveData {
+  const move = DATA.getMove(moveId);
+  return {
+    ...move,
+    ...overrides,
+    id: moveId,
+    displayName: overrides?.displayName ?? move.displayName,
+    type: overrides?.type ?? move.type,
+    category: overrides?.category ?? move.category,
+    power: overrides?.power ?? move.power,
+    accuracy: overrides?.accuracy ?? move.accuracy,
+    pp: overrides?.pp ?? move.pp,
+    priority: overrides?.priority ?? move.priority,
+    target: overrides?.target ?? move.target,
+    flags: overrides?.flags ?? { ...move.flags },
+    effect: overrides?.effect ?? move.effect,
+    critRatio: overrides?.critRatio ?? move.critRatio,
+    description: overrides?.description ?? move.description,
+    generation: overrides?.generation ?? move.generation,
+  } as MoveData;
+}
+
+function createSyntheticMove(opts: {
   type: PokemonType;
   power: number;
   category?: "physical" | "special" | "status";
@@ -177,39 +197,19 @@ function createMove(opts: {
   contact?: boolean;
   effect?: MoveData["effect"];
 }): MoveData {
+  const baseMove = createCanonicalMove(CORE_MOVES.tackle);
   return {
+    ...baseMove,
     id: opts.id ?? "test-move",
-    displayName: "Test Move",
+    displayName: baseMove.displayName,
     type: opts.type,
-    category: opts.category ?? "physical",
+    category: opts.category ?? baseMove.category,
     power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
     flags: {
+      ...baseMove.flags,
       contact: opts.contact ?? false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
     },
-    effect: opts.effect ?? null,
-    critRatio: 0,
-    description: "",
-    generation: 4,
+    effect: opts.effect ?? baseMove.effect,
   } as MoveData;
 }
 
@@ -355,7 +355,7 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.charcoal,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const fireMove = createMove({ type: TYPES.fire, power: 80, category: "physical" });
+    const fireMove = createSyntheticMove({ type: TYPES.fire, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -382,7 +382,7 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.silkScarf,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.fire] });
-    const normalMove = createMove({ type: TYPES.normal, power: 80, category: "physical" });
+    const normalMove = createSyntheticMove({ type: TYPES.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -407,7 +407,7 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.flamePlate,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const fireMove = createMove({ type: TYPES.fire, power: 80, category: "physical" });
+    const fireMove = createSyntheticMove({ type: TYPES.fire, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -430,7 +430,7 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.charcoal,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const waterMove = createMove({ type: TYPES.water, power: 80, category: "physical" });
+    const waterMove = createSyntheticMove({ type: TYPES.water, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -454,7 +454,7 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       ability: ABILITIES.klutz,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const fireMove = createMove({ type: TYPES.fire, power: 80, category: "physical" });
+    const fireMove = createSyntheticMove({ type: TYPES.fire, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -477,7 +477,7 @@ describe("Bug #266: Destiny Bond cleared when user makes a different move", () =
     const attacker = createActivePokemon({ types: [TYPES.normal] });
     attacker.volatileStatuses.set(VOLATILES.destinyBond, { turnsLeft: -1 });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const tackle = createMove({ type: TYPES.normal, power: 40, id: CORE_MOVES.tackle });
+    const tackle = createCanonicalMove(CORE_MOVES.tackle);
     const rng = createMockRng(100);
     const context = createMoveEffectContext(attacker, defender, tackle, 40, rng);
 
@@ -495,13 +495,7 @@ describe("Bug #266: Destiny Bond cleared when user makes a different move", () =
     const attacker = createActivePokemon({ types: [TYPES.normal] });
     attacker.volatileStatuses.set(VOLATILES.destinyBond, { turnsLeft: -1 });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const destinyBond = createMove({
-      type: TYPES.ghost,
-      power: 0,
-      category: "status",
-      id: MOVES.destinyBond,
-      effect: { type: "custom", tag: MOVES.destinyBond } as MoveData["effect"],
-    });
+    const destinyBond = createCanonicalMove(MOVES.destinyBond);
     const rng = createMockRng(100);
     const context = createMoveEffectContext(attacker, defender, destinyBond, 0, rng);
 
@@ -518,7 +512,7 @@ describe("Bug #266: Destiny Bond cleared when user makes a different move", () =
     // Regression: don't add clearing entries when the volatile isn't present
     const attacker = createActivePokemon({ types: [TYPES.normal] });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const tackle = createMove({ type: TYPES.normal, power: 40, id: CORE_MOVES.tackle });
+    const tackle = createCanonicalMove(CORE_MOVES.tackle);
     const rng = createMockRng(100);
     const context = createMoveEffectContext(attacker, defender, tackle, 40, rng);
 
@@ -544,12 +538,7 @@ describe("Bug #257: Natural Gift does not set customDamage (damage goes through 
       heldItem: ITEMS.cheriBerry,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const naturalGift = createMove({
-      type: TYPES.normal,
-      power: 1,
-      category: "physical",
-      id: MOVES.naturalGift,
-    });
+    const naturalGift = createCanonicalMove(MOVES.naturalGift);
     const rng = createMockRng(100);
     const context = createMoveEffectContext(attacker, defender, naturalGift, 0, rng);
 
@@ -569,12 +558,7 @@ describe("Bug #257: Natural Gift does not set customDamage (damage goes through 
       heldItem: ITEMS.cheriBerry,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const naturalGift = createMove({
-      type: TYPES.normal,
-      power: 1,
-      category: "physical",
-      id: MOVES.naturalGift,
-    });
+    const naturalGift = createCanonicalMove(MOVES.naturalGift);
     const rng = createMockRng(100);
     const context = createMoveEffectContext(attacker, defender, naturalGift, 0, rng);
 
@@ -597,12 +581,7 @@ describe("Bug #257: Fling does not set customDamage (damage goes through normal 
       heldItem: CORE_ITEMS.ironBall,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const fling = createMove({
-      type: TYPES.dark,
-      power: 0,
-      category: "physical",
-      id: MOVES.fling,
-    });
+    const fling = createCanonicalMove(MOVES.fling);
     const rng = createMockRng(100);
     const context = createMoveEffectContext(attacker, defender, fling, 0, rng);
 
@@ -619,12 +598,7 @@ describe("Bug #257: Fling does not set customDamage (damage goes through normal 
     // Source: Showdown Gen 4 — Fling fails if no held item
     const attacker = createActivePokemon({ types: [TYPES.normal], heldItem: null });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const fling = createMove({
-      type: TYPES.dark,
-      power: 0,
-      category: "physical",
-      id: MOVES.fling,
-    });
+    const fling = createCanonicalMove(MOVES.fling);
     const rng = createMockRng(100);
     const context = createMoveEffectContext(attacker, defender, fling, 0, rng);
 
@@ -650,7 +624,7 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
       pokemon: defender,
       state,
       rng: createMockRng(100),
-      move: createMove({ type: TYPES.normal, power: 80, contact: true }),
+      move: createSyntheticMove({ type: TYPES.normal, power: 80, contact: true }),
       damage: 50,
     };
 
@@ -671,7 +645,7 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
       pokemon: defender,
       state,
       rng: createMockRng(100),
-      move: createMove({ type: TYPES.normal, power: 80, contact: false }),
+      move: createSyntheticMove({ type: TYPES.normal, power: 80, contact: false }),
       damage: 50,
     };
 
@@ -693,7 +667,7 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
       pokemon: defender,
       state,
       rng: createMockRng(100),
-      move: createMove({ type: TYPES.normal, power: 80, contact: true }),
+      move: createSyntheticMove({ type: TYPES.normal, power: 80, contact: true }),
       damage: 50,
     };
 
@@ -725,7 +699,7 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
       pokemon: defender,
       state,
       rng: createMockRng(100),
-      move: createMove({ type: TYPES.normal, power: 80, contact: true }),
+      move: createSyntheticMove({ type: TYPES.normal, power: 80, contact: true }),
       damage: 50,
     };
 
@@ -753,7 +727,7 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
       pokemon: defender,
       state,
       rng: createMockRng(100),
-      move: createMove({ type: TYPES.normal, power: 80, contact: true }),
+      move: createSyntheticMove({ type: TYPES.normal, power: 80, contact: true }),
       damage: 50,
     };
 
@@ -781,7 +755,7 @@ describe("Bug #518: Sticky Barb transfer triggers Unburden volatile", () => {
       pokemon: defender,
       state,
       rng: createMockRng(100),
-      move: createMove({ type: TYPES.normal, power: 80, contact: true }),
+      move: createSyntheticMove({ type: TYPES.normal, power: 80, contact: true }),
       damage: 50,
     };
 
@@ -823,12 +797,7 @@ describe("Bug #275: Fire Fang bypasses Wonder Guard in Gen 4", () => {
       ability: ABILITIES.wonderGuard,
     });
     // Fire vs Normal = neutral (1x) in neutral chart — normally blocked by Wonder Guard
-    const fireFang = createMove({
-      type: TYPES.fire,
-      power: 65,
-      id: MOVES.fireFang,
-      contact: true,
-    });
+    const fireFang = createCanonicalMove(MOVES.fireFang);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -853,7 +822,7 @@ describe("Bug #275: Fire Fang bypasses Wonder Guard in Gen 4", () => {
       types: [TYPES.normal],
       ability: ABILITIES.wonderGuard,
     });
-    const tackle = createMove({ type: TYPES.normal, power: 40, id: CORE_MOVES.tackle });
+    const tackle = createCanonicalMove(CORE_MOVES.tackle);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
