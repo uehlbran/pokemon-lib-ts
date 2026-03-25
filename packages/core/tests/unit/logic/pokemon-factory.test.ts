@@ -8,6 +8,56 @@ import {
 } from "../../../src/logic/pokemon-factory";
 import { SeededRandom } from "../../../src/prng/seeded-random";
 
+function makeScriptedRng(script: {
+  ints?: number[];
+  picks?: string[];
+  chances?: boolean[];
+}): SeededRandom {
+  let intIndex = 0;
+  let pickIndex = 0;
+  let chanceIndex = 0;
+
+  return {
+    next(): number {
+      throw new Error("This test double should use scripted int/pick/chance calls only.");
+    },
+    int(min: number, max: number): number {
+      const value = script.ints?.[intIndex++];
+      if (value === undefined) {
+        throw new Error(`Missing scripted int for range [${min}, ${max}]`);
+      }
+      if (value < min || value > max) {
+        throw new Error(`Scripted int ${value} is outside range [${min}, ${max}]`);
+      }
+      return value;
+    },
+    chance(_probability: number): boolean {
+      const value = script.chances?.[chanceIndex++];
+      if (value === undefined) {
+        throw new Error("Missing scripted chance value");
+      }
+      return value;
+    },
+    pick<T>(array: readonly T[]): T {
+      const value = script.picks?.[pickIndex++] as T | undefined;
+      if (value === undefined) {
+        throw new Error("Missing scripted pick value");
+      }
+      if (!array.includes(value)) {
+        throw new Error(`Scripted pick ${String(value)} is not in the provided array`);
+      }
+      return value;
+    },
+    shuffle<T>(array: readonly T[]): T[] {
+      return [...array];
+    },
+    getState(): number {
+      return 0;
+    },
+    setState(_state: number): void {},
+  } as SeededRandom;
+}
+
 // --- Mock Species Data ---
 
 function makeMockSpecies(overrides?: Partial<PokemonSpeciesData>): PokemonSpeciesData {
@@ -102,31 +152,22 @@ describe("determineGender", () => {
     expect(gender).toBe("female");
   });
 
-  it("given mixed genderRatio (87.5), when called with deterministic seed, then returns valid gender", () => {
-    // Arrange
-    const rng = new SeededRandom(42);
+  it("given mixed genderRatio (87.5), when the roll is at the male threshold, then returns male", () => {
+    // Derived from determineGender: male iff rng.int(1, 100) <= genderRatio.
+    const rng = makeScriptedRng({ ints: [87] });
 
-    // Act
     const gender = determineGender(87.5, rng);
 
-    // Assert
-    expect(["male", "female"]).toContain(gender);
+    expect(gender).toBe("male");
   });
 
-  it("given mixed genderRatio (50), when called many times, then produces both genders", () => {
-    // Arrange
-    const rng = new SeededRandom(12345);
-    const results = new Set<string>();
+  it("given mixed genderRatio (87.5), when the roll is above the male threshold, then returns female", () => {
+    // Derived from determineGender: male iff rng.int(1, 100) <= genderRatio.
+    const rng = makeScriptedRng({ ints: [88] });
 
-    // Act
-    for (let i = 0; i < 100; i++) {
-      results.add(determineGender(50, rng));
-    }
+    const gender = determineGender(87.5, rng);
 
-    // Assert
-    expect(results.has("male")).toBe(true);
-    expect(results.has("female")).toBe(true);
-    expect(results.size).toBe(2);
+    expect(gender).toBe("female");
   });
 });
 
@@ -236,6 +277,7 @@ describe("createMoveSlot", () => {
     const slot = createMoveSlot("flamethrower", 15);
 
     // Assert
+    // Source: Flamethrower's canonical PP is 15 in the game data.
     expect(slot.moveId).toBe("flamethrower");
     expect(slot.currentPP).toBe(15);
     expect(slot.maxPP).toBe(15);
@@ -264,29 +306,33 @@ describe("createMoveSlot", () => {
     expect(slot.ppUps).toBe(1);
   });
 
-  it("given a move with odd PP and ppUps, when called, then applies floor truncation", () => {
+  it("given a move with PP that produces a fractional bonus, when called, then applies floor truncation", () => {
     // Arrange / Act
-    const slot = createMoveSlot("fire-blast", 5, 1);
+    const slot = createMoveSlot("fire-blast", 7, 1);
 
     // Assert
-    // maxPP = floor(5 * 1.2) = floor(6) = 6
-    expect(slot.maxPP).toBe(6);
-    expect(slot.currentPP).toBe(6);
+    // Derived from createMoveSlot: floor(7 * (1 + 0.2 * 1)) = floor(8.4) = 8.
+    expect(slot.maxPP).toBe(8);
+    expect(slot.currentPP).toBe(8);
   });
 });
 
 // --- createPokemonInstance ---
 
 describe("createPokemonInstance", () => {
-  it("given a species and level, when called with defaults, then creates a valid instance with all required fields", () => {
-    // Arrange
+  it("given a species and scripted defaults, when called, then creates the exact default instance fields", () => {
     const species = makeMockSpecies();
-    const rng = new SeededRandom(42);
+    const rng = makeScriptedRng({
+      // Source: createPokemonInstance rolls six IVs, then determineGender, then generateUid twice.
+      ints: [31, 0, 15, 20, 25, 30, 87, 0x12345678, 0x9abcdef0],
+      picks: ["adamant"],
+      chances: [false],
+    });
 
-    // Act
     const instance = createPokemonInstance(species, 50, rng);
 
-    // Assert
+    // Derived from determineGender: male iff rng.int(1, 100) <= genderRatio.
+    // Derived from generateUid: concatenates two zero-padded 32-bit hex values.
     expect(instance.speciesId).toBe(6);
     expect(instance.level).toBe(50);
     expect(instance.experience).toBe(0);
@@ -299,77 +345,67 @@ describe("createPokemonInstance", () => {
     expect(instance.originalTrainer).toBe("Player");
     expect(instance.originalTrainerId).toBe(0);
     expect(instance.pokeball).toBe("poke-ball");
-    expect(instance.friendship).toBe(70); // baseFriendship
-    expect(instance.uid).toBeTruthy();
-    expect(typeof instance.uid).toBe("string");
-    expect(instance.uid.length).toBe(16); // 8 hex chars + 8 hex chars
+    expect(instance.friendship).toBe(70); // Source: mock species baseFriendship is 70.
+    expect(instance.uid).toBe("123456789abcdef0");
+    expect(instance.nature).toBe("adamant");
+    expect(instance.gender).toBe("male");
+    expect(instance.ability).toBe("blaze");
+    expect(instance.abilitySlot).toBe("normal1");
+    expect(instance.isShiny).toBe(false);
+    expect(instance.ivs).toEqual({
+      hp: 31,
+      attack: 0,
+      defense: 15,
+      spAttack: 20,
+      spDefense: 25,
+      speed: 30,
+    });
   });
 
-  it("given a species, when called with default IVs, then generates random IVs between 0 and 31", () => {
-    // Arrange
+  it("given a species and scripted IV rolls, when called with default IVs, then uses those exact IVs", () => {
     const species = makeMockSpecies();
-    const rng = new SeededRandom(42);
+    const rng = makeScriptedRng({
+      ints: [5, 10, 15, 20, 25, 30, 40, 0, 1],
+      picks: ["bold"],
+      chances: [false],
+    });
 
-    // Act
     const instance = createPokemonInstance(species, 50, rng);
 
-    // Assert
-    const stats = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const;
-    for (const stat of stats) {
-      expect(instance.ivs[stat]).toBeGreaterThanOrEqual(0);
-      expect(instance.ivs[stat]).toBeLessThanOrEqual(31);
-    }
+    expect(instance.ivs).toEqual({
+      hp: 5,
+      attack: 10,
+      defense: 15,
+      spAttack: 20,
+      spDefense: 25,
+      speed: 30,
+    });
   });
 
-  it("given a species, when called with default nature, then picks a valid nature", () => {
-    // Arrange
+  it("given a species and a scripted nature pick, when called, then uses that exact nature", () => {
     const species = makeMockSpecies();
-    const rng = new SeededRandom(42);
-    const allNatures = [
-      "hardy",
-      "lonely",
-      "brave",
-      "adamant",
-      "naughty",
-      "bold",
-      "docile",
-      "relaxed",
-      "impish",
-      "lax",
-      "timid",
-      "hasty",
-      "serious",
-      "jolly",
-      "naive",
-      "modest",
-      "mild",
-      "quiet",
-      "bashful",
-      "rash",
-      "calm",
-      "gentle",
-      "sassy",
-      "careful",
-      "quirky",
-    ];
+    const rng = makeScriptedRng({
+      ints: [0, 0, 0, 0, 0, 0, 87, 0, 1],
+      picks: ["timid"],
+      chances: [false],
+    });
 
-    // Act
     const instance = createPokemonInstance(species, 50, rng);
 
-    // Assert
-    expect(allNatures).toContain(instance.nature);
+    expect(instance.nature).toBe("timid");
   });
 
-  it("given a species, when called with default gender, then returns valid gender based on ratio", () => {
-    // Arrange
+  it("given a species with 87.5% male ratio and a scripted female roll, when called, then returns female", () => {
     const species = makeMockSpecies({ genderRatio: 87.5 });
-    const rng = new SeededRandom(42);
+    const rng = makeScriptedRng({
+      ints: [0, 0, 0, 0, 0, 0, 88, 0, 1],
+      picks: ["hardy"],
+      chances: [false],
+    });
 
-    // Act
     const instance = createPokemonInstance(species, 50, rng);
 
-    // Assert
-    expect(["male", "female"]).toContain(instance.gender);
+    expect(instance.gender).toBe("female");
   });
 
   it("given a genderless species, when called, then returns genderless", () => {
@@ -397,39 +433,48 @@ describe("createPokemonInstance", () => {
     expect(instance.abilitySlot).toBe("normal1");
   });
 
-  it("given a species with two normal abilities, when called, then randomly selects one", () => {
-    // Arrange
+  it("given a species with two normal abilities and a true ability roll, when called, then selects normal1", () => {
     const species = makeMockSpecies({
       abilities: { normal: ["intimidate", "moxie"], hidden: "mold-breaker" },
     });
-    const results = new Set<string>();
+    const rng = makeScriptedRng({
+      ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
+      picks: ["hardy"],
+      chances: [true, false],
+    });
 
-    // Act - run with many seeds to get both abilities
-    for (let seed = 0; seed < 100; seed++) {
-      const rng = new SeededRandom(seed);
-      const instance = createPokemonInstance(species, 50, rng);
-      results.add(instance.ability);
-    }
+    const instance = createPokemonInstance(species, 50, rng);
 
-    // Assert
-    expect(results.has("intimidate")).toBe(true);
-    expect(results.has("moxie")).toBe(true);
+    expect(instance.abilitySlot).toBe("normal1");
+    expect(instance.ability).toBe("intimidate");
   });
 
-  it("given a species, when called with default shiny, then is almost never shiny (1/4096)", () => {
-    // Arrange
+  it("given a species and a false shiny roll, when called with default shiny odds, then is not shiny", () => {
     const species = makeMockSpecies();
-    let shinyCount = 0;
+    const rng = makeScriptedRng({
+      ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
+      picks: ["hardy"],
+      // Source: createPokemonInstance uses rng.chance(1 / 4096) for default shiny odds.
+      chances: [false],
+    });
 
-    // Act
-    for (let seed = 0; seed < 1000; seed++) {
-      const rng = new SeededRandom(seed);
-      const instance = createPokemonInstance(species, 50, rng);
-      if (instance.isShiny) shinyCount++;
-    }
+    const instance = createPokemonInstance(species, 50, rng);
 
-    // Assert - with 1/4096 chance and 1000 trials, expect very few shinies
-    expect(shinyCount).toBeLessThan(10);
+    expect(instance.isShiny).toBe(false);
+  });
+
+  it("given a species and a true shiny roll, when called with default shiny odds, then is shiny", () => {
+    const species = makeMockSpecies();
+    const rng = makeScriptedRng({
+      ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
+      picks: ["hardy"],
+      // Source: createPokemonInstance uses rng.chance(1 / 4096) for default shiny odds.
+      chances: [true],
+    });
+
+    const instance = createPokemonInstance(species, 50, rng);
+
+    expect(instance.isShiny).toBe(true);
   });
 
   it("given a species, when called with default moves, then uses latest 4 level-up moves", () => {
@@ -503,15 +548,15 @@ describe("createPokemonInstance", () => {
     expect(instance.moves[2]?.moveId).toBe("dragon-pulse");
     expect(instance.moves[3]?.moveId).toBe("roost");
     expect(instance.heldItem).toBe("leftovers");
-    expect(instance.friendship).toBe(255);
+    expect(instance.friendship).toBe(255); // Source: friendship override is provided explicitly in the options above.
     expect(instance.metLocation).toBe("pallet-town");
     expect(instance.originalTrainer).toBe("Ash");
-    expect(instance.originalTrainerId).toBe(54321);
+    expect(instance.originalTrainerId).toBe(54321); // Source: trainer ID override is provided explicitly in the options above.
     expect(instance.pokeball).toBe("ultra-ball");
     expect(instance.ability).toBe("solar-power"); // hidden ability
     expect(instance.abilitySlot).toBe("hidden");
     expect(instance.teraType).toBe("dragon");
-    expect(instance.dynamaxLevel).toBe(10);
+    expect(instance.dynamaxLevel).toBe(10); // Source: Dynamax Level override is provided explicitly in the options above.
   });
 
   it("given the same seed, when called twice, then produces identical instances", () => {
@@ -554,6 +599,19 @@ describe("createPokemonInstance", () => {
 
     // Assert
     expect(instance.ability).toBe("blaze");
+  });
+
+  it("given a species with two normal abilities, when abilitySlot is normal2, then uses the second normal ability", () => {
+    const species = makeMockSpecies({
+      abilities: { normal: ["intimidate", "moxie"], hidden: "mold-breaker" },
+    });
+    const rng = new SeededRandom(42);
+
+    const instance = createPokemonInstance(species, 50, rng, { abilitySlot: "normal2" });
+
+    // Derived from getAbilityForSlot: normal2 maps to abilities.normal[1] when present.
+    expect(instance.abilitySlot).toBe("normal2");
+    expect(instance.ability).toBe("moxie");
   });
 
   it("given a species, when called with default teraType, then uses first species type", () => {

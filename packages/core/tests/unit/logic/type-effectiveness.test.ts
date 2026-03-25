@@ -9,6 +9,8 @@ import {
 
 // Full Gen 6+ type chart (18x18)
 // Only stores non-1.0 values; getTypeMultiplier defaults missing entries to 1.
+// Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
+// Cross-check: Bulbapedia Fairy-era type chart.
 const ALL_TYPES: PokemonType[] = [
   "normal",
   "fire",
@@ -41,6 +43,7 @@ function buildDefaultTypeChart(): TypeChart {
   }
 
   // Super effective (2x)
+  // Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
   const superEffective: [PokemonType, PokemonType][] = [
     ["fire", "grass"],
     ["fire", "ice"],
@@ -96,6 +99,7 @@ function buildDefaultTypeChart(): TypeChart {
   ];
 
   // Not very effective (0.5x)
+  // Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
   const notVeryEffective: [PokemonType, PokemonType][] = [
     ["normal", "rock"],
     ["normal", "steel"],
@@ -161,6 +165,7 @@ function buildDefaultTypeChart(): TypeChart {
   ];
 
   // Immune (0x)
+  // Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
   const immune: [PokemonType, PokemonType][] = [
     ["normal", "ghost"],
     ["electric", "ground"],
@@ -189,6 +194,7 @@ const TYPE_CHART = buildDefaultTypeChart();
 
 describe("getTypeMultiplier", () => {
   it("given a Fire-type attacker and Grass-type defender, when calculating type multiplier, then returns 2.0", () => {
+    // Source: Gen 6+ type chart: Fire is super effective against Grass.
     expect(getTypeMultiplier("fire", "grass", TYPE_CHART)).toBe(2.0);
   });
 
@@ -201,11 +207,15 @@ describe("getTypeMultiplier", () => {
   });
 
   it("given a Normal-type attacker and Normal-type defender, when calculating type multiplier, then returns 1.0", () => {
-    expect(getTypeMultiplier("normal", "normal", TYPE_CHART)).toBe(1.0);
+    // Derived from getTypeMultiplier: unspecified entries in the chart remain neutral (1.0).
+    const neutralMultiplier = 1.0;
+    expect(getTypeMultiplier("normal", "normal", TYPE_CHART)).toBe(neutralMultiplier);
   });
 
   it("given a Ghost-type attacker and Psychic-type defender, when calculating type multiplier, then returns 2.0", () => {
-    expect(getTypeMultiplier("ghost", "psychic", TYPE_CHART)).toBe(2.0);
+    // Source: Gen 6+ type chart: Ghost is super effective against Psychic.
+    const superEffectiveMultiplier = 2.0;
+    expect(getTypeMultiplier("ghost", "psychic", TYPE_CHART)).toBe(superEffectiveMultiplier);
   });
 
   it("given a Dragon-type attacker and Fairy-type defender, when calculating type multiplier, then returns 0", () => {
@@ -213,17 +223,33 @@ describe("getTypeMultiplier", () => {
   });
 
   it("given a Fairy-type attacker and Dragon-type defender, when calculating type multiplier, then returns 2.0", () => {
+    // Source: Gen 6+ type chart: Fairy is super effective against Dragon.
     expect(getTypeMultiplier("fairy", "dragon", TYPE_CHART)).toBe(2.0);
+  });
+
+  it("given a sparse chart with a missing matchup, when calculating type multiplier, then defaults to neutral", () => {
+    const sparseChart = {
+      fire: { grass: 2.0 },
+    } as unknown as TypeChart;
+
+    // Derived from getTypeMultiplier: missing chart entries default to neutral (1).
+    const neutralMultiplier = 1.0;
+    expect(getTypeMultiplier("normal", "normal", sparseChart)).toBe(neutralMultiplier);
   });
 });
 
 describe("getTypeEffectiveness", () => {
   it("given a Fire-type move and single-type Grass defender, when calculating effectiveness, then returns 2.0", () => {
+    // Source: Gen 6+ type chart: Fire is super effective against Grass.
     expect(getTypeEffectiveness("fire", ["grass"], TYPE_CHART)).toBe(2.0);
   });
 
   it("given an Ice-type move and Dragon/Flying dual-type defender, when calculating effectiveness, then returns 4.0", () => {
-    expect(getTypeEffectiveness("ice", ["dragon", "flying"], TYPE_CHART)).toBe(4.0);
+    // Derived from the chart: Ice vs Dragon = 2.0 and Ice vs Flying = 2.0, so 2.0 * 2.0 = 4.0.
+    const doubleSuperEffectiveMultiplier = 4.0;
+    expect(getTypeEffectiveness("ice", ["dragon", "flying"], TYPE_CHART)).toBe(
+      doubleSuperEffectiveMultiplier,
+    );
   });
 
   it("given a Normal-type move and Ghost-type defender, when calculating effectiveness, then returns 0 regardless of second type", () => {
@@ -232,19 +258,27 @@ describe("getTypeEffectiveness", () => {
   });
 
   it("given a Fire-type move and Water/Dragon dual-type defender, when calculating effectiveness, then returns 0.25", () => {
-    expect(getTypeEffectiveness("fire", ["water", "dragon"], TYPE_CHART)).toBe(0.25);
+    // Derived from the chart: Fire vs Water = 0.5 and Fire vs Dragon = 0.5, so 0.5 * 0.5 = 0.25.
+    const doubleResistedMultiplier = 0.25;
+    expect(getTypeEffectiveness("fire", ["water", "dragon"], TYPE_CHART)).toBe(
+      doubleResistedMultiplier,
+    );
   });
 
   it("given a Normal-type move and Normal-type defender, when calculating effectiveness, then returns 1.0", () => {
-    expect(getTypeEffectiveness("normal", ["normal"], TYPE_CHART)).toBe(1.0);
+    // Derived from the chart builder: Normal vs Normal is an unspecified matchup, so it stays neutral at 1.0.
+    const neutralMultiplier = 1.0;
+    expect(getTypeEffectiveness("normal", ["normal"], TYPE_CHART)).toBe(neutralMultiplier);
   });
 
   it("given a Fire-type move and Grass/Water dual-type defender, when calculating effectiveness, then returns 1.0", () => {
     // Fire vs Grass/Water: 2.0 * 0.5 = 1.0
-    expect(getTypeEffectiveness("fire", ["grass", "water"], TYPE_CHART)).toBe(1.0);
+    const neutralMultiplier = 1.0;
+    expect(getTypeEffectiveness("fire", ["grass", "water"], TYPE_CHART)).toBe(neutralMultiplier);
   });
 
   it("given a Water-type move and single-type Fire defender, when calculating effectiveness, then returns 2.0", () => {
+    // Source: Gen 6+ type chart: Water is super effective against Fire.
     expect(getTypeEffectiveness("water", ["fire"], TYPE_CHART)).toBe(2.0);
   });
 
@@ -254,12 +288,17 @@ describe("getTypeEffectiveness", () => {
       for (const def1 of ALL_TYPES) {
         // Single type
         const single = getTypeEffectiveness(atkType, [def1], TYPE_CHART);
+        expect(single).toBe(getTypeMultiplier(atkType, def1, TYPE_CHART));
         expect(validValues.has(single)).toBe(true);
 
         // Dual type
         for (const def2 of ALL_TYPES) {
           if (def1 === def2) continue;
           const dual = getTypeEffectiveness(atkType, [def1, def2], TYPE_CHART);
+          expect(dual).toBe(
+            getTypeMultiplier(atkType, def1, TYPE_CHART) *
+              getTypeMultiplier(atkType, def2, TYPE_CHART),
+          );
           expect(validValues.has(dual)).toBe(true);
         }
       }
