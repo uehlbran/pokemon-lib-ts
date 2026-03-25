@@ -244,6 +244,7 @@ export const CORE_VOLATILE_IDS = {
   infatuation: "infatuation",
   mist: "mist",
   noRetreat: "no-retreat",
+  perishSong: "perish-song",
   protect: "protect",
   protosynthesis: "protosynthesis",
   quarkDrive: "quarkdrive",

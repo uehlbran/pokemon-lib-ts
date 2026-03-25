@@ -21,16 +21,59 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 import { checkIsShinyByDVs } from "../../src/Gen2StatCalc";
 import { GEN2_TYPE_CHART } from "../../src/Gen2TypeChart";
+import {
+  createGen2DataManager,
+  GEN2_ITEM_IDS,
+  GEN2_MOVE_IDS,
+  GEN2_SPECIES_IDS,
+} from "../../src";
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
 // ---------------------------------------------------------------------------
+
+const gen2Data = createGen2DataManager();
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN2_MOVE_IDS } as const;
+const ITEM_IDS = GEN2_ITEM_IDS;
+const SPECIES_IDS = GEN2_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const DEFAULT_MOVE = gen2Data.getMove(MOVE_IDS.tackle);
+const DEFAULT_SPECIES = gen2Data.getSpecies(SPECIES_IDS.bulbasaur);
+const DEFAULT_SYNTHETIC_STATS = {
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 100,
+} as const;
+
+function getMove(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
+  const move = gen2Data.getMove(moveId);
+  return {
+    ...move,
+    ...overrides,
+    flags: { ...move.flags, ...overrides.flags },
+  } as MoveData;
+}
+
+function createSyntheticMove(moveId: string, overrides: Partial<MoveData>): MoveData {
+  return getMove(moveId, overrides);
+}
 
 function createMockActive(
   overrides: Partial<{
@@ -43,7 +86,7 @@ function createMockActive(
     spDefense: number;
     speed: number;
     status: string | null;
-    types: string[];
+    types: PokemonType[];
     heldItem: string | null;
     speciesId: number;
     nickname: string | null;
@@ -60,7 +103,7 @@ function createMockActive(
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES_IDS.bulbasaur,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
       status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
@@ -75,14 +118,21 @@ function createMockActive(
         speed: overrides.ivs?.speed ?? 15,
       },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: [
+        {
+          moveId: MOVE_IDS.tackle,
+          currentPP: DEFAULT_MOVE.pp,
+          maxPP: DEFAULT_MOVE.pp,
+          ppUps: 0,
+        },
+      ],
       calculatedStats: {
         hp: maxHp,
-        attack: overrides.attack ?? 100,
-        defense: overrides.defense ?? 100,
-        spAttack: overrides.spAttack ?? 100,
-        spDefense: overrides.spDefense ?? 100,
-        speed: overrides.speed ?? 100,
+        attack: overrides.attack ?? DEFAULT_SYNTHETIC_STATS.attack,
+        defense: overrides.defense ?? DEFAULT_SYNTHETIC_STATS.defense,
+        spAttack: overrides.spAttack ?? DEFAULT_SYNTHETIC_STATS.spAttack,
+        spDefense: overrides.spDefense ?? DEFAULT_SYNTHETIC_STATS.spDefense,
+        speed: overrides.speed ?? DEFAULT_SYNTHETIC_STATS.speed,
       },
     },
     teamSlot: 0,
@@ -97,8 +147,8 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
-    ability: "",
+    types: overrides.types ?? [TYPES.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -219,7 +269,7 @@ describe("Issue #361 — processPerishSong countdown and faint", () => {
     // Counter starts at 3, decrements to 0, faints at 0.
     // Arrange
     const pokemon = createMockActive();
-    pokemon.volatileStatuses.set("perish-song", { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(VOLATILES.perishSong, { turnsLeft: 3 });
 
     // Act
     const result = ruleset.processPerishSong(pokemon);
@@ -234,7 +284,7 @@ describe("Issue #361 — processPerishSong countdown and faint", () => {
     // Triangulation: second step of the countdown.
     // Arrange
     const pokemon = createMockActive();
-    pokemon.volatileStatuses.set("perish-song", { turnsLeft: 2 });
+    pokemon.volatileStatuses.set(VOLATILES.perishSong, { turnsLeft: 2 });
 
     // Act
     const result = ruleset.processPerishSong(pokemon);
@@ -249,7 +299,7 @@ describe("Issue #361 — processPerishSong countdown and faint", () => {
     // When counter <= 1, the Pokemon faints this turn.
     // Arrange
     const pokemon = createMockActive();
-    pokemon.volatileStatuses.set("perish-song", { turnsLeft: 1 });
+    pokemon.volatileStatuses.set(VOLATILES.perishSong, { turnsLeft: 1 });
 
     // Act
     const result = ruleset.processPerishSong(pokemon);
@@ -278,7 +328,7 @@ describe("Issue #361 — processPerishSong countdown and faint", () => {
     // Full 3-turn simulation using data.counter storage path.
     // Arrange
     const pokemon = createMockActive();
-    pokemon.volatileStatuses.set("perish-song", {
+    pokemon.volatileStatuses.set(VOLATILES.perishSong, {
       turnsLeft: 3,
       data: { counter: 3 },
     });
@@ -289,7 +339,7 @@ describe("Issue #361 — processPerishSong countdown and faint", () => {
     expect(turn1.fainted).toBe(false);
 
     // Update counter (simulate engine decrement)
-    const state1 = pokemon.volatileStatuses.get("perish-song");
+    const state1 = pokemon.volatileStatuses.get(VOLATILES.perishSong);
     if (state1?.data) state1.data.counter = 2;
 
     // Act & Assert — turn 2
@@ -298,7 +348,7 @@ describe("Issue #361 — processPerishSong countdown and faint", () => {
     expect(turn2.fainted).toBe(false);
 
     // Update counter
-    const state2 = pokemon.volatileStatuses.get("perish-song");
+    const state2 = pokemon.volatileStatuses.get(VOLATILES.perishSong);
     if (state2?.data) state2.data.counter = 1;
 
     // Act & Assert — turn 3 (faint)
@@ -395,41 +445,25 @@ describe("Issue #363 — Pursuit double power on switch-out", () => {
     // The engine passes powerMultiplier=2 to executeMove when Pursuit fires pre-switch.
     // We test the damage calc directly: same attacker/defender, power=80 vs power=40, ratio should be ~2x.
     // Arrange
-    const attacker = createMockActive({ level: 50, attack: 100, types: ["dark"] });
-    const defender = createMockActive({ defense: 100, types: ["normal"] });
+    const attacker = createMockActive({ level: 50, attack: 100, types: [TYPES.dark] });
+    const defender = createMockActive({ defense: 100, types: [TYPES.normal] });
     const rng = createMockRng(255); // Max damage roll for deterministic comparison
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-    const species = {
-      id: 1,
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-    } as never;
-
-    const pursuitNormal = {
-      id: "pursuit",
-      type: "dark",
-      category: "physical",
-      power: 40,
-      accuracy: 100,
-      priority: 0,
-      effect: null,
-      flags: {},
-    } as unknown as MoveData;
-
-    const pursuitDoubled = {
-      ...pursuitNormal,
-      power: 80, // Doubled base power for pre-switch execution
-    } as unknown as MoveData;
+    const pursuitNormal = getMove(MOVE_IDS.pursuit);
+    const pursuitDoubled = createSyntheticMove(MOVE_IDS.pursuit, {
+      power: 80,
+    });
 
     // Act
     const normalDmg = calculateGen2Damage(
       { attacker, defender, move: pursuitNormal, state, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
     const doubledDmg = calculateGen2Damage(
       { attacker, defender, move: pursuitDoubled, state, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
 
     // Assert: doubled power yields the observed deterministic damage increase.
@@ -441,31 +475,17 @@ describe("Issue #363 — Pursuit double power on switch-out", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm — normal Pursuit BP = 40
     // When no switch occurs, Pursuit fires as a normal 40-BP move.
     // Arrange
-    const attacker = createMockActive({ level: 50, attack: 100, types: ["dark"] });
-    const defender = createMockActive({ defense: 100, types: ["normal"] });
+    const attacker = createMockActive({ level: 50, attack: 100, types: [TYPES.dark] });
+    const defender = createMockActive({ defense: 100, types: [TYPES.normal] });
     const rng = createMockRng(255);
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-    const species = {
-      id: 1,
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-    } as never;
-
-    const pursuitMove = {
-      id: "pursuit",
-      type: "dark",
-      category: "physical",
-      power: 40,
-      accuracy: 100,
-      priority: 0,
-      effect: null,
-      flags: {},
-    } as unknown as MoveData;
+    const pursuitMove = getMove(MOVE_IDS.pursuit);
 
     // Act
     const result = calculateGen2Damage(
       { attacker, defender, move: pursuitMove, state, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
 
     // Assert: normal 40 BP dark (special) move: L50, SpAtk=100, SpDef=100, no STAB (attacker types=dark but default spAttack=100)
@@ -491,16 +511,7 @@ describe("Issue #363 — Pursuit double power on switch-out", () => {
 describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interactions", () => {
   const ruleset = new Gen2Ruleset();
 
-  const thunderMove = {
-    id: "thunder",
-    type: "electric",
-    category: "special",
-    power: 110,
-    accuracy: 70,
-    priority: 0,
-    effect: { type: "thunder-accuracy" },
-    flags: {},
-  } as unknown as MoveData;
+  const thunderMove = getMove(MOVE_IDS.thunder);
 
   it("given Rain weather is active, when Thunder is used, then accuracy check always returns true (bypassed)", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:1286-1290
@@ -508,7 +519,7 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "rain",
+      type: WEATHER.rain,
       turnsLeft: 4,
     });
 
@@ -576,40 +587,26 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SolarBeamPower
     // In rain or sandstorm, SolarBeam power is halved before damage calc.
     // Arrange
-    const attacker = createMockActive({ level: 50, spAttack: 100, types: ["grass"] });
-    const defender = createMockActive({ spDefense: 100, types: ["normal"] });
+    const attacker = createMockActive({ level: 50, spAttack: 100, types: [TYPES.grass] });
+    const defender = createMockActive({ spDefense: 100, types: [TYPES.normal] });
     const rng = createMockRng(255);
     const rainState = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "rain",
+      type: WEATHER.rain,
       turnsLeft: 4,
     });
     const clearState = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-    const species = {
-      id: 1,
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-    } as never;
-
-    const solarBeam = {
-      id: "solar-beam",
-      type: "grass",
-      category: "special",
-      power: 120,
-      accuracy: 100,
-      priority: 0,
-      effect: { type: "two-turn" },
-      flags: {},
-    } as unknown as MoveData;
+    const solarBeam = getMove(MOVE_IDS.solarBeam);
 
     // Act
     const rainDmg = calculateGen2Damage(
       { attacker, defender, move: solarBeam, state: rainState, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
     const clearDmg = calculateGen2Damage(
       { attacker, defender, move: solarBeam, state: clearState, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
 
     // Assert: rain halves SolarBeam power → ~halved damage
@@ -622,40 +619,26 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SolarBeamPower
     // In sandstorm (as well as rain), SolarBeam power is halved.
     // Arrange
-    const attacker = createMockActive({ level: 50, spAttack: 100, types: ["grass"] });
-    const defender = createMockActive({ spDefense: 100, types: ["normal"] });
+    const attacker = createMockActive({ level: 50, spAttack: 100, types: [TYPES.grass] });
+    const defender = createMockActive({ spDefense: 100, types: [TYPES.normal] });
     const rng = createMockRng(255);
     const sandState = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "sand",
+      type: WEATHER.sand,
       turnsLeft: 4,
     });
     const clearState = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-    const species = {
-      id: 1,
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-    } as never;
-
-    const solarBeam = {
-      id: "solar-beam",
-      type: "grass",
-      category: "special",
-      power: 120,
-      accuracy: 100,
-      priority: 0,
-      effect: { type: "two-turn" },
-      flags: {},
-    } as unknown as MoveData;
+    const solarBeam = getMove(MOVE_IDS.solarBeam);
 
     // Act
     const sandDmg = calculateGen2Damage(
       { attacker, defender, move: solarBeam, state: sandState, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
     const clearDmg = calculateGen2Damage(
       { attacker, defender, move: solarBeam, state: clearState, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
 
     // Assert: sandstorm halves SolarBeam power → less damage
@@ -668,40 +651,26 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
     // and gets the sun boost (1.5x for fire/water, but grass/sun is 1.0x in Gen 2).
     // Key: damage should equal or exceed clear weather (not be halved)
     // Arrange
-    const attacker = createMockActive({ level: 50, spAttack: 100, types: ["grass"] });
-    const defender = createMockActive({ spDefense: 100, types: ["normal"] });
+    const attacker = createMockActive({ level: 50, spAttack: 100, types: [TYPES.grass] });
+    const defender = createMockActive({ spDefense: 100, types: [TYPES.normal] });
     const rng = createMockRng(255);
     const sunState = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "sun",
+      type: WEATHER.sun,
       turnsLeft: 4,
     });
     const clearState = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-    const species = {
-      id: 1,
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-    } as never;
-
-    const solarBeam = {
-      id: "solar-beam",
-      type: "grass",
-      category: "special",
-      power: 120,
-      accuracy: 100,
-      priority: 0,
-      effect: { type: "two-turn" },
-      flags: {},
-    } as unknown as MoveData;
+    const solarBeam = getMove(MOVE_IDS.solarBeam);
 
     // Act
     const sunDmg = calculateGen2Damage(
       { attacker, defender, move: solarBeam, state: sunState, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
     const clearDmg = calculateGen2Damage(
       { attacker, defender, move: solarBeam, state: clearState, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
 
     // Assert: sun does NOT halve SolarBeam (no power reduction), same damage as clear weather.
@@ -721,16 +690,7 @@ describe("Issue #364 — Thunder accuracy in rain/sun, SolarBeam weather interac
 describe("Issue #365 — OHKO moves level-based accuracy formula", () => {
   const ruleset = new Gen2Ruleset();
 
-  const fissureMove = {
-    id: "fissure",
-    type: "ground",
-    category: "physical",
-    power: null,
-    accuracy: 30,
-    priority: 0,
-    effect: { type: "ohko" },
-    flags: {},
-  } as unknown as MoveData;
+  const fissureMove = getMove(MOVE_IDS.fissure);
 
   it("given attacker L50 vs defender L40, when checking OHKO accuracy, then effective accuracy = 30 + 2*(50-40) = 50 (on 0-255 scale)", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:5420-5462 BattleCommand_OHKO
@@ -861,19 +821,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
     return {
       attacker,
       defender,
-      move: {
-        id: moveId,
-        type: "normal",
-        category: "status",
-        power: null,
-        accuracy: null,
-        priority: 0,
-        // Weather-sensitive healing moves use effect.type = "custom" in Gen 2 data.
-        // The actual healing logic is dispatched by handleCustomEffect based on move.id.
-        // Source: packages/gen2/data/moves.json — moonlight/morning-sun/synthesis use "custom" effect
-        effect: { type: "custom", handler: moveId },
-        flags: {},
-      } as unknown as MoveData,
+      move: getMove(moveId),
       damage: 0,
       state,
       rng: new SeededRandom(42),
@@ -883,7 +831,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, no weather, when using Moonlight, then heals floor(100 * 1/2) = 50 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // No weather: heals 1/2 max HP (floor)
-    const context = createHealingMoveContext("moonlight", 100, null);
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, null);
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(50);
   });
@@ -891,7 +839,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, no weather, when using Morning Sun, then heals 50 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Morning Sun has same healing formula as Moonlight/Synthesis.
-    const context = createHealingMoveContext("morning-sun", 100, null);
+    const context = createHealingMoveContext(MOVE_IDS.morningSun, 100, null);
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(50);
   });
@@ -899,7 +847,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, no weather, when using Synthesis, then heals 50 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Synthesis has same healing formula.
-    const context = createHealingMoveContext("synthesis", 100, null);
+    const context = createHealingMoveContext(MOVE_IDS.synthesis, 100, null);
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(50);
   });
@@ -907,7 +855,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, sunny weather, when using Moonlight, then heals floor(100 * 2/3) = 66 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Sunny Day: heals 2/3 max HP (floor). floor(100 * 2/3) = floor(66.67) = 66
-    const context = createHealingMoveContext("moonlight", 100, { type: "sun", turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, { type: WEATHER.sun, turnsLeft: 4 });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(66);
   });
@@ -915,7 +863,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=150, sunny weather, when using Moonlight, then heals floor(150 * 2/3) = 100 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Triangulation: floor(150 * 2/3) = floor(100) = 100
-    const context = createHealingMoveContext("moonlight", 150, { type: "sun", turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 150, { type: WEATHER.sun, turnsLeft: 4 });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(100);
   });
@@ -923,7 +871,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, rain weather, when using Moonlight, then heals floor(100 * 1/4) = 25 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Rain Dance: heals 1/4 max HP (floor). floor(100 / 4) = 25
-    const context = createHealingMoveContext("moonlight", 100, { type: "rain", turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, { type: WEATHER.rain, turnsLeft: 4 });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(25);
   });
@@ -931,7 +879,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, sandstorm weather, when using Moonlight, then heals floor(100 * 1/4) = 25 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Sandstorm: also heals 1/4 max HP (floor)
-    const context = createHealingMoveContext("moonlight", 100, { type: "sand", turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, { type: WEATHER.sand, turnsLeft: 4 });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(25);
   });
@@ -939,7 +887,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=1 (edge case), no weather, when using Moonlight, then heals minimum 1 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // floor(1 * 1/2) = 0 → clamped to minimum 1
-    const context = createHealingMoveContext("moonlight", 1, null);
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 1, null);
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(1);
   });
@@ -952,16 +900,7 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
 describe("Issue #368 — Bright Powder accuracy reduction", () => {
   const ruleset = new Gen2Ruleset();
 
-  const normalMove = {
-    id: "tackle",
-    type: "normal",
-    category: "physical",
-    power: 35,
-    accuracy: 100,
-    priority: 0,
-    effect: null,
-    flags: {},
-  } as unknown as MoveData;
+  const normalMove = getMove(MOVE_IDS.strength);
 
   it("given defender holds Bright Powder, when attacker uses a 100% accurate move, then effective accuracy is reduced by 20 (on 0-255 scale)", () => {
     // Source: pret/pokecrystal engine/battle/core.asm:1074-1094 BrightPowderEffect
@@ -969,7 +908,7 @@ describe("Issue #368 — Bright Powder accuracy reduction", () => {
     // 100% accuracy = 255/255 → 255 - 20 = 235 out of 255 = 92.2% effective.
     // Arrange
     const attacker = createMockActive();
-    const defenderWithBP = createMockActive({ heldItem: "bright-powder" });
+    const defenderWithBP = createMockActive({ heldItem: ITEM_IDS.brightPowder });
     const defenderNoBP = createMockActive({ heldItem: null });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defenderWithBP));
     const stateNoBP = createMockState(createMockSide(0, attacker), createMockSide(1, defenderNoBP));
@@ -1005,7 +944,7 @@ describe("Issue #368 — Bright Powder accuracy reduction", () => {
     // Hit rate = 235/255 ≈ 92.2%
     // Arrange
     const attacker = createMockActive();
-    const defender = createMockActive({ heldItem: "bright-powder" });
+    const defender = createMockActive({ heldItem: ITEM_IDS.brightPowder });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
     // Act
@@ -1077,7 +1016,7 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
       level: 50,
       attack: 200, // High attack — should boost physical HP damage
       spAttack: 50, // Low special attack — should NOT be used for physical HP
-      types: ["normal"],
+      types: [TYPES.normal],
       ivs: { attack: 0, defense: 0, speed: 0, spAttack: 0, spDefense: 0, hp: 0 },
     });
     const lowDefDefender = createMockActive({
@@ -1098,21 +1037,7 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
       createMockSide(0, physAttacker),
       createMockSide(1, highDefDefender),
     );
-    const species = {
-      id: 1,
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-    } as never;
-
-    const hiddenPower = {
-      id: "hidden-power",
-      type: "normal", // Will be overridden by DV calculation
-      category: "special", // Category overridden by HP type
-      power: 60, // Will be overridden by DV power calculation
-      accuracy: 100,
-      priority: 0,
-      effect: { type: "hidden-power" },
-      flags: {},
-    } as unknown as MoveData;
+    const hiddenPower = getMove(MOVE_IDS.hiddenPower);
 
     // Act
     const dmgLowDef = calculateGen2Damage(
@@ -1125,7 +1050,7 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
         isCrit: false,
       },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
     const dmgHighDef = calculateGen2Damage(
       {
@@ -1137,7 +1062,7 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
         isCrit: false,
       },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
 
     // Assert: Fighting-type Hidden Power is physical in Gen 2 and its damage is deterministic here.
@@ -1159,33 +1084,19 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
       level: 50,
       attack: 50,
       spAttack: 200, // High special attack — used for special HP
-      types: ["fire"],
+      types: [TYPES.fire],
       ivs: { attack: 2, defense: 0, speed: 0, spAttack: 0, spDefense: 0, hp: 0 },
     });
     const defender = createMockActive({ spDefense: 100 });
     const rng = createMockRng(255);
     const state = createMockState(createMockSide(0, specAttacker), createMockSide(1, defender));
-    const species = {
-      id: 1,
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-    } as never;
-
-    const hiddenPower = {
-      id: "hidden-power",
-      type: "normal",
-      category: "special",
-      power: 60,
-      accuracy: 100,
-      priority: 0,
-      effect: { type: "hidden-power" },
-      flags: {},
-    } as unknown as MoveData;
+    const hiddenPower = getMove(MOVE_IDS.hiddenPower);
 
     // Act
     const result = calculateGen2Damage(
       { attacker: specAttacker, defender, move: hiddenPower, state, rng, isCrit: false },
       GEN2_TYPE_CHART,
-      species,
+      DEFAULT_SPECIES,
     );
 
     // Assert: Fire type → special category, with deterministic damage.
@@ -1225,7 +1136,7 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
       const attacker = createMockActive({
         level: 50,
         attack: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         ivs: {
           attack: atkDv,
           defense: defDv,
@@ -1235,31 +1146,17 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
           hp: 15,
         },
       });
-      // Use "water" type for the defender to avoid Ghost-type immunity
+      // Use Water type for the defender to avoid Ghost-type immunity
       // (Ghost vs Normal-type is immune in Gen 2, which returns early without effectiveCategory)
-      const defender = createMockActive({ types: ["water"] });
+      const defender = createMockActive({ types: [TYPES.water] });
       const rng = createMockRng(255);
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-      const species = {
-        id: 1,
-        baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-      } as never;
-
-      const hiddenPower = {
-        id: "hidden-power",
-        type: "normal",
-        category: "special",
-        power: 60,
-        accuracy: 100,
-        priority: 0,
-        effect: { type: "hidden-power" },
-        flags: {},
-      } as unknown as MoveData;
+      const hiddenPower = getMove(MOVE_IDS.hiddenPower);
 
       const result = calculateGen2Damage(
         { attacker, defender, move: hiddenPower, state, rng, isCrit: false },
         GEN2_TYPE_CHART,
-        species,
+        DEFAULT_SPECIES,
       );
 
       // Assert: indices 0-7 are all physical types
