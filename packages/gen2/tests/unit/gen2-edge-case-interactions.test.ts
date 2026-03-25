@@ -27,9 +27,24 @@ import type {
   ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { MoveData, MoveSlot, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_HAZARD_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen2DataManager,
+  GEN2_ITEM_IDS,
+  GEN2_MOVE_IDS,
+  GEN2_NATURE_IDS,
+  GEN2_SPECIES_IDS,
+} from "../../src";
 import { getRolloutPower } from "../../src/Gen2DamageCalc";
 import { applyGen2HeldItem } from "../../src/Gen2Items";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
@@ -39,6 +54,16 @@ import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 // ---------------------------------------------------------------------------
 
 const ruleset = new Gen2Ruleset();
+const dataManager = createGen2DataManager();
+const ABILITIES = CORE_ABILITY_IDS;
+const HAZARDS = CORE_HAZARD_IDS;
+const ITEMS = GEN2_ITEM_IDS;
+const MOVES = GEN2_MOVE_IDS;
+const NATURES = GEN2_NATURE_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
 
 const DEFAULT_FLAGS: MoveData["flags"] = {
   contact: false,
@@ -64,7 +89,7 @@ function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   return {
     id: "test-move",
     displayName: "Test Move",
-    type: "normal" as PokemonType,
+    type: TYPES.normal,
     category: "physical",
     power: 50,
     accuracy: 100,
@@ -79,28 +104,42 @@ function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   };
 }
 
+function createResolvedMoveSlot(
+  moveId: string,
+  overrides: Partial<MoveSlot> = {},
+): MoveSlot {
+  const move = dataManager.getMove(moveId);
+  const slot = createMoveSlot(move.id, move.pp ?? 0, overrides.ppUps ?? 0);
+  return {
+    ...slot,
+    currentPP: overrides.currentPP ?? slot.currentPP,
+    maxPP: overrides.maxPP ?? slot.maxPP,
+    ppUps: overrides.ppUps ?? slot.ppUps,
+  };
+}
+
 function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
   const maxHp = 200;
   return {
     pokemon: {
       uid: "test-uid",
-      speciesId: 1,
+      speciesId: SPECIES.ditto,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: NATURES.hardy,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "growl", currentPP: 40, maxPP: 40, ppUps: 0 },
-        { moveId: "sleep-talk", currentPP: 10, maxPP: 10, ppUps: 0 },
+        createResolvedMoveSlot(MOVES.tackle),
+        createResolvedMoveSlot(MOVES.growl),
+        createResolvedMoveSlot(MOVES.sleepTalk),
       ],
       currentHp: maxHp,
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: "",
+      ability: ABILITIES.none,
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -108,7 +147,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: {
         hp: maxHp,
         attack: 100,
@@ -130,8 +169,8 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: ["normal"] as PokemonType[],
-    ability: "",
+    types: [TYPES.normal],
+    ability: ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -175,7 +214,7 @@ function makeBattleSide(
 
 function makeBattleState(
   attacker: ActivePokemon = makeActivePokemon(),
-  defender: ActivePokemon = makeActivePokemon({ types: ["normal"] }),
+  defender: ActivePokemon = makeActivePokemon({ types: [TYPES.normal] }),
   attackerHazards: BattleSide["hazards"] = [],
   defenderHazards: BattleSide["hazards"] = [],
 ): BattleState {
@@ -204,7 +243,7 @@ function makeBattleState(
 
 function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
   const attacker = makeActivePokemon();
-  const defender = makeActivePokemon({ types: ["normal"] });
+  const defender = makeActivePokemon({ types: [TYPES.normal] });
   const rng = new SeededRandom(42);
   return {
     attacker,
@@ -232,7 +271,7 @@ describe("Gen 2 King's Rock: flinch applies on-hit trigger", () => {
     // Source: pret/pokecrystal — King's Rock uses rng.chance(30/256).
     // When chance() returns true, flinch activates.
     const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, heldItem: "kings-rock" },
+      pokemon: { ...makeActivePokemon().pokemon, heldItem: ITEMS.kingsRock },
     });
     const context: ItemContext = {
       pokemon,
@@ -253,15 +292,15 @@ describe("Gen 2 King's Rock: flinch applies on-hit trigger", () => {
     const result = applyGen2HeldItem("on-hit", context);
     expect(result.activated).toBe(true);
     // Flinch effect should be in the effects list
-    const hasFlinch = result.effects.some((e) => e.type === "flinch");
-    expect(hasFlinch || result.messages.some((m) => m.toLowerCase().includes("flinch"))).toBe(true);
+    const hasFlinch = result.effects.some((e) => e.type === VOLATILES.flinch);
+    expect(hasFlinch || result.messages.some((m) => m.toLowerCase().includes(VOLATILES.flinch))).toBe(true);
   });
 
   it("given a pokemon holds King's Rock and rng.chance returns false, when on-hit check runs, then no flinch", () => {
     // Source: pret/pokecrystal — King's Rock uses rng.chance(30/256).
     // When chance() returns false (roll fails), no flinch.
     const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, heldItem: "kings-rock" },
+      pokemon: { ...makeActivePokemon().pokemon, heldItem: ITEMS.kingsRock },
     });
     const context: ItemContext = {
       pokemon,
@@ -294,7 +333,7 @@ describe("Gen 2 Baton Pass mechanic", () => {
   // The engine uses result.batonPass=true to flag the preservation.
 
   const batonPassMove = makeMove({
-    id: "baton-pass",
+    id: MOVES.batonPass,
     category: "status" as const,
     power: null,
     accuracy: null,
@@ -339,8 +378,8 @@ describe("Gen 2 Future Sight typeless behavior", () => {
   // The moveId is stored as "future-sight" and the engine resolves it as typeless.
 
   const futureSightMove = makeMove({
-    id: "future-sight",
-    type: "psychic" as PokemonType,
+    id: MOVES.futureSight,
+    type: TYPES.psychic,
     category: "special" as const,
     power: 80,
     accuracy: 100,
@@ -350,13 +389,13 @@ describe("Gen 2 Future Sight typeless behavior", () => {
   it("given Future Sight is used, when executeMoveEffect runs, then futureAttack is scheduled for 2 turns", () => {
     // Source: pret/pokecrystal FutureSightEffect — turnsLeft=2 means the attack
     // lands on the turn AFTER next (i.e., 2 turns from now).
-    const attacker = makeActivePokemon({ types: ["psychic"] });
-    const defender = makeActivePokemon({ types: ["dark"] });
+    const attacker = makeActivePokemon({ types: [TYPES.psychic] });
+    const defender = makeActivePokemon({ types: [TYPES.dark] });
     const state = makeBattleState(attacker, defender);
     const context = makeMoveEffectContext({ attacker, defender, move: futureSightMove, state });
     const result = ruleset.executeMoveEffect(context);
     expect(result.futureAttack).toBeDefined();
-    expect(result.futureAttack?.moveId).toBe("future-sight");
+    expect(result.futureAttack?.moveId).toBe(MOVES.futureSight);
     expect(result.futureAttack?.turnsLeft).toBe(2);
   });
 
@@ -365,8 +404,8 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     // Dark-types are immune to Psychic in Gen 2, but NOT to Future Sight.
     // The effect handler schedules the attack regardless of the defender's types.
     // Type effectiveness is not applied at resolution (engine handles this with typeless flag).
-    const attacker = makeActivePokemon({ types: ["psychic"] });
-    const darkDefender = makeActivePokemon({ types: ["dark"] });
+    const attacker = makeActivePokemon({ types: [TYPES.psychic] });
+    const darkDefender = makeActivePokemon({ types: [TYPES.dark] });
     const state = makeBattleState(attacker, darkDefender);
     const context = makeMoveEffectContext({
       attacker,
@@ -377,17 +416,17 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     const result = ruleset.executeMoveEffect(context);
     // Future Sight schedules even vs Dark-type
     expect(result.futureAttack).toBeDefined();
-    expect(result.futureAttack?.moveId).toBe("future-sight");
+    expect(result.futureAttack?.moveId).toBe(MOVES.futureSight);
   });
 
   it("given Future Sight is already pending on the target's side, when Future Sight is used again, then it fails", () => {
     // Source: pret/pokecrystal FutureSightEffect — fails if a future attack is already
     // pending on the target's side (cannot stack).
-    const attacker = makeActivePokemon({ types: ["psychic"] });
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const attacker = makeActivePokemon({ types: [TYPES.psychic] });
+    const defender = makeActivePokemon({ types: [TYPES.normal] });
     const state = makeBattleState(attacker, defender);
     // Set futureAttack already pending on defender's side (side index 1)
-    state.sides[1].futureAttack = { moveId: "future-sight", turnsLeft: 1, sourceSide: 0 };
+    state.sides[1].futureAttack = { moveId: MOVES.futureSight, turnsLeft: 1, sourceSide: 0 };
     const context = makeMoveEffectContext({ attacker, defender, move: futureSightMove, state });
     const result = ruleset.executeMoveEffect(context);
     expect(result.futureAttack).toBeUndefined();
@@ -406,7 +445,7 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
   // these tests verify the handler's own precondition check.
 
   const sleepTalkMove = makeMove({
-    id: "sleep-talk",
+    id: MOVES.sleepTalk,
     category: "status" as const,
     power: null,
     accuracy: null,
@@ -416,17 +455,27 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
   it("given the attacker is asleep and has usable moves, when Sleep Talk runs, then a recursive move is chosen", () => {
     // Source: pret/pokecrystal SleepTalkEffect — picks a random non-banned move.
     const attacker = makeActivePokemon();
-    attacker.pokemon.status = "sleep" as unknown as typeof attacker.pokemon.status;
-    // Ensure attacker has moves that are not in SLEEP_TALK_BANNED_MOVES
+    attacker.pokemon.status = STATUSES.sleep as unknown as typeof attacker.pokemon.status;
+    // Ensure attacker has moves that are not in SLEEP_TALK_BANNED_MOVES.
     attacker.pokemon.moves = [
-      { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-      { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
+      createResolvedMoveSlot(MOVES.tackle),
+      createResolvedMoveSlot(MOVES.thunderbolt),
     ];
-    const context = makeMoveEffectContext({ attacker, move: sleepTalkMove });
+    const context = makeMoveEffectContext({
+      attacker,
+      move: sleepTalkMove,
+      rng: {
+        next: () => 0,
+        int: () => 1,
+        chance: () => false,
+        pick: <T>(arr: readonly T[]) => arr[0] as T,
+        shuffle: <T>(arr: readonly T[]) => [...arr],
+        getState: () => 0,
+        setState: () => {},
+      } as SeededRandom,
+    });
     const result = ruleset.executeMoveEffect(context);
-    // Sleep Talk should pick one of the available moves
-    expect(result.recursiveMove).toBeDefined();
-    expect(["tackle", "thunderbolt"]).toContain(result.recursiveMove);
+    expect(result.recursiveMove).toBe(MOVES.thunderbolt);
   });
 
   it("given the attacker is NOT asleep, when Sleep Talk runs, then it fails", () => {
@@ -443,12 +492,12 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
     // Source: pret/pokecrystal SleepTalkEffect — banned moves list includes sleep-talk, bide,
     // skull-bash, razor-wind, sky-attack, solar-beam, fly, dig.
     const attacker = makeActivePokemon();
-    attacker.pokemon.status = "sleep" as unknown as typeof attacker.pokemon.status;
+    attacker.pokemon.status = STATUSES.sleep as unknown as typeof attacker.pokemon.status;
     attacker.pokemon.moves = [
-      { moveId: "sleep-talk", currentPP: 10, maxPP: 10, ppUps: 0 },
-      { moveId: "bide", currentPP: 10, maxPP: 10, ppUps: 0 },
-      { moveId: "fly", currentPP: 15, maxPP: 15, ppUps: 0 },
-      { moveId: "dig", currentPP: 10, maxPP: 10, ppUps: 0 },
+      createResolvedMoveSlot(MOVES.sleepTalk),
+      createResolvedMoveSlot(MOVES.bide),
+      createResolvedMoveSlot(MOVES.fly),
+      createResolvedMoveSlot(MOVES.dig),
     ];
     const context = makeMoveEffectContext({ attacker, move: sleepTalkMove });
     const result = ruleset.executeMoveEffect(context);
@@ -459,8 +508,8 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
   it("given the attacker is asleep with only 0-PP moves (non-banned), when Sleep Talk runs, then it fails", () => {
     // Source: pret/pokecrystal SleepTalkEffect — moves with 0 PP are not usable.
     const attacker = makeActivePokemon();
-    attacker.pokemon.status = "sleep" as unknown as typeof attacker.pokemon.status;
-    attacker.pokemon.moves = [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }];
+    attacker.pokemon.status = STATUSES.sleep as unknown as typeof attacker.pokemon.status;
+    attacker.pokemon.moves = [createResolvedMoveSlot(MOVES.tackle, { currentPP: 0 })];
     const context = makeMoveEffectContext({ attacker, move: sleepTalkMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.recursiveMove).toBeUndefined();
@@ -480,9 +529,9 @@ describe("Gen 2 Spikes: Flying-type immunity", () => {
   it("given Spikes are on the field and a Flying-type switches in, when applyEntryHazards is called, then damage is 0", () => {
     // Source: pret/pokecrystal — Flying-type immunity to Spikes.
     // A pure Flying-type (e.g., Pidgey) takes no damage from Spikes.
-    const flyingPokemon = makeActivePokemon({ types: ["flying"] });
+    const flyingPokemon = makeActivePokemon({ types: [TYPES.flying] });
     const sideWithSpikes = makeBattleSide(1, flyingPokemon, [
-      { type: "spikes" as const, layers: 1 },
+      { type: HAZARDS.spikes, layers: 1 },
     ]);
     const result = ruleset.applyEntryHazards(flyingPokemon, sideWithSpikes);
     expect(result.damage).toBe(0);
@@ -492,9 +541,9 @@ describe("Gen 2 Spikes: Flying-type immunity", () => {
   it("given Spikes are on the field and a Water/Flying dual-type switches in, when applyEntryHazards is called, then damage is 0", () => {
     // Source: pret/pokecrystal — any Pokemon with the Flying type (primary or secondary)
     // is immune to Spikes. Dual-type with Flying (e.g., Gyarados = Water/Flying) also immune.
-    const waterFlyingPokemon = makeActivePokemon({ types: ["water", "flying"] });
+    const waterFlyingPokemon = makeActivePokemon({ types: [TYPES.water, TYPES.flying] });
     const sideWithSpikes = makeBattleSide(1, waterFlyingPokemon, [
-      { type: "spikes" as const, layers: 1 },
+      { type: HAZARDS.spikes, layers: 1 },
     ]);
     const result = ruleset.applyEntryHazards(waterFlyingPokemon, sideWithSpikes);
     expect(result.damage).toBe(0);
@@ -503,9 +552,9 @@ describe("Gen 2 Spikes: Flying-type immunity", () => {
   it("given Spikes are on the field and a grounded Normal-type switches in, when applyEntryHazards is called, then damage = floor(maxHP/8)", () => {
     // Source: pret/pokecrystal — Spikes deal 1/8 max HP damage to grounded Pokemon.
     // maxHP = 200, floor(200/8) = 25.
-    const groundedPokemon = makeActivePokemon({ types: ["normal"] });
+    const groundedPokemon = makeActivePokemon({ types: [TYPES.normal] });
     const sideWithSpikes = makeBattleSide(1, groundedPokemon, [
-      { type: "spikes" as const, layers: 1 },
+      { type: HAZARDS.spikes, layers: 1 },
     ]);
     const result = ruleset.applyEntryHazards(groundedPokemon, sideWithSpikes);
     expect(result.damage).toBe(25); // floor(200/8) = 25
@@ -514,15 +563,15 @@ describe("Gen 2 Spikes: Flying-type immunity", () => {
   it("given Spikes are on the field and a Rock-type switches in, when applyEntryHazards is called, then damage = floor(maxHP/8)", () => {
     // Second triangulation case: Rock-type (grounded) also takes Spikes damage.
     // maxHP = 200, floor(200/8) = 25.
-    const rockPokemon = makeActivePokemon({ types: ["rock"] });
-    const sideWithSpikes = makeBattleSide(1, rockPokemon, [{ type: "spikes" as const, layers: 1 }]);
+    const rockPokemon = makeActivePokemon({ types: [TYPES.rock] });
+    const sideWithSpikes = makeBattleSide(1, rockPokemon, [{ type: HAZARDS.spikes, layers: 1 }]);
     const result = ruleset.applyEntryHazards(rockPokemon, sideWithSpikes);
     expect(result.damage).toBe(25); // floor(200/8) = 25
   });
 
   it("given NO Spikes are on the field and a grounded Pokemon switches in, when applyEntryHazards is called, then damage is 0", () => {
     // Source: pret/pokecrystal — no hazards → no damage.
-    const groundedPokemon = makeActivePokemon({ types: ["normal"] });
+    const groundedPokemon = makeActivePokemon({ types: [TYPES.normal] });
     const sideWithNoSpikes = makeBattleSide(1, groundedPokemon, []);
     const result = ruleset.applyEntryHazards(groundedPokemon, sideWithNoSpikes);
     expect(result.damage).toBe(0);
@@ -543,7 +592,7 @@ describe("Gen 2 Rollout: escalating base power", () => {
     // Source: pret/pokecrystal — first Rollout hit: count=0, power = 30 * 2^0 = 30.
     const attacker = makeActivePokemon();
     // No rollout volatile set — first use
-    expect(attacker.volatileStatuses.has("rollout")).toBe(false);
+    expect(attacker.volatileStatuses.has(MOVES.rollout)).toBe(false);
     const power = getRolloutPower(attacker);
     expect(power).toBe(30);
   });
@@ -551,7 +600,7 @@ describe("Gen 2 Rollout: escalating base power", () => {
   it("given Rollout volatile with count=1 (second use), when getRolloutPower is called, then power is 60", () => {
     // Source: pret/pokecrystal — second Rollout hit: count=1, power = 30 * 2^1 = 60.
     const attacker = makeActivePokemon();
-    attacker.volatileStatuses.set("rollout", { turnsLeft: 1, data: { count: 1 } });
+    attacker.volatileStatuses.set(MOVES.rollout, { turnsLeft: 1, data: { count: 1 } });
     const power = getRolloutPower(attacker);
     expect(power).toBe(60);
   });
@@ -559,7 +608,7 @@ describe("Gen 2 Rollout: escalating base power", () => {
   it("given Rollout volatile with count=2 (third use), when getRolloutPower is called, then power is 120", () => {
     // Source: pret/pokecrystal — third hit: count=2, power = 30 * 2^2 = 120.
     const attacker = makeActivePokemon();
-    attacker.volatileStatuses.set("rollout", { turnsLeft: 1, data: { count: 2 } });
+    attacker.volatileStatuses.set(MOVES.rollout, { turnsLeft: 1, data: { count: 2 } });
     const power = getRolloutPower(attacker);
     expect(power).toBe(120);
   });
@@ -567,7 +616,7 @@ describe("Gen 2 Rollout: escalating base power", () => {
   it("given Rollout volatile with count=3 (fourth use), when getRolloutPower is called, then power is 240", () => {
     // Source: pret/pokecrystal — fourth hit: count=3, power = 30 * 2^3 = 240.
     const attacker = makeActivePokemon();
-    attacker.volatileStatuses.set("rollout", { turnsLeft: 1, data: { count: 3 } });
+    attacker.volatileStatuses.set(MOVES.rollout, { turnsLeft: 1, data: { count: 3 } });
     const power = getRolloutPower(attacker);
     expect(power).toBe(240);
   });
@@ -575,7 +624,7 @@ describe("Gen 2 Rollout: escalating base power", () => {
   it("given Rollout volatile with count=4 (fifth use), when getRolloutPower is called, then power is 480", () => {
     // Source: pret/pokecrystal — fifth hit: count=4, power = 30 * 2^4 = 480.
     const attacker = makeActivePokemon();
-    attacker.volatileStatuses.set("rollout", { turnsLeft: 1, data: { count: 4 } });
+    attacker.volatileStatuses.set(MOVES.rollout, { turnsLeft: 1, data: { count: 4 } });
     const power = getRolloutPower(attacker);
     expect(power).toBe(480);
   });
@@ -585,8 +634,8 @@ describe("Gen 2 Rollout: escalating base power", () => {
     // The handler requires attacker.pokemon.moves to contain "rollout" to find the move index.
     // This is the correct contract: the Pokemon using Rollout must have Rollout in its moveset.
     const rolloutMove = makeMove({
-      id: "rollout",
-      type: "rock" as PokemonType,
+      id: MOVES.rollout,
+      type: TYPES.rock,
       category: "physical" as const,
       power: 30,
       effect: { type: "custom" as const, handler: "rollout" },
@@ -595,18 +644,18 @@ describe("Gen 2 Rollout: escalating base power", () => {
       pokemon: {
         ...makeActivePokemon().pokemon,
         moves: [
-          { moveId: "rollout", currentPP: 20, maxPP: 20, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          createResolvedMoveSlot(MOVES.rollout),
+          createResolvedMoveSlot(MOVES.tackle),
         ],
       },
     });
     const context = makeMoveEffectContext({ attacker, move: rolloutMove });
     const result = ruleset.executeMoveEffect(context);
     // First use: handler creates the volatile with count=1 for the NEXT turn
-    expect(result.selfVolatileInflicted).toBe("rollout");
+    expect(result.selfVolatileInflicted).toBe(MOVES.rollout);
     expect(result.selfVolatileData?.data?.count).toBe(1);
     // User is locked into Rollout for next turn
-    expect(result.forcedMoveSet?.moveId).toBe("rollout");
+    expect(result.forcedMoveSet?.moveId).toBe(MOVES.rollout);
   });
 });
 
@@ -639,7 +688,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
   // Rock, Bug, Ghost, Steel) — NOT just Normal/Fighting like Gen 1.
 
   const counterMove = makeMove({
-    id: "counter",
+    id: MOVES.counter,
     category: "physical" as const,
     power: null,
     effect: { type: "custom" as const, handler: "counter" },
@@ -649,7 +698,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
     // Source: pret/pokecrystal counter.asm — Normal (type 0) < SPECIAL → Counter succeeds.
     const attacker = makeActivePokemon({
       lastDamageTaken: 40,
-      lastDamageType: "normal" as PokemonType,
+      lastDamageType: TYPES.normal,
       lastDamageCategory: "physical" as const,
     });
     const context = makeMoveEffectContext({ attacker, move: counterMove });
@@ -661,7 +710,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
     // Source: pret/pokecrystal counter.asm — Fighting (type 1) < SPECIAL → Counter succeeds.
     const attacker = makeActivePokemon({
       lastDamageTaken: 50,
-      lastDamageType: "fighting" as PokemonType,
+      lastDamageType: TYPES.fighting,
       lastDamageCategory: "physical" as const,
     });
     const context = makeMoveEffectContext({ attacker, move: counterMove });
@@ -674,7 +723,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
     // In Gen 2, Fire is a special type so lastDamageCategory is always "special".
     const attacker = makeActivePokemon({
       lastDamageTaken: 60,
-      lastDamageType: "fire" as PokemonType,
+      lastDamageType: TYPES.fire,
       lastDamageCategory: "special" as const,
     });
     const context = makeMoveEffectContext({ attacker, move: counterMove });
@@ -688,7 +737,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
     // Mirror Coat handles special moves.
     const attacker = makeActivePokemon({
       lastDamageTaken: 50,
-      lastDamageType: "water" as PokemonType,
+      lastDamageType: TYPES.water,
       lastDamageCategory: "special" as const,
     });
     const context = makeMoveEffectContext({ attacker, move: counterMove });
@@ -707,7 +756,7 @@ describe("Gen 2 Disable mechanic", () => {
   // unlike Gen 1 which picks a random move slot.
 
   const disableMove = makeMove({
-    id: "disable",
+    id: MOVES.disable,
     category: "status" as const,
     power: null,
     accuracy: 55,
@@ -717,22 +766,22 @@ describe("Gen 2 Disable mechanic", () => {
   it("given the defender's last used move was Tackle, when Disable is used, then Tackle is disabled", () => {
     // Source: pret/pokecrystal DisableEffect — disables lastMoveUsed.
     const defender = makeActivePokemon({
-      types: ["normal"],
-      lastMoveUsed: "tackle",
+      types: [TYPES.normal],
+      lastMoveUsed: MOVES.tackle,
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createResolvedMoveSlot(MOVES.tackle)],
       },
     });
     const context = makeMoveEffectContext({ defender, move: disableMove });
     const result = ruleset.executeMoveEffect(context);
-    expect(result.volatileInflicted).toBe("disable");
-    expect(result.volatileData?.data?.moveId).toBe("tackle");
+    expect(result.volatileInflicted).toBe(MOVES.disable);
+    expect(result.volatileData?.data?.moveId).toBe(MOVES.tackle);
   });
 
   it("given defender has no last used move, when Disable is used, then it fails", () => {
     // Source: pret/pokecrystal DisableEffect — fails if no last move tracked.
-    const defender = makeActivePokemon({ types: ["normal"], lastMoveUsed: null });
+    const defender = makeActivePokemon({ types: [TYPES.normal], lastMoveUsed: null });
     const context = makeMoveEffectContext({ defender, move: disableMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.volatileInflicted).toBeNull();
@@ -741,8 +790,8 @@ describe("Gen 2 Disable mechanic", () => {
 
   it("given defender is already disabled, when Disable is used, then it fails (no stacking)", () => {
     // Source: pret/pokecrystal DisableEffect — only one Disable active at a time.
-    const defender = makeActivePokemon({ types: ["normal"], lastMoveUsed: "tackle" });
-    defender.volatileStatuses.set("disable", { turnsLeft: 3, data: { moveId: "tackle" } });
+    const defender = makeActivePokemon({ types: [TYPES.normal], lastMoveUsed: MOVES.tackle });
+    defender.volatileStatuses.set(MOVES.disable, { turnsLeft: 3, data: { moveId: MOVES.tackle } });
     const context = makeMoveEffectContext({ defender, move: disableMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.volatileInflicted).toBeNull();
@@ -755,11 +804,11 @@ describe("Gen 2 Disable mechanic", () => {
     const durations: number[] = [];
     for (let seed = 0; seed < 500; seed++) {
       const defender = makeActivePokemon({
-        types: ["normal"],
-        lastMoveUsed: "tackle",
+        types: [TYPES.normal],
+        lastMoveUsed: MOVES.tackle,
         pokemon: {
           ...makeActivePokemon().pokemon,
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createResolvedMoveSlot(MOVES.tackle)],
         },
         volatileStatuses: new Map(),
       });
@@ -773,11 +822,8 @@ describe("Gen 2 Disable mechanic", () => {
         durations.push(result.volatileData.turnsLeft);
       }
     }
-    expect(durations.length).toBeGreaterThan(0);
-    for (const d of durations) {
-      expect(d).toBeGreaterThanOrEqual(1);
-      expect(d).toBeLessThanOrEqual(7);
-    }
+    const observedDurations = [...new Set(durations)].sort((a, b) => a - b);
+    expect(observedDurations).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   it("given Disable duration is sampled 500 times, then both minimum (1) and maximum (7) are observed", () => {
@@ -785,11 +831,11 @@ describe("Gen 2 Disable mechanic", () => {
     const durations: number[] = [];
     for (let seed = 0; seed < 500; seed++) {
       const defender = makeActivePokemon({
-        types: ["normal"],
-        lastMoveUsed: "tackle",
+        types: [TYPES.normal],
+        lastMoveUsed: MOVES.tackle,
         pokemon: {
           ...makeActivePokemon().pokemon,
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createResolvedMoveSlot(MOVES.tackle)],
         },
         volatileStatuses: new Map(),
       });
