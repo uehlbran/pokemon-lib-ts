@@ -1,3 +1,4 @@
+import { CORE_MOVE_IDS, CORE_STATUS_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { ParsedReplay, ParsedTurn, ReconstructedPokemon } from "../src/replay-types.js";
 import { validateReplay } from "../src/validator.js";
@@ -35,7 +36,7 @@ function getInfos(result: ReturnType<typeof validateReplay>) {
 describe("validateReplay — type effectiveness", () => {
   it("given a replay where Showdown says super-effective, when validated, then the real chart agrees for Surf into Charizard", () => {
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
-      [{ species: "Starmie", level: 100, knownMoves: ["surf"], nickname: "Starmie" }],
+      [{ species: "Starmie", level: 100, knownMoves: [CORE_MOVE_IDS.surf], nickname: "Starmie" }],
       [{ species: "Charizard", level: 100, knownMoves: [], nickname: "Charizard" }],
     ];
     const turns = [
@@ -44,7 +45,7 @@ describe("validateReplay — type effectiveness", () => {
           type: "move",
           userIdent: { side: 0, position: "a", nickname: "Starmie" },
           moveName: "Surf",
-          moveId: "surf",
+          moveId: CORE_MOVE_IDS.surf,
           targetIdent: { side: 1, position: "a", nickname: "Charizard" },
         },
         { type: "supereffective", ident: { side: 1, position: "a", nickname: "Charizard" } },
@@ -59,7 +60,7 @@ describe("validateReplay — type effectiveness", () => {
 
   it("given a replay where Showdown says immune, when validated, then the real chart agrees for Tackle into Gengar", () => {
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
-      [{ species: "Rhydon", level: 100, knownMoves: ["tackle"], nickname: "Rhydon" }],
+      [{ species: "Rhydon", level: 100, knownMoves: [CORE_MOVE_IDS.tackle], nickname: "Rhydon" }],
       [{ species: "Gengar", level: 100, knownMoves: [], nickname: "Gengar" }],
     ];
     const turns = [
@@ -68,7 +69,7 @@ describe("validateReplay — type effectiveness", () => {
           type: "move",
           userIdent: { side: 0, position: "a", nickname: "Rhydon" },
           moveName: "Tackle",
-          moveId: "tackle",
+          moveId: CORE_MOVE_IDS.tackle,
           targetIdent: { side: 1, position: "a", nickname: "Gengar" },
         },
         { type: "immune", ident: { side: 1, position: "a", nickname: "Gengar" } },
@@ -83,7 +84,7 @@ describe("validateReplay — type effectiveness", () => {
 
   it("given a replay where Showdown says resisted, when validated, then the real chart agrees for Flamethrower into Vaporeon", () => {
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
-      [{ species: "Arcanine", level: 100, knownMoves: ["flamethrower"], nickname: "Arcanine" }],
+      [{ species: "Arcanine", level: 100, knownMoves: [CORE_MOVE_IDS.flamethrower], nickname: "Arcanine" }],
       [{ species: "Vaporeon", level: 100, knownMoves: [], nickname: "Vaporeon" }],
     ];
     const turns = [
@@ -92,7 +93,7 @@ describe("validateReplay — type effectiveness", () => {
           type: "move",
           userIdent: { side: 0, position: "a", nickname: "Arcanine" },
           moveName: "Flamethrower",
-          moveId: "flamethrower",
+          moveId: CORE_MOVE_IDS.flamethrower,
           targetIdent: { side: 1, position: "a", nickname: "Vaporeon" },
         },
         { type: "resisted", ident: { side: 1, position: "a", nickname: "Vaporeon" } },
@@ -107,7 +108,7 @@ describe("validateReplay — type effectiveness", () => {
 
   it("given a replay with a super-effective marker on a neutral hit, when validated, then returns an error mismatch", () => {
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
-      [{ species: "Pikachu", level: 100, knownMoves: ["tackle"], nickname: "Pikachu" }],
+      [{ species: "Pikachu", level: 100, knownMoves: [CORE_MOVE_IDS.tackle], nickname: "Pikachu" }],
       [{ species: "Rhydon", level: 100, knownMoves: [], nickname: "Rhydon" }],
     ];
     const turns = [
@@ -116,7 +117,7 @@ describe("validateReplay — type effectiveness", () => {
           type: "move",
           userIdent: { side: 0, position: "a", nickname: "Pikachu" },
           moveName: "Tackle",
-          moveId: "tackle",
+          moveId: CORE_MOVE_IDS.tackle,
           targetIdent: { side: 1, position: "a", nickname: "Rhydon" },
         },
         { type: "supereffective", ident: { side: 1, position: "a", nickname: "Rhydon" } },
@@ -133,7 +134,7 @@ describe("validateReplay — type effectiveness", () => {
 
   it("given a move with no following effectiveness marker, when validated, then skips the type-effectiveness check", () => {
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
-      [{ species: "Pikachu", level: 100, knownMoves: ["tackle"], nickname: "Pikachu" }],
+      [{ species: "Pikachu", level: 100, knownMoves: [CORE_MOVE_IDS.tackle], nickname: "Pikachu" }],
       [{ species: "Rhydon", level: 100, knownMoves: [], nickname: "Rhydon" }],
     ];
     const turns = [
@@ -142,7 +143,7 @@ describe("validateReplay — type effectiveness", () => {
           type: "move",
           userIdent: { side: 0, position: "a", nickname: "Pikachu" },
           moveName: "Tackle",
-          moveId: "tackle",
+          moveId: CORE_MOVE_IDS.tackle,
           targetIdent: { side: 1, position: "a", nickname: "Rhydon" },
         },
         {
@@ -172,7 +173,7 @@ describe("validateReplay — status legality", () => {
           type: "status",
           ident: { side: 1, position: "a", nickname: "Arcanine" },
           statusId: "brn",
-          statusName: "burn",
+          statusName: CORE_STATUS_IDS.burn,
         },
       ]),
     ];
@@ -196,7 +197,7 @@ describe("validateReplay — status legality", () => {
           type: "status",
           ident: { side: 1, position: "a", nickname: "Rhydon" },
           statusId: "brn",
-          statusName: "burn",
+          statusName: CORE_STATUS_IDS.burn,
         },
       ]),
     ];
@@ -218,7 +219,7 @@ describe("validateReplay — status legality", () => {
           type: "status",
           ident: { side: 1, position: "a", nickname: "Jolteon" },
           statusId: "par",
-          statusName: "paralysis",
+          statusName: CORE_STATUS_IDS.paralysis,
         },
       ]),
     ];
@@ -242,7 +243,7 @@ describe("validateReplay — unknown species/move handling", () => {
           type: "status",
           ident: { side: 1, position: "a", nickname: "UnknownMon" },
           statusId: "brn",
-          statusName: "burn",
+          statusName: CORE_STATUS_IDS.burn,
         },
       ]),
     ];
@@ -285,7 +286,7 @@ describe("validateReplay — unknown species/move handling", () => {
 describe("validateReplay — summary", () => {
   it("given a replay with valid events, when validated, then it preserves the report identity and counts", () => {
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
-      [{ species: "Starmie", level: 100, knownMoves: ["surf"], nickname: "Starmie" }],
+      [{ species: "Starmie", level: 100, knownMoves: [CORE_MOVE_IDS.surf], nickname: "Starmie" }],
       [{ species: "Charizard", level: 100, knownMoves: [], nickname: "Charizard" }],
     ];
     const turns = [
@@ -294,7 +295,7 @@ describe("validateReplay — summary", () => {
           type: "move",
           userIdent: { side: 0, position: "a", nickname: "Starmie" },
           moveName: "Surf",
-          moveId: "surf",
+          moveId: CORE_MOVE_IDS.surf,
           targetIdent: { side: 1, position: "a", nickname: "Charizard" },
         },
         { type: "supereffective", ident: { side: 1, position: "a", nickname: "Charizard" } },

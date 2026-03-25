@@ -241,22 +241,12 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
     // Act
     const team = generateRandomTeam(1, gen1Dm, rng);
 
-    // Assert — Gen 1 uses DVs (0-15), not IVs (0-31)
-    for (const pokemon of team) {
-      const { hp, attack, defense, spAttack, spDefense, speed } = pokemon.ivs;
-      expect(hp).toBeGreaterThanOrEqual(0);
-      expect(hp).toBeLessThanOrEqual(15);
-      expect(attack).toBeGreaterThanOrEqual(0);
-      expect(attack).toBeLessThanOrEqual(15);
-      expect(defense).toBeGreaterThanOrEqual(0);
-      expect(defense).toBeLessThanOrEqual(15);
-      expect(spAttack).toBeGreaterThanOrEqual(0);
-      expect(spAttack).toBeLessThanOrEqual(15);
-      expect(spDefense).toBeGreaterThanOrEqual(0);
-      expect(spDefense).toBeLessThanOrEqual(15);
-      expect(speed).toBeGreaterThanOrEqual(0);
-      expect(speed).toBeLessThanOrEqual(15);
-    }
+    // Assert — Gen 1 uses 0-15 DVs, and the seeded generator should stay deterministic.
+    expect(team.map((pokemon) => pokemon.ivs)).toEqual([
+      { hp: 4, attack: 5, defense: 10, spAttack: 3, spDefense: 2, speed: 11 },
+      { hp: 12, attack: 7, defense: 2, spAttack: 13, spDefense: 8, speed: 13 },
+      { hp: 3, attack: 6, defense: 8, spAttack: 15, spDefense: 7, speed: 13 },
+    ]);
   });
 
   it("given generation 1, when generating a team, then all Pokemon have no held item", () => {
