@@ -1,5 +1,18 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_FIXED_POINT,
+  NEUTRAL_NATURES,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  type SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   canToxicChainApply,
@@ -26,6 +39,22 @@ import {
   isMyceliumMightBypassingAbility,
   SUPREME_OVERLORD_TABLE,
 } from "../src/Gen9AbilitiesNew";
+import {
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../src/data/reference-ids";
+
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS };
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS };
+const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS };
+const SPECIES = GEN9_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN9_NATURE_IDS.hardy;
 
 /**
  * Gen 9 new and nerfed ability tests.
@@ -55,11 +84,11 @@ function makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     uid: makeTestUid(),
-    speciesId: overrides.speciesId ?? 1,
+    speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
@@ -75,7 +104,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -121,8 +150,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -195,9 +224,9 @@ function makeBattleState(): BattleState {
 
 function makeMove(overrides: Partial<MoveData>): MoveData {
   return {
-    id: overrides.id ?? "tackle",
+    id: overrides.id ?? MOVES.tackle,
     name: overrides.name ?? "Tackle",
-    type: overrides.type ?? "normal",
+    type: overrides.type ?? TYPES.normal,
     category: overrides.category ?? "physical",
     power: overrides.power ?? 40,
     accuracy: overrides.accuracy ?? 100,
@@ -238,8 +267,8 @@ describe("handleToxicChain", () => {
     // Source: Showdown data/abilities.ts:5001-5014
     // "this.randomChance(3, 10)" -- 30% chance
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain", nickname: "Pecharunt" }),
-      opponent: makeActivePokemon({ types: ["normal"], nickname: "Mew" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain, nickname: "Pecharunt" }),
+      opponent: makeActivePokemon({ types: [TYPES.normal], nickname: "Mew" }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
@@ -251,7 +280,7 @@ describe("handleToxicChain", () => {
         {
           effectType: "status-inflict",
           target: "opponent",
-          status: "badly-poisoned",
+          status: STATUSES.badlyPoisoned,
         },
       ],
       messages: ["Pecharunt's Toxic Chain badly poisoned the target!"],
@@ -261,8 +290,8 @@ describe("handleToxicChain", () => {
   it("given on-after-move-used with special move and 30% roll succeeds, when handling, then badly poisons target", () => {
     // Source: Showdown data/abilities.ts:5001-5014 -- works on any damaging move
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain", nickname: "Pecharunt" }),
-      opponent: makeActivePokemon({ types: ["normal"], nickname: "Mew" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain, nickname: "Pecharunt" }),
+      opponent: makeActivePokemon({ types: [TYPES.normal], nickname: "Mew" }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "special" }),
       rng: { chance: () => true },
@@ -274,7 +303,7 @@ describe("handleToxicChain", () => {
         {
           effectType: "status-inflict",
           target: "opponent",
-          status: "badly-poisoned",
+          status: STATUSES.badlyPoisoned,
         },
       ],
       messages: ["Pecharunt's Toxic Chain badly poisoned the target!"],
@@ -284,8 +313,8 @@ describe("handleToxicChain", () => {
   it("given status move, when handling, then does not activate (status moves excluded)", () => {
     // Source: Showdown data/abilities.ts:5001-5014 -- only triggers on damage-dealing moves
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
+      opponent: makeActivePokemon({ types: [TYPES.normal] }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "status" }),
       rng: { chance: () => true },
@@ -297,8 +326,8 @@ describe("handleToxicChain", () => {
   it("given 30% roll fails, when handling, then does not activate", () => {
     // Source: Showdown data/abilities.ts:5001-5014
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
+      opponent: makeActivePokemon({ types: [TYPES.normal] }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => false },
@@ -310,8 +339,8 @@ describe("handleToxicChain", () => {
   it("given target already has a status, when handling, then does not activate", () => {
     // Source: Showdown data/abilities.ts:5001-5014
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["normal"], status: "paralysis" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
+      opponent: makeActivePokemon({ types: [TYPES.normal], status: STATUSES.paralysis }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
@@ -323,8 +352,8 @@ describe("handleToxicChain", () => {
   it("given target is Poison-type, when handling, then does not activate (type immunity)", () => {
     // Source: Showdown data/abilities.ts:5001-5014 -- type immunity check
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["poison"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
+      opponent: makeActivePokemon({ types: [TYPES.poison] }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
@@ -336,8 +365,8 @@ describe("handleToxicChain", () => {
   it("given target is Steel-type, when handling, then does not activate (type immunity)", () => {
     // Source: Showdown data/abilities.ts:5001-5014
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["steel"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
+      opponent: makeActivePokemon({ types: [TYPES.steel] }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
@@ -348,7 +377,7 @@ describe("handleToxicChain", () => {
 
   it("given no opponent, when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
@@ -359,8 +388,8 @@ describe("handleToxicChain", () => {
 
   it("given wrong trigger, when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
+      opponent: makeActivePokemon({ types: [TYPES.normal] }),
       trigger: "on-switch-in",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
@@ -374,27 +403,27 @@ describe("canToxicChainApply", () => {
   it("given physical move, no status, non-immune types, when checking, then returns true", () => {
     // Source: Showdown data/abilities.ts:5001-5014
     const move = makeMove({ category: "physical" });
-    expect(canToxicChainApply(move, null, ["normal"])).toBe(true);
+    expect(canToxicChainApply(move, null, [TYPES.normal])).toBe(true);
   });
 
   it("given status move, when checking, then returns false", () => {
     const move = makeMove({ category: "status" });
-    expect(canToxicChainApply(move, null, ["normal"])).toBe(false);
+    expect(canToxicChainApply(move, null, [TYPES.normal])).toBe(false);
   });
 
   it("given target has burn, when checking, then returns false", () => {
     const move = makeMove({ category: "physical" });
-    expect(canToxicChainApply(move, "burn", ["normal"])).toBe(false);
+    expect(canToxicChainApply(move, STATUSES.burn, [TYPES.normal])).toBe(false);
   });
 
   it("given target is Poison type, when checking, then returns false", () => {
     const move = makeMove({ category: "physical" });
-    expect(canToxicChainApply(move, null, ["poison", "flying"])).toBe(false);
+    expect(canToxicChainApply(move, null, [TYPES.poison, TYPES.flying])).toBe(false);
   });
 
   it("given target is Steel type, when checking, then returns false", () => {
     const move = makeMove({ category: "physical" });
-    expect(canToxicChainApply(move, null, ["steel"])).toBe(false);
+    expect(canToxicChainApply(move, null, [TYPES.steel])).toBe(false);
   });
 });
 
@@ -407,9 +436,9 @@ describe("handleGoodAsGold", () => {
     // Source: Showdown data/abilities.ts:1573-1584
     // "if (move.category === 'Status' && target !== source) return null"
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "good-as-gold", nickname: "Gholdengo" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.goodAsGold, nickname: "Gholdengo" }),
       trigger: "on-before-move",
-      move: makeMove({ category: "status", id: "toxic" }),
+      move: makeMove({ category: "status", id: MOVES.toxic }),
     });
     const result = handleGoodAsGold(ctx);
     expect(result).toEqual({
@@ -423,7 +452,7 @@ describe("handleGoodAsGold", () => {
   it("given on-before-move with Physical-category move, when handling, then does not block", () => {
     // Source: Showdown data/abilities.ts:1573-1584 -- only blocks Status
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "good-as-gold" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.goodAsGold }),
       trigger: "on-before-move",
       move: makeMove({ category: "physical" }),
     });
@@ -433,7 +462,7 @@ describe("handleGoodAsGold", () => {
 
   it("given on-before-move with Special-category move, when handling, then does not block", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "good-as-gold" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.goodAsGold }),
       trigger: "on-before-move",
       move: makeMove({ category: "special" }),
     });
@@ -443,7 +472,7 @@ describe("handleGoodAsGold", () => {
 
   it("given wrong trigger (on-switch-in), when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "good-as-gold" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.goodAsGold }),
       trigger: "on-switch-in",
       move: makeMove({ category: "status" }),
     });
@@ -453,7 +482,7 @@ describe("handleGoodAsGold", () => {
 
   it("given no move in context, when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "good-as-gold" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.goodAsGold }),
       trigger: "on-before-move",
     });
     const result = handleGoodAsGold(ctx);
@@ -463,15 +492,15 @@ describe("handleGoodAsGold", () => {
 
 describe("isBlockedByGoodAsGold", () => {
   it("given good-as-gold and status category, when checking, then returns true", () => {
-    expect(isBlockedByGoodAsGold("good-as-gold", "status")).toBe(true);
+    expect(isBlockedByGoodAsGold(ABILITIES.goodAsGold, "status")).toBe(true);
   });
 
   it("given good-as-gold and physical category, when checking, then returns false", () => {
-    expect(isBlockedByGoodAsGold("good-as-gold", "physical")).toBe(false);
+    expect(isBlockedByGoodAsGold(ABILITIES.goodAsGold, "physical")).toBe(false);
   });
 
   it("given different ability and status category, when checking, then returns false", () => {
-    expect(isBlockedByGoodAsGold("intimidate", "status")).toBe(false);
+    expect(isBlockedByGoodAsGold(ABILITIES.intimidate, "status")).toBe(false);
   });
 });
 
@@ -485,7 +514,7 @@ describe("handleEmbodyAspect", () => {
     // embodyaspectteal: spe +1
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "embody-aspect-teal",
+        ability: ABILITIES.embodyAspectTeal,
         nickname: "Ogerpon",
         isTerastallized: true,
       }),
@@ -498,7 +527,7 @@ describe("handleEmbodyAspect", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "embody-aspect-used",
+          volatile: VOLATILES.embodyAspectUsed,
         },
         {
           effectType: "stat-change",
@@ -516,7 +545,7 @@ describe("handleEmbodyAspect", () => {
     // embodyaspecthearthflame: atk +1
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "embody-aspect-hearthflame",
+        ability: ABILITIES.embodyAspectHearthflame,
         nickname: "Ogerpon",
         isTerastallized: true,
       }),
@@ -529,7 +558,7 @@ describe("handleEmbodyAspect", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "embody-aspect-used",
+          volatile: VOLATILES.embodyAspectUsed,
         },
         {
           effectType: "stat-change",
@@ -547,7 +576,7 @@ describe("handleEmbodyAspect", () => {
     // embodyaspectwellspring: spd +1
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "embody-aspect-wellspring",
+        ability: ABILITIES.embodyAspectWellspring,
         nickname: "Ogerpon",
         isTerastallized: true,
       }),
@@ -560,7 +589,7 @@ describe("handleEmbodyAspect", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "embody-aspect-used",
+          volatile: VOLATILES.embodyAspectUsed,
         },
         {
           effectType: "stat-change",
@@ -578,7 +607,7 @@ describe("handleEmbodyAspect", () => {
     // embodyaspectcornerstone: def +1
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "embody-aspect-cornerstone",
+        ability: ABILITIES.embodyAspectCornerstone,
         nickname: "Ogerpon",
         isTerastallized: true,
       }),
@@ -591,7 +620,7 @@ describe("handleEmbodyAspect", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "embody-aspect-used",
+          volatile: VOLATILES.embodyAspectUsed,
         },
         {
           effectType: "stat-change",
@@ -609,7 +638,7 @@ describe("handleEmbodyAspect", () => {
     // "if (!pokemon.terastallized) return"
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "embody-aspect-teal",
+        ability: ABILITIES.embodyAspectTeal,
         isTerastallized: false,
       }),
       trigger: "on-switch-in",
@@ -620,10 +649,10 @@ describe("handleEmbodyAspect", () => {
 
   it("given already used (volatile set), when handling, then does not activate again (once per battle)", () => {
     // Source: Showdown data/abilities.ts:1162-1212 -- once per battle check
-    const volatiles = new Map([["embody-aspect-used", { turnsLeft: -1 }]]);
+    const volatiles = new Map([[VOLATILES.embodyAspectUsed, { turnsLeft: -1 }]]);
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "embody-aspect-teal",
+        ability: ABILITIES.embodyAspectTeal,
         isTerastallized: true,
         volatiles: volatiles as any,
       }),
@@ -636,7 +665,7 @@ describe("handleEmbodyAspect", () => {
   it("given wrong trigger (on-contact), when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "embody-aspect-teal",
+        ability: ABILITIES.embodyAspectTeal,
         isTerastallized: true,
       }),
       trigger: "on-contact",
@@ -648,39 +677,39 @@ describe("handleEmbodyAspect", () => {
 
 describe("isEmbodyAspect", () => {
   it("given embody-aspect-teal, when checking, then returns true", () => {
-    expect(isEmbodyAspect("embody-aspect-teal")).toBe(true);
+    expect(isEmbodyAspect(ABILITIES.embodyAspectTeal)).toBe(true);
   });
 
   it("given embody-aspect-hearthflame, when checking, then returns true", () => {
-    expect(isEmbodyAspect("embody-aspect-hearthflame")).toBe(true);
+    expect(isEmbodyAspect(ABILITIES.embodyAspectHearthflame)).toBe(true);
   });
 
   it("given embody-aspect-wellspring, when checking, then returns true", () => {
-    expect(isEmbodyAspect("embody-aspect-wellspring")).toBe(true);
+    expect(isEmbodyAspect(ABILITIES.embodyAspectWellspring)).toBe(true);
   });
 
   it("given embody-aspect-cornerstone, when checking, then returns true", () => {
-    expect(isEmbodyAspect("embody-aspect-cornerstone")).toBe(true);
+    expect(isEmbodyAspect(ABILITIES.embodyAspectCornerstone)).toBe(true);
   });
 
   it("given unrelated ability, when checking, then returns false", () => {
-    expect(isEmbodyAspect("intimidate")).toBe(false);
+    expect(isEmbodyAspect(ABILITIES.intimidate)).toBe(false);
   });
 });
 
 describe("EMBODY_ASPECT_BOOSTS", () => {
   it("given Embody Aspect Teal, when looking up its stat boost, then it maps to Speed", () => {
     // Source: Showdown data/abilities.ts:1162-1212
-    expect(EMBODY_ASPECT_BOOSTS["embody-aspect-teal"]).toBe("speed");
+    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectTeal]).toBe("speed");
   });
   it("given Embody Aspect Hearthflame, when looking up its stat boost, then it maps to Attack", () => {
-    expect(EMBODY_ASPECT_BOOSTS["embody-aspect-hearthflame"]).toBe("attack");
+    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectHearthflame]).toBe("attack");
   });
   it("given Embody Aspect Wellspring, when looking up its stat boost, then it maps to Sp. Def", () => {
-    expect(EMBODY_ASPECT_BOOSTS["embody-aspect-wellspring"]).toBe("spDefense");
+    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectWellspring]).toBe("spDefense");
   });
   it("given Embody Aspect Cornerstone, when looking up its stat boost, then it maps to Defense", () => {
-    expect(EMBODY_ASPECT_BOOSTS["embody-aspect-cornerstone"]).toBe("defense");
+    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectCornerstone]).toBe("defense");
   });
 });
 
@@ -692,7 +721,7 @@ describe("handleMyceliumMight", () => {
   it("given on-priority-check with status move, when handling, then activates", () => {
     // Source: Showdown data/abilities.ts:2722-2738
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "mycelium-might" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.myceliumMight }),
       trigger: "on-priority-check",
       move: makeMove({ category: "status" }),
     });
@@ -703,7 +732,7 @@ describe("handleMyceliumMight", () => {
   it("given on-priority-check with physical move, when handling, then does not activate", () => {
     // Source: Showdown data/abilities.ts:2722-2738 -- only for status moves
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "mycelium-might" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.myceliumMight }),
       trigger: "on-priority-check",
       move: makeMove({ category: "physical" }),
     });
@@ -713,7 +742,7 @@ describe("handleMyceliumMight", () => {
 
   it("given wrong trigger (on-switch-in), when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "mycelium-might" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.myceliumMight }),
       trigger: "on-switch-in",
       move: makeMove({ category: "status" }),
     });
@@ -725,30 +754,30 @@ describe("handleMyceliumMight", () => {
 describe("hasMyceliumMightPriorityReduction", () => {
   it("given mycelium-might and status move, when checking, then returns true", () => {
     // Source: Showdown data/abilities.ts:2722-2728
-    expect(hasMyceliumMightPriorityReduction("mycelium-might", "status")).toBe(true);
+    expect(hasMyceliumMightPriorityReduction(ABILITIES.myceliumMight, "status")).toBe(true);
   });
 
   it("given mycelium-might and physical move, when checking, then returns false", () => {
-    expect(hasMyceliumMightPriorityReduction("mycelium-might", "physical")).toBe(false);
+    expect(hasMyceliumMightPriorityReduction(ABILITIES.myceliumMight, "physical")).toBe(false);
   });
 
   it("given different ability and status move, when checking, then returns false", () => {
-    expect(hasMyceliumMightPriorityReduction("intimidate", "status")).toBe(false);
+    expect(hasMyceliumMightPriorityReduction(ABILITIES.intimidate, "status")).toBe(false);
   });
 });
 
 describe("isMyceliumMightBypassingAbility", () => {
   it("given mycelium-might and status move, when checking, then returns true", () => {
     // Source: Showdown data/abilities.ts:2730-2738
-    expect(isMyceliumMightBypassingAbility("mycelium-might", "status")).toBe(true);
+    expect(isMyceliumMightBypassingAbility(ABILITIES.myceliumMight, "status")).toBe(true);
   });
 
   it("given mycelium-might and special move, when checking, then returns false", () => {
-    expect(isMyceliumMightBypassingAbility("mycelium-might", "special")).toBe(false);
+    expect(isMyceliumMightBypassingAbility(ABILITIES.myceliumMight, "special")).toBe(false);
   });
 
   it("given other ability and status move, when checking, then returns false", () => {
-    expect(isMyceliumMightBypassingAbility("protean", "status")).toBe(false);
+    expect(isMyceliumMightBypassingAbility(ABILITIES.protean, "status")).toBe(false);
   });
 });
 
@@ -824,7 +853,7 @@ describe("handleGen9IntrepidSwordTrigger", () => {
   it("given on-switch-in with no prior usage, when handling, then boosts Attack and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- intrepidsword: once per battle in Gen 9
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intrepid-sword", nickname: "Zacian" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.intrepidSword, nickname: "Zacian" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9IntrepidSwordTrigger(ctx);
@@ -834,7 +863,7 @@ describe("handleGen9IntrepidSwordTrigger", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "intrepid-sword-used",
+          volatile: VOLATILES.intrepidSwordUsed,
         },
         {
           effectType: "stat-change",
@@ -852,7 +881,7 @@ describe("handleGen9IntrepidSwordTrigger", () => {
     // Source: specs/battle/10-gen9.md -- "Intrepid Sword: once per battle (nerfed from Gen 8)"
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "intrepid-sword",
+        ability: ABILITIES.intrepidSword,
       }),
       trigger: "on-switch-in",
     });
@@ -863,7 +892,7 @@ describe("handleGen9IntrepidSwordTrigger", () => {
 
   it("given wrong trigger, when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.intrepidSword }),
       trigger: "on-contact",
     });
     const result = handleGen9IntrepidSwordTrigger(ctx);
@@ -877,7 +906,7 @@ describe("handleGen9IntrepidSwordTrigger", () => {
 
   it("given Intrepid Sword already used this battle, when switch-out clears volatiles, then the persistent once-per-battle flag still blocks it", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.intrepidSword }),
       trigger: "on-switch-in",
     });
 
@@ -897,7 +926,7 @@ describe("handleGen9DauntlessShieldTrigger", () => {
   it("given on-switch-in with no prior usage, when handling, then boosts Defense and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- dauntlessshield: once per battle in Gen 9
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "dauntless-shield", nickname: "Zamazenta" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.dauntlessShield, nickname: "Zamazenta" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9DauntlessShieldTrigger(ctx);
@@ -907,7 +936,7 @@ describe("handleGen9DauntlessShieldTrigger", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "dauntless-shield-used",
+          volatile: VOLATILES.dauntlessShieldUsed,
         },
         {
           effectType: "stat-change",
@@ -925,7 +954,7 @@ describe("handleGen9DauntlessShieldTrigger", () => {
     // Source: specs/battle/10-gen9.md -- "Dauntless Shield: once per battle (nerfed from Gen 8)"
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "dauntless-shield",
+        ability: ABILITIES.dauntlessShield,
       }),
       trigger: "on-switch-in",
     });
@@ -936,7 +965,7 @@ describe("handleGen9DauntlessShieldTrigger", () => {
 
   it("given wrong trigger, when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.dauntlessShield }),
       trigger: "on-turn-end",
     });
     const result = handleGen9DauntlessShieldTrigger(ctx);
@@ -950,7 +979,7 @@ describe("handleGen9DauntlessShieldTrigger", () => {
 
   it("given Dauntless Shield already used this battle, when switch-out clears volatiles, then the persistent once-per-battle flag still blocks it", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.dauntlessShield }),
       trigger: "on-switch-in",
     });
 
@@ -970,9 +999,9 @@ describe("handleProteanGen9", () => {
   it("given on-before-move with no prior usage, when handling, then changes type and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- protean/libero: once per switchin in Gen 9
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protean", types: ["normal"], nickname: "Greninja" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.protean, types: [TYPES.normal], nickname: "Greninja" }),
       trigger: "on-before-move",
-      move: makeMove({ type: "fire" }),
+      move: makeMove({ type: TYPES.fire }),
     });
     const result = handleProteanGen9(ctx);
     expect(result).toEqual({
@@ -981,12 +1010,12 @@ describe("handleProteanGen9", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "protean-used",
+          volatile: VOLATILES.proteanUsed,
         },
         {
           effectType: "type-change",
           target: "self",
-          types: ["fire"],
+          types: [TYPES.fire],
         },
       ],
       messages: ["Greninja's Protean changed its type to fire!"],
@@ -996,9 +1025,9 @@ describe("handleProteanGen9", () => {
   it("given Libero ability, when handling, then also works and message says Libero", () => {
     // Source: Showdown data/abilities.ts -- libero: same as protean
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "libero", types: ["grass"], nickname: "Cinderace" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.libero, types: [TYPES.grass], nickname: "Cinderace" }),
       trigger: "on-before-move",
-      move: makeMove({ type: "fire" }),
+      move: makeMove({ type: TYPES.fire }),
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(true);
@@ -1007,15 +1036,15 @@ describe("handleProteanGen9", () => {
 
   it("given already used (volatile set), when handling, then does not activate (once per switch-in)", () => {
     // Source: specs/battle/10-gen9.md -- "Protean/Libero: once per switchin"
-    const volatiles = new Map([["protean-used", { turnsLeft: -1 }]]);
+    const volatiles = new Map([[VOLATILES.proteanUsed, { turnsLeft: -1 }]]);
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "protean",
-        types: ["normal"],
+        ability: ABILITIES.protean,
+        types: [TYPES.normal],
         volatiles: volatiles as any,
       }),
       trigger: "on-before-move",
-      move: makeMove({ type: "fire" }),
+      move: makeMove({ type: TYPES.fire }),
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(false);
@@ -1024,9 +1053,9 @@ describe("handleProteanGen9", () => {
   it("given already the move's type (single type matches), when handling, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- doesn't activate if already the type
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protean", types: ["fire"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.protean, types: [TYPES.fire] }),
       trigger: "on-before-move",
-      move: makeMove({ type: "fire" }),
+      move: makeMove({ type: TYPES.fire }),
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(false);
@@ -1035,9 +1064,9 @@ describe("handleProteanGen9", () => {
   it("given dual type where one matches move type, when handling, then activates (changes to mono-type)", () => {
     // Dual-type means types.length !== 1, so the single-type check doesn't block
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protean", types: ["fire", "flying"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.protean, types: [TYPES.fire, TYPES.flying] }),
       trigger: "on-before-move",
-      move: makeMove({ type: "fire" }),
+      move: makeMove({ type: TYPES.fire }),
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(true);
@@ -1045,21 +1074,21 @@ describe("handleProteanGen9", () => {
       {
         effectType: "volatile-inflict",
         target: "self",
-        volatile: "protean-used",
+        volatile: VOLATILES.proteanUsed,
       },
       {
         effectType: "type-change",
         target: "self",
-        types: ["fire"],
+        types: [TYPES.fire],
       },
     ]);
   });
 
   it("given wrong trigger, when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protean" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.protean }),
       trigger: "on-switch-in",
-      move: makeMove({ type: "fire" }),
+      move: makeMove({ type: TYPES.fire }),
     });
     const result = handleProteanGen9(ctx);
     expect(result.activated).toBe(false);
@@ -1067,7 +1096,7 @@ describe("handleProteanGen9", () => {
 
   it("given no move in context, when handling, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protean" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.protean }),
       trigger: "on-before-move",
     });
     const result = handleProteanGen9(ctx);
@@ -1087,8 +1116,8 @@ describe("handleProteanGen9", () => {
 describe("handleGen9NewAbility", () => {
   it("given toxic-chain ability, when dispatching, then routes to handleToxicChain", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "toxic-chain" }),
-      opponent: makeActivePokemon({ types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.toxicChain }),
+      opponent: makeActivePokemon({ types: [TYPES.normal] }),
       trigger: "on-after-move-used",
       move: makeMove({ category: "physical" }),
       rng: { chance: () => true },
@@ -1099,7 +1128,7 @@ describe("handleGen9NewAbility", () => {
 
   it("given good-as-gold ability with status move, when dispatching, then routes to handleGoodAsGold", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "good-as-gold" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.goodAsGold }),
       trigger: "on-before-move",
       move: makeMove({ category: "status" }),
     });
@@ -1110,7 +1139,7 @@ describe("handleGen9NewAbility", () => {
 
   it("given intrepid-sword ability, when dispatching, then routes to handleIntrepidSwordGen9", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.intrepidSword }),
       trigger: "on-switch-in",
     });
     const result = handleGen9NewAbility(ctx);
@@ -1119,7 +1148,7 @@ describe("handleGen9NewAbility", () => {
 
   it("given dauntless-shield ability, when dispatching, then routes to handleDauntlessShieldGen9", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "dauntless-shield" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.dauntlessShield }),
       trigger: "on-switch-in",
     });
     const result = handleGen9NewAbility(ctx);
@@ -1128,9 +1157,9 @@ describe("handleGen9NewAbility", () => {
 
   it("given protean ability, when dispatching, then routes to handleProteanGen9", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protean", types: ["normal"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.protean, types: [TYPES.normal] }),
       trigger: "on-before-move",
-      move: makeMove({ type: "water" }),
+      move: makeMove({ type: TYPES.water }),
     });
     const result = handleGen9NewAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1138,9 +1167,9 @@ describe("handleGen9NewAbility", () => {
 
   it("given libero ability, when dispatching, then routes to handleProteanGen9", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "libero", types: ["grass"] }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.libero, types: [TYPES.grass] }),
       trigger: "on-before-move",
-      move: makeMove({ type: "fire" }),
+      move: makeMove({ type: TYPES.fire }),
     });
     const result = handleGen9NewAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1148,7 +1177,7 @@ describe("handleGen9NewAbility", () => {
 
   it("given unrelated ability, when dispatching, then returns inactive", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "levitate" }),
+      pokemon: makeActivePokemon({ ability: ABILITIES.levitate }),
       trigger: "on-switch-in",
     });
     const result = handleGen9NewAbility(ctx);

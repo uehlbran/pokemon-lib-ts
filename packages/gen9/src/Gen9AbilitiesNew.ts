@@ -1,5 +1,6 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import {
   getSupremeOverlordModifier,
   SUPREME_OVERLORD_TABLE as SUPREME_OVERLORD_MODIFIER_TABLE,
@@ -150,10 +151,10 @@ export function isBlockedByGoodAsGold(abilityId: string, moveCategory: string): 
 export const EMBODY_ASPECT_BOOSTS: Readonly<
   Record<string, "attack" | "defense" | "spAttack" | "spDefense" | "speed">
 > = {
-  "embody-aspect-teal": "speed",
-  "embody-aspect-hearthflame": "attack",
-  "embody-aspect-wellspring": "spDefense",
-  "embody-aspect-cornerstone": "defense",
+  [GEN9_ABILITY_IDS.embodyAspectTeal]: "speed",
+  [GEN9_ABILITY_IDS.embodyAspectHearthflame]: "attack",
+  [GEN9_ABILITY_IDS.embodyAspectWellspring]: "spDefense",
+  [GEN9_ABILITY_IDS.embodyAspectCornerstone]: "defense",
 };
 
 /**
@@ -431,10 +432,10 @@ export function handleGen9NewAbility(ctx: AbilityContext): AbilityResult {
       return handleToxicChain(ctx);
     case "good-as-gold":
       return handleGoodAsGold(ctx);
-    case "embody-aspect-teal":
-    case "embody-aspect-hearthflame":
-    case "embody-aspect-wellspring":
-    case "embody-aspect-cornerstone":
+    case GEN9_ABILITY_IDS.embodyAspectTeal:
+    case GEN9_ABILITY_IDS.embodyAspectHearthflame:
+    case GEN9_ABILITY_IDS.embodyAspectWellspring:
+    case GEN9_ABILITY_IDS.embodyAspectCornerstone:
       return handleEmbodyAspect(ctx);
     case "mycelium-might":
       return handleMyceliumMight(ctx);
