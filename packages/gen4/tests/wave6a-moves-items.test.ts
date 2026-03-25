@@ -1,6 +1,23 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { applyGen4HeldItem, getPinchBerryThreshold } from "../src/Gen4Items";
 import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
@@ -22,6 +39,18 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 // Test helpers (same pattern as wave5a-volatile-moves.test.ts)
 // ---------------------------------------------------------------------------
 
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const SPECIES = GEN4_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
+
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const EMBER = DATA_MANAGER.getMove(MOVES.ember);
+
 function createMockRng(intReturnValue: number, nextValue = 0) {
   return {
     next: () => nextValue,
@@ -36,17 +65,17 @@ function createMockRng(intReturnValue: number, nextValue = 0) {
 
 function createActivePokemon(opts: {
   types: PokemonType[];
-  status?: string | null;
-  heldItem?: string | null;
+  status?: PokemonInstance["status"];
+  heldItem?: PokemonInstance["heldItem"];
   nickname?: string | null;
   currentHp?: number;
   maxHp?: number;
   level?: number;
-  ability?: string;
-  lastMoveUsed?: string | null;
-  moves?: Array<{ moveId: string; currentPP: number; maxPP: number }>;
+  ability?: PokemonInstance["ability"];
+  lastMoveUsed?: MoveData["id"] | null;
+  moves?: PokemonInstance["moves"];
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
-  statStages?: Partial<Record<string, number>>;
+  statStages?: Partial<ActivePokemon["statStages"]>;
   gender?: string;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
@@ -61,19 +90,19 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: `test-${Math.random().toString(36).slice(2, 8)}`,
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: opts.moves ?? [
-      { moveId: "tackle", currentPP: 35, maxPP: 35 },
-      { moveId: "ember", currentPP: 25, maxPP: 25 },
+      createMoveSlot(TACKLE.id, TACKLE.pp),
+      createMoveSlot(EMBER.id, EMBER.pp),
     ],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -84,7 +113,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -109,7 +138,7 @@ function createActivePokemon(opts: {
     statStages: defaultStages,
     volatileStatuses: volatiles,
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -129,28 +158,10 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function createMove(id: MoveData["id"], overrides?: Partial<MoveData>): MoveData {
+  const move = DATA_MANAGER.getMove(id);
   return {
-    id,
-    name: id,
-    type: "normal",
-    category: "status",
-    power: 0,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
+    ...move,
     ...overrides,
   } as MoveData;
 }
@@ -217,15 +228,15 @@ describe("Magnet Rise", () => {
   it("given attacker uses Magnet Rise, when executed, then attacker gets magnet-rise volatile with turnsLeft=5", () => {
     // Source: Bulbapedia -- Magnet Rise: "levitates for five turns"
     // Source: Showdown Gen 4 mod -- Magnet Rise self-volatile, 5 turns
-    const attacker = createActivePokemon({ types: ["electric"], nickname: "Magnezone" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("magnet-rise", { type: "electric" });
+    const attacker = createActivePokemon({ types: [TYPES.electric], nickname: "Magnezone" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.magnetRise);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.selfVolatileInflicted).toBe("magnet-rise");
+    expect(result.selfVolatileInflicted).toBe(VOLATILES.magnetRise);
     expect(result.selfVolatileData).toEqual({ turnsLeft: 5 });
     expect(result.messages).toContain("Magnezone levitated with electromagnetism!");
   });
@@ -233,9 +244,9 @@ describe("Magnet Rise", () => {
   it("given Gravity is active, when attacker uses Magnet Rise, then it fails", () => {
     // Source: Bulbapedia -- Magnet Rise fails under Gravity
     // Source: Showdown Gen 4 mod -- Magnet Rise blocked by Gravity
-    const attacker = createActivePokemon({ types: ["electric"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("magnet-rise", { type: "electric" });
+    const attacker = createActivePokemon({ types: [TYPES.electric] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.magnetRise);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng, {
       gravity: { active: true, turnsLeft: 3 },
@@ -250,10 +261,10 @@ describe("Magnet Rise", () => {
   it("given attacker already has Magnet Rise, when Magnet Rise is used again, then it fails", () => {
     // Source: Showdown Gen 4 mod -- Magnet Rise fails if already active
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("magnet-rise", { turnsLeft: 3 });
-    const attacker = createActivePokemon({ types: ["electric"], volatiles });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("magnet-rise", { type: "electric" });
+    volatiles.set(VOLATILES.magnetRise, { turnsLeft: 3 });
+    const attacker = createActivePokemon({ types: [TYPES.electric], volatiles });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.magnetRise);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -272,9 +283,9 @@ describe("Acupressure", () => {
   it("given attacker uses Acupressure with no stats at +6, when executed, then a random stat is boosted by +2", () => {
     // Source: Bulbapedia -- Acupressure: "Sharply raises one of the user's stats at random"
     // Source: Showdown Gen 4 mod -- Acupressure +2 to random stat
-    const attacker = createActivePokemon({ types: ["normal"], nickname: "Shuckle" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("acupressure");
+    const attacker = createActivePokemon({ types: [TYPES.normal], nickname: "Shuckle" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.acupressure);
     // rng.int returns 0, which picks the first boostable stat ("attack")
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
@@ -291,7 +302,7 @@ describe("Acupressure", () => {
   it("given all stats are at +6, when Acupressure is used, then it fails", () => {
     // Source: Showdown Gen 4 mod -- Acupressure fails when all stats maxed
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: {
         attack: 6,
         defense: 6,
@@ -302,8 +313,8 @@ describe("Acupressure", () => {
         evasion: 6,
       },
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("acupressure");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.acupressure);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -316,7 +327,7 @@ describe("Acupressure", () => {
   it("given only speed is below +6, when Acupressure is used, then speed is boosted by +2", () => {
     // Source: Showdown Gen 4 mod -- only non-maxed stats are eligible
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: {
         attack: 6,
         defense: 6,
@@ -327,8 +338,8 @@ describe("Acupressure", () => {
         evasion: 6,
       },
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("acupressure");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.acupressure);
     // rng.int returns 0, only boostable stat is speed
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
@@ -350,14 +361,14 @@ describe("Power Swap", () => {
     // Source: Bulbapedia -- Power Swap swaps Atk and SpAtk stat stages
     // Source: Showdown Gen 4 mod -- Power Swap exchanges offensive stat changes
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       statStages: { attack: 2, spAttack: 0 },
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { attack: 0, spAttack: -1 },
     });
-    const move = createMove("power-swap", { type: "psychic" });
+    const move = createMove(MOVES.powerSwap);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -371,9 +382,9 @@ describe("Power Swap", () => {
 
   it("given both have zero stages, when Power Swap is used, then stages remain zero", () => {
     // Source: Showdown Gen 4 mod -- Power Swap with no changes is a no-op swap
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("power-swap", { type: "psychic" });
+    const attacker = createActivePokemon({ types: [TYPES.psychic] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.powerSwap);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -396,14 +407,14 @@ describe("Guard Swap", () => {
     // Source: Bulbapedia -- Guard Swap swaps Def and SpDef stat stages
     // Source: Showdown Gen 4 mod -- Guard Swap exchanges defensive stat changes
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       statStages: { defense: 3, spDefense: 0 },
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { defense: 0, spDefense: -2 },
     });
-    const move = createMove("guard-swap", { type: "psychic" });
+    const move = createMove(MOVES.guardSwap);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -418,14 +429,14 @@ describe("Guard Swap", () => {
   it("given attacker has -1 Def and +2 SpDef and defender has +1 Def and -3 SpDef, when Guard Swap is used, then both stats swap correctly", () => {
     // Source: Showdown Gen 4 mod -- Guard Swap swaps all defensive stages
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       statStages: { defense: -1, spDefense: 2 },
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { defense: 1, spDefense: -3 },
     });
-    const move = createMove("guard-swap", { type: "psychic" });
+    const move = createMove(MOVES.guardSwap);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -447,7 +458,7 @@ describe("Heart Swap", () => {
     // Source: Bulbapedia -- Heart Swap: "swaps all stat changes with the target"
     // Source: Showdown Gen 4 mod -- Heart Swap swaps every stat stage
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       statStages: {
         attack: 2,
         defense: -1,
@@ -459,7 +470,7 @@ describe("Heart Swap", () => {
       },
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: {
         attack: -3,
         defense: 1,
@@ -470,7 +481,7 @@ describe("Heart Swap", () => {
         evasion: 1,
       },
     });
-    const move = createMove("heart-swap", { type: "psychic" });
+    const move = createMove(MOVES.heartSwap);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -496,9 +507,9 @@ describe("Heart Swap", () => {
 
   it("given both have zero stages, when Heart Swap is used, then stages remain zero and message is emitted", () => {
     // Source: Showdown Gen 4 mod -- Heart Swap still succeeds even with no changes
-    const attacker = createActivePokemon({ types: ["psychic"], nickname: "Manaphy" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("heart-swap", { type: "psychic" });
+    const attacker = createActivePokemon({ types: [TYPES.psychic], nickname: "Manaphy" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(MOVES.heartSwap);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -517,16 +528,13 @@ describe("Curse (Ghost-type)", () => {
     // Source: Bulbapedia -- Curse (Ghost): "user loses half its maximum HP, target is cursed"
     // Source: Showdown Gen 4 mod -- Ghost Curse: 1/2 HP cost, curse volatile on target
     const attacker = createActivePokemon({
-      types: ["ghost"],
+      types: [TYPES.ghost],
       nickname: "Gengar",
       maxHp: 200,
       currentHp: 200,
     });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Snorlax" });
-    const move = createMove("curse", {
-      type: "ghost",
-      effect: { type: "volatile-status", status: "curse", chance: 100 },
-    });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Snorlax" });
+    const move = createMove(MOVES.curse);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -536,22 +544,19 @@ describe("Curse (Ghost-type)", () => {
     expect(result.customDamage).toEqual({
       target: "attacker",
       amount: 100,
-      source: "curse",
+      source: MOVES.curse,
     });
-    expect(result.volatileInflicted).toBe("curse");
+    expect(result.volatileInflicted).toBe(VOLATILES.curse);
     expect(result.messages).toContain("Gengar cut its own HP and laid a curse on Snorlax!");
   });
 
   it("given target already has curse volatile, when Ghost Curse is used, then it fails", () => {
     // Source: Showdown Gen 4 mod -- Curse fails if target already cursed
-    const attacker = createActivePokemon({ types: ["ghost"] });
+    const attacker = createActivePokemon({ types: [TYPES.ghost] });
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("curse", { turnsLeft: -1 });
-    const defender = createActivePokemon({ types: ["normal"], volatiles });
-    const move = createMove("curse", {
-      type: "ghost",
-      effect: { type: "volatile-status", status: "curse", chance: 100 },
-    });
+    volatiles.set(VOLATILES.curse, { turnsLeft: -1 });
+    const defender = createActivePokemon({ types: [TYPES.normal], volatiles });
+    const move = createMove(MOVES.curse);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -571,13 +576,13 @@ describe("Sticky Barb", () => {
     // Source: Bulbapedia -- Sticky Barb: "1/8 of its maximum HP at the end of every turn"
     // Source: Showdown Gen 4 mod -- Sticky Barb EoT chip
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "sticky-barb",
+      types: [TYPES.normal],
+      heldItem: ITEMS.stickyBarb,
       maxHp: 200,
       currentHp: 200,
       nickname: "Holder",
     });
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem("end-of-turn", {
@@ -595,12 +600,12 @@ describe("Sticky Barb", () => {
   it("given holder has 16 max HP with Sticky Barb, when end-of-turn triggers, then holder takes floor(16/8)=2 damage", () => {
     // Source: Showdown Gen 4 mod -- Sticky Barb damage is floor(maxHP/8)
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "sticky-barb",
+      types: [TYPES.normal],
+      heldItem: ITEMS.stickyBarb,
       maxHp: 16,
       currentHp: 16,
     });
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem("end-of-turn", {
@@ -623,13 +628,13 @@ describe("Berry Juice", () => {
     // Source: Bulbapedia -- Berry Juice: "Restores 20 HP when HP drops to 50% or below"
     // Source: Showdown Gen 4 mod -- Berry Juice trigger at 50%
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "berry-juice",
+      types: [TYPES.normal],
+      heldItem: ITEMS.berryJuice,
       maxHp: 200,
       currentHp: 100, // 50% exactly
       nickname: "Holder",
     });
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem("end-of-turn", {
@@ -641,7 +646,7 @@ describe("Berry Juice", () => {
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "heal", target: "self", value: 20 },
-      { type: "consume", target: "self", value: "berry-juice" },
+      { type: "consume", target: "self", value: ITEMS.berryJuice },
     ]);
     expect(result.messages).toContain("Holder's Berry Juice restored 20 HP!");
   });
@@ -649,12 +654,12 @@ describe("Berry Juice", () => {
   it("given holder has Berry Juice and HP above 50%, when end-of-turn triggers, then Berry Juice does not activate", () => {
     // Source: Showdown Gen 4 mod -- Berry Juice only triggers at <=50%
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "berry-juice",
+      types: [TYPES.normal],
+      heldItem: ITEMS.berryJuice,
       maxHp: 200,
       currentHp: 101, // Above 50%
     });
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem("end-of-turn", {
@@ -677,43 +682,43 @@ describe("Grip Claw and Binding Moves", () => {
     // In Gen 4, binding lasts 3-6 turns (rng.int(3, 6)), Grip Claw forces max = 6.
     // Note: Gen 4 Grip Claw is 5+1 extension = 6, not 7 (7 was Gen 5+).
     const attacker = createActivePokemon({
-      types: ["normal"],
-      heldItem: "grip-claw",
+      types: [TYPES.normal],
+      heldItem: ITEMS.gripClaw,
     });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Target" });
-    const move = createMove("bind", { type: "normal", category: "physical", power: 15 });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Target" });
+    const move = createMove(MOVES.bind);
     const rng = createMockRng(4); // Would be 4 normally, but Grip Claw overrides
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("bound");
+    expect(result.volatileInflicted).toBe(VOLATILES.bound);
     expect(result.volatileData).toEqual({ turnsLeft: 6 });
   });
 
   it("given attacker does NOT hold Grip Claw, when using Fire Spin, then binding lasts 3-6 turns based on RNG", () => {
     // Source: Showdown Gen 4 mod — binding duration is rng.int(3, 6) without Grip Claw
     // Source: Bulbapedia — Binding moves last 2-5 turns in Gen 4 (exclusive upper = 3-6 inclusive for int)
-    const attacker = createActivePokemon({ types: ["fire"] });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Foe" });
-    const move = createMove("fire-spin", { type: "fire", category: "special", power: 15 });
+    const attacker = createActivePokemon({ types: [TYPES.fire] });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Foe" });
+    const move = createMove(MOVES.fireSpin);
     // rng.int returns 4 (min of range)
     const rng = createMockRng(4);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatileInflicted).toBe("bound");
+    expect(result.volatileInflicted).toBe(VOLATILES.bound);
     expect(result.volatileData).toEqual({ turnsLeft: 4 });
   });
 
   it("given target already has bound volatile, when binding move is used, then no additional binding is applied", () => {
     // Source: Showdown Gen 4 mod -- cannot stack binding moves
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("bound", { turnsLeft: 3 });
-    const defender = createActivePokemon({ types: ["normal"], volatiles });
-    const move = createMove("wrap", { type: "normal", category: "physical", power: 15 });
+    volatiles.set(VOLATILES.bound, { turnsLeft: 3 });
+    const defender = createActivePokemon({ types: [TYPES.normal], volatiles });
+    const move = createMove(MOVES.wrap);
     const rng = createMockRng(4);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -731,20 +736,20 @@ describe("Gluttony", () => {
   it("given normal fraction 0.25, when holder has Gluttony, then threshold becomes 0.5", () => {
     // Source: Bulbapedia -- Gluttony: "eats Berry at 50% HP instead of 25%"
     // Source: Showdown data/abilities.ts -- Gluttony modifies pinch berry threshold
-    const result = getPinchBerryThreshold({ ability: "gluttony" }, 0.25);
+    const result = getPinchBerryThreshold({ ability: ABILITIES.gluttony }, 0.25);
     expect(result).toBe(0.5);
   });
 
   it("given normal fraction 0.25, when holder does NOT have Gluttony, then threshold stays 0.25", () => {
     // Source: Showdown data/abilities.ts -- non-Gluttony Pokemon use normal threshold
-    const result = getPinchBerryThreshold({ ability: "blaze" }, 0.25);
+    const result = getPinchBerryThreshold({ ability: ABILITIES.blaze }, 0.25);
     expect(result).toBe(0.25);
   });
 
   it("given normal fraction 0.5, when holder has Gluttony, then threshold stays 0.5 (Gluttony only affects 25% berries)", () => {
     // Source: Bulbapedia -- Gluttony only affects berries with 25% threshold
     // Sitrus Berry already activates at 50%, unaffected by Gluttony
-    const result = getPinchBerryThreshold({ ability: "gluttony" }, 0.5);
+    const result = getPinchBerryThreshold({ ability: ABILITIES.gluttony }, 0.5);
     expect(result).toBe(0.5);
   });
 });
@@ -759,10 +764,10 @@ describe("Unburden", () => {
     // Source: Showdown data/abilities.ts -- Unburden onModifySpe
     const ruleset = new Gen4Ruleset();
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("unburden", { turnsLeft: -1 });
+    volatiles.set(VOLATILES.unburden, { turnsLeft: -1 });
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "unburden",
+      types: [TYPES.normal],
+      ability: ABILITIES.unburden,
       heldItem: null, // Item already consumed
       volatiles,
     });
@@ -784,7 +789,7 @@ describe("Unburden", () => {
 
     // Create a slower opponent (speed 300) -- unburden pokemon has speed 100 * 2 = 200
     const opponent = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       maxHp: 200,
       currentHp: 200,
     });
@@ -805,16 +810,16 @@ describe("Unburden", () => {
     // Source: Showdown data/abilities.ts -- Unburden only active when item is absent
     const ruleset = new Gen4Ruleset();
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("unburden", { turnsLeft: -1 });
+    volatiles.set(VOLATILES.unburden, { turnsLeft: -1 });
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "unburden",
-      heldItem: "leftovers", // Still has item
+      types: [TYPES.normal],
+      ability: ABILITIES.unburden,
+      heldItem: ITEMS.leftovers, // Still has item
       volatiles,
     });
 
     const opponent = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       maxHp: 200,
       currentHp: 200,
     });
@@ -848,36 +853,36 @@ describe("Unburden", () => {
   it("given berry is consumed and holder has Unburden, when item trigger fires, then unburden volatile is set", () => {
     // Source: Showdown Gen 4 mod -- Unburden volatile set when item is consumed
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "unburden",
-      heldItem: "sitrus-berry",
+      types: [TYPES.normal],
+      ability: ABILITIES.unburden,
+      heldItem: ITEMS.sitrusBerry,
       maxHp: 200,
       currentHp: 80, // Below 50%
     });
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: ["normal"] }));
+    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [TYPES.normal] }));
     const rng = createMockRng(0);
 
     applyGen4HeldItem("end-of-turn", { pokemon, state, rng });
 
-    expect(pokemon.volatileStatuses.has("unburden")).toBe(true);
+    expect(pokemon.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
   });
 
   it("given Knock Off removes defender's item and defender has Unburden, then unburden volatile is set", () => {
     // Source: Showdown Gen 4 mod -- Unburden triggers on Knock Off
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
-      ability: "unburden",
-      heldItem: "leftovers",
+      types: [TYPES.normal],
+      ability: ABILITIES.unburden,
+      heldItem: ITEMS.leftovers,
     });
-    const move = createMove("knock-off", { type: "dark", category: "physical", power: 20 });
+    const move = createMove(MOVES.knockOff);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     executeGen4MoveEffect(ctx);
 
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(defender.volatileStatuses.has("unburden")).toBe(true);
+    expect(defender.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
   });
 });
 
@@ -891,16 +896,12 @@ describe("Magnet Rise Ground immunity", () => {
     // Source: Showdown Gen 4 mod -- Magnet Rise grants Ground immunity
 
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("magnet-rise", { turnsLeft: 3 });
+    volatiles.set(VOLATILES.magnetRise, { turnsLeft: 3 });
 
-    const attacker = createActivePokemon({ types: ["ground"], maxHp: 200 });
-    const defender = createActivePokemon({ types: ["electric"], volatiles, maxHp: 200 });
+    const attacker = createActivePokemon({ types: [TYPES.ground], maxHp: 200 });
+    const defender = createActivePokemon({ types: [TYPES.electric], volatiles, maxHp: 200 });
 
-    const move = createMove("earthquake", {
-      type: "ground",
-      category: "physical",
-      power: 100,
-    });
+    const move = createMove(MOVES.earthquake);
 
     const rng = createMockRng(100);
     const state = createMinimalBattleState(attacker, defender);
@@ -926,16 +927,13 @@ describe("Magnet Rise Ground immunity", () => {
     // Source: Showdown Gen 4 mod -- Gravity grounds Magnet Rise users
 
     const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("magnet-rise", { turnsLeft: 3 });
+    volatiles.set(VOLATILES.magnetRise, { turnsLeft: 3 });
 
-    const attacker = createActivePokemon({ types: ["ground"], maxHp: 200 });
-    const defender = createActivePokemon({ types: ["electric"], volatiles, maxHp: 200 });
+    const attacker = createActivePokemon({ types: [TYPES.ground], maxHp: 200 });
+    const defender = createActivePokemon({ types: [TYPES.electric], volatiles, maxHp: 200 });
+    const groundedDefender = createActivePokemon({ types: [TYPES.electric], maxHp: 200 });
 
-    const move = createMove("earthquake", {
-      type: "ground",
-      category: "physical",
-      power: 100,
-    });
+    const move = createMove(MOVES.earthquake);
 
     const rng = createMockRng(100);
     const state = {
@@ -955,7 +953,19 @@ describe("Magnet Rise Ground immunity", () => {
       GEN4_TYPE_CHART,
     );
 
-    // Ground move should hit because Gravity is active
-    expect(result.damage).toBeGreaterThan(0);
+    const groundedResult = calculateGen4Damage(
+      {
+        attacker,
+        defender: groundedDefender,
+        move,
+        state: createMinimalBattleState(attacker, groundedDefender),
+        rng,
+        isCrit: false,
+      },
+      GEN4_TYPE_CHART,
+    );
+
+    expect(result.damage).toBe(groundedResult.damage);
+    expect(result.effectiveness).toBe(groundedResult.effectiveness);
   });
 });

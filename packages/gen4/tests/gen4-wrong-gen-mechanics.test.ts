@@ -6,8 +6,22 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
@@ -30,12 +44,23 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
  *   - specs/battle/05-gen4.md line 531 — "if counter reaches 0, Pokemon wakes and acts normally"
  */
 
+const gen4Data = createGen4DataManager();
+const ABILITIES = GEN4_ABILITY_IDS;
+const ITEMS = GEN4_ITEM_IDS;
+const MOVES = GEN4_MOVE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
+const DEFAULT_MOVE = gen4Data.getMove(CORE_MOVE_IDS.tackle);
+
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
 function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+  return new Gen4Ruleset(gen4Data);
 }
 
 function _makePokemonInstance(overrides: {
@@ -48,11 +73,11 @@ function _makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: null,
     level: overrides.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: maxHp,
@@ -68,7 +93,7 @@ function _makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -104,11 +129,11 @@ function makeActivePokemon(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: 1,
+      speciesId: SPECIES.bulbasaur,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: maxHp,
@@ -124,7 +149,7 @@ function makeActivePokemon(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: stats,
     } as PokemonInstance,
     teamSlot: 0,
@@ -138,7 +163,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [TYPES.normal],
     ability: overrides.ability ?? "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -164,15 +189,16 @@ function createMove(opts: {
   category?: "physical" | "special" | "status";
   id?: string;
 }): MoveData {
+  const baseMove = opts.id ? gen4Data.getMove(opts.id) : DEFAULT_MOVE;
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
+    id: opts.id ?? baseMove?.id ?? CORE_MOVE_IDS.tackle,
+    displayName: baseMove?.displayName ?? "Test Move",
     type: opts.type,
     category: opts.category ?? "physical",
     power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
+    accuracy: baseMove?.accuracy ?? 100,
+    pp: baseMove?.pp ?? 35,
+    priority: baseMove?.priority ?? 0,
     target: "adjacent-foe",
     flags: {
       contact: false,
@@ -214,23 +240,23 @@ function createMockRng(nextReturnValue = 0.5) {
 /** All-neutral type chart for 17 Gen 4 types. */
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    TYPES.normal,
+    TYPES.fire,
+    TYPES.water,
+    TYPES.electric,
+    TYPES.grass,
+    TYPES.ice,
+    TYPES.fighting,
+    TYPES.poison,
+    TYPES.ground,
+    TYPES.flying,
+    TYPES.psychic,
+    TYPES.bug,
+    TYPES.rock,
+    TYPES.ghost,
+    TYPES.dragon,
+    TYPES.dark,
+    TYPES.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -274,22 +300,22 @@ describe("Gen4Ruleset processSleepTurn — Bug #354 wake-turn behavior", () => {
     // Source: Showdown Gen 4 mod — BaseRuleset.processSleepTurn returns true on wake
     // This is the CORRECTED Gen 4 behavior: can act on wake turn (unlike Gen 1-2)
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    const mon = makeActivePokemon({ status: STATUSES.sleep });
+    mon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
 
     const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
 
     expect(canAct).toBe(true);
     expect(mon.pokemon.status).toBeNull();
-    expect(mon.volatileStatuses.has("sleep-counter")).toBe(false);
+    expect(mon.volatileStatuses.has(VOLATILES.sleepCounter)).toBe(false);
   });
 
   it("given a sleeping Pokemon with sleep counter already at 0, when processSleepTurn is called, then Pokemon wakes and returns true (can act)", () => {
     // Source: specs/battle/05-gen4.md — waking Pokemon can act normally
     // Counter at 0 means already expired — wake immediately, return true
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
+    const mon = makeActivePokemon({ status: STATUSES.sleep });
+    mon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 0 });
 
     const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
 
@@ -301,14 +327,14 @@ describe("Gen4Ruleset processSleepTurn — Bug #354 wake-turn behavior", () => {
     // Source: specs/battle/05-gen4.md — sleep counter > 0 after decrement: still sleeping
     // Must return false when still asleep (not yet waking)
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    const mon = makeActivePokemon({ status: STATUSES.sleep });
+    mon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
 
     const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
 
     expect(canAct).toBe(false);
-    expect(mon.pokemon.status).toBe("sleep");
-    expect(mon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
+    expect(mon.pokemon.status).toBe(STATUSES.sleep);
+    expect(mon.volatileStatuses.get(VOLATILES.sleepCounter)?.turnsLeft).toBe(2);
   });
 });
 
@@ -321,7 +347,7 @@ describe("Gen4Abilities on-after-move-hit Stench — Bug #384 Gen 4 has no flinc
     // Source: Bulbapedia — Stench (Generation IV): "Has no effect in battle."
     //   The 10% flinch effect was introduced in Generation V.
     // Source: Showdown — Stench onModifyMove flinch chance only exists in Gen 5+
-    const attacker = makeActivePokemon({ ability: "stench" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.stench });
     const defender = makeActivePokemon({ ability: "" });
 
     const context = {
@@ -329,7 +355,7 @@ describe("Gen4Abilities on-after-move-hit Stench — Bug #384 Gen 4 has no flinc
       opponent: defender,
       rng: createMockRng(0), // next() = 0 = always passes any probability check
       state: STUB_STATE,
-      moveType: "normal" as PokemonType,
+      moveType: TYPES.normal,
     };
 
     const result = applyGen4Ability("on-after-move-hit", context);
@@ -337,7 +363,8 @@ describe("Gen4Abilities on-after-move-hit Stench — Bug #384 Gen 4 has no flinc
     // Must not apply flinch
     expect(result.activated).toBe(false);
     const flinchEffect = result.effects.find(
-      (e) => e.effectType === "volatile-inflict" && "volatile" in e && e.volatile === "flinch",
+      (e) =>
+        e.effectType === "volatile-inflict" && "volatile" in e && e.volatile === VOLATILES.flinch,
     );
     expect(flinchEffect).toBeUndefined();
   });
@@ -345,7 +372,7 @@ describe("Gen4Abilities on-after-move-hit Stench — Bug #384 Gen 4 has no flinc
   it("given a Pokemon with Stench ability and rng.next() = 0 (guaranteed hit), when on-after-move-hit triggers, then still no flinch is applied", () => {
     // Source: Bulbapedia — Stench (Gen 4): no battle effect regardless of RNG outcome
     // Second test case: confirm no flinch even when RNG would guarantee the effect
-    const attacker = makeActivePokemon({ ability: "stench" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.stench });
     const defender = makeActivePokemon({ ability: "" });
 
     const context = {
@@ -353,7 +380,7 @@ describe("Gen4Abilities on-after-move-hit Stench — Bug #384 Gen 4 has no flinc
       opponent: defender,
       rng: { ...createMockRng(0), next: () => 0 }, // 0 < 0.1, would trigger if Gen 5 logic
       state: STUB_STATE,
-      moveType: "normal" as PokemonType,
+      moveType: TYPES.normal,
     };
 
     const result = applyGen4Ability("on-after-move-hit", context);
@@ -373,7 +400,7 @@ describe("Gen4Abilities passive-immunity Storm Drain — Bug #350/#351 no Water 
     //   to this Pokemon. Has no effect in single battles."
     // Source: Showdown Gen 4 mod — Storm Drain is redirect-only in doubles;
     //   in singles there is no Water immunity and no SpAtk boost
-    const defender = makeActivePokemon({ ability: "storm-drain" });
+    const defender = makeActivePokemon({ ability: ABILITIES.stormDrain });
     const attacker = makeActivePokemon({ ability: "" });
 
     const context = {
@@ -381,7 +408,7 @@ describe("Gen4Abilities passive-immunity Storm Drain — Bug #350/#351 no Water 
       opponent: attacker,
       rng: createMockRng(),
       state: STUB_STATE,
-      moveType: "water" as PokemonType,
+      moveType: TYPES.water,
     };
 
     const result = applyGen4Ability("passive-immunity", context);
@@ -393,7 +420,7 @@ describe("Gen4Abilities passive-immunity Storm Drain — Bug #350/#351 no Water 
   it("given a Pokemon with Storm Drain, when a non-Water-type move is used, then no immunity activates (regardless of type)", () => {
     // Source: Showdown Gen 4 mod — Storm Drain only attempted to redirect Water moves
     // Control case: confirm non-Water moves are also not blocked
-    const defender = makeActivePokemon({ ability: "storm-drain" });
+    const defender = makeActivePokemon({ ability: ABILITIES.stormDrain });
     const attacker = makeActivePokemon({ ability: "" });
 
     const context = {
@@ -401,7 +428,7 @@ describe("Gen4Abilities passive-immunity Storm Drain — Bug #350/#351 no Water 
       opponent: attacker,
       rng: createMockRng(),
       state: STUB_STATE,
-      moveType: "fire" as PokemonType,
+      moveType: TYPES.fire,
     };
 
     const result = applyGen4Ability("passive-immunity", context);
@@ -426,9 +453,13 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
     //
     // Without Thick Fat (BP=90):
     //   baseDmg = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
-    const attacker = makeActivePokemon({ attack: 100, types: ["fire"] });
-    const defender = makeActivePokemon({ ability: "thick-fat", defense: 100, types: ["normal"] });
-    const fireMove = createMove({ type: "fire", power: 90, category: "physical" });
+    const attacker = makeActivePokemon({ attack: 100, types: [TYPES.fire] });
+    const defender = makeActivePokemon({
+      ability: ABILITIES.thickFat,
+      defense: 100,
+      types: [TYPES.normal],
+    });
+    const fireMove = createMove({ type: TYPES.fire, power: 90, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const resultWithThickFat = calculateGen4Damage(
@@ -442,7 +473,7 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
     );
 
     // No-ability defender for comparison
-    const defenderNoAbility = makeActivePokemon({ ability: "", defense: 100, types: ["normal"] });
+    const defenderNoAbility = makeActivePokemon({ ability: "", defense: 100, types: [TYPES.normal] });
     const resultWithout = calculateGen4Damage(
       createDamageContext({
         attacker,
@@ -469,9 +500,13 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
   it("given a defender with Thick Fat and an Ice move with base power 60, when calculating damage, then damage is halved compared to no Thick Fat", () => {
     // Source: Showdown Gen 4 mod — Thick Fat also applies to Ice-type moves
     // Second test case: Ice moves also trigger Thick Fat base power halving
-    const attacker = makeActivePokemon({ spAttack: 100, types: ["water"] });
-    const defender = makeActivePokemon({ ability: "thick-fat", spDefense: 100, types: ["normal"] });
-    const iceMove = createMove({ type: "ice", power: 60, category: "special" });
+    const attacker = makeActivePokemon({ spAttack: 100, types: [TYPES.water] });
+    const defender = makeActivePokemon({
+      ability: ABILITIES.thickFat,
+      spDefense: 100,
+      types: [TYPES.normal],
+    });
+    const iceMove = createMove({ type: TYPES.ice, power: 60, category: "special" });
     const chart = createNeutralTypeChart();
 
     const resultWithThickFat = calculateGen4Damage(
@@ -484,7 +519,7 @@ describe("Gen4DamageCalc Thick Fat — Bug #353 halves base power not attack sta
       chart,
     );
 
-    const defenderNoAbility = makeActivePokemon({ ability: "", spDefense: 100, types: ["normal"] });
+    const defenderNoAbility = makeActivePokemon({ ability: "", spDefense: 100, types: [TYPES.normal] });
     const resultWithout = calculateGen4Damage(
       createDamageContext({
         attacker,
@@ -523,10 +558,10 @@ describe("Gen4DamageCalc Metronome item — Gen 4 step size (0.1x) with no cap",
     //   floor(floor(22*80*100/100)/50)+2 = floor(1760/50)+2 = 35+2 = 37
     // With 1.2x Metronome: floor(37 * 1.2) = floor(44.4) = 44
     // With Gen 5+ 1.4x: floor(37 * 1.4) = floor(51.8) = 51
-    const attacker = makeActivePokemon({ heldItem: "metronome", attack: 100 });
+    const attacker = makeActivePokemon({ heldItem: ITEMS.metronome, attack: 100 });
     attacker.volatileStatuses.set("metronome-count", { turnsLeft: 0, data: { count: 3 } });
     const defender = makeActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: TYPES.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const resultWithMetronome = calculateGen4Damage(
@@ -559,10 +594,10 @@ describe("Gen4DamageCalc Metronome item — Gen 4 step size (0.1x) with no cap",
   it("given a Pokemon holding Metronome item at count=6 (5 consecutive uses after first), when calculating damage, then boost is 1.5x", () => {
     // Source: Showdown data/mods/gen4/items.ts — damage * (1 + numConsecutive/10), no cap
     // count=6: boostSteps=5 → multiplier = 1 + 5*0.1 = 1.5x
-    const attacker = makeActivePokemon({ heldItem: "metronome", attack: 100 });
+    const attacker = makeActivePokemon({ heldItem: ITEMS.metronome, attack: 100 });
     attacker.volatileStatuses.set("metronome-count", { turnsLeft: 0, data: { count: 6 } });
     const defender = makeActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: TYPES.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const resultCapped = calculateGen4Damage(
@@ -593,10 +628,10 @@ describe("Gen4DamageCalc Metronome item — Gen 4 step size (0.1x) with no cap",
   it("given a Pokemon holding Metronome item at count=10, when calculating damage, then boost is 1.9x (no cap in Gen 4)", () => {
     // Source: Showdown data/mods/gen4/items.ts — no cap on numConsecutive in Gen 4
     // count=10: boostSteps=9 → multiplier = 1 + 9*0.1 = 1.9x
-    const attacker = makeActivePokemon({ heldItem: "metronome", attack: 100 });
+    const attacker = makeActivePokemon({ heldItem: ITEMS.metronome, attack: 100 });
     attacker.volatileStatuses.set("metronome-count", { turnsLeft: 0, data: { count: 10 } });
     const defender = makeActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: TYPES.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const resultCapped = calculateGen4Damage(
