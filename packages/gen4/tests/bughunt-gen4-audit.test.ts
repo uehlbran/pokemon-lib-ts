@@ -14,8 +14,15 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -79,7 +86,7 @@ function createActivePokemon(opts: {
   ability?: string;
   heldItem?: string | null;
   status?: PrimaryStatus | null;
-  gender?: "male" | "female" | "genderless";
+  gender?: CoreGender;
   speciesId?: number;
   volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
@@ -101,16 +108,16 @@ function createActivePokemon(opts: {
     level,
     experience: 0,
     nature: GEN4_NATURE_IDS.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: ZERO_IVS,
+    evs: ZERO_EVS,
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: opts.gender ?? ("male" as const),
+    friendship: createFriendship(0),
+    gender: opts.gender ?? CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -186,16 +193,16 @@ function createItemContext(opts: {
     level: 50,
     experience: 0,
     nature: GEN4_NATURE_IDS.hardy,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: MAX_IVS,
+    evs: ZERO_EVS,
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -253,6 +260,19 @@ function createItemContext(opts: {
 const dataManager = createGen4DataManager();
 const ruleset = new Gen4Ruleset(dataManager);
 const ROOM_SUFFIX = GEN4_MOVE_IDS.trickRoom.slice(5);
+const ZERO_IVS = createIvs({
+  hp: 0,
+  attack: 0,
+  defense: 0,
+  spAttack: 0,
+  spDefense: 0,
+  speed: 0,
+});
+const MAX_IVS = createIvs();
+const ZERO_EVS = createEvs();
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
+type CoreGender = (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
 
 function getGen4Move(id: string): MoveData {
   return dataManager.getMove(id);
@@ -454,7 +474,7 @@ describe("applyGen4HeldItem on-damage-taken — Focus Sash unit function (issue 
       currentHp: 200,
       damage: 300,
     });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e) => e.type === "survive")).toBe(true);
@@ -472,7 +492,7 @@ describe("applyGen4HeldItem on-damage-taken — Focus Sash unit function (issue 
       currentHp: 200,
       damage: 50,
     });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -486,7 +506,7 @@ describe("applyGen4HeldItem on-damage-taken — Focus Sash unit function (issue 
       currentHp: 150,
       damage: 300,
     });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -594,7 +614,7 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
       rng: createMockRng(),
     } as any;
 
-    const result = applyGen4Ability("on-switch-in", context);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, context);
 
     expect(result.activated).toBe(true);
     const statEffect = result.effects.find(
@@ -620,7 +640,7 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
       rng: createMockRng(),
     } as any;
 
-    const result = applyGen4Ability("on-switch-in", context);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, context);
 
     expect(result.activated).toBe(true);
     const statEffect = result.effects.find(
@@ -817,7 +837,7 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
     // Source: Showdown data/abilities.ts — Klutz gates all item battle effects including orbs
     const ctx = createItemContext({ heldItem: GEN4_ITEM_IDS.toxicOrb, ability: GEN4_ABILITY_IDS.klutz });
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -826,7 +846,7 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
     // Source: Bulbapedia — Klutz: holder cannot use any held items
     // Source: Showdown Gen 4 mod — Klutz check gates all item effects including Flame Orb
     const ctx = createItemContext({ heldItem: GEN4_ITEM_IDS.flameOrb, ability: GEN4_ABILITY_IDS.klutz });
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -839,7 +859,7 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
       ability: GEN4_ABILITY_IDS.blaze,
       types: [CORE_TYPE_IDS.normal],
     });
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
     expect(
