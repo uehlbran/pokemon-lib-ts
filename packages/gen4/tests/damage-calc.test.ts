@@ -3,12 +3,21 @@ import type {
   MoveData,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { GEN4_TYPE_CHART, GEN4_TYPES } from "../src/Gen4TypeChart";
+import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "../src/data/reference-ids";
 
 /**
  * Gen 4 Damage Formula Tests
@@ -69,7 +78,7 @@ function createActivePokemon(opts: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
 }): ActivePokemon {
@@ -123,7 +132,7 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
+    types: opts.types ?? [CORE_TYPE_IDS.normal],
     ability: opts.ability ?? "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -194,29 +203,10 @@ function createMockState(weather?: { type: string; turnsLeft: number; source: st
 
 /** All-neutral type chart for 17 Gen 4 types. */
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
   const chart = {} as Record<string, Record<string, number>>;
-  for (const atk of types) {
+  for (const atk of GEN4_TYPES) {
     chart[atk] = {};
-    for (const def of types) {
+    for (const def of GEN4_TYPES) {
       (chart[atk] as Record<string, number>)[def] = 1;
     }
   }
@@ -276,7 +266,7 @@ describe("Gen 4 damage calc — physical/special split", () => {
       defense: 100,
       spAttack: 50,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -284,9 +274,9 @@ describe("Gen 4 damage calc — physical/special split", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const physicalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -311,7 +301,7 @@ describe("Gen 4 damage calc — physical/special split", () => {
       defense: 100,
       spAttack: 150,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -319,9 +309,9 @@ describe("Gen 4 damage calc — physical/special split", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -347,7 +337,7 @@ describe("Gen 4 damage calc — physical/special split", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"], // no Water STAB to keep it simple
+      types: [CORE_TYPE_IDS.fighting], // no Water STAB to keep it simple
     });
     const defender = createActivePokemon({
       level: 50,
@@ -355,16 +345,16 @@ describe("Gen 4 damage calc — physical/special split", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const chart = createNeutralTypeChart();
     const waterfall = createMove({
-      type: "water",
+      type: CORE_TYPE_IDS.water,
       power: 80,
       category: "physical",
-      id: "waterfall",
+      id: GEN4_MOVE_IDS.waterfall,
     });
-    const surf = createMove({ type: "water", power: 95, category: "special", id: "surf" });
+    const surf = createMove({ type: CORE_TYPE_IDS.water, power: 95, category: "special", id: "surf" });
 
     const waterfallResult = calculateGen4Damage(
       createDamageContext({ attacker, defender, move: waterfall, rng: createMockRng(100) }),
@@ -398,8 +388,8 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      status: "burn",
+      types: [CORE_TYPE_IDS.fighting],
+      status: CORE_STATUS_IDS.burn,
     });
     const healthyAttacker = createActivePokemon({
       level: 50,
@@ -407,7 +397,7 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -415,9 +405,9 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const physicalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const burnedResult = calculateGen4Damage(
@@ -455,8 +445,8 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      status: "burn",
+      types: [CORE_TYPE_IDS.normal],
+      status: CORE_STATUS_IDS.burn,
     });
     const healthyAttacker = createActivePokemon({
       level: 50,
@@ -464,7 +454,7 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -472,9 +462,9 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = createMove({ type: "fire", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const burnedResult = calculateGen4Damage(
@@ -511,9 +501,9 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      ability: "guts",
-      status: "burn",
+      types: [CORE_TYPE_IDS.fighting],
+      ability: GEN4_ABILITY_IDS.guts,
+      status: CORE_STATUS_IDS.burn,
     });
     const noGutsHealthyAttacker = createActivePokemon({
       level: 50,
@@ -521,7 +511,7 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -529,9 +519,9 @@ describe("Gen 4 damage calc — burn", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const physicalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const gutsResult = calculateGen4Damage(
@@ -575,7 +565,7 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 120,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -583,9 +573,9 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const rainResult = calculateGen4Damage(
@@ -610,7 +600,7 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 120,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -618,9 +608,9 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = createMove({ type: "fire", power: 80, category: "special" });
+    const fireMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const rainResult = calculateGen4Damage(
@@ -645,7 +635,7 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 120,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -653,9 +643,9 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = createMove({ type: "fire", power: 80, category: "special" });
+    const fireMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
@@ -680,7 +670,7 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 120,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -688,9 +678,9 @@ describe("Gen 4 damage calc — weather", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
@@ -722,7 +712,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -730,9 +720,9 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const critResult = calculateGen4Damage(
@@ -761,8 +751,8 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      ability: "sniper",
+      types: [CORE_TYPE_IDS.fighting],
+      ability: GEN4_ABILITY_IDS.sniper,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -770,9 +760,9 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -800,7 +790,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
       statStages: { attack: -2 },
     });
     const attackerNeutral = createActivePokemon({
@@ -809,7 +799,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
       statStages: { attack: 0 },
     });
     const defender = createActivePokemon({
@@ -818,9 +808,9 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const debuffedCrit = calculateGen4Damage(
@@ -857,7 +847,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defenderBoosted = createActivePokemon({
       level: 50,
@@ -865,7 +855,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
       statStages: { defense: 2 },
     });
     const defenderNeutral = createActivePokemon({
@@ -874,9 +864,9 @@ describe("Gen 4 damage calc — critical hits", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const vsBoostedCrit = calculateGen4Damage(
@@ -918,7 +908,7 @@ describe("Gen 4 damage calc — STAB", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const nonWaterAttacker = createActivePokemon({
       level: 50,
@@ -926,7 +916,7 @@ describe("Gen 4 damage calc — STAB", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -934,9 +924,9 @@ describe("Gen 4 damage calc — STAB", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const stabResult = calculateGen4Damage(
@@ -971,8 +961,8 @@ describe("Gen 4 damage calc — STAB", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "adaptability",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN4_ABILITY_IDS.adaptability,
     });
     const normalStabAttacker = createActivePokemon({
       level: 50,
@@ -980,7 +970,7 @@ describe("Gen 4 damage calc — STAB", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -988,9 +978,9 @@ describe("Gen 4 damage calc — STAB", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const adaptResult = calculateGen4Damage(
@@ -1031,7 +1021,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const fireDefender = createActivePokemon({
       level: 50,
@@ -1039,10 +1029,10 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
-    const chart = createTypeChart([["water", "fire", 2]]);
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -1066,7 +1056,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const grassDefender = createActivePokemon({
       level: 50,
@@ -1074,10 +1064,10 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["grass"],
+      types: [CORE_TYPE_IDS.grass],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
-    const chart = createTypeChart([["water", "grass", 0.5]]);
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.grass, 0.5]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -1101,7 +1091,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const flyingDefender = createActivePokemon({
       level: 50,
@@ -1109,12 +1099,12 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["flying"],
-      ability: "levitate",
+      types: [CORE_TYPE_IDS.flying],
+      ability: CORE_ABILITY_IDS.levitate,
     });
-    const groundMove = createMove({ type: "ground", power: 100, category: "physical" });
+    const groundMove = createMove({ type: CORE_TYPE_IDS.ground, power: 100, category: "physical" });
     // Ground vs Flying = immune in Gen 4 type chart
-    const chart = createTypeChart([["ground", "flying", 0]]);
+    const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying, 0]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -1143,16 +1133,16 @@ describe("Gen 4 damage calc — type effectiveness", () => {
     //   no STAB → 46
     //   Ground vs Flying without immunity (grounded by Iron Ball): chart = 1x → 46
     // Without Iron Ball the type chart has ground vs flying = 0, damage = 0.
-    const attacker = createActivePokemon({ level: 50, attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 50, attack: 100, types: [CORE_TYPE_IDS.normal] });
     const flyingDefender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["flying"],
-      heldItem: "iron-ball",
+      types: [CORE_TYPE_IDS.flying],
+      heldItem: CORE_ITEM_IDS.ironBall,
     });
-    const groundMove = createMove({ type: "ground", power: 100, category: "physical" });
+    const groundMove = createMove({ type: CORE_TYPE_IDS.ground, power: 100, category: "physical" });
     // Set type chart so ground vs flying would normally be immune (0), but Iron Ball overrides
-    const chart = createTypeChart([["ground", "flying", 0]]);
+    const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying, 0]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -1173,15 +1163,15 @@ describe("Gen 4 damage calc — type effectiveness", () => {
   it("given Flying-type defender WITHOUT Iron Ball, when hit by Ground-type move, then damage = 0 (normal Flying immunity)", () => {
     // Source: Gen 4 type chart — Ground-type moves are immune vs Flying-type (0x)
     // Triangulation: confirms Iron Ball is required for grounding (not an unconditional bypass)
-    const attacker = createActivePokemon({ level: 50, attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 50, attack: 100, types: [CORE_TYPE_IDS.normal] });
     const flyingDefender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["flying"],
+      types: [CORE_TYPE_IDS.flying],
       heldItem: null,
     });
-    const groundMove = createMove({ type: "ground", power: 100, category: "physical" });
-    const chart = createTypeChart([["ground", "flying", 0]]);
+    const groundMove = createMove({ type: CORE_TYPE_IDS.ground, power: 100, category: "physical" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying, 0]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -1205,7 +1195,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const dualDefender = createActivePokemon({
       level: 50,
@@ -1213,17 +1203,17 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 80,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire", "rock"],
+      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.rock],
     });
     const groundMove = createMove({
-      type: "ground",
+      type: CORE_TYPE_IDS.ground,
       power: 100,
       category: "physical",
-      id: "earthquake",
+      id: GEN4_MOVE_IDS.earthquake,
     });
     const chart = createTypeChart([
-      ["ground", "fire", 2],
-      ["ground", "rock", 2],
+      [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.fire, 2],
+      [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.rock, 2],
     ]);
 
     const result = calculateGen4Damage(
@@ -1248,7 +1238,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const dualResistDefender = createActivePokemon({
       level: 50,
@@ -1256,12 +1246,12 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["steel", "rock"],
+      types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.rock],
     });
-    const normalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const normalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createTypeChart([
-      ["normal", "steel", 0.5],
-      ["normal", "rock", 0.5],
+      [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.steel, 0.5],
+      [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.rock, 0.5],
     ]);
 
     const result = calculateGen4Damage(
@@ -1292,8 +1282,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      ability: "technician",
+      types: [CORE_TYPE_IDS.fighting],
+      ability: GEN4_ABILITY_IDS.technician,
     });
     const noTechAttacker = createActivePokemon({
       level: 50,
@@ -1301,7 +1291,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1309,10 +1299,10 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     // power=40, Technician raises it to 60 effectively
-    const weakMove = createMove({ type: "normal", power: 40, category: "physical" });
+    const weakMove = createMove({ type: CORE_TYPE_IDS.normal, power: 40, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const techResult = calculateGen4Damage(
@@ -1349,8 +1339,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      ability: "technician",
+      types: [CORE_TYPE_IDS.fighting],
+      ability: GEN4_ABILITY_IDS.technician,
     });
     const noTechAttacker = createActivePokemon({
       level: 50,
@@ -1358,7 +1348,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1366,9 +1356,9 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const strongMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const strongMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const techResult = calculateGen4Damage(
@@ -1404,8 +1394,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      ability: "tinted-lens",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.tintedLens,
     });
     const noLensAttacker = createActivePokemon({
       level: 50,
@@ -1413,7 +1403,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1421,11 +1411,11 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["rock"],
+      types: [CORE_TYPE_IDS.rock],
     });
     // Normal vs Rock = 0.5x NVE
-    const normalMove = createMove({ type: "normal", power: 80, category: "physical" });
-    const chart = createTypeChart([["normal", "rock", 0.5]]);
+    const normalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.normal, CORE_TYPE_IDS.rock, 0.5]]);
 
     const lensResult = calculateGen4Damage(
       createDamageContext({
@@ -1459,8 +1449,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "tinted-lens",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN4_ABILITY_IDS.tintedLens,
     });
     const noLensAttacker = createActivePokemon({
       level: 50,
@@ -1468,7 +1458,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1476,11 +1466,11 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
     // Water vs Fire = SE (2x). Tinted Lens must NOT apply.
-    const chart = createTypeChart([["water", "fire", 2]]);
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
 
     const lensResult = calculateGen4Damage(
       createDamageContext({
@@ -1514,7 +1504,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const filterDefender = createActivePokemon({
       level: 50,
@@ -1522,8 +1512,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
-      ability: "filter",
+      types: [CORE_TYPE_IDS.fire],
+      ability: GEN4_ABILITY_IDS.filter,
     });
     const noFilterDefender = createActivePokemon({
       level: 50,
@@ -1531,10 +1521,10 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
-    const chart = createTypeChart([["water", "fire", 2]]);
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const filterResult = calculateGen4Damage(
       createDamageContext({
@@ -1568,7 +1558,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solidRockDefender = createActivePokemon({
       level: 50,
@@ -1576,8 +1566,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
-      ability: "solid-rock",
+      types: [CORE_TYPE_IDS.fire],
+      ability: GEN4_ABILITY_IDS.solidRock,
     });
     const noAbilityDefender = createActivePokemon({
       level: 50,
@@ -1585,10 +1575,10 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
-    const chart = createTypeChart([["water", "fire", 2]]);
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const solidRockResult = calculateGen4Damage(
       createDamageContext({
@@ -1621,7 +1611,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const filterDefender = createActivePokemon({
       level: 50,
@@ -1629,8 +1619,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      ability: "filter",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.filter,
     });
     const noAbilityDefender = createActivePokemon({
       level: 50,
@@ -1638,11 +1628,11 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     // Normal vs Normal = neutral (1x). Filter must NOT apply.
     const chart = createNeutralTypeChart();
-    const normalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const normalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
 
     const filterResult = calculateGen4Damage(
       createDamageContext({
@@ -1677,8 +1667,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["grass"],
-      ability: "overgrow",
+      types: [CORE_TYPE_IDS.grass],
+      ability: GEN4_ABILITY_IDS.overgrow,
       hp: maxHp,
       currentHp: Math.floor(maxHp / 3), // exactly at the 1/3 threshold
     });
@@ -1688,8 +1678,8 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["grass"],
-      ability: "overgrow",
+      types: [CORE_TYPE_IDS.grass],
+      ability: GEN4_ABILITY_IDS.overgrow,
       hp: maxHp,
       currentHp: maxHp, // full HP → Overgrow does NOT activate
     });
@@ -1699,9 +1689,9 @@ describe("Gen 4 damage calc — new abilities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const grassMove = createMove({ type: "grass", power: 80, category: "special" });
+    const grassMove = createMove({ type: CORE_TYPE_IDS.grass, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const overgrowResult = calculateGen4Damage(
@@ -1742,8 +1732,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      heldItem: "choice-band",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: CORE_ITEM_IDS.choiceBand,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -1751,7 +1741,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1759,9 +1749,9 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const physicalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const choiceResult = calculateGen4Damage(
@@ -1799,8 +1789,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      heldItem: "choice-specs",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_ITEM_IDS.choiceSpecs,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -1808,7 +1798,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1816,9 +1806,9 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const specsResult = calculateGen4Damage(
@@ -1855,8 +1845,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      heldItem: "life-orb",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_ITEM_IDS.lifeOrb,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -1864,7 +1854,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1872,9 +1862,9 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const lifeOrbResult = calculateGen4Damage(
@@ -1900,8 +1890,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      heldItem: "expert-belt",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_ITEM_IDS.expertBelt,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -1909,7 +1899,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1917,10 +1907,10 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
-    const chart = createTypeChart([["water", "fire", 2]]);
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const beltResult = calculateGen4Damage(
       createDamageContext({
@@ -1953,8 +1943,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      heldItem: "expert-belt",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_ITEM_IDS.expertBelt,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -1962,7 +1952,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -1970,9 +1960,9 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const normalMove = createMove({ type: "water", power: 80, category: "special" });
+    const normalMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart(); // neutral matchup
 
     const beltResult = calculateGen4Damage(
@@ -2007,8 +1997,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
-      heldItem: "muscle-band",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_ITEM_IDS.muscleBand,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -2016,7 +2006,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -2024,9 +2014,9 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const physicalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const bandResult = calculateGen4Damage(
@@ -2062,8 +2052,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      heldItem: "wise-glasses",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_ITEM_IDS.wiseGlasses,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -2071,7 +2061,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -2079,9 +2069,9 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const glassesResult = calculateGen4Damage(
@@ -2118,8 +2108,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["electric"],
-      heldItem: "light-ball",
+      types: [CORE_TYPE_IDS.electric],
+      heldItem: CORE_ITEM_IDS.lightBall,
       speciesId: 25,
     });
     const noItemPika = createActivePokemon({
@@ -2128,7 +2118,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["electric"],
+      types: [CORE_TYPE_IDS.electric],
       speciesId: 25,
     });
     const defender = createActivePokemon({
@@ -2137,10 +2127,10 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     // Physical move — Light Ball doubles Attack in Gen 4+
-    const physMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const physMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const lightBallResult = calculateGen4Damage(
@@ -2177,8 +2167,8 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["electric"],
-      heldItem: "light-ball",
+      types: [CORE_TYPE_IDS.electric],
+      heldItem: CORE_ITEM_IDS.lightBall,
       speciesId: 25,
     });
     const noItemPika = createActivePokemon({
@@ -2187,7 +2177,7 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["electric"],
+      types: [CORE_TYPE_IDS.electric],
       speciesId: 25,
     });
     const defender = createActivePokemon({
@@ -2196,9 +2186,9 @@ describe("Gen 4 damage calc — items", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const lightBallResult = calculateGen4Damage(
@@ -2240,7 +2230,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const soulDewLatias = createActivePokemon({
       level: 50,
@@ -2248,8 +2238,8 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["dragon", "psychic"],
-      heldItem: "soul-dew",
+      types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.psychic],
+      heldItem: CORE_ITEM_IDS.soulDew,
       speciesId: 380,
     });
     const noItemLatias = createActivePokemon({
@@ -2258,10 +2248,10 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["dragon", "psychic"],
+      types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.psychic],
       speciesId: 380,
     });
-    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const soulDewResult = calculateGen4Damage(
@@ -2296,8 +2286,8 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      heldItem: "deep-sea-tooth",
+      types: [CORE_TYPE_IDS.water],
+      heldItem: CORE_ITEM_IDS.deepSeaTooth,
       speciesId: 366,
     });
     const noItemClamperl = createActivePokemon({
@@ -2306,7 +2296,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
       speciesId: 366,
     });
     const defender = createActivePokemon({
@@ -2315,9 +2305,9 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const toothResult = calculateGen4Damage(
@@ -2354,7 +2344,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const deepSeaScale = createActivePokemon({
       level: 50,
@@ -2362,8 +2352,8 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      heldItem: "deep-sea-scale",
+      types: [CORE_TYPE_IDS.water],
+      heldItem: CORE_ITEM_IDS.deepSeaScale,
       speciesId: 366,
     });
     const noItemClamperl = createActivePokemon({
@@ -2372,10 +2362,10 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
       speciesId: 366,
     });
-    const specialMove = createMove({ type: "fire", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const scaleResult = calculateGen4Damage(
@@ -2410,8 +2400,8 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["ground"],
-      heldItem: "thick-club",
+      types: [CORE_TYPE_IDS.ground],
+      heldItem: CORE_ITEM_IDS.thickClub,
       speciesId: 104,
     });
     const noItemCubone = createActivePokemon({
@@ -2420,7 +2410,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["ground"],
+      types: [CORE_TYPE_IDS.ground],
       speciesId: 104,
     });
     const defender = createActivePokemon({
@@ -2429,9 +2419,9 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const physMove = createMove({ type: "normal", power: 80, category: "physical" });
+    const physMove = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const thickClubResult = calculateGen4Damage(
@@ -2475,7 +2465,7 @@ describe("Gen 4 damage calc — ability immunities", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const wonderGuardDefender = createActivePokemon({
       level: 50,
@@ -2483,11 +2473,11 @@ describe("Gen 4 damage calc — ability immunities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["ghost"],
-      ability: "wonder-guard",
+      types: [CORE_TYPE_IDS.ghost],
+      ability: CORE_ABILITY_IDS.wonderGuard,
     });
     // Normal vs Ghost → immune in type chart; but here we test neutral (effectiveness=1) vs WonderGuard
-    const normalMove = createMove({ type: "normal", power: 100, category: "physical" });
+    const normalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 100, category: "physical" });
     const chart = createNeutralTypeChart(); // neutral effectiveness = 1
 
     const result = calculateGen4Damage(
@@ -2513,7 +2503,7 @@ describe("Gen 4 damage calc — ability immunities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const levitateDefender = createActivePokemon({
       level: 50,
@@ -2521,18 +2511,18 @@ describe("Gen 4 damage calc — ability immunities", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["electric"],
-      ability: "levitate",
+      types: [CORE_TYPE_IDS.electric],
+      ability: CORE_ABILITY_IDS.levitate,
     });
     const groundMove = createMove({
-      type: "ground",
+      type: CORE_TYPE_IDS.ground,
       power: 100,
       category: "physical",
-      id: "earthquake",
+      id: GEN4_MOVE_IDS.earthquake,
     });
     // Levitate: Ground immunity — the calc should treat effectiveness as 0
     // Ground vs Electric would normally be 1x; Levitate makes it 0
-    const chart = createTypeChart([["ground", "electric", 0]]);
+    const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.electric, 0]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -2591,7 +2581,7 @@ describe("Gen 4 damage calc — ability immunities", () => {
       defense: 80,
       spAttack: 120,
       spDefense: 80,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const thickFatDefender = createActivePokemon({
       level: 50,
@@ -2599,10 +2589,10 @@ describe("Gen 4 damage calc — ability immunities", () => {
       defense: 80,
       spAttack: 120,
       spDefense: 80,
-      types: ["normal"],
-      ability: "thick-fat",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.thickFat,
     });
-    const fireMove = createMove({ type: "fire", power: 80, category: "special" });
+    const fireMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const thickFatResult = calculateGen4Damage(
@@ -2629,7 +2619,7 @@ describe("Gen 4 damage calc — ability immunities", () => {
       defense: 80,
       spAttack: 120,
       spDefense: 80,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const noAbilityResult = calculateGen4Damage(
       createDamageContext({
@@ -2661,7 +2651,7 @@ describe("Gen 4 damage calc — Explosion / Self-Destruct", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -2669,19 +2659,19 @@ describe("Gen 4 damage calc — Explosion / Self-Destruct", () => {
       defense: 200, // high defense to make the halving effect observable
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const noHalveMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 250,
       category: "physical",
       id: "normal-250",
     });
     const explosionMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 250,
       category: "physical",
-      id: "explosion",
+      id: GEN4_MOVE_IDS.explosion,
     });
     const chart = createNeutralTypeChart();
 
@@ -2719,7 +2709,7 @@ describe("Gen 4 damage calc — minimum damage", () => {
       defense: 1,
       spAttack: 1,
       spDefense: 1,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const bulkyDefender = createActivePokemon({
       level: 100,
@@ -2727,9 +2717,9 @@ describe("Gen 4 damage calc — minimum damage", () => {
       defense: 999,
       spAttack: 100,
       spDefense: 999,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 10, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 10, category: "physical" });
     const chart = createNeutralTypeChart();
     // Use minimum random roll (85) to make result as small as possible
     const ctx = createDamageContext({
@@ -2752,7 +2742,7 @@ describe("Gen 4 damage calc — minimum damage", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const ghostDefender = createActivePokemon({
       level: 50,
@@ -2760,10 +2750,10 @@ describe("Gen 4 damage calc — minimum damage", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["ghost"],
+      types: [CORE_TYPE_IDS.ghost],
     });
-    const normalMove = createMove({ type: "normal", power: 150, category: "physical" });
-    const chart = createTypeChart([["normal", "ghost", 0]]);
+    const normalMove = createMove({ type: CORE_TYPE_IDS.normal, power: 150, category: "physical" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.normal, CORE_TYPE_IDS.ghost, 0]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -2795,7 +2785,7 @@ describe("Gen 4 damage calc — breakdown completeness", () => {
       defense: 100,
       spAttack: 120,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const fireDefender = createActivePokemon({
       level: 50,
@@ -2803,10 +2793,10 @@ describe("Gen 4 damage calc — breakdown completeness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 80,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
-    const surf = createMove({ type: "water", power: 95, category: "special", id: "surf" });
-    const chart = createTypeChart([["water", "fire", 2]]);
+    const surf = createMove({ type: CORE_TYPE_IDS.water, power: 95, category: "special", id: "surf" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -2845,7 +2835,7 @@ describe("Gen 4 damage calc — type chart integration", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const fireDefender = createActivePokemon({
       level: 50,
@@ -2853,9 +2843,9 @@ describe("Gen 4 damage calc — type chart integration", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+    const waterMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -2878,7 +2868,7 @@ describe("Gen 4 damage calc — type chart integration", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const groundDefender = createActivePokemon({
       level: 50,
@@ -2886,9 +2876,9 @@ describe("Gen 4 damage calc — type chart integration", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["ground"],
+      types: [CORE_TYPE_IDS.ground],
     });
-    const electricMove = createMove({ type: "electric", power: 90, category: "special" });
+    const electricMove = createMove({ type: CORE_TYPE_IDS.electric, power: 90, category: "special" });
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -2921,7 +2911,7 @@ describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
     const drySkinDefender = createActivePokemon({
       level: 50,
@@ -2929,8 +2919,8 @@ describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      ability: "dry-skin",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.drySkin,
     });
     const noAbilityDefender = createActivePokemon({
       level: 50,
@@ -2938,9 +2928,9 @@ describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = createMove({ type: "fire", power: 80, category: "special" });
+    const fireMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const drySkinResult = calculateGen4Damage(
@@ -2995,8 +2985,8 @@ describe("Gen 4 damage calc — Plates (4915/4096 base power boost)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
-      heldItem: "flame-plate",
+      types: [CORE_TYPE_IDS.fire],
+      heldItem: GEN4_ITEM_IDS.flamePlate,
     });
     const noItemAttacker = createActivePokemon({
       level: 50,
@@ -3004,7 +2994,7 @@ describe("Gen 4 damage calc — Plates (4915/4096 base power boost)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -3012,9 +3002,9 @@ describe("Gen 4 damage calc — Plates (4915/4096 base power boost)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = createMove({ type: "fire", power: 80, category: "special" });
+    const fireMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const plateResult = calculateGen4Damage(
@@ -3040,7 +3030,7 @@ describe("Gen 4 damage calc — Plates (4915/4096 base power boost)", () => {
   it("given Gen 4 type list, when checking for Fairy type, then Fairy is absent (Fairy introduced Gen 6)", () => {
     // Source: Bulbapedia — Fairy type was introduced in Generation VI (X/Y)
     // Pixie Plate (fairy) must NOT exist in Gen 4 — no Fairy type means no Fairy plate bonus
-    expect(GEN4_TYPES).not.toContain("fairy");
+    expect(GEN4_TYPES).not.toContain(CORE_TYPE_IDS.fairy);
     // Gen 4 has exactly 17 types: Normal, Fire, Water, Grass, Electric, Ice, Fighting,
     // Poison, Ground, Flying, Psychic, Bug, Rock, Ghost, Dragon, Dark, Steel
     // Source: Bulbapedia — Generation IV type chart has 17 types
@@ -3070,18 +3060,18 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["grass"],
+      types: [CORE_TYPE_IDS.grass],
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -3129,18 +3119,18 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["normal"], // no STAB with grass
+      types: [CORE_TYPE_IDS.normal], // no STAB with grass
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -3181,18 +3171,18 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -3218,18 +3208,18 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -3271,8 +3261,8 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["normal"],
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_MOVE_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
@@ -3282,9 +3272,9 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3305,8 +3295,8 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"], // no STAB on normal move
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting], // no STAB on normal move
+      heldItem: GEN4_MOVE_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
@@ -3316,9 +3306,9 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3335,8 +3325,8 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"], // no STAB on normal move
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting], // no STAB on normal move
+      heldItem: GEN4_MOVE_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
@@ -3346,9 +3336,9 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3367,8 +3357,8 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_MOVE_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
@@ -3378,9 +3368,9 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3397,7 +3387,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
       heldItem: null, // NOT holding metronome
     });
     attacker.volatileStatuses.set("metronome-count", {
@@ -3408,9 +3398,9 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3437,11 +3427,11 @@ describe("Gen 4 damage calc — weather before +2 order (#349)", () => {
     // Derivation: L50, power=80, Atk=100, Def=100, rng=100
     //   baseDmg = floor(floor(22*80*100/100)/50) = 35
     //   weather(rain, water) = floor(35*1.5) = 52; +2 = 54
-    //   random=100%, no STAB (attacker=["normal"]), neutral eff => 54
+    //   random=100%, no STAB (attacker=[CORE_TYPE_IDS.normal]), neutral eff => 54
     // OLD BUG: +2 first → 37, then floor(37*1.5) = 55 (wrong)
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "water", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3464,9 +3454,9 @@ describe("Gen 4 damage calc — weather before +2 order (#349)", () => {
     //   baseDmg = floor(floor(22*100*120/90)/50) = floor(floor(29333.33)/50) = floor(2933/50) = 58
     //   weather(sun, fire) = floor(58*1.5) = 87; +2 = 89
     // OLD BUG: +2 first → 60, then floor(60*1.5) = 90 (wrong)
-    const attacker = createActivePokemon({ attack: 120, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 120, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 90 });
-    const move = createMove({ type: "fire", power: 100, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 100, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3495,10 +3485,10 @@ describe("Gen 4 damage calc — Flash Fire as damage modifier (#352)", () => {
     //   baseDmg = floor(floor(22*60*120/100)/50) = floor(1584/50) = 31
     //   Flash Fire (damage mod): floor(31*1.5) = 46; +2 = 48
     // OLD BUG: power*1.5 first → power=90, baseDmg=floor(floor(22*90*120/100)/50)+2 = 47+2 = 49
-    const attacker = createActivePokemon({ attack: 120, types: ["normal"] });
-    attacker.volatileStatuses.set("flash-fire", { turnsLeft: -1 });
+    const attacker = createActivePokemon({ attack: 120, types: [CORE_TYPE_IDS.normal] });
+    attacker.volatileStatuses.set(CORE_ABILITY_IDS.flashFire, { turnsLeft: -1 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "fire", power: 60, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 60, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3514,10 +3504,10 @@ describe("Gen 4 damage calc — Flash Fire as damage modifier (#352)", () => {
     // Derivation: L50, power=100, Atk=80, Def=100, rng=100
     //   baseDmg = floor(floor(22*100*80/100)/50) = floor(1760/50) = 35
     //   Flash Fire: floor(35*1.5) = 52; +2 = 54
-    const attacker = createActivePokemon({ attack: 80, types: ["normal"] });
-    attacker.volatileStatuses.set("flash-fire", { turnsLeft: -1 });
+    const attacker = createActivePokemon({ attack: 80, types: [CORE_TYPE_IDS.normal] });
+    attacker.volatileStatuses.set(CORE_ABILITY_IDS.flashFire, { turnsLeft: -1 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "fire", power: 100, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 100, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3541,13 +3531,13 @@ describe("Gen 4 damage calc — Thick Fat halves base power (#353)", () => {
     //   baseDmg = floor(floor(22*40*100/100)/50) = floor(880/50) = 17; +2 = 19
     // OLD BUG: attack halved instead → atk=50, baseDmg=floor(floor(22*80*50/100)/50)+2 = floor(880/50)+2 = 17+2 = 19
     // (Same result with these numbers — use different ones to distinguish)
-    const attacker = createActivePokemon({ attack: 130, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 130, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({
       defense: 100,
-      ability: "thick-fat",
-      types: ["normal"],
+      ability: GEN4_ABILITY_IDS.thickFat,
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "fire", power: 90, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 90, category: "physical" });
     const chart = createNeutralTypeChart();
 
     // Power halved: power = floor(90/2) = 45
@@ -3597,13 +3587,13 @@ describe("Gen 4 damage calc — Thick Fat halves base power (#353)", () => {
     //   baseDmg = floor(floor(22*36*100/100)/50) = floor(792/50) = 15; +2 = 17
     // OLD BUG (attack halved): floor(100/2)=50
     //   baseDmg = floor(floor(22*73*50/100)/50) = floor(803/50) = 16; +2 = 18 (WRONG)
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({
       defense: 100,
-      ability: "thick-fat",
-      types: ["normal"],
+      ability: GEN4_ABILITY_IDS.thickFat,
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "ice", power: 73, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.ice, power: 73, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3630,13 +3620,13 @@ describe("Gen 4 damage calc — Heatproof post-formula 0.5x modifier (#355)", ()
     //   baseDmg = floor(floor(22*73*100/100)/50)+2 = floor(1606/50)+2 = 32+2 = 34
     //   crit=1x, random=100/100=1x, STAB=none, effectiveness=1x → 34
     //   Heatproof (post-formula): floor(34 * 0.5) = 17
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({
       defense: 100,
-      ability: "heatproof",
-      types: ["steel"],
+      ability: GEN4_ABILITY_IDS.heatproof,
+      types: [CORE_TYPE_IDS.steel],
     });
-    const move = createMove({ type: "fire", power: 73, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 73, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3654,13 +3644,13 @@ describe("Gen 4 damage calc — Heatproof post-formula 0.5x modifier (#355)", ()
     //   22*91=2002, 2002*110=220220, floor(220220/100)=2202, floor(2202/50)=44; +2=46
     //   crit=1x, random=100/100=1x, STAB=none, effectiveness=1x → 46
     //   Heatproof (post-formula): floor(46 * 0.5) = 23
-    const attacker = createActivePokemon({ spAttack: 110, types: ["normal"] });
+    const attacker = createActivePokemon({ spAttack: 110, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({
       spDefense: 100,
-      ability: "heatproof",
-      types: ["steel"],
+      ability: GEN4_ABILITY_IDS.heatproof,
+      types: [CORE_TYPE_IDS.steel],
     });
-    const move = createMove({ type: "fire", power: 91, category: "special" });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 91, category: "special" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3688,11 +3678,11 @@ describe("Gen 4 damage calc — Life Orb in Phase 2 (#357)", () => {
     //   then Life Orb: floor(31*1.3) = 40 (happens to be same here — use crit for differentiation)
     const attacker = createActivePokemon({
       attack: 100,
-      types: ["fighting"],
-      heldItem: "life-orb",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_ITEM_IDS.lifeOrb,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3714,11 +3704,11 @@ describe("Gen 4 damage calc — Life Orb in Phase 2 (#357)", () => {
     //   OLD: crit=74, random=floor(74*0.85)=62, STAB=floor(62*1.5)=93, LO=floor(93*1.3)=120
     const attacker = createActivePokemon({
       attack: 100,
-      types: ["normal"],
-      heldItem: "life-orb",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_ITEM_IDS.lifeOrb,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3743,11 +3733,11 @@ describe("Gen 4 damage calc — Muscle Band and Wise Glasses base power (#366)",
     //   baseDmg = floor(floor(22*98*100/100)/50) = floor(2156/50) = 43; +2 = 45
     const attacker = createActivePokemon({
       attack: 100,
-      types: ["fighting"],
-      heldItem: "muscle-band",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_ITEM_IDS.muscleBand,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 90, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 90, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3766,11 +3756,11 @@ describe("Gen 4 damage calc — Muscle Band and Wise Glasses base power (#366)",
     //   baseDmg = floor(floor(22*98*100/100)/50) = floor(2156/50) = 43; +2 = 45
     const attacker = createActivePokemon({
       spAttack: 100,
-      types: ["fighting"],
-      heldItem: "wise-glasses",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_ITEM_IDS.wiseGlasses,
     });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "normal", power: 90, category: "special" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 90, category: "special" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3817,12 +3807,12 @@ describe("Gen 4 damage calc — Expert Belt 4915/4096 (#369)", () => {
     // OLD: floor(100*1.2) = 120. DIFFERENT!
     const attacker = createActivePokemon({
       attack: 137,
-      types: ["normal"],
-      heldItem: "expert-belt",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_ITEM_IDS.expertBelt,
     });
-    const defender = createActivePokemon({ defense: 100, types: ["grass"] });
-    const move = createMove({ type: "fire", power: 80, category: "physical" });
-    const chart = createTypeChart([["fire", "grass", 2]]);
+    const defender = createActivePokemon({ defense: 100, types: [CORE_TYPE_IDS.grass] });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "physical" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.grass, 2]]);
 
     const result = calculateGen4Damage(
       createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
@@ -3840,12 +3830,12 @@ describe("Gen 4 damage calc — Expert Belt 4915/4096 (#369)", () => {
     //   Expert Belt: floor(74*4915/4096) = floor(88.72..) = 88
     const attacker = createActivePokemon({
       attack: 100,
-      types: ["normal"],
-      heldItem: "expert-belt",
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN4_ITEM_IDS.expertBelt,
     });
-    const defender = createActivePokemon({ defense: 100, types: ["grass"] });
-    const move = createMove({ type: "fire", power: 80, category: "physical" });
-    const chart = createTypeChart([["fire", "grass", 2]]);
+    const defender = createActivePokemon({ defense: 100, types: [CORE_TYPE_IDS.grass] });
+    const move = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "physical" });
+    const chart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.grass, 2]]);
 
     const result = calculateGen4Damage(
       createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
@@ -3857,29 +3847,28 @@ describe("Gen 4 damage calc — Expert Belt 4915/4096 (#369)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// #377 — No Teravolt/Turboblaze in Gen 4
+// #377 — Non-Mold-Breaker bypass guard
 // ---------------------------------------------------------------------------
 
-describe("Gen 4 damage calc — no Teravolt/Turboblaze (#377)", () => {
-  it("given attacker with ability=teravolt attacking Flower Gift defender in sun, when calculating damage, then Flower Gift SpDef boost still applies (teravolt is not mold-breaker in Gen 4)", () => {
-    // Source: Bulbapedia — Teravolt was introduced in Gen 5 for Zekrom.
-    // In Gen 4, only Mold Breaker exists. An attacker with "teravolt" should NOT
-    // bypass Flower Gift (since teravolt doesn't exist in Gen 4).
+describe("Gen 4 damage calc — non-Mold-Breaker bypass guard (#377)", () => {
+  it("given attacker with a non-bypassing ability attacking Flower Gift defender in sun, when calculating damage, then Flower Gift SpDef boost still applies", () => {
+    // Source: Bulbapedia — only Mold Breaker-style effects bypass defensive abilities in Gen 4.
+    // This ensures a normal ability does not accidentally bypass Flower Gift.
     // Derivation: L50, power=80, SpAtk=100, SpDef=100 (→150 with FG), rng=100
     //   no STAB [fighting attacker, normal move]
-    //   def = floor(100*150/100) = 150 (Flower Gift boost APPLIED, teravolt doesn't block)
+    //   def = floor(100*150/100) = 150 (Flower Gift boost APPLIED, non-bypassing ability doesn't block)
     //   baseDmg = floor(floor(22*80*100/150)/50) = floor(floor(1173.33)/50) = floor(1173/50) = 23; +2 = 25
     const attacker = createActivePokemon({
       spAttack: 100,
-      ability: "teravolt",
-      types: ["fighting"],
+      ability: CORE_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       spDefense: 100,
-      ability: "flower-gift",
-      types: ["normal"],
+      ability: GEN4_ABILITY_IDS.flowerGift,
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3893,24 +3882,23 @@ describe("Gen 4 damage calc — no Teravolt/Turboblaze (#377)", () => {
       chart,
     );
 
-    // Flower Gift boost applied (SpDef=150), not bypassed by teravolt
+    // Flower Gift boost applied (SpDef=150), not bypassed by the attacker ability
     expect(result.damage).toBe(25);
   });
 
-  it("given attacker with ability=turboblaze attacking Flower Gift defender in sun, when calculating damage, then Flower Gift still applies", () => {
-    // Source: Bulbapedia — Turboblaze was introduced in Gen 5 for Reshiram.
-    // Same as above — turboblaze should not bypass Flower Gift in Gen 4.
+  it("given attacker with a non-bypassing ability attacking Flower Gift defender in sun, when calculating damage, then Flower Gift still applies", () => {
+    // Source: Bulbapedia — only Mold Breaker-style effects bypass defensive abilities in Gen 4.
     const attacker = createActivePokemon({
       spAttack: 100,
-      ability: "turboblaze",
-      types: ["fighting"],
+      ability: CORE_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       spDefense: 100,
-      ability: "flower-gift",
-      types: ["normal"],
+      ability: GEN4_ABILITY_IDS.flowerGift,
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3946,15 +3934,15 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
     //   count=3: new=1.2x, old=1.4x → values differ
     const attacker = createActivePokemon({
       attack: 100,
-      types: ["fighting"],
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_MOVE_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
       data: { count: 3, moveId: "test" },
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3976,15 +3964,15 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
     //   Phase2: floor(41*1.2)=49, random=floor(49*0.85)=41 → 41 (DIFFERENT! 38 vs 41)
     const attacker = createActivePokemon({
       attack: 100,
-      types: ["fighting"],
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: GEN4_MOVE_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
       data: { count: 2, moveId: "test" },
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 90, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 90, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -4008,9 +3996,9 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     //   baseDmg = floor(floor(22*80*100/100)/50) = 35
     //   Reflect: floor(35/2) = 17; +2 = 19
     // Without Reflect: baseDmg=35, +2=37 → 37
-    const attacker = createActivePokemon({ attack: 100, types: ["fighting"] });
+    const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.fighting] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4035,9 +4023,9 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     //   no STAB [fighting attacker, normal move]
     //   baseDmg = floor(floor(22*80*100/100)/50) = 35
     //   Light Screen: floor(35/2) = 17; +2 = 19
-    const attacker = createActivePokemon({ spAttack: 100, types: ["fighting"] });
+    const attacker = createActivePokemon({ spAttack: 100, types: [CORE_TYPE_IDS.fighting] });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4062,9 +4050,9 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     // Derivation: L50, power=80, Atk=100, Def=100, rng=100, crit=true
     //   baseDmg = 35; no screen reduction on crit; +2 = 37; crit: 37*2 = 74
     //   random=74; STAB(normal)=floor(74*1.5)=111 → 111
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4090,13 +4078,13 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     // Derivation: L50, power=75 (Brick Break), Atk=100, Def=100, rng=100
     //   baseDmg = floor(floor(22*75*100/100)/50) = floor(1650/50) = 33
     //   No screen reduction (Brick Break bypasses); +2 = 35 → 35
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 100 });
     const move = createMove({
-      type: "fighting",
+      type: CORE_TYPE_IDS.fighting,
       power: 75,
       category: "physical",
-      id: "brick-break",
+      id: GEN4_MOVE_IDS.brickBreak,
     });
     const chart = createNeutralTypeChart();
 
@@ -4132,7 +4120,7 @@ describe("Gen 4 damage calc — null power / status moves (issue #429)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -4140,13 +4128,13 @@ describe("Gen 4 damage calc — null power / status moves (issue #429)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     // Construct a move with power explicitly set to null (status move)
     const statusMove: MoveData = {
-      id: "growl",
+      id: CORE_MOVE_IDS.growl,
       displayName: "Growl",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       power: null,
       accuracy: 100,
@@ -4192,12 +4180,12 @@ describe("Gen 4 damage calc — null power / status moves (issue #429)", () => {
     // Exercises calculateGen4Damage power===0 branch (Gen4DamageCalc.ts:531)
     // Some moves that conditionally deal no damage (e.g., failed variable-power moves) have power=0.
     // Source: Showdown sim/battle.ts — power === 0 treated same as null (no damage)
-    const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
+    const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({ defense: 100, types: [CORE_TYPE_IDS.normal] });
     const zeroPowerMove: MoveData = {
-      id: "splash",
+      id: CORE_MOVE_IDS.splash,
       displayName: "Splash",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "status",
       power: 0,
       accuracy: 100,
@@ -4261,7 +4249,7 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defenderNoHeatproof = createActivePokemon({
       level: 50,
@@ -4269,7 +4257,7 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defenderHeatproof = createActivePokemon({
       level: 50,
@@ -4277,14 +4265,14 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      ability: "heatproof",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.heatproof,
     });
     const firePhysicalMove = createMove({
-      type: "fire",
+      type: CORE_TYPE_IDS.fire,
       power: 80,
       category: "physical",
-      id: "fire-punch",
+      id: GEN4_MOVE_IDS.firePunch,
     });
     const chart = createNeutralTypeChart();
 
@@ -4328,7 +4316,7 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defenderNoHeatproof = createActivePokemon({
       level: 50,
@@ -4336,7 +4324,7 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defenderHeatproof = createActivePokemon({
       level: 50,
@@ -4344,14 +4332,14 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      ability: "heatproof",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.heatproof,
     });
     const fireSpecialMove = createMove({
-      type: "fire",
+      type: CORE_TYPE_IDS.fire,
       power: 90,
       category: "special",
-      id: "flamethrower",
+      id: CORE_MOVE_IDS.flamethrower,
     });
     const chart = createNeutralTypeChart();
 
@@ -4404,8 +4392,8 @@ describe("Gen 4 damage calc — Mold Breaker bypasses Heatproof (issue #430 adde
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["bug"],
-      ability: "mold-breaker",
+      types: [CORE_TYPE_IDS.bug],
+      ability: CORE_ABILITY_IDS.moldBreaker,
     });
     const defenderHeatproof = createActivePokemon({
       level: 50,
@@ -4413,14 +4401,14 @@ describe("Gen 4 damage calc — Mold Breaker bypasses Heatproof (issue #430 adde
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      ability: "heatproof",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.heatproof,
     });
     const firePhysicalMove = createMove({
-      type: "fire",
+      type: CORE_TYPE_IDS.fire,
       power: 80,
       category: "physical",
-      id: "fire-punch",
+      id: GEN4_MOVE_IDS.firePunch,
     });
     const chart = createNeutralTypeChart();
 
@@ -4465,7 +4453,7 @@ describe("Gen 4 damage calc — sandstorm Rock SpDef boost (issue #440)", () => 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["ice"],
+      types: [CORE_TYPE_IDS.ice],
     });
     const rockDefender = createActivePokemon({
       level: 50,
@@ -4473,10 +4461,10 @@ describe("Gen 4 damage calc — sandstorm Rock SpDef boost (issue #440)", () => 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["rock"],
+      types: [CORE_TYPE_IDS.rock],
     });
     const specialMove = createMove({
-      type: "water",
+      type: CORE_TYPE_IDS.water,
       power: 80,
       category: "special",
     });
@@ -4522,14 +4510,14 @@ describe("Gen 4 damage calc — sandstorm Rock SpDef boost (issue #440)", () => 
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 100,
-      types: ["ice"],
+      types: [CORE_TYPE_IDS.ice],
     });
     const normalDefender = createActivePokemon({
       level: 50,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = createMove({ type: "water", power: 80, category: "special" });
+    const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
 
     const noSandstormResult = calculateGen4Damage(
@@ -4581,7 +4569,7 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -4589,19 +4577,19 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const explosionMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 250,
       category: "physical",
-      id: "explosion",
+      id: GEN4_MOVE_IDS.explosion,
     });
     const normalPhysicalMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 250,
       category: "physical",
-      id: "hyper-beam",
+      id: CORE_MOVE_IDS.hyperBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -4647,7 +4635,7 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -4655,19 +4643,19 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const selfDestructMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 200,
       category: "physical",
-      id: "self-destruct",
+      id: GEN4_MOVE_IDS.selfDestruct,
     });
     const normalMove200 = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 200,
       category: "physical",
-      id: "double-edge",
+      id: CORE_MOVE_IDS.doubleEdge,
     });
     const chart = createNeutralTypeChart();
 
@@ -4712,7 +4700,7 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -4720,19 +4708,19 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const explosionMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 250,
       category: "physical",
-      id: "explosion",
+      id: GEN4_MOVE_IDS.explosion,
     });
     const selfDestructMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 200,
       category: "physical",
-      id: "self-destruct",
+      id: GEN4_MOVE_IDS.selfDestruct,
     });
     const chart = createNeutralTypeChart();
 
@@ -4784,7 +4772,7 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -4792,13 +4780,13 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -4839,18 +4827,18 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const defender = createActivePokemon({
       level: 50,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -4878,18 +4866,18 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const defender = createActivePokemon({
       level: 50,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 
@@ -4919,18 +4907,18 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
     const defender = createActivePokemon({
       level: 50,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const solarBeam = createMove({
-      type: "grass",
+      type: CORE_TYPE_IDS.grass,
       power: 120,
       category: "special",
-      id: "solar-beam",
+      id: CORE_MOVE_IDS.solarBeam,
     });
     const chart = createNeutralTypeChart();
 

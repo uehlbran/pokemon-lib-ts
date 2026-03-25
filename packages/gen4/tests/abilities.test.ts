@@ -1,7 +1,22 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  CORE_VOLATILE_IDS,
+  type Gender,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  type PrimaryStatus,
+  type WeatherType,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { applyGen4Ability } from "../src/Gen4Abilities";
+import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "../src/data/reference-ids";
 
 /**
  * Gen 4 Ability Tests
@@ -25,7 +40,7 @@ function makePokemonInstance(overrides: {
   nickname?: string | null;
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   defense?: number;
@@ -72,7 +87,7 @@ function makeActivePokemon(overrides: {
   types?: PokemonType[];
   speciesId?: number;
   nickname?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   heldItem?: string | null;
@@ -105,7 +120,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [CORE_TYPE_IDS.normal],
     ability: overrides.ability ?? "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -143,7 +158,7 @@ function makeSide(index: 0 | 1): BattleSide {
 }
 
 function makeBattleState(weather?: {
-  type: "sand" | "hail" | "rain" | "sun";
+  type: WeatherType;
   turnsLeft: number;
   source: string;
 }): BattleState {
@@ -197,8 +212,8 @@ function makeContext(opts: {
   ability: string;
   types?: PokemonType[];
   opponent?: ReturnType<typeof makeActivePokemon>;
-  weather?: { type: "sand" | "hail" | "rain" | "sun"; turnsLeft: number; source: string };
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  weather?: { type: "sand" | CORE_WEATHER_IDS.hail | CORE_WEATHER_IDS.rain | CORE_WEATHER_IDS.sun; turnsLeft: number; source: string };
+  status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   defense?: number;
@@ -256,37 +271,37 @@ function makeContext(opts: {
 describe("applyGen4Ability on-switch-in — Drizzle", () => {
   it("given Drizzle, when Pokemon switches in, then sets rain weather with -1 turns (permanent)", () => {
     // Source: Showdown Gen 4 mod — Drizzle sets permanent rain on switch-in (Gen 4: no turn limit)
-    const ctx = makeContext({ ability: "drizzle" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.drizzle });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
     expect(result.effects[0]).toMatchObject({
       effectType: "weather-set",
-      weather: "rain",
+      weather: CORE_WEATHER_IDS.rain,
       weatherTurns: -1,
     });
   });
 
   it("given Drizzle, when Pokemon switches in, then message mentions rain", () => {
     // Source: Showdown Gen 4 mod — Drizzle message text
-    const ctx = makeContext({ ability: "drizzle" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.drizzle });
     const result = applyGen4Ability("on-switch-in", ctx);
 
-    expect(result.messages[0]).toContain("rain");
+    expect(result.messages[0]).toContain(CORE_WEATHER_IDS.rain);
   });
 });
 
 describe("applyGen4Ability on-switch-in — Drought", () => {
   it("given Drought, when Pokemon switches in, then sets sun weather with -1 turns (permanent)", () => {
     // Source: Showdown Gen 4 mod — Drought sets permanent sun on switch-in
-    const ctx = makeContext({ ability: "drought" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.drought });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
       effectType: "weather-set",
-      weather: "sun",
+      weather: CORE_WEATHER_IDS.sun,
       weatherTurns: -1,
     });
   });
@@ -295,7 +310,7 @@ describe("applyGen4Ability on-switch-in — Drought", () => {
 describe("applyGen4Ability on-switch-in — Sand Stream", () => {
   it("given Sand Stream, when Pokemon switches in, then sets sandstorm weather with -1 turns (permanent)", () => {
     // Source: Showdown Gen 4 mod — Sand Stream sets permanent sandstorm on switch-in
-    const ctx = makeContext({ ability: "sand-stream" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.sandStream });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
@@ -311,23 +326,23 @@ describe("applyGen4Ability on-switch-in — Snow Warning (NEW in Gen 4)", () => 
   it("given Snow Warning, when Pokemon switches in, then sets hail weather with -1 turns (permanent)", () => {
     // Source: Bulbapedia — Snow Warning introduced in Gen 4 with Abomasnow; sets permanent hail
     // Source: Showdown Gen 4 mod — Snow Warning trigger
-    const ctx = makeContext({ ability: "snow-warning" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.snowWarning });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
       effectType: "weather-set",
-      weather: "hail",
+      weather: CORE_WEATHER_IDS.hail,
       weatherTurns: -1,
     });
   });
 
   it("given Snow Warning, when Pokemon switches in, then message mentions hail", () => {
     // Source: Showdown Gen 4 mod — Snow Warning message text
-    const ctx = makeContext({ ability: "snow-warning" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.snowWarning });
     const result = applyGen4Ability("on-switch-in", ctx);
 
-    expect(result.messages[0]).toContain("hail");
+    expect(result.messages[0]).toContain(CORE_WEATHER_IDS.hail);
   });
 });
 
@@ -339,7 +354,7 @@ describe("applyGen4Ability on-switch-in — Intimidate", () => {
   it("given Intimidate and an opponent present, when Pokemon switches in, then lowers opponent Attack by 1 stage", () => {
     // Source: Showdown Gen 4 mod — Intimidate lowers opponent's Attack -1 on switch-in
     const opponent = makeActivePokemon({ ability: "", speciesId: 2 });
-    const ctx = makeContext({ ability: "intimidate", opponent });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.intimidate, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
@@ -353,7 +368,7 @@ describe("applyGen4Ability on-switch-in — Intimidate", () => {
 
   it("given Intimidate and no opponent present, when Pokemon switches in, then does not activate", () => {
     // Source: Showdown Gen 4 mod — Intimidate requires an opponent to lower
-    const ctx = makeContext({ ability: "intimidate" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.intimidate });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(false);
@@ -370,7 +385,7 @@ describe("applyGen4Ability on-switch-in — Download (NEW in Gen 4)", () => {
     // Source: Showdown Gen 4 mod — Download trigger
     // Derivation: foe has Def=80, SpDef=100 → 80 < 100 → +1 Atk
     const opponent = makeActivePokemon({ defense: 80, spDefense: 100 });
-    const ctx = makeContext({ ability: "download", opponent });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.download, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
@@ -386,7 +401,7 @@ describe("applyGen4Ability on-switch-in — Download (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Download: raises SpAtk if foe Def >= SpDef
     // Derivation: foe has Def=100, SpDef=80 → 100 >= 80 → +1 SpAtk
     const opponent = makeActivePokemon({ defense: 100, spDefense: 80 });
-    const ctx = makeContext({ ability: "download", opponent });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.download, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
@@ -402,7 +417,7 @@ describe("applyGen4Ability on-switch-in — Download (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Download raises SpAtk when Def >= SpDef (equal counts as >=)
     // Derivation: foe has Def=100, SpDef=100 → 100 >= 100 → +1 SpAtk
     const opponent = makeActivePokemon({ defense: 100, spDefense: 100 });
-    const ctx = makeContext({ ability: "download", opponent });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.download, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
@@ -421,7 +436,7 @@ describe("applyGen4Ability on-switch-in — Download (NEW in Gen 4)", () => {
 describe("applyGen4Ability on-switch-in — Anticipation", () => {
   it("given Anticipation without DataManager, when Pokemon switches in, then does not activate", () => {
     // Anticipation requires DataManager to scan opponent moves; without one it returns false
-    const ctx = makeContext({ ability: "anticipation" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.anticipation });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(false);
@@ -432,14 +447,14 @@ describe("applyGen4Ability on-switch-in — Forewarn", () => {
   it("given Forewarn without DataManager, when Pokemon switches in, then does not activate", () => {
     // Forewarn requires DataManager to scan opponent moves; without one it returns false
     const opponent = makeActivePokemon({ speciesId: 2 });
-    const ctx = makeContext({ ability: "forewarn", opponent });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.forewarn, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(false);
   });
 
   it("given Forewarn with no opponent, when Pokemon switches in, then does not activate", () => {
-    const ctx = makeContext({ ability: "forewarn" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.forewarn });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(false);
@@ -449,12 +464,12 @@ describe("applyGen4Ability on-switch-in — Forewarn", () => {
 describe("applyGen4Ability on-switch-in — Frisk", () => {
   it("given Frisk and an opponent holding an item, when Pokemon switches in, then activates and reveals the item", () => {
     // Source: Bulbapedia — Frisk: reveals foe's held item on switch-in (informational)
-    const opponent = makeActivePokemon({ heldItem: "leftovers", speciesId: 2 });
-    const ctx = makeContext({ ability: "frisk", opponent });
+    const opponent = makeActivePokemon({ heldItem: CORE_ITEM_IDS.leftovers, speciesId: 2 });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.frisk, opponent });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("leftovers");
+    expect(result.messages[0]).toContain(CORE_ITEM_IDS.leftovers);
   });
 });
 
@@ -462,7 +477,7 @@ describe("applyGen4Ability on-switch-in — Slow Start", () => {
   it("given Slow Start, when Pokemon switches in, then sets slow-start volatile with 5 turns and a message", () => {
     // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns after switch-in
     // Source: Showdown Gen 4 mod — Slow Start counter initialized on switch-in
-    const ctx = makeContext({ ability: "slow-start" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.slowStart });
     const result = applyGen4Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
@@ -470,7 +485,7 @@ describe("applyGen4Ability on-switch-in — Slow Start", () => {
     expect(result.effects[0]).toMatchObject({
       effectType: "volatile-inflict",
       target: "self",
-      volatile: "slow-start",
+      volatile: GEN4_ABILITY_IDS.slowStart,
       data: { turnsLeft: 5 },
     });
     expect(result.messages).toHaveLength(1);
@@ -486,7 +501,7 @@ describe("applyGen4Ability on-turn-end — Speed Boost", () => {
   it("given Speed Boost on first turn (turnsOnField=0), when turn ends, then does NOT activate (first-turn skip)", () => {
     // Source: pret/pokeplatinum src/battle/battle_lib.c:3555-3558 — Speed Boost:
     //   fakeOutTurnNumber != totalTurns + 1 — does NOT activate on the first turn
-    const ctx = makeContext({ ability: "speed-boost", turnsOnField: 0 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.speedBoost, turnsOnField: 0 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -497,7 +512,7 @@ describe("applyGen4Ability on-turn-end — Speed Boost", () => {
     // Source: pret/pokeplatinum src/battle/battle_lib.c:3555-3558 — Speed Boost
     //   activates from turn 2 onward
     // Source: Bulbapedia — Speed Boost: raises Speed by 1 at end of each turn
-    const ctx = makeContext({ ability: "speed-boost", turnsOnField: 1 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.speedBoost, turnsOnField: 1 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
@@ -509,7 +524,7 @@ describe("applyGen4Ability on-turn-end — Speed Boost", () => {
   });
 
   it("given Speed Boost on second turn, when turn ends, then message mentions Speed Boost", () => {
-    const ctx = makeContext({ ability: "speed-boost", turnsOnField: 1 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.speedBoost, turnsOnField: 1 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.messages[0]).toContain("Speed Boost");
@@ -525,10 +540,10 @@ describe("applyGen4Ability on-turn-end — Rain Dish", () => {
     // Source: Bulbapedia — Rain Dish: restores 1/16 HP in rain each turn
     // Derivation: maxHp=160, floor(160/16) = 10
     const ctx = makeContext({
-      ability: "rain-dish",
+      ability: CORE_ABILITY_IDS.rainDish,
       maxHp: 160,
       currentHp: 100,
-      weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: "rain-dance" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -540,7 +555,7 @@ describe("applyGen4Ability on-turn-end — Rain Dish", () => {
 
   it("given Rain Dish and no rain, when turn ends, then does not activate", () => {
     // Source: Bulbapedia — Rain Dish only activates in rain
-    const ctx = makeContext({ ability: "rain-dish", maxHp: 160 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.rainDish, maxHp: 160 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -556,10 +571,10 @@ describe("applyGen4Ability on-turn-end — Ice Body (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Ice Body (Gen 4): heals 1/16 HP per turn in hail; also immune to hail chip
     // Derivation: maxHp=160, floor(160/16) = 10
     const ctx = makeContext({
-      ability: "ice-body",
+      ability: GEN4_ABILITY_IDS.iceBody,
       maxHp: 160,
       currentHp: 100,
-      weather: { type: "hail", turnsLeft: 5, source: "hail" },
+      weather: { type: CORE_WEATHER_IDS.hail, turnsLeft: 5, source: CORE_WEATHER_IDS.hail },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -570,7 +585,7 @@ describe("applyGen4Ability on-turn-end — Ice Body (NEW in Gen 4)", () => {
   });
 
   it("given Ice Body and no hail, when turn ends, then does not activate", () => {
-    const ctx = makeContext({ ability: "ice-body", maxHp: 160 });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.iceBody, maxHp: 160 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -586,10 +601,10 @@ describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Dry Skin: heals 1/8 HP in rain at end of turn
     // Derivation: maxHp=160, floor(160/8) = 20
     const ctx = makeContext({
-      ability: "dry-skin",
+      ability: GEN4_ABILITY_IDS.drySkin,
       maxHp: 160,
       currentHp: 100,
-      weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: "rain-dance" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -603,9 +618,9 @@ describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Dry Skin: takes 1/8 HP chip damage in sun at end of turn
     // Derivation: maxHp=160, floor(160/8) = 20 (positive — engine applies as damage)
     const ctx = makeContext({
-      ability: "dry-skin",
+      ability: GEN4_ABILITY_IDS.drySkin,
       maxHp: 160,
-      weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: "sunny-day" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -615,7 +630,7 @@ describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
   });
 
   it("given Dry Skin and no weather, when turn ends, then does not activate", () => {
-    const ctx = makeContext({ ability: "dry-skin", maxHp: 160 });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.drySkin, maxHp: 160 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -631,9 +646,9 @@ describe("applyGen4Ability on-turn-end — Solar Power (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Solar Power: takes 1/8 HP chip in sun; SpAtk 1.5x (damage calc)
     // Derivation: maxHp=160, floor(160/8) = 20 (positive — engine applies as damage)
     const ctx = makeContext({
-      ability: "solar-power",
+      ability: CORE_ABILITY_IDS.solarPower,
       maxHp: 160,
-      weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: "sunny-day" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -643,7 +658,7 @@ describe("applyGen4Ability on-turn-end — Solar Power (NEW in Gen 4)", () => {
   });
 
   it("given Solar Power and no sun, when turn ends, then does not activate", () => {
-    const ctx = makeContext({ ability: "solar-power", maxHp: 160 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.solarPower, maxHp: 160 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -658,9 +673,9 @@ describe("applyGen4Ability on-turn-end — Hydration (NEW in Gen 4)", () => {
   it("given Hydration, rain, and poison status, when turn ends, then cures the status", () => {
     // Source: Bulbapedia — Hydration: cures status at end of turn in rain
     const ctx = makeContext({
-      ability: "hydration",
-      status: "poison",
-      weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      ability: GEN4_ABILITY_IDS.hydration,
+      status: CORE_TYPE_IDS.poison,
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: "rain-dance" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -671,8 +686,8 @@ describe("applyGen4Ability on-turn-end — Hydration (NEW in Gen 4)", () => {
 
   it("given Hydration, rain, but no status, when turn ends, then does not activate", () => {
     const ctx = makeContext({
-      ability: "hydration",
-      weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      ability: GEN4_ABILITY_IDS.hydration,
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: "rain-dance" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -680,7 +695,7 @@ describe("applyGen4Ability on-turn-end — Hydration (NEW in Gen 4)", () => {
   });
 
   it("given Hydration, status, but no rain, when turn ends, then does not activate", () => {
-    const ctx = makeContext({ ability: "hydration", status: "burn" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.hydration, status: CORE_STATUS_IDS.burn });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -694,7 +709,7 @@ describe("applyGen4Ability on-turn-end — Hydration (NEW in Gen 4)", () => {
 describe("applyGen4Ability on-turn-end — Shed Skin", () => {
   it("given Shed Skin with a status and RNG succeeds, when turn ends, then cures the status", () => {
     // Source: Bulbapedia — Shed Skin: 33% chance to cure status each turn
-    const ctx = makeContext({ ability: "shed-skin", status: "paralysis", rngChance: true });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.shedSkin, status: CORE_STATUS_IDS.paralysis, rngChance: true });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
@@ -704,7 +719,7 @@ describe("applyGen4Ability on-turn-end — Shed Skin", () => {
 
   it("given Shed Skin with a status and RNG fails, when turn ends, then does not activate", () => {
     // Source: Bulbapedia — Shed Skin: 33% chance (RNG fail = no activation)
-    const ctx = makeContext({ ability: "shed-skin", status: "burn", rngChance: false });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.shedSkin, status: CORE_STATUS_IDS.burn, rngChance: false });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -712,7 +727,7 @@ describe("applyGen4Ability on-turn-end — Shed Skin", () => {
 
   it("given Shed Skin with no status, when turn ends, then does not activate regardless of RNG", () => {
     // Source: Bulbapedia — Shed Skin only checks if a status is present
-    const ctx = makeContext({ ability: "shed-skin", rngChance: true });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.shedSkin, rngChance: true });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -727,8 +742,8 @@ describe("applyGen4Ability on-turn-end — Bad Dreams (NEW in Gen 4)", () => {
   it("given Bad Dreams and a sleeping opponent, when turn ends, then deals 1/8 opponent's max HP with chip-damage effect type", () => {
     // Source: Bulbapedia — Bad Dreams: damages sleeping opponents for 1/8 HP each turn
     // Derivation: opponent maxHp=160, floor(160/8) = 20 (positive — engine applies as damage)
-    const opponent = makeActivePokemon({ status: "sleep", maxHp: 160 });
-    const ctx = makeContext({ ability: "bad-dreams", opponent });
+    const opponent = makeActivePokemon({ status: CORE_STATUS_IDS.sleep, maxHp: 160 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.badDreams, opponent });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
@@ -740,15 +755,15 @@ describe("applyGen4Ability on-turn-end — Bad Dreams (NEW in Gen 4)", () => {
 
   it("given Bad Dreams and a non-sleeping opponent, when turn ends, then does not activate", () => {
     // Source: Bulbapedia — Bad Dreams only affects sleeping opponents
-    const opponent = makeActivePokemon({ status: "burn" });
-    const ctx = makeContext({ ability: "bad-dreams", opponent });
+    const opponent = makeActivePokemon({ status: CORE_STATUS_IDS.burn });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.badDreams, opponent });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
   });
 
   it("given Bad Dreams and no opponent, when turn ends, then does not activate", () => {
-    const ctx = makeContext({ ability: "bad-dreams" });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.badDreams });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -764,8 +779,8 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Poison Heal: heals 1/8 HP per turn when poisoned (instead of damage)
     // Derivation: maxHp=160, currentHp=100, floor(160/8) = 20
     const ctx = makeContext({
-      ability: "poison-heal",
-      status: "poison",
+      ability: CORE_ABILITY_IDS.poisonHeal,
+      status: CORE_TYPE_IDS.poison,
       maxHp: 160,
       currentHp: 100,
     });
@@ -781,8 +796,8 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Poison Heal works for both regular and bad poison
     // Derivation: maxHp=160, currentHp=80, floor(160/8) = 20
     const ctx = makeContext({
-      ability: "poison-heal",
-      status: "badly-poisoned",
+      ability: CORE_ABILITY_IDS.poisonHeal,
+      status: CORE_STATUS_IDS.badlyPoisoned,
       maxHp: 160,
       currentHp: 80,
     });
@@ -799,8 +814,8 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Poison Heal: heals instead of taking damage; no damage is ever dealt
     // Source: Showdown Gen 4 mod — Poison Heal activates when poisoned regardless of current HP
     const ctx = makeContext({
-      ability: "poison-heal",
-      status: "poison",
+      ability: CORE_ABILITY_IDS.poisonHeal,
+      status: CORE_TYPE_IDS.poison,
       maxHp: 160,
       currentHp: 160,
     });
@@ -812,7 +827,7 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
 
   it("given Poison Heal and no status, when turn ends, then does not activate", () => {
     // Source: Bulbapedia — Poison Heal only triggers when holder is poisoned
-    const ctx = makeContext({ ability: "poison-heal", maxHp: 160, currentHp: 100 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.poisonHeal, maxHp: 160, currentHp: 100 });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(false);
@@ -833,7 +848,7 @@ describe("applyGen4Ability — unknown ability/trigger", () => {
   });
 
   it("given a known ability, when an unknown trigger fires, then returns not activated", () => {
-    const ctx = makeContext({ ability: "drizzle" });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.drizzle });
     // @ts-expect-error intentional unknown trigger for test
     const result = applyGen4Ability("on-faint", ctx);
 
@@ -851,10 +866,10 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     // Triangulation: second test with different maxHp to verify formula, not a constant
     // Derivation: maxHp=320, floor(320/16) = 20
     const ctx = makeContext({
-      ability: "rain-dish",
+      ability: CORE_ABILITY_IDS.rainDish,
       maxHp: 320,
       currentHp: 200,
-      weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: "rain-dance" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -868,10 +883,10 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     // Triangulation: confirms formula scales with maxHp
     // Derivation: maxHp=320, floor(320/16) = 20
     const ctx = makeContext({
-      ability: "ice-body",
+      ability: GEN4_ABILITY_IDS.iceBody,
       maxHp: 320,
       currentHp: 200,
-      weather: { type: "hail", turnsLeft: 5, source: "hail" },
+      weather: { type: CORE_WEATHER_IDS.hail, turnsLeft: 5, source: CORE_WEATHER_IDS.hail },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -885,9 +900,9 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     // Triangulation: confirms chip-damage value scales with maxHp
     // Derivation: maxHp=320, floor(320/8) = 40
     const ctx = makeContext({
-      ability: "dry-skin",
+      ability: GEN4_ABILITY_IDS.drySkin,
       maxHp: 320,
-      weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: "sunny-day" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -901,9 +916,9 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     // Triangulation: confirms chip-damage formula scales with maxHp
     // Derivation: maxHp=320, floor(320/8) = 40
     const ctx = makeContext({
-      ability: "solar-power",
+      ability: CORE_ABILITY_IDS.solarPower,
       maxHp: 320,
-      weather: { type: "sun", turnsLeft: 5, source: "sunny-day" },
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: "sunny-day" },
     });
     const result = applyGen4Ability("on-turn-end", ctx);
 
@@ -916,8 +931,8 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     // Source: Bulbapedia — Bad Dreams: damages sleeping opponents for 1/8 HP each turn
     // Triangulation: confirms chip-damage targets opponent and scales with opponent maxHp
     // Derivation: oppMaxHp=320, floor(320/8) = 40
-    const opponent = makeActivePokemon({ status: "sleep", maxHp: 320 });
-    const ctx = makeContext({ ability: "bad-dreams", opponent });
+    const opponent = makeActivePokemon({ status: CORE_STATUS_IDS.sleep, maxHp: 320 });
+    const ctx = makeContext({ ability: CORE_ABILITY_IDS.badDreams, opponent });
     const result = applyGen4Ability("on-turn-end", ctx);
 
     expect(result.activated).toBe(true);
@@ -931,8 +946,8 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     // Triangulation: confirms heal formula scales with maxHp
     // Derivation: maxHp=320, floor(320/8) = 40
     const ctx = makeContext({
-      ability: "poison-heal",
-      status: "poison",
+      ability: CORE_ABILITY_IDS.poisonHeal,
+      status: CORE_TYPE_IDS.poison,
       maxHp: 320,
       currentHp: 200,
     });
@@ -954,11 +969,11 @@ describe("applyGen4Ability — integration: Rain Dish end-to-end", () => {
     // Derivation: maxHp=160, currentHp=128 (80%), floor(160/16) = 10
     const maxHp = 160;
     const pokemon = makeActivePokemon({
-      ability: "rain-dish",
+      ability: CORE_ABILITY_IDS.rainDish,
       currentHp: 128,
       maxHp,
     });
-    const state = makeBattleState({ type: "rain", turnsLeft: 3, source: "drizzle" });
+    const state = makeBattleState({ type: CORE_WEATHER_IDS.rain, turnsLeft: 3, source: CORE_ABILITY_IDS.drizzle });
     const ctx: AbilityContext = {
       pokemon,
       state,
@@ -994,7 +1009,7 @@ describe("applyGen4Ability on-contact -- Static", () => {
     // Source: Showdown Gen 4 mod -- Static trigger
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "static",
+      ability: GEN4_ABILITY_IDS.static,
       opponent: attacker,
       rngNextValues: [0.1], // < 0.3, triggers
     });
@@ -1005,7 +1020,7 @@ describe("applyGen4Ability on-contact -- Static", () => {
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "paralysis",
+      status: CORE_STATUS_IDS.paralysis,
     });
   });
 
@@ -1013,7 +1028,7 @@ describe("applyGen4Ability on-contact -- Static", () => {
     // Source: Bulbapedia -- Static: 30% chance; RNG >= 0.3 means no trigger
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "static",
+      ability: GEN4_ABILITY_IDS.static,
       opponent: attacker,
       rngNextValues: [0.5], // >= 0.3, no trigger
     });
@@ -1024,9 +1039,9 @@ describe("applyGen4Ability on-contact -- Static", () => {
 
   it("given Static and attacker already has a status, when contact is made, then does not activate", () => {
     // Source: Bulbapedia -- Static: cannot paralyze a Pokemon that already has a status
-    const attacker = makeActivePokemon({ maxHp: 200, status: "burn" });
+    const attacker = makeActivePokemon({ maxHp: 200, status: CORE_STATUS_IDS.burn });
     const ctx = makeContext({
-      ability: "static",
+      ability: GEN4_ABILITY_IDS.static,
       opponent: attacker,
       rngNextValues: [0.1], // would trigger, but status blocks
     });
@@ -1046,7 +1061,7 @@ describe("applyGen4Ability on-contact -- Flame Body", () => {
     // Source: Showdown Gen 4 mod -- Flame Body trigger
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "flame-body",
+      ability: GEN4_ABILITY_IDS.flameBody,
       opponent: attacker,
       rngNextValues: [0.2], // < 0.3, triggers
     });
@@ -1056,15 +1071,15 @@ describe("applyGen4Ability on-contact -- Flame Body", () => {
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "burn",
+      status: CORE_STATUS_IDS.burn,
     });
   });
 
   it("given Flame Body and attacker already has a status, when contact is made, then does not activate", () => {
     // Source: Bulbapedia -- Flame Body: cannot burn if attacker already has a status condition
-    const attacker = makeActivePokemon({ maxHp: 200, status: "paralysis" });
+    const attacker = makeActivePokemon({ maxHp: 200, status: CORE_STATUS_IDS.paralysis });
     const ctx = makeContext({
-      ability: "flame-body",
+      ability: GEN4_ABILITY_IDS.flameBody,
       opponent: attacker,
       rngNextValues: [0.1],
     });
@@ -1084,7 +1099,7 @@ describe("applyGen4Ability on-contact -- Poison Point", () => {
     // Source: Showdown Gen 4 mod -- Poison Point trigger
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "poison-point",
+      ability: GEN4_ABILITY_IDS.poisonPoint,
       opponent: attacker,
       rngNextValues: [0.15], // < 0.3, triggers
     });
@@ -1094,15 +1109,15 @@ describe("applyGen4Ability on-contact -- Poison Point", () => {
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: CORE_TYPE_IDS.poison,
     });
   });
 
   it("given Poison Point and attacker already has a status, when contact is made, then does not activate", () => {
     // Source: Bulbapedia -- Poison Point: cannot poison if attacker already has a status condition
-    const attacker = makeActivePokemon({ maxHp: 200, status: "sleep" });
+    const attacker = makeActivePokemon({ maxHp: 200, status: CORE_STATUS_IDS.sleep });
     const ctx = makeContext({
-      ability: "poison-point",
+      ability: GEN4_ABILITY_IDS.poisonPoint,
       opponent: attacker,
       rngNextValues: [0.1],
     });
@@ -1123,7 +1138,7 @@ describe("applyGen4Ability on-contact -- Rough Skin", () => {
     // Derivation: floor(200/8) = 25
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "rough-skin",
+      ability: GEN4_ABILITY_IDS.roughSkin,
       opponent: attacker,
     });
     const result = applyGen4Ability("on-contact", ctx);
@@ -1142,7 +1157,7 @@ describe("applyGen4Ability on-contact -- Rough Skin", () => {
     // Derivation: floor(320/8) = 40
     const attacker = makeActivePokemon({ maxHp: 320 });
     const ctx = makeContext({
-      ability: "rough-skin",
+      ability: GEN4_ABILITY_IDS.roughSkin,
       opponent: attacker,
     });
     const result = applyGen4Ability("on-contact", ctx);
@@ -1160,7 +1175,7 @@ describe("applyGen4Ability on-contact -- Rough Skin", () => {
     // Derivation: floor(1/8) = 0, but Math.max(1, 0) = 1
     const attacker = makeActivePokemon({ maxHp: 1, currentHp: 1 });
     const ctx = makeContext({
-      ability: "rough-skin",
+      ability: GEN4_ABILITY_IDS.roughSkin,
       opponent: attacker,
     });
     const result = applyGen4Ability("on-contact", ctx);
@@ -1190,7 +1205,7 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     // Source: Showdown Gen 4 mod — Effect Spore single roll pattern
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "effect-spore",
+      ability: GEN4_ABILITY_IDS.effectSpore,
       opponent: attacker,
       rngNextValues: [0.05],
     });
@@ -1200,7 +1215,7 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "sleep",
+      status: CORE_STATUS_IDS.sleep,
     });
   });
 
@@ -1209,7 +1224,7 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     // Source: Showdown Gen 4 mod — Effect Spore single roll pattern
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "effect-spore",
+      ability: GEN4_ABILITY_IDS.effectSpore,
       opponent: attacker,
       rngNextValues: [0.15],
     });
@@ -1219,7 +1234,7 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "paralysis",
+      status: CORE_STATUS_IDS.paralysis,
     });
   });
 
@@ -1228,7 +1243,7 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     // Source: Showdown Gen 4 mod — Effect Spore single roll pattern
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "effect-spore",
+      ability: GEN4_ABILITY_IDS.effectSpore,
       opponent: attacker,
       rngNextValues: [0.25],
     });
@@ -1238,7 +1253,7 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: CORE_TYPE_IDS.poison,
     });
   });
 
@@ -1247,7 +1262,7 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
     // Source: Showdown Gen 4 mod — Effect Spore: 70% no-effect range
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "effect-spore",
+      ability: GEN4_ABILITY_IDS.effectSpore,
       opponent: attacker,
       rngNextValues: [0.5],
     });
@@ -1259,9 +1274,9 @@ describe("applyGen4Ability on-contact -- Effect Spore", () => {
   it("given Effect Spore and attacker already has status, when contact is made, then does not activate", () => {
     // Source: Bulbapedia -- Effect Spore: cannot inflict status if attacker already has one
     // Source: Showdown Gen 4 mod — early return if target has status
-    const attacker = makeActivePokemon({ maxHp: 200, status: "poison" });
+    const attacker = makeActivePokemon({ maxHp: 200, status: CORE_TYPE_IDS.poison });
     const ctx = makeContext({
-      ability: "effect-spore",
+      ability: GEN4_ABILITY_IDS.effectSpore,
       opponent: attacker,
       rngNextValues: [0.05],
     });
@@ -1281,7 +1296,7 @@ describe("applyGen4Ability on-contact -- Cute Charm", () => {
     // Source: Showdown Gen 4 mod -- Cute Charm trigger
     const attacker = makeActivePokemon({ maxHp: 200, gender: "male" });
     const ctx = makeContext({
-      ability: "cute-charm",
+      ability: GEN4_ABILITY_IDS.cuteCharm,
       opponent: attacker,
       gender: "female",
       rngNextValues: [0.1], // < 0.3, triggers
@@ -1300,7 +1315,7 @@ describe("applyGen4Ability on-contact -- Cute Charm", () => {
     // Source: Bulbapedia -- Cute Charm: requires opposite genders
     const attacker = makeActivePokemon({ maxHp: 200, gender: "female" });
     const ctx = makeContext({
-      ability: "cute-charm",
+      ability: GEN4_ABILITY_IDS.cuteCharm,
       opponent: attacker,
       gender: "female",
       rngNextValues: [0.1], // would trigger RNG, but same gender blocks
@@ -1314,7 +1329,7 @@ describe("applyGen4Ability on-contact -- Cute Charm", () => {
     // Source: Bulbapedia -- Cute Charm: fails if either Pokemon is genderless
     const attacker = makeActivePokemon({ maxHp: 200, gender: "male" });
     const ctx = makeContext({
-      ability: "cute-charm",
+      ability: GEN4_ABILITY_IDS.cuteCharm,
       opponent: attacker,
       gender: "genderless",
       rngNextValues: [0.1],
@@ -1328,7 +1343,7 @@ describe("applyGen4Ability on-contact -- Cute Charm", () => {
     // Source: Bulbapedia -- Cute Charm: fails if either Pokemon is genderless
     const attacker = makeActivePokemon({ maxHp: 200, gender: "genderless" });
     const ctx = makeContext({
-      ability: "cute-charm",
+      ability: GEN4_ABILITY_IDS.cuteCharm,
       opponent: attacker,
       gender: "female",
       rngNextValues: [0.1],
@@ -1342,7 +1357,7 @@ describe("applyGen4Ability on-contact -- Cute Charm", () => {
     // Source: Bulbapedia -- Cute Charm: 30% chance; RNG fail = no activation
     const attacker = makeActivePokemon({ maxHp: 200, gender: "male" });
     const ctx = makeContext({
-      ability: "cute-charm",
+      ability: GEN4_ABILITY_IDS.cuteCharm,
       opponent: attacker,
       gender: "female",
       rngNextValues: [0.5], // >= 0.3, no trigger
@@ -1359,7 +1374,7 @@ describe("applyGen4Ability on-contact -- Cute Charm", () => {
 
 describe("applyGen4Ability on-contact -- no opponent", () => {
   it("given Static but no opponent present, when on-contact triggers, then does not activate", () => {
-    const ctx = makeContext({ ability: "static" });
+    const ctx = makeContext({ ability: GEN4_ABILITY_IDS.static });
     const result = applyGen4Ability("on-contact", ctx);
 
     expect(result.activated).toBe(false);
@@ -1376,10 +1391,10 @@ describe("applyGen4Ability passive-immunity -- Water Absorb", () => {
     // Source: Showdown Gen 4 mod -- Water Absorb immunity
     // Derivation: floor(200/4) = 50
     const ctx = makeContext({
-      ability: "water-absorb",
+      ability: GEN4_ABILITY_IDS.waterAbsorb,
       maxHp: 200,
       currentHp: 100,
-      move: makeMove("water"),
+      move: makeMove(CORE_TYPE_IDS.water),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1397,10 +1412,10 @@ describe("applyGen4Ability passive-immunity -- Water Absorb", () => {
     // Triangulation: confirms formula scales with max HP
     // Derivation: floor(320/4) = 80
     const ctx = makeContext({
-      ability: "water-absorb",
+      ability: GEN4_ABILITY_IDS.waterAbsorb,
       maxHp: 320,
       currentHp: 200,
-      move: makeMove("water"),
+      move: makeMove(CORE_TYPE_IDS.water),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1415,9 +1430,9 @@ describe("applyGen4Ability passive-immunity -- Water Absorb", () => {
   it("given Water Absorb and incoming Fire move, when passive-immunity triggers, then does not activate", () => {
     // Source: Bulbapedia -- Water Absorb: only absorbs Water-type moves
     const ctx = makeContext({
-      ability: "water-absorb",
+      ability: GEN4_ABILITY_IDS.waterAbsorb,
       maxHp: 200,
-      move: makeMove("fire"),
+      move: makeMove(CORE_TYPE_IDS.fire),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1435,10 +1450,10 @@ describe("applyGen4Ability passive-immunity -- Volt Absorb", () => {
     // Source: Showdown Gen 4 mod -- Volt Absorb immunity
     // Derivation: floor(200/4) = 50
     const ctx = makeContext({
-      ability: "volt-absorb",
+      ability: GEN4_ABILITY_IDS.voltAbsorb,
       maxHp: 200,
       currentHp: 100,
-      move: makeMove("electric"),
+      move: makeMove(CORE_TYPE_IDS.electric),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1453,9 +1468,9 @@ describe("applyGen4Ability passive-immunity -- Volt Absorb", () => {
   it("given Volt Absorb and incoming Normal move, when passive-immunity triggers, then does not activate", () => {
     // Source: Bulbapedia -- Volt Absorb: only absorbs Electric-type moves
     const ctx = makeContext({
-      ability: "volt-absorb",
+      ability: GEN4_ABILITY_IDS.voltAbsorb,
       maxHp: 200,
-      move: makeMove("normal"),
+      move: makeMove(CORE_TYPE_IDS.normal),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1472,9 +1487,9 @@ describe("applyGen4Ability passive-immunity -- Motor Drive", () => {
     // Source: Bulbapedia -- Motor Drive: Electric moves raise Speed by 1 stage
     // Source: Showdown Gen 4 mod -- Motor Drive immunity + Speed boost
     const ctx = makeContext({
-      ability: "motor-drive",
+      ability: GEN4_ABILITY_IDS.motorDrive,
       maxHp: 200,
-      move: makeMove("electric"),
+      move: makeMove(CORE_TYPE_IDS.electric),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1490,9 +1505,9 @@ describe("applyGen4Ability passive-immunity -- Motor Drive", () => {
   it("given Motor Drive and incoming Water move, when passive-immunity triggers, then does not activate", () => {
     // Source: Bulbapedia -- Motor Drive: only absorbs Electric-type moves
     const ctx = makeContext({
-      ability: "motor-drive",
+      ability: GEN4_ABILITY_IDS.motorDrive,
       maxHp: 200,
-      move: makeMove("water"),
+      move: makeMove(CORE_TYPE_IDS.water),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1510,10 +1525,10 @@ describe("applyGen4Ability passive-immunity -- Dry Skin", () => {
     // Source: Showdown Gen 4 mod -- Dry Skin passive Water immunity
     // Derivation: floor(200/4) = 50
     const ctx = makeContext({
-      ability: "dry-skin",
+      ability: GEN4_ABILITY_IDS.drySkin,
       maxHp: 200,
       currentHp: 100,
-      move: makeMove("water"),
+      move: makeMove(CORE_TYPE_IDS.water),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1528,9 +1543,9 @@ describe("applyGen4Ability passive-immunity -- Dry Skin", () => {
   it("given Dry Skin and incoming Fire move, when passive-immunity triggers, then does not activate (Fire weakness handled in damage calc)", () => {
     // Source: Bulbapedia -- Dry Skin: Fire weakness is a damage multiplier, not immunity
     const ctx = makeContext({
-      ability: "dry-skin",
+      ability: GEN4_ABILITY_IDS.drySkin,
       maxHp: 200,
-      move: makeMove("fire"),
+      move: makeMove(CORE_TYPE_IDS.fire),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1548,9 +1563,9 @@ describe("applyGen4Ability passive-immunity -- Flash Fire", () => {
     //   Fire-type moves by 50% while it is in effect"
     // Source: Showdown Gen 4 mod -- Flash Fire immunity + volatile boost
     const ctx = makeContext({
-      ability: "flash-fire",
+      ability: GEN4_ABILITY_IDS.flashFire,
       maxHp: 200,
-      move: makeMove("fire"),
+      move: makeMove(CORE_TYPE_IDS.fire),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1559,7 +1574,7 @@ describe("applyGen4Ability passive-immunity -- Flash Fire", () => {
     expect(result.effects[0]).toEqual({
       effectType: "volatile-inflict",
       target: "self",
-      volatile: "flash-fire",
+      volatile: GEN4_ABILITY_IDS.flashFire,
     });
     expect(result.messages[0]).toContain("Flash Fire was activated");
   });
@@ -1567,12 +1582,12 @@ describe("applyGen4Ability passive-immunity -- Flash Fire", () => {
   it("given Flash Fire already boosted and incoming Fire move, when passive-immunity triggers, then activates with no new volatile", () => {
     // Source: Bulbapedia -- Flash Fire: still absorbs the move if already boosted
     const ctx = makeContext({
-      ability: "flash-fire",
+      ability: GEN4_ABILITY_IDS.flashFire,
       maxHp: 200,
-      move: makeMove("fire"),
+      move: makeMove(CORE_TYPE_IDS.fire),
     });
     // Set the volatile to simulate an already-boosted state
-    ctx.pokemon.volatileStatuses.set("flash-fire", { turnsLeft: -1 });
+    ctx.pokemon.volatileStatuses.set(GEN4_ABILITY_IDS.flashFire, { turnsLeft: -1 });
     const result = applyGen4Ability("passive-immunity", ctx);
 
     expect(result.activated).toBe(true);
@@ -1583,9 +1598,9 @@ describe("applyGen4Ability passive-immunity -- Flash Fire", () => {
   it("given Flash Fire and incoming Water move, when passive-immunity triggers, then does not activate", () => {
     // Source: Bulbapedia -- Flash Fire: only absorbs Fire-type moves
     const ctx = makeContext({
-      ability: "flash-fire",
+      ability: GEN4_ABILITY_IDS.flashFire,
       maxHp: 200,
-      move: makeMove("water"),
+      move: makeMove(CORE_TYPE_IDS.water),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1602,9 +1617,9 @@ describe("applyGen4Ability passive-immunity -- Levitate", () => {
     // Source: Bulbapedia -- Levitate: Ground moves have no effect
     // Source: Showdown Gen 4 mod -- Levitate ground immunity
     const ctx = makeContext({
-      ability: "levitate",
+      ability: GEN4_ABILITY_IDS.levitate,
       maxHp: 200,
-      move: makeMove("ground"),
+      move: makeMove(CORE_TYPE_IDS.ground),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1615,9 +1630,9 @@ describe("applyGen4Ability passive-immunity -- Levitate", () => {
   it("given Levitate and incoming Electric move, when passive-immunity triggers, then does not activate", () => {
     // Source: Bulbapedia -- Levitate: only grants immunity to Ground-type moves
     const ctx = makeContext({
-      ability: "levitate",
+      ability: GEN4_ABILITY_IDS.levitate,
       maxHp: 200,
-      move: makeMove("electric"),
+      move: makeMove(CORE_TYPE_IDS.electric),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 
@@ -1632,7 +1647,7 @@ describe("applyGen4Ability passive-immunity -- Levitate", () => {
 describe("applyGen4Ability passive-immunity -- no move", () => {
   it("given Water Absorb but no move in context, when passive-immunity triggers, then does not activate", () => {
     const ctx = makeContext({
-      ability: "water-absorb",
+      ability: GEN4_ABILITY_IDS.waterAbsorb,
       maxHp: 200,
     });
     const result = applyGen4Ability("passive-immunity", ctx);
@@ -1650,7 +1665,7 @@ describe("applyGen4Ability passive-immunity -- unknown ability", () => {
     const ctx = makeContext({
       ability: "some-unknown",
       maxHp: 200,
-      move: makeMove("water"),
+      move: makeMove(CORE_TYPE_IDS.water),
     });
     const result = applyGen4Ability("passive-immunity", ctx);
 

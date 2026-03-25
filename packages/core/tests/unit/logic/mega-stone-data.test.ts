@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { CORE_TYPE_IDS } from "../../../src/constants/reference-ids";
 import { MEGA_STONE_DATA } from "../../../src/logic/mega-stone-data.js";
+import { GEN6_ABILITY_IDS, GEN6_ITEM_IDS } from "../../../../gen6/src/data/reference-ids";
+
+const { dragon, fighting, fire, steel } = CORE_TYPE_IDS;
 
 describe("MEGA_STONE_DATA", () => {
   it("contains the 47 shared Gen 6 and Gen 7 mega stones", () => {
@@ -14,21 +18,21 @@ describe("MEGA_STONE_DATA", () => {
     // Source: Bulbapedia "Charizardite X" and the imported Gen 6 / Gen 7 mega
     // form data tables. Mega Charizard X is Fire/Dragon with Tough Claws and
     // 130 Attack.
-    const data = MEGA_STONE_DATA["charizardite-x"];
+    const data = MEGA_STONE_DATA[GEN6_ITEM_IDS.charizarditeX];
     expect(data.form).toBe("mega-charizard-x");
-    expect(data.types).toEqual(["fire", "dragon"]);
-    expect(data.ability).toBe("tough-claws");
+    expect(data.types).toEqual([fire, dragon]);
+    expect(data.ability).toBe(GEN6_ABILITY_IDS.toughClaws);
     expect(data.baseStats.attack).toBe(130);
   });
 
-  it("includes Lucarionite and preserves the Mega Lucario data", () => {
+  it("given the shared mega-stone table, when reading Lucarionite, then the Mega Lucario data is preserved", () => {
     // Source: Bulbapedia "Lucarionite" and the imported Gen 6 / Gen 7 mega
     // form data tables. Mega Lucario is Fighting/Steel with Adaptability and
     // 145 Attack.
-    const data = MEGA_STONE_DATA.lucarionite;
+    const data = MEGA_STONE_DATA[GEN6_ITEM_IDS.lucarionite];
     expect(data.form).toBe("mega-lucario");
-    expect(data.types).toEqual(["fighting", "steel"]);
-    expect(data.ability).toBe("adaptability");
+    expect(data.types).toEqual([fighting, steel]);
+    expect(data.ability).toBe(GEN6_ABILITY_IDS.adaptability);
     expect(data.baseStats.attack).toBe(145);
   });
 });

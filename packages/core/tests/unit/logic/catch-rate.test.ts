@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CORE_STATUS_IDS } from "../../../src/constants/reference-ids";
 import {
   calculateModifiedCatchRate,
   calculateShakeChecks,
@@ -7,6 +8,19 @@ import {
   STATUS_CATCH_MODIFIERS_GEN34,
 } from "../../../src/logic/catch-rate";
 import { SeededRandom } from "../../../src/prng/seeded-random";
+import { GEN2_ITEM_IDS } from "../../../../gen2/src/data/reference-ids";
+import { GEN3_ITEM_IDS } from "../../../../gen3/src/data/reference-ids";
+import { GEN4_ITEM_IDS } from "../../../../gen4/src/data/reference-ids";
+import { GEN5_ITEM_IDS } from "../../../../gen5/src/data/reference-ids";
+
+const ITEM_IDS_BY_GENERATION = {
+  2: GEN2_ITEM_IDS,
+  3: GEN3_ITEM_IDS,
+  4: GEN4_ITEM_IDS,
+  5: GEN5_ITEM_IDS,
+} as const;
+
+const { badlyPoisoned, burn, freeze, paralysis, poison, sleep } = CORE_STATUS_IDS;
 
 function collectShakeSequence(modifiedCatchRate: number, seed: number, count: number): number[] {
   const rng = new SeededRandom(seed);
@@ -50,16 +64,16 @@ describe("calculateModifiedCatchRate", () => {
 describe("STATUS_CATCH_MODIFIERS (Gen 5+ default)", () => {
   it("given Gen 5+ defaults, when checking sleep/freeze modifiers, then they are 2.5x", () => {
     // Source: Bulbapedia — Catch rate: Gen 5+ changed sleep/freeze from 2.0 to 2.5
-    expect(STATUS_CATCH_MODIFIERS.sleep).toBe(2.5);
-    expect(STATUS_CATCH_MODIFIERS.freeze).toBe(2.5);
+    expect(STATUS_CATCH_MODIFIERS[sleep]).toBe(2.5);
+    expect(STATUS_CATCH_MODIFIERS[freeze]).toBe(2.5);
   });
 
   it("given Gen 5+ defaults, when checking other status modifiers, then they are 1.5x", () => {
     // Source: Bulbapedia — Catch rate: paralysis/burn/poison are 1.5x across all gens
-    expect(STATUS_CATCH_MODIFIERS.paralysis).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS.burn).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS.poison).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS["badly-poisoned"]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS[paralysis]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS[burn]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS[poison]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS[badlyPoisoned]).toBe(1.5);
   });
 
   it("given STATUS_CATCH_MODIFIERS alias, when compared to STATUS_CATCH_MODIFIERS_GEN5, then they are identical", () => {
@@ -71,43 +85,44 @@ describe("STATUS_CATCH_MODIFIERS (Gen 5+ default)", () => {
 describe("STATUS_CATCH_MODIFIERS_GEN34", () => {
   it("given Gen 3-4 modifiers, when checking sleep/freeze, then they are 2.0x (not 2.5x)", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — sleep/freeze: odds *= 2
-    expect(STATUS_CATCH_MODIFIERS_GEN34.sleep).toBe(2.0);
-    expect(STATUS_CATCH_MODIFIERS_GEN34.freeze).toBe(2.0);
+    expect(STATUS_CATCH_MODIFIERS_GEN34[sleep]).toBe(2.0);
+    expect(STATUS_CATCH_MODIFIERS_GEN34[freeze]).toBe(2.0);
   });
 
   it("given Gen 3-4 modifiers, when checking other statuses, then they are 1.5x (same as Gen 5+)", () => {
     // Source: pret/pokeemerald — poison/burn/paralysis: odds = (odds * 15) / 10
-    expect(STATUS_CATCH_MODIFIERS_GEN34.paralysis).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS_GEN34.burn).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS_GEN34.poison).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS_GEN34["badly-poisoned"]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN34[paralysis]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN34[burn]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN34[poison]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN34[badlyPoisoned]).toBe(1.5);
   });
 });
 
 describe("STATUS_CATCH_MODIFIERS_GEN5", () => {
   it("given Gen 5+ modifiers, when checking sleep/freeze, then they are 2.5x", () => {
     // Source: Bulbapedia — Catch rate: Gen 5+ changed sleep/freeze to 2.5x
-    expect(STATUS_CATCH_MODIFIERS_GEN5.sleep).toBe(2.5);
-    expect(STATUS_CATCH_MODIFIERS_GEN5.freeze).toBe(2.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5[sleep]).toBe(2.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5[freeze]).toBe(2.5);
   });
 
   it("given Gen 5+ modifiers, when checking other statuses, then they are 1.5x", () => {
     // Source: Bulbapedia — Catch rate: paralysis/burn/poison unchanged at 1.5x
-    expect(STATUS_CATCH_MODIFIERS_GEN5.paralysis).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS_GEN5.burn).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS_GEN5.poison).toBe(1.5);
-    expect(STATUS_CATCH_MODIFIERS_GEN5["badly-poisoned"]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5[paralysis]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5[burn]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5[poison]).toBe(1.5);
+    expect(STATUS_CATCH_MODIFIERS_GEN5[badlyPoisoned]).toBe(1.5);
   });
 });
 
 describe("Poke Ball items have catch useEffect in generated data", () => {
   // Source: Bug #301 — Poke Ball items were missing useEffect.type=catch
-  for (const gen of [2, 3, 4, 5]) {
+  for (const gen of [2, 3, 4, 5] as const) {
     it(`given Gen ${gen} items.json, when checking Poke Ball items, then poke-ball exists and every Pokeball has useEffect.type=catch`, () => {
       // Source: Bulbapedia — Poke Balls have a catch rate modifier
+      const itemIds = ITEM_IDS_BY_GENERATION[gen];
       const items = require(`../../../../../packages/gen${gen}/data/items.json`);
       const pokeballs = items.filter((item: { category: string }) => item.category === "pokeball");
-      expect(pokeballs.map((item: { id: string }) => item.id)).toContain("poke-ball");
+      expect(pokeballs.map((item: { id: string }) => item.id)).toContain(itemIds.pokeBall);
       const withCatchEffect = pokeballs.filter(
         (item: { useEffect?: { type: string } }) => item.useEffect?.type === "catch",
       );
@@ -116,8 +131,9 @@ describe("Poke Ball items have catch useEffect in generated data", () => {
 
     it(`given Gen ${gen} items.json, when checking Ultra Ball, then catchRateModifier is 2`, () => {
       // Source: Bulbapedia — Ultra Ball catch rate modifier is 2x
+      const itemIds = ITEM_IDS_BY_GENERATION[gen];
       const items = require(`../../../../../packages/gen${gen}/data/items.json`);
-      const ultraBall = items.find((item: { id: string }) => item.id === "ultra-ball");
+      const ultraBall = items.find((item: { id: string }) => item.id === itemIds.ultraBall);
       if (ultraBall) {
         expect(ultraBall.useEffect).toEqual({
           type: "catch",
