@@ -10,7 +10,11 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -59,6 +63,10 @@ const SPECIES = GEN4_SPECIES_IDS;
 const STATUS = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 const DEFAULT_SPECIES = dataManager.getSpecies(SPECIES.rattata);
 const DEFAULT_FLAGS: MoveFlags = {
@@ -111,7 +119,7 @@ function _createSequentialRng(intValues: number[]) {
   };
 }
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -125,7 +133,7 @@ function makePokemonInstance(overrides: {
   const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
   const pokemon = createPokemonInstance(species, 50, new SeededRandom(4), {
     nature: DEFAULT_NATURE,
-    abilitySlot: "normal1",
+    abilitySlot: ABILITY_SLOTS.normal1,
     heldItem: overrides.heldItem ?? null,
     moves: [],
     isShiny: false,
@@ -137,7 +145,7 @@ function makePokemonInstance(overrides: {
 
   pokemon.nickname = overrides.nickname ?? null;
   pokemon.currentHp = overrides.currentHp ?? maxHp;
-  pokemon.moves = overrides.moves ?? [makeMoveSlot(MOVES.tackle), makeMoveSlot(MOVES.ember)];
+  pokemon.moves = overrides.moves ?? [createMoveSlotFromCanonical(MOVES.tackle), createMoveSlotFromCanonical(MOVES.ember)];
   pokemon.ability = overrides.ability ?? pokemon.ability;
   pokemon.heldItem = overrides.heldItem ?? null;
   pokemon.status = overrides.status ?? null;
@@ -153,7 +161,7 @@ function makePokemonInstance(overrides: {
   return pokemon as PokemonInstance;
 }
 
-function makeMoveSlot(moveId: string, overrides?: Partial<{ currentPP: number; maxPP: number }>) {
+function createMoveSlotFromCanonical(moveId: string, overrides?: Partial<{ currentPP: number; maxPP: number }>) {
   const move = dataManager.getMove(moveId);
   const slot = createMoveSlot(moveId, move.pp);
   return {
@@ -163,7 +171,7 @@ function makeMoveSlot(moveId: string, overrides?: Partial<{ currentPP: number; m
   };
 }
 
-function makeActivePokemon(overrides: {
+function createSyntheticActivePokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   speciesId?: number;
@@ -186,7 +194,7 @@ function makeActivePokemon(overrides: {
     evasion: number;
   }>;
 }): ActivePokemon {
-  const pokemon = makePokemonInstance({
+  const pokemon = createSyntheticPokemonInstance({
     ability: overrides.ability,
     speciesId: overrides.speciesId,
     nickname: overrides.nickname,
@@ -235,7 +243,7 @@ function makeActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeSide(index: 0 | 1, overrides?: Partial<BattleSide>): BattleSide {
+function createBattleSide(index: 0 | 1, overrides?: Partial<BattleSide>): BattleSide {
   return {
     index,
     trainer: null,
@@ -253,13 +261,13 @@ function makeSide(index: 0 | 1, overrides?: Partial<BattleSide>): BattleSide {
   } as BattleSide;
 }
 
-function makeBattleState(overrides?: Partial<BattleState>): BattleState {
+function createBattleState(overrides?: Partial<BattleState>): BattleState {
   return {
     phase: "turn-end",
     generation: 4,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -274,7 +282,7 @@ function makeBattleState(overrides?: Partial<BattleState>): BattleState {
   } as unknown as BattleState;
 }
 
-function makeCanonicalMove(moveId: string, overrides?: Partial<MoveData>): MoveData {
+function createCanonicalMove(moveId: string, overrides?: Partial<MoveData>): MoveData {
   const sourceMove = dataManager.getMove(moveId);
   return {
     ...sourceMove,
@@ -294,9 +302,9 @@ function makeCanonicalMove(moveId: string, overrides?: Partial<MoveData>): MoveD
   } as MoveData;
 }
 
-function makeSyntheticMove(overrides: Partial<MoveData>): MoveData {
+function createSyntheticMove(overrides: Partial<MoveData>): MoveData {
   return {
-    ...makeCanonicalMove(MOVES.tackle),
+    ...createCanonicalMove(MOVES.tackle),
     ...overrides,
     id: overrides.id ?? MOVES.tackle,
     displayName: overrides.displayName ?? dataManager.getMove(MOVES.tackle).displayName,
@@ -304,7 +312,7 @@ function makeSyntheticMove(overrides: Partial<MoveData>): MoveData {
   } as MoveData;
 }
 
-function makeAbilityContext(
+function createAbilityContext(
   pokemon: ActivePokemon,
   opponent?: ActivePokemon,
   state?: BattleState,
@@ -312,10 +320,10 @@ function makeAbilityContext(
 ): AbilityContext {
   return {
     pokemon,
-    opponent: opponent ?? makeActivePokemon({ types: [TYPES.normal] }),
-    state: state ?? makeBattleState(),
+    opponent: opponent ?? createSyntheticActivePokemon({ types: [TYPES.normal] }),
+    state: state ?? createBattleState(),
     rng: createMockRng(),
-    trigger: trigger ?? "on-switch-in",
+    trigger: trigger ?? ABILITY_TRIGGERS.onSwitchIn,
   } as AbilityContext;
 }
 
@@ -330,19 +338,19 @@ describe("#258 Tangled Feet accuracy halving", () => {
     // After Tangled Feet: calc = floor(100 * 0.5) = 50
     // rng(1,100) = 50 <= 50, so it hits
     const ruleset = new Gen4Ruleset(createGen4DataManager());
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({
       ability: ABILITIES.tangledFeet,
       volatiles: new Map([[VOLATILES.confusion, { turnsLeft: 3 }]]),
     });
-    const move = makeSyntheticMove({ accuracy: 100 });
+    const move = createSyntheticMove({ accuracy: 100 });
     const rng = createMockRng(50); // roll = 50
 
     const context: AccuracyContext = {
       attacker,
       defender,
       move,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng,
     };
     // roll 50 <= calc 50 => hit
@@ -354,19 +362,19 @@ describe("#258 Tangled Feet accuracy halving", () => {
     // Source: Showdown data/abilities.ts — Tangled Feet onModifyAccuracy: accuracy * 0.5
     // calc = floor(100 * 0.5) = 50, rng(1,100) = 51 > 50 => miss
     const ruleset = new Gen4Ruleset(createGen4DataManager());
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({
       ability: ABILITIES.tangledFeet,
       volatiles: new Map([[VOLATILES.confusion, { turnsLeft: 3 }]]),
     });
-    const move = makeSyntheticMove({ accuracy: 100 });
+    const move = createSyntheticMove({ accuracy: 100 });
     const rng = createMockRng(51); // roll = 51
 
     const context: AccuracyContext = {
       attacker,
       defender,
       move,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng,
     };
     const result = ruleset.doesMoveHit(context);
@@ -377,18 +385,18 @@ describe("#258 Tangled Feet accuracy halving", () => {
     // Source: Showdown — Tangled Feet only activates when confused
     // Without confusion: calc = 100, rng 51 <= 100 => hit
     const ruleset = new Gen4Ruleset(createGen4DataManager());
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({
       ability: ABILITIES.tangledFeet,
     });
-    const move = makeSyntheticMove({ accuracy: 100 });
+    const move = createSyntheticMove({ accuracy: 100 });
     const rng = createMockRng(51);
 
     const context: AccuracyContext = {
       attacker,
       defender,
       move,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng,
     };
     const result = ruleset.doesMoveHit(context);
@@ -432,13 +440,13 @@ describe("#261 Trick Room toggle deactivation", () => {
   it("given Trick Room is active, when using Trick Room, then result.trickRoomSet.turnsLeft is 0", () => {
     // Source: Showdown Gen 4 — Trick Room toggle: using it while active ends it
     // Trick Room has effect: null in Gen 4 data, routed through handleNullEffectMoves
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({});
-    const state = makeBattleState({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({});
+    const state = createBattleState({
       trickRoom: { active: true, turnsLeft: 3 },
     });
     state.sides[0].active = [attacker];
-    const move = makeCanonicalMove(MOVES.trickRoom);
+    const move = createCanonicalMove(MOVES.trickRoom);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -456,11 +464,11 @@ describe("#261 Trick Room toggle deactivation", () => {
   it("given Trick Room is inactive, when using Trick Room, then result.trickRoomSet.turnsLeft is 5", () => {
     // Source: Showdown Gen 4 — Trick Room sets for 5 turns when not active
     // Trick Room has effect: null in Gen 4 data, routed through handleNullEffectMoves
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({});
-    const state = makeBattleState();
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({});
+    const state = createBattleState();
     state.sides[0].active = [attacker];
-    const move = makeCanonicalMove(MOVES.trickRoom);
+    const move = createCanonicalMove(MOVES.trickRoom);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -483,11 +491,11 @@ describe("#261 Trick Room toggle deactivation", () => {
 describe("#264 Perish Song volatile data with turnsLeft", () => {
   it("given attacker uses Perish Song, when effect resolves, then selfVolatileData has turnsLeft 3", () => {
     // Source: Bulbapedia — Perish Song: "All Pokemon that hear this song will faint in 3 turns."
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({});
-    const state = makeBattleState();
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({});
+    const state = createBattleState();
     state.sides[0].active = [attacker];
-    const move = makeCanonicalMove(MOVES.perishSong);
+    const move = createCanonicalMove(MOVES.perishSong);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -507,11 +515,11 @@ describe("#264 Perish Song volatile data with turnsLeft", () => {
   it("given Perish Song used, when checking both sides, then both get turnsLeft 3", () => {
     // Source: Bulbapedia — Perish Song affects all Pokemon in battle (3 turns)
     // Triangulation: different attacker/defender types
-    const attacker = makeActivePokemon({ types: [TYPES.fire] });
-    const defender = makeActivePokemon({ types: [TYPES.water] });
-    const state = makeBattleState();
+    const attacker = createSyntheticActivePokemon({ types: [TYPES.fire] });
+    const defender = createSyntheticActivePokemon({ types: [TYPES.water] });
+    const state = createBattleState();
     state.sides[0].active = [attacker];
-    const move = makeCanonicalMove(MOVES.perishSong);
+    const move = createCanonicalMove(MOVES.perishSong);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -534,15 +542,15 @@ describe("#264 Perish Song volatile data with turnsLeft", () => {
 describe("#268 Disable random duration 4-7 turns", () => {
   it("given rng returns 4, when Disable resolves, then turnsLeft is 4", () => {
     // Source: Showdown Gen 4 — this.random(4, 8) = 4-7 inclusive
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({
       lastMoveUsed: MOVES.tackle,
-      moves: [makeMoveSlot(MOVES.tackle)],
+      moves: [createMoveSlotFromCanonical(MOVES.tackle)],
     });
-    const state = makeBattleState();
+    const state = createBattleState();
     state.sides[0].active = [attacker];
     const rng = createMockRng(4); // int(4,7) returns 4
-    const move = makeCanonicalMove(MOVES.disable);
+    const move = createCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -559,15 +567,15 @@ describe("#268 Disable random duration 4-7 turns", () => {
 
   it("given rng returns 7, when Disable resolves, then turnsLeft is 7", () => {
     // Source: Showdown Gen 4 — this.random(4, 8) = 4-7 inclusive
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({
       lastMoveUsed: MOVES.tackle,
-      moves: [makeMoveSlot(MOVES.tackle)],
+      moves: [createMoveSlotFromCanonical(MOVES.tackle)],
     });
-    const state = makeBattleState();
+    const state = createBattleState();
     state.sides[0].active = [attacker];
     const rng = createMockRng(7); // int(4,7) returns 7
-    const move = makeCanonicalMove(MOVES.disable);
+    const move = createCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -590,14 +598,14 @@ describe("#268 Disable random duration 4-7 turns", () => {
 describe("#278 Disable fails when target's last move has 0 PP", () => {
   it("given defender's last move has 0 PP, when Disable is used, then it fails", () => {
     // Source: Showdown Gen 4 — Disable fails if target's last move has 0 PP
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({
       lastMoveUsed: MOVES.tackle,
-      moves: [makeMoveSlot(MOVES.tackle, { currentPP: 0 })],
+      moves: [createMoveSlotFromCanonical(MOVES.tackle, { currentPP: 0 })],
     });
-    const state = makeBattleState();
+    const state = createBattleState();
     state.sides[0].active = [attacker];
-    const move = makeCanonicalMove(MOVES.disable);
+    const move = createCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -614,14 +622,14 @@ describe("#278 Disable fails when target's last move has 0 PP", () => {
 
   it("given defender's last move has PP > 0, when Disable is used, then it succeeds", () => {
     // Source: Showdown Gen 4 — Disable succeeds if target's last move has PP > 0
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({
       lastMoveUsed: MOVES.tackle,
-      moves: [makeMoveSlot(MOVES.tackle, { currentPP: 10 })],
+      moves: [createMoveSlotFromCanonical(MOVES.tackle, { currentPP: 10 })],
     });
-    const state = makeBattleState();
+    const state = createBattleState();
     state.sides[0].active = [attacker];
-    const move = makeCanonicalMove(MOVES.disable);
+    const move = createCanonicalMove(MOVES.disable);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -643,9 +651,9 @@ describe("#278 Disable fails when target's last move has 0 PP", () => {
 describe("#277 Future Sight fails when future attack is already pending", () => {
   it("given target side already has a future attack, when using Future Sight, then it fails", () => {
     // Source: Showdown Gen 4 — Future Sight fails if a future attack is already set
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({});
-    const state = makeBattleState();
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({});
+    const state = createBattleState();
     state.sides[0].active = [attacker];
     // Attacker is on side 0, target is side 1 — set future attack on target side
     state.sides[1].futureAttack = {
@@ -654,7 +662,7 @@ describe("#277 Future Sight fails when future attack is already pending", () => 
       damage: 100,
       sourceSide: 0,
     } as any;
-    const move = makeCanonicalMove(MOVES.futureSight);
+    const move = createCanonicalMove(MOVES.futureSight);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -672,12 +680,12 @@ describe("#277 Future Sight fails when future attack is already pending", () => 
 
   it("given target side has no future attack, when using Future Sight, then it succeeds", () => {
     // Source: Showdown Gen 4 — Future Sight succeeds normally
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({});
-    const state = makeBattleState();
+    const attacker = createSyntheticActivePokemon({});
+    const defender = createSyntheticActivePokemon({});
+    const state = createBattleState();
     state.sides[0].active = [attacker];
     state.sides[1].futureAttack = null;
-    const move = makeCanonicalMove(MOVES.futureSight);
+    const move = createCanonicalMove(MOVES.futureSight);
     const context: MoveEffectContext = {
       attacker,
       defender,
@@ -701,22 +709,22 @@ describe("#277 Future Sight fails when future attack is already pending", () => 
 describe("#263 Intimidate blocked by Substitute", () => {
   it("given opponent has a Substitute, when Intimidate activates, then it does not reduce Attack", () => {
     // Source: Showdown Gen 4 — Intimidate is blocked by Substitute
-    const user = makeActivePokemon({ ability: ABILITIES.intimidate });
-    const opponent = makeActivePokemon({ substituteHp: 50 });
-    const ctx = makeAbilityContext(user, opponent);
+    const user = createSyntheticActivePokemon({ ability: ABILITIES.intimidate });
+    const opponent = createSyntheticActivePokemon({ substituteHp: 50 });
+    const ctx = createAbilityContext(user, opponent);
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toHaveLength(0);
   });
 
   it("given opponent has no Substitute, when Intimidate activates, then it reduces Attack by 1 stage", () => {
     // Source: Showdown Gen 4 — Intimidate lowers opponent's Attack by 1 stage
-    const user = makeActivePokemon({ ability: ABILITIES.intimidate, nickname: "User" });
-    const opponent = makeActivePokemon({ substituteHp: 0, nickname: "Foe" });
-    const ctx = makeAbilityContext(user, opponent);
+    const user = createSyntheticActivePokemon({ ability: ABILITIES.intimidate, nickname: "User" });
+    const opponent = createSyntheticActivePokemon({ substituteHp: 0, nickname: "Foe" });
+    const ctx = createAbilityContext(user, opponent);
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
     expect(result.effects[0].effectType).toBe("stat-change");
@@ -731,43 +739,43 @@ describe("#273 Flash Fire does not activate when frozen", () => {
   it("given a frozen Pokemon with Flash Fire, when hit by a Fire move, then Flash Fire does not activate", () => {
     // Source: Showdown Gen 4 — frozen Pokemon cannot activate Flash Fire;
     // the Fire move should proceed and thaw the frozen Pokemon
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticActivePokemon({
       ability: ABILITIES.flashFire,
       types: [TYPES.fire],
       status: STATUS.freeze,
     });
-    const fireMove = makeCanonicalMove(MOVES.flamethrower);
+    const fireMove = createCanonicalMove(MOVES.flamethrower);
     const ctx: AbilityContext = {
       pokemon,
-      opponent: makeActivePokemon({}),
-      state: makeBattleState(),
+      opponent: createSyntheticActivePokemon({}),
+      state: createBattleState(),
       rng: createMockRng(),
-      trigger: "passive-immunity",
+      trigger: ABILITY_TRIGGERS.passiveImmunity,
       move: fireMove,
     } as AbilityContext;
 
-    const result = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.passiveImmunity, ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given a non-frozen Pokemon with Flash Fire, when hit by a Fire move, then Flash Fire activates", () => {
     // Source: Showdown Gen 4 — Flash Fire activates normally when not frozen
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticActivePokemon({
       ability: ABILITIES.flashFire,
       types: [TYPES.fire],
       status: null,
     });
-    const fireMove = makeCanonicalMove(MOVES.flamethrower);
+    const fireMove = createCanonicalMove(MOVES.flamethrower);
     const ctx: AbilityContext = {
       pokemon,
-      opponent: makeActivePokemon({}),
-      state: makeBattleState(),
+      opponent: createSyntheticActivePokemon({}),
+      state: createBattleState(),
       rng: createMockRng(),
-      trigger: "passive-immunity",
+      trigger: ABILITY_TRIGGERS.passiveImmunity,
       move: fireMove,
     } as AbilityContext;
 
-    const result = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.passiveImmunity, ctx);
     expect(result.activated).toBe(true);
   });
 });
@@ -780,16 +788,16 @@ describe("#276 Forewarn base power assignments", () => {
   it("given opponent knows Counter, when Forewarn activates, then Counter is reported with BP 120", () => {
     // Source: Showdown Gen 4 — Forewarn assigns 120 to Counter/Mirror Coat/Metal Burst
     const dataManager = createGen4DataManager();
-    const user = makeActivePokemon({ ability: ABILITIES.forewarn, nickname: "User" });
-    const opponent = makeActivePokemon({
+    const user = createSyntheticActivePokemon({ ability: ABILITIES.forewarn, nickname: "User" });
+    const opponent = createSyntheticActivePokemon({
       moves: [
-        makeMoveSlot(MOVES.counter),
-        makeMoveSlot(MOVES.tackle),
+        createMoveSlotFromCanonical(MOVES.counter),
+        createMoveSlotFromCanonical(MOVES.tackle),
       ],
     });
-    const ctx = makeAbilityContext(user, opponent);
+    const ctx = createAbilityContext(user, opponent);
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, ctx, dataManager);
     // Counter (BP 120) > Tackle (BP 40) — Counter should be reported
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("Counter");
@@ -798,16 +806,16 @@ describe("#276 Forewarn base power assignments", () => {
   it("given opponent knows Mirror Coat and a 100-BP move, when Forewarn activates, then Mirror Coat (120) beats the 100-BP move", () => {
     // Source: Showdown Gen 4 — Mirror Coat is treated as BP 120 for Forewarn
     const dataManager = createGen4DataManager();
-    const user = makeActivePokemon({ ability: ABILITIES.forewarn, nickname: "User" });
-    const opponent = makeActivePokemon({
+    const user = createSyntheticActivePokemon({ ability: ABILITIES.forewarn, nickname: "User" });
+    const opponent = createSyntheticActivePokemon({
       moves: [
-        makeMoveSlot(MOVES.mirrorCoat),
-        makeMoveSlot(MOVES.fireBlast),
+        createMoveSlotFromCanonical(MOVES.mirrorCoat),
+        createMoveSlotFromCanonical(MOVES.fireBlast),
       ],
     });
-    const ctx = makeAbilityContext(user, opponent);
+    const ctx = createAbilityContext(user, opponent);
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, ctx, dataManager);
     expect(result.activated).toBe(true);
     // Mirror Coat (120) > Fire Blast (110 in Gen 4) — Mirror Coat wins
     expect(result.messages[0]).toContain("Mirror Coat");
@@ -821,81 +829,81 @@ describe("#276 Forewarn base power assignments", () => {
 describe("#270 Flame/Toxic Orb type immunity", () => {
   it("given a Poison-type Pokemon with Toxic Orb, when end-of-turn triggers, then Toxic Orb does not activate", () => {
     // Source: Showdown Gen 4 — Poison types are immune to poisoning; Toxic Orb doesn't activate
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticActivePokemon({
       types: [TYPES.poison],
       heldItem: ITEMS.toxicOrb,
     });
     const ctx: ItemContext = {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: createMockRng(),
     };
 
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given a Steel-type Pokemon with Toxic Orb, when end-of-turn triggers, then Toxic Orb does not activate", () => {
     // Source: Showdown Gen 4 — Steel types are immune to poisoning; Toxic Orb doesn't activate
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticActivePokemon({
       types: [TYPES.steel],
       heldItem: ITEMS.toxicOrb,
     });
     const ctx: ItemContext = {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: createMockRng(),
     };
 
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given a Fire-type Pokemon with Flame Orb, when end-of-turn triggers, then Flame Orb does not activate", () => {
     // Source: Showdown Gen 4 — Fire types are immune to burns; Flame Orb doesn't activate
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticActivePokemon({
       types: [TYPES.fire],
       heldItem: ITEMS.flameOrb,
     });
     const ctx: ItemContext = {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: createMockRng(),
     };
 
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given a Normal-type Pokemon with Toxic Orb, when end-of-turn triggers, then Toxic Orb activates", () => {
     // Source: Showdown Gen 4 — Normal types are NOT immune to poison; Toxic Orb activates
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticActivePokemon({
       types: [TYPES.normal],
       heldItem: ITEMS.toxicOrb,
     });
     const ctx: ItemContext = {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: createMockRng(),
     };
 
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given a Water-type Pokemon with Flame Orb, when end-of-turn triggers, then Flame Orb activates", () => {
     // Source: Showdown Gen 4 — Water types are NOT immune to burns; Flame Orb activates
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticActivePokemon({
       types: [TYPES.water],
       heldItem: ITEMS.flameOrb,
     });
     const ctx: ItemContext = {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: createMockRng(),
     };
 
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
   });
 });
@@ -910,15 +918,15 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     //   moves by 20%." Showdown data/items.ts — onBasePower: basePower * 0x1333 / 0x1000
     // Dragon Pulse base power 90, boosted: floor(90 * 4915 / 4096) = floor(107.9...) = 107
     // We verify via damage result that the boost is applied.
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       speciesId: SPECIES.dialga,
       heldItem: ITEMS.adamantOrb,
     });
-    const defender = makeActivePokemon({
+    const defender = createSyntheticActivePokemon({
       types: [TYPES.normal],
     });
-    const move = makeCanonicalMove(MOVES.dragonPulse);
-    const state = makeBattleState();
+    const move = createCanonicalMove(MOVES.dragonPulse);
+    const state = createBattleState();
     const _rng = createMockRng(100); // max random roll for predictability
 
     // Calculate WITH Adamant Orb
@@ -933,7 +941,7 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     const resultWith = calculateGen4Damage(contextWith, GEN4_TYPE_CHART);
 
     // Calculate WITHOUT Adamant Orb
-    const attackerWithout = makeActivePokemon({
+    const attackerWithout = createSyntheticActivePokemon({
       speciesId: SPECIES.dialga,
       heldItem: null,
     });
@@ -963,13 +971,13 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
   it("given Palkia holding Lustrous Orb using Surf, when damage is calculated, then base power is boosted", () => {
     // Source: Bulbapedia — Lustrous Orb: "Boosts the power of Palkia's Water- and Dragon-type
     //   moves by 20%."
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       speciesId: SPECIES.palkia,
       heldItem: ITEMS.lustrousOrb,
     });
-    const defender = makeActivePokemon({ types: [TYPES.normal] });
-    const move = makeCanonicalMove(MOVES.surf);
-    const state = makeBattleState();
+    const defender = createSyntheticActivePokemon({ types: [TYPES.normal] });
+    const move = createCanonicalMove(MOVES.surf);
+    const state = createBattleState();
 
     const contextWith: DamageContext = {
       attacker,
@@ -981,7 +989,7 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     };
     const resultWith = calculateGen4Damage(contextWith, GEN4_TYPE_CHART);
 
-    const attackerWithout = makeActivePokemon({
+    const attackerWithout = createSyntheticActivePokemon({
       speciesId: SPECIES.palkia,
       heldItem: null,
     });
@@ -1009,13 +1017,13 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
 
   it("given Dialga holding Adamant Orb using Flamethrower (Fire), when damage is calculated, then no boost", () => {
     // Source: Showdown — Adamant Orb only boosts Dragon and Steel moves for Dialga
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       speciesId: SPECIES.dialga,
       heldItem: ITEMS.adamantOrb,
     });
-    const defender = makeActivePokemon({ types: [TYPES.normal] });
-    const move = makeCanonicalMove(MOVES.flamethrower);
-    const state = makeBattleState();
+    const defender = createSyntheticActivePokemon({ types: [TYPES.normal] });
+    const move = createCanonicalMove(MOVES.flamethrower);
+    const state = createBattleState();
 
     const contextWith: DamageContext = {
       attacker,
@@ -1027,7 +1035,7 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     };
     const resultWith = calculateGen4Damage(contextWith, GEN4_TYPE_CHART);
 
-    const attackerWithout = makeActivePokemon({
+    const attackerWithout = createSyntheticActivePokemon({
       speciesId: SPECIES.dialga,
       heldItem: null,
     });
@@ -1047,13 +1055,13 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
 
   it("given non-Dialga holding Adamant Orb using Dragon move, when damage is calculated, then no boost", () => {
     // Source: Showdown — Adamant Orb only works for Dialga (species 483)
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       speciesId: SPECIES.dragonite,
       heldItem: ITEMS.adamantOrb,
     });
-    const defender = makeActivePokemon({ types: [TYPES.normal] });
-    const move = makeCanonicalMove(MOVES.dragonPulse);
-    const state = makeBattleState();
+    const defender = createSyntheticActivePokemon({ types: [TYPES.normal] });
+    const move = createCanonicalMove(MOVES.dragonPulse);
+    const state = createBattleState();
 
     const contextWith: DamageContext = {
       attacker,
@@ -1065,7 +1073,7 @@ describe("#272 Adamant Orb and Lustrous Orb base power boost", () => {
     };
     const resultWith = calculateGen4Damage(contextWith, GEN4_TYPE_CHART);
 
-    const attackerWithout = makeActivePokemon({
+    const attackerWithout = createSyntheticActivePokemon({
       speciesId: SPECIES.dragonite,
       heldItem: null,
     });
