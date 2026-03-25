@@ -14,6 +14,13 @@ import type {
   ItemContext,
 } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type {
+  Gender,
+  MoveData,
+  MoveEffect,
+  PokemonType,
+  PrimaryStatus,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -22,24 +29,30 @@ import {
   CORE_GENDERS,
   CORE_GIMMICK_IDS,
   CORE_ITEM_IDS,
-  CORE_MOVE_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
   CORE_NATURE_IDS,
-  CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  CORE_TERRAIN_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import type { Gender, MoveData, MoveEffect, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
 import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
+import { describe, expect, it } from "vitest";
+import {
+  createGen8DataManager,
+  GEN8_ABILITY_IDS,
+  GEN8_ITEM_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_SPECIES_IDS,
+} from "../src";
 import {
   getAteAbilityOverride,
   getDragonsMawMultiplier,
@@ -64,14 +77,6 @@ import {
 } from "../src/Gen8AbilitiesDamage";
 import { calculateGen8Damage } from "../src/Gen8DamageCalc";
 import { applyGen8HeldItem, getConsumableItemEffect } from "../src/Gen8Items";
-import {
-  createGen8DataManager,
-  GEN8_ABILITY_IDS,
-  GEN8_ITEM_IDS,
-  GEN8_MOVE_IDS,
-  GEN8_NATURE_IDS,
-  GEN8_SPECIES_IDS,
-} from "../src";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 
 // ---------------------------------------------------------------------------
@@ -83,18 +88,16 @@ const gen8Data = createGen8DataManager();
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const;
 const MOVES = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const;
-const NATURES = GEN8_NATURE_IDS;
-const SCREENS = CORE_SCREEN_IDS;
 const SPECIES = GEN8_SPECIES_IDS;
 const STATUSES = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const WEATHER = CORE_WEATHER_IDS;
 const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 const GENDERS = CORE_GENDERS;
 const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
 const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
-const G7M = GEN7_MOVE_IDS;
 const defaultSpecies = gen8Data.getSpecies(SPECIES.bulbasaur);
 const defaultNature = gen8Data.getNature(CORE_NATURE_IDS.hardy).id;
 const defaultFriendship = createFriendship(defaultSpecies.baseFriendship);
@@ -158,11 +161,7 @@ function createOnFieldPokemon(overrides: {
     speed: overrides.speed ?? DEFAULT_SYNTHETIC_STATS.speed,
   };
 
-  const activePokemon = createBattleOnFieldPokemon(
-    pokemon,
-    0,
-    overrides.types ?? [TYPES.normal],
-  );
+  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, overrides.types ?? [TYPES.normal]);
   activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
   activePokemon.ability = overrides.ability ?? ABILITIES.none;
   activePokemon.movedThisTurn = overrides.movedThisTurn ?? false;
@@ -362,13 +361,21 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // But let's use Fire vs Normal = 1x (neutral) to test the non-SE path.
       const noBerryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ spAttack: 100 }),
-        defender: createOnFieldPokemon({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: null }),
+        defender: createOnFieldPokemon({
+          spDefense: 100,
+          types: [CORE_TYPE_IDS.normal],
+          heldItem: null,
+        }),
         move: createCanonicalMove(MOVES.firePledge),
         seed: 42,
       });
       const berryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ spAttack: 100 }),
-        defender: createOnFieldPokemon({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.occaBerry }),
+        defender: createOnFieldPokemon({
+          spDefense: 100,
+          types: [CORE_TYPE_IDS.normal],
+          heldItem: CORE_ITEM_IDS.occaBerry,
+        }),
         move: createCanonicalMove(MOVES.firePledge),
         seed: 42,
       });
@@ -386,13 +393,21 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Fire vs Grass = 2x (SE), so Occa Berry should activate
       const noBerryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ spAttack: 100 }),
-        defender: createOnFieldPokemon({ spDefense: 100, types: [CORE_TYPE_IDS.grass], heldItem: null }),
+        defender: createOnFieldPokemon({
+          spDefense: 100,
+          types: [CORE_TYPE_IDS.grass],
+          heldItem: null,
+        }),
         move: createCanonicalMove(MOVES.firePledge),
         seed: 42,
       });
       const berryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ spAttack: 100 }),
-        defender: createOnFieldPokemon({ spDefense: 100, types: [CORE_TYPE_IDS.grass], heldItem: CORE_ITEM_IDS.occaBerry }),
+        defender: createOnFieldPokemon({
+          spDefense: 100,
+          types: [CORE_TYPE_IDS.grass],
+          heldItem: CORE_ITEM_IDS.occaBerry,
+        }),
         move: createCanonicalMove(MOVES.firePledge),
         seed: 42,
       });
@@ -411,13 +426,21 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Normal vs Normal = 1x (neutral). Chilan Berry still activates.
       const noBerryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ attack: 100 }),
-        defender: createOnFieldPokemon({ defense: 100, types: [CORE_TYPE_IDS.normal], heldItem: null }),
+        defender: createOnFieldPokemon({
+          defense: 100,
+          types: [CORE_TYPE_IDS.normal],
+          heldItem: null,
+        }),
         move: createCanonicalMove(MOVES.strength),
         seed: 42,
       });
       const berryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ attack: 100 }),
-        defender: createOnFieldPokemon({ defense: 100, types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.chilanBerry }),
+        defender: createOnFieldPokemon({
+          defense: 100,
+          types: [CORE_TYPE_IDS.normal],
+          heldItem: CORE_ITEM_IDS.chilanBerry,
+        }),
         move: createCanonicalMove(MOVES.strength),
         seed: 42,
       });
@@ -435,13 +458,21 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/items.ts -- Chilan Berry only activates on Normal-type hits
       const noBerryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ spAttack: 100 }),
-        defender: createOnFieldPokemon({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: null }),
+        defender: createOnFieldPokemon({
+          spDefense: 100,
+          types: [CORE_TYPE_IDS.normal],
+          heldItem: null,
+        }),
         move: createCanonicalMove(MOVES.waterPledge),
         seed: 42,
       });
       const berryCtx = createDamageContext({
         attacker: createOnFieldPokemon({ spAttack: 100 }),
-        defender: createOnFieldPokemon({ spDefense: 100, types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.chilanBerry }),
+        defender: createOnFieldPokemon({
+          spDefense: 100,
+          types: [CORE_TYPE_IDS.normal],
+          heldItem: CORE_ITEM_IDS.chilanBerry,
+        }),
         move: createCanonicalMove(MOVES.waterPledge),
         seed: 42,
       });
@@ -784,7 +815,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         heldItem: GEN8_ITEM_IDS.sitrusBerry,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
 
       expect(result.activated).toBe(true);
       // The consume effect should be in the effects array
@@ -802,7 +833,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         heldItem: GEN8_ITEM_IDS.sitrusBerry,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "consume")).toBe(true);
@@ -1016,7 +1047,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         heldItem: GEN8_ITEM_IDS.shellBell,
       });
       const ctx = createItemContext({ pokemon, damage: 0 });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -1034,12 +1065,15 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         ability: GEN8_ABILITY_IDS.sheerForce,
         heldItem: GEN8_ITEM_IDS.lifeOrb,
       });
-      const move = createSyntheticMove("Exercise the Sheer Force suppression branch with a synthetic secondary effect.", {
-        baseMoveId: MOVES.firePledge,
-        effect: { type: "status-chance", status: STATUSES.burn, chance: 10 } as MoveEffect,
-      });
+      const move = createSyntheticMove(
+        "Exercise the Sheer Force suppression branch with a synthetic secondary effect.",
+        {
+          baseMoveId: MOVES.firePledge,
+          effect: { type: "status-chance", status: STATUSES.burn, chance: 10 } as MoveEffect,
+        },
+      );
       const ctx = createItemContext({ pokemon, damage: 50, move });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
 
       // Sheer Force suppresses Life Orb recoil
       expect(result.activated).toBe(false);
@@ -1052,12 +1086,15 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         ability: GEN8_ABILITY_IDS.sheerForce,
         heldItem: GEN8_ITEM_IDS.lifeOrb,
       });
-      const move = createSyntheticMove("Remove the base move secondary effect to prove the non-Sheer Force branch.", {
-        baseMoveId: MOVES.firePledge,
-        effect: null,
-      });
+      const move = createSyntheticMove(
+        "Remove the base move secondary effect to prove the non-Sheer Force branch.",
+        {
+          baseMoveId: MOVES.firePledge,
+          effect: null,
+        },
+      );
       const ctx = createItemContext({ pokemon, damage: 50, move });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
 
       // Move has no secondary effect so Sheer Force doesn't suppress Life Orb recoil
       expect(result.activated).toBe(true);
@@ -1079,7 +1116,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         primaryStatus: CORE_STATUS_IDS.burn,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
 
@@ -1092,7 +1129,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         primaryStatus: CORE_STATUS_IDS.paralysis,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1111,7 +1148,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         heldItem: CORE_ITEM_IDS.toxicOrb,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
 
@@ -1124,7 +1161,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         heldItem: CORE_ITEM_IDS.toxicOrb,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
 
@@ -1137,7 +1174,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         heldItem: CORE_ITEM_IDS.flameOrb,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
 
@@ -1150,7 +1187,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         primaryStatus: CORE_STATUS_IDS.burn,
       });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1286,7 +1323,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Gen8Items.ts -- handleEndOfTurn default branch returns NO_ACTIVATION
       const pokemon = createOnFieldPokemon({ heldItem: CORE_ITEM_IDS.choiceBand }); // Not an end-of-turn item
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1332,7 +1369,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Gen8Items.ts -- handleOnHit default branch
       const pokemon = createOnFieldPokemon({ heldItem: CORE_ITEM_IDS.choiceBand });
       const ctx = createItemContext({ pokemon, damage: 50 });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1346,7 +1383,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Gen8Items.ts -- early return when no item
       const pokemon = createOnFieldPokemon({ heldItem: null });
       const ctx = createItemContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1425,11 +1462,14 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Showdown data/abilities.ts -- Sturdy blocks OHKO moves
       const ctx = createAbilityContext({
         ability: CORE_ABILITY_IDS.sturdy,
-        move: createSyntheticMove("Exercise the Sturdy OHKO immunity branch with an explicit OHKO effect.", {
-          baseMoveId: MOVES.strength,
-          power: null,
-          effect: { type: "ohko" } as MoveEffect,
-        }),
+        move: createSyntheticMove(
+          "Exercise the Sturdy OHKO immunity branch with an explicit OHKO effect.",
+          {
+            baseMoveId: MOVES.strength,
+            power: null,
+            effect: { type: "ohko" } as MoveEffect,
+          },
+        ),
       });
       const result = handleGen8DamageImmunityAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1830,7 +1870,9 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     const originalDamage = 300;
 
     it(`given non-Sturdy ability, when getting damage cap, then ${GEN7_MOVE_IDS.return}s original damage`, () => {
-      expect(getSturdyDamageCap(CORE_ABILITY_IDS.blaze, originalDamage, 200, 200)).toBe(originalDamage);
+      expect(getSturdyDamageCap(CORE_ABILITY_IDS.blaze, originalDamage, 200, 200)).toBe(
+        originalDamage,
+      );
     });
 
     it(`given non-Sturdy ability, when checking OHKO ${GEN8_MOVE_IDS.block}, then returns false`, () => {
@@ -1857,17 +1899,23 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
   describe("Utility function matching conditions", () => {
     it(`given Gorilla Tactics with physical move, when getting multiplier, then returns ${CORE_FIXED_POINT.boost15}/4096`, () => {
       // Source: Showdown data/abilities.ts -- Gorilla Tactics: 1.5x physical
-      expect(getGorillaTacticsMultiplier(GEN8_ABILITY_IDS.gorillaTactics, MOVE_CATEGORIES.physical)).toBe(6144 / 4096);
+      expect(
+        getGorillaTacticsMultiplier(GEN8_ABILITY_IDS.gorillaTactics, MOVE_CATEGORIES.physical),
+      ).toBe(6144 / 4096);
     });
 
     it(`given Transistor with Electric move, when getting multiplier, then returns ${CORE_FIXED_POINT.boost15}/4096`, () => {
       // Source: Showdown data/abilities.ts -- Transistor: 1.5x Electric in Gen 8
-      expect(getTransistorMultiplier(GEN8_ABILITY_IDS.transistor, CORE_TYPE_IDS.electric)).toBe(6144 / 4096);
+      expect(getTransistorMultiplier(GEN8_ABILITY_IDS.transistor, CORE_TYPE_IDS.electric)).toBe(
+        6144 / 4096,
+      );
     });
 
     it(`given Dragon's Maw with Dragon move, when getting multiplier, then returns ${CORE_FIXED_POINT.boost15}/4096`, () => {
       // Source: Showdown data/abilities.ts -- Dragon's Maw: 1.5x Dragon
-      expect(getDragonsMawMultiplier(`${CORE_TYPE_IDS.dragon}s-maw`, CORE_TYPE_IDS.dragon)).toBe(6144 / 4096);
+      expect(getDragonsMawMultiplier(`${CORE_TYPE_IDS.dragon}s-maw`, CORE_TYPE_IDS.dragon)).toBe(
+        6144 / 4096,
+      );
     });
 
     it(`given Punk Rock outgoing with sound move, when getting multiplier, then returns ${CORE_FIXED_POINT.gemBoost}/4096`, () => {
@@ -1882,12 +1930,16 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
     it(`given Ice Scales with special move, when getting multiplier, then returns 0.${GEN8_SPECIES_IDS.charmeleon}`, () => {
       // Source: Showdown data/abilities.ts -- Ice Scales: 0.5x special
-      expect(getIceScalesMultiplier(`${CORE_TYPE_IDS.ice}-scales`, MOVE_CATEGORIES.special)).toBe(0.5);
+      expect(getIceScalesMultiplier(`${CORE_TYPE_IDS.ice}-scales`, MOVE_CATEGORIES.special)).toBe(
+        0.5,
+      );
     });
 
     it(`given Steelworker with Steel move, when getting multiplier, then returns ${CORE_FIXED_POINT.boost15}/4096`, () => {
       // Source: Showdown data/abilities.ts -- Steelworker: 1.5x Steel
-      expect(getSteelworkerMultiplier(`${CORE_TYPE_IDS.steel}worker`, CORE_TYPE_IDS.steel)).toBe(6144 / 4096);
+      expect(getSteelworkerMultiplier(`${CORE_TYPE_IDS.steel}worker`, CORE_TYPE_IDS.steel)).toBe(
+        6144 / 4096,
+      );
     });
 
     it(`given Tough Claws with contact move, when getting multiplier, then returns ${CORE_FIXED_POINT.gemBoost}/4096`, () => {
@@ -1951,7 +2003,11 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
     it(`given volatile-status effect with 0% chance, when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
       // Source: Gen8AbilitiesDamage.ts -- volatile-status: requires chance > 0
-      const effect: MoveEffect = { type: "volatile-status", status: CORE_VOLATILE_IDS.flinch, chance: 0 };
+      const effect: MoveEffect = {
+        type: "volatile-status",
+        status: CORE_VOLATILE_IDS.flinch,
+        chance: 0,
+      };
       expect(isSheerForceEligibleMove(effect, CORE_MOVE_IDS.headbutt)).toBe(false);
     });
 
@@ -1976,17 +2032,35 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
   describe("sheerForceSuppressesLifeOrb", () => {
     it(`given non-Sheer Force ability, when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
       // Source: Showdown scripts.ts -- only Sheer Force suppresses Life Orb
-      const effect: MoveEffect = { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 10 };
-      expect(sheerForceSuppressesLifeOrb(CORE_ABILITY_IDS.blaze, effect, `${CORE_TYPE_IDS.fire}-blast`)).toBe(false);
+      const effect: MoveEffect = {
+        type: "status-chance",
+        status: CORE_STATUS_IDS.burn,
+        chance: 10,
+      };
+      expect(
+        sheerForceSuppressesLifeOrb(CORE_ABILITY_IDS.blaze, effect, `${CORE_TYPE_IDS.fire}-blast`),
+      ).toBe(false);
     });
 
     it(`given Sheer Force with eligible move, when checking, then ${GEN7_MOVE_IDS.return}s true`, () => {
-      const effect: MoveEffect = { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 10 };
-      expect(sheerForceSuppressesLifeOrb(GEN8_ABILITY_IDS.sheerForce, effect, `${CORE_TYPE_IDS.fire}-blast`)).toBe(true);
+      const effect: MoveEffect = {
+        type: "status-chance",
+        status: CORE_STATUS_IDS.burn,
+        chance: 10,
+      };
+      expect(
+        sheerForceSuppressesLifeOrb(
+          GEN8_ABILITY_IDS.sheerForce,
+          effect,
+          `${CORE_TYPE_IDS.fire}-blast`,
+        ),
+      ).toBe(true);
     });
 
     it(`given Sheer Force with non-eligible move, when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
-      expect(sheerForceSuppressesLifeOrb(GEN8_ABILITY_IDS.sheerForce, null, CORE_MOVE_IDS.tackle)).toBe(false);
+      expect(
+        sheerForceSuppressesLifeOrb(GEN8_ABILITY_IDS.sheerForce, null, CORE_MOVE_IDS.tackle),
+      ).toBe(false);
     });
   });
 });
