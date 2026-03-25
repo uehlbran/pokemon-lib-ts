@@ -28,13 +28,21 @@ import {
   CORE_FIXED_POINT,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   NEUTRAL_NATURES,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_MOVE_IDS, GEN9_SPECIES_IDS } from "../src";
+import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../src";
 import {
   calculateGen9Damage,
   isGen9Grounded,
@@ -49,9 +57,12 @@ const FIXED_POINT = CORE_FIXED_POINT;
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS };
 const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS };
 const SPECIES = GEN9_SPECIES_IDS;
+const TERRAINS = CORE_TERRAIN_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const DATA_MANAGER = createGen9DataManager();
 // Source: Showdown resist berries use the 2048/4096 half-damage modifier.
 const HALF_DAMAGE_MODIFIER = FIXED_POINT.half;
 
@@ -146,54 +157,95 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  target?: string;
-  hasCrashDamage?: boolean;
-}): MoveData {
+function makeCanonicalMove(
+  moveId: (typeof MOVES)[keyof typeof MOVES],
+  overrides?: Partial<MoveData>,
+): MoveData {
+  const baseMove = DATA_MANAGER.getMove(moveId)
   return {
-    id: overrides.id ?? MOVES.tackle,
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? TYPES.normal,
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 9,
-    critRatio: overrides.critRatio ?? 0,
-    hasCrashDamage: overrides.hasCrashDamage ?? false,
-  } as MoveData;
+    ...baseMove,
+    ...overrides,
+    flags: overrides?.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
+  } as MoveData
 }
+
+/**
+ * Branch-driving synthetic move fixture for formula tests. Start from a real Gen 9 move record
+ * and override only the fields this file intentionally varies for isolated formula coverage.
+ */
+function makeSyntheticMove(
+  baseMoveId: (typeof MOVES)[keyof typeof MOVES],
+  type: PokemonType,
+  category: "physical" | "special" | "status",
+  power: number | null,
+  overrides?: Pick<MoveData, "critRatio" | "effect" | "hasCrashDamage" | "target"> &
+    Partial<Pick<MoveData, "flags">>,
+): MoveData {
+  return makeCanonicalMove(baseMoveId, {
+    type,
+    category,
+    power,
+    critRatio: overrides?.critRatio,
+    effect: overrides?.effect,
+    hasCrashDamage: overrides?.hasCrashDamage,
+    target: overrides?.target,
+    flags: overrides?.flags,
+  })
+}
+
+const CANONICAL_TACKLE = () => makeCanonicalMove(MOVES.tackle)
+const CANONICAL_GROWL = () => makeCanonicalMove(MOVES.growl)
+const CANONICAL_SOLAR_BEAM = () => makeCanonicalMove(MOVES.solarBeam)
+const CANONICAL_EARTHQUAKE = () => makeCanonicalMove(MOVES.earthquake)
+const CANONICAL_FACADE = () => makeCanonicalMove(MOVES.facade)
+const CANONICAL_HEX = () => makeCanonicalMove(MOVES.hex)
+const CANONICAL_KNOCK_OFF = () => makeCanonicalMove(MOVES.knockOff)
+const CANONICAL_VENOSHOCK = () => makeCanonicalMove(MOVES.venoshock)
+const CANONICAL_DAZZLING_GLEAM = () => makeCanonicalMove(MOVES.dazzlingGleam)
+const CANONICAL_EXTRASENSORY = () => makeCanonicalMove(MOVES.extrasensory)
+const CANONICAL_DRILL_RUN = () => makeCanonicalMove(MOVES.drillRun)
+const CANONICAL_SCALD = () => makeCanonicalMove(MOVES.scald)
+const CANONICAL_ZEN_HEADBUTT = () => makeCanonicalMove(MOVES.zenHeadbutt)
+const CANONICAL_DOUBLE_EDGE = () => makeCanonicalMove(MOVES.doubleEdge)
+const CANONICAL_BELCH = () => makeCanonicalMove(MOVES.belch)
+
+const SYNTHETIC_NORMAL_PHYSICAL_50 = () =>
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 50)
+const SYNTHETIC_NORMAL_PHYSICAL_80 = () =>
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 80)
+const SYNTHETIC_NORMAL_PHYSICAL_60 = () =>
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 60)
+const SYNTHETIC_NORMAL_PHYSICAL_10 = () =>
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 10)
+const SYNTHETIC_FIRE_SPECIAL_90 = () =>
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 90)
+const SYNTHETIC_FIRE_SPECIAL_80 = () =>
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 80)
+const SYNTHETIC_FIRE_SPECIAL_50 = () =>
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 50)
+const SYNTHETIC_WATER_SPECIAL_80 = () =>
+  makeSyntheticMove(MOVES.surf, TYPES.water, "special", 80)
+const SYNTHETIC_WATER_SPECIAL_50 = () =>
+  makeSyntheticMove(MOVES.surf, TYPES.water, "special", 50)
+const SYNTHETIC_FIRE_PHYSICAL_80 = () =>
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "physical", 80)
+const SYNTHETIC_FIRE_PHYSICAL_10 = () =>
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "physical", 10)
+const SYNTHETIC_ELECTRIC_SPECIAL_80 = () =>
+  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, "special", 80)
+const SYNTHETIC_ELECTRIC_SPECIAL_120 = () =>
+  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, "special", 120)
+const SYNTHETIC_GRASS_SPECIAL_80 = () =>
+  makeSyntheticMove(MOVES.energyBall, TYPES.grass, "special", 80)
+const SYNTHETIC_DRAGON_SPECIAL_80 = () =>
+  makeSyntheticMove(MOVES.dragonPulse, TYPES.dragon, "special", 80)
+const SYNTHETIC_ICE_SPECIAL_80 = () =>
+  makeSyntheticMove(MOVES.iceBeam, TYPES.ice, "special", 80)
+const SYNTHETIC_FIGHTING_PHYSICAL_80 = () =>
+  makeSyntheticMove(MOVES.closeCombat, TYPES.fighting, "physical", 80)
+const SYNTHETIC_GROUND_PHYSICAL_80 = () =>
+  makeSyntheticMove(MOVES.earthquake, TYPES.ground, "physical", 80)
 
 function makeState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
@@ -228,7 +280,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? CANONICAL_TACKLE(),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -315,7 +367,7 @@ describe("Base damage formula", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ level: 50, attack: 100, types: ["fire"] }),
       defender: makeActive({ defense: 100 }),
-      move: makeMove({ power: 50, type: "normal", category: "physical" }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -339,7 +391,7 @@ describe("Base damage formula", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ level: 100, attack: 200, types: ["fire"] }),
       defender: makeActive({ defense: 100 }),
-      move: makeMove({ power: 80, type: "normal", category: "physical" }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -350,7 +402,7 @@ describe("Base damage formula", () => {
   it("given status move, when calculating damage, then returns 0", () => {
     // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
     const ctx = makeDamageContext({
-      move: makeMove({ category: "status", power: null }),
+      move: CANONICAL_GROWL(),
     });
     const result = calculateGen9Damage(ctx, typeChart);
     expect(result.damage).toBe(0);
@@ -359,7 +411,7 @@ describe("Base damage formula", () => {
   it("given power=0 move, when calculating damage, then returns 0", () => {
     // Source: Showdown -- zero power moves produce no damage
     const ctx = makeDamageContext({
-      move: makeMove({ power: 0 }),
+      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 0),
     });
     const result = calculateGen9Damage(ctx, typeChart);
     expect(result.damage).toBe(0);
@@ -371,7 +423,7 @@ describe("Base damage formula", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 200, attack: 50 }),
       defender: makeActive({ spDefense: 50, defense: 300 }),
-      move: makeMove({ type: "fire", category: "special", power: 90 }),
+      move: SYNTHETIC_FIRE_SPECIAL_90(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -394,7 +446,7 @@ describe("Weather modifiers", () => {
     const ctxSun = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 50 }),
+      move: SYNTHETIC_FIRE_SPECIAL_50(),
       state: makeState({ weather: { type: "sun", turnsLeft: 5, source: "test" } }),
       seed: 12345,
     });
@@ -403,7 +455,7 @@ describe("Weather modifiers", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 50 }),
+      move: SYNTHETIC_FIRE_SPECIAL_50(),
       state: makeState(),
       seed: 12345,
     });
@@ -420,7 +472,7 @@ describe("Weather modifiers", () => {
     const ctxSun = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 50 }),
+      move: SYNTHETIC_WATER_SPECIAL_50(),
       state: makeState({ weather: { type: "sun", turnsLeft: 5, source: "test" } }),
       seed: 12345,
     });
@@ -429,7 +481,7 @@ describe("Weather modifiers", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 50 }),
+      move: SYNTHETIC_WATER_SPECIAL_50(),
       state: makeState(),
       seed: 12345,
     });
@@ -444,7 +496,7 @@ describe("Weather modifiers", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 50 }),
+      move: SYNTHETIC_WATER_SPECIAL_50(),
       state: makeState({ weather: { type: "rain", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -457,7 +509,7 @@ describe("Weather modifiers", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 50 }),
+      move: SYNTHETIC_FIRE_SPECIAL_50(),
       state: makeState({ weather: { type: "rain", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -471,7 +523,7 @@ describe("Weather modifiers", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       state: makeState({ weather: { type: "snow", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -484,7 +536,7 @@ describe("Weather modifiers", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       state: makeState({ weather: { type: "harsh-sun", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -498,7 +550,7 @@ describe("Weather modifiers", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       state: makeState({ weather: { type: "heavy-rain", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -512,7 +564,7 @@ describe("Weather modifiers", () => {
     const ctxRain = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["grass"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ id: "solar-beam", type: "grass", category: "special", power: 120 }),
+      move: CANONICAL_SOLAR_BEAM(),
       state: makeState({ weather: { type: "rain", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -521,7 +573,7 @@ describe("Weather modifiers", () => {
     const ctxSun = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["grass"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ id: "solar-beam", type: "grass", category: "special", power: 120 }),
+      move: CANONICAL_SOLAR_BEAM(),
       state: makeState({ weather: { type: "sun", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -542,7 +594,7 @@ describe("STAB modifiers", () => {
     const ctxStab = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fire"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const resultStab = calculateGen9Damage(ctxStab, typeChart);
@@ -550,7 +602,7 @@ describe("STAB modifiers", () => {
     const ctxNoStab = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["water"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const resultNoStab = calculateGen9Damage(ctxNoStab, typeChart);
@@ -565,7 +617,7 @@ describe("STAB modifiers", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fire"], ability: "adaptability" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -583,7 +635,7 @@ describe("STAB modifiers", () => {
         teraType: TYPES.fire,
       }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -601,7 +653,7 @@ describe("STAB modifiers", () => {
         teraType: TYPES.fire,
       }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     // Note: Since the attacker's types are already ["fire"] (original types for non-Stellar Tera
@@ -618,7 +670,7 @@ describe("STAB modifiers", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["water"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -636,7 +688,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["grass"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -648,7 +700,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -660,7 +712,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["water"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -672,7 +724,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["ghost"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -685,7 +737,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["ground"] }),
       defender: makeActive({ defense: 100, types: ["flying"] }),
-      move: makeMove({ type: "ground", category: "physical", power: 80 }),
+      move: SYNTHETIC_GROUND_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -698,7 +750,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["grass", "bug"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -710,7 +762,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fighting"] }),
       defender: makeActive({ defense: 100, types: ["normal", "ghost"] }),
-      move: makeMove({ type: "fighting", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIGHTING_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -726,7 +778,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fairy"] }),
       defender: makeActive({ spDefense: 100, types: ["dragon"] }),
-      move: makeMove({ type: "fairy", category: "special", power: 80 }),
+      move: CANONICAL_DAZZLING_GLEAM(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -738,7 +790,7 @@ describe("Type effectiveness", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["dragon"] }),
       defender: makeActive({ spDefense: 100, types: ["fairy"] }),
-      move: makeMove({ type: "dragon", category: "special", power: 80 }),
+      move: SYNTHETIC_DRAGON_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -757,7 +809,7 @@ describe("Critical hit", () => {
     const ctxCrit = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       isCrit: true,
       seed: 42,
     });
@@ -766,7 +818,7 @@ describe("Critical hit", () => {
     const ctxNoCrit = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       isCrit: false,
       seed: 42,
     });
@@ -782,7 +834,7 @@ describe("Critical hit", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "sniper" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       isCrit: true,
       seed: 42,
     });
@@ -797,7 +849,7 @@ describe("Critical hit", () => {
     const ctxCrit = makeDamageContext({
       attacker: attackerNeg,
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       isCrit: true,
       seed: 42,
     });
@@ -806,7 +858,7 @@ describe("Critical hit", () => {
     const ctxNoCritZeroStage = makeDamageContext({
       attacker: attackerZero,
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       isCrit: true,
       seed: 42,
     });
@@ -825,7 +877,7 @@ describe("Critical hit", () => {
     const ctxCritVsBoost = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: defenderPlus,
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       isCrit: true,
       seed: 42,
     });
@@ -833,7 +885,7 @@ describe("Critical hit", () => {
     const ctxCritVsZero = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       isCrit: true,
       seed: 42,
     });
@@ -856,7 +908,7 @@ describe("Burn penalty", () => {
     const ctxBurn = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], status: "burn" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       seed: 42,
     });
     const resultBurn = calculateGen9Damage(ctxBurn, typeChart);
@@ -864,7 +916,7 @@ describe("Burn penalty", () => {
     const ctxNoBurn = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       seed: 42,
     });
     const resultNoBurn = calculateGen9Damage(ctxNoBurn, typeChart);
@@ -878,7 +930,7 @@ describe("Burn penalty", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"], status: "burn" }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 50 }),
+      move: SYNTHETIC_FIRE_SPECIAL_50(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -890,7 +942,7 @@ describe("Burn penalty", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], status: "burn" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ id: "facade", type: "normal", category: "physical", power: 70 }),
+      move: CANONICAL_FACADE(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -902,7 +954,7 @@ describe("Burn penalty", () => {
     const ctxGuts = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "guts", status: "burn" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       seed: 42,
     });
     const resultGuts = calculateGen9Damage(ctxGuts, typeChart);
@@ -912,7 +964,7 @@ describe("Burn penalty", () => {
     const ctxPlain = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 50 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       seed: 42,
     });
     const resultPlain = calculateGen9Damage(ctxPlain, typeChart);
@@ -932,7 +984,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxSnow = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["ice"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: makeState({ weather: { type: "snow", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -941,7 +993,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxClear = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["ice"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -959,7 +1011,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxSnow = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["ice"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       state: makeState({ weather: { type: "snow", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -968,7 +1020,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxClear = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["ice"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -983,7 +1035,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxSnow = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: makeState({ weather: { type: "snow", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -992,7 +1044,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxClear = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -1008,7 +1060,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxSnow = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["ice", "water"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: makeState({ weather: { type: "snow", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -1017,7 +1069,7 @@ describe("Snow Ice-type Defense boost", () => {
     const ctxClear = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["ice", "water"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -1037,7 +1089,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxTerrain = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["electric"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "electric", category: "special", power: 80 }),
+      move: SYNTHETIC_ELECTRIC_SPECIAL_80(),
       state: makeState({ terrain: { type: "electric", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -1046,7 +1098,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["electric"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "electric", category: "special", power: 80 }),
+      move: SYNTHETIC_ELECTRIC_SPECIAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -1060,7 +1112,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxTerrain = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["grass"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "grass", category: "special", power: 80 }),
+      move: SYNTHETIC_GRASS_SPECIAL_80(),
       state: makeState({ terrain: { type: "grassy", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -1069,7 +1121,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["grass"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "grass", category: "special", power: 80 }),
+      move: SYNTHETIC_GRASS_SPECIAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -1083,7 +1135,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxTerrain = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["psychic"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "psychic", category: "special", power: 80 }),
+      move: CANONICAL_EXTRASENSORY(),
       state: makeState({ terrain: { type: "psychic", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -1092,7 +1144,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["psychic"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "psychic", category: "special", power: 80 }),
+      move: CANONICAL_EXTRASENSORY(),
       state: makeState(),
       seed: 42,
     });
@@ -1106,7 +1158,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxTerrain = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["dragon"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "dragon", category: "special", power: 80 }),
+      move: SYNTHETIC_DRAGON_SPECIAL_80(),
       state: makeState({ terrain: { type: "misty", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -1115,7 +1167,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["dragon"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "dragon", category: "special", power: 80 }),
+      move: SYNTHETIC_DRAGON_SPECIAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -1129,7 +1181,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxTerrain = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["electric", "flying"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "electric", category: "special", power: 80 }),
+      move: SYNTHETIC_ELECTRIC_SPECIAL_80(),
       state: makeState({ terrain: { type: "electric", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -1138,7 +1190,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["electric", "flying"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "electric", category: "special", power: 80 }),
+      move: SYNTHETIC_ELECTRIC_SPECIAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -1153,7 +1205,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxTerrain = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["ground"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ id: "earthquake", type: "ground", category: "physical", power: 100 }),
+      move: CANONICAL_EARTHQUAKE(),
       state: makeState({ terrain: { type: "grassy", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -1162,7 +1214,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["ground"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ id: "earthquake", type: "ground", category: "physical", power: 100 }),
+      move: CANONICAL_EARTHQUAKE(),
       state: makeState(),
       seed: 42,
     });
@@ -1183,7 +1235,7 @@ describe("Minimum 1 damage", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 1, types: ["normal"] }),
       defender: makeActive({ defense: 400, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 10 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_10(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1195,7 +1247,7 @@ describe("Minimum 1 damage", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 10, types: ["fire"], level: 5 }),
       defender: makeActive({ defense: 200, types: ["water"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 10 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_10(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1214,7 +1266,7 @@ describe("Immunity returns 0 damage", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 200, types: ["normal"] }),
       defender: makeActive({ defense: 50, types: ["ghost"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 120 }),
+      move: CANONICAL_DOUBLE_EDGE(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1227,7 +1279,7 @@ describe("Immunity returns 0 damage", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 200, types: ["electric"] }),
       defender: makeActive({ spDefense: 50, types: ["ground"] }),
-      move: makeMove({ type: "electric", category: "special", power: 120 }),
+      move: SYNTHETIC_ELECTRIC_SPECIAL_120(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1240,7 +1292,7 @@ describe("Immunity returns 0 damage", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 200, types: ["poison"] }),
       defender: makeActive({ spDefense: 50, types: ["steel"] }),
-      move: makeMove({ type: "poison", category: "special", power: 120 }),
+      move: CANONICAL_BELCH(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1259,7 +1311,7 @@ describe("Ability type immunities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["ground"] }),
       defender: makeActive({ defense: 100, types: ["normal"], ability: "levitate" }),
-      move: makeMove({ type: "ground", category: "physical", power: 80 }),
+      move: SYNTHETIC_GROUND_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1272,7 +1324,7 @@ describe("Ability type immunities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["electric"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], ability: "volt-absorb" }),
-      move: makeMove({ type: "electric", category: "special", power: 80 }),
+      move: SYNTHETIC_ELECTRIC_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1285,7 +1337,7 @@ describe("Ability type immunities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], ability: "water-absorb" }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1298,7 +1350,7 @@ describe("Ability type immunities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], ability: "flash-fire" }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1311,7 +1363,7 @@ describe("Ability type immunities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["ground"] }),
       defender: makeActive({ defense: 100, types: ["normal"], ability: "earth-eater" }),
-      move: makeMove({ type: "ground", category: "physical", power: 80 }),
+      move: SYNTHETIC_GROUND_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1324,7 +1376,7 @@ describe("Ability type immunities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["grass"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], ability: "sap-sipper" }),
-      move: makeMove({ type: "grass", category: "special", power: 80 }),
+      move: SYNTHETIC_GRASS_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1339,7 +1391,7 @@ describe("Ability type immunities", () => {
       types: [TYPES.ground],
       ability: ABILITIES.moldBreaker,
     });
-    const move = makeMove({ type: TYPES.ground, category: "physical", power: 80 });
+    const move = SYNTHETIC_GROUND_PHYSICAL_80();
     const ctx = makeDamageContext({
       attacker,
       defender: makeActive({
@@ -1373,7 +1425,7 @@ describe("Ability type immunities", () => {
       types: [TYPES.fire],
       ability: ABILITIES.moldBreaker,
     });
-    const move = makeMove({ type: TYPES.fire, category: "special", power: 80 });
+    const move = SYNTHETIC_FIRE_SPECIAL_80();
     const ctx = makeDamageContext({
       attacker,
       defender: makeActive({
@@ -1407,7 +1459,7 @@ describe("Wonder Guard", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"], ability: "wonder-guard" }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1419,7 +1471,7 @@ describe("Wonder Guard", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"], ability: "wonder-guard" }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1436,7 +1488,7 @@ describe("Wonder Guard", () => {
         types: [TYPES.steel],
         ability: ABILITIES.wonderGuard,
       }),
-      move: makeMove({ type: TYPES.water, category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1451,7 +1503,7 @@ describe("Thick Fat", () => {
     const ctxThickFat = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], ability: "thick-fat" }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultThickFat = calculateGen9Damage(ctxThickFat, typeChart);
@@ -1459,7 +1511,7 @@ describe("Thick Fat", () => {
     const ctxNormal = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultNormal = calculateGen9Damage(ctxNormal, typeChart);
@@ -1472,7 +1524,7 @@ describe("Thick Fat", () => {
     const ctxThickFat = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["ice"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], ability: "thick-fat" }),
-      move: makeMove({ type: "ice", category: "special", power: 80 }),
+      move: SYNTHETIC_ICE_SPECIAL_80(),
       seed: 42,
     });
     const resultThickFat = calculateGen9Damage(ctxThickFat, typeChart);
@@ -1480,7 +1532,7 @@ describe("Thick Fat", () => {
     const ctxNormal = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["ice"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "ice", category: "special", power: 80 }),
+      move: SYNTHETIC_ICE_SPECIAL_80(),
       seed: 42,
     });
     const resultNormal = calculateGen9Damage(ctxNormal, typeChart);
@@ -1497,7 +1549,7 @@ describe("Scrappy", () => {
       types: [TYPES.normal],
       ability: ABILITIES.scrappy,
     });
-    const move = makeMove({ type: TYPES.normal, category: "physical", power: 80 });
+    const move = SYNTHETIC_NORMAL_PHYSICAL_80();
     const ctx = makeDamageContext({
       attacker,
       defender: makeActive({ defense: 100, types: [TYPES.ghost] }),
@@ -1527,7 +1579,7 @@ describe("Scrappy", () => {
       types: [TYPES.fighting],
       ability: ABILITIES.scrappy,
     });
-    const move = makeMove({ type: TYPES.fighting, category: "physical", power: 80 });
+    const move = SYNTHETIC_FIGHTING_PHYSICAL_80();
     const ctx = makeDamageContext({
       attacker,
       defender: makeActive({ defense: 100, types: [TYPES.ghost] }),
@@ -1557,7 +1609,7 @@ describe("Filter / Solid Rock", () => {
     const ctxFilter = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"], ability: "filter" }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultFilter = calculateGen9Damage(ctxFilter, typeChart);
@@ -1565,7 +1617,7 @@ describe("Filter / Solid Rock", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1578,7 +1630,7 @@ describe("Filter / Solid Rock", () => {
     const ctxSR = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"], ability: "solid-rock" }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultSR = calculateGen9Damage(ctxSR, typeChart);
@@ -1586,7 +1638,7 @@ describe("Filter / Solid Rock", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1601,7 +1653,7 @@ describe("Prism Armor", () => {
     const ctxPA = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"], ability: "prism-armor" }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultPA = calculateGen9Damage(ctxPA, typeChart);
@@ -1609,7 +1661,7 @@ describe("Prism Armor", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1622,7 +1674,7 @@ describe("Prism Armor", () => {
     const ctxMB = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"], ability: "mold-breaker" }),
       defender: makeActive({ spDefense: 100, types: ["fire"], ability: "prism-armor" }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultMB = calculateGen9Damage(ctxMB, typeChart);
@@ -1630,7 +1682,7 @@ describe("Prism Armor", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"], ability: "mold-breaker" }),
       defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1645,7 +1697,7 @@ describe("Tinted Lens", () => {
     const ctxTL = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"], ability: "tinted-lens" }),
       defender: makeActive({ spDefense: 100, types: ["water"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultTL = calculateGen9Damage(ctxTL, typeChart);
@@ -1653,7 +1705,7 @@ describe("Tinted Lens", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["water"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1668,7 +1720,7 @@ describe("Technician", () => {
     const ctxTech = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "technician" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 60 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_60(),
       seed: 42,
     });
     const resultTech = calculateGen9Damage(ctxTech, typeChart);
@@ -1676,7 +1728,7 @@ describe("Technician", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 60 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_60(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1689,7 +1741,7 @@ describe("Technician", () => {
     const ctxTech = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "technician" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultTech = calculateGen9Damage(ctxTech, typeChart);
@@ -1697,7 +1749,7 @@ describe("Technician", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1718,7 +1770,7 @@ describe("Pinch abilities", () => {
         currentHp: 99, // 99 <= floor(300/3) = 100 -> triggers
       }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1732,7 +1784,7 @@ describe("Pinch abilities", () => {
         currentHp: 300,
       }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultFull = calculateGen9Damage(ctxFull, typeChart);
@@ -1751,7 +1803,7 @@ describe("Pinch abilities", () => {
         currentHp: 100, // 100 = floor(300/3) -> triggers
       }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1765,7 +1817,7 @@ describe("Pinch abilities", () => {
         currentHp: 300,
       }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultFull = calculateGen9Damage(ctxFull, typeChart);
@@ -1784,7 +1836,7 @@ describe("Item interactions", () => {
     const ctxBand = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], heldItem: "choice-band" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultBand = calculateGen9Damage(ctxBand, typeChart);
@@ -1792,7 +1844,7 @@ describe("Item interactions", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1805,7 +1857,7 @@ describe("Item interactions", () => {
     const ctxSpecs = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"], heldItem: "choice-specs" }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultSpecs = calculateGen9Damage(ctxSpecs, typeChart);
@@ -1813,7 +1865,7 @@ describe("Item interactions", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1826,7 +1878,7 @@ describe("Item interactions", () => {
     const ctxLO = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], heldItem: "life-orb" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultLO = calculateGen9Damage(ctxLO, typeChart);
@@ -1834,7 +1886,7 @@ describe("Item interactions", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1847,7 +1899,7 @@ describe("Item interactions", () => {
     const ctxEB = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"], heldItem: "expert-belt" }),
       defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultEB = calculateGen9Damage(ctxEB, typeChart);
@@ -1855,7 +1907,7 @@ describe("Item interactions", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1868,7 +1920,7 @@ describe("Item interactions", () => {
     const ctxCharcoal = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"], heldItem: "charcoal" }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultCharcoal = calculateGen9Damage(ctxCharcoal, typeChart);
@@ -1876,7 +1928,7 @@ describe("Item interactions", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1894,7 +1946,7 @@ describe("Item interactions", () => {
         heldItem: ITEMS.choiceBand,
       }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultKlutz = calculateGen9Damage(ctxKlutz, typeChart);
@@ -1902,7 +1954,7 @@ describe("Item interactions", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -1915,7 +1967,7 @@ describe("Item interactions", () => {
     const ctxKO = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["dark"] }),
       defender: makeActive({ defense: 100, types: ["normal"], heldItem: "leftovers" }),
-      move: makeMove({ id: "knock-off", type: "dark", category: "physical", power: 65 }),
+      move: CANONICAL_KNOCK_OFF(),
       seed: 42,
     });
     const resultKO = calculateGen9Damage(ctxKO, typeChart);
@@ -1923,7 +1975,7 @@ describe("Item interactions", () => {
     const ctxNoItem = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["dark"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ id: "knock-off", type: "dark", category: "physical", power: 65 }),
+      move: CANONICAL_KNOCK_OFF(),
       seed: 42,
     });
     const resultNoItem = calculateGen9Damage(ctxNoItem, typeChart);
@@ -1943,7 +1995,7 @@ describe("Type-resist berries", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
       defender,
-      move: makeMove({ type: TYPES.fire, category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1951,7 +2003,7 @@ describe("Type-resist berries", () => {
     const ctxNoBerry = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
       defender: makeActive({ defense: 100, types: [TYPES.grass] }),
-      move: makeMove({ type: TYPES.fire, category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultNoBerry = calculateGen9Damage(ctxNoBerry, typeChart);
@@ -1970,7 +2022,7 @@ describe("Type-resist berries", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: [TYPES.normal] }),
       defender,
-      move: makeMove({ type: TYPES.normal, category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -1978,7 +2030,7 @@ describe("Type-resist berries", () => {
     const ctxNoBerry = makeDamageContext({
       attacker: makeActive({ attack: 100, types: [TYPES.normal] }),
       defender: makeActive({ defense: 100, types: [TYPES.normal] }),
-      move: makeMove({ type: TYPES.normal, category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNoBerry = calculateGen9Damage(ctxNoBerry, typeChart);
@@ -2006,7 +2058,7 @@ describe("-ate abilities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fairy"], ability: "pixilate" }),
       defender: makeActive({ defense: 100, types: ["dragon"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2025,7 +2077,7 @@ describe("-ate abilities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["flying"], ability: "aerilate" }),
       defender: makeActive({ defense: 100, types: ["grass"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2039,7 +2091,7 @@ describe("-ate abilities", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["normal"], ability: "normalize" }),
       defender: makeActive({ spDefense: 100, types: ["ghost"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2060,12 +2112,7 @@ describe("Body Press", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 50, defense: 200, types: ["fighting"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.bodyPress,
-        type: "fighting",
-        category: "physical",
-        power: 80,
-      }),
+      move: makeCanonicalMove(MOVES.bodyPress),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2075,12 +2122,7 @@ describe("Body Press", () => {
     const ctxTackle = makeDamageContext({
       attacker: makeActive({ attack: 50, defense: 200, types: ["fighting"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.tackle,
-        type: "fighting",
-        category: "physical",
-        power: 80,
-      }),
+      move: makeSyntheticMove(MOVES.tackle, TYPES.fighting, "physical", 80),
       seed: 42,
     });
     const resultTackle = calculateGen9Damage(ctxTackle, typeChart);
@@ -2100,10 +2142,7 @@ describe("Spread moves (doubles)", () => {
     const ctxDoubles = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({
-        type: "fire",
-        category: "special",
-        power: 80,
+      move: makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 80, {
         target: "all-adjacent-foes",
       }),
       state: makeState({ format: "doubles" }),
@@ -2114,10 +2153,7 @@ describe("Spread moves (doubles)", () => {
     const ctxSingles = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({
-        type: "fire",
-        category: "special",
-        power: 80,
+      move: makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 80, {
         target: "adjacent-foe",
       }),
       state: makeState({ format: "singles" }),
@@ -2139,7 +2175,7 @@ describe("Defensive items", () => {
     const ctxEviolite = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"], heldItem: "eviolite" }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultEviolite = calculateGen9Damage(ctxEviolite, typeChart);
@@ -2147,7 +2183,7 @@ describe("Defensive items", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -2160,7 +2196,7 @@ describe("Defensive items", () => {
     const ctxAV = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], heldItem: "assault-vest" }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultAV = calculateGen9Damage(ctxAV, typeChart);
@@ -2168,7 +2204,7 @@ describe("Defensive items", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -2187,7 +2223,7 @@ describe("Sandstorm Rock-type SpDef boost", () => {
     const ctxSand = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["rock"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       state: makeState({ weather: { type: "sand", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -2196,7 +2232,7 @@ describe("Sandstorm Rock-type SpDef boost", () => {
     const ctxClear = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["rock"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -2210,7 +2246,7 @@ describe("Sandstorm Rock-type SpDef boost", () => {
     const ctxSand = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       state: makeState({ weather: { type: "sand", turnsLeft: 5, source: "test" } }),
       seed: 42,
     });
@@ -2219,7 +2255,7 @@ describe("Sandstorm Rock-type SpDef boost", () => {
     const ctxClear = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "water", category: "special", power: 80 }),
+      move: SYNTHETIC_WATER_SPECIAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -2299,7 +2335,7 @@ describe("Flash Fire volatile boost", () => {
     const ctxFF = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"], volatiles }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultFF = calculateGen9Damage(ctxFF, typeChart);
@@ -2307,7 +2343,7 @@ describe("Flash Fire volatile boost", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "special", power: 80 }),
+      move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -2326,7 +2362,7 @@ describe("Move-specific power doubling", () => {
     const ctxPoison = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["poison"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], status: "poison" }),
-      move: makeMove({ id: "venoshock", type: "poison", category: "special", power: 65 }),
+      move: CANONICAL_VENOSHOCK(),
       seed: 42,
     });
     const resultPoison = calculateGen9Damage(ctxPoison, typeChart);
@@ -2334,7 +2370,7 @@ describe("Move-specific power doubling", () => {
     const ctxHealthy = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["poison"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ id: "venoshock", type: "poison", category: "special", power: 65 }),
+      move: CANONICAL_VENOSHOCK(),
       seed: 42,
     });
     const resultHealthy = calculateGen9Damage(ctxHealthy, typeChart);
@@ -2348,7 +2384,7 @@ describe("Move-specific power doubling", () => {
     const _ctxStatus = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["ghost"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"], status: "paralysis" }),
-      move: makeMove({ id: "hex", type: "ghost", category: "special", power: 65 }),
+      move: CANONICAL_HEX(),
       seed: 42,
     });
     // Ghost vs Normal = immune... need a different type matchup
@@ -2356,7 +2392,7 @@ describe("Move-specific power doubling", () => {
     const ctxStatusFixed = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["ghost"] }),
       defender: makeActive({ spDefense: 100, types: ["psychic"], status: "paralysis" }),
-      move: makeMove({ id: "hex", type: "ghost", category: "special", power: 65 }),
+      move: CANONICAL_HEX(),
       seed: 42,
     });
     const resultStatus = calculateGen9Damage(ctxStatusFixed, typeChart);
@@ -2364,7 +2400,7 @@ describe("Move-specific power doubling", () => {
     const ctxHealthy = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["ghost"] }),
       defender: makeActive({ spDefense: 100, types: ["psychic"] }),
-      move: makeMove({ id: "hex", type: "ghost", category: "special", power: 65 }),
+      move: CANONICAL_HEX(),
       seed: 42,
     });
     const resultHealthy = calculateGen9Damage(ctxHealthy, typeChart);
@@ -2377,12 +2413,7 @@ describe("Move-specific power doubling", () => {
     const ctxNoItem = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["flying"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.acrobatics,
-        type: "flying",
-        category: "physical",
-        power: 55,
-      }),
+      move: makeCanonicalMove(MOVES.acrobatics),
       seed: 42,
     });
     const resultNoItem = calculateGen9Damage(ctxNoItem, typeChart);
@@ -2390,12 +2421,7 @@ describe("Move-specific power doubling", () => {
     const ctxWithItem = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["flying"], heldItem: "leftovers" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.acrobatics,
-        type: "flying",
-        category: "physical",
-        power: 55,
-      }),
+      move: makeCanonicalMove(MOVES.acrobatics),
       seed: 42,
     });
     const resultWithItem = calculateGen9Damage(ctxWithItem, typeChart);
@@ -2421,7 +2447,7 @@ describe("Screens", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender,
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state,
       seed: 42,
     });
@@ -2430,7 +2456,7 @@ describe("Screens", () => {
     const ctxNoScreen = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: makeState(),
       seed: 42,
     });
@@ -2451,7 +2477,7 @@ describe("Screens", () => {
     const ctxCrit = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender,
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state,
       isCrit: true,
       seed: 42,
@@ -2468,7 +2494,7 @@ describe("Screens", () => {
     const ctxCritNoScreen = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: defender2,
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       state: state2,
       isCrit: true,
       seed: 42,
@@ -2490,7 +2516,7 @@ describe("Huge Power / Pure Power", () => {
     const ctxHP = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "huge-power" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultHP = calculateGen9Damage(ctxHP, typeChart);
@@ -2498,7 +2524,7 @@ describe("Huge Power / Pure Power", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -2511,7 +2537,7 @@ describe("Huge Power / Pure Power", () => {
     const ctxPP = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["psychic"], ability: "pure-power" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "psychic", category: "physical", power: 80 }),
+      move: CANONICAL_ZEN_HEADBUTT(),
       seed: 42,
     });
     const resultPP = calculateGen9Damage(ctxPP, typeChart);
@@ -2519,7 +2545,7 @@ describe("Huge Power / Pure Power", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["psychic"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "psychic", category: "physical", power: 80 }),
+      move: CANONICAL_ZEN_HEADBUTT(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -2538,10 +2564,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxTC = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "tough-claws" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        type: "normal",
-        category: "physical",
-        power: 80,
+      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 80, {
         flags: { contact: true },
       }),
       seed: 42,
@@ -2551,10 +2574,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        type: "normal",
-        category: "physical",
-        power: 80,
+      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 80, {
         flags: { contact: true },
       }),
       seed: 42,
@@ -2569,11 +2589,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxSJ = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["dark"], ability: "strong-jaw" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.crunch,
-        type: "dark",
-        category: "physical",
-        power: 80,
+      move: makeCanonicalMove(MOVES.crunch, {
         flags: { bite: true },
       }),
       seed: 42,
@@ -2583,11 +2599,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["dark"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.crunch,
-        type: "dark",
-        category: "physical",
-        power: 80,
+      move: makeCanonicalMove(MOVES.crunch, {
         flags: { bite: true },
       }),
       seed: 42,
@@ -2602,11 +2614,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxML = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"], ability: "mega-launcher" }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.waterPulse,
-        type: "water",
-        category: "special",
-        power: 60,
+      move: makeCanonicalMove(MOVES.waterPulse, {
         flags: { pulse: true },
       }),
       seed: 42,
@@ -2616,11 +2624,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["water"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.waterPulse,
-        type: "water",
-        category: "special",
-        power: 60,
+      move: makeCanonicalMove(MOVES.waterPulse, {
         flags: { pulse: true },
       }),
       seed: 42,
@@ -2635,11 +2639,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxIF = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fighting"], ability: "iron-fist" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.machPunch,
-        type: "fighting",
-        category: "physical",
-        power: 40,
+      move: makeCanonicalMove(MOVES.machPunch, {
         flags: { punch: true },
       }),
       seed: 42,
@@ -2649,11 +2649,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fighting"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({
-        id: MOVES.machPunch,
-        type: "fighting",
-        category: "physical",
-        power: 40,
+      move: makeCanonicalMove(MOVES.machPunch, {
         flags: { punch: true },
       }),
       seed: 42,
@@ -2676,7 +2672,7 @@ describe("Magnet Rise", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["ground"] }),
       defender: makeActive({ defense: 100, types: ["normal"], volatiles }),
-      move: makeMove({ type: "ground", category: "physical", power: 80 }),
+      move: SYNTHETIC_GROUND_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2691,7 +2687,7 @@ describe("Magnet Rise", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["ground"], ability: "mold-breaker" }),
       defender: makeActive({ defense: 100, types: ["normal"], volatiles }),
-      move: makeMove({ type: "ground", category: "physical", power: 80 }),
+      move: SYNTHETIC_GROUND_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2707,7 +2703,7 @@ describe("Gravity interaction", () => {
   it("given Gravity active and Flying defender hit by Ground move, when calculating, then Ground move hits", () => {
     // Source: Showdown data/conditions.ts -- Gravity removes Ground immunity from Flying types.
     const attacker = makeActive({ attack: 100, types: [TYPES.ground] });
-    const move = makeMove({ type: TYPES.ground, category: "physical", power: 80 });
+    const move = SYNTHETIC_GROUND_PHYSICAL_80();
     const ctx = makeDamageContext({
       attacker,
       defender: makeActive({ defense: 100, types: [TYPES.flying] }),
@@ -2742,7 +2738,7 @@ describe("Rivalry", () => {
     const ctxRivalry = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "rivalry", gender: "male" }),
       defender: makeActive({ defense: 100, types: ["normal"], gender: "male" }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultRivalry = calculateGen9Damage(ctxRivalry, typeChart);
@@ -2750,7 +2746,7 @@ describe("Rivalry", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], gender: "male" }),
       defender: makeActive({ defense: 100, types: ["normal"], gender: "male" }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -2763,7 +2759,7 @@ describe("Rivalry", () => {
     const ctxRivalry = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "rivalry", gender: "male" }),
       defender: makeActive({ defense: 100, types: ["normal"], gender: "female" }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultRivalry = calculateGen9Damage(ctxRivalry, typeChart);
@@ -2771,7 +2767,7 @@ describe("Rivalry", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], gender: "male" }),
       defender: makeActive({ defense: 100, types: ["normal"], gender: "female" }),
-      move: makeMove({ type: "normal", category: "physical", power: 80 }),
+      move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
@@ -2789,7 +2785,7 @@ describe("DamageResult structure", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fire"] }),
       defender: makeActive({ defense: 100, types: ["grass"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2808,7 +2804,7 @@ describe("DamageResult structure", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fire"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
@@ -2842,7 +2838,7 @@ describe("Gen9Ruleset.calculateDamage integration", () => {
     const ctx = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["fire"] }),
       defender: makeActive({ defense: 100, types: ["grass"] }),
-      move: makeMove({ type: "fire", category: "physical", power: 80 }),
+      move: SYNTHETIC_FIRE_PHYSICAL_80(),
       seed: 42,
     });
     const result = ruleset.calculateDamage(ctx);
@@ -2871,7 +2867,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
     attacker.statStages.attack = 2;
     const defender = makeActive({ defense: 100, ability: "unaware", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
     expect(result.damage).toBe(22);
@@ -2889,7 +2885,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
     attacker.statStages.attack = 2;
     const defender = makeActive({ defense: 100, ability: "none", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
     expect(result.damage).toBe(63);
@@ -2909,7 +2905,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const attacker = makeActive({ attack: 100, ability: "mold-breaker", types: ["water"] });
     attacker.statStages.attack = 2;
     const defender = makeActive({ defense: 100, ability: "unaware", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
     expect(result.damage).toBe(43);
@@ -2929,7 +2925,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
     attacker.statStages.attack = 2;
     const defender = makeActive({ defense: 100, ability: "teravolt", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
     expect(result.damage).toBe(63);
