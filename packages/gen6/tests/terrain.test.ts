@@ -1,7 +1,23 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, TerrainType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  PokemonType,
+  PrimaryStatus,
+  TerrainType,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "../src";
 import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
 import {
@@ -10,6 +26,20 @@ import {
   getTerrainDamageModifier,
 } from "../src/Gen6Terrain";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
+
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = CORE_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS };
+const SPECIES = GEN6_SPECIES_IDS;
+const TERRAINS = CORE_TERRAIN_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const TERRAIN_SOURCES = {
+  electric: GEN6_MOVE_IDS.electricTerrain,
+  grassy: GEN6_MOVE_IDS.grassyTerrain,
+  misty: GEN6_MOVE_IDS.mistyTerrain,
+} as const;
 
 // ---------------------------------------------------------------------------
 // Helper factories (same patterns as damage-calc.test.ts)
@@ -27,10 +57,10 @@ function makeActive(overrides: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: string | null;
+  status?: PrimaryStatus | null
   speciesId?: number;
   gender?: "male" | "female" | "genderless";
-  volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
+  volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
   nickname?: string | null;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
@@ -42,16 +72,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -62,7 +92,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -76,8 +106,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -111,9 +141,9 @@ function makeMove(overrides: {
   target?: string;
 }): MoveData {
   return {
-    id: overrides.id ?? "tackle",
+    id: overrides.id ?? MOVES.tackle,
     displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
+    type: overrides.type ?? TYPES.normal,
     category: overrides.category ?? "physical",
     power: overrides.power ?? 50,
     accuracy: 100,
@@ -202,20 +232,20 @@ describe("getTerrainDamageModifier", () => {
   describe("Electric Terrain", () => {
     it("given Electric Terrain + Electric move + grounded attacker, returns 6144 (1.5x) power modifier", () => {
       // Source: Bulbapedia "Electric Terrain" Gen 6 -- 1.5x Electric for grounded attacker
-      const result = getTerrainDamageModifier("electric", "electric", "thunderbolt", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.electric, TYPES.electric, MOVES.thunderbolt, true, true);
       expect(result.powerModifier).toBe(6144);
       expect(result.grassyGroundHalved).toBe(false);
     });
 
     it("given Electric Terrain + Electric move + non-grounded attacker (Flying), returns no modifier", () => {
       // Source: Bulbapedia "Electric Terrain" -- only grounded attackers get the boost
-      const result = getTerrainDamageModifier("electric", "electric", "thunderbolt", false, true);
+      const result = getTerrainDamageModifier(TERRAINS.electric, TYPES.electric, MOVES.thunderbolt, false, true);
       expect(result.powerModifier).toBeNull();
     });
 
     it("given Electric Terrain + non-Electric move, returns no modifier", () => {
       // Source: Bulbapedia "Electric Terrain" -- only boosts Electric-type moves
-      const result = getTerrainDamageModifier("electric", "fire", "flamethrower", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.electric, TYPES.fire, MOVES.flamethrower, true, true);
       expect(result.powerModifier).toBeNull();
     });
   });
@@ -223,44 +253,44 @@ describe("getTerrainDamageModifier", () => {
   describe("Grassy Terrain", () => {
     it("given Grassy Terrain + Grass move + grounded attacker, returns 6144 (1.5x) power modifier", () => {
       // Source: Bulbapedia "Grassy Terrain" Gen 6 -- 1.5x Grass for grounded attacker
-      const result = getTerrainDamageModifier("grassy", "grass", "energy-ball", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.grassy, TYPES.grass, MOVES.energyBall, true, true);
       expect(result.powerModifier).toBe(6144);
       expect(result.grassyGroundHalved).toBe(false);
     });
 
     it("given Grassy Terrain + Grass move + non-grounded attacker, returns no modifier", () => {
       // Source: Bulbapedia "Grassy Terrain" -- only grounded attackers get the boost
-      const result = getTerrainDamageModifier("grassy", "grass", "energy-ball", false, true);
+      const result = getTerrainDamageModifier(TERRAINS.grassy, TYPES.grass, MOVES.energyBall, false, true);
       expect(result.powerModifier).toBeNull();
     });
 
     it("given Grassy Terrain + Earthquake vs grounded defender, returns grassyGroundHalved=true", () => {
       // Source: Bulbapedia "Grassy Terrain" -- Earthquake/Bulldoze/Magnitude halved
-      const result = getTerrainDamageModifier("grassy", "ground", "earthquake", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.grassy, TYPES.ground, MOVES.earthquake, true, true);
       expect(result.grassyGroundHalved).toBe(true);
     });
 
     it("given Grassy Terrain + Bulldoze vs grounded defender, returns grassyGroundHalved=true", () => {
       // Source: Bulbapedia "Grassy Terrain" -- Bulldoze is in the halved set
-      const result = getTerrainDamageModifier("grassy", "ground", "bulldoze", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.grassy, TYPES.ground, MOVES.bulldoze, true, true);
       expect(result.grassyGroundHalved).toBe(true);
     });
 
     it("given Grassy Terrain + Magnitude vs grounded defender, returns grassyGroundHalved=true", () => {
       // Source: Bulbapedia "Grassy Terrain" -- Magnitude is in the halved set
-      const result = getTerrainDamageModifier("grassy", "ground", "magnitude", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.grassy, TYPES.ground, MOVES.magnitude, true, true);
       expect(result.grassyGroundHalved).toBe(true);
     });
 
     it("given Grassy Terrain + Earthquake vs non-grounded defender (Flying), no halving", () => {
       // Source: Bulbapedia "Grassy Terrain" -- only halves for grounded targets
-      const result = getTerrainDamageModifier("grassy", "ground", "earthquake", true, false);
+      const result = getTerrainDamageModifier(TERRAINS.grassy, TYPES.ground, MOVES.earthquake, true, false);
       expect(result.grassyGroundHalved).toBe(false);
     });
 
     it("given Grassy Terrain + non-ground move, no halving", () => {
       // Source: Only Earthquake/Bulldoze/Magnitude are halved
-      const result = getTerrainDamageModifier("grassy", "normal", "tackle", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.grassy, TYPES.normal, MOVES.tackle, true, true);
       expect(result.powerModifier).toBeNull();
       expect(result.grassyGroundHalved).toBe(false);
     });
@@ -269,19 +299,19 @@ describe("getTerrainDamageModifier", () => {
   describe("Misty Terrain", () => {
     it("given Misty Terrain + Dragon move vs grounded defender, returns 2048 (0.5x) power modifier", () => {
       // Source: Bulbapedia "Misty Terrain" Gen 6 -- Dragon moves halved vs grounded
-      const result = getTerrainDamageModifier("misty", "dragon", "dragon-pulse", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.misty, TYPES.dragon, MOVES.dragonPulse, true, true);
       expect(result.powerModifier).toBe(2048);
     });
 
     it("given Misty Terrain + Dragon move vs non-grounded defender (Flying), returns no modifier", () => {
       // Source: Bulbapedia "Misty Terrain" -- only halves against grounded targets
-      const result = getTerrainDamageModifier("misty", "dragon", "dragon-pulse", true, false);
+      const result = getTerrainDamageModifier(TERRAINS.misty, TYPES.dragon, MOVES.dragonPulse, true, false);
       expect(result.powerModifier).toBeNull();
     });
 
     it("given Misty Terrain + non-Dragon move, returns no modifier", () => {
       // Source: Bulbapedia "Misty Terrain" -- only halves Dragon-type moves
-      const result = getTerrainDamageModifier("misty", "fire", "flamethrower", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.misty, TYPES.fire, MOVES.flamethrower, true, true);
       expect(result.powerModifier).toBeNull();
     });
   });
@@ -290,7 +320,7 @@ describe("getTerrainDamageModifier", () => {
     it("given Psychic Terrain, returns no power modifier (Psychic Terrain boost is Gen 7+)", () => {
       // Source: Bulbapedia "Psychic Terrain" -- power boost introduced Gen 7, not Gen 6
       // Gen 6 Psychic Terrain only blocks priority moves targeting grounded Pokemon
-      const result = getTerrainDamageModifier("psychic", "psychic", "psychic", true, true);
+      const result = getTerrainDamageModifier(TERRAINS.psychic, TYPES.psychic, TYPES.psychic, true, true);
       expect(result.powerModifier).toBeNull();
     });
   });
@@ -305,18 +335,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
     it("given Electric Terrain + grounded attacker using Thunderbolt, damage includes 1.5x boost", () => {
       // Source: Bulbapedia "Electric Terrain" Gen 6 -- 1.5x Electric for grounded attacker
       // Grounded: normal-type (not flying, no levitate)
-      const attacker = makeActive({ types: ["normal"], spAttack: 150 });
-      const defender = makeActive({ types: ["normal"], spDefense: 100 });
+      const attacker = makeActive({ types: [TYPES.normal], spAttack: 150 });
+      const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
       const move = makeMove({
-        id: "thunderbolt",
-        type: "electric",
+        id: MOVES.thunderbolt,
+        type: TYPES.electric,
         category: "special",
         power: 90,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
       });
 
       // Use same seed for deterministic comparison
@@ -335,18 +365,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
 
     it("given Electric Terrain + Flying-type attacker using Thunderbolt, no terrain boost", () => {
       // Source: Bulbapedia "Electric Terrain" -- only grounded attackers get the boost
-      const attacker = makeActive({ types: ["flying"], spAttack: 150 });
-      const defender = makeActive({ types: ["normal"], spDefense: 100 });
+      const attacker = makeActive({ types: [TYPES.flying], spAttack: 150 });
+      const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
       const move = makeMove({
-        id: "thunderbolt",
-        type: "electric",
+        id: MOVES.thunderbolt,
+        type: TYPES.electric,
         category: "special",
         power: 90,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+        terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_SOURCES.electric },
       });
 
       const resultNoTerrain = calculateGen6Damage(
@@ -366,18 +396,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
   describe("Grassy Terrain", () => {
     it("given Grassy Terrain + grounded attacker using Energy Ball, damage includes 1.5x boost", () => {
       // Source: Bulbapedia "Grassy Terrain" Gen 6 -- 1.5x Grass for grounded attacker
-      const attacker = makeActive({ types: ["grass"], spAttack: 150 });
-      const defender = makeActive({ types: ["normal"], spDefense: 100 });
+      const attacker = makeActive({ types: [TYPES.grass], spAttack: 150 });
+      const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
       const move = makeMove({
-        id: "energy-ball",
-        type: "grass",
+        id: MOVES.energyBall,
+        type: TYPES.grass,
         category: "special",
         power: 90,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
       });
 
       const resultNoTerrain = calculateGen6Damage(
@@ -395,18 +425,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
 
     it("given Grassy Terrain + grounded defender hit by Earthquake, damage is halved", () => {
       // Source: Bulbapedia "Grassy Terrain" -- Earthquake damage halved vs grounded
-      const attacker = makeActive({ types: ["ground"], attack: 150 });
-      const defender = makeActive({ types: ["normal"], defense: 100 });
+      const attacker = makeActive({ types: [TYPES.ground], attack: 150 });
+      const defender = makeActive({ types: [TYPES.normal], defense: 100 });
       const move = makeMove({
-        id: "earthquake",
-        type: "ground",
+        id: MOVES.earthquake,
+        type: TYPES.ground,
         category: "physical",
         power: 100,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
       });
 
       const resultNoTerrain = calculateGen6Damage(
@@ -426,18 +456,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
       // Source: Bulbapedia "Grassy Terrain" -- halving only applies to grounded targets
       // Flying types are not grounded (Earthquake wouldn't normally hit them, but this
       // tests the terrain halving logic independently from type immunity)
-      const attacker = makeActive({ types: ["ground"], attack: 150 });
-      const defender = makeActive({ types: ["normal", "flying"], defense: 100 });
+      const attacker = makeActive({ types: [TYPES.ground], attack: 150 });
+      const defender = makeActive({ types: [TYPES.normal, TYPES.flying], defense: 100 });
       const move = makeMove({
-        id: "earthquake",
-        type: "ground",
+        id: MOVES.earthquake,
+        type: TYPES.ground,
         category: "physical",
         power: 100,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
       });
 
       const resultNoTerrain = calculateGen6Damage(
@@ -458,18 +488,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
   describe("Misty Terrain", () => {
     it("given Misty Terrain + Dragon Pulse vs grounded defender, damage is halved", () => {
       // Source: Bulbapedia "Misty Terrain" Gen 6 -- Dragon moves 0.5x vs grounded
-      const attacker = makeActive({ types: ["dragon"], spAttack: 150 });
-      const defender = makeActive({ types: ["normal"], spDefense: 100 });
+      const attacker = makeActive({ types: [TYPES.dragon], spAttack: 150 });
+      const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
       const move = makeMove({
-        id: "dragon-pulse",
-        type: "dragon",
+        id: MOVES.dragonPulse,
+        type: TYPES.dragon,
         category: "special",
         power: 85,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
       const resultNoTerrain = calculateGen6Damage(
@@ -487,18 +517,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
 
     it("given Misty Terrain + Dragon move vs Flying defender (not grounded), no halving", () => {
       // Source: Bulbapedia "Misty Terrain" -- halving only vs grounded targets
-      const attacker = makeActive({ types: ["dragon"], spAttack: 150 });
-      const defender = makeActive({ types: ["flying"], spDefense: 100 });
+      const attacker = makeActive({ types: [TYPES.dragon], spAttack: 150 });
+      const defender = makeActive({ types: [TYPES.flying], spDefense: 100 });
       const move = makeMove({
-        id: "dragon-pulse",
-        type: "dragon",
+        id: MOVES.dragonPulse,
+        type: TYPES.dragon,
         category: "special",
         power: 85,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
       const resultNoTerrain = calculateGen6Damage(
@@ -516,18 +546,18 @@ describe("calculateGen6Damage — terrain modifiers", () => {
 
     it("given Misty Terrain + non-Dragon move vs grounded defender, no halving", () => {
       // Source: Bulbapedia "Misty Terrain" -- only halves Dragon-type moves
-      const attacker = makeActive({ types: ["fire"], spAttack: 150 });
-      const defender = makeActive({ types: ["normal"], spDefense: 100 });
+      const attacker = makeActive({ types: [TYPES.fire], spAttack: 150 });
+      const defender = makeActive({ types: [TYPES.normal], spDefense: 100 });
       const move = makeMove({
-        id: "flamethrower",
-        type: "fire",
+        id: MOVES.flamethrower,
+        type: TYPES.fire,
         category: "special",
         power: 90,
       });
 
       const stateNoTerrain = makeState();
       const stateWithTerrain = makeState({
-        terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+        terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_SOURCES.misty },
       });
 
       const resultNoTerrain = calculateGen6Damage(
@@ -639,11 +669,11 @@ describe("applyGen6TerrainEffects", () => {
       const pokemon = makeActive({
         hp: 400,
         currentHp: 320,
-        types: ["psychic"],
-        ability: "levitate",
+        types: [TYPES.psychic],
+        ability: ABILITIES.levitate,
       });
       const state = makeState({
-        terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+        terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_SOURCES.grassy },
         sides: [
           { index: 0, active: [pokemon] },
           { index: 1, active: [] },
