@@ -18,7 +18,9 @@ import {
   CORE_ABILITY_IDS,
   CORE_FIXED_POINT,
   CORE_GIMMICK_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
@@ -50,6 +52,8 @@ const I = GEN8_ITEM_IDS;
 const M = GEN8_MOVE_IDS;
 const C = CORE_ABILITY_IDS;
 const T = CORE_TYPE_IDS;
+const MC = CORE_MOVE_CATEGORIES;
+const GENDERS = CORE_GENDERS;
 const S = CORE_STATUS_IDS;
 const V = CORE_VOLATILE_IDS;
 const W = CORE_WEATHER_IDS;
@@ -59,25 +63,25 @@ const SP = GEN8_SPECIES_IDS;
 const DEFAULT_SPECIES_ID = SP.bulbasaur;
 const TELEKINESIS_VOLATILE = V.telekinesis;
 const SYNTHETIC_NORMAL_PHYSICAL_50 = () =>
-  makeSyntheticMove(M.tackle, T.normal, "physical", 50);
+  makeSyntheticMove(M.tackle, T.normal, MC.physical, 50);
 const SYNTHETIC_NORMAL_PHYSICAL_65 = () =>
-  makeSyntheticMove(M.bodySlam, T.normal, "physical", 65);
+  makeSyntheticMove(M.bodySlam, T.normal, MC.physical, 65);
 const SYNTHETIC_NORMAL_PHYSICAL_70 = () =>
-  makeSyntheticMove(M.headbutt, T.normal, "physical", 70);
+  makeSyntheticMove(M.headbutt, T.normal, MC.physical, 70);
 const SYNTHETIC_NORMAL_PHYSICAL_80 = () =>
-  makeSyntheticMove(M.bodySlam, T.normal, "physical", 80);
+  makeSyntheticMove(M.bodySlam, T.normal, MC.physical, 80);
 const SYNTHETIC_WATER_SPECIAL_50 = () =>
-  makeSyntheticMove(M.surf, T.water, "special", 50);
+  makeSyntheticMove(M.surf, T.water, MC.special, 50);
 const SYNTHETIC_WATER_SPECIAL_60 = () =>
-  makeSyntheticMove(M.surf, T.water, "special", 60);
+  makeSyntheticMove(M.surf, T.water, MC.special, 60);
 const SYNTHETIC_WATER_SPECIAL_80 = () =>
-  makeSyntheticMove(M.surf, T.water, "special", 80);
+  makeSyntheticMove(M.surf, T.water, MC.special, 80);
 const SYNTHETIC_ELECTRIC_SPECIAL_50 = () =>
-  makeSyntheticMove(M.triAttack, T.electric, "special", 50);
+  makeSyntheticMove(M.triAttack, T.electric, MC.special, 50);
 const SYNTHETIC_FIRE_SPECIAL_80 = () =>
-  makeSyntheticMove(M.flamethrower, T.fire, "special", 80);
+  makeSyntheticMove(M.flamethrower, T.fire, MC.special, 80);
 const SYNTHETIC_PSYCHIC_SPECIAL_80 = () =>
-  makeSyntheticMove(M.focusBlast, T.psychic, "special", 80);
+  makeSyntheticMove(M.focusBlast, T.psychic, MC.special, 80);
 
 function makeActive(overrides: {
   level?: number;
@@ -93,7 +97,7 @@ function makeActive(overrides: {
   heldItem?: string | null;
   status?: string | null;
   speciesId?: number;
-  gender?: "male" | "female" | "genderless";
+  gender?: (typeof GENDERS)[keyof typeof GENDERS];
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   isDynamaxed?: boolean;
   statStages?: {
@@ -123,7 +127,7 @@ function makeActive(overrides: {
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as never,
       friendship: 0,
-      gender: (overrides.gender ?? "male") as never,
+      gender: (overrides.gender ?? GENDERS.male) as never,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -190,13 +194,13 @@ function makeCanonicalMove(moveId: (typeof M)[keyof typeof M], overrides?: Parti
 function makeSyntheticMove(
   baseMoveId: (typeof M)[keyof typeof M],
   type: PokemonType,
-  category: "physical" | "special" | "status",
+  category: (typeof MC)[keyof typeof MC] | "status",
   power: number | null,
 ): MoveData {
   return makeCanonicalMove(baseMoveId, { type, category, power });
 }
 
-function makeState(overrides?: {
+function createSyntheticBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
   terrain?: { type: string; turnsLeft: number; source: string } | null;
 }): BattleState {
@@ -226,7 +230,7 @@ function makeDmgCtx(overrides: {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
     move: overrides.move ?? makeCanonicalMove(M.tackle),
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createSyntheticBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
   } as unknown as DamageContext;
@@ -666,7 +670,7 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
       attacker: attackerNegStage,
       defender,
       move,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(99),
       isCrit: true,
     } as unknown as DamageContext;
@@ -675,7 +679,7 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
       attacker: attackerZeroStage,
       defender,
       move,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(99),
       isCrit: true,
     } as unknown as DamageContext;
@@ -850,8 +854,8 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     const rockDefender = makeActive({ types: [CORE_TYPE_IDS.rock], spDefense: 100, ability: CORE_ABILITY_IDS.none });
     const attacker = makeActive({ spAttack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_PSYCHIC_SPECIAL_80();
-    const stateWithSand = makeState({ weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
-    const stateNoWeather = makeState();
+    const stateWithSand = createSyntheticBattleState({ weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const stateNoWeather = createSyntheticBattleState();
 
     const dmgWithSand = calcDmg(
       makeDmgCtx({ attacker, defender: rockDefender, move, state: stateWithSand }),
@@ -877,8 +881,8 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     // Use normal-type physical move: normal vs rock = 1x effectiveness
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
-    const stateWithSand = makeState({ weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
-    const stateNoWeather = makeState();
+    const stateWithSand = createSyntheticBattleState({ weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const stateNoWeather = createSyntheticBattleState();
 
     const dmgWithSand = calcDmg(
       makeDmgCtx({ attacker, defender: rockDefender, move, state: stateWithSand }),
@@ -899,7 +903,7 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     const noAbility = makeActive({ spDefense: 100, ability: CORE_ABILITY_IDS.none });
     const attacker = makeActive({ spAttack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_WATER_SPECIAL_80();
-    const state = makeState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const state = createSyntheticBattleState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
 
     const dmgFlowerGift = calcDmg(
       makeDmgCtx({ attacker, defender: withFlowerGift, move, state }),
@@ -915,7 +919,7 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     const noAbility = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.none });
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
-    const state = makeState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const state = createSyntheticBattleState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
 
     const dmgFlowerGift = calcDmg(
       makeDmgCtx({ attacker, defender: withFlowerGift, move, state }),
