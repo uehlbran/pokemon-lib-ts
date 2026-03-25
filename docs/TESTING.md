@@ -15,6 +15,7 @@ Code examples for the test types used in this project. For testing philosophy, c
 - For shared cross-generation mechanic constants, import the owned core surface instead of duplicating literals in the test.
 - For shared cross-generation domain literals like move categories, import the owned core surface instead of duplicating handwritten strings in the test.
 - For bounded shared domain literals like genders and ability slots, import the owned core surface instead of duplicating handwritten strings in the test.
+- For real lifecycle hook names, import the owned trigger surface instead of hardcoding strings like `on-switch-in`, `on-turn-end`, `on-contact`, or `on-priority-check` in touched tests. Invalid-trigger rejection tests may still use raw non-canonical strings when they are explicitly proving rejection behavior.
 - For generation-specific mechanic constants, import the owning generation package's exported surface instead of inventing file-local literals.
 - For generation-specific entities, also verify they actually exist in the generation under test. Matching strings across generations are not enough; source them from the generation's own exports or data manager instead of reusing another generation's reference surface.
 - Keep generation semantics honest when using shared constants: for Gen 1-3, damaging move category is generation-derived from the type split, not canonical per-move Gen 4+ metadata. Do not backport later-generation category assumptions into early-generation canonical tests.

@@ -1,6 +1,36 @@
-import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_NATURE_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../src";
 import { handleGen9Ability } from "../src/Gen9Abilities";
 
 /**
@@ -19,108 +49,115 @@ import { handleGen9Ability } from "../src/Gen9Abilities";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const dataManager = createGen9DataManager();
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS } as const;
+const abilityTriggers = CORE_ABILITY_TRIGGER_IDS;
+const itemIds = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS } as const;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const moveIds = GEN9_MOVE_IDS;
+const speciesIds = GEN9_SPECIES_IDS;
+const terrainIds = CORE_TERRAIN_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
+const weatherIds = CORE_WEATHER_IDS;
+const defaultSpecies = dataManager.getSpecies(speciesIds.eevee);
+const defaultNature = dataManager.getNature(CORE_NATURE_IDS.hardy).id;
+
 let nextTestUid = 0;
-function makeTestUid() {
+function createTestUid() {
   return `test-${nextTestUid++}`;
 }
 
-function makePokemonInstance(overrides: {
-  ability?: string;
-  nickname?: string | null;
-  heldItem?: string | null;
-  status?: string | null;
-  maxHp?: number;
-}): PokemonInstance {
-  const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: makeTestUid(),
-    speciesId: 1,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: maxHp,
-    moves: [],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: overrides.heldItem ?? null,
-    status: (overrides.status as PokemonInstance["status"]) ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+function createCanonicalMove(moveId: (typeof moveIds)[keyof typeof moveIds]): MoveData {
+  return dataManager.getMove(moveId);
 }
 
-function makeActivePokemon(overrides: {
-  ability?: string;
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
+  return {
+    ...baseMove,
+    ...overrides,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides.effect ?? baseMove.effect,
+  };
+}
+
+function createSyntheticPokemonInstance(overrides: {
+  ability?: (typeof abilityIds)[keyof typeof abilityIds] | "";
+  nickname?: string | null;
+  heldItem?: (typeof itemIds)[keyof typeof itemIds] | null;
+  status?: PrimaryStatus | null;
+  maxHp?: number;
+  speciesId?: (typeof speciesIds)[keyof typeof speciesIds];
+}): ActivePokemon["pokemon"] {
+  const maxHp = overrides.maxHp ?? 200;
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(7), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    isShiny: false,
+    moves: [],
+    heldItem: overrides.heldItem ?? null,
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: itemIds.pokeBall,
+  });
+
+  pokemon.uid = createTestUid();
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = maxHp;
+  pokemon.ability = overrides.ability ?? "";
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return pokemon;
+}
+
+function createOnFieldPokemon(overrides: {
+  ability?: (typeof abilityIds)[keyof typeof abilityIds] | "";
   types?: PokemonType[];
   nickname?: string | null;
-  heldItem?: string | null;
-  status?: string | null;
+  heldItem?: (typeof itemIds)[keyof typeof itemIds] | null;
+  status?: PrimaryStatus | null;
   maxHp?: number;
   substituteHp?: number;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   isTerastallized?: boolean;
-}) {
-  return {
-    pokemon: makePokemonInstance({
-      ability: overrides.ability,
-      nickname: overrides.nickname,
-      heldItem: overrides.heldItem,
-      status: overrides.status,
-      maxHp: overrides.maxHp,
-    }),
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
-    suppressedAbility: null,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: overrides.substituteHp ?? 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: overrides.isTerastallized ?? false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    forcedMove: null,
-  };
+  speciesId?: (typeof speciesIds)[keyof typeof speciesIds];
+}): ActivePokemon {
+  const pokemon = createSyntheticPokemonInstance({
+    ability: overrides.ability,
+    nickname: overrides.nickname,
+    heldItem: overrides.heldItem,
+    status: overrides.status,
+    maxHp: overrides.maxHp,
+    speciesId: overrides.speciesId,
+  });
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const activePokemon = createBattleOnFieldPokemon(
+    pokemon,
+    0,
+    overrides.types ?? [...(species.types as PokemonType[])],
+  );
+  activePokemon.ability = overrides.ability ?? "";
+  activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
+  activePokemon.substituteHp = overrides.substituteHp ?? 0;
+  activePokemon.isTerastallized = overrides.isTerastallized ?? false;
+  return activePokemon;
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -137,7 +174,7 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeRng(overrides?: Partial<SeededRandom>): SeededRandom {
+function createTestRng(overrides?: Partial<SeededRandom>): SeededRandom {
   return {
     next: () => 0,
     int: () => 1,
@@ -150,7 +187,7 @@ function makeRng(overrides?: Partial<SeededRandom>): SeededRandom {
   };
 }
 
-function makeBattleState(overrides?: {
+function createBattleState(overrides?: {
   weather?: BattleState["weather"];
   terrain?: BattleState["terrain"];
 }): BattleState {
@@ -159,7 +196,7 @@ function makeBattleState(overrides?: {
     generation: 9,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: overrides?.weather ?? null,
     terrain: overrides?.terrain ?? null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -167,25 +204,25 @@ function makeBattleState(overrides?: {
     wonderRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },
     turnHistory: [],
-    rng: makeRng(),
+    rng: createTestRng(),
   } as BattleState;
 }
 
-function makeContext(overrides: {
-  pokemon: ReturnType<typeof makeActivePokemon>;
-  opponent?: ReturnType<typeof makeActivePokemon>;
-  trigger: string;
+function createAbilityContext(overrides: {
+  pokemon: ActivePokemon;
+  opponent?: ActivePokemon;
+  trigger: AbilityContext["trigger"];
   weather?: BattleState["weather"];
   terrain?: BattleState["terrain"];
-  move?: any;
+  move?: MoveData;
   rng?: Partial<SeededRandom>;
 }): AbilityContext {
   return {
-    pokemon: overrides.pokemon as any,
-    opponent: overrides.opponent as any,
-    state: makeBattleState({ weather: overrides.weather, terrain: overrides.terrain }),
-    rng: makeRng(overrides.rng),
-    trigger: overrides.trigger as any,
+    pokemon: overrides.pokemon,
+    opponent: overrides.opponent,
+    state: createBattleState({ weather: overrides.weather, terrain: overrides.terrain }),
+    rng: createTestRng(overrides.rng),
+    trigger: overrides.trigger,
     move: overrides.move,
   };
 }
@@ -196,70 +233,78 @@ function makeContext(overrides: {
 
 describe("handleGen9Ability -- routing", () => {
   it("routes protosynthesis to stat ability handler (priority 1)", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-switch-in",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.protosynthesis }),
+      trigger: abilityTriggers.onSwitchIn,
+      weather: { type: weatherIds.sun, turnsLeft: 5, source: abilityIds.drought },
     });
-    const result = handleGen9Ability("on-switch-in", ctx);
+    const result = handleGen9Ability(abilityTriggers.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: "protosynthesis" }));
+    expect(result.effects[0]).toEqual(
+      expect.objectContaining({ volatile: volatileIds.protosynthesis }),
+    );
   });
 
   it("routes quark-drive to stat ability handler (priority 1)", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive" }),
-      trigger: "on-switch-in",
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.quarkDrive }),
+      trigger: abilityTriggers.onSwitchIn,
+      terrain: {
+        type: terrainIds.electric,
+        turnsLeft: 5,
+        source: abilityIds.electricSurge,
+      },
     });
-    const result = handleGen9Ability("on-switch-in", ctx);
+    const result = handleGen9Ability(abilityTriggers.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: "quarkdrive" }));
+    expect(result.effects[0]).toEqual(
+      expect.objectContaining({ volatile: volatileIds.quarkDrive }),
+    );
   });
 
   it("routes intrepid-sword to new ability handler (priority 2)", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "intrepid-sword" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.intrepidSword }),
+      trigger: abilityTriggers.onSwitchIn,
     });
-    const result = handleGen9Ability("on-switch-in", ctx);
+    const result = handleGen9Ability(abilityTriggers.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[1]).toEqual(expect.objectContaining({ stat: "attack", stages: 1 }));
   });
 
   it("routes intimidate to switch ability handler (priority 3)", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "intimidate" }),
-      opponent: makeActivePokemon({}),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.intimidate }),
+      opponent: createOnFieldPokemon({}),
+      trigger: abilityTriggers.onSwitchIn,
     });
-    const result = handleGen9Ability("on-switch-in", ctx);
+    const result = handleGen9Ability(abilityTriggers.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(expect.objectContaining({ stat: "attack", stages: -1 }));
   });
 
   it("routes drizzle to switch ability handler (priority 3)", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "drizzle" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.drizzle }),
+      trigger: abilityTriggers.onSwitchIn,
     });
-    const result = handleGen9Ability("on-switch-in", ctx);
+    const result = handleGen9Ability(abilityTriggers.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ weather: "rain" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ weather: weatherIds.rain }));
   });
 
   it("routes speed-boost on-turn-end to switch ability handler", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "speed-boost" }),
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.speedBoost }),
+      trigger: abilityTriggers.onTurnEnd,
     });
-    const result = handleGen9Ability("on-turn-end", ctx);
+    const result = handleGen9Ability(abilityTriggers.onTurnEnd, ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given unsupported trigger type, then returns inactive", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "intimidate" }),
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.intimidate }),
       trigger: "on-damage",
     });
     const result = handleGen9Ability("on-damage", ctx);
@@ -267,14 +312,14 @@ describe("handleGen9Ability -- routing", () => {
   });
 
   it("given embody aspect (which isEmbodyAspect check covers), routes to new ability handler", () => {
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({
-        ability: "embody-aspect-teal",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: abilityIds.embodyAspectTeal,
         isTerastallized: true,
       }),
-      trigger: "on-switch-in",
+      trigger: abilityTriggers.onSwitchIn,
     });
-    const result = handleGen9Ability("on-switch-in", ctx);
+    const result = handleGen9Ability(abilityTriggers.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[1]).toEqual(expect.objectContaining({ stat: "speed", stages: 1 }));
   });
@@ -288,12 +333,12 @@ describe("handleGen9Ability -- Triage healing move coverage (#803)", () => {
   it("given Triage user with life-dew, when checking priority, then returns activated with +3 boost", () => {
     // Source: Showdown data/moves.ts -- life-dew has heal flag
     // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "triage" }),
-      trigger: "on-priority-check",
-      move: { id: "life-dew", category: "status", type: "water", effect: null },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.triage }),
+      trigger: abilityTriggers.onPriorityCheck,
+      move: createCanonicalMove(moveIds.lifeDew),
     });
-    const result = handleGen9Ability("on-priority-check", ctx);
+    const result = handleGen9Ability(abilityTriggers.onPriorityCheck, ctx);
     expect(result.activated).toBe(true);
     expect(result.priorityBoost).toBe(3);
   });
@@ -301,12 +346,12 @@ describe("handleGen9Ability -- Triage healing move coverage (#803)", () => {
   it("given Triage user with jungle-healing, when checking priority, then returns activated with +3 boost", () => {
     // Source: Showdown data/moves.ts -- jungle-healing has heal flag
     // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "triage" }),
-      trigger: "on-priority-check",
-      move: { id: "jungle-healing", category: "status", type: "grass", effect: null },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.triage }),
+      trigger: abilityTriggers.onPriorityCheck,
+      move: createCanonicalMove(moveIds.jungleHealing),
     });
-    const result = handleGen9Ability("on-priority-check", ctx);
+    const result = handleGen9Ability(abilityTriggers.onPriorityCheck, ctx);
     expect(result.activated).toBe(true);
     expect(result.priorityBoost).toBe(3);
   });
@@ -314,12 +359,12 @@ describe("handleGen9Ability -- Triage healing move coverage (#803)", () => {
   it("given Triage user with lunar-blessing, when checking priority, then returns activated with +3 boost", () => {
     // Source: Showdown data/moves.ts -- lunar-blessing has heal flag
     // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "triage" }),
-      trigger: "on-priority-check",
-      move: { id: "lunar-blessing", category: "status", type: "psychic", effect: null },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.triage }),
+      trigger: abilityTriggers.onPriorityCheck,
+      move: createCanonicalMove(moveIds.lunarBlessing),
     });
-    const result = handleGen9Ability("on-priority-check", ctx);
+    const result = handleGen9Ability(abilityTriggers.onPriorityCheck, ctx);
     expect(result.activated).toBe(true);
     expect(result.priorityBoost).toBe(3);
   });
@@ -327,17 +372,17 @@ describe("handleGen9Ability -- Triage healing move coverage (#803)", () => {
   it("given Triage user with non-allowlisted move that has effectType heal, when checking priority, then returns activated with +3 boost", () => {
     // Source: Showdown data/abilities.ts -- triage: move.flags.heal check
     // Verifies the effectType "heal" fallback for future moves not yet in the HEALING_MOVES allowlist
-    const ctx = makeContext({
-      pokemon: makeActivePokemon({ ability: "triage" }),
-      trigger: "on-priority-check",
-      move: {
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: abilityIds.triage }),
+      trigger: abilityTriggers.onPriorityCheck,
+      move: createSyntheticMoveFrom(createCanonicalMove(moveIds.lifeDew), {
         id: "custom-heal-move",
-        category: "status",
-        type: "normal",
+        category: moveCategories.status,
+        type: typeIds.normal,
         effect: { type: "heal" },
-      },
+      }),
     });
-    const result = handleGen9Ability("on-priority-check", ctx);
+    const result = handleGen9Ability(abilityTriggers.onPriorityCheck, ctx);
     expect(result.activated).toBe(true);
     expect(result.priorityBoost).toBe(3);
   });

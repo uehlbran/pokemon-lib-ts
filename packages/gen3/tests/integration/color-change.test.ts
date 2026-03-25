@@ -1,5 +1,22 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  type StatBlock,
+} from "@pokemon-lib-ts/core";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+} from "@pokemon-lib-ts/gen3";
 import { describe, expect, it } from "vitest";
 import { applyGen3Ability } from "../../src/Gen3Abilities";
 
@@ -18,6 +35,15 @@ import { applyGen3Ability } from "../../src/Gen3Abilities";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const dataManager = createGen3DataManager();
+const abilityTriggers = CORE_ABILITY_TRIGGER_IDS;
+const types = CORE_TYPE_IDS;
+const abilityIds = GEN3_ABILITY_IDS;
+const moveIds = GEN3_MOVE_IDS;
+const speciesIds = GEN3_SPECIES_IDS;
+
+type Gen3MoveId = (typeof moveIds)[keyof typeof moveIds];
+
 function createMockRng() {
   return {
     next: () => 0,
@@ -33,6 +59,7 @@ function createMockRng() {
 function createActivePokemon(opts: {
   types: PokemonType[];
   ability: string;
+  speciesId?: number;
   nickname?: string | null;
 }): ActivePokemon {
   const stats: StatBlock = {
@@ -43,29 +70,31 @@ function createActivePokemon(opts: {
     spDefense: 100,
     speed: 100,
   };
+  const speciesId = opts.speciesId ?? speciesIds.kecleon;
+  const species = dataManager.getSpecies(speciesId);
   const pokemon = {
     uid: "test",
-    speciesId: 352, // Kecleon
-    nickname: opts.nickname === undefined ? "Kecleon" : opts.nickname,
+    speciesId,
+    nickname: opts.nickname === undefined ? species.displayName : opts.nickname,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN3_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
     moves: [],
     ability: opts.ability,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -102,40 +131,8 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(type: PokemonType): MoveData {
-  return {
-    id: "test-move",
-    displayName: "Test Move",
-    type,
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 3,
-  } as MoveData;
+function createCanonicalMove(moveId: Gen3MoveId): MoveData {
+  return dataManager.getMove(moveId);
 }
 
 function createDamageTakenContext(pokemon: ActivePokemon, move?: MoveData): AbilityContext {
@@ -143,7 +140,7 @@ function createDamageTakenContext(pokemon: ActivePokemon, move?: MoveData): Abil
     pokemon,
     state: { weather: null } as AbilityContext["state"],
     rng: createMockRng(),
-    trigger: "on-damage-taken",
+    trigger: abilityTriggers.onDamageTaken,
     move,
   } as AbilityContext;
 }
@@ -157,55 +154,58 @@ describe("Gen 3 Color Change", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_COLOR_CHANGE
     // Kecleon is Normal-type, hit by Fire move -> becomes Fire-type
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "color-change",
+      types: [types.normal],
+      ability: abilityIds.colorChange,
+      speciesId: speciesIds.kecleon,
       nickname: "Kecleon",
     });
-    const move = createMove("fire");
+    const move = createCanonicalMove(moveIds.flamethrower);
     const ctx = createDamageTakenContext(pokemon, move);
-    const result = applyGen3Ability("on-damage-taken", ctx);
+    const result = applyGen3Ability(abilityTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     expect(result.effects[0]!.effectType).toBe("type-change");
     if (result.effects[0]!.effectType === "type-change") {
-      expect(result.effects[0]!.types).toEqual(["fire"]);
+      expect(result.effects[0]!.types).toEqual([types.fire]);
       expect(result.effects[0]!.target).toBe("self");
     }
-    expect(result.messages[0]).toBe("Kecleon's Color Change made it the fire type!");
+    expect(result.messages[0]).toBe(`Kecleon's Color Change made it the ${types.fire} type!`);
   });
 
   it("given Color Change Pokemon hit by Water move, when on-damage-taken fires, then type changes to water", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_COLOR_CHANGE
     // Triangulation: second independent test with different move type
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "color-change",
+      types: [types.normal],
+      ability: abilityIds.colorChange,
+      speciesId: speciesIds.kecleon,
       nickname: "Kecleon",
     });
-    const move = createMove("water");
+    const move = createCanonicalMove(moveIds.surf);
     const ctx = createDamageTakenContext(pokemon, move);
-    const result = applyGen3Ability("on-damage-taken", ctx);
+    const result = applyGen3Ability(abilityTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     if (result.effects[0]!.effectType === "type-change") {
-      expect(result.effects[0]!.types).toEqual(["water"]);
+      expect(result.effects[0]!.types).toEqual([types.water]);
     }
-    expect(result.messages[0]).toBe("Kecleon's Color Change made it the water type!");
+    expect(result.messages[0]).toBe(`Kecleon's Color Change made it the ${types.water} type!`);
   });
 
   it("given Color Change Pokemon already fire-type hit by Fire move, when on-damage-taken fires, then no type change", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_COLOR_CHANGE
     // Does not activate if already mono-typed to the move's type
     const pokemon = createActivePokemon({
-      types: ["fire"],
-      ability: "color-change",
+      types: [types.fire],
+      ability: abilityIds.colorChange,
+      speciesId: speciesIds.kecleon,
       nickname: "Kecleon",
     });
-    const move = createMove("fire");
+    const move = createCanonicalMove(moveIds.flamethrower);
     const ctx = createDamageTakenContext(pokemon, move);
-    const result = applyGen3Ability("on-damage-taken", ctx);
+    const result = applyGen3Ability(abilityTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -217,13 +217,14 @@ describe("Gen 3 Color Change", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_COLOR_CHANGE check at line 2757
     // A fire/water Pokemon hit by fire should NOT change (fire type already present in slot 0)
     const pokemon = createActivePokemon({
-      types: ["fire", "water"],
-      ability: "color-change",
+      types: [types.fire, types.water],
+      ability: abilityIds.colorChange,
+      speciesId: speciesIds.kecleon,
       nickname: "Kecleon",
     });
-    const move = createMove("fire");
+    const move = createCanonicalMove(moveIds.flamethrower);
     const ctx = createDamageTakenContext(pokemon, move);
-    const result = applyGen3Ability("on-damage-taken", ctx);
+    const result = applyGen3Ability(abilityTriggers.onDamageTaken, ctx);
 
     // Color Change does NOT activate — fire type already present
     expect(result.activated).toBe(false);
@@ -233,12 +234,13 @@ describe("Gen 3 Color Change", () => {
   it("given Color Change Pokemon with no move context, when on-damage-taken fires, then no type change", () => {
     // Edge case: no move in context (should not happen in normal flow, but defensive)
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "color-change",
+      types: [types.normal],
+      ability: abilityIds.colorChange,
+      speciesId: speciesIds.kecleon,
       nickname: "Kecleon",
     });
     const ctx = createDamageTakenContext(pokemon, undefined);
-    const result = applyGen3Ability("on-damage-taken", ctx);
+    const result = applyGen3Ability(abilityTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -247,13 +249,14 @@ describe("Gen 3 Color Change", () => {
   it("given non-Color-Change Pokemon, when on-damage-taken fires, then no effect", () => {
     // Non-Color-Change abilities should not trigger type change
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "huge-power",
+      types: [types.normal],
+      ability: abilityIds.hugePower,
+      speciesId: speciesIds.azumarill,
       nickname: "Azumarill",
     });
-    const move = createMove("fire");
+    const move = createCanonicalMove(moveIds.flamethrower);
     const ctx = createDamageTakenContext(pokemon, move);
-    const result = applyGen3Ability("on-damage-taken", ctx);
+    const result = applyGen3Ability(abilityTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);

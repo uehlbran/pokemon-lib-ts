@@ -142,6 +142,32 @@ export const CORE_ABILITY_SLOTS = {
   hidden: "hidden",
 } as const;
 
+export const CORE_ABILITY_TRIGGER_IDS = {
+  onSwitchIn: "on-switch-in",
+  onSwitchOut: "on-switch-out",
+  onBeforeMove: "on-before-move",
+  onAfterMoveHit: "on-after-move-hit",
+  onAfterMoveUsed: "on-after-move-used",
+  onDamageTaken: "on-damage-taken",
+  onDamageCalc: "on-damage-calc",
+  onStatChange: "on-stat-change",
+  onStatusInflicted: "on-status-inflicted",
+  onWeatherChange: "on-weather-change",
+  onTerrainChange: "on-terrain-change",
+  onTurnEnd: "on-turn-end",
+  onHpThreshold: "on-hp-threshold",
+  onFaint: "on-faint",
+  onContact: "on-contact",
+  onCriticalHit: "on-critical-hit",
+  onAccuracyCheck: "on-accuracy-check",
+  onPriorityCheck: "on-priority-check",
+  onTypeEffectiveness: "on-type-effectiveness",
+  onItemUse: "on-item-use",
+  passiveModifier: "passive-modifier",
+  passiveImmunity: "passive-immunity",
+  onFlinch: "on-flinch",
+} as const;
+
 export const CORE_GENDERS = {
   male: "male",
   female: "female",
