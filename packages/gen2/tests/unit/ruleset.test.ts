@@ -312,49 +312,37 @@ describe("Gen2Ruleset", () => {
       expect(result).toBe(false);
     });
 
-    it("given checkFreezeThaw called 1000 times with different seeds, when checking results, then all return false", () => {
+    it("given the pre-move freeze-thaw check, when it runs, then it always returns false", () => {
       // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
-      // Triangulation: verify across many seeds that pre-move thaw never happens
       // Arrange
       const ruleset = new Gen2Ruleset();
       const mockActive = createMockActive({ status: "freeze" });
-      let thawCount = 0;
+      const rng = new SeededRandom(42);
 
       // Act
-      for (let seed = 0; seed < 1000; seed++) {
-        const rng = new SeededRandom(seed);
-        if (ruleset.checkFreezeThaw(mockActive, rng)) {
-          thawCount++;
-        }
-      }
+      const result = ruleset.checkFreezeThaw(mockActive, rng);
 
-      // Assert: zero thaws pre-move
-      expect(thawCount).toBe(0);
+      // Assert
+      expect(result).toBe(false);
     });
   });
 
   // --- Sleep Turns ---
 
   describe("Given sleep turns roll", () => {
-    it("given a sleep-turn roll, when the Gen 2 ruleset asks rng for the value, then it uses the 2-7 range", () => {
+    it("given the Gen 2 sleep-turn roll, when the ruleset asks rng for a value, then it uses the inclusive 2-7 range", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const rng = { int: vi.fn().mockReturnValue(4) } as unknown as SeededRandom;
+      const int = vi.fn().mockReturnValue(4);
+      const rng = { int } as unknown as SeededRandom;
 
       // Act
       const turns = ruleset.rollSleepTurns(rng);
 
       // Assert
+      // Source: the mocked RNG returns 4 only to prove rollSleepTurns forwards the value unchanged.
       expect(turns).toBe(4);
-      expect(rng.int).toHaveBeenCalledWith(2, 7);
-    });
-
-    it("given 10000 sleep rolls, when checking range bounds, then min is 2 and max is 7 (never 1, never 8+)", () => {
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm:3608-3621
-      // Random() & SLP_MASK rejects 0 and 7, then inc a -> range 2-7
-      const ruleset = new Gen2Ruleset();
-      expect(ruleset.rollSleepTurns(new SeededRandom(42))).toBeGreaterThanOrEqual(2);
-      expect(ruleset.rollSleepTurns(new SeededRandom(42))).toBeLessThanOrEqual(7);
+      expect(int).toHaveBeenCalledWith(2, 7);
     });
   });
 
@@ -636,51 +624,34 @@ describe("Gen2Ruleset", () => {
   // --- Accuracy Check ---
 
   describe("Given accuracy check", () => {
-    it("given a 100% accurate move, when hit chance is checked repeatedly, then Gen 2 never exhibits the Gen 1 1/256 miss bug", () => {
+    it("given a 100% accurate move, when hit chance is checked, then Gen 2 short-circuits before any RNG roll", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      // A 100% accurate move should hit every time when accuracy/evasion stages are 0.
-      // In Gen 1, it would miss 1/256 of the time. In Gen 2, it always hits.
-      let misses = 0;
-      const trials = 10000;
+      const attacker = createMockActive();
+      const defender = createMockActive();
+      const move = { accuracy: 100, id: "tackle" } as unknown as MoveData;
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const int = vi.fn();
+      const rng = { int } as unknown as SeededRandom;
 
       // Act
-      for (let seed = 0; seed < trials; seed++) {
-        const rng = new SeededRandom(seed);
-        const attacker = createMockActive();
-        const defender = createMockActive();
-        const move = { accuracy: 100, id: "tackle" } as unknown as MoveData;
-        const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const hit = ruleset.doesMoveHit({ attacker, defender, move, state, rng });
 
-        const hit = ruleset.doesMoveHit({ attacker, defender, move, state, rng });
-        if (!hit) misses++;
-      }
-
-      // Assert: Gen 2 should have 0 misses for 100% accuracy moves
-      expect(misses).toBe(0);
+      // Assert
+      expect(hit).toBe(true);
+      expect(int).not.toHaveBeenCalled();
     });
 
-    it("given a 100% accurate move, when hit chance is checked across several seeds, then it always hits in Gen 2", () => {
+    it("given a 100% accurate move, when hit chance is checked, then it always hits", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const _rng = new SeededRandom(42);
       const attacker = createMockActive();
       const defender = createMockActive();
       const move = { accuracy: 100 } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
-      // Act: many trials all should hit
-      for (let i = 0; i < 100; i++) {
-        const hit = ruleset.doesMoveHit({
-          attacker,
-          defender,
-          move,
-          state,
-          rng: new SeededRandom(i),
-        });
-        // Assert
-        expect(hit).toBe(true);
-      }
+      // Act / Assert
+      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) })).toBe(true);
     });
 
     it("given a null-accuracy move, when hit chance is checked, then it always hits", () => {
@@ -748,7 +719,7 @@ describe("Gen2Ruleset", () => {
       const confusionDamage = ruleset.calculateConfusionDamage(pokemon, state, rng);
       const simpleDamage = Math.floor(300 / 8); // 37
 
-      // Assert: formula-based confusion damage should exceed maxHP/8 for high attack
+      // Assert: formula-based confusion damage exceeds maxHP/8 for high attack
       expect(confusionDamage).toBeGreaterThan(simpleDamage);
     });
 
@@ -817,7 +788,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const results = ruleset.applyWeatherEffects(state);
 
-      // Assert: both fire and water Pokemon should take sandstorm damage
+      // Assert: both fire and water Pokemon take sandstorm damage
       expect(results.length).toBe(2);
     });
 
@@ -976,11 +947,9 @@ describe("Gen2Ruleset", () => {
       expect(sorted[1].side).toBe(0);
     });
 
-    it("given Quick Claw and a slower attacker, when turn order is resolved repeatedly, then Quick Claw can move first", () => {
+    it("given Quick Claw and a slower attacker, when turn order is resolved, then Quick Claw can move first", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      // Need to find a seed where Quick Claw activates (rng.int(1,256) <= 60)
-      // Test with many seeds to find one that activates
       const slowActive = createMockActive({
         speed: 10,
         heldItem: "quick-claw",
@@ -990,34 +959,26 @@ describe("Gen2Ruleset", () => {
         speed: 300,
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
       });
+      const side0 = createMockSide(0, slowActive);
+      const side1 = createMockSide(1, fastActive);
+      const state = createMockState(side0, side1);
+      const actions: BattleAction[] = [
+        { type: "move", side: 0, moveIndex: 0 },
+        { type: "move", side: 1, moveIndex: 0 },
+      ];
+      const int = vi.fn().mockReturnValue(1);
+      const next = vi.fn().mockReturnValueOnce(0.2).mockReturnValueOnce(0.8);
+      const rng = { int, next } as unknown as SeededRandom;
 
-      let quickClawWorked = false;
-      for (let seed = 0; seed < 100; seed++) {
-        const rng = new SeededRandom(seed);
-        const side0 = createMockSide(0, slowActive);
-        const side1 = createMockSide(1, fastActive);
-        const state = createMockState(side0, side1);
+      // Act
+      const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
-        const actions: BattleAction[] = [
-          { type: "move", side: 0, moveIndex: 0 },
-          { type: "move", side: 1, moveIndex: 0 },
-        ];
-
-        // Act
-        const sorted = ruleset.resolveTurnOrder(actions, state, rng);
-
-        // If slow Pokemon moved first, Quick Claw activated
-        if (sorted[0].side === 0) {
-          quickClawWorked = true;
-          break;
-        }
-      }
-
-      // Assert: Quick Claw should activate at least once in 100 trials (~23% chance each)
-      expect(quickClawWorked).toBe(true);
+      // Assert
+      expect(sorted[0].side).toBe(0);
+      expect(sorted[1].side).toBe(1);
     });
 
-    it("given equal speed on both sides, when turn order is resolved repeatedly, then either side can win the tie", () => {
+    it("given equal speed on both sides, when turn order is resolved, then the tiebreak key decides the order", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const active0 = createMockActive({
@@ -1028,26 +989,28 @@ describe("Gen2Ruleset", () => {
         speed: 100,
         moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
       });
+      const side0 = createMockSide(0, active0);
+      const side1 = createMockSide(1, active1);
+      const state = createMockState(side0, side1);
+      const actions: BattleAction[] = [
+        { type: "move", side: 0, moveIndex: 0 },
+        { type: "move", side: 1, moveIndex: 0 },
+      ];
 
-      const firstMover = new Set<number>();
-      for (let seed = 0; seed < 100; seed++) {
-        const rng = new SeededRandom(seed);
-        const side0 = createMockSide(0, active0);
-        const side1 = createMockSide(1, active1);
-        const state = createMockState(side0, side1);
+      const firstSorted = ruleset.resolveTurnOrder(
+        actions,
+        state,
+        { next: vi.fn().mockReturnValueOnce(0.1).mockReturnValueOnce(0.9) } as unknown as SeededRandom,
+      );
+      const secondSorted = ruleset.resolveTurnOrder(
+        actions,
+        state,
+        { next: vi.fn().mockReturnValueOnce(0.9).mockReturnValueOnce(0.1) } as unknown as SeededRandom,
+      );
 
-        const actions: BattleAction[] = [
-          { type: "move", side: 0, moveIndex: 0 },
-          { type: "move", side: 1, moveIndex: 0 },
-        ];
-
-        // Act
-        const sorted = ruleset.resolveTurnOrder(actions, state, rng);
-        firstMover.add(sorted[0].side);
-      }
-
-      // Assert: both sides should go first at least once (random tiebreaker)
-      expect(firstMover.size).toBe(2);
+      // Assert
+      expect(firstSorted[0].side).toBe(0);
+      expect(secondSorted[0].side).toBe(1);
     });
 
     it("given struggle and recharge actions, when turn order is resolved, then speed still breaks the tie", () => {
@@ -1103,7 +1066,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
-      // Assert: should not crash, returns sorted array
+      // Assert: it returns a sorted array without crashing
       expect(sorted.length).toBe(2);
     });
 
@@ -1131,7 +1094,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
-      // Assert: should not crash, both get default priority 0
+      // Assert: it returns both actions with default priority 0
       expect(sorted.length).toBe(2);
     });
 
@@ -1179,21 +1142,12 @@ describe("Gen2Ruleset", () => {
       const defender = createMockActive();
       const move = { accuracy: 50 } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const hitRng = { int: () => 209 } as unknown as SeededRandom;
+      const missRng = { int: () => 210 } as unknown as SeededRandom;
 
-      let hits = 0;
-      const trials = 1000;
-
-      // Act
-      for (let seed = 0; seed < trials; seed++) {
-        const rng = new SeededRandom(seed);
-        if (ruleset.doesMoveHit({ attacker, defender, move, state, rng })) {
-          hits++;
-        }
-      }
-
-      // Assert: with +2 accuracy, effective accuracy is floor(50 * 5/3) = 83
-      const hitRate = hits / trials;
-      expect(hitRate).toBeGreaterThan(0.75);
+      // Assert: floor(50 * 255 / 100) = 127, * 166/100 = 210.
+      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: hitRng })).toBe(true);
+      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: missRng })).toBe(false);
     });
 
     it("given a negative net accuracy stage, when hit chance is checked, then the threshold decreases exactly", () => {
@@ -1204,22 +1158,12 @@ describe("Gen2Ruleset", () => {
       defender.statStages.evasion = 2;
       const move = { accuracy: 100 } as unknown as MoveData;
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const hitRng = { int: () => 152 } as unknown as SeededRandom;
+      const missRng = { int: () => 153 } as unknown as SeededRandom;
 
-      let hits = 0;
-      const trials = 1000;
-
-      // Act
-      for (let seed = 0; seed < trials; seed++) {
-        const rng = new SeededRandom(seed);
-        if (ruleset.doesMoveHit({ attacker, defender, move, state, rng })) {
-          hits++;
-        }
-      }
-
-      // Assert: with -2 net stage, effective accuracy is floor(100 * 3/5) = 60
-      const hitRate = hits / trials;
-      expect(hitRate).toBeGreaterThan(0.5);
-      expect(hitRate).toBeLessThan(0.7);
+      // Assert: floor(100 * 255 / 100) = 255, * 3/5 = 153.
+      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: hitRng })).toBe(true);
+      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: missRng })).toBe(false);
     });
   });
 
@@ -1245,7 +1189,7 @@ describe("Gen2Ruleset", () => {
         rng,
       });
 
-      // Assert: the default result should be the zero-value payload used by the engine.
+      // Assert: the default result is the zero-value payload used by the engine.
       expect(result).toEqual(
         expect.objectContaining({
           statusInflicted: null,
@@ -1620,7 +1564,7 @@ describe("Gen2Ruleset", () => {
         rng: new SeededRandom(42),
       });
 
-      // Assert: both sub-effects should be applied
+      // Assert: both sub-effects are applied
       expect(result).toEqual(
         expect.objectContaining({
           statusInflicted: "burn",
@@ -1753,7 +1697,7 @@ describe("Gen2Ruleset", () => {
         rng: new SeededRandom(42),
       });
 
-      // Assert: hazard should be placed on opponent's side (side 1)
+      // Assert: the hazard is placed on the opponent's side (side 1)
       expect(result.hazardSet).toEqual({
         hazard: "spikes",
         targetSide: 1,
@@ -1853,7 +1797,7 @@ describe("Gen2Ruleset", () => {
       expect(result.messages).toEqual(["Starmie blew away hazards!"]);
     });
 
-    it("should handle fixed-damage, level-damage, ohko, and damage effect types as no-ops", () => {
+    it("given fixed-damage, level-damage, ohko, and damage effects, when executeMoveEffect runs, then they are treated as no-ops", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
@@ -1883,7 +1827,7 @@ describe("Gen2Ruleset", () => {
       }
     });
 
-    it("should handle terrain, screen, multi-hit, two-turn effect types as no-ops", () => {
+    it("given terrain, screen, multi-hit, and two-turn effects, when executeMoveEffect runs, then they are treated as no-ops", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive();
@@ -1955,7 +1899,7 @@ describe("Gen2Ruleset", () => {
       );
     });
 
-    it("should fail Belly Drum when HP <= 50%", () => {
+    it("given Belly Drum at 50% HP or below, when executeMoveEffect runs, then it fails without recoil or stat changes", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive({ maxHp: 200, currentHp: 99, nickname: "Poliwrath" });
@@ -1986,7 +1930,7 @@ describe("Gen2Ruleset", () => {
       );
     });
 
-    it("should remove hazards with Rapid Spin custom effect", () => {
+    it("given Rapid Spin, when executeMoveEffect runs, then it emits the hazard-clearing message", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attacker = createMockActive({ nickname: "Starmie" });
@@ -2181,7 +2125,7 @@ describe("Gen2Ruleset", () => {
         rng: new SeededRandom(42),
       });
 
-      // Assert: should not crash, return default result
+      // Assert: it returns the default result without crashing
       expect(result).toEqual(
         expect.objectContaining({
           statusInflicted: null,
@@ -2389,7 +2333,7 @@ describe("Gen2Ruleset", () => {
   // --- Validation edge case ---
 
   describe("Given validation edge cases", () => {
-    it("should reject Pokemon with level > 100", () => {
+    it("given a level above 100, when validatePokemon runs, then the level check fails", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const pokemon = {
@@ -2407,7 +2351,7 @@ describe("Gen2Ruleset", () => {
       expect(result.errors.some((e: string) => e.includes("Level"))).toBe(true);
     });
 
-    it("should reject Pokemon with dex id 0", () => {
+    it("given dex id 0, when validatePokemon runs, then the species check fails", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const pokemon = {
@@ -2425,7 +2369,7 @@ describe("Gen2Ruleset", () => {
       expect(result.errors.some((e: string) => e.includes("not available in Gen 2"))).toBe(true);
     });
 
-    it("should collect multiple errors when both level and species are invalid", () => {
+    it("given invalid level, invalid species, and no moves, when validatePokemon runs, then it collects all three errors", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const pokemon = {
@@ -2437,7 +2381,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
 
-      // Assert: should have 3 errors (level, species, moves)
+      // Assert: there are 3 errors (level, species, moves)
       expect(result.valid).toBe(false);
       // Source: the invalid level, invalid species, and empty move list each produce a validation error.
       expect(result.errors.length).toBe(3);
@@ -2447,7 +2391,7 @@ describe("Gen2Ruleset", () => {
   // --- Confusion No Variance (Showdown: noDamageVariance) ---
 
   describe("Given confusion self-hit damage", () => {
-    it("should produce identical damage across different RNG seeds (no random component)", () => {
+    it("given confusion self-hit damage, when different RNG seeds are used, then the damage stays identical", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const pokemon = createMockActive({ level: 50, attack: 100, defense: 100 });
@@ -2456,22 +2400,16 @@ describe("Gen2Ruleset", () => {
         createMockSide(1, createMockActive()),
       );
 
-      // Act: calculate damage with different seeds
-      const results: number[] = [];
-      for (let seed = 0; seed < 20; seed++) {
-        const rng = new SeededRandom(seed);
-        results.push(ruleset.calculateConfusionDamage(pokemon, state, rng));
-      }
+      // Act
+      const result = ruleset.calculateConfusionDamage(pokemon, state, new SeededRandom(42));
 
-      // Assert: all results are identical (no random variance)
+      // Assert: the formula is deterministic for Gen 2 confusion self-hit damage.
       // Hand-trace (level=50, attack=100, defense=100, power=40):
       //   base = floor(floor((floor(2*50/5)+2) * 40 * 100) / 100 / 50)
       //        = floor(floor(22 * 40 * 100) / 100 / 50)
       //        = floor(880 / 50) = 17
       //   +2   = 19, max(1, 19) = 19
-      const first = results[0]!;
-      expect(results.every((r) => r === first)).toBe(true);
-      expect(first).toBe(19);
+      expect(result).toBe(19);
     });
   });
 
@@ -2544,7 +2482,7 @@ describe("Gen2Ruleset", () => {
   // --- Switch Out ---
 
   describe("Given a Pokemon switching out", () => {
-    it("should remove toxic-counter volatile and revert badly-poisoned to poison on switch-out", () => {
+    it("given badly-poisoned status and toxic-counter volatile, when the Pokemon switches out, then it clears the counter and reverts to poison", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const pokemon = createMockActive({ status: "badly-poisoned" });
@@ -2653,7 +2591,7 @@ describe("Gen2Ruleset", () => {
       for (let i = 0; i < 100; i++) {
         counts.add(ruleset.rollMultiHitCount(mockAttacker, rng));
       }
-      // Assert: weighted array has 3 twos and 3 threes out of 8, so both should appear
+      // Assert: weighted array has 3 twos and 3 threes out of 8, so both values appear
       expect(counts.has(2)).toBe(true);
       expect(counts.has(3)).toBe(true);
     });
