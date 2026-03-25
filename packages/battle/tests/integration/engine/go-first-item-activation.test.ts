@@ -1,4 +1,6 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { GEN9_ITEM_IDS } from "@pokemon-lib-ts/gen9";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -8,9 +10,20 @@ import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
+const ITEM_IDS = GEN9_ITEM_IDS;
+const MOVE_IDS = CORE_MOVE_IDS;
+const ACTIVATION_MODES = {
+  none: CORE_ABILITY_IDS.none,
+  consume: "consume",
+  itemActivate: "item-activate",
+} as const;
+
 class GoFirstItemRuleset extends MockRuleset {
   constructor(
-    private readonly activationMode: "none" | "consume" | "item-activate",
+    private readonly activationMode:
+      | typeof ACTIVATION_MODES.none
+      | typeof ACTIVATION_MODES.consume
+      | typeof ACTIVATION_MODES.itemActivate,
     private readonly activatingPokemonUid: string,
   ) {
     super();
@@ -25,19 +38,19 @@ class GoFirstItemRuleset extends MockRuleset {
     if (
       trigger !== "before-turn-order" ||
       context.pokemon.pokemon.uid !== this.activatingPokemonUid ||
-      this.activationMode === "none"
+      this.activationMode === ACTIVATION_MODES.none
     ) {
       return { activated: false, effects: [], messages: [] };
     }
 
-    if (this.activationMode === "consume") {
+    if (this.activationMode === ACTIVATION_MODES.consume) {
       return {
         activated: true,
         effects: [
           {
             type: "consume",
             target: "self",
-            value: context.pokemon.pokemon.heldItem ?? "custap-berry",
+            value: context.pokemon.pokemon.heldItem ?? ITEM_IDS.custapBerry,
           },
         ],
         messages: [`${context.pokemon.pokemon.nickname}'s item let it move first!`],
@@ -89,21 +102,21 @@ function createEngine(ruleset: MockRuleset, team1: PokemonInstance[], team2: Pok
 }
 
 function createTeams(heldItem: string | null) {
-  const slowerHolder = createTestPokemon(9, 50, {
-    uid: "blastoise-1",
-    nickname: "Blastoise",
-    heldItem,
+    const slowerHolder = createTestPokemon(9, 50, {
+      uid: "blastoise-1",
+      nickname: "Blastoise",
+      heldItem,
     currentHp: 200,
     calculatedStats: {
       hp: 200,
       attack: 110,
-      defense: 100,
-      spAttack: 65,
-      spDefense: 110,
-      speed: 30,
-    },
-    moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-  });
+        defense: 100,
+        spAttack: 65,
+        spDefense: 110,
+        speed: 30,
+      },
+      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+    });
 
   const fasterOpponent = createTestPokemon(6, 50, {
     uid: "charizard-1",
@@ -112,21 +125,21 @@ function createTeams(heldItem: string | null) {
     calculatedStats: {
       hp: 200,
       attack: 65,
-      defense: 60,
-      spAttack: 110,
-      spDefense: 95,
-      speed: 130,
-    },
-    moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-  });
+        defense: 60,
+        spAttack: 110,
+        spDefense: 95,
+        speed: 130,
+      },
+      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+    });
 
   return { team1: [slowerHolder], team2: [fasterOpponent] };
 }
 
 describe("go-first item activation", () => {
-  it("consumes an activated go-first item before turn order is resolved", () => {
-    const ruleset = new GoFirstItemRuleset("consume", "blastoise-1");
-    const { team1, team2 } = createTeams("custap-berry");
+  it("given an activated go-first item that consumes itself, when turn order is resolved, then the item is consumed before the first move", () => {
+    const ruleset = new GoFirstItemRuleset(ACTIVATION_MODES.consume, "blastoise-1");
+    const { team1, team2 } = createTeams(ITEM_IDS.custapBerry);
     const { engine, events } = createEngine(ruleset, team1, team2);
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -144,9 +157,9 @@ describe("go-first item activation", () => {
     expect(itemConsumed).toBeDefined();
   });
 
-  it("supports non-consuming go-first items in the same pre-turn path", () => {
-    const ruleset = new GoFirstItemRuleset("item-activate", "blastoise-1");
-    const { team1, team2 } = createTeams("quick-claw");
+  it("given a non-consuming go-first item, when turn order is resolved, then the item activates without being consumed", () => {
+    const ruleset = new GoFirstItemRuleset(ACTIVATION_MODES.itemActivate, "blastoise-1");
+    const { team1, team2 } = createTeams(ITEM_IDS.quickClaw);
     const { engine, events } = createEngine(ruleset, team1, team2);
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -155,7 +168,7 @@ describe("go-first item activation", () => {
     const moveStarts = events.filter((event) => event.type === "move-start");
     expect(moveStarts).toHaveLength(2);
     expect(moveStarts[0]).toMatchObject({ pokemon: "Blastoise" });
-    expect(engine.getActive(0)?.pokemon.heldItem).toBe("quick-claw");
+    expect(engine.getActive(0)?.pokemon.heldItem).toBe(ITEM_IDS.quickClaw);
 
     const itemActivated = events.find(
       (event) =>
@@ -164,9 +177,9 @@ describe("go-first item activation", () => {
     expect(itemActivated).toBeDefined();
   });
 
-  it("leaves turn order unchanged when no go-first item activates", () => {
-    const ruleset = new GoFirstItemRuleset("none", "blastoise-1");
-    const { team1, team2 } = createTeams("custap-berry");
+  it("given no go-first item activation, when turn order is resolved, then the faster Pokemon acts first", () => {
+    const ruleset = new GoFirstItemRuleset(ACTIVATION_MODES.none, "blastoise-1");
+    const { team1, team2 } = createTeams(ITEM_IDS.custapBerry);
     const { engine, events } = createEngine(ruleset, team1, team2);
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -175,7 +188,7 @@ describe("go-first item activation", () => {
     const moveStarts = events.filter((event) => event.type === "move-start");
     expect(moveStarts).toHaveLength(2);
     expect(moveStarts[0]).toMatchObject({ pokemon: "Charizard" });
-    expect(engine.getActive(0)?.pokemon.heldItem).toBe("custap-berry");
+    expect(engine.getActive(0)?.pokemon.heldItem).toBe(ITEM_IDS.custapBerry);
 
     const itemEvent = events.find(
       (event) =>
