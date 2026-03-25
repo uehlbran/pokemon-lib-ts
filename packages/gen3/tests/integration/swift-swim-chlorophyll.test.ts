@@ -1,7 +1,18 @@
 import type { ActivePokemon, BattleAction, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_MOVE_IDS,
+  CORE_WEATHER_IDS,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createOnFieldPokemon } from "../../../battle/src/utils/BattleHelpers";
+import { GEN3_MOVE_IDS, GEN3_NATURE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { createGen3DataManager } from "../../src/data";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 
@@ -21,78 +32,45 @@ import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function createActivePokemon(opts: {
-  types: PokemonType[];
-  ability?: string;
-  speed?: number;
-  moves?: Array<{ moveId: string; currentPp: number; maxPp: number }>;
-}): ActivePokemon {
-  const stats: StatBlock = {
-    hp: 200,
-    attack: 100,
-    defense: 100,
-    spAttack: 100,
-    spDefense: 100,
-    speed: opts.speed ?? 100,
+const dataManager = createGen3DataManager();
+const hardyNature = dataManager.getNature(GEN3_NATURE_IDS.hardy).id;
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN3_MOVE_IDS } as const;
+const WEATHER_IDS = CORE_WEATHER_IDS;
+
+function createSyntheticPokemon(
+  speciesId: number,
+  speed: number,
+  overrides?: {
+    types?: PokemonType[];
+  },
+): ActivePokemon {
+  const species = dataManager.getSpecies(speciesId);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(42), {
+    ivs: createIvs(),
+    evs: createEvs(),
+    nature: hardyNature,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    heldItem: null,
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
+  });
+
+  pokemon.currentHp = pokemon.calculatedStats?.hp ?? 200;
+  pokemon.calculatedStats = {
+    ...(pokemon.calculatedStats ?? {
+      hp: 200,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed,
+    }),
+    speed,
   };
 
-  const pokemon = {
-    uid: "test-mon",
-    speciesId: 1,
-    nickname: null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 200,
-    moves: opts.moves ?? [{ moveId: "tackle", currentPp: 35, maxPp: 35 }],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: null,
-    status: null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: opts.types,
-    ability: opts.ability ?? "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  return createOnFieldPokemon(pokemon, 0, overrides?.types ?? [...species.types]);
 }
 
 function createBattleState(opts: {
@@ -139,7 +117,6 @@ function createBattleState(opts: {
 // Tests
 // ---------------------------------------------------------------------------
 
-const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
 
 describe("Gen 3 Swift Swim — 2x Speed in Rain", () => {
@@ -147,20 +124,13 @@ describe("Gen 3 Swift Swim — 2x Speed in Rain", () => {
     // Source: pret/pokeemerald — Swift Swim doubles speed in rain
     // Source: Showdown data/abilities.ts — Swift Swim onModifySpe: 2x in rain
     // Swift Swim user: speed 50 * 2 = 100 → faster than 80
-    const swiftSwimMon = createActivePokemon({
-      types: ["water"],
-      ability: "swift-swim",
-      speed: 50,
-    });
-    const normalMon = createActivePokemon({
-      types: ["normal"],
-      speed: 80,
-    });
+    const swiftSwimMon = createSyntheticPokemon(GEN3_SPECIES_IDS.lotad, 50);
+    const normalMon = createSyntheticPokemon(GEN3_SPECIES_IDS.bulbasaur, 80);
 
     const state = createBattleState({
       side0Active: swiftSwimMon,
       side1Active: normalMon,
-      weather: { type: "rain", turnsLeft: 3, source: "rain-dance" },
+      weather: { type: WEATHER_IDS.rain, turnsLeft: 3, source: MOVE_IDS.rainDance },
     });
 
     const actions: BattleAction[] = [
@@ -178,15 +148,8 @@ describe("Gen 3 Swift Swim — 2x Speed in Rain", () => {
 
   it("given no weather and Swift Swim user (speed 50) vs normal user (speed 80), when turn order is resolved, then normal user moves first", () => {
     // Source: pret/pokeemerald — Swift Swim only activates in rain
-    const swiftSwimMon = createActivePokemon({
-      types: ["water"],
-      ability: "swift-swim",
-      speed: 50,
-    });
-    const normalMon = createActivePokemon({
-      types: ["normal"],
-      speed: 80,
-    });
+    const swiftSwimMon = createSyntheticPokemon(GEN3_SPECIES_IDS.lotad, 50);
+    const normalMon = createSyntheticPokemon(GEN3_SPECIES_IDS.bulbasaur, 80);
 
     const state = createBattleState({
       side0Active: swiftSwimMon,
@@ -213,20 +176,13 @@ describe("Gen 3 Chlorophyll — 2x Speed in Sun", () => {
     // Source: pret/pokeemerald — Chlorophyll doubles speed in sun
     // Source: Showdown data/abilities.ts — Chlorophyll onModifySpe: 2x in sun
     // Chlorophyll user: speed 50 * 2 = 100 → faster than 80
-    const chlorophyllMon = createActivePokemon({
-      types: ["grass"],
-      ability: "chlorophyll",
-      speed: 50,
-    });
-    const normalMon = createActivePokemon({
-      types: ["normal"],
-      speed: 80,
-    });
+    const chlorophyllMon = createSyntheticPokemon(GEN3_SPECIES_IDS.oddish, 50);
+    const normalMon = createSyntheticPokemon(GEN3_SPECIES_IDS.bulbasaur, 80);
 
     const state = createBattleState({
       side0Active: chlorophyllMon,
       side1Active: normalMon,
-      weather: { type: "sun", turnsLeft: 3, source: "sunny-day" },
+      weather: { type: WEATHER_IDS.sun, turnsLeft: 3, source: MOVE_IDS.sunnyDay },
     });
 
     const actions: BattleAction[] = [
@@ -244,20 +200,13 @@ describe("Gen 3 Chlorophyll — 2x Speed in Sun", () => {
 
   it("given rain weather and Chlorophyll user (speed 50) vs normal user (speed 80), when turn order is resolved, then normal user moves first (Chlorophyll needs sun)", () => {
     // Source: pret/pokeemerald — Chlorophyll only activates in sun, not rain
-    const chlorophyllMon = createActivePokemon({
-      types: ["grass"],
-      ability: "chlorophyll",
-      speed: 50,
-    });
-    const normalMon = createActivePokemon({
-      types: ["normal"],
-      speed: 80,
-    });
+    const chlorophyllMon = createSyntheticPokemon(GEN3_SPECIES_IDS.oddish, 50);
+    const normalMon = createSyntheticPokemon(GEN3_SPECIES_IDS.bulbasaur, 80);
 
     const state = createBattleState({
       side0Active: chlorophyllMon,
       side1Active: normalMon,
-      weather: { type: "rain", turnsLeft: 3, source: "rain-dance" },
+      weather: { type: WEATHER_IDS.rain, turnsLeft: 3, source: MOVE_IDS.rainDance },
     });
 
     const actions: BattleAction[] = [
@@ -275,20 +224,13 @@ describe("Gen 3 Chlorophyll — 2x Speed in Sun", () => {
 
   it("given sun weather and Swift Swim user (speed 50) vs normal user (speed 80), when turn order is resolved, then normal user moves first (Swift Swim needs rain, not sun)", () => {
     // Source: pret/pokeemerald — Swift Swim needs rain, Chlorophyll needs sun
-    const swiftSwimMon = createActivePokemon({
-      types: ["water"],
-      ability: "swift-swim",
-      speed: 50,
-    });
-    const normalMon = createActivePokemon({
-      types: ["normal"],
-      speed: 80,
-    });
+    const swiftSwimMon = createSyntheticPokemon(GEN3_SPECIES_IDS.lotad, 50);
+    const normalMon = createSyntheticPokemon(GEN3_SPECIES_IDS.bulbasaur, 80);
 
     const state = createBattleState({
       side0Active: swiftSwimMon,
       side1Active: normalMon,
-      weather: { type: "sun", turnsLeft: 3, source: "sunny-day" },
+      weather: { type: WEATHER_IDS.sun, turnsLeft: 3, source: MOVE_IDS.sunnyDay },
     });
 
     const actions: BattleAction[] = [
