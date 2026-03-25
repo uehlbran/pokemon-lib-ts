@@ -1,6 +1,10 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
@@ -8,6 +12,10 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   SeededRandom,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createPokemonInstance,
   type MoveData,
   type PokemonType,
   type PrimaryStatus,
@@ -39,8 +47,18 @@ const moveIds = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const;
 const speciesIds = GEN6_SPECIES_IDS;
 const statusIds = CORE_STATUS_IDS;
 const typeIds = CORE_TYPE_IDS;
+const triggerIds = CORE_ABILITY_TRIGGER_IDS;
 const volatileIds = CORE_VOLATILE_IDS;
-const defaultNature = GEN6_NATURE_IDS.hardy;
+const defaultSpecies = dataManager.getSpecies(speciesIds.bulbasaur);
+const defaultNature = dataManager.getNature(GEN6_NATURE_IDS.hardy).id;
+const defaultFriendship = createFriendship(defaultSpecies.baseFriendship);
+const DEFAULT_SYNTHETIC_STATS = {
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 100,
+} as const;
 
 function createOnFieldPokemon(overrides: {
   level?: number;
@@ -60,72 +78,46 @@ function createOnFieldPokemon(overrides: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? speciesIds.bulbasaur,
-      nickname: overrides.nickname ?? null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: defaultNature,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? abilityIds.none,
-      abilitySlot: "normal1" as const,
-      heldItem: overrides.heldItem ?? null,
-      status: overrides.status ?? null,
-      friendship: 0,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: itemIds.pokeBall,
-      calculatedStats: {
-        hp,
-        attack: overrides.attack ?? 100,
-        defense: overrides.defense ?? 100,
-        spAttack: overrides.spAttack ?? 100,
-        spDefense: overrides.spDefense ?? 100,
-        speed: overrides.speed ?? 100,
-      },
-    },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [typeIds.normal],
-    ability: overrides.ability ?? abilityIds.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: null,
-    forcedMove: null,
-  } as ActivePokemon;
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(6), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    moves: [],
+    heldItem: overrides.heldItem ?? null,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    friendship: defaultFriendship,
+    gender: CORE_GENDERS.male,
+    isShiny: false,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: itemIds.pokeBall,
+  });
+  pokemon.uid = "test";
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.ability = overrides.ability ?? abilityIds.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp,
+    attack: overrides.attack ?? DEFAULT_SYNTHETIC_STATS.attack,
+    defense: overrides.defense ?? DEFAULT_SYNTHETIC_STATS.defense,
+    spAttack: overrides.spAttack ?? DEFAULT_SYNTHETIC_STATS.spAttack,
+    spDefense: overrides.spDefense ?? DEFAULT_SYNTHETIC_STATS.spDefense,
+    speed: overrides.speed ?? DEFAULT_SYNTHETIC_STATS.speed,
+  };
+  const activePokemon = createBattleOnFieldPokemon(
+    pokemon,
+    0,
+    overrides.types ?? [typeIds.normal],
+  );
+  activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
+  activePokemon.ability = overrides.ability ?? abilityIds.none;
+  activePokemon.suppressedAbility = null;
+  activePokemon.forcedMove = null;
+  return activePokemon;
 }
 
 function createSyntheticMoveFrom(
@@ -151,7 +143,7 @@ function createSyntheticMoveFrom(
   } as MoveData;
 }
 
-function makeState(overrides?: { sides?: [any, any] }): BattleState {
+function createBattleState(overrides?: { sides?: [any, any] }): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -166,7 +158,7 @@ function makeState(overrides?: { sides?: [any, any] }): BattleState {
   } as unknown as BattleState;
 }
 
-function makeItemContext(overrides: {
+function createItemContext(overrides: {
   pokemon?: ActivePokemon;
   state?: BattleState;
   move?: MoveData;
@@ -175,7 +167,7 @@ function makeItemContext(overrides: {
 }): ItemContext {
   return {
     pokemon: overrides.pokemon ?? createOnFieldPokemon({}),
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     move: overrides.move,
     damage: overrides.damage,
@@ -199,7 +191,7 @@ describe("Gen 6 Items -- Klutz and Embargo suppression", () => {
       hp: 200,
       currentHp: 100,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expectNoActivation(result);
   });
@@ -214,7 +206,7 @@ describe("Gen 6 Items -- Klutz and Embargo suppression", () => {
       currentHp: 100,
       volatiles,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expectNoActivation(result);
   });
@@ -229,7 +221,7 @@ describe("Gen 6 Items -- Leftovers", () => {
     // Source: Showdown data/items.ts -- Leftovers: heals 1/16 max HP per turn
     // Derivation: floor(200 / 16) = 12
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 200, currentHp: 150 });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 12 }]);
@@ -239,7 +231,7 @@ describe("Gen 6 Items -- Leftovers", () => {
     // Source: Showdown data/items.ts -- Leftovers: heals 1/16 max HP per turn
     // Derivation: floor(100 / 16) = 6
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 100, currentHp: 80 });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 6 }]);
@@ -255,7 +247,7 @@ describe("Gen 6 Items -- Life Orb", () => {
     // Source: Showdown data/items.ts -- Life Orb: recoil = floor(maxHP / 10)
     // Derivation: floor(200 / 10) = 20
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.lifeOrb, hp: 200, currentHp: 200 });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: dataManager.getMove(moveIds.tackle),
@@ -269,7 +261,7 @@ describe("Gen 6 Items -- Life Orb", () => {
     // Source: Showdown data/items.ts -- Life Orb: recoil = floor(maxHP / 10)
     // Derivation: floor(300 / 10) = 30
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.lifeOrb, hp: 300, currentHp: 300 });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 80,
       move: dataManager.getMove(moveIds.tackle),
@@ -287,7 +279,7 @@ describe("Gen 6 Items -- Life Orb", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), {
@@ -322,18 +314,18 @@ describe("Gen 6 Items -- Rocky Helmet", () => {
       currentHp: 200,
     });
     const attacker = createOnFieldPokemon({ hp: 300, currentHp: 300 });
-    const state = makeState({
+    const state = createBattleState({
       sides: [
         { active: [defender], hazards: {}, screens: {} },
         { active: [attacker], hazards: {}, screens: {} },
       ],
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon: defender,
       state,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { flags: { contact: true } }),
     });
-    const result = applyGen6HeldItem("on-contact", ctx);
+    const result = applyGen6HeldItem(triggerIds.onContact, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "opponent", value: 50 }]);
   });
@@ -345,11 +337,11 @@ describe("Gen 6 Items -- Rocky Helmet", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon: defender,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { flags: { contact: false } }),
     });
-    const result = applyGen6HeldItem("on-contact", ctx);
+    const result = applyGen6HeldItem(triggerIds.onContact, ctx);
     expectNoActivation(result);
   });
 });
@@ -369,7 +361,7 @@ describe("Gen 6 Items -- Weakness Policy", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 80,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.thunderbolt), {
@@ -377,7 +369,7 @@ describe("Gen 6 Items -- Weakness Policy", () => {
         category: moveCategories.special,
       }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack", stages: 2 },
@@ -396,7 +388,7 @@ describe("Gen 6 Items -- Weakness Policy", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 120,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.rockSlide), {
@@ -404,7 +396,7 @@ describe("Gen 6 Items -- Weakness Policy", () => {
         category: moveCategories.physical,
       }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack", stages: 2 },
@@ -421,7 +413,7 @@ describe("Gen 6 Items -- Weakness Policy", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
@@ -429,7 +421,7 @@ describe("Gen 6 Items -- Weakness Policy", () => {
         category: moveCategories.physical,
       }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 });
@@ -447,12 +439,12 @@ describe("Gen 6 Items -- Kee Berry", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { category: moveCategories.physical }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "defense" },
@@ -467,12 +459,12 @@ describe("Gen 6 Items -- Kee Berry", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), { category: moveCategories.special }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 });
@@ -490,12 +482,12 @@ describe("Gen 6 Items -- Maranga Berry", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), { category: moveCategories.special }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "spDefense" },
@@ -510,12 +502,12 @@ describe("Gen 6 Items -- Maranga Berry", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { category: moveCategories.physical }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 });
@@ -535,7 +527,7 @@ describe("Gen 6 Items -- Roseli Berry (moved to damage calc)", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 80,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.dazzlingGleam), {
@@ -543,7 +535,7 @@ describe("Gen 6 Items -- Roseli Berry (moved to damage calc)", () => {
         category: moveCategories.special,
       }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 });
@@ -561,12 +553,12 @@ describe("Gen 6 Items -- Luminous Moss", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.surf), { type: typeIds.water, category: moveCategories.special }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "spDefense" },
@@ -581,7 +573,7 @@ describe("Gen 6 Items -- Luminous Moss", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), {
@@ -589,7 +581,7 @@ describe("Gen 6 Items -- Luminous Moss", () => {
         category: moveCategories.special,
       }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 });
@@ -607,12 +599,12 @@ describe("Gen 6 Items -- Snowball", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.iceBeam), { type: typeIds.ice, category: moveCategories.special }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack" },
@@ -627,7 +619,7 @@ describe("Gen 6 Items -- Snowball", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
@@ -635,7 +627,7 @@ describe("Gen 6 Items -- Snowball", () => {
         category: moveCategories.physical,
       }),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 });
@@ -720,7 +712,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: statusIds.burn }]);
@@ -734,7 +726,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expectNoActivation(result);
   });
@@ -747,7 +739,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -763,7 +755,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expectNoActivation(result);
   });
@@ -783,7 +775,7 @@ describe("Gen 6 Items -- Black Sludge", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 12 }]);
@@ -798,7 +790,7 @@ describe("Gen 6 Items -- Black Sludge", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 25 }]);
@@ -819,12 +811,12 @@ describe("Gen 6 Items -- Focus Sash (moved to capLethalDamage, #784)", () => {
       hp: 200,
       currentHp: 200,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 250,
       move: dataManager.getMove(moveIds.tackle),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 
@@ -835,12 +827,12 @@ describe("Gen 6 Items -- Focus Sash (moved to capLethalDamage, #784)", () => {
       hp: 200,
       currentHp: 150,
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 200,
       move: dataManager.getMove(moveIds.tackle),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
   });
 });
@@ -860,12 +852,12 @@ describe("Gen 6 Items -- Pinch Berries", () => {
       hp: 200,
       currentHp: 49, // post-damage HP (was 200, took 151 damage)
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 151,
       move: dataManager.getMove(moveIds.tackle),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "attack" },
@@ -884,12 +876,12 @@ describe("Gen 6 Items -- Pinch Berries", () => {
       hp: 200,
       currentHp: 99, // post-damage HP (was 200, took 101 damage)
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 101,
       move: dataManager.getMove(moveIds.tackle),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "stat-boost", target: "self", value: "speed" },
@@ -932,12 +924,12 @@ describe("Gen 6 Items -- Unburden volatile on consume", () => {
       hp: 200,
       currentHp: 80, // <= 50% of 200 HP, triggers Sitrus Berry
     });
-    const ctx = makeItemContext({
+    const ctx = createItemContext({
       pokemon,
       damage: 50,
       move: dataManager.getMove(moveIds.tackle),
     });
-    const result = applyGen6HeldItem("on-damage-taken", ctx);
+    const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(pokemon.volatileStatuses.has(volatileIds.unburden)).toBe(true);
   },
@@ -953,7 +945,7 @@ describe("Gen 6 Ruleset -- applyHeldItem wiring", () => {
     // Verify the Gen6Ruleset.applyHeldItem override correctly delegates to applyGen6HeldItem
     const ruleset = new Gen6Ruleset();
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 200, currentHp: 100 });
-    const ctx = makeItemContext({ pokemon });
+    const ctx = createItemContext({ pokemon });
     const result = ruleset.applyHeldItem("end-of-turn", ctx);
     expect(result.activated).toBe(true);
     // Source: Leftovers: floor(200/16) = 12
