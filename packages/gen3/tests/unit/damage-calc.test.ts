@@ -145,10 +145,19 @@ function createActivePokemon(opts: {
 }
 
 /** Create a move mock from the owned Gen 3 move data. */
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function createMove(id: string): MoveData {
+  return dataManager.getMove(id);
+}
+
+/** Create an explicitly synthetic move variant for formula-isolation scenarios. */
+function createSyntheticMove(id: string, overrides: Partial<MoveData>): MoveData {
+  const base = dataManager.getMove(id);
   return {
-    ...dataManager.getMove(id),
+    ...base,
     ...overrides,
+    id: overrides.id ?? (`synthetic-${base.id}-${overrides.power ?? base.power}` as MoveData["id"]),
+    displayName:
+      overrides.displayName ?? `Synthetic ${base.displayName} ${String(overrides.power ?? base.power)}`,
   } as MoveData;
 }
 
@@ -290,7 +299,7 @@ describe("Gen 3 Damage Calculation", () => {
         types: [T.normal],
       });
       // Rock type = physical, uses Atk/Def
-      const move = createMove(GEN3_MOVE_IDS.rockThrow, { type: T.rock, power: 50 });
+      const move = createMove(GEN3_MOVE_IDS.rockThrow);
       const chart = createNeutralTypeChart();
       const ctx = createDamageContext({
         attacker,
@@ -327,7 +336,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.rock],
       });
-      const move = createMove(GEN3_MOVE_IDS.earthquake, { type: T.ground, power: 100 });
+      const move = createMove(GEN3_MOVE_IDS.earthquake);
       const chart = createNeutralTypeChart();
       const ctx = createDamageContext({
         attacker,
@@ -358,7 +367,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.growl, { type: T.normal, power: 0, category: "status" });
+      const move = createMove(GEN3_MOVE_IDS.growl);
       move.category = "status" as any;
       const chart = createNeutralTypeChart();
       const ctx = createDamageContext({ attacker, defender, move });
@@ -400,7 +409,7 @@ describe("Gen 3 Damage Calculation", () => {
         types: [T.normal],
       });
       // Water = special, uses SpAtk/SpDef
-      const move = createMove(GEN3_MOVE_IDS.surf, { type: T.water, power: 95 });
+      const move = createMove(GEN3_MOVE_IDS.surf);
       const chart = createNeutralTypeChart();
 
       const stabCtx = createDamageContext({
@@ -449,7 +458,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.flamethrower, { type: T.fire, power: 95 });
+      const move = createMove(GEN3_MOVE_IDS.flamethrower);
       const chart = createNeutralTypeChart();
 
       const stabResult = calculateGen3Damage(
@@ -486,7 +495,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.water],
       });
-      const move = createMove(GEN3_MOVE_IDS.fireBlast, { type: T.fire, power: 100 });
+      const move = createMove(GEN3_MOVE_IDS.fireBlast);
       const chart = createTypeChart([[T.fire, T.water, 0.5]]);
       const ctx = createDamageContext({ attacker, defender, move, rng: createMockRng(100) });
 
@@ -520,7 +529,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.ground],
       });
-      const move = createMove(GEN3_MOVE_IDS.thunder, { type: T.electric, power: 100 });
+      const move = createMove(GEN3_MOVE_IDS.thunder);
       const chart = createTypeChart([[T.electric, T.ground, 0]]);
       const ctx = createDamageContext({ attacker, defender, move, rng: createMockRng(100) });
 
@@ -547,7 +556,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fire],
       });
-      const move = createMove(GEN3_MOVE_IDS.hydroPump, { type: T.water, power: 100 });
+      const move = createMove(GEN3_MOVE_IDS.hydroPump);
       const chart = createTypeChart([[T.water, T.fire, 2]]);
       const ctx = createDamageContext({ attacker, defender, move, rng: createMockRng(100) });
 
@@ -574,7 +583,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fire, T.grass],
       });
-      const move = createMove(GEN3_MOVE_IDS.hydroPump, { type: T.water, power: 100 });
+      const move = createMove(GEN3_MOVE_IDS.hydroPump);
       const chart = createTypeChart([
         [T.water, T.fire, 2],
         [T.water, T.grass, 0.5],
@@ -603,7 +612,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fire, T.rock],
       });
-      const move = createMove(GEN3_MOVE_IDS.earthquake, { type: T.ground, power: 100 });
+      const move = createMove(GEN3_MOVE_IDS.earthquake);
       const chart = createTypeChart([
         [T.ground, T.fire, 2],
         [T.ground, T.rock, 2],
@@ -637,7 +646,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fighting],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const critCtx = createDamageContext({
@@ -698,7 +707,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       // Both with crit = true; the -1 Atk stage should be ignored
@@ -755,7 +764,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const boostedCrit = calculateGen3Damage(
@@ -817,7 +826,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const vsBoostedCrit = calculateGen3Damage(
@@ -872,7 +881,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const vsDebuffedCrit = calculateGen3Damage(
@@ -940,7 +949,7 @@ describe("Gen 3 Damage Calculation", () => {
         types: [T.fighting],
       });
       // Normal type = physical, attacker is fighting → no STAB
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const burnedResult = calculateGen3Damage(
@@ -988,7 +997,7 @@ describe("Gen 3 Damage Calculation", () => {
         types: [T.normal],
       });
       // Fire type = special, burn should not affect it
-      const move = createMove(GEN3_MOVE_IDS.flamethrower, { type: T.fire, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.flamethrower, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const burnedResult = calculateGen3Damage(
@@ -1027,7 +1036,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 999,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.tackle, { type: T.normal, power: 10 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 10 });
       const chart = createNeutralTypeChart();
       // Use minimum random roll (85)
       const ctx = createDamageContext({ attacker, defender, move, rng: createMockRng(85) });
@@ -1060,7 +1069,7 @@ describe("Gen 3 Damage Calculation", () => {
         types: [T.ghost],
       });
       // Normal vs Ghost = immune
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 100 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 100 });
       const chart = createTypeChart([[T.normal, T.ghost, 0]]);
       const ctx = createDamageContext({ attacker, defender, move, rng: createMockRng(100) });
 
@@ -1092,7 +1101,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fighting],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const minResult = calculateGen3Damage(
@@ -1132,7 +1141,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fighting],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const result = calculateGen3Damage(
@@ -1167,7 +1176,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.surf, { type: T.water, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.surf, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const rainResult = calculateGen3Damage(
@@ -1213,7 +1222,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.flamethrower, { type: T.fire, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.flamethrower, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const rainResult = calculateGen3Damage(
@@ -1259,7 +1268,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.flamethrower, { type: T.fire, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.flamethrower, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const sunResult = calculateGen3Damage(
@@ -1318,7 +1327,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.flamethrower, { type: T.fire, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.flamethrower, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const highSpAtkResult = calculateGen3Damage(
@@ -1372,7 +1381,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const highAtkResult = calculateGen3Damage(
@@ -1432,7 +1441,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fighting],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const boostedResult = calculateGen3Damage(
@@ -1480,7 +1489,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fighting],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
 
       const vsBoosted = calculateGen3Damage(
@@ -1522,7 +1531,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [T.fighting],
       });
-      const move = createMove(GEN3_MOVE_IDS.doubleEdge, { type: T.normal, power: 80 });
+      const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { power: 80 });
       const chart = createNeutralTypeChart();
       const ctx = createDamageContext({ attacker, defender, move, rng: createMockRng(95) });
 
@@ -1560,7 +1569,7 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 80,
         types: [T.fire],
       });
-      const move = createMove(GEN3_MOVE_IDS.surf, { type: T.water, power: 95 });
+      const move = createMove(GEN3_MOVE_IDS.surf);
       const chart = createTypeChart([[T.water, T.fire, 2]]);
       const ctx = createDamageContext({
         attacker,

@@ -12,32 +12,47 @@
  * Source: Showdown sim/pokemon.ts, sim/battle.ts, Bulbapedia ability/item pages
  */
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { SeededRandom } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
-  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  DataManager,
+  SeededRandom,
+  createMoveSlot,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen7Ruleset } from "../src/Gen7Ruleset";
-import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "../src/data/reference-ids";
+import {
+  createGen7DataManager,
+  GEN7_ABILITY_IDS,
+  GEN7_CRIT_MULTIPLIER,
+  GEN7_CRIT_RATE_TABLE,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_SPECIES_IDS,
+  Gen7Ruleset,
+} from "../src";
 
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
 const STATUS_IDS = CORE_STATUS_IDS;
-const TYPE_IDS = CORE_TYPE_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const HAZARD_IDS = CORE_HAZARD_IDS;
 const WEATHER_IDS = CORE_WEATHER_IDS;
 const END_OF_TURN_EFFECT_IDS = CORE_END_OF_TURN_EFFECT_IDS;
+const GEN7_DATA = createGen7DataManager();
+const DEFAULT_SPECIES = GEN7_DATA.getSpecies(GEN7_SPECIES_IDS.pikachu);
+const DEFAULT_MOVE = GEN7_DATA.getMove(MOVE_IDS.tackle);
+const STATUS_SLEEP = STATUS_IDS.sleep;
+const DEFAULT_LEVEL = 50;
+const TAILWIND_TURNS = 4;
+const TRICK_ROOM_TURNS = 5;
+const TERRAIN_HEAL_END_OF_TURN = END_OF_TURN_EFFECT_IDS.grassyTerrainHeal;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,24 +73,39 @@ function makeActive(
   } = {},
 ): ActivePokemon {
   const hp = overrides.hp ?? 200;
-  return {
-    pokemon: {
-      calculatedStats: {
-        hp,
-        speed: overrides.speed ?? 100,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-      },
-      currentHp: overrides.currentHp ?? hp,
-      status: overrides.status ?? null,
+  const pokemon = createPokemonInstance(
+    DEFAULT_SPECIES,
+    DEFAULT_LEVEL,
+    new SeededRandom(7),
+    {
+      moves: [],
       heldItem: overrides.heldItem ?? null,
-      level: 50,
-      nickname: null,
-      speciesId: 25,
-      moves: overrides.moves ?? [{ moveId: MOVE_IDS.tackle }],
+      isShiny: false,
+      gender: "male",
+      abilitySlot: "normal1",
+      metLocation: "test",
+      originalTrainer: "Test",
+      originalTrainerId: 7,
     },
+  );
+
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.status = overrides.status ?? null;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.moves = (overrides.moves ?? [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)]).map((move) =>
+    createMoveSlot(move.moveId, GEN7_DATA.getMove(move.moveId).pp),
+  );
+  pokemon.calculatedStats = {
+    hp,
+    speed: overrides.speed ?? 100,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+  };
+
+  return {
+    pokemon,
     ability: overrides.ability ?? null,
     statStages: {
       attack: 0,
@@ -86,7 +116,7 @@ function makeActive(
       accuracy: 0,
       evasion: 0,
     },
-    types: (overrides.types ?? ["electric"]) as any,
+    types: (overrides.types ?? DEFAULT_SPECIES.types) as any,
     volatileStatuses: new Map(
       (overrides.volatiles ?? []).map(([k, v]) => [k, v] as [string, unknown]),
     ),
@@ -127,7 +157,10 @@ function makeSide(
     active: overrides?.active ?? [],
     hazards: [],
     screens: [],
-    tailwind: { active: overrides?.tailwind ?? false, turnsLeft: overrides?.tailwind ? 4 : 0 },
+    tailwind: {
+      active: overrides?.tailwind ?? false,
+      turnsLeft: overrides?.tailwind ? TAILWIND_TURNS : 0,
+    },
     luckyChant: { active: false, turnsLeft: 0 },
     wish: null,
     futureAttack: null,
@@ -166,7 +199,10 @@ function makeState(overrides?: {
     sides: overrides?.sides ?? [makeSide(0), makeSide(1)],
     weather: overrides?.weather ?? null,
     terrain: overrides?.terrain ?? null,
-    trickRoom: { active: overrides?.trickRoom ?? false, turnsLeft: overrides?.trickRoom ? 5 : 0 },
+    trickRoom: {
+      active: overrides?.trickRoom ?? false,
+      turnsLeft: overrides?.trickRoom ? TRICK_ROOM_TURNS : 0,
+    },
     magicRoom: { active: false, turnsLeft: 0 },
     wonderRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },
@@ -177,9 +213,9 @@ function makeState(overrides?: {
   } as unknown as BattleState;
 }
 
-/** Instantiate a Gen7Ruleset with an empty DataManager (no data files needed). */
+/** Instantiate a Gen7Ruleset with the real Gen 7 data bundle. */
 function createTestRuleset(): Gen7Ruleset {
-  return new Gen7Ruleset(new DataManager());
+  return new Gen7Ruleset(GEN7_DATA);
 }
 
 const ruleset = createTestRuleset();
@@ -249,7 +285,9 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const chloro = makeActive({ speed: 50, ability: ABILITY_IDS.chlorophyll });
     const normal = makeActive({ speed: 80 });
-    expect(whoGoesFirst(chloro, normal, { weather: { type: "sun", turnsLeft: 3 } })).toBe(0);
+    expect(whoGoesFirst(chloro, normal, { weather: { type: WEATHER_IDS.sun, turnsLeft: 3 } })).toBe(
+      0,
+    );
   });
 
   it("given Pokemon with Chlorophyll NOT in sun with 50 base speed vs 80 base speed, when resolving turn order, then Chlorophyll user goes second", () => {
@@ -267,7 +305,9 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const swimmer = makeActive({ speed: 50, ability: ABILITY_IDS.swiftSwim });
     const normal = makeActive({ speed: 80 });
-    expect(whoGoesFirst(swimmer, normal, { weather: { type: "rain", turnsLeft: 3 } })).toBe(0);
+    expect(whoGoesFirst(swimmer, normal, { weather: { type: WEATHER_IDS.rain, turnsLeft: 3 } })).toBe(
+      0,
+    );
   });
 
   // --- Sand Rush ---
@@ -277,7 +317,9 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const rush = makeActive({ speed: 50, ability: ABILITY_IDS.sandRush });
     const normal = makeActive({ speed: 80 });
-    expect(whoGoesFirst(rush, normal, { weather: { type: "sand", turnsLeft: 3 } })).toBe(0);
+    expect(whoGoesFirst(rush, normal, { weather: { type: WEATHER_IDS.sand, turnsLeft: 3 } })).toBe(
+      0,
+    );
   });
 
   // --- Slush Rush (NEW in Gen 7) ---
@@ -288,7 +330,9 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const slush = makeActive({ speed: 50, ability: ABILITY_IDS.slushRush });
     const normal = makeActive({ speed: 80 });
-    expect(whoGoesFirst(slush, normal, { weather: { type: "hail", turnsLeft: 3 } })).toBe(0);
+    expect(whoGoesFirst(slush, normal, { weather: { type: WEATHER_IDS.hail, turnsLeft: 3 } })).toBe(
+      0,
+    );
   });
 
   it("given Pokemon with Slush Rush NOT in hail with 50 base speed vs 80 base speed, when resolving turn order, then Slush Rush user goes second", () => {
@@ -660,12 +704,12 @@ describe("Gen7Ruleset — getAvailableHazards", () => {
 describe("Gen7Ruleset — inherited BaseRuleset defaults", () => {
   it("given Gen7Ruleset, when getting crit multiplier, then returns 1.5 (Gen 6+ default)", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 6+ crit multiplier is 1.5x
-    expect(ruleset.getCritMultiplier()).toBe(1.5);
+    expect(ruleset.getCritMultiplier()).toBe(GEN7_CRIT_MULTIPLIER);
   });
 
   it("given Gen7Ruleset, when getting crit rate table, then returns Gen 6+ table [24, 8, 2, 1]", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 6+ crit rate table
-    expect(ruleset.getCritRateTable()).toEqual([24, 8, 2, 1]);
+    expect(ruleset.getCritRateTable()).toEqual(GEN7_CRIT_RATE_TABLE);
   });
 
   it("given Gen7Ruleset, when getting post-attack residual order, then returns empty array", () => {
@@ -692,7 +736,7 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       300,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(199);
@@ -708,7 +752,7 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       200,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(200);
@@ -723,7 +767,7 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       300,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -738,7 +782,7 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       100,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(100);
@@ -760,7 +804,7 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       300,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(199);
@@ -777,7 +821,7 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       200,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(200);
@@ -799,7 +843,7 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       300,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -821,7 +865,7 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       300,
       defender,
       attacker,
-      { id: MOVE_IDS.tackle } as any,
+      DEFAULT_MOVE as any,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -835,7 +879,7 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
     const defender = makeActive({ heldItem: ITEM_IDS.focusSash, hp: 200, currentHp: 200 }) as any;
     const attacker = makeActive();
     const state = { magicRoom: { active: true, turnsLeft: 3 } } as BattleState;
-    const result = ruleset.capLethalDamage(300, defender, attacker, { id: MOVE_IDS.tackle } as any, state);
+    const result = ruleset.capLethalDamage(300, defender, attacker, DEFAULT_MOVE as any, state);
     expect(result.damage).toBe(300);
     expect(result.survived).toBe(false);
     expect(result.consumedItem).toBeUndefined();
@@ -869,7 +913,7 @@ describe("Gen7Ruleset — canHitSemiInvulnerable", () => {
 
   it("given surf vs underwater, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Surf hits Dive targets
-    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.surf, "underwater" as any)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.surf, VOLATILE_IDS.underwater as any)).toBe(true);
   });
 
   it("given any move vs shadow-force-charging, when checking semi-invulnerable bypass, then returns false", () => {
@@ -926,7 +970,7 @@ describe("Gen7Ruleset — getEndOfTurnOrder", () => {
   it("given Gen7Ruleset, when getting end-of-turn order, then includes grassy-terrain-heal", () => {
     // Source: Showdown data/conditions.ts -- grassy terrain heals 1/16 at end of turn
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toContain("grassy-terrain-heal");
+    expect(order).toContain(TERRAIN_HEAL_END_OF_TURN);
   });
 
   it("given Gen7Ruleset, when getting end-of-turn order, then status-damage comes after leech-seed", () => {
@@ -967,7 +1011,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     // Stub -- will be fully implemented in Wave 3
     const target = makeActive();
     const state = makeState();
-    const result = ruleset.checkTerrainStatusImmunity("sleep" as never, target, state);
+    const result = ruleset.checkTerrainStatusImmunity(STATUS_SLEEP as never, target, state);
     expect(result.immune).toBe(false);
   });
 
@@ -976,7 +1020,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     // This test just verifies it doesn't throw for a basic invocation
     expect(() => {
       ruleset.executeMoveEffect({
-        move: { id: MOVE_IDS.tackle, type: "normal", category: "physical", power: 40 } as any,
+        move: DEFAULT_MOVE as any,
         attacker: makeActive(),
         defender: makeActive(),
         state: makeState(),

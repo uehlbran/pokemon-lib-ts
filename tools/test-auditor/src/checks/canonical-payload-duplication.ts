@@ -18,8 +18,9 @@ const HELPER_SIGNATURE_PATTERNS: ReadonlyArray<{ kind: string; re: RegExp }> = [
 ];
 
 const DATA_BACKED_CONTEXT_RE = /\b(?:getMove|getSpecies|getItem|getAbility|getNature|createGen\d+DataManager|DATA_MANAGER)\b/;
-const EXPLICIT_OVERRIDE_RE = /\b(?:override|synthetic|custom|derived|scenario)\b/i;
+const EXPLICIT_OVERRIDE_RE = /(?:override|synthetic|custom|derived|scenario)/i;
 const PRIMARY_FIELD_KINDS = new Set(["display name", "species base stats", "species abilities"]);
+const SPECIES_PAYLOAD_FIELD_KINDS = new Set(["display name", "species base stats", "species abilities", "species gender ratio"]);
 
 function getWindowFieldKinds(lines: string[]): Set<string> {
   const kinds = new Set<string>();
@@ -47,13 +48,20 @@ export function checkCanonicalPayloadDuplication(ctx: FileContext): Finding[] {
       const contextWindow = contextLines.join("\n");
       const windowKinds = getWindowFieldKinds(contextLines);
       const looksLikeCanonicalRecord =
-        PRIMARY_FIELD_KINDS.has(pattern.kind) || windowKinds.size >= 2 || DATA_BACKED_CONTEXT_RE.test(contextWindow);
+        PRIMARY_FIELD_KINDS.has(pattern.kind) ||
+        (pattern.kind === "species typings"
+          ? [...windowKinds].some((kind) => SPECIES_PAYLOAD_FIELD_KINDS.has(kind))
+          : windowKinds.size >= 2 || DATA_BACKED_CONTEXT_RE.test(contextWindow));
 
       if (!looksLikeCanonicalRecord) {
         continue;
       }
 
-      if (DATA_BACKED_CONTEXT_RE.test(contextWindow) && !EXPLICIT_OVERRIDE_RE.test(contextWindow)) {
+      if (EXPLICIT_OVERRIDE_RE.test(contextWindow)) {
+        continue;
+      }
+
+      if (DATA_BACKED_CONTEXT_RE.test(contextWindow)) {
         continue;
       }
 

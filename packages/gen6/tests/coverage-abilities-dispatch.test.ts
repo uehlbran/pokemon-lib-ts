@@ -463,7 +463,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     const ctx = makeCtx({
       ability: A.levitate,
       trigger: "passive-immunity",
-      move: makeMove(T.ground, { displayName: "Earthquake" }),
+      move: dataManager.getMove(M.earthquake),
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(true);
@@ -506,7 +506,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     const ctx = makeCtx({
       ability: A.voltAbsorb,
       trigger: "passive-immunity",
-      move: makeMove(T.electric, { displayName: "Thunderbolt" }),
+      move: dataManager.getMove(M.thunderbolt),
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(true);
@@ -517,7 +517,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
     const ctx = makeCtx({
       ability: A.sapSipper,
       trigger: "passive-immunity",
-      move: makeMove(T.grass, { displayName: "Energy Ball" }),
+      move: dataManager.getMove(M.energyBall),
     });
     const result = applyGen6Ability("passive-immunity", ctx);
     expect(result.activated).toBe(true);

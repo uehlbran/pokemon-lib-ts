@@ -8,7 +8,7 @@ import {
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "../src";
+import { createGen4DataManager, GEN4_ITEM_IDS, GEN4_MOVE_IDS, GEN4_NATURE_IDS, GEN4_SPECIES_IDS } from "../src";
 import { applyGen4HeldItem } from "../src/Gen4Items";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
@@ -51,11 +51,11 @@ function makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 160;
   return {
     uid: "test",
-    speciesId: overrides.speciesId ?? 1,
+    speciesId: overrides.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN4_NATURE_IDS.hardy,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
@@ -71,7 +71,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: I.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -717,7 +717,7 @@ describe("Gen4Ruleset.capLethalDamage -- Focus Band", () => {
     const defender = {
       pokemon: instance,
       types: [],
-      ability: "",
+      ability: A.none,
       volatileStatuses: new Map(),
     } as unknown as ActivePokemon;
     const state = {
