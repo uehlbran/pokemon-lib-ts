@@ -1,6 +1,15 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { MoveData } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   AURORA_VEIL_DEFAULT_TURNS,
@@ -27,6 +36,17 @@ import {
   isSteelBeamRecoil,
   isTarShotActive,
 } from "../src/Gen8MoveEffects";
+import { createGen8DataManager, GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_MOVE_IDS, GEN8_SPECIES_IDS } from "../src";
+
+const DATA_MANAGER = createGen8DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS };
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS };
+const MOVES = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS };
+const TYPES = CORE_TYPE_IDS;
+const HAZARDS = CORE_HAZARD_IDS;
+const TERRAIN = CORE_TERRAIN_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const SPECIES = GEN8_SPECIES_IDS;
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -60,13 +80,13 @@ function makeActivePokemon(overrides: {
       currentHp: overrides.currentHp ?? maxHp,
       status: overrides.status ?? null,
       heldItem: overrides.heldItem ?? null,
-      moves: overrides.moves ?? [{ moveId: "tackle" }],
+      moves: overrides.moves ?? [{ moveId: MOVES.tackle }],
       nickname: overrides.nickname ?? null,
-      speciesId: overrides.speciesId ?? 25,
+      speciesId: overrides.speciesId ?? SPECIES.pikachu,
     },
-    ability: overrides.ability ?? "blaze",
+    ability: overrides.ability ?? ABILITIES.blaze,
     volatileStatuses: overrides.volatileStatuses ?? new Map(),
-    types: (overrides.types ?? ["normal"]) as readonly string[],
+    types: (overrides.types ?? [TYPES.normal]) as readonly string[],
     consecutiveProtects: overrides.consecutiveProtects ?? 0,
     turnsOnField: overrides.turnsOnField ?? 0,
     statStages: {
@@ -82,38 +102,10 @@ function makeActivePokemon(overrides: {
 }
 
 function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const move = DATA_MANAGER.getMove(id);
   return {
-    id,
-    displayName: id,
-    type: "normal",
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 10,
-    priority: 0,
-    target: "self" as MoveTarget,
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 8,
+    ...move,
+    flags: { ...move.flags, ...(overrides?.flags ?? {}) },
     ...overrides,
   } as MoveData;
 }
@@ -263,19 +255,19 @@ describe("Gen8 isBlockedByKingsShield", () => {
 describe("Gen8 Obstruct -- executeGen8MoveEffect", () => {
   it("given no consecutive protect uses, when Obstruct is used, then succeeds and sets obstruct volatile", () => {
     // Source: Showdown data/moves.ts -- obstruct: volatileStatus: 'obstruct', duration: 1
-    const ctx = makeContext("obstruct");
+    const ctx = makeContext(MOVES.obstruct);
     const rng = new SeededRandom(42);
     const result = executeGen8MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("obstruct");
+    expect(result!.selfVolatileInflicted).toBe(GEN8_MOVE_IDS.obstruct);
     expect(result!.selfVolatileData).toEqual({ turnsLeft: 1 });
     expect(result!.messages[0]).toContain("protected itself");
   });
 
   it("given stalling check fails, when Obstruct is used, then fails", () => {
     // Source: Showdown data/moves.ts -- obstruct: stallingMove: true
-    const ctx = makeContext("obstruct");
+    const ctx = makeContext(MOVES.obstruct);
     const rng = new SeededRandom(42);
     const result = executeGen8MoveEffect(ctx, rng, alwaysFailProtect);
 
@@ -336,19 +328,19 @@ describe("Gen8 getRapidSpinSpeedBoost", () => {
     // Source: Showdown data/moves.ts -- rapidSpin Gen 8: onAfterHit: this.boost({ spe: 1 })
     // Source: Bulbapedia -- "Starting in Generation VIII, Rapid Spin also raises
     //   the user's Speed by one stage."
-    const result = getRapidSpinSpeedBoost("rapid-spin", true);
+    const result = getRapidSpinSpeedBoost(MOVES.rapidSpin, true);
     expect(result.speedStages).toBe(1);
   });
 
   it("given Rapid Spin misses, when getting speed boost, then returns 0 Speed", () => {
     // Source: Showdown -- onAfterHit only fires when move hits
-    const result = getRapidSpinSpeedBoost("rapid-spin", false);
+    const result = getRapidSpinSpeedBoost(MOVES.rapidSpin, false);
     expect(result.speedStages).toBe(0);
   });
 
   it("given a different move hits successfully, when getting speed boost, then returns 0 Speed", () => {
     // Only Rapid Spin gets the Gen 8 speed boost, not other moves
-    const result = getRapidSpinSpeedBoost("tackle", true);
+    const result = getRapidSpinSpeedBoost(CORE_MOVE_IDS.tackle, true);
     expect(result.speedStages).toBe(0);
   });
 });
@@ -362,26 +354,26 @@ describe("Gen8 executeGen8Defog", () => {
     // Source: Showdown data/moves.ts -- defog: removes all hazards from target side
     const result = executeGen8Defog(
       [], // user side hazards
-      ["stealth-rock", "spikes"], // target side hazards
+      [HAZARDS.stealthRock, HAZARDS.spikes], // target side hazards
       [], // user side screens
       [], // target side screens
       null, // no terrain
     );
-    expect(result.clearedHazards).toContain("stealth-rock");
-    expect(result.clearedHazards).toContain("spikes");
+    expect(result.clearedHazards).toContain(HAZARDS.stealthRock);
+    expect(result.clearedHazards).toContain(HAZARDS.spikes);
     expect(result.clearedHazards).toHaveLength(2);
   });
 
   it("given user side has Toxic Spikes, when using Defog, then also removes user-side hazards", () => {
     // Source: Showdown data/moves.ts -- defog Gen 6+: also clears user's side
     const result = executeGen8Defog(
-      ["toxic-spikes"], // user side hazards
+      [HAZARDS.toxicSpikes], // user side hazards
       [], // target side hazards
       [], // user side screens
       [], // target side screens
       null,
     );
-    expect(result.clearedHazards).toContain("toxic-spikes");
+    expect(result.clearedHazards).toContain(HAZARDS.toxicSpikes);
     expect(result.clearedHazards).toHaveLength(1);
   });
 
@@ -405,7 +397,7 @@ describe("Gen8 executeGen8Defog", () => {
       [],
       [],
       [],
-      "electric", // active terrain
+      TERRAIN.electric, // active terrain
     );
     expect(result.clearedTerrain).toBe(true);
   });
@@ -427,13 +419,13 @@ describe("Gen8 executeGen8Defog", () => {
     const result = executeGen8Defog(
       [], // user hazards
       [], // target hazards
-      ["safeguard", "mist"], // user screens
-      ["aurora-veil"], // target screens
+      [GEN8_MOVE_IDS.safeguard, VOLATILES.mist], // user screens
+      [GEN8_MOVE_IDS.auroraVeil], // target screens
       null,
     );
-    expect(result.clearedScreens).toContain("aurora-veil");
-    expect(result.clearedScreens).toContain("safeguard");
-    expect(result.clearedScreens).toContain("mist");
+    expect(result.clearedScreens).toContain(GEN8_MOVE_IDS.auroraVeil);
+    expect(result.clearedScreens).toContain(GEN8_MOVE_IDS.safeguard);
+    expect(result.clearedScreens).toContain(VOLATILES.mist);
     expect(result.clearedScreens).toHaveLength(3);
   });
 });
@@ -457,11 +449,11 @@ describe("Gen8 Steel Beam", () => {
 
   it("given move is steel-beam, when checking isSteelBeamRecoil, then returns true", () => {
     // Source: Showdown data/moves.ts -- steelbeam: mindBlownRecoil: true
-    expect(isSteelBeamRecoil("steel-beam")).toBe(true);
+    expect(isSteelBeamRecoil(MOVES.steelBeam)).toBe(true);
   });
 
   it("given move is not steel-beam, when checking isSteelBeamRecoil, then returns false", () => {
-    expect(isSteelBeamRecoil("flash-cannon")).toBe(false);
+    expect(isSteelBeamRecoil(GEN8_MOVE_IDS.flashCannon)).toBe(false);
   });
 });
 
@@ -478,7 +470,7 @@ describe("Gen8 handleNoRetreat", () => {
     //   Special Attack, Special Defense, and Speed by one stage each."
     const result = handleNoRetreat(false);
 
-    expect(result.selfVolatileInflicted).toBe("no-retreat");
+    expect(result.selfVolatileInflicted).toBe(VOLATILES.noRetreat);
     expect(result.statChanges).toHaveLength(5);
     expect(result.statChanges).toContainEqual({ target: "attacker", stat: "attack", stages: 1 });
     expect(result.statChanges).toContainEqual({ target: "attacker", stat: "defense", stages: 1 });
@@ -507,12 +499,12 @@ describe("Gen8 handleNoRetreat", () => {
 describe("Gen8 No Retreat via executeGen8MoveEffect", () => {
   it("given user without no-retreat volatile, when dispatching no-retreat move, then sets volatile and boosts stats", () => {
     // Source: Showdown data/moves.ts -- noretreat boosts + trapping
-    const ctx = makeContext("no-retreat");
+    const ctx = makeContext(MOVES.noRetreat);
     const rng = new SeededRandom(42);
     const result = executeGen8MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).not.toBeNull();
-    expect(result!.selfVolatileInflicted).toBe("no-retreat");
+    expect(result!.selfVolatileInflicted).toBe(VOLATILES.noRetreat);
     expect(result!.statChanges).toHaveLength(5);
   });
 });
@@ -530,7 +522,7 @@ describe("Gen8 handleTarShot", () => {
     const result = handleTarShot(false);
 
     expect(result.statChanges).toContainEqual({ target: "defender", stat: "speed", stages: -1 });
-    expect(result.volatileInflicted).toBe("tar-shot");
+    expect(result.volatileInflicted).toBe(GEN8_MOVE_IDS.tarShot);
     expect(result.messages[0]).toContain("weaker to fire");
   });
 
@@ -546,7 +538,7 @@ describe("Gen8 handleTarShot", () => {
 describe("Gen8 isTarShotActive", () => {
   it("given target has tar-shot volatile, when checking, then returns true", () => {
     // Source: Showdown -- tarshot condition.onEffectiveness checks for volatile
-    const volatiles = new Map([["tar-shot", { turnsLeft: -1 }]]);
+    const volatiles = new Map([[GEN8_MOVE_IDS.tarShot, { turnsLeft: -1 }]]);
     expect(isTarShotActive(volatiles)).toBe(true);
   });
 
@@ -583,7 +575,7 @@ describe("Gen8 Clangorous Soul via executeGen8MoveEffect", () => {
   it("given user with sufficient HP, when dispatching clangorous-soul, then costs 1/3 HP and boosts all stats", () => {
     // Source: Showdown data/moves.ts -- clangoroussoul: boosts { atk:1, def:1, spa:1, spd:1, spe:1 }
     //   cost = Math.floor(maxhp / 3)
-    const ctx = makeContext("clangorous-soul", { attacker: { maxHp: 300, currentHp: 300 } });
+    const ctx = makeContext(MOVES.clangorousSoul, { attacker: { maxHp: 300, currentHp: 300 } });
     const rng = new SeededRandom(42);
     const result = executeGen8MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -598,7 +590,7 @@ describe("Gen8 Clangorous Soul via executeGen8MoveEffect", () => {
   it("given user with HP equal to cost, when dispatching clangorous-soul, then fails (would faint)", () => {
     // Source: Showdown -- onTry: if (pokemon.hp <= Math.floor(pokemon.maxhp / 3)) return false;
     // maxHp=300, cost=100, currentHp=100 -> 100 <= 100 -> fails
-    const ctx = makeContext("clangorous-soul", { attacker: { maxHp: 300, currentHp: 100 } });
+    const ctx = makeContext(MOVES.clangorousSoul, { attacker: { maxHp: 300, currentHp: 100 } });
     const rng = new SeededRandom(42);
     const result = executeGen8MoveEffect(ctx, rng, alwaysSucceedProtect);
 
@@ -619,27 +611,27 @@ describe("Gen8 getFishiousBoltBeakPower", () => {
     //     return move.basePower * 2;  // 85 * 2 = 170
     // Source: Bulbapedia -- "If the user moves before the target, the power of
     //   Fishious Rend doubles from 85 to 170."
-    expect(getFishiousBoltBeakPower("fishious-rend", true)).toBe(170);
+    expect(getFishiousBoltBeakPower(MOVES.fishiousRend, true)).toBe(170);
   });
 
   it("given Fishious Rend and user moved second, when getting power, then returns 85", () => {
     // Source: Showdown -- base power 85 when moving after target
-    expect(getFishiousBoltBeakPower("fishious-rend", false)).toBe(85);
+    expect(getFishiousBoltBeakPower(MOVES.fishiousRend, false)).toBe(85);
   });
 
   it("given Bolt Beak and user moved first, when getting power, then returns 170 (85 * 2)", () => {
     // Source: Showdown data/moves.ts -- boltbeak: same basePowerCallback as Fishious Rend
-    expect(getFishiousBoltBeakPower("bolt-beak", true)).toBe(170);
+    expect(getFishiousBoltBeakPower(MOVES.boltBeak, true)).toBe(170);
   });
 
   it("given Bolt Beak and user moved second, when getting power, then returns 85", () => {
     // Source: Showdown -- base power 85 when moving after target
-    expect(getFishiousBoltBeakPower("bolt-beak", false)).toBe(85);
+    expect(getFishiousBoltBeakPower(MOVES.boltBeak, false)).toBe(85);
   });
 
   it("given a different move and user moved first, when getting power, then returns 85 (no doubling)", () => {
     // Only Fishious Rend and Bolt Beak get the doubling effect
-    expect(getFishiousBoltBeakPower("tackle", true)).toBe(85);
+    expect(getFishiousBoltBeakPower(CORE_MOVE_IDS.tackle, true)).toBe(85);
   });
 });
 
@@ -656,10 +648,10 @@ describe("Gen8 handleJawLock", () => {
     const result = handleJawLock();
 
     // Defender gets trapped
-    expect(result.volatileInflicted).toBe("jaw-lock");
+    expect(result.volatileInflicted).toBe(GEN8_MOVE_IDS.jawLock);
     expect(result.volatileData).toEqual({ turnsLeft: -1 });
     // Attacker also gets trapped
-    expect(result.selfVolatileInflicted).toBe("jaw-lock");
+    expect(result.selfVolatileInflicted).toBe(GEN8_MOVE_IDS.jawLock);
     expect(result.selfVolatileData).toEqual({ turnsLeft: -1 });
     expect(result.messages[0]).toContain("Neither Pokemon can switch out");
   });
@@ -679,22 +671,22 @@ describe("Gen8 handleJawLock", () => {
 describe("Gen8 isAntiDynamaxMove", () => {
   it("given behemoth-blade, when checking, then returns true", () => {
     // Source: Showdown data/conditions.ts:785 -- behemothblade: chainModify(2) vs Dynamax
-    expect(isAntiDynamaxMove("behemoth-blade")).toBe(true);
+    expect(isAntiDynamaxMove(GEN8_MOVE_IDS.behemothBlade)).toBe(true);
   });
 
   it("given behemoth-bash, when checking, then returns true", () => {
     // Source: Showdown data/conditions.ts:785 -- behemothbash: chainModify(2) vs Dynamax
-    expect(isAntiDynamaxMove("behemoth-bash")).toBe(true);
+    expect(isAntiDynamaxMove(GEN8_MOVE_IDS.behemothBash)).toBe(true);
   });
 
   it("given dynamax-cannon, when checking, then returns true", () => {
     // Source: Showdown data/conditions.ts:785 -- dynamaxcannon: chainModify(2) vs Dynamax
-    expect(isAntiDynamaxMove("dynamax-cannon")).toBe(true);
+    expect(isAntiDynamaxMove(GEN8_MOVE_IDS.dynamaxCannon)).toBe(true);
   });
 
   it("given iron-head (a regular Steel move), when checking, then returns false", () => {
     // Only the three anti-Dynamax moves get the 2x modifier
-    expect(isAntiDynamaxMove("iron-head")).toBe(false);
+    expect(isAntiDynamaxMove(GEN8_MOVE_IDS.ironHead)).toBe(false);
   });
 });
 
@@ -705,11 +697,11 @@ describe("Gen8 isAntiDynamaxMove", () => {
 describe("Gen8 isBodyPress", () => {
   it("given body-press move, when checking, then returns true", () => {
     // Source: Showdown data/moves.ts -- bodypress: overrideOffensiveStat: 'def'
-    expect(isBodyPress("body-press")).toBe(true);
+    expect(isBodyPress(GEN8_MOVE_IDS.bodyPress)).toBe(true);
   });
 
   it("given a different move, when checking, then returns false", () => {
-    expect(isBodyPress("close-combat")).toBe(false);
+    expect(isBodyPress(GEN8_MOVE_IDS.closeCombat)).toBe(false);
   });
 });
 
@@ -721,7 +713,7 @@ describe("Gen8 handleDrainEffect", () => {
   it("given Giga Drain dealing 100 damage (50% drain), when handling drain, then heals 50 HP", () => {
     // Source: Showdown data/moves.ts -- gigadrain: { drain: [1, 2] } = 50%
     // floor(100 * 0.5) = 50
-    const ctx = makeContext("giga-drain", {
+    const ctx = makeContext(MOVES.gigaDrain, {
       damage: 100,
       moveOverrides: {
         effect: { type: "drain", amount: 0.5 },
@@ -735,7 +727,7 @@ describe("Gen8 handleDrainEffect", () => {
 
   it("given drain move dealing 0 damage, when handling drain, then returns null (no drain effect)", () => {
     // Source: Showdown sim/battle-actions.ts -- drain only triggers when damage > 0
-    const ctx = makeContext("giga-drain", {
+    const ctx = makeContext(MOVES.gigaDrain, {
       damage: 0,
       moveOverrides: {
         effect: { type: "drain", amount: 0.5 },
@@ -754,21 +746,21 @@ describe("Gen8 isGen8GrassPowderBlocked", () => {
   it("given Grass-type target, when checking powder immunity, then returns true", () => {
     // Source: Showdown data/moves.ts -- powder moves: if (target.hasType('Grass')) return null;
     // Source: Bulbapedia -- "Grass-type Pokemon are immune to powder and spore moves."
-    expect(isGen8GrassPowderBlocked(["grass"], "blaze", null)).toBe(true);
+    expect(isGen8GrassPowderBlocked([TYPES.grass], ABILITIES.blaze, null)).toBe(true);
   });
 
   it("given Overcoat ability, when checking powder immunity, then returns true", () => {
     // Source: Showdown data/abilities.ts -- overcoat: blocks powder moves
-    expect(isGen8GrassPowderBlocked(["normal"], "overcoat", null)).toBe(true);
+    expect(isGen8GrassPowderBlocked([TYPES.normal], ABILITIES.overcoat, null)).toBe(true);
   });
 
   it("given Safety Goggles held, when checking powder immunity, then returns true", () => {
     // Source: Showdown data/items.ts -- safetygoggles: blocks powder moves
-    expect(isGen8GrassPowderBlocked(["normal"], "blaze", "safety-goggles")).toBe(true);
+    expect(isGen8GrassPowderBlocked([TYPES.normal], ABILITIES.blaze, ITEMS.safetyGoggles)).toBe(true);
   });
 
   it("given non-Grass type without Overcoat or Safety Goggles, when checking, then returns false", () => {
-    expect(isGen8GrassPowderBlocked(["fire"], "blaze", null)).toBe(false);
+    expect(isGen8GrassPowderBlocked([TYPES.fire], ABILITIES.blaze, null)).toBe(false);
   });
 });
 
