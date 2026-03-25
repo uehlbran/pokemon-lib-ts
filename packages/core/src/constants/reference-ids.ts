@@ -237,6 +237,7 @@ export const CORE_VOLATILE_IDS = {
   underground: "underground",
   smackDown: "smackdown",
   substitute: "substitute",
+  telekinesis: "telekinesis",
   uproar: "uproar",
   taunt: "taunt",
   unburden: "unburden",
