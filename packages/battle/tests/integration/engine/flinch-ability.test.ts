@@ -1,5 +1,6 @@
-import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_VOLATILE_IDS, type AbilityTrigger, type PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -43,8 +44,8 @@ function createTestEngine() {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      ability: "steadfast",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      ability: CORE_ABILITY_IDS.steadfast,
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -61,8 +62,8 @@ function createTestEngine() {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      ability: "torrent",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      ability: CORE_ABILITY_IDS.torrent,
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -95,7 +96,7 @@ describe("On-flinch ability dispatch", () => {
     const { engine, ruleset, events } = createTestEngine();
     // Source: Bulbapedia — Steadfast raises Speed by 1 stage when the Pokemon flinches
     ruleset.setAbilityHandler((trigger, ctx) => {
-      if (trigger === "on-flinch" && ctx.pokemon.ability === "steadfast") {
+      if (trigger === "on-flinch" && ctx.pokemon.ability === CORE_ABILITY_IDS.steadfast) {
         return {
           activated: true,
           effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
@@ -109,7 +110,7 @@ describe("On-flinch ability dispatch", () => {
 
     // Set flinch volatile on the slower Pokemon (side 0's Charizard)
     const active0 = engine.state.sides[0].active[0];
-    active0!.volatileStatuses.set("flinch", { turnsLeft: 1 });
+    active0!.volatileStatuses.set(CORE_VOLATILE_IDS.flinch, { turnsLeft: 1 });
 
     // Act — both sides use tackle; side 0 is slower, will try to move but flinch
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

@@ -1,5 +1,6 @@
-import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_MOVE_IDS, type MoveData, type PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { ActivePokemon, BattleConfig, BattleState } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -39,7 +40,7 @@ class SturdyMockRuleset extends MockRuleset {
     // Source: Showdown data/abilities.ts -- sturdy onDamage
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     if (
-      defender.ability === "sturdy" &&
+      defender.ability === CORE_ABILITY_IDS.sturdy &&
       defender.pokemon.currentHp === maxHp &&
       damage >= defender.pokemon.currentHp
     ) {
@@ -70,7 +71,7 @@ function createSturdyEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -87,7 +88,7 @@ function createSturdyEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -123,7 +124,7 @@ describe("Bug #500 — Sturdy survival via capLethalDamage", () => {
     // Set defender's ability to "sturdy"
     const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
-    defender!.ability = "sturdy";
+    defender!.ability = CORE_ABILITY_IDS.sturdy;
 
     // Act — Charizard (speed 120) attacks Blastoise (speed 80) first
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -151,7 +152,7 @@ describe("Bug #500 — Sturdy survival via capLethalDamage", () => {
     // Set defender's ability to "sturdy" but reduce HP below max
     const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
-    defender!.ability = "sturdy";
+    defender!.ability = CORE_ABILITY_IDS.sturdy;
     defender!.pokemon.currentHp = 150; // Not at full HP (max is 200)
 
     // Act
@@ -180,7 +181,7 @@ describe("Bug #500 — Sturdy survival via capLethalDamage", () => {
     // Defender has a non-Sturdy ability
     const defender = engine.state.sides[1].active[0];
     expect(defender).not.toBeNull();
-    defender!.ability = "torrent"; // Not sturdy
+    defender!.ability = CORE_ABILITY_IDS.torrent; // Not sturdy
 
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

@@ -1,5 +1,14 @@
-import type { DataManager, MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type DataManager,
+  type MoveData,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -46,9 +55,9 @@ function createSleepTestDataManager(): DataManager {
   // Sleep Talk — status move usable while asleep
   // Source: Showdown data/moves.ts — sleepUsable: true, handler calls randomMove
   const sleepTalkData: MoveData = {
-    id: "sleep-talk",
+    id: CORE_MOVE_IDS.sleepTalk,
     displayName: "Sleep Talk",
-    type: "normal",
+    type: CORE_TYPE_IDS.normal,
     category: "status",
     power: null,
     accuracy: null,
@@ -56,7 +65,7 @@ function createSleepTestDataManager(): DataManager {
     priority: 0,
     target: "self",
     flags: { ...defaultFlags, protect: false, mirror: false, snatch: false },
-    effect: { type: "custom", handler: "sleep-talk" },
+    effect: { type: "custom", handler: CORE_MOVE_IDS.sleepTalk },
     description: "While it is asleep, the user randomly uses one of the moves it knows.",
     generation: 2,
   };
@@ -64,9 +73,9 @@ function createSleepTestDataManager(): DataManager {
   // Snore — damaging move usable while asleep
   // Source: Showdown data/moves.ts — sleepUsable: true
   const snoreData: MoveData = {
-    id: "snore",
+    id: CORE_MOVE_IDS.snore,
     displayName: "Snore",
-    type: "normal",
+    type: CORE_TYPE_IDS.normal,
     category: "special",
     power: 50,
     accuracy: 100,
@@ -108,9 +117,9 @@ function createSleepTestEngine(overrides?: {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        { moveId: "sleep-talk", currentPP: 10, maxPP: 10, ppUps: 0 },
-        { moveId: "snore", currentPP: 15, maxPP: 15, ppUps: 0 },
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+        createMockMoveSlot(CORE_MOVE_IDS.sleepTalk),
+        createMockMoveSlot(CORE_MOVE_IDS.snore),
+        createMockMoveSlot(CORE_MOVE_IDS.tackle),
       ],
       calculatedStats: {
         hp: 200,
@@ -121,7 +130,7 @@ function createSleepTestEngine(overrides?: {
         speed: 120,
       },
       currentHp: 200,
-      status: "sleep",
+      status: CORE_STATUS_IDS.sleep,
     }),
   ];
 
@@ -129,7 +138,7 @@ function createSleepTestEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -175,10 +184,10 @@ describe("Sleep-usable moves (issue #524)", () => {
 
     // Assert — sleep talk reaches the move-start stage even though the user remains asleep.
     expect(
-      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "sleep-talk"),
+      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk),
     ).toBe(true);
     expect(
-      events.some((e) => e.type === "move-fail" && e.side === 0 && e.move === "sleep-talk"),
+      events.some((e) => e.type === "move-fail" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk),
     ).toBe(false);
   });
 
@@ -199,14 +208,14 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert
-    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "snore")).toBe(
+    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.snore)).toBe(
       true,
     );
     expect(
-      events.some((e) => e.type === "damage" && e.side === 1 && e.source === "snore"),
+      events.some((e) => e.type === "damage" && e.side === 1 && e.source === CORE_MOVE_IDS.snore),
     ).toBe(true);
     expect(
-      events.some((e) => e.type === "move-fail" && e.side === 0 && e.move === "snore"),
+      events.some((e) => e.type === "move-fail" && e.side === 0 && e.move === CORE_MOVE_IDS.snore),
     ).toBe(false);
   });
 
@@ -227,7 +236,7 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — Tackle never reaches move-start and the battle reports the sleep block.
-    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "tackle")).toBe(
+    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.tackle)).toBe(
       false,
     );
     expect(
@@ -235,7 +244,7 @@ describe("Sleep-usable moves (issue #524)", () => {
         (e) => e.type === "message" && "text" in e && e.text.includes("fast asleep"),
       ),
     ).toBe(true);
-    expect(events.some((e) => e.type === "damage" && e.side === 1 && e.source === "tackle")).toBe(
+    expect(events.some((e) => e.type === "damage" && e.side === 1 && e.source === CORE_MOVE_IDS.tackle)).toBe(
       false,
     );
   });
@@ -248,7 +257,7 @@ describe("Sleep-usable moves (issue #524)", () => {
     ruleset.processSleepTurn = (pokemon, _state) => {
       // Pokemon wakes up this turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     };
 
@@ -260,10 +269,10 @@ describe("Sleep-usable moves (issue #524)", () => {
 
     // Assert — waking up clears the sleep status and allows the move to execute.
     expect(
-      events.some((e) => e.type === "status-cure" && e.side === 0 && e.status === "sleep"),
+      events.some((e) => e.type === "status-cure" && e.side === 0 && e.status === CORE_STATUS_IDS.sleep),
     ).toBe(true);
     expect(
-      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === "sleep-talk"),
+      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk),
     ).toBe(true);
   });
 });

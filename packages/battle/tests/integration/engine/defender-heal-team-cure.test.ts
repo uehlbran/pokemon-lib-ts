@@ -12,6 +12,8 @@
 
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+import { CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_STATUS_IDS } from "@pokemon-lib-ts/core";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -33,7 +35,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -50,7 +52,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -188,7 +190,7 @@ describe("processEffectResult -- teamStatusCure", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -202,7 +204,7 @@ describe("processEffectResult -- teamStatusCure", () => {
       createTestPokemon(25, 50, {
         uid: "pikachu-1",
         nickname: "Pikachu",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -219,11 +221,11 @@ describe("processEffectResult -- teamStatusCure", () => {
     engine.start();
 
     // Set poison on the benched Pikachu AFTER engine.start() (constructor resets state)
-    engine.state.sides[0].team[1].status = "poison";
+    engine.state.sides[0].team[1].status = CORE_STATUS_IDS.poison;
 
     // Verify benched Pikachu has poison before the move
     const benchedBefore = engine.state.sides[0].team[1];
-    expect(benchedBefore.status).toBe("poison");
+    expect(benchedBefore.status).toBe(CORE_STATUS_IDS.poison);
 
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -248,7 +250,7 @@ describe("processEffectResult -- abilityChange", () => {
       healAmount: 0,
       switchOut: false,
       messages: [],
-      abilityChange: { target: "defender", ability: "intimidate" },
+      abilityChange: { target: "defender", ability: CORE_ABILITY_IDS.intimidate },
     });
 
     const { engine, events } = createEngine({ ruleset });
@@ -256,7 +258,7 @@ describe("processEffectResult -- abilityChange", () => {
 
     // Verify defender (Blastoise) starts with default ability (not intimidate)
     const defenderBefore = engine.state.sides[1].active[0]!;
-    expect(defenderBefore.ability).not.toBe("intimidate");
+    expect(defenderBefore.ability).not.toBe(CORE_ABILITY_IDS.intimidate);
 
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -265,11 +267,11 @@ describe("processEffectResult -- abilityChange", () => {
     // Assert -- defender's ability should have been changed to intimidate
     // Charizard (speed 120) moves first, so its effect applies to Blastoise
     const defenderAfter = engine.state.sides[1].active[0]!;
-    expect(defenderAfter.ability).toBe("intimidate");
+    expect(defenderAfter.ability).toBe(CORE_ABILITY_IDS.intimidate);
 
     // Verify a message was emitted about the ability change
     const abilityMessages = events.filter(
-      (e) => e.type === "message" && (e as { text?: string }).text?.includes("intimidate"),
+      (e) => e.type === "message" && (e as { text?: string }).text?.includes(CORE_ABILITY_IDS.intimidate),
     );
     expect(abilityMessages.length).toBeGreaterThanOrEqual(1);
   });

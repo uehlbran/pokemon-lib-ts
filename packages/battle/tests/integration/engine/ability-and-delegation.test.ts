@@ -1,5 +1,7 @@
 import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+import { CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -44,7 +46,7 @@ class DelegationTrackingRuleset extends MockRuleset {
   override processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
     this.confusionCalls.push(active);
     // Simulate: decrement, still confused if > 0
-    const conf = active.volatileStatuses.get("confusion");
+    const conf = active.volatileStatuses.get(CORE_VOLATILE_IDS.confusion);
     if (!conf) return false;
     conf.turnsLeft--;
     return conf.turnsLeft > 0;
@@ -53,7 +55,7 @@ class DelegationTrackingRuleset extends MockRuleset {
   override processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
     this.boundCalls.push(active);
     // Simulate: decrement, still bound if > 0
-    const bound = active.volatileStatuses.get("bound");
+    const bound = active.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
     if (!bound) return false;
     bound.turnsLeft--;
     return bound.turnsLeft > 0;
@@ -75,8 +77,8 @@ function createAbilityEngine(opts?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      ability: opts?.team1Ability ?? "blaze",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      ability: opts?.team1Ability ?? CORE_ABILITY_IDS.blaze,
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -93,8 +95,8 @@ function createAbilityEngine(opts?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      ability: opts?.team2Ability ?? "torrent",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      ability: opts?.team2Ability ?? CORE_ABILITY_IDS.torrent,
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -130,7 +132,7 @@ function createDelegationEngine() {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -147,7 +149,7 @@ function createDelegationEngine() {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -182,11 +184,11 @@ describe("Bug 2A: switch-in ability processing", () => {
       // Arrange
       // Source: pret/pokeemerald ABILITY_INTIMIDATE — lowers opponent's Attack by 1 stage on switch-in
       const { engine, ruleset, events } = createAbilityEngine({
-        team1Ability: "intimidate",
+        team1Ability: CORE_ABILITY_IDS.intimidate,
       });
 
       ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === "intimidate") {
+        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
           return {
             activated: true,
             effects: [
@@ -227,11 +229,11 @@ describe("Bug 2A: switch-in ability processing", () => {
       // Arrange
       // Source: pret/pokeemerald ABILITY_INTIMIDATE — lowers opponent's Attack by 1 stage on switch-in
       const { engine, ruleset } = createAbilityEngine({
-        team2Ability: "intimidate",
+        team2Ability: CORE_ABILITY_IDS.intimidate,
       });
 
       ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === "intimidate") {
+        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
           return {
             activated: true,
             effects: [
@@ -263,18 +265,18 @@ describe("Bug 2A: switch-in ability processing", () => {
       // Arrange
       // Source: pret/pokeemerald ABILITY_DRIZZLE — sets permanent rain on switch-in
       const { engine, ruleset, events } = createAbilityEngine({
-        team1Ability: "drizzle",
+        team1Ability: CORE_ABILITY_IDS.drizzle,
       });
 
       ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === "drizzle") {
+        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.drizzle) {
           return {
             activated: true,
             effects: [
               {
                 effectType: "weather-set",
                 target: "field" as const,
-                weather: "rain" as const,
+                weather: CORE_WEATHER_IDS.rain as const,
                 weatherTurns: -1,
               },
             ],
@@ -289,7 +291,7 @@ describe("Bug 2A: switch-in ability processing", () => {
 
       // Assert
       expect(engine.state.weather).not.toBeNull();
-      expect(engine.state.weather!.type).toBe("rain");
+      expect(engine.state.weather!.type).toBe(CORE_WEATHER_IDS.rain);
       // -1 means indefinite (permanent weather from abilities in Gen 3-5)
       expect(engine.state.weather!.turnsLeft).toBe(-1);
 
@@ -302,18 +304,18 @@ describe("Bug 2A: switch-in ability processing", () => {
       // Arrange
       // Source: pret/pokeemerald ABILITY_DROUGHT — sets permanent sun on switch-in
       const { engine, ruleset } = createAbilityEngine({
-        team2Ability: "drought",
+        team2Ability: CORE_ABILITY_IDS.drought,
       });
 
       ruleset.setAbilityHandler((trigger, ctx) => {
-        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === "drought") {
+        if (trigger === "on-switch-in" && ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.drought) {
           return {
             activated: true,
             effects: [
               {
                 effectType: "weather-set",
                 target: "field" as const,
-                weather: "sun" as const,
+                weather: CORE_WEATHER_IDS.sun as const,
                 weatherTurns: -1,
               },
             ],
@@ -328,7 +330,7 @@ describe("Bug 2A: switch-in ability processing", () => {
 
       // Assert
       expect(engine.state.weather).not.toBeNull();
-      expect(engine.state.weather!.type).toBe("sun");
+      expect(engine.state.weather!.type).toBe(CORE_WEATHER_IDS.sun);
       expect(engine.state.weather!.turnsLeft).toBe(-1);
     });
   });
@@ -339,8 +341,8 @@ describe("Bug 2A: switch-in ability processing", () => {
       // Source: pret/pokeemerald — faster pokemon's on-switch-in ability activates first
       const callOrder: string[] = [];
       const { engine, ruleset } = createAbilityEngine({
-        team1Ability: "intimidate",
-        team2Ability: "intimidate",
+        team1Ability: CORE_ABILITY_IDS.intimidate,
+        team2Ability: CORE_ABILITY_IDS.intimidate,
         team1Speed: 50, // slower
         team2Speed: 100, // faster
       });
@@ -368,7 +370,7 @@ describe("Bug 2A: switch-in ability processing", () => {
       engine.start();
 
       // Assert — faster pokemon (side 1, speed 100) triggers before slower (side 0, speed 50)
-      // Both have "intimidate" so we can't distinguish by ability name,
+      // Both have CORE_ABILITY_IDS.intimidate so we can't distinguish by ability name,
       // but both should be lowered by -1 each from the other's Intimidate
       const side0 = engine.state.sides[0].active[0];
       const side1 = engine.state.sides[1].active[0];
@@ -390,16 +392,16 @@ describe("Bug 2A: switch-in ability processing", () => {
             createTestPokemon(6, 50, {
               uid: "charizard-1",
               nickname: "Charizard1",
-              ability: "intimidate",
-              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+              ability: CORE_ABILITY_IDS.intimidate,
+              moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             }),
           ],
           [
             createTestPokemon(6, 50, {
               uid: "charizard-2",
               nickname: "Charizard2",
-              ability: "intimidate",
-              moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+              ability: CORE_ABILITY_IDS.intimidate,
+              moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             }),
           ],
         ],
@@ -437,7 +439,7 @@ describe("Bug 2B: confusion turn processing delegated to ruleset", () => {
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set confusion with 3 turns remaining
-    charizard!.volatileStatuses.set("confusion", { turnsLeft: 3 });
+    charizard!.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: 3 });
 
     // Make the confusion self-hit always fail (so the pokemon can move)
     // We just need to verify the delegation happens
@@ -462,7 +464,7 @@ describe("Bug 2B: confusion turn processing delegated to ruleset", () => {
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set confusion with 1 turn remaining — will end after processConfusionTurn decrements
-    charizard!.volatileStatuses.set("confusion", { turnsLeft: 1 });
+    charizard!.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: 1 });
 
     // Act
     events.length = 0;
@@ -471,11 +473,11 @@ describe("Bug 2B: confusion turn processing delegated to ruleset", () => {
 
     // Assert — confusion should have ended
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "confusion",
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.confusion,
     );
     expect(volatileEndEvents.length).toBeGreaterThanOrEqual(1);
     // The volatile status should be removed
-    expect(charizard!.volatileStatuses.has("confusion")).toBe(false);
+    expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)).toBe(false);
   });
 });
 
@@ -490,7 +492,7 @@ describe("Bug 2C: bound turn processing delegated to ruleset", () => {
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set bound with 3 turns remaining (will still be bound after decrement)
-    charizard!.volatileStatuses.set("bound", { turnsLeft: 3 });
+    charizard!.volatileStatuses.set(CORE_VOLATILE_IDS.bound, { turnsLeft: 3 });
 
     ruleset.boundCalls = [];
 
@@ -513,7 +515,7 @@ describe("Bug 2C: bound turn processing delegated to ruleset", () => {
     const charizard = engine.state.sides[0].active[0];
     expect(charizard).not.toBeNull();
     // Set bound with 1 turn remaining — will end after processBoundTurn decrements
-    charizard!.volatileStatuses.set("bound", { turnsLeft: 1 });
+    charizard!.volatileStatuses.set(CORE_VOLATILE_IDS.bound, { turnsLeft: 1 });
 
     // Act
     events.length = 0;
@@ -522,10 +524,10 @@ describe("Bug 2C: bound turn processing delegated to ruleset", () => {
 
     // Assert — bound should have ended
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "bound",
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.bound,
     );
     expect(volatileEndEvents.length).toBeGreaterThanOrEqual(1);
     // The volatile status should be removed
-    expect(charizard!.volatileStatuses.has("bound")).toBe(false);
+    expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.bound)).toBe(false);
   });
 });

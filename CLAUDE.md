@@ -146,6 +146,8 @@ These rules govern **how** tests are written. The Testing Philosophy section abo
 - **Reference Id Imports** — do not handwrite canonical move, item, ability, species, weather, terrain, status, volatile, or gimmick ids in tests when an exported reference surface already owns them. Import shared engine/domain ids from `@pokemon-lib-ts/core` or `@pokemon-lib-ts/battle`, and import generation-specific ids from the generation package's exported `GENN_*_IDS` modules generated from `packages/genN/data/*.json`.
 - **Canonical Expected Values** — when an expected value already exists in an owned canonical data source, assert against that source instead of re-copying the literal into the test. Use exported type charts, generated per-gen data references, move/item metadata from the generation data manager, and core-owned numeric constants where applicable.
 - **Data-backed Fixture Defaults** — do not hardcode fixture defaults like PP, max PP, base power, accuracy, priority, species ids, or similar setup values when the owned move/species/item data already exposes them. Read them from the canonical data surface and make this retrofit retroactive for earlier test files too.
+- **Named Synthetic Scenario Inputs** — when a test needs a deliberately synthetic branch-driving value that does not come from owned data, do not leave it as an unexplained literal. Promote it to a named constant and document why that specific synthetic value is required.
+- **No Duplicated Canonical Payloads** — replacing raw ids with imported constants is not enough if the test still hand-builds a canonical species, move, item, hazard, weather, or end-of-turn payload that already exists elsewhere. Load or import the owned payload instead of rebuilding it locally.
 
 ## Source Authority
 

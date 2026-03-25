@@ -1,5 +1,7 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+import { CORE_HAZARD_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import type { BattleConfig, EntryHazardResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -34,7 +36,7 @@ function createHazardTestEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -48,7 +50,7 @@ function createHazardTestEngine(overrides?: {
     createTestPokemon(25, 50, {
       uid: "pikachu-1",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 150,
         attack: 80,
@@ -65,7 +67,7 @@ function createHazardTestEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -98,7 +100,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
 
     // Override getAvailableHazards to include sticky-web
     // Source: Showdown — Sticky Web is an entry hazard type
-    ruleset.getAvailableHazards = () => ["sticky-web"] as any;
+    ruleset.getAvailableHazards = () => [CORE_HAZARD_IDS.stickyWeb] as any;
 
     // Override applyEntryHazards to return a Speed drop
     // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon)
@@ -121,7 +123,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
 
     // Add sticky-web hazard to side 0 (Charizard's side)
     const state = engine.getState();
-    state.sides[0].hazards.push({ type: "sticky-web" as any, layers: 1 });
+    state.sides[0].hazards.push({ type: CORE_HAZARD_IDS.stickyWeb as any, layers: 1 });
 
     events.length = 0;
 
@@ -152,7 +154,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
     // (This tests the combination path)
     const ruleset = new MockRuleset();
 
-    ruleset.getAvailableHazards = () => ["stealth-rock"] as any;
+    ruleset.getAvailableHazards = () => [CORE_HAZARD_IDS.stealthRock] as any;
 
     ruleset.applyEntryHazards = (
       _pokemon: ActivePokemon,
@@ -174,7 +176,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
     engine.start();
 
     const state = engine.getState();
-    state.sides[0].hazards.push({ type: "stealth-rock" as any, layers: 1 });
+    state.sides[0].hazards.push({ type: CORE_HAZARD_IDS.stealthRock as any, layers: 1 });
 
     events.length = 0;
 
