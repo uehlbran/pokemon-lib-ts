@@ -1,13 +1,19 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_MOVE_IDS, CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN6_ITEM_IDS } from "../src";
 import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
+
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
+const MOVES = CORE_MOVE_IDS;
+const TYPES = CORE_TYPE_IDS;
 
 function makeActive(overrides: {
   level?: number;
@@ -44,7 +50,7 @@ function makeActive(overrides: {
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -70,7 +76,7 @@ function makeActive(overrides: {
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
     types: overrides.types ?? ["psychic"],
-    ability: overrides.ability ?? "none",
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -104,7 +110,7 @@ function makeMove(overrides: {
   target?: string;
 }): MoveData {
   return {
-    id: overrides.id ?? "tackle",
+    id: overrides.id ?? MOVES.tackle,
     displayName: overrides.id ?? "Tackle",
     type: overrides.type ?? "normal",
     category: overrides.category ?? "physical",
@@ -359,20 +365,19 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
     expect(ratio).toBeCloseTo(1.3, 1);
   });
 
-  it("given a Pokemon holding Fire Gem uses a Fire move, then gem is consumed", () => {
-    // Source: Showdown data/items.ts -- gems are consumed on use
-    const attacker = makeActive({ attack: 100, types: ["fire"], heldItem: "fire-gem" });
+  it("given a Pokemon holding Normal Gem uses a non-Normal move, then the gem is not consumed", () => {
+    // Source: packages/gen6/data/items.json -- only Normal Gem exists in Gen 6
+    const attacker = makeActive({ attack: 100, types: [TYPES.fire], heldItem: ITEMS.normalGem });
     const ctx = makeDamageContext({
       attacker,
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 50, type: "fire" }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeMove({ power: 50, type: TYPES.fire }),
       seed: 42,
     });
 
-    expect(attacker.pokemon.heldItem).toBe("fire-gem");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.normalGem);
     calculateGen6Damage(ctx, typeChart);
-    // Gem should be consumed (set to null)
-    expect(attacker.pokemon.heldItem).toBe(null);
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.normalGem);
   });
 
   it("given a Pokemon holding Charcoal uses a Fire move, then 1.2x boost (not consumed)", () => {
@@ -397,7 +402,7 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
     // Charcoal gives ~1.2x boost
     expect(charcoalResult.damage).toBeGreaterThan(noItemResult.damage);
     // Charcoal is NOT consumed
-    expect(attacker.pokemon.heldItem).toBe("charcoal");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.charcoal);
   });
 });
 

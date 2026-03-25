@@ -1,6 +1,6 @@
 import type { ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
-import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_IDS, CORE_TYPE_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { GEN6_TYPE_CHART } from "./Gen6TypeChart.js";
 
 /** No-op result for when an item doesn't activate. */
@@ -12,34 +12,17 @@ const NO_ACTIVATION: ItemResult = {
 
 /**
  * Map of gem item IDs to the type they boost.
- * Gen 6 has 18 gem types (includes Fairy Gem, introduced in Gen 6).
+ * In Gen 6, only Normal Gem remains in the item data; the other Gems were removed.
  *
  * NOTE: Gem boost (1.3x base power) is handled in Gen6DamageCalc.ts, not here.
  * The damage calc consumes the gem (sets heldItem to null). This map is
  * exported for test convenience only.
  *
- * Source: Showdown data/items.ts -- individual gem entries
- * Source: Bulbapedia "Gem" -- Gen VI nerfed from 1.5x to 1.3x
+ * Source: packages/gen6/data/items.json -- only `normal-gem` is present in Gen 6 data
+ * Source: Bulbapedia "Gem" -- most Gems are unavailable from Gen VI onward
  */
 export const GEM_TYPES: Record<string, string> = {
-  "normal-gem": "normal",
-  "fire-gem": "fire",
-  "water-gem": "water",
-  "electric-gem": "electric",
-  "grass-gem": "grass",
-  "ice-gem": "ice",
-  "fighting-gem": "fighting",
-  "poison-gem": "poison",
-  "ground-gem": "ground",
-  "flying-gem": "flying",
-  "psychic-gem": "psychic",
-  "bug-gem": "bug",
-  "rock-gem": "rock",
-  "ghost-gem": "ghost",
-  "dragon-gem": "dragon",
-  "dark-gem": "dark",
-  "steel-gem": "steel",
-  "fairy-gem": "fairy",
+  [CORE_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
 };
 
 /**
