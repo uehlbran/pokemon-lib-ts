@@ -26,6 +26,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
@@ -60,6 +61,7 @@ const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const STATUS_IDS = CORE_STATUS_IDS;
 const TRIGGER_IDS = CORE_ABILITY_TRIGGER_IDS;
+const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 const TYPE_IDS = CORE_TYPE_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const WEATHER_IDS = CORE_WEATHER_IDS satisfies Record<string, WeatherType>;
@@ -1374,7 +1376,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Cheri Berry and paralysis status, then cures paralysis", () => {
       // Source: Showdown data/items.ts -- Cheri Berry cures paralysis
       const ctx = createItemContext({ item: ITEM_IDS.cheriBerry, status: STATUS_IDS.paralysis });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "status-cure")).toBe(true);
       expect(result.effects.some((e: any) => e.type === "consume")).toBe(true);
@@ -1382,7 +1384,7 @@ describe("Gen7Items coverage gaps", () => {
 
     it("given Cheri Berry without paralysis, then no activation", () => {
       const ctx = createItemContext({ item: ITEM_IDS.cheriBerry, status: null });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1391,14 +1393,14 @@ describe("Gen7Items coverage gaps", () => {
     it("given Chesto Berry and sleep, then cures sleep", () => {
       // Source: Showdown data/items.ts -- Chesto Berry cures sleep
       const ctx = createItemContext({ item: ITEM_IDS.chestoBerry, status: STATUS_IDS.sleep });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Chesto Berry");
     });
 
     it("given Chesto Berry and burn, then no activation", () => {
       const ctx = createItemContext({ item: ITEM_IDS.chestoBerry, status: STATUS_IDS.burn });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1407,7 +1409,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Pecha Berry and poison, then cures poison", () => {
       // Source: Showdown data/items.ts -- Pecha Berry cures poison
       const ctx = createItemContext({ item: ITEM_IDS.pechaBerry, status: STATUS_IDS.poison });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Pecha Berry");
     });
@@ -1415,7 +1417,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Pecha Berry and badly-poisoned, then cures it", () => {
       // Source: Showdown -- Pecha Berry also cures badly-poisoned
       const ctx = createItemContext({ item: ITEM_IDS.pechaBerry, status: STATUS_IDS.badlyPoisoned });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
     });
   });
@@ -1424,7 +1426,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Rawst Berry and burn, then cures burn", () => {
       // Source: Showdown data/items.ts -- Rawst Berry cures burn
       const ctx = createItemContext({ item: ITEM_IDS.rawstBerry, status: STATUS_IDS.burn });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Rawst Berry");
     });
@@ -1434,7 +1436,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Aspear Berry and freeze, then thaws out", () => {
       // Source: Showdown data/items.ts -- Aspear Berry cures freeze
       const ctx = createItemContext({ item: ITEM_IDS.aspearBerry, status: STATUS_IDS.freeze });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Aspear Berry");
     });
@@ -1446,7 +1448,7 @@ describe("Gen7Items coverage gaps", () => {
       const volatiles = new Map<string, unknown>();
       volatiles.set(VOLATILE_IDS.confusion, true);
       const ctx = createItemContext({ item: ITEM_IDS.persimBerry, volatileStatuses: volatiles });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toContain("Persim Berry");
     });
@@ -1459,7 +1461,7 @@ describe("Gen7Items coverage gaps", () => {
       const volatiles = new Map<string, unknown>();
       volatiles.set(VOLATILE_IDS.taunt, true);
       const ctx = createItemContext({ item: ITEM_IDS.mentalHerb, volatileStatuses: volatiles });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(
         result.effects.some((e: any) => e.type === "volatile-cure" && e.value === VOLATILE_IDS.taunt),
@@ -1468,7 +1470,7 @@ describe("Gen7Items coverage gaps", () => {
 
     it("given Mental Herb with no mental volatiles, then no activation", () => {
       const ctx = createItemContext({ item: ITEM_IDS.mentalHerb });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1478,7 +1480,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Sticky Barb end-of-turn, then deals 1/8 max HP", () => {
       // Source: Showdown data/items.ts -- Sticky Barb onResidual: 1/8 max HP
       const ctx = createItemContext({ item: ITEM_IDS.stickyBarb, maxHp: 200, currentHp: 200 });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // 1/8 of 200 = 25
       // Source: Showdown -- Sticky Barb: floor(maxHp / 8)
@@ -1493,14 +1495,14 @@ describe("Gen7Items coverage gaps", () => {
     it("given Berry Juice at <=50% HP, then heals 20 HP", () => {
       // Source: Showdown data/items.ts -- Berry Juice: heals 20 HP
       const ctx = createItemContext({ item: ITEM_IDS.berryJuice, maxHp: 200, currentHp: 100 });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "heal" && e.value === 20)).toBe(true);
     });
 
     it("given Berry Juice above 50% HP, then no activation", () => {
       const ctx = createItemContext({ item: ITEM_IDS.berryJuice, maxHp: 200, currentHp: 150 });
-      const result = applyGen7HeldItem("end-of-turn", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1700,7 +1702,7 @@ describe("Gen7Items coverage gaps", () => {
       // Use seed that gives us a low enough roll
       const ctx = createItemContext({ item: ITEM_IDS.kingsRock, damage: 50 });
       // Need to test both outcomes -- use different seeds
-      const result1 = applyGen7HeldItem("on-hit", {
+      const result1 = applyGen7HeldItem(ITEM_TRIGGERS.onHit, {
         ...ctx,
         rng: new SeededRandom(1), // might or might not trigger
       });
@@ -1713,7 +1715,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Razor Fang and damage dealt, then 10% flinch chance", () => {
       // Source: Showdown data/items.ts -- Razor Fang onModifyMovePriority
       const ctx = createItemContext({ item: ITEM_IDS.razorFang, damage: 50 });
-      const result = applyGen7HeldItem("on-hit", {
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, {
         ...ctx,
         rng: new SeededRandom(1),
       });
@@ -1725,7 +1727,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Shell Bell and 80 damage dealt, then heals 10 HP (floor(80/8))", () => {
       // Source: Showdown data/items.ts -- Shell Bell onAfterMoveSecondarySelf
       const ctx = createItemContext({ item: ITEM_IDS.shellBell, damage: 80 });
-      const result = applyGen7HeldItem("on-hit", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
       // floor(80/8) = 10
       expect(result.effects.some((e: any) => e.type === "heal" && e.value === 10)).toBe(true);
@@ -1733,7 +1735,7 @@ describe("Gen7Items coverage gaps", () => {
 
     it("given Shell Bell and 0 damage dealt, then no activation", () => {
       const ctx = createItemContext({ item: ITEM_IDS.shellBell, damage: 0 });
-      const result = applyGen7HeldItem("on-hit", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1841,7 +1843,7 @@ describe("Gen7Items coverage gaps", () => {
     it("given Life Orb and damage dealt, then deals 1/10 max HP recoil", () => {
       // Source: Showdown data/items.ts -- Life Orb onAfterMoveSecondarySelf
       const ctx = createItemContext({ item: ITEM_IDS.lifeOrb, maxHp: 200, damage: 80 });
-      const result = applyGen7HeldItem("on-hit", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
       // 1/10 of 200 = 20
       expect(result.effects.some((e: any) => e.type === "chip-damage" && e.value === 20)).toBe(
@@ -1863,7 +1865,7 @@ describe("Gen7Items coverage gaps", () => {
           effect: { type: "status-chance", status: STATUS_IDS.burn, chance: 10 } as any,
         }),
       });
-      const result = applyGen7HeldItem("on-hit", ctx);
+      const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(false);
     });
   });
