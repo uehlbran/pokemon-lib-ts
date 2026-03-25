@@ -32,13 +32,33 @@ import type {
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen2DataManager } from "../../src/data";
+import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src/data/reference-ids";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { handleCustomEffect, type MutableResult } from "../../src/Gen2MoveEffects";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
+import { CORE_TYPE_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const dataManager = createGen2DataManager();
+const MOVE_IDS = GEN2_MOVE_IDS;
+const ITEM_IDS = GEN2_ITEM_IDS;
+const SPECIES_IDS = GEN2_SPECIES_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const WEATHER_IDS = CORE_WEATHER_IDS;
+
+function createMoveSlot(moveId: string = MOVE_IDS.tackle, pp?: number, maxPp?: number) {
+  const baseMove = dataManager.getMove(moveId);
+  const resolvedMaxPp = maxPp ?? baseMove.pp;
+  return {
+    moveId,
+    pp: pp ?? resolvedMaxPp,
+    maxPp: resolvedMaxPp,
+  };
+}
 
 function createMockActive(
   overrides: Partial<{
@@ -51,7 +71,7 @@ function createMockActive(
     spDefense: number;
     speed: number;
     status: string | null;
-    types: string[];
+    types: PokemonType[];
     heldItem: string | null;
     speciesId: number;
     nickname: string | null;
@@ -66,7 +86,7 @@ function createMockActive(
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES_IDS.ditto,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
       status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
@@ -74,7 +94,7 @@ function createMockActive(
       nickname: overrides.nickname ?? null,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: overrides.moves ?? [createMoveSlot()],
       calculatedStats: {
         hp: maxHp,
         attack: overrides.attack ?? 100,
@@ -97,7 +117,7 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
+    types: overrides.types ?? [TYPE_IDS.normal],
     ability: "",
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     turnsOnField: 0,
@@ -155,39 +175,14 @@ function createMockState(
 }
 
 function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const baseMove = dataManager.getMove(id);
   return {
-    id,
-    displayName: id,
-    type: "normal",
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 2,
+    ...baseMove,
     ...overrides,
+    flags: {
+      ...baseMove.flags,
+      ...overrides?.flags,
+    },
   } as MoveData;
 }
 
@@ -204,25 +199,7 @@ function createEmptyResult(): MutableResult {
 }
 
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
+  const types = Object.values(TYPE_IDS) as PokemonType[];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
     chart[atk] = {};
@@ -246,28 +223,7 @@ function createMockRng(intReturnValue: number) {
 }
 
 function createSpecies() {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types: ["normal"],
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
-  };
+  return dataManager.getSpecies(SPECIES_IDS.ditto);
 }
 
 // ---------------------------------------------------------------------------
@@ -286,15 +242,15 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
     const attacker = createMockActive({
       level: 50,
       attack: 100,
-      types: ["normal"],
+      types: [TYPE_IDS.normal],
     });
     const defender = createMockActive({
       level: 50,
       defense: 80,
-      speciesId: 132, // Ditto
-      heldItem: "metal-powder",
+      speciesId: SPECIES_IDS.ditto,
+      heldItem: ITEM_IDS.metalPowder,
       transformed: false,
-      types: ["normal"],
+      types: [TYPE_IDS.normal],
     });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
     const typeChart = createNeutralTypeChart();
@@ -303,7 +259,7 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
       {
         attacker,
         defender,
-        move: createMove("tackle", { type: "normal", power: 40, category: "physical" }),
+        move: createMove(MOVE_IDS.tackle, { type: TYPE_IDS.normal, power: 40, category: "physical" }),
         state,
         rng: createMockRng(255),
         isCrit: false,
@@ -329,15 +285,15 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
     const attacker = createMockActive({
       level: 50,
       attack: 100,
-      types: ["normal"],
+      types: [TYPE_IDS.normal],
     });
     const defender = createMockActive({
       level: 50,
       defense: 80,
-      speciesId: 132, // Ditto
-      heldItem: "metal-powder",
+      speciesId: SPECIES_IDS.ditto,
+      heldItem: ITEM_IDS.metalPowder,
       transformed: true, // Ditto has Transformed
-      types: ["normal"],
+      types: [TYPE_IDS.normal],
     });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
     const typeChart = createNeutralTypeChart();
@@ -346,7 +302,7 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
       {
         attacker,
         defender,
-        move: createMove("tackle", { type: "normal", power: 40, category: "physical" }),
+        move: createMove(MOVE_IDS.tackle, { type: TYPE_IDS.normal, power: 40, category: "physical" }),
         state,
         rng: createMockRng(255),
         isCrit: false,
@@ -376,8 +332,8 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
   //   ret nc            ; fail if type >= SPECIAL
   // Counter works on ALL physical types (type < SPECIAL), not just Normal/Fighting
   // like Gen 1. Physical types: Normal, Fighting, Flying, Poison, Ground, Rock, Bug, Ghost, Steel.
-  const counterMove = createMove("counter", {
-    type: "fighting",
+  const counterMove = createMove(MOVE_IDS.counter, {
+    type: TYPE_IDS.fighting,
     category: "physical",
     power: null,
     priority: -1,
@@ -389,7 +345,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     const attacker = createMockActive({
       lastDamageTaken: 50,
       lastDamageCategory: "physical",
-      lastDamageType: "normal",
+      lastDamageType: TYPE_IDS.normal,
     });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -406,7 +362,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     expect(result.customDamage).toEqual({
       target: "defender",
       amount: 100,
-      source: "counter",
+      source: MOVE_IDS.counter,
     });
   });
 
@@ -415,7 +371,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     const attacker = createMockActive({
       lastDamageTaken: 60,
       lastDamageCategory: "physical",
-      lastDamageType: "fighting",
+      lastDamageType: TYPE_IDS.fighting,
     });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -432,7 +388,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     expect(result.customDamage).toEqual({
       target: "defender",
       amount: 120,
-      source: "counter",
+      source: MOVE_IDS.counter,
     });
   });
 
@@ -442,7 +398,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     const attacker = createMockActive({
       lastDamageTaken: 80,
       lastDamageCategory: "physical",
-      lastDamageType: "rock",
+      lastDamageType: TYPE_IDS.rock,
     });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -459,7 +415,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     expect(result.customDamage).toEqual({
       target: "defender",
       amount: 160,
-      source: "counter",
+      source: MOVE_IDS.counter,
     });
   });
 
@@ -468,7 +424,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     const attacker = createMockActive({
       lastDamageTaken: 90,
       lastDamageCategory: "physical",
-      lastDamageType: "ground",
+      lastDamageType: TYPE_IDS.ground,
     });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -485,7 +441,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     expect(result.customDamage).toEqual({
       target: "defender",
       amount: 180,
-      source: "counter",
+      source: MOVE_IDS.counter,
     });
   });
 
@@ -494,7 +450,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
     const attacker = createMockActive({
       lastDamageTaken: 70,
       lastDamageCategory: "special",
-      lastDamageType: "water",
+      lastDamageType: TYPE_IDS.water,
     });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -508,7 +464,7 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
       rng: new SeededRandom(42),
     });
 
-    expect(result.customDamage).toBeUndefined();
+    expect(result).not.toHaveProperty("customDamage");
     expect(result.messages).toContain("But it failed!");
   });
 });
@@ -522,7 +478,7 @@ describe("#252 — Whirlwind/Roar should have priority -6", () => {
     // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
     // Source: Bulbapedia — Whirlwind has -6 priority in Gen 2+
     const dm = createGen2DataManager();
-    const move = dm.getMove("whirlwind");
+    const move = dm.getMove(MOVE_IDS.whirlwind);
     expect(move.priority).toBe(-6);
   });
 
@@ -530,7 +486,7 @@ describe("#252 — Whirlwind/Roar should have priority -6", () => {
     // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
     // Source: Bulbapedia — Roar has -6 priority in Gen 2+
     const dm = createGen2DataManager();
-    const move = dm.getMove("roar");
+    const move = dm.getMove(MOVE_IDS.roar);
     expect(move.priority).toBe(-6);
   });
 });
@@ -540,8 +496,8 @@ describe("#252 — Whirlwind/Roar should have priority -6", () => {
 // =========================================================================
 
 describe("#253 — Hyper Beam recharge skipped only on KO, NOT on miss", () => {
-  const hyperBeamMove = createMove("hyper-beam", {
-    type: "normal",
+  const hyperBeamMove = createMove(MOVE_IDS.hyperBeam, {
+    type: TYPE_IDS.normal,
     category: "special",
     power: 150,
     flags: { recharge: true } as any,
@@ -584,7 +540,7 @@ describe("#253 — Hyper Beam recharge skipped only on KO, NOT on miss", () => {
     });
 
     // noRecharge should be falsy (undefined) — user must recharge even on miss
-    expect(result.noRecharge).toBeFalsy();
+    expect(result).not.toHaveProperty("noRecharge");
   });
 
   it("given Hyper Beam hits but target survives, when executeMoveEffect, then noRecharge is NOT set", () => {
@@ -603,7 +559,7 @@ describe("#253 — Hyper Beam recharge skipped only on KO, NOT on miss", () => {
       rng: new SeededRandom(42),
     });
 
-    expect(result.noRecharge).toBeFalsy();
+    expect(result).not.toHaveProperty("noRecharge");
   });
 });
 
@@ -615,8 +571,8 @@ describe("#325 — Attract and Nightmare volatile cleared on switch-out", () => 
   it("given Pokemon has Attract volatile, when switching out, then Attract is cleared", () => {
     // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
     // Source: gen2-ground-truth.md Switching Mechanics — Attract resets on switch
-    const pokemon = createMockActive({ lastMoveUsed: "tackle" });
-    pokemon.volatileStatuses.set("infatuation", { turnsLeft: -1 });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.tackle });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.infatuation, { turnsLeft: -1 });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -624,14 +580,14 @@ describe("#325 — Attract and Nightmare volatile cleared on switch-out", () => 
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("infatuation")).toBe(false);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.infatuation)).toBe(false);
   });
 
   it("given Pokemon has Nightmare volatile, when switching out, then Nightmare is cleared", () => {
     // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
     // Source: gen2-ground-truth.md Switching Mechanics — Nightmare resets on switch
-    const pokemon = createMockActive({ lastMoveUsed: "tackle" });
-    pokemon.volatileStatuses.set("nightmare", { turnsLeft: -1 });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.tackle });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.nightmare, { turnsLeft: -1 });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -639,14 +595,14 @@ describe("#325 — Attract and Nightmare volatile cleared on switch-out", () => 
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("nightmare")).toBe(false);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.nightmare)).toBe(false);
   });
 
   it("given Pokemon has both Attract and Nightmare, when switching out, then both are cleared", () => {
     // Source: pret/pokecrystal — both are non-persistent volatiles
-    const pokemon = createMockActive({ lastMoveUsed: "tackle" });
-    pokemon.volatileStatuses.set("infatuation", { turnsLeft: -1 });
-    pokemon.volatileStatuses.set("nightmare", { turnsLeft: -1 });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.tackle });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.infatuation, { turnsLeft: -1 });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.nightmare, { turnsLeft: -1 });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -654,8 +610,8 @@ describe("#325 — Attract and Nightmare volatile cleared on switch-out", () => 
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("infatuation")).toBe(false);
-    expect(pokemon.volatileStatuses.has("nightmare")).toBe(false);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.infatuation)).toBe(false);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.nightmare)).toBe(false);
   });
 });
 
@@ -667,8 +623,8 @@ describe("#328 — Baton Pass should transfer perish-song, substitute, and curse
   it("given Baton Pass switch, when onSwitchOut is called, then perish-song is preserved", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
     // Perish Song counter transfers via Baton Pass.
-    const pokemon = createMockActive({ lastMoveUsed: "baton-pass" });
-    pokemon.volatileStatuses.set("perish-song", { turnsLeft: 2, data: { counter: 2 } });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.batonPass });
+    pokemon.volatileStatuses.set(MOVE_IDS.perishSong, { turnsLeft: 2, data: { counter: 2 } });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -676,14 +632,14 @@ describe("#328 — Baton Pass should transfer perish-song, substitute, and curse
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("perish-song")).toBe(true);
+    expect(pokemon.volatileStatuses.has(MOVE_IDS.perishSong)).toBe(true);
   });
 
   it("given Baton Pass switch, when onSwitchOut is called, then substitute is preserved", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
     // Substitute HP and flag transfer via Baton Pass.
-    const pokemon = createMockActive({ lastMoveUsed: "baton-pass" });
-    pokemon.volatileStatuses.set("substitute", { turnsLeft: -1, data: { hp: 50 } });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.batonPass });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.substitute, { turnsLeft: -1, data: { hp: 50 } });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -691,14 +647,14 @@ describe("#328 — Baton Pass should transfer perish-song, substitute, and curse
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("substitute")).toBe(true);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.substitute)).toBe(true);
   });
 
   it("given Baton Pass switch, when onSwitchOut is called, then curse is preserved", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
     // Curse (Ghost-type) transfers via Baton Pass.
-    const pokemon = createMockActive({ lastMoveUsed: "baton-pass" });
-    pokemon.volatileStatuses.set("curse", { turnsLeft: -1 });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.batonPass });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.curse, { turnsLeft: -1 });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -706,16 +662,16 @@ describe("#328 — Baton Pass should transfer perish-song, substitute, and curse
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("curse")).toBe(true);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.curse)).toBe(true);
   });
 
   it("given normal switch (not Baton Pass), when onSwitchOut, then perish-song/substitute/curse are cleared", () => {
     // Source: pret/pokecrystal engine/battle/core.asm NewBattleMonStatus
     // Normal switch clears all non-persistent volatiles.
-    const pokemon = createMockActive({ lastMoveUsed: "tackle" });
-    pokemon.volatileStatuses.set("perish-song", { turnsLeft: 2, data: { counter: 2 } });
-    pokemon.volatileStatuses.set("substitute", { turnsLeft: -1, data: { hp: 50 } });
-    pokemon.volatileStatuses.set("curse", { turnsLeft: -1 });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.tackle });
+    pokemon.volatileStatuses.set(MOVE_IDS.perishSong, { turnsLeft: 2, data: { counter: 2 } });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.substitute, { turnsLeft: -1, data: { hp: 50 } });
+    pokemon.volatileStatuses.set(VOLATILE_IDS.curse, { turnsLeft: -1 });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -723,9 +679,9 @@ describe("#328 — Baton Pass should transfer perish-song, substitute, and curse
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("perish-song")).toBe(false);
-    expect(pokemon.volatileStatuses.has("substitute")).toBe(false);
-    expect(pokemon.volatileStatuses.has("curse")).toBe(false);
+    expect(pokemon.volatileStatuses.has(MOVE_IDS.perishSong)).toBe(false);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.substitute)).toBe(false);
+    expect(pokemon.volatileStatuses.has(VOLATILE_IDS.curse)).toBe(false);
   });
 });
 
@@ -741,10 +697,10 @@ describe("#329 — Bright Powder reduces opponent's accuracy by 20/256", () => {
     // After Bright Powder: 255 - 20 = 235
     // If the RNG rolls 235-254, the move misses (previously it would always hit)
     const attacker = createMockActive();
-    const defender = createMockActive({ heldItem: "bright-powder" });
-    const move = createMove("body-slam", {
+    const defender = createMockActive({ heldItem: ITEM_IDS.brightPowder });
+    const move = createMove(MOVE_IDS.bodySlam, {
       accuracy: 100,
-      type: "normal",
+      type: TYPE_IDS.normal,
       category: "physical",
     });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -766,9 +722,9 @@ describe("#329 — Bright Powder reduces opponent's accuracy by 20/256", () => {
     // Source: without Bright Powder, accuracy = 255 and 255 >= 255 means always hit
     const attacker = createMockActive();
     const defender = createMockActive({ heldItem: null });
-    const move = createMove("body-slam", {
+    const move = createMove(MOVE_IDS.bodySlam, {
       accuracy: 100,
-      type: "normal",
+      type: TYPE_IDS.normal,
       category: "physical",
     });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -797,14 +753,14 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     // Thunder always hits in rain.
     const attacker = createMockActive();
     const defender = createMockActive();
-    const move = createMove("thunder", {
-      type: "electric",
+    const move = createMove(MOVE_IDS.thunder, {
+      type: TYPE_IDS.electric,
       category: "special",
       power: 120,
       accuracy: 70,
     });
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "rain",
+      type: WEATHER_IDS.rain,
       turnsLeft: 3,
     });
 
@@ -827,8 +783,8 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     // RNG roll of 250 > 178 -> miss
     const attacker = createMockActive();
     const defender = createMockActive();
-    const move = createMove("thunder", {
-      type: "electric",
+    const move = createMove(MOVE_IDS.thunder, {
+      type: TYPE_IDS.electric,
       category: "special",
       power: 120,
       accuracy: 70,
@@ -853,14 +809,14 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     // RNG roll of 100 > 89 → miss; RNG roll of 50 < 89 → hit
     const attacker = createMockActive();
     const defender = createMockActive();
-    const move = createMove("thunder", {
-      type: "electric",
+    const move = createMove(MOVE_IDS.thunder, {
+      type: TYPE_IDS.electric,
       category: "special",
       power: 120,
       accuracy: 70,
     });
     const stateSun = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "sun",
+      type: WEATHER_IDS.sun,
       turnsLeft: 3,
     });
 
@@ -883,15 +839,15 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     const attacker = createMockActive({
       level: 50,
       spAttack: 100,
-      types: ["grass"],
+      types: [TYPE_IDS.grass],
     });
     const defender = createMockActive({
       level: 50,
       spDefense: 100,
-      types: ["normal"],
+      types: [TYPE_IDS.normal],
     });
     const stateRain = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "rain",
+      type: WEATHER_IDS.rain,
       turnsLeft: 3,
     });
     const stateNone = createMockState(
@@ -902,8 +858,8 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     const typeChart = createNeutralTypeChart();
     const species = createSpecies();
     const rng = createMockRng(255);
-    const solarBeam = createMove("solar-beam", {
-      type: "grass",
+    const solarBeam = createMove(MOVE_IDS.solarBeam, {
+      type: TYPE_IDS.grass,
       category: "special",
       power: 120,
     });
@@ -946,15 +902,15 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     const attacker = createMockActive({
       level: 50,
       spAttack: 100,
-      types: ["grass"],
+      types: [TYPE_IDS.grass],
     });
     const defender = createMockActive({
       level: 50,
       spDefense: 100,
-      types: ["normal"],
+      types: [TYPE_IDS.normal],
     });
     const stateSand = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "sand",
+      type: WEATHER_IDS.sand,
       turnsLeft: 3,
     });
     const stateNone = createMockState(
@@ -965,8 +921,8 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
     const typeChart = createNeutralTypeChart();
     const species = createSpecies();
     const rng = createMockRng(255);
-    const solarBeam = createMove("solar-beam", {
-      type: "grass",
+    const solarBeam = createMove(MOVE_IDS.solarBeam, {
+      type: TYPE_IDS.grass,
       category: "special",
       power: 120,
     });
@@ -1015,10 +971,10 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), null);
     const result = createEmptyResult();
-    const move = createMove("moonlight", {
+    const move = createMove(MOVE_IDS.moonlight, {
       category: "status",
       power: null,
-      effect: { type: "custom", handler: "moonlight" } as any,
+      effect: { type: "custom", handler: MOVE_IDS.moonlight } as any,
     });
 
     handleCustomEffect(move, result, {
@@ -1039,14 +995,14 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
     const attacker = createMockActive({ maxHp: 200, currentHp: 50 });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "sun",
+      type: WEATHER_IDS.sun,
       turnsLeft: 3,
     });
     const result = createEmptyResult();
-    const move = createMove("morning-sun", {
+    const move = createMove(MOVE_IDS.morningSun, {
       category: "status",
       power: null,
-      effect: { type: "custom", handler: "morning-sun" } as any,
+      effect: { type: "custom", handler: MOVE_IDS.morningSun } as any,
     });
 
     handleCustomEffect(move, result, {
@@ -1067,14 +1023,14 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
     const attacker = createMockActive({ maxHp: 200, currentHp: 50 });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "rain",
+      type: WEATHER_IDS.rain,
       turnsLeft: 3,
     });
     const result = createEmptyResult();
-    const move = createMove("synthesis", {
+    const move = createMove(MOVE_IDS.synthesis, {
       category: "status",
       power: null,
-      effect: { type: "custom", handler: "synthesis" } as any,
+      effect: { type: "custom", handler: MOVE_IDS.synthesis } as any,
     });
 
     handleCustomEffect(move, result, {
@@ -1095,14 +1051,14 @@ describe("#331 — Weather-dependent healing for Moonlight/Morning Sun/Synthesis
     const attacker = createMockActive({ maxHp: 200, currentHp: 50 });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender), {
-      type: "sand",
+      type: WEATHER_IDS.sand,
       turnsLeft: 3,
     });
     const result = createEmptyResult();
-    const move = createMove("moonlight", {
+    const move = createMove(MOVE_IDS.moonlight, {
       category: "status",
       power: null,
-      effect: { type: "custom", handler: "moonlight" } as any,
+      effect: { type: "custom", handler: MOVE_IDS.moonlight } as any,
     });
 
     handleCustomEffect(move, result, {
@@ -1126,8 +1082,8 @@ describe("#333 — Perish Song counter cleared on normal switch-out", () => {
   it("given Pokemon has Perish Song counter, when switching out normally, then counter is cleared", () => {
     // Source: pret/pokecrystal engine/battle/core.asm NewBattleMonStatus
     // Source: gen2-ground-truth.md — Perish Song counter removed on switch-out
-    const pokemon = createMockActive({ lastMoveUsed: "tackle" });
-    pokemon.volatileStatuses.set("perish-song", { turnsLeft: 2, data: { counter: 2 } });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.tackle });
+    pokemon.volatileStatuses.set(MOVE_IDS.perishSong, { turnsLeft: 2, data: { counter: 2 } });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -1135,14 +1091,14 @@ describe("#333 — Perish Song counter cleared on normal switch-out", () => {
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("perish-song")).toBe(false);
+    expect(pokemon.volatileStatuses.has(MOVE_IDS.perishSong)).toBe(false);
   });
 
   it("given Pokemon has Perish Song counter at 1, when switching out normally, then counter is cleared (avoids faint)", () => {
     // Source: gen2-ground-truth.md — switching out removes Perish Song entirely
     // This is the key behavior: switching out saves the Pokemon from Perish Song faint
-    const pokemon = createMockActive({ lastMoveUsed: "tackle" });
-    pokemon.volatileStatuses.set("perish-song", { turnsLeft: 1, data: { counter: 1 } });
+    const pokemon = createMockActive({ lastMoveUsed: MOVE_IDS.tackle });
+    pokemon.volatileStatuses.set(MOVE_IDS.perishSong, { turnsLeft: 1, data: { counter: 1 } });
     const state = createMockState(
       createMockSide(0, pokemon),
       createMockSide(1, createMockActive()),
@@ -1150,6 +1106,6 @@ describe("#333 — Perish Song counter cleared on normal switch-out", () => {
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has("perish-song")).toBe(false);
+    expect(pokemon.volatileStatuses.has(MOVE_IDS.perishSong)).toBe(false);
   });
 });

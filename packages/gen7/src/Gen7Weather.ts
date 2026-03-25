@@ -22,6 +22,13 @@
 import type { ActivePokemon, BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
 
+export const GEN7_WEATHER_DAMAGE_MULTIPLIERS = {
+  rainWaterBoost: 1.5,
+  rainFirePenalty: 0.5,
+  sunFireBoost: 1.5,
+  sunWaterPenalty: 0.5,
+} as const;
+
 // ─── Cloud Nine / Air Lock Weather Suppression ─────────────────────────────
 
 /**

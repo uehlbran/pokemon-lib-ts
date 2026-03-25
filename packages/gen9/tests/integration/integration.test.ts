@@ -22,8 +22,25 @@
 
 import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_FIXED_POINT,
+  CORE_HAZARD_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../../src";
 import {
   getHadronEngineSpAModifier,
   getOrichalcumPulseAtkModifier,
@@ -44,6 +61,29 @@ import { GEN9_TYPE_CHART } from "../../src/Gen9TypeChart";
 // Shared test helper factories
 // ---------------------------------------------------------------------------
 
+const gen9Data = createGen9DataManager();
+const DEFAULT_SPECIES = gen9Data.getSpecies(GEN9_SPECIES_IDS.eevee);
+const DEFAULT_NATURE = gen9Data.getNature(GEN9_NATURE_IDS.hardy);
+const DEFAULT_MOVE = gen9Data.getMove(GEN9_MOVE_IDS.tackle);
+const DEFAULT_POKEBALL = GEN9_ITEM_IDS.pokeBall;
+
+const NORMAL_TYPES = [CORE_TYPE_IDS.normal];
+const FIRE_TYPES = [CORE_TYPE_IDS.fire];
+const WATER_TYPES = [CORE_TYPE_IDS.water];
+const GRASS_TYPES = [CORE_TYPE_IDS.grass];
+const GHOST_TYPES = [CORE_TYPE_IDS.ghost];
+const FIGHTING_TYPES = [CORE_TYPE_IDS.fighting];
+const ICE_TYPES = [CORE_TYPE_IDS.ice];
+const SUN_WEATHER = CORE_WEATHER_IDS.sun;
+const RAIN_WEATHER = CORE_WEATHER_IDS.rain;
+const HARSH_SUN_WEATHER = CORE_WEATHER_IDS.harshSun;
+const SNOW_WEATHER = CORE_WEATHER_IDS.snow;
+const ELECTRIC_TERRAIN = CORE_TERRAIN_IDS.electric;
+const GRASSY_TERRAIN = CORE_TERRAIN_IDS.grassy;
+const HEAVY_RAIN_WEATHER = CORE_WEATHER_IDS.heavyRain;
+const SALT_CURE_VOLATILE = CORE_VOLATILE_IDS.saltCure;
+const STELLAR_TERA = "stellar" as PokemonType;
+
 function makeActive(overrides: {
   level?: number;
   attack?: number;
@@ -56,6 +96,7 @@ function makeActive(overrides: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
+  nickname?: string | null;
   status?: string | null;
   speciesId?: number;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
@@ -73,17 +114,17 @@ function makeActive(overrides: {
   const speed = overrides.speed ?? 100;
   return {
     pokemon: {
-      uid: `test-${overrides.speciesId ?? 1}`,
-      speciesId: overrides.speciesId ?? 1,
-      nickname: null,
+      uid: `test-${overrides.speciesId ?? DEFAULT_SPECIES.id}`,
+      speciesId: overrides.speciesId ?? DEFAULT_SPECIES.id,
+      nickname: overrides.nickname ?? DEFAULT_SPECIES.name,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE.id,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -94,7 +135,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: DEFAULT_POKEBALL,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
       teraType: overrides.teraType ?? null,
       timesAttacked: overrides.timesAttacked ?? 0,
@@ -110,8 +151,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? NORMAL_TYPES,
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -143,41 +184,27 @@ function makeMove(overrides: {
   effect?: MoveData["effect"];
   critRatio?: number;
 }): MoveData {
+  const baseMove = overrides.id ? gen9Data.getMove(overrides.id) : DEFAULT_MOVE;
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
+    ...baseMove,
+    id: overrides.id ?? baseMove.id,
+    displayName: baseMove.displayName,
+    type: overrides.type ?? baseMove.type,
+    category: overrides.category ?? baseMove.category,
+    power: overrides.power ?? baseMove.power,
+    accuracy: baseMove.accuracy,
+    pp: baseMove.pp,
+    priority: baseMove.priority,
+    target: baseMove.target,
     flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...baseMove.flags,
       ...overrides.flags,
     },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 9,
-    critRatio: overrides.critRatio ?? 0,
-    hasCrashDamage: false,
+    effect: overrides.effect ?? baseMove.effect,
+    description: baseMove.description,
+    generation: baseMove.generation,
+    critRatio: overrides.critRatio ?? baseMove.critRatio,
+    hasCrashDamage: baseMove.hasCrashDamage,
   } as MoveData;
 }
 
@@ -254,12 +281,12 @@ describe("Gen 9 integration tests", () => {
       // Formula derivation:
       //   calculateTeraStab returns 2.0 when pokemon.isTerastallized && teraType === moveType && originalTypes.includes(moveType)
       const pokemon = makeActive({
-        types: ["fire"],
+        types: FIRE_TYPES,
         isTerastallized: true,
-        teraType: "fire",
+        teraType: CORE_TYPE_IDS.fire,
       });
 
-      const stab = calculateTeraStab(pokemon, "fire", ["fire"], false);
+      const stab = calculateTeraStab(pokemon, CORE_TYPE_IDS.fire, FIRE_TYPES, false);
       expect(stab).toBe(2.0);
     });
 
@@ -267,13 +294,13 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown sim/battle-actions.ts:1756-1793
       // When Tera type matches move type but NOT original type: 1.5x STAB
       const pokemon = makeActive({
-        types: ["fire"], // types changed to Tera type after activation
+        types: FIRE_TYPES, // types changed to Tera type after activation
         isTerastallized: true,
-        teraType: "fire",
+        teraType: CORE_TYPE_IDS.fire,
       });
 
       // Original types were Normal (not Fire)
-      const stab = calculateTeraStab(pokemon, "fire", ["normal"], false);
+      const stab = calculateTeraStab(pokemon, CORE_TYPE_IDS.fire, NORMAL_TYPES, false);
       expect(stab).toBe(1.5);
     });
 
@@ -290,16 +317,21 @@ describe("Gen 9 integration tests", () => {
       //
       // Non-Tera STAB = 1.5x for comparison
       const attackerTera = makeActive({
-        types: ["fire"],
+        types: FIRE_TYPES,
         isTerastallized: true,
-        teraType: "fire",
+        teraType: CORE_TYPE_IDS.fire,
       });
       const attackerNonTera = makeActive({
-        types: ["fire"],
+        types: FIRE_TYPES,
         isTerastallized: false,
       });
-      const defender = makeActive({ types: ["normal"] });
-      const move = makeMove({ id: "flamethrower", type: "fire", category: "special", power: 80 });
+      const defender = makeActive({ types: NORMAL_TYPES });
+      const move = makeMove({
+        id: GEN9_MOVE_IDS.flamethrower,
+        type: CORE_TYPE_IDS.fire,
+        category: "special",
+        power: 80,
+      });
 
       const resultTera = calculateGen9Damage(
         makeDamageContext({
@@ -342,9 +374,9 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown data/abilities.ts:4634-4658
       //   const powMod = [4096, 4506, 4915, 5325, 5734, 6144];
       //   faintCount 3 → powMod[3] = 5325
-      const modifier = getSupremeOverlordModifier("supreme-overlord", 3);
-      expect(modifier).toBe(5325);
-      expect(SUPREME_OVERLORD_TABLE[3]).toBe(5325);
+      const modifier = getSupremeOverlordModifier(GEN9_ABILITY_IDS.supremeOverlord, 3);
+      expect(modifier).toBe(CORE_FIXED_POINT.boost13);
+      expect(SUPREME_OVERLORD_TABLE[3]).toBe(CORE_FIXED_POINT.boost13);
     });
 
     it("given Supreme Overlord with 3 fainted allies, when damage calc runs, then power is boosted by 5325/4096", () => {
@@ -354,11 +386,11 @@ describe("Gen 9 integration tests", () => {
       // We verify the power boost flows through the damage calc by comparing
       // damage with 0 fainted vs 3 fainted allies.
       const attacker = makeActive({
-        ability: "supreme-overlord",
-        types: ["normal"],
+        ability: GEN9_ABILITY_IDS.supremeOverlord,
+        types: NORMAL_TYPES,
       });
-      const defender = makeActive({ types: ["normal"] });
-      const move = makeMove({ id: "body-slam", type: "normal", power: 85 });
+      const defender = makeActive({ types: NORMAL_TYPES });
+      const move = makeMove({ id: GEN9_MOVE_IDS.bodySlam, type: CORE_TYPE_IDS.normal, power: 85 });
 
       // 0 fainted: no boost
       const side0 = makeSide({
@@ -396,7 +428,7 @@ describe("Gen 9 integration tests", () => {
       //   = floor(454672 / 4096) = floor(110.9...) = 111 (rounds up due to +2047 bias)
       // vs original power = 85
       // Ratio = 111/85 ≈ 1.306, close to 5325/4096 ≈ 1.2998
-      const boostedPower = pokeRound(85, 5325);
+      const boostedPower = pokeRound(85, CORE_FIXED_POINT.boost13);
       expect(boostedPower).toBe(111);
     });
   });
@@ -422,11 +454,11 @@ describe("Gen 9 integration tests", () => {
     it("given 3 fainted allies, when damage calc runs Last Respects, then uses boosted power", () => {
       // Source: Showdown data/moves.ts:10473-10474
       // Last Respects base power scales via the damage calc (not move effect handler)
-      const attacker = makeActive({ types: ["ghost"] });
-      const _defender = makeActive({ types: ["normal"] });
+      const attacker = makeActive({ types: GHOST_TYPES });
+      const _defender = makeActive({ types: NORMAL_TYPES });
       const move = makeMove({
-        id: "last-respects",
-        type: "ghost",
+        id: GEN9_MOVE_IDS.lastRespects,
+        type: CORE_TYPE_IDS.ghost,
         category: "physical",
         power: 50,
       });
@@ -442,7 +474,7 @@ describe("Gen 9 integration tests", () => {
 
       // Ghost vs Normal = immune in the type chart
       // Use a non-immune defender type instead
-      const normalDefender = makeActive({ types: ["fighting"] });
+      const normalDefender = makeActive({ types: FIGHTING_TYPES });
 
       const result = calculateGen9Damage(
         makeDamageContext({
@@ -495,19 +527,19 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown data/abilities.ts:3016-3035 -- orichalcumpulse onModifyAtk
       //   if (['sunnyday', 'desolateland'].includes(pokemon.effectiveWeather()))
       //     return this.chainModify([5461, 4096]);
-      const modifier = getOrichalcumPulseAtkModifier("orichalcum-pulse", "sun");
+      const modifier = getOrichalcumPulseAtkModifier(GEN9_ABILITY_IDS.orichalcumPulse, SUN_WEATHER);
       expect(modifier).toBe(5461);
     });
 
     it("given no Sun weather and Orichalcum Pulse ability, when checking modifier, then returns 4096 (neutral)", () => {
       // Source: Showdown data/abilities.ts:3016-3035 -- only activates in sun/desolateland
-      const modifier = getOrichalcumPulseAtkModifier("orichalcum-pulse", "rain");
-      expect(modifier).toBe(4096);
+      const modifier = getOrichalcumPulseAtkModifier(GEN9_ABILITY_IDS.orichalcumPulse, RAIN_WEATHER);
+      expect(modifier).toBe(CORE_FIXED_POINT.identity);
     });
 
     it("given harsh-sun (Desolate Land) and Orichalcum Pulse, when checking modifier, then returns 5461", () => {
       // Source: Showdown data/abilities.ts:3016-3035 -- desolateland triggers too
-      const modifier = getOrichalcumPulseAtkModifier("orichalcum-pulse", "harsh-sun");
+      const modifier = getOrichalcumPulseAtkModifier(GEN9_ABILITY_IDS.orichalcumPulse, HARSH_SUN_WEATHER);
       expect(modifier).toBe(5461);
     });
   });
@@ -521,20 +553,20 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown data/abilities.ts:1725-1742 -- hadronengine onModifySpA
       //   if (this.field.isTerrain('electricterrain'))
       //     return this.chainModify([5461, 4096]);
-      const modifier = getHadronEngineSpAModifier("hadron-engine", "electric");
+      const modifier = getHadronEngineSpAModifier(GEN9_ABILITY_IDS.hadronEngine, ELECTRIC_TERRAIN);
       expect(modifier).toBe(5461);
     });
 
     it("given no Electric Terrain and Hadron Engine, when checking modifier, then returns 4096 (neutral)", () => {
       // Source: Showdown data/abilities.ts:1725-1742 -- only activates on Electric Terrain
-      const modifier = getHadronEngineSpAModifier("hadron-engine", "grassy");
-      expect(modifier).toBe(4096);
+      const modifier = getHadronEngineSpAModifier(GEN9_ABILITY_IDS.hadronEngine, GRASSY_TERRAIN);
+      expect(modifier).toBe(CORE_FIXED_POINT.identity);
     });
 
     it("given Electric Terrain and non-Hadron Engine ability, when checking modifier, then returns 4096 (neutral)", () => {
       // Source: Showdown data/abilities.ts -- only hadron-engine gets this boost
-      const modifier = getHadronEngineSpAModifier("levitate", "electric");
-      expect(modifier).toBe(4096);
+      const modifier = getHadronEngineSpAModifier(GEN9_ABILITY_IDS.levitate, ELECTRIC_TERRAIN);
+      expect(modifier).toBe(CORE_FIXED_POINT.identity);
     });
   });
 
@@ -561,18 +593,18 @@ describe("Gen 9 integration tests", () => {
       //   Base damage = floor(floor(22 * 80 * 100 / 100) / 50) + 2
       //     = floor(1760/50) + 2 = 35 + 2 = 37
 
-      const attacker = makeActive({ types: ["fighting"], attack: 100 });
-      const iceDefender = makeActive({ types: ["ice"], defense: 100 });
+      const attacker = makeActive({ types: FIGHTING_TYPES, attack: 100 });
+      const iceDefender = makeActive({ types: ICE_TYPES, defense: 100 });
 
       const move = makeMove({
-        id: "close-combat",
-        type: "fighting",
+        id: GEN9_MOVE_IDS.closeCombat,
+        type: CORE_TYPE_IDS.fighting,
         category: "physical",
         power: 80,
       });
 
       const snowState = makeState({
-        weather: { type: "snow", turnsLeft: 5 },
+        weather: { type: SNOW_WEATHER, turnsLeft: 5 },
       });
       const noWeatherState = makeState();
 
@@ -610,12 +642,12 @@ describe("Gen 9 integration tests", () => {
 
     it("given Snow weather and a non-Ice-type defender, when a physical move is used, then Defense is NOT boosted", () => {
       // Source: Showdown data/conditions.ts:709 -- only Ice-type gets the boost
-      const attacker = makeActive({ types: ["normal"] });
-      const normalDefender = makeActive({ types: ["normal"], defense: 100 });
-      const move = makeMove({ id: "tackle", type: "normal", power: 80, category: "physical" });
+      const attacker = makeActive({ types: NORMAL_TYPES });
+      const normalDefender = makeActive({ types: NORMAL_TYPES, defense: 100 });
+      const move = makeMove({ id: GEN9_MOVE_IDS.tackle, type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
 
       const snowState = makeState({
-        weather: { type: "snow", turnsLeft: 5 },
+        weather: { type: SNOW_WEATHER, turnsLeft: 5 },
       });
       const noWeatherState = makeState();
 
@@ -650,28 +682,28 @@ describe("Gen 9 integration tests", () => {
       //     this.damage(pokemon.baseMaxhp / (pokemon.hasType(['Water', 'Steel']) ? 4 : 8));
       //   }
       // maxHp = 200, Water type: floor(200/4) = 50
-      const damage = calculateSaltCureDamage(200, ["water"]);
+      const damage = calculateSaltCureDamage(200, [CORE_TYPE_IDS.water]);
       expect(damage).toBe(50);
     });
 
     it("given Salt Cure volatile on a Steel-type Pokemon, when end of turn processes, then damage is floor(maxHP / 4)", () => {
       // Source: Showdown data/moves.ts:16225-16227 -- Steel type also gets 1/4
       // maxHp = 200, Steel type: floor(200/4) = 50
-      const damage = calculateSaltCureDamage(200, ["steel"]);
+      const damage = calculateSaltCureDamage(200, [CORE_TYPE_IDS.steel]);
       expect(damage).toBe(50);
     });
 
     it("given Salt Cure volatile on a Normal-type Pokemon, when end of turn processes, then damage is floor(maxHP / 8)", () => {
       // Source: Showdown data/moves.ts:16225-16227 -- non-Water/Steel gets 1/8
       // maxHp = 200, Normal type: floor(200/8) = 25
-      const damage = calculateSaltCureDamage(200, ["normal"]);
+      const damage = calculateSaltCureDamage(200, [CORE_TYPE_IDS.normal]);
       expect(damage).toBe(25);
     });
 
     it("given Salt Cure with odd maxHP on Water type, when calculating damage, then floors correctly", () => {
       // Source: Showdown data/moves.ts:16225-16227
       // maxHp = 301, Water type: floor(301/4) = 75
-      const damage = calculateSaltCureDamage(301, ["water"]);
+      const damage = calculateSaltCureDamage(301, [CORE_TYPE_IDS.water]);
       expect(damage).toBe(75);
     });
 
@@ -680,10 +712,10 @@ describe("Gen 9 integration tests", () => {
       // Source: Gen9Ruleset.ts:546-556 -- delegates to calculateSaltCureDamage
       const ruleset = new Gen9Ruleset();
       const active = makeActive({
-        types: ["water"],
+        types: WATER_TYPES,
         hp: 200,
         currentHp: 200,
-        volatiles: new Map([["salt-cure" as string, { turnsLeft: -1 }]]) as Map<
+        volatiles: new Map([[SALT_CURE_VOLATILE, { turnsLeft: -1 }]]) as Map<
           VolatileStatus,
           { turnsLeft: number }
         > as any,
@@ -701,10 +733,10 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown data/moves.ts:16225-16227 -- 1/8 for non-Water/Steel
       const ruleset = new Gen9Ruleset();
       const active = makeActive({
-        types: ["normal"],
+        types: NORMAL_TYPES,
         hp: 200,
         currentHp: 200,
-        volatiles: new Map([["salt-cure" as string, { turnsLeft: -1 }]]) as Map<
+        volatiles: new Map([[SALT_CURE_VOLATILE, { turnsLeft: -1 }]]) as Map<
           VolatileStatus,
           { turnsLeft: number }
         > as any,
@@ -727,30 +759,30 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown sim/battle-actions.ts:1770-1785
       // Stellar Tera: first use of a base type gets 2x boost, then marked as consumed
       const pokemon = makeActive({
-        types: ["fire", "flying"],
+        types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
         isTerastallized: true,
-        teraType: "stellar" as PokemonType,
+        teraType: STELLAR_TERA,
         stellarBoostedTypes: [],
       });
 
       // First use of Fire: should get 2x boost
-      const stab1 = calculateTeraStab(pokemon, "fire", ["fire", "flying"], false);
+      const stab1 = calculateTeraStab(pokemon, CORE_TYPE_IDS.fire, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying], false);
       expect(stab1).toBe(2.0);
       // stellarBoostedTypes should now include "fire"
-      expect(pokemon.stellarBoostedTypes).toContain("fire");
+      expect(pokemon.stellarBoostedTypes).toContain(CORE_TYPE_IDS.fire);
     });
 
     it("given Stellar Tera and a move matching an already-boosted type, when used again, then 1.5x STAB (standard)", () => {
       // Source: Showdown sim/battle-actions.ts:1770-1785
       // After the one-time boost is consumed, it falls back to standard 1.5x STAB
       const pokemon = makeActive({
-        types: ["fire", "flying"],
+        types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
         isTerastallized: true,
-        teraType: "stellar" as PokemonType,
-        stellarBoostedTypes: ["fire"], // Already boosted
+        teraType: STELLAR_TERA,
+        stellarBoostedTypes: [CORE_TYPE_IDS.fire], // Already boosted
       });
 
-      const stab = calculateTeraStab(pokemon, "fire", ["fire", "flying"], false);
+      const stab = calculateTeraStab(pokemon, CORE_TYPE_IDS.fire, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying], false);
       expect(stab).toBe(1.5);
     });
 
@@ -758,39 +790,39 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown sim/battle-actions.ts:1781-1784
       // Non-base type: 1.2x boost (4915/4096)
       const pokemon = makeActive({
-        types: ["fire", "flying"],
+        types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
         isTerastallized: true,
-        teraType: "stellar" as PokemonType,
+        teraType: STELLAR_TERA,
         stellarBoostedTypes: [],
       });
 
       // Ground is not a base type for Fire/Flying
-      const stab = calculateTeraStab(pokemon, "ground", ["fire", "flying"], false);
-      expect(stab).toBeCloseTo(4915 / 4096, 6);
+      const stab = calculateTeraStab(pokemon, CORE_TYPE_IDS.ground, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying], false);
+      expect(stab).toBeCloseTo(CORE_FIXED_POINT.typeBoost / CORE_FIXED_POINT.identity, 6);
     });
 
     it("given Stellar Tera, when boosting Fire then Flying sequentially, then each gets independent 2x boost", () => {
       // Source: Showdown sim/battle-actions.ts:1770-1785
       // Each base type gets its own independent one-time 2x boost
       const pokemon = makeActive({
-        types: ["fire", "flying"],
+        types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
         isTerastallized: true,
-        teraType: "stellar" as PokemonType,
+        teraType: STELLAR_TERA,
         stellarBoostedTypes: [],
       });
 
       // Fire: first use -> 2x
-      const stabFire = calculateTeraStab(pokemon, "fire", ["fire", "flying"], false);
+      const stabFire = calculateTeraStab(pokemon, CORE_TYPE_IDS.fire, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying], false);
       expect(stabFire).toBe(2.0);
-      expect(pokemon.stellarBoostedTypes).toEqual(["fire"]);
+      expect(pokemon.stellarBoostedTypes).toEqual([CORE_TYPE_IDS.fire]);
 
       // Flying: first use -> 2x (independent)
-      const stabFlying = calculateTeraStab(pokemon, "flying", ["fire", "flying"], false);
+      const stabFlying = calculateTeraStab(pokemon, CORE_TYPE_IDS.flying, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying], false);
       expect(stabFlying).toBe(2.0);
-      expect(pokemon.stellarBoostedTypes).toEqual(["fire", "flying"]);
+      expect(pokemon.stellarBoostedTypes).toEqual([CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
 
       // Fire again: already consumed -> 1.5x
-      const stabFireAgain = calculateTeraStab(pokemon, "fire", ["fire", "flying"], false);
+      const stabFireAgain = calculateTeraStab(pokemon, CORE_TYPE_IDS.fire, [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying], false);
       expect(stabFireAgain).toBe(1.5);
     });
   });
@@ -803,11 +835,11 @@ describe("Gen 9 integration tests", () => {
     it("given same seed and same inputs, when damage calc runs twice, then results are identical", () => {
       // Source: @pokemon-lib-ts/core SeededRandom (Mulberry32) -- deterministic PRNG
       // Same seed + same inputs = same damage output
-      const attacker = makeActive({ types: ["fire"], attack: 130 });
-      const defender = makeActive({ types: ["grass"], defense: 90 });
+      const attacker = makeActive({ types: FIRE_TYPES, attack: 130 });
+      const defender = makeActive({ types: GRASS_TYPES, defense: 90 });
       const move = makeMove({
-        id: "fire-punch",
-        type: "fire",
+        id: GEN9_MOVE_IDS.firePunch,
+        type: CORE_TYPE_IDS.fire,
         category: "physical",
         power: 75,
       });
@@ -830,11 +862,11 @@ describe("Gen 9 integration tests", () => {
     it("given different seeds, when damage calc runs, then results may differ (randomRoll varies)", () => {
       // Source: Showdown sim/battle-actions.ts -- random factor [85..100]
       // Different seeds produce different random rolls
-      const attacker = makeActive({ types: ["water"], spAttack: 120 });
-      const defender = makeActive({ types: ["fire"], spDefense: 80 });
+      const attacker = makeActive({ types: WATER_TYPES, spAttack: 120 });
+      const defender = makeActive({ types: FIRE_TYPES, spDefense: 80 });
       const move = makeMove({
-        id: "surf",
-        type: "water",
+        id: GEN9_MOVE_IDS.surf,
+        type: CORE_TYPE_IDS.water,
         category: "special",
         power: 90,
       });
@@ -871,10 +903,10 @@ describe("Gen 9 integration tests", () => {
       expect(ruleset.shouldExecutePursuitPreSwitch()).toBe(false);
       expect(ruleset.recalculatesFutureAttackDamage()).toBe(true);
       expect(ruleset.getAvailableHazards()).toEqual([
-        "stealth-rock",
-        "spikes",
-        "toxic-spikes",
-        "sticky-web",
+        CORE_HAZARD_IDS.stealthRock,
+        CORE_HAZARD_IDS.spikes,
+        CORE_HAZARD_IDS.toxicSpikes,
+        CORE_HAZARD_IDS.stickyWeb,
       ]);
     });
 
@@ -885,16 +917,16 @@ describe("Gen 9 integration tests", () => {
       //   - Tera STAB is applied as the STAB multiplier
       // Source: Showdown sim/battle-actions.ts -- modifier stacking
       const attacker = makeActive({
-        types: ["fire"],
-        ability: "supreme-overlord",
+        types: FIRE_TYPES,
+        ability: GEN9_ABILITY_IDS.supremeOverlord,
         isTerastallized: true,
-        teraType: "fire",
+        teraType: CORE_TYPE_IDS.fire,
         attack: 120,
       });
-      const defender = makeActive({ types: ["grass"], defense: 100 });
+      const defender = makeActive({ types: GRASS_TYPES, defense: 100 });
       const move = makeMove({
-        id: "flare-blitz",
-        type: "fire",
+        id: GEN9_MOVE_IDS.flareBlitz,
+        type: CORE_TYPE_IDS.fire,
         category: "physical",
         power: 120,
       });
@@ -941,7 +973,7 @@ describe("Gen 9 integration tests", () => {
       const tera = new Gen9Terastallization();
       const pokemon = makeActive({
         isTerastallized: false,
-        teraType: "fire",
+        teraType: CORE_TYPE_IDS.fire,
       });
       const side = makeSide({ gimmickUsed: true });
       const state = makeState();
@@ -953,24 +985,24 @@ describe("Gen 9 integration tests", () => {
       // Source: Bulbapedia "Terastallization" -- type change, one per trainer
       const tera = new Gen9Terastallization();
       const pokemon = makeActive({
-        types: ["fire", "flying"],
+        types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
         isTerastallized: false,
-        teraType: "water",
+        teraType: CORE_TYPE_IDS.water,
       });
-      pokemon.pokemon.teraType = "water";
+      pokemon.pokemon.teraType = CORE_TYPE_IDS.water;
       const side = makeSide({ gimmickUsed: false });
       const state = makeState();
 
       const events = tera.activate(pokemon, side, state);
 
       expect(pokemon.isTerastallized).toBe(true);
-      expect(pokemon.teraType).toBe("water");
-      expect(pokemon.types).toEqual(["water"]);
+      expect(pokemon.teraType).toBe(CORE_TYPE_IDS.water);
+      expect(pokemon.types).toEqual([CORE_TYPE_IDS.water]);
       expect(side.gimmickUsed).toBe(true);
       expect(events).toHaveLength(1);
       expect(events[0]).toMatchObject({
         type: "terastallize",
-        teraType: "water",
+        teraType: CORE_TYPE_IDS.water,
       });
     });
 
@@ -978,13 +1010,13 @@ describe("Gen 9 integration tests", () => {
       // Source: Showdown data/conditions.ts:696-728 -- Snow has no onResidual damage
       // Source: Bulbapedia -- Snow replaced Hail; no chip damage
       const ruleset = new Gen9Ruleset();
-      const iceActive = makeActive({ types: ["ice"], hp: 200, currentHp: 200 });
-      const fireActive = makeActive({ types: ["fire"], hp: 200, currentHp: 200 });
+      const iceActive = makeActive({ types: ICE_TYPES, hp: 200, currentHp: 200 });
+      const fireActive = makeActive({ types: FIRE_TYPES, hp: 200, currentHp: 200 });
 
       const side0 = makeSide({ index: 0, active: [iceActive] });
       const side1 = makeSide({ index: 1, active: [fireActive] });
       const state = makeState({
-        weather: { type: "snow", turnsLeft: 5 },
+        weather: { type: SNOW_WEATHER, turnsLeft: 5 },
         sides: [side0, side1],
       });
 

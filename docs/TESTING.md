@@ -12,12 +12,15 @@ Code examples for the test types used in this project. For testing philosophy, c
 - For core-owned ids, import from `@pokemon-lib-ts/core`.
 - For battle-owned ids, import from `@pokemon-lib-ts/battle`.
 - For generation-specific ids, import from the generation package's exported data-backed `GENN_*_IDS` references derived from `packages/genN/data/*.json`.
+- For shared cross-generation mechanic constants, import the owned core surface instead of duplicating literals in the test.
+- For generation-specific mechanic constants, import the owning generation package's exported surface instead of inventing file-local literals.
 - For generation-specific entities, also verify they actually exist in the generation under test. Matching strings across generations are not enough; source them from the generation's own exports or data manager instead of reusing another generation's reference surface.
 - When an expected value can be read from the same canonical owned data source, do that instead of duplicating literals in the test.
 - Apply the same rule to fixture setup values like move slots, PP, max PP, priority, accuracy, species ids, and similar defaults whenever the owned move/species/item data already provides them.
 - Apply the same rule to branch-driving inputs like status chances, thresholds, base power, and similar scenario literals: source them from owned data when possible, and if the test truly needs a synthetic value, give it a named derived constant plus a short justification.
 - Do not stop at swapping literals for imported ids if the surrounding payload is still duplicated. If a species, move, item, weather, hazard, or end-of-turn payload already exists in owned data/constants, import or load that payload instead of rebuilding it test-locally.
 - Examples: type effectiveness from the exported type chart, move metadata from the generation data bundle, item metadata from the generated per-gen references, and owned fixed-point constants from core.
+- If the cleanup introduces or changes a public package export that tests rely on, add the required changeset and update the affected package README/spec docs in the same PR.
 
 ## Unit Tests
 

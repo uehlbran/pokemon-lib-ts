@@ -1,7 +1,13 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen8DataManager,
+  GEN8_ABILITY_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_SPECIES_IDS,
+} from "../src";
 import {
   getTriagePriorityBonus,
   handleGen8StatAbility,
@@ -14,6 +20,12 @@ import {
   isQuickDrawTrigger,
   isSteamEngineTrigger,
 } from "../src/Gen8AbilitiesStat";
+
+const dataManager = createGen8DataManager();
+const A = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS };
+const T = CORE_TYPE_IDS;
+const M = GEN8_MOVE_IDS;
+const S = GEN8_SPECIES_IDS;
 
 // ---------------------------------------------------------------------------
 // Helper factories
@@ -46,7 +58,7 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? S.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
@@ -55,7 +67,7 @@ function makeActive(overrides: {
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? A.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -80,8 +92,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [T.normal],
+    ability: overrides.ability ?? A.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -104,49 +116,8 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-}): MoveData {
-  return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 8,
-    critRatio: 0,
-  } as MoveData;
+function getMove(moveId: string): MoveData {
+  return dataManager.getMove(moveId);
 }
 
 function makeState(): BattleState {
@@ -183,7 +154,7 @@ function makeCtx(overrides: {
       ability: overrides.ability,
       currentHp: overrides.currentHp ?? hp,
       hp: hp,
-      types: overrides.types ?? ["normal"],
+      types: overrides.types ?? [T.normal],
       nickname: overrides.nickname ?? null,
       turnsOnField: overrides.turnsOnField ?? 0,
     }),
@@ -207,52 +178,52 @@ describe("Gen 8 Stat Abilities", () => {
     it("given a healing move, when Triage is active, then returns +3 priority bonus", () => {
       // Source: Showdown data/abilities.ts -- triage: onModifyPriority +3
       // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-      const bonus = getTriagePriorityBonus("triage", "drain-punch", null);
+      const bonus = getTriagePriorityBonus(A.triage, M.drainPunch, null);
       expect(bonus).toBe(3);
     });
 
     it("given a drain-type effect, when Triage is active, then returns +3 priority bonus", () => {
       // Source: Showdown data/abilities.ts -- triage: move.flags.heal
-      const bonus = getTriagePriorityBonus("triage", "some-drain-move", "drain");
+      const bonus = getTriagePriorityBonus(A.triage, "some-drain-move", "drain");
       expect(bonus).toBe(3);
     });
 
     it("given a non-healing move, when Triage is active, then returns 0", () => {
-      const bonus = getTriagePriorityBonus("triage", "thunderbolt", null);
+      const bonus = getTriagePriorityBonus(A.triage, M.thunderbolt, null);
       expect(bonus).toBe(0);
     });
 
     it("given a different ability, when checking Triage bonus, then returns 0", () => {
-      const bonus = getTriagePriorityBonus("intimidate", "drain-punch", null);
+      const bonus = getTriagePriorityBonus(A.intimidate, M.drainPunch, null);
       expect(bonus).toBe(0);
     });
 
     it("given life-dew, when Triage is active, then returns +3 priority bonus", () => {
       // Source: Showdown data/moves.ts -- life-dew has heal flag
       // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-      const bonus = getTriagePriorityBonus("triage", "life-dew", null);
+      const bonus = getTriagePriorityBonus(A.triage, M.lifeDew, null);
       expect(bonus).toBe(3);
     });
 
     it("given jungle-healing, when Triage is active, then returns +3 priority bonus", () => {
       // Source: Showdown data/moves.ts -- jungle-healing has heal flag
       // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-      const bonus = getTriagePriorityBonus("triage", "jungle-healing", null);
+      const bonus = getTriagePriorityBonus(A.triage, M.jungleHealing, null);
       expect(bonus).toBe(3);
     });
 
     it("given non-allowlisted move with effectType heal, when Triage is active, then returns +3 priority bonus", () => {
       // Source: Showdown data/abilities.ts -- triage: move.flags.heal check
       // Verifies the effectType "heal" fallback for future moves not yet in the HEALING_MOVES allowlist
-      const bonus = getTriagePriorityBonus("triage", "custom-heal-move", "heal");
+      const bonus = getTriagePriorityBonus(A.triage, "custom-heal-move", "heal");
       expect(bonus).toBe(3);
     });
 
     it("given the dispatcher, when Triage user uses healing move, then returns activated:true", () => {
       const ctx = makeCtx({
-        ability: "triage",
+        ability: A.triage,
         trigger: "on-priority-check",
-        move: makeMove({ id: "drain-punch" }),
+        move: getMove(M.drainPunch),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -265,29 +236,29 @@ describe("Gen 8 Stat Abilities", () => {
     it("given full HP and a Flying move, when Gale Wings is active, then returns true", () => {
       // Source: Showdown data/abilities.ts -- galeWings: requires full HP
       // Source: Bulbapedia "Gale Wings" Gen 7+ -- "only at full HP"
-      expect(isGaleWingsActive("gale-wings", "flying", 200, 200)).toBe(true);
+      expect(isGaleWingsActive(A.galeWings, T.flying, 200, 200)).toBe(true);
     });
 
     it("given less than full HP and a Flying move, when Gale Wings is active, then returns false", () => {
       // Source: Showdown data/abilities.ts -- galeWings: requires pokemon.hp === pokemon.maxhp
-      expect(isGaleWingsActive("gale-wings", "flying", 199, 200)).toBe(false);
+      expect(isGaleWingsActive(A.galeWings, T.flying, 199, 200)).toBe(false);
     });
 
     it("given full HP and a non-Flying move, when Gale Wings is active, then returns false", () => {
-      expect(isGaleWingsActive("gale-wings", "fire", 200, 200)).toBe(false);
+      expect(isGaleWingsActive(A.galeWings, T.fire, 200, 200)).toBe(false);
     });
 
     it("given a different ability, when checking Gale Wings, then returns false", () => {
-      expect(isGaleWingsActive("intimidate", "flying", 200, 200)).toBe(false);
+      expect(isGaleWingsActive(A.intimidate, T.flying, 200, 200)).toBe(false);
     });
 
     it("given the dispatcher, when Gale Wings user at full HP uses Flying move, then returns activated:true", () => {
       const ctx = makeCtx({
-        ability: "gale-wings",
+        ability: A.galeWings,
         trigger: "on-priority-check",
         currentHp: 200,
         maxHp: 200,
-        move: makeMove({ type: "flying" }),
+        move: getMove(M.aerialAce),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -295,11 +266,11 @@ describe("Gen 8 Stat Abilities", () => {
 
     it("given the dispatcher, when Gale Wings user below full HP uses Flying move, then returns activated:false", () => {
       const ctx = makeCtx({
-        ability: "gale-wings",
+        ability: A.galeWings,
         trigger: "on-priority-check",
         currentHp: 150,
         maxHp: 200,
-        move: makeMove({ type: "flying" }),
+        move: getMove(M.aerialAce),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -321,22 +292,22 @@ describe("Gen 8 Stat Abilities", () => {
     it("given Prankster and a status move targeting Dark type, when checking block, then returns true", () => {
       // Source: Showdown data/abilities.ts -- prankster: Dark targets block
       // Source: Bulbapedia "Prankster" Gen 7+ -- "status moves fail against Dark-type targets"
-      expect(isPranksterBlockedByDarkType("prankster", "status", ["dark"])).toBe(true);
+      expect(isPranksterBlockedByDarkType(A.prankster, "status", [T.dark])).toBe(true);
     });
 
     it("given Prankster and a status move targeting non-Dark type, when checking block, then returns false", () => {
-      expect(isPranksterBlockedByDarkType("prankster", "status", ["fire"])).toBe(false);
+      expect(isPranksterBlockedByDarkType(A.prankster, "status", [T.fire])).toBe(false);
     });
 
     it("given Prankster and a physical move targeting Dark type, when checking block, then returns false", () => {
-      expect(isPranksterBlockedByDarkType("prankster", "physical", ["dark"])).toBe(false);
+      expect(isPranksterBlockedByDarkType(A.prankster, "physical", [T.dark])).toBe(false);
     });
 
     it("given the dispatcher, when Prankster user uses status move, then returns activated:true", () => {
       const ctx = makeCtx({
-        ability: "prankster",
+        ability: A.prankster,
         trigger: "on-priority-check",
-        move: makeMove({ category: "status" }),
+        move: getMove(M.agility),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -349,23 +320,23 @@ describe("Gen 8 Stat Abilities", () => {
     it("given first turn on field (turnsOnField === 0), when checking trigger, then returns true", () => {
       // Source: Showdown data/abilities.ts -- intrepidsword: onStart (no once flag in Gen 8)
       // Source: Bulbapedia "Intrepid Sword" -- triggers on entry
-      expect(isIntrepidSwordTrigger("intrepid-sword", 0)).toBe(true);
+      expect(isIntrepidSwordTrigger(A.intrepidSword, 0)).toBe(true);
     });
 
     it("given already been on field (turnsOnField > 0), when checking trigger, then returns false", () => {
       // The ability triggers on switch-in, not mid-battle
-      expect(isIntrepidSwordTrigger("intrepid-sword", 1)).toBe(false);
+      expect(isIntrepidSwordTrigger(A.intrepidSword, 1)).toBe(false);
     });
 
     it("given a different ability, when checking Intrepid Sword trigger, then returns false", () => {
-      expect(isIntrepidSwordTrigger("intimidate", 0)).toBe(false);
+      expect(isIntrepidSwordTrigger(A.intimidate, 0)).toBe(false);
     });
 
     it("given the dispatcher on switch-in, when Intrepid Sword activates, then effect is +1 Attack", () => {
       // Source: Showdown data/abilities.ts -- intrepidsword: onStart, boost atk: 1
       // Source: Bulbapedia "Intrepid Sword" -- "raises Attack by one stage upon entering battle"
       const ctx = makeCtx({
-        ability: "intrepid-sword",
+        ability: A.intrepidSword,
         trigger: "on-switch-in",
         turnsOnField: 0,
       });
@@ -380,7 +351,7 @@ describe("Gen 8 Stat Abilities", () => {
       // Source: Showdown data/mods/gen8/abilities.ts -- no once-per-battle flag
       // In Gen 8, Intrepid Sword triggers every switch-in, not once per battle
       const ctx1 = makeCtx({
-        ability: "intrepid-sword",
+        ability: A.intrepidSword,
         trigger: "on-switch-in",
         turnsOnField: 0,
       });
@@ -389,7 +360,7 @@ describe("Gen 8 Stat Abilities", () => {
 
       // Simulate second switch-in (turnsOnField resets to 0)
       const ctx2 = makeCtx({
-        ability: "intrepid-sword",
+        ability: A.intrepidSword,
         trigger: "on-switch-in",
         turnsOnField: 0,
       });
@@ -404,18 +375,18 @@ describe("Gen 8 Stat Abilities", () => {
     it("given first turn on field, when checking trigger, then returns true", () => {
       // Source: Showdown data/abilities.ts -- dauntlessshield: onStart
       // Source: Bulbapedia "Dauntless Shield" -- triggers on entry
-      expect(isDauntlessShieldTrigger("dauntless-shield", 0)).toBe(true);
+      expect(isDauntlessShieldTrigger(A.dauntlessShield, 0)).toBe(true);
     });
 
     it("given already been on field, when checking trigger, then returns false", () => {
-      expect(isDauntlessShieldTrigger("dauntless-shield", 1)).toBe(false);
+      expect(isDauntlessShieldTrigger(A.dauntlessShield, 1)).toBe(false);
     });
 
     it("given the dispatcher on switch-in, when Dauntless Shield activates, then effect is +1 Defense", () => {
       // Source: Showdown data/abilities.ts -- dauntlessshield: onStart, boost def: 1
       // Source: Bulbapedia "Dauntless Shield" -- "raises Defense by one stage upon entering battle"
       const ctx = makeCtx({
-        ability: "dauntless-shield",
+        ability: A.dauntlessShield,
         trigger: "on-switch-in",
         turnsOnField: 0,
       });
@@ -429,7 +400,7 @@ describe("Gen 8 Stat Abilities", () => {
     it("given multiple switch-ins in Gen 8, when Dauntless Shield re-enters, then triggers again", () => {
       // Source: Gen 8 has no once-per-battle limit for Dauntless Shield
       const ctx = makeCtx({
-        ability: "dauntless-shield",
+        ability: A.dauntlessShield,
         trigger: "on-switch-in",
         turnsOnField: 0,
       });
@@ -450,20 +421,20 @@ describe("Gen 8 Stat Abilities", () => {
     it("given Cotton Down, when checking trigger, then returns true", () => {
       // Source: Showdown data/abilities.ts -- cottondown: onDamagingHit
       // Source: Bulbapedia "Cotton Down" -- "when hit by an attack"
-      expect(isCottonDownTrigger("cotton-down")).toBe(true);
+      expect(isCottonDownTrigger(A.cottonDown)).toBe(true);
     });
 
     it("given a different ability, when checking Cotton Down trigger, then returns false", () => {
-      expect(isCottonDownTrigger("intimidate")).toBe(false);
+      expect(isCottonDownTrigger(A.intimidate)).toBe(false);
     });
 
     it("given the dispatcher, when Cotton Down holder is hit by physical move, then lowers opponent Speed by 1", () => {
       // Source: Showdown data/abilities.ts -- cottondown: lowers all adjacent Speed
       // Source: Bulbapedia "Cotton Down" -- "lowering the Speed stat of all other Pokemon"
       const ctx = makeCtx({
-        ability: "cotton-down",
+        ability: A.cottonDown,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "physical" }),
+        move: getMove(M.tackle),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -474,9 +445,9 @@ describe("Gen 8 Stat Abilities", () => {
 
     it("given the dispatcher, when Cotton Down holder is hit by special move, then also triggers", () => {
       const ctx = makeCtx({
-        ability: "cotton-down",
+        ability: A.cottonDown,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "special" }),
+        move: getMove(M.thunderbolt),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -485,9 +456,9 @@ describe("Gen 8 Stat Abilities", () => {
     it("given the dispatcher, when Cotton Down holder is hit by status move, then does not trigger", () => {
       // Status moves do not deal damage, so Cotton Down does not trigger
       const ctx = makeCtx({
-        ability: "cotton-down",
+        ability: A.cottonDown,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "status" }),
+        move: getMove(M.agility),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -500,28 +471,28 @@ describe("Gen 8 Stat Abilities", () => {
     it("given a Fire move, when checking Steam Engine trigger, then returns true", () => {
       // Source: Showdown data/abilities.ts -- steamengine: Fire or Water type
       // Source: Bulbapedia "Steam Engine" -- "Fire- or Water-type move"
-      expect(isSteamEngineTrigger("steam-engine", "fire")).toBe(true);
+      expect(isSteamEngineTrigger(A.steamEngine, T.fire)).toBe(true);
     });
 
     it("given a Water move, when checking Steam Engine trigger, then returns true", () => {
-      expect(isSteamEngineTrigger("steam-engine", "water")).toBe(true);
+      expect(isSteamEngineTrigger(A.steamEngine, T.water)).toBe(true);
     });
 
     it("given a Normal move, when checking Steam Engine trigger, then returns false", () => {
-      expect(isSteamEngineTrigger("steam-engine", "normal")).toBe(false);
+      expect(isSteamEngineTrigger(A.steamEngine, T.normal)).toBe(false);
     });
 
     it("given a different ability, when checking Steam Engine trigger, then returns false", () => {
-      expect(isSteamEngineTrigger("intimidate", "fire")).toBe(false);
+      expect(isSteamEngineTrigger(A.intimidate, T.fire)).toBe(false);
     });
 
     it("given the dispatcher, when Steam Engine holder is hit by Fire move, then raises Speed by 6", () => {
       // Source: Showdown data/abilities.ts -- steamengine: onDamagingHit, boost spe: 6
       // Source: Bulbapedia "Steam Engine" -- "raises Speed by 6 stages"
       const ctx = makeCtx({
-        ability: "steam-engine",
+        ability: A.steamEngine,
         trigger: "on-damage-taken",
-        move: makeMove({ type: "fire" }),
+        move: getMove(M.flamethrower),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -532,9 +503,9 @@ describe("Gen 8 Stat Abilities", () => {
 
     it("given the dispatcher, when Steam Engine holder is hit by Water move, then raises Speed by 6", () => {
       const ctx = makeCtx({
-        ability: "steam-engine",
+        ability: A.steamEngine,
         trigger: "on-damage-taken",
-        move: makeMove({ type: "water" }),
+        move: getMove(M.surf),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -545,9 +516,9 @@ describe("Gen 8 Stat Abilities", () => {
 
     it("given the dispatcher, when Steam Engine holder is hit by Electric move, then does not trigger", () => {
       const ctx = makeCtx({
-        ability: "steam-engine",
+        ability: A.steamEngine,
         trigger: "on-damage-taken",
-        move: makeMove({ type: "electric" }),
+        move: getMove(M.thunderbolt),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -560,18 +531,18 @@ describe("Gen 8 Stat Abilities", () => {
     it("given rng value < 0.3, when checking Quick Draw trigger, then returns true (30% chance)", () => {
       // Source: Showdown data/abilities.ts -- quickdraw: onFractionalPriority, 30% chance
       // Source: Bulbapedia "Quick Draw" -- "30% chance of acting first"
-      expect(isQuickDrawTrigger("quick-draw", 0.0)).toBe(true);
-      expect(isQuickDrawTrigger("quick-draw", 0.29)).toBe(true);
+      expect(isQuickDrawTrigger(A.quickDraw, 0.0)).toBe(true);
+      expect(isQuickDrawTrigger(A.quickDraw, 0.29)).toBe(true);
     });
 
     it("given rng value >= 0.3, when checking Quick Draw trigger, then returns false", () => {
-      expect(isQuickDrawTrigger("quick-draw", 0.3)).toBe(false);
-      expect(isQuickDrawTrigger("quick-draw", 0.5)).toBe(false);
-      expect(isQuickDrawTrigger("quick-draw", 0.99)).toBe(false);
+      expect(isQuickDrawTrigger(A.quickDraw, 0.3)).toBe(false);
+      expect(isQuickDrawTrigger(A.quickDraw, 0.5)).toBe(false);
+      expect(isQuickDrawTrigger(A.quickDraw, 0.99)).toBe(false);
     });
 
     it("given a different ability, when checking Quick Draw trigger, then returns false", () => {
-      expect(isQuickDrawTrigger("intimidate", 0.0)).toBe(false);
+      expect(isQuickDrawTrigger(A.intimidate, 0.0)).toBe(false);
     });
 
     it("given the dispatcher with seeded rng, when Quick Draw user checks priority, then outcome is deterministic", () => {
@@ -579,17 +550,17 @@ describe("Gen 8 Stat Abilities", () => {
       // We test that the dispatcher returns a consistent result for the same seed.
       // Source: Showdown data/abilities.ts -- quickdraw: 30% chance
       const ctx = makeCtx({
-        ability: "quick-draw",
+        ability: A.quickDraw,
         trigger: "on-priority-check",
-        move: makeMove({}),
+        move: getMove(M.tackle),
         seed: 42,
       });
       const result1 = handleGen8StatAbility(ctx);
       // Run again with same seed to verify determinism
       const ctx2 = makeCtx({
-        ability: "quick-draw",
+        ability: A.quickDraw,
         trigger: "on-priority-check",
-        move: makeMove({}),
+        move: getMove(M.tackle),
         seed: 42,
       });
       const result2 = handleGen8StatAbility(ctx2);
@@ -602,9 +573,9 @@ describe("Gen 8 Stat Abilities", () => {
       let activations = 0;
       for (let seed = 0; seed < 1000; seed++) {
         const ctx = makeCtx({
-          ability: "quick-draw",
+          ability: A.quickDraw,
           trigger: "on-priority-check",
-          move: makeMove({}),
+          move: getMove(M.tackle),
           seed,
         });
         const result = handleGen8StatAbility(ctx);
@@ -623,9 +594,9 @@ describe("Gen 8 Stat Abilities", () => {
       // Source: Showdown data/abilities.ts -- Weak Armor Gen 7+: spe +2
       // Source: Bulbapedia "Weak Armor" -- "+2 Speed from Gen VII onwards"
       const ctx = makeCtx({
-        ability: "weak-armor",
+        ability: A.weakArmor,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "physical" }),
+        move: getMove(M.tackle),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -637,9 +608,9 @@ describe("Gen 8 Stat Abilities", () => {
 
     it("given a special hit, when Weak Armor is checked, then does not trigger", () => {
       const ctx = makeCtx({
-        ability: "weak-armor",
+        ability: A.weakArmor,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "special" }),
+        move: getMove(M.thunderbolt),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -650,9 +621,9 @@ describe("Gen 8 Stat Abilities", () => {
     it("given any damaging move, when Stamina triggers, then +1 Defense", () => {
       // Source: Showdown data/abilities.ts -- Stamina onDamagingHit
       const ctx = makeCtx({
-        ability: "stamina",
+        ability: A.stamina,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "physical" }),
+        move: getMove(M.tackle),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -668,15 +639,15 @@ describe("Gen 8 Stat Abilities", () => {
     it("given Protean and a move type not matching current type, when used before move, then changes type", () => {
       // Source: Showdown data/abilities.ts -- protean: onPrepareHit
       const ctx = makeCtx({
-        ability: "protean",
+        ability: A.protean,
         trigger: "on-before-move",
-        types: ["normal"],
-        move: makeMove({ type: "fire" }),
+        types: [T.normal],
+        move: getMove(M.flamethrower),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "type-change", target: "self", types: ["fire"] },
+        { effectType: "type-change", target: "self", types: [getMove(M.flamethrower).type] },
       ]);
     });
 
@@ -684,24 +655,24 @@ describe("Gen 8 Stat Abilities", () => {
       // Source: Showdown data/abilities.ts -- libero: same as protean
       // Source: Bulbapedia "Libero" -- "same effect as Protean, introduced in Gen 8"
       const ctx = makeCtx({
-        ability: "libero",
+        ability: A.libero,
         trigger: "on-before-move",
-        types: ["fire"],
-        move: makeMove({ type: "electric" }),
+        types: [T.fire],
+        move: getMove(M.thunderbolt),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "type-change", target: "self", types: ["electric"] },
+        { effectType: "type-change", target: "self", types: [getMove(M.thunderbolt).type] },
       ]);
     });
 
     it("given Protean and the move type already matches, when used before move, then does not activate", () => {
       const ctx = makeCtx({
-        ability: "protean",
+        ability: A.protean,
         trigger: "on-before-move",
-        types: ["fire"],
-        move: makeMove({ type: "fire" }),
+        types: [T.fire],
+        move: getMove(M.flamethrower),
       });
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -723,7 +694,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
   it("given Moody in Gen 8, when on-turn-end fires with all stats at 0, then raises one of the 5 eligible stats by 2", () => {
     // Source: Showdown data/abilities.ts -- Moody onResidual: boost one of [atk,def,spa,spd,spe] by +2
     // Source: Bulbapedia "Moody" -- Gen 8 pool is exactly these 5 stats
-    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 42 });
+    const ctx = makeCtx({ ability: A.moody, trigger: "on-turn-end", seed: 42 });
     const result = handleGen8StatAbility(ctx);
 
     expect(result.activated).toBe(true);
@@ -740,7 +711,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
   it("given Moody in Gen 8, when on-turn-end fires, then lowers one of the 5 eligible stats by 1", () => {
     // Source: Showdown data/abilities.ts -- Moody onResidual: lower a different stat by -1
-    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 42 });
+    const ctx = makeCtx({ ability: A.moody, trigger: "on-turn-end", seed: 42 });
     const result = handleGen8StatAbility(ctx);
 
     expect(result.activated).toBe(true);
@@ -757,7 +728,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
   it("given Moody in Gen 8, when on-turn-end fires, then raised stat and lowered stat are different", () => {
     // Source: Showdown data/abilities.ts -- Moody raises one stat and lowers a DIFFERENT one
-    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 42 });
+    const ctx = makeCtx({ ability: A.moody, trigger: "on-turn-end", seed: 42 });
     const result = handleGen8StatAbility(ctx);
 
     const raiseEffect = result.effects.find(
@@ -773,7 +744,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
   it("given Moody in Gen 8, when a stat is already at +6, then that stat is excluded from the raise pool", () => {
     // Source: Showdown data/abilities.ts -- Moody plusPool excludes stats already at +6
-    const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed: 99 });
+    const ctx = makeCtx({ ability: A.moody, trigger: "on-turn-end", seed: 99 });
     // Set attack to +6 (maxed) — should not be raised further
     ctx.pokemon.statStages.attack = 6;
     ctx.pokemon.statStages.defense = 6;
@@ -801,7 +772,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     // This test runs 100 seeds to confirm accuracy/evasion never appear in Gen 8 Moody pool.
     const INELIGIBLE_STATS = ["accuracy", "evasion"];
     for (let seed = 0; seed < 100; seed++) {
-      const ctx = makeCtx({ ability: "moody", trigger: "on-turn-end", seed });
+      const ctx = makeCtx({ ability: A.moody, trigger: "on-turn-end", seed });
       const result = handleGen8StatAbility(ctx);
       for (const effect of result.effects) {
         if (effect.effectType === "stat-change") {

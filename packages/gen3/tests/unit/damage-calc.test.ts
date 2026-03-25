@@ -6,14 +6,21 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_MECHANIC_MULTIPLIERS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen3DataManager,
+  GEN3_CRIT_MULTIPLIER,
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
   GEN3_TYPES,
+  GEN3_WEATHER_DAMAGE_MULTIPLIERS,
 } from "../../src";
 import { calculateGen3Damage, isGen3PhysicalType } from "../../src/Gen3DamageCalc";
 
@@ -1567,18 +1574,12 @@ describe("Gen 3 Damage Calculation", () => {
       const result = calculateGen3Damage(ctx, chart);
 
       expect(result.breakdown).not.toBeNull();
-      // Source: rain boosts Water damage by 1.5x in Gen 3.
-      const RAIN_WATER_MULTIPLIER = 1.5;
-      expect(result.breakdown!.weatherMultiplier).toBe(RAIN_WATER_MULTIPLIER);
-      expect(result.breakdown!.critMultiplier).toBe(2);
-      // Source: same-type attack bonus is 1.5x.
-      const STAB_MULTIPLIER = 1.5;
-      expect(result.breakdown!.stabMultiplier).toBe(STAB_MULTIPLIER);
+      expect(result.breakdown!.weatherMultiplier).toBe(GEN3_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost);
+      expect(result.breakdown!.critMultiplier).toBe(GEN3_CRIT_MULTIPLIER);
+      expect(result.breakdown!.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
       expect(result.breakdown!.typeMultiplier).toBe(2);
-      expect(result.breakdown!.burnMultiplier).toBe(1); // special move, burn doesn't apply
-      // Source: the mocked RNG roll is 100, which produces the max random multiplier of 1.0.
-      const MAX_RANDOM_MULTIPLIER = 1.0;
-      expect(result.breakdown!.randomMultiplier).toBeCloseTo(MAX_RANDOM_MULTIPLIER, 2);
+      expect(result.breakdown!.burnMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.neutral); // special move, burn doesn't apply
+      expect(result.breakdown!.randomMultiplier).toBeCloseTo(CORE_MECHANIC_MULTIPLIERS.maxRandom, 2);
       expect(result.isCrit).toBe(true);
     });
   });

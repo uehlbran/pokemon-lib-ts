@@ -24,6 +24,8 @@ npm install @pokemon-lib-ts/core
 
 ```typescript
 import {
+  CORE_MECHANIC_MULTIPLIERS,
+  CORE_TYPE_IDS,
   calculateHp,
   calculateStat,
   getTypeEffectiveness,
@@ -36,7 +38,10 @@ const hp = calculateHp(78, 31, 0, 50); // base, iv, ev, level
 
 // Type effectiveness
 import { GEN6_TYPE_CHART } from "@pokemon-lib-ts/core";
-const multiplier = getTypeEffectiveness("fire", ["grass"], GEN6_TYPE_CHART); // 2
+const multiplier = getTypeEffectiveness(CORE_TYPE_IDS.fire, [CORE_TYPE_IDS.grass], GEN6_TYPE_CHART); // 2
+
+// Shared mechanic constants used by rulesets/tests
+console.log(CORE_MECHANIC_MULTIPLIERS.stab); // 1.5
 
 // Deterministic RNG
 const rng = new SeededRandom(42);

@@ -28,7 +28,12 @@ npm run build
 ## Usage
 
 ```typescript
-import { Gen3Ruleset, createGen3DataManager } from "@pokemon-lib-ts/gen3";
+import {
+  GEN3_MOVE_IDS,
+  GEN3_WEATHER_DAMAGE_MULTIPLIERS,
+  Gen3Ruleset,
+  createGen3DataManager,
+} from "@pokemon-lib-ts/gen3";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
 
 // Load Gen 3 data
@@ -37,8 +42,9 @@ const blaziken = dm.getSpecies(257);
 console.log(blaziken.baseStats);
 // { hp: 80, attack: 120, defense: 70, spAttack: 110, spDefense: 70, speed: 80 }
 
-const flamethrower = dm.getMove("flamethrower");
+const flamethrower = dm.getMove(GEN3_MOVE_IDS.flamethrower);
 console.log(flamethrower.power, flamethrower.type); // 95, 'fire'
+console.log(GEN3_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost); // 1.5
 
 // Create a Gen 3 battle
 const ruleset = new Gen3Ruleset();
@@ -51,6 +57,11 @@ const engine = new BattleEngine(
 engine.on((event) => console.log(event));
 engine.start();
 ```
+
+## Test/Reference Exports
+
+- `GEN3_*_IDS` exports are generated from the committed Gen 3 `data/*.json` bundle and are the preferred source for canonical move/item/ability/species ids in tests.
+- `GEN3_WEATHER_DAMAGE_MULTIPLIERS` exposes Gen 3-owned weather damage multipliers so tests and tooling do not duplicate mechanic literals.
 
 ## Gen 3 Key Mechanics
 

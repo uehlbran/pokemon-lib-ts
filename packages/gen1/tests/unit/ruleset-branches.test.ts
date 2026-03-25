@@ -15,10 +15,27 @@ import type {
   PokemonType,
   PrimaryStatus,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GIMMICK_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen1Ruleset } from "../../src/Gen1Ruleset";
+import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS, GEN1_TYPES } from "../../src";
+import { createGen1DataManager } from "../../src/data";
 import { applyGen1BadgeBoosts } from "../../src/Gen1StatCalc";
+import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 
 /**
  * Gen1Ruleset Branch Coverage Tests
@@ -35,6 +52,20 @@ import { applyGen1BadgeBoosts } from "../../src/Gen1StatCalc";
 // --- Test Helpers ---
 
 const ruleset = new Gen1Ruleset();
+const gen1DataManager = createGen1DataManager();
+const HARDY_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Hardy")!.id;
+const MODEST_NATURE = ALL_NATURES.find((nature) => nature.displayName === "Modest")!.id;
+const PIKACHU_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.pikachu);
+const BULBASAUR_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
+const CHARIZARD_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.charizard);
+const NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.normal];
+const FIRE_TYPES: PokemonType[] = [CORE_TYPE_IDS.fire];
+const WATER_TYPES: PokemonType[] = [CORE_TYPE_IDS.water];
+const ICE_TYPES: PokemonType[] = [CORE_TYPE_IDS.ice];
+const POISON_TYPES: PokemonType[] = [CORE_TYPE_IDS.poison];
+const ELECTRIC_TYPES: PokemonType[] = [CORE_TYPE_IDS.electric];
+const WATER_ROCK_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock];
+const WATER_NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.normal];
 
 const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   contact: false,
@@ -60,7 +91,7 @@ function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   return {
     id: "test-move",
     displayName: "Test Move",
-    type: "normal" as PokemonType,
+    type: CORE_TYPE_IDS.normal as PokemonType,
     category: "physical",
     power: 50,
     accuracy: 100,
@@ -79,14 +110,14 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   return {
     pokemon: {
       uid: "test-uid",
-      speciesId: 25,
+      speciesId: GEN1_SPECIES_IDS.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "thunder-shock", currentPP: 30, maxPP: 30, ppUps: 0 }],
+      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       currentHp: 100,
       status: null,
       friendship: 70,
@@ -121,8 +152,8 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "",
+    types: ELECTRIC_TYPES,
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 1,
     movedThisTurn: false,
@@ -196,7 +227,7 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
   const rng = new SeededRandom(42);
   return {
     attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: ["normal"] }),
+    defender: makeActivePokemon({ types: NORMAL_TYPES }),
     move: makeMove(),
     damage: 50,
     state: makeBattleState(),
@@ -212,9 +243,9 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
   it("given a fire-type target, when burn is inflicted, then burn is not applied (fire immunity)", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["fire"] });
+    const defender = makeActivePokemon({ types: FIRE_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "burn" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.burn },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -225,9 +256,9 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
 
   it("given an ice-type target, when freeze is inflicted, then freeze is not applied (ice immunity)", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["ice"] });
+    const defender = makeActivePokemon({ types: ICE_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "freeze" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.freeze },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -238,9 +269,9 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
 
   it("given a poison-type target, when poison is inflicted, then poison is not applied (poison immunity)", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["poison"] });
+    const defender = makeActivePokemon({ types: POISON_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "poison" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.poison },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -251,9 +282,9 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
 
   it("given a poison-type target, when badly-poisoned is inflicted, then badly-poisoned is not applied (poison immunity)", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["poison"] });
+    const defender = makeActivePokemon({ types: POISON_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "badly-poisoned" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.badlyPoisoned },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -264,59 +295,59 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
 
   it("given an electric-type target, when paralysis is inflicted, then paralysis IS applied (Gen 1 quirk)", () => {
     // Arrange: In Gen 1, Electric types CAN be paralyzed (unlike later gens)
-    const defender = makeActivePokemon({ types: ["electric"] });
+    const defender = makeActivePokemon({ types: ELECTRIC_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "paralysis" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.paralysis },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBe("paralysis");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.paralysis);
   });
 
   it("given a normal-type target, when sleep is inflicted, then sleep IS applied (no immunity)", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "sleep" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.sleep },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBe("sleep");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.sleep);
   });
 
   it("given a non-fire target, when burn is inflicted, then burn IS applied", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "burn" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.burn },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBe("burn");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.burn);
   });
 
   it("given a non-ice target, when freeze is inflicted, then freeze IS applied", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "freeze" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.freeze },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBe("freeze");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.freeze);
   });
 
   it("given an unknown status type, when inflicting via status-guaranteed, then default allows infliction", () => {
     // Arrange: Cast to PrimaryStatus to test the default branch in canInflictStatus
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
       effect: { type: "status-guaranteed", status: "unknown-status" as PrimaryStatus },
     });
@@ -329,15 +360,15 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
 
   it("given a non-poison target, when poison is inflicted, then poison IS applied", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "poison" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.poison },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBe("poison");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.poison);
   });
 });
 
@@ -363,7 +394,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     });
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, state);
     // Assert: floor(160 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -385,7 +416,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     });
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "poison", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.poison, state);
     // Assert: floor(160 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -393,7 +424,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
   it("given a badly-poisoned Pokemon with toxic counter 1, when applying status damage, then deals 1/16 max HP", () => {
     // Arrange
     const volatiles = new Map();
-    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 1 } });
+    volatiles.set(CORE_VOLATILE_IDS.toxicCounter, { turnsLeft: 0, data: { counter: 1 } });
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
@@ -410,7 +441,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     });
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
     // Assert: floor(160 * 1 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -418,7 +449,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
   it("given a badly-poisoned Pokemon with toxic counter 3, when applying status damage, then deals 3/16 max HP (escalating)", () => {
     // Arrange
     const volatiles = new Map();
-    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 3 } });
+    volatiles.set(CORE_VOLATILE_IDS.toxicCounter, { turnsLeft: 0, data: { counter: 3 } });
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
@@ -435,7 +466,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     });
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
     // Assert: floor(160 * 3 / 16) = floor(30) = 30
     expect(damage).toBe(30);
   });
@@ -457,7 +488,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     });
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
     // Assert: defaults to counter 1 -> floor(160 * 1 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -467,7 +498,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const pokemon = makeActivePokemon();
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "freeze", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.freeze, state);
     // Assert
     expect(damage).toBe(0);
   });
@@ -477,7 +508,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const pokemon = makeActivePokemon();
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "sleep", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.sleep, state);
     // Assert
     expect(damage).toBe(0);
   });
@@ -487,7 +518,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const pokemon = makeActivePokemon();
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "paralysis", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.paralysis, state);
     // Assert
     expect(damage).toBe(0);
   });
@@ -509,7 +540,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     });
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, state);
     // Assert: max(1, floor(15 / 16)) = max(1, 0) = 1
     expect(damage).toBe(1);
   });
@@ -535,7 +566,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     });
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, state);
     // Assert: floor(160 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -565,22 +596,22 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a status-chance effect with 100% chance, when roll passes and target has no status, then inflicts status", () => {
     // Arrange: Use a high chance that will pass with the seeded rng
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
-      effect: { type: "status-chance", status: "paralysis", chance: 100 },
+      effect: { type: "status-chance", status: CORE_STATUS_IDS.paralysis, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBe("paralysis");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.paralysis);
   });
 
   it("given a status-chance effect with 0% chance, when roll fails, then does not inflict status", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
-      effect: { type: "status-chance", status: "burn", chance: 0 },
+      effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 0 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -593,14 +624,14 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Arrange
     const defenderPokemon = {
       ...makeActivePokemon().pokemon,
-      status: "paralysis" as PrimaryStatus,
+      status: CORE_STATUS_IDS.paralysis as PrimaryStatus,
     } as PokemonInstance;
     const defender = makeActivePokemon({
-      types: ["normal"],
+      types: NORMAL_TYPES,
       pokemon: defenderPokemon,
     });
     const move = makeMove({
-      effect: { type: "status-chance", status: "burn", chance: 100 },
+      effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -611,9 +642,9 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a status-chance effect for burn, when target is fire-type, then status immunity prevents infliction", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["fire"] });
+    const defender = makeActivePokemon({ types: FIRE_TYPES });
     const move = makeMove({
-      effect: { type: "status-chance", status: "burn", chance: 100 },
+      effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -628,14 +659,14 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Arrange
     const defenderPokemon = {
       ...makeActivePokemon().pokemon,
-      status: "burn" as PrimaryStatus,
+      status: CORE_STATUS_IDS.burn as PrimaryStatus,
     } as PokemonInstance;
     const defender = makeActivePokemon({
-      types: ["normal"],
+      types: NORMAL_TYPES,
       pokemon: defenderPokemon,
     });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "sleep" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.sleep },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -646,9 +677,9 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a status-guaranteed effect for freeze on ice-type, when executing, then immunity prevents infliction", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["ice"] });
+    const defender = makeActivePokemon({ types: ICE_TYPES });
     const move = makeMove({
-      effect: { type: "status-guaranteed", status: "freeze" },
+      effect: { type: "status-guaranteed", status: CORE_STATUS_IDS.freeze },
     });
     const ctx = makeMoveEffectContext({ defender, move });
     // Act
@@ -825,7 +856,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
 
   it("given a multi effect with nested stat-change and status-chance, when executing, then both sub-effects are applied", () => {
     // Arrange
-    const defender = makeActivePokemon({ types: ["normal"] });
+    const defender = makeActivePokemon({ types: NORMAL_TYPES });
     const move = makeMove({
       effect: {
         type: "multi",
@@ -836,7 +867,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
             target: "foe",
             chance: 100,
           },
-          { type: "status-chance", status: "paralysis", chance: 100 },
+          { type: "status-chance", status: CORE_STATUS_IDS.paralysis, chance: 100 },
         ],
       },
     });
@@ -845,7 +876,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
     expect(result.statChanges).toHaveLength(1);
-    expect(result.statusInflicted).toBe("paralysis");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.paralysis);
   });
 
   // --- No-op effect types ---
@@ -902,7 +933,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a volatile-status (confusion) effect, when executing, then no primary status is inflicted", () => {
     // Arrange
     const move = makeMove({
-      effect: { type: "volatile-status", status: "confusion", chance: 100 },
+      effect: { type: "volatile-status", status: CORE_VOLATILE_IDS.confusion, chance: 100 },
     });
     const ctx = makeMoveEffectContext({ move });
     // Act
@@ -914,7 +945,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a weather effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
     const move = makeMove({
-      effect: { type: "weather", weather: "sun", turns: 5 },
+      effect: { type: "weather", weather: CORE_WEATHER_IDS.sun, turns: 5 },
     });
     const ctx = makeMoveEffectContext({ move });
     // Act
@@ -926,7 +957,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a terrain effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
     const move = makeMove({
-      effect: { type: "terrain", terrain: "electric", turns: 5 },
+      effect: { type: "terrain", terrain: CORE_TERRAIN_IDS.electric, turns: 5 },
     });
     const ctx = makeMoveEffectContext({ move });
     // Act
@@ -938,7 +969,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given an entry-hazard effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
     const move = makeMove({
-      effect: { type: "entry-hazard", hazard: "stealth-rock" },
+      effect: { type: "entry-hazard", hazard: CORE_HAZARD_IDS.stealthRock },
     });
     const ctx = makeMoveEffectContext({ move });
     // Act
@@ -962,7 +993,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a screen effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = makeMove({
-      effect: { type: "screen", screen: "reflect", turns: 5 },
+      effect: { type: "screen", screen: CORE_SCREEN_IDS.reflect, turns: 5 },
     });
     const ctx = makeMoveEffectContext({ move });
     // Act
@@ -1264,7 +1295,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const paralyzedPokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "paralysis" as PrimaryStatus,
+        status: CORE_STATUS_IDS.paralysis as PrimaryStatus,
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1356,7 +1387,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const slowWithQuickAttack = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.quickAttack, currentPP: 30, maxPP: 30, ppUps: 0 }],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1370,7 +1401,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const fastWithTackle = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1413,7 +1444,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const pokemonWithTackle = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1484,7 +1515,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
         if (moveId === customMoveId) {
           return { priority: 2 };
         }
-        if (moveId === "tackle") {
+        if (moveId === GEN1_MOVE_IDS.tackle) {
           return { priority: 0 };
         }
         throw new Error(`Move ${moveId} not found`);
@@ -1508,7 +1539,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     const tacklePokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -1587,55 +1618,20 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
 
 describe("Gen1Ruleset validatePokemon", () => {
   function makeSpecies(overrides: Partial<PokemonSpeciesData> = {}): PokemonSpeciesData {
-    return {
-      id: 25,
-      name: "pikachu",
-      displayName: "Pikachu",
-      types: ["electric"],
-      baseStats: { hp: 35, attack: 55, defense: 40, spAttack: 50, spDefense: 50, speed: 90 },
-      abilities: { normal: ["static"], hidden: "lightning-rod" },
-      genderRatio: 50,
-      catchRate: 190,
-      baseExp: 112,
-      expGroup: "medium-fast",
-      evYield: { speed: 2 },
-      eggGroups: ["field", "fairy"],
-      learnset: {
-        levelUp: [
-          { level: 1, move: "thunder-shock" },
-          { level: 1, move: "growl" },
-          { level: 9, move: "thunder-wave" },
-          { level: 16, move: "quick-attack" },
-          { level: 26, move: "swift" },
-          { level: 33, move: "agility" },
-          { level: 43, move: "thunder" },
-        ],
-        tm: [],
-        egg: [],
-        tutor: [],
-      },
-      evolution: null,
-      dimensions: { height: 0.4, weight: 6.0 },
-      spriteKey: "pikachu",
-      baseFriendship: 70,
-      generation: 1,
-      isLegendary: false,
-      isMythical: false,
-      ...overrides,
-    } as PokemonSpeciesData;
+    return { ...BULBASAUR_SPECIES, ...overrides } as PokemonSpeciesData;
   }
 
   function makePokemonInstance(overrides: Partial<PokemonInstance> = {}): PokemonInstance {
     return {
       uid: "test-uid",
-      speciesId: 25,
+      speciesId: GEN1_SPECIES_IDS.bulbasaur,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "thunder-shock", currentPP: 30, maxPP: 30, ppUps: 0 }],
+      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       currentHp: 100,
       status: null,
       friendship: 70,
@@ -1656,32 +1652,32 @@ describe("Gen1Ruleset validatePokemon", () => {
   it("given a Gen 1 Pokemon with an illegal move, when validating, then returns an error for Gen 1 move legality", () => {
     // Arrange
     const pokemon = makePokemonInstance({
-      moves: [{ moveId: "shadow-ball", currentPP: 15, maxPP: 15, ppUps: 0 }],
+      moves: [{ moveId: GEN1_MOVE_IDS.hyperBeam, currentPP: 5, maxPP: 5, ppUps: 0 }],
     });
     const species = makeSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("shadow-ball"))).toBe(true);
+    expect(result.errors.some((e) => e.includes(GEN1_MOVE_IDS.hyperBeam))).toBe(true);
   });
 
   it("given a Gen 1 Pokemon with a legal move the species cannot learn, when validating, then returns an error for species move legality", () => {
     // Arrange
     const pokemon = makePokemonInstance({
-      moves: [{ moveId: "fissure", currentPP: 5, maxPP: 5, ppUps: 0 }],
+      moves: [{ moveId: GEN1_MOVE_IDS.fissure, currentPP: 5, maxPP: 5, ppUps: 0 }],
     });
     const species = makeSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
     // Assert
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("fissure"))).toBe(true);
+    expect(result.errors.some((e) => e.includes(GEN1_MOVE_IDS.fissure))).toBe(true);
   });
 
   it("given a Gen 1 Pokemon with an ability, when validating, then returns an error because abilities do not exist in Gen 1", () => {
     // Arrange
-    const pokemon = makePokemonInstance({ ability: "static" });
+    const pokemon = makePokemonInstance({ ability: CORE_ABILITY_IDS.static });
     const species = makeSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
@@ -1782,11 +1778,11 @@ describe("Gen1Ruleset validatePokemon", () => {
     // Arrange
     const pokemon = makePokemonInstance({
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "thunder-shock", currentPP: 30, maxPP: 30, ppUps: 0 },
-        { moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
-        { moveId: "thunder", currentPP: 10, maxPP: 10, ppUps: 0 },
+        { moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
+        { moveId: GEN1_MOVE_IDS.thunderShock, currentPP: 30, maxPP: 30, ppUps: 0 },
+        { moveId: GEN1_MOVE_IDS.quickAttack, currentPP: 30, maxPP: 30, ppUps: 0 },
+        { moveId: GEN1_MOVE_IDS.thunderbolt, currentPP: 15, maxPP: 15, ppUps: 0 },
+        { moveId: GEN1_MOVE_IDS.thunder, currentPP: 10, maxPP: 10, ppUps: 0 },
       ],
     });
     const species = makeSpecies();
@@ -1799,7 +1795,7 @@ describe("Gen1Ruleset validatePokemon", () => {
 
   it("given a Pokemon with a held item, when validating, then returns error for held items not available", () => {
     // Arrange
-    const pokemon = makePokemonInstance({ heldItem: "leftovers" });
+    const pokemon = makePokemonInstance({ heldItem: CORE_ITEM_IDS.leftovers });
     const species = makeSpecies();
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
@@ -1810,7 +1806,7 @@ describe("Gen1Ruleset validatePokemon", () => {
 
   it("given a Pokemon with multiple validation errors, when validating, then returns all errors", () => {
     // Arrange: level out of range + held item + species out of range
-    const pokemon = makePokemonInstance({ level: 200, heldItem: "leftovers" });
+    const pokemon = makePokemonInstance({ level: 200, heldItem: CORE_ITEM_IDS.leftovers });
     const species = makeSpecies({ id: 200, displayName: "Invalid" });
     // Act
     const result = ruleset.validatePokemon(pokemon, species);
@@ -1830,7 +1826,7 @@ describe("Gen1Ruleset checkFreezeThaw (Gen 1 quirk: permanent freeze)", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "freeze" as PrimaryStatus,
+        status: CORE_STATUS_IDS.freeze as PrimaryStatus,
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42);
@@ -1889,7 +1885,7 @@ describe("Gen1Ruleset checkFreezeThaw (additional)", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "freeze" as PrimaryStatus,
+        status: CORE_STATUS_IDS.freeze as PrimaryStatus,
       } as PokemonInstance,
     });
     // Act / Assert
@@ -1911,7 +1907,7 @@ describe("Gen1Ruleset applyStatusDamage (toxic escalation)", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "badly-poisoned" as PrimaryStatus,
+        status: CORE_STATUS_IDS.badlyPoisoned as PrimaryStatus,
         calculatedStats: {
           hp: maxHp,
           attack: 80,
@@ -1926,7 +1922,7 @@ describe("Gen1Ruleset applyStatusDamage (toxic escalation)", () => {
     // Note: toxic counter stored in volatileStatuses — use default (counter=1)
     const state = makeBattleState();
     // Act
-    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
     // Assert: with counter=1 (default), damage = floor(160 * 1 / 16) = 10
     expect(damage).toBe(10);
     expect(damage).toBeGreaterThan(0);
@@ -1992,7 +1988,7 @@ describe("Gen1Ruleset no-op methods", () => {
   });
 
   it("given Gen1Ruleset, when calling getBattleGimmick, then returns null", () => {
-    expect(ruleset.getBattleGimmick("mega")).toBe(null);
+    expect(ruleset.getBattleGimmick(CORE_GIMMICK_IDS.mega)).toBe(null);
   });
 
   it("given Gen1Ruleset, when calling getAvailableHazards, then returns empty array", () => {
@@ -2040,19 +2036,19 @@ describe("Gen 1 Quirks", () => {
     // Arrange
     const normalVolatiles = new Map();
     const focusEnergyVolatiles = new Map();
-    focusEnergyVolatiles.set("focus-energy", { turnsLeft: -1 });
+    focusEnergyVolatiles.set(GEN1_MOVE_IDS.focusEnergy, { turnsLeft: -1 });
 
     const normalAttacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        speciesId: 25, // Pikachu, base speed 90
+        speciesId: GEN1_SPECIES_IDS.pikachu, // Pikachu, base speed 90
       } as PokemonInstance,
       volatileStatuses: normalVolatiles,
     });
     const focusAttacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        speciesId: 25,
+        speciesId: GEN1_SPECIES_IDS.pikachu,
       } as PokemonInstance,
       volatileStatuses: focusEnergyVolatiles,
     });
@@ -2081,7 +2077,7 @@ describe("Gen 1 Quirks", () => {
       pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
     const hyperBeam = makeMove({
-      id: "hyper-beam",
+      id: GEN1_MOVE_IDS.hyperBeam,
       power: 150,
       flags: { ...DEFAULT_MOVE_FLAGS, recharge: true },
     });
@@ -2103,7 +2099,7 @@ describe("Gen 1 Quirks", () => {
     const frozen = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "freeze" as PrimaryStatus,
+        status: CORE_STATUS_IDS.freeze as PrimaryStatus,
       } as PokemonInstance,
     });
     // Act / Assert
@@ -2120,17 +2116,17 @@ describe("Gen 1 Quirks", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "sleep" as PrimaryStatus,
+        status: CORE_STATUS_IDS.sleep as PrimaryStatus,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 4 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 4 });
     const state = makeBattleState({ side0Active: pokemon });
-    state.sides[0].screens = [{ type: "reflect", turnsLeft: -1 }];
+    state.sides[0].screens = [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: -1 }];
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.pokemon.status).toBe("sleep");
-    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(4);
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
+    expect(pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter)?.turnsLeft).toBe(4);
     expect(state.sides[0].screens).toEqual([]);
   });
 
@@ -2141,7 +2137,7 @@ describe("Gen 1 Quirks", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        speciesId: 25,
+        speciesId: GEN1_SPECIES_IDS.pikachu,
       } as PokemonInstance,
     });
     const statusMove = makeMove({ category: "status" });
@@ -2172,7 +2168,7 @@ describe("Gen 1 Quirks", () => {
     expect(ruleset.hasHeldItems()).toBe(false);
     expect(ruleset.hasWeather()).toBe(false);
     expect(ruleset.hasTerrain()).toBe(false);
-    expect(ruleset.getBattleGimmick("mega")).toBeNull();
+    expect(ruleset.getBattleGimmick(CORE_GIMMICK_IDS.mega)).toBeNull();
     expect(ruleset.getAvailableHazards()).toEqual([]);
   });
 
@@ -2316,11 +2312,11 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
 
     const pokemon = {
       uid: "test-uid",
-      speciesId: 25,
+      speciesId: GEN1_SPECIES_IDS.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [],
@@ -2328,7 +2324,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -2340,15 +2336,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     } as PokemonInstance;
 
-    // Pikachu species data: base Attack = 55
-    // Source: Showdown/PokeAPI — Pikachu Gen 1 base stats
-    const species = {
-      id: 25,
-      name: "pikachu",
-      displayName: "Pikachu",
-      types: ["electric"],
-      baseStats: { hp: 35, attack: 55, defense: 40, spAttack: 50, spDefense: 50, speed: 90 },
-    } as PokemonSpeciesData;
+    const species = PIKACHU_SPECIES;
 
     const statsNoBadge = rulesetNoBadge.calculateStats(pokemon, species);
     const statsWithBadge = rulesetWithBadge.calculateStats(pokemon, species);
@@ -2371,11 +2359,11 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
 
     const pokemon = {
       uid: "test-uid",
-      speciesId: 6,
+      speciesId: GEN1_SPECIES_IDS.charizard,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [],
@@ -2383,7 +2371,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -2395,15 +2383,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     } as PokemonInstance;
 
-    // Charizard base stats (Gen 1): HP=78, Atk=84, Def=78, SpAtk=109, SpDef=109, Spe=100
-    // Source: Showdown/PokeAPI — Charizard Gen 1 base stats
-    const species = {
-      id: 6,
-      name: "charizard",
-      displayName: "Charizard",
-      types: ["fire", "flying"],
-      baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 109, speed: 100 },
-    } as PokemonSpeciesData;
+    const species = CHARIZARD_SPECIES;
 
     const statsDefault = rulesetDefault.calculateStats(pokemon, species);
     const statsExplicitNone = rulesetExplicitNone.calculateStats(pokemon, species);
@@ -2420,11 +2400,11 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
 
     const pokemon = {
       uid: "test-uid",
-      speciesId: 6,
+      speciesId: GEN1_SPECIES_IDS.charizard,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: HARDY_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [],
@@ -2432,7 +2412,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -2444,15 +2424,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
       calculatedStats: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     } as PokemonInstance;
 
-    // Charizard Gen 1 base stats
-    // Source: Showdown/PokeAPI — Charizard Gen 1 base stats
-    const species = {
-      id: 6,
-      name: "charizard",
-      displayName: "Charizard",
-      types: ["fire", "flying"],
-      baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 109, speed: 100 },
-    } as PokemonSpeciesData;
+    const species = CHARIZARD_SPECIES;
 
     const stats = rulesetAllBadges.calculateStats(pokemon, species);
 
@@ -2490,7 +2462,7 @@ describe("Gen1Ruleset rollCritical", () => {
     const attacker = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        speciesId: 25, // Pikachu
+        speciesId: GEN1_SPECIES_IDS.pikachu, // Pikachu
       } as PokemonInstance,
     });
     const move = makeMove({ category: "physical" });
@@ -2618,7 +2590,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "paralysis" as PrimaryStatus,
+        status: CORE_STATUS_IDS.paralysis as PrimaryStatus,
       } as PokemonInstance,
     });
     // Mock RNG: int(0, 255) returns 62 → 62 < 63 → true
@@ -2640,7 +2612,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "paralysis" as PrimaryStatus,
+        status: CORE_STATUS_IDS.paralysis as PrimaryStatus,
       } as PokemonInstance,
     });
     // Mock RNG: int(0, 255) returns 63 → 63 < 63 → false
@@ -2662,7 +2634,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "paralysis" as PrimaryStatus,
+        status: CORE_STATUS_IDS.paralysis as PrimaryStatus,
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42);
@@ -2689,10 +2661,10 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "sleep" as PrimaryStatus,
+        status: CORE_STATUS_IDS.sleep as PrimaryStatus,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 1 });
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
@@ -2700,7 +2672,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     // Assert — Gen 1: cannot act on the wake turn (returns false even on wake)
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBeNull();
-    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(false);
   });
 
   it("given Gen 1 rules and a pokemon with turnsLeft > 1, when processSleepTurn called, then stays sleeping and returns false", () => {
@@ -2708,18 +2680,18 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "sleep" as PrimaryStatus,
+        status: CORE_STATUS_IDS.sleep as PrimaryStatus,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 3 });
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
 
     // Assert — still sleeping, counter decremented
     expect(canAct).toBe(false);
-    expect(pokemon.pokemon.status).toBe("sleep");
-    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
+    expect(pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter)?.turnsLeft).toBe(2);
   });
 
   it("given Gen 1 rules and a pokemon with turnsLeft = 0, when processSleepTurn called, then wakes up but returns false (cannot act)", () => {
@@ -2727,10 +2699,10 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "sleep" as PrimaryStatus,
+        status: CORE_STATUS_IDS.sleep as PrimaryStatus,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 0 });
 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
@@ -2738,6 +2710,6 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     // Assert — Gen 1: wakes up but still cannot act this turn
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBeNull();
-    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(false);
   });
 });

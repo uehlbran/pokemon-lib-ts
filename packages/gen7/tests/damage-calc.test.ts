@@ -4,6 +4,7 @@ import {
   ALL_NATURES,
   CORE_ABILITY_IDS,
   CORE_FIXED_POINT as TEST_FIXED_POINT,
+  CORE_MECHANIC_MULTIPLIERS,
   CORE_MOVE_IDS,
   CORE_ITEM_IDS as TEST_ITEM_IDS,
   CORE_STATUS_IDS,
@@ -18,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import { calculateGen7Damage, pokeRound } from "../src/Gen7DamageCalc";
 import { GEN7_TYPE_CHART } from "../src/Gen7TypeChart";
 import { createGen7DataManager } from "../src/data";
+import { GEN7_CRIT_MULTIPLIER, GEN7_WEATHER_DAMAGE_MULTIPLIERS } from "../src";
 
 const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
 const ITEM_IDS = { ...TEST_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
@@ -31,13 +33,13 @@ const WEATHER_IDS = {
   hail: TEST_WEATHER_IDS.hail,
   sand: TEST_WEATHER_IDS.sand as WeatherType,
   harshSun: TEST_WEATHER_IDS.harshSun,
-  heavyRain: ["heavy", TEST_WEATHER_IDS.rain].join("-") as WeatherType,
+  heavyRain: TEST_WEATHER_IDS.heavyRain as WeatherType,
 } as const;
 const TERRAIN_IDS = {
   electric: TEST_TERRAIN_IDS.electric,
-  grassy: GEN7_MOVE_IDS.grassyTerrain.replace("-terrain", "") as TerrainType,
-  misty: GEN7_MOVE_IDS.mistyTerrain.replace("-terrain", "") as TerrainType,
-  psychic: GEN7_MOVE_IDS.psychicTerrain.replace("-terrain", "") as TerrainType,
+  grassy: TEST_TERRAIN_IDS.grassy as TerrainType,
+  misty: TEST_TERRAIN_IDS.misty as TerrainType,
+  psychic: TEST_TERRAIN_IDS.psychic as TerrainType,
 } as const;
 const GENDER_IDS = {
   male: ["ma", "le"].join("") as Gender,
@@ -380,8 +382,8 @@ describe("Gen 7 STAB", () => {
     expect(stabResult.damage).toBe(36);
     expect(noStabResult.damage).toBe(24);
     // Breakdown should report 1.5 STAB
-    expect(stabResult.breakdown?.stabMultiplier).toBe(1.5);
-    expect(noStabResult.breakdown?.stabMultiplier).toBe(1);
+    expect(stabResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
+    expect(noStabResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 
   it("given an Adaptability attacker using same-type move, when calculating STAB, then STAB is 2.0x", () => {
@@ -406,8 +408,8 @@ describe("Gen 7 STAB", () => {
     // Source: Showdown data/abilities.ts -- Adaptability: STAB = 2.0x via pokeRound(base, 8192)
     expect(adaptResult.damage).toBe(44);
     expect(normalResult.damage).toBe(33);
-    expect(adaptResult.breakdown?.stabMultiplier).toBe(2);
-    expect(normalResult.breakdown?.stabMultiplier).toBe(1.5);
+    expect(adaptResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.adaptabilityStab);
+    expect(normalResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
   });
 });
 
@@ -440,8 +442,8 @@ describe("Gen 7 weather modifiers", () => {
     // Source: Showdown sim/battle-actions.ts -- sun + Fire = pokeRound(base, 6144) = 1.5x
     expect(withSun.damage).toBe(33);
     expect(noWeather.damage).toBe(22);
-    expect(withSun.breakdown?.weatherMultiplier).toBe(1.5);
-    expect(noWeather.breakdown?.weatherMultiplier).toBe(1);
+    expect(withSun.breakdown?.weatherMultiplier).toBe(GEN7_WEATHER_DAMAGE_MULTIPLIERS.sunFireBoost);
+    expect(noWeather.breakdown?.weatherMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 
   it("given rain weather and a Fire move, when calculating damage, then 0.5x nerf applied", () => {
@@ -465,7 +467,7 @@ describe("Gen 7 weather modifiers", () => {
     const withRain = calculateGen7Damage(rainCtx, typeChart);
 
     expect(withRain.damage).toBeLessThan(noWeather.damage);
-    expect(withRain.breakdown?.weatherMultiplier).toBe(0.5);
+    expect(withRain.breakdown?.weatherMultiplier).toBe(GEN7_WEATHER_DAMAGE_MULTIPLIERS.rainFirePenalty);
   });
 
   it("given rain weather and a Water move, when calculating damage, then 1.5x boost applied", () => {
@@ -479,7 +481,7 @@ describe("Gen 7 weather modifiers", () => {
     });
 
     const result = calculateGen7Damage(rainCtx, typeChart);
-    expect(result.breakdown?.weatherMultiplier).toBe(1.5);
+    expect(result.breakdown?.weatherMultiplier).toBe(GEN7_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost);
   });
 
   it("given heavy rain and a Fire move, when calculating damage, then returns 0 damage", () => {
@@ -640,8 +642,8 @@ describe("Gen 7 critical hit", () => {
     const withCrit = calculateGen7Damage(critCtx, typeChart);
 
     expect(withCrit.damage).toBeGreaterThan(noCrit.damage);
-    expect(withCrit.breakdown?.critMultiplier).toBe(1.5);
-    expect(noCrit.breakdown?.critMultiplier).toBe(1);
+    expect(withCrit.breakdown?.critMultiplier).toBe(GEN7_CRIT_MULTIPLIER);
+    expect(noCrit.breakdown?.critMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
     expect(withCrit.isCrit).toBe(true);
   });
 

@@ -1,6 +1,6 @@
 <!-- SPEC FRONT-MATTER -->
 <!-- status: IMPLEMENTED -->
-<!-- last-updated: 2026-03-15 -->
+<!-- last-updated: 2026-03-25 -->
 
 # Core Pokémon Library — Architecture
 
@@ -18,6 +18,7 @@
 - **Entity definitions** — TypeScript interfaces and types for every Pokémon concept (species, instances, moves, abilities, items, natures)
 - **Shared logic** — Stat calculation, type effectiveness, experience curves, nature modifiers, catch rate formulas, damage range utilities
 - **Data infrastructure** — DataManager for loading/caching JSON data, typed accessors, validation
+- **Owned constant surfaces** — core owns shared finite vocabularies and cross-generation mechanic constants; generation packages own generated `GENN_*_IDS` references and generation-specific mechanic constants
 - **Seeded PRNG** — Deterministic randomness for reproducible simulations
 - **Zero dependencies** — No runtime npm dependencies. No game engine. No DOM. Runs in Node.js, Deno, Bun, browsers, workers — anywhere TypeScript runs.
 
@@ -34,6 +35,7 @@ The libraries live in a single monorepo managed by **Turborepo** with npm worksp
 - **Install only what you use.** A game using Gen 1 and Gen 9 installs those two + the engine. No dead code from Gen 2-8.
 - **Independent versioning.** A Gen 1 bug fix doesn't bump Gen 9's version. Consumers' lockfiles stay stable.
 - **Each gen bundles its own data.** A Gen 1 Charizard and a Gen 9 Charizard are different objects with different base stats, learnsets, types, and abilities. No merging, no overlays — each gen has complete, self-contained data.
+- **Ownership stays with the right package.** `@pokemon-lib-ts/core` exports shared vocabularies and cross-gen mechanic constants, while each `@pokemon-lib-ts/genN` package exports data-backed `GENN_*_IDS` references plus generation-specific mechanic constants derived from its own rules.
 - **Open source friendly.** Contributors work on one gen without touching others.
 
 ### Why Fully Separate Data Per Gen?

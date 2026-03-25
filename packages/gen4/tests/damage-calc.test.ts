@@ -10,6 +10,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_MECHANIC_MULTIPLIERS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -17,7 +18,13 @@ import {
 import { describe, expect, it } from "vitest";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { GEN4_TYPE_CHART, GEN4_TYPES } from "../src/Gen4TypeChart";
-import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "../src/data/reference-ids";
+import {
+  GEN4_ABILITY_IDS,
+  GEN4_CRIT_MULTIPLIER,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_WEATHER_DAMAGE_MULTIPLIERS,
+} from "../src";
 
 /**
  * Gen 4 Damage Formula Tests
@@ -589,7 +596,7 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(rainResult.breakdown?.weatherMultiplier).toBe(1.5);
+    expect(rainResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost);
   });
 
   it("given rain weather and Fire-type special move, when calculating damage, then weatherMultiplier = 0.5 in breakdown", () => {
@@ -624,7 +631,7 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(rainResult.breakdown?.weatherMultiplier).toBe(0.5);
+    expect(rainResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainFirePenalty);
   });
 
   it("given sun weather and Fire-type special move, when calculating damage, then weatherMultiplier = 1.5 in breakdown", () => {
@@ -659,7 +666,7 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(sunResult.breakdown?.weatherMultiplier).toBe(1.5);
+    expect(sunResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.sunFireBoost);
   });
 
   it("given sun weather and Water-type special move, when calculating damage, then weatherMultiplier = 0.5 in breakdown", () => {
@@ -694,7 +701,7 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(sunResult.breakdown?.weatherMultiplier).toBe(0.5);
+    expect(sunResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.sunWaterPenalty);
   });
 });
 
@@ -948,8 +955,10 @@ describe("Gen 4 damage calc — STAB", () => {
       chart,
     );
 
-    expect(stabResult.breakdown?.stabMultiplier).toBe(1.5);
-    expect(stabResult.damage).toBe(Math.floor(noStabResult.damage * 1.5));
+    expect(stabResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
+    expect(stabResult.damage).toBe(
+      Math.floor(noStabResult.damage * CORE_MECHANIC_MULTIPLIERS.stab),
+    );
   });
 
   it("given attacker has Adaptability ability and move type matches attacker type, when calculating damage, then stabMultiplier = 2.0", () => {
@@ -1002,7 +1011,7 @@ describe("Gen 4 damage calc — STAB", () => {
       chart,
     );
 
-    expect(adaptResult.breakdown?.stabMultiplier).toBe(2.0);
+    expect(adaptResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.adaptabilityStab);
     // Adaptability (2.0x) vs normal STAB (1.5x) — adapt does more damage
     expect(adaptResult.damage).toBeGreaterThan(normalStabResult.damage);
   });
@@ -2811,12 +2820,12 @@ describe("Gen 4 damage calc — breakdown completeness", () => {
     );
 
     expect(result.breakdown).not.toBeNull();
-    expect(result.breakdown?.weatherMultiplier).toBe(1.5);
-    expect(result.breakdown?.critMultiplier).toBe(2);
-    expect(result.breakdown?.stabMultiplier).toBe(1.5);
+    expect(result.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost);
+    expect(result.breakdown?.critMultiplier).toBe(GEN4_CRIT_MULTIPLIER);
+    expect(result.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
     expect(result.breakdown?.typeMultiplier).toBe(2);
-    expect(result.breakdown?.burnMultiplier).toBe(1); // special move, burn doesn't apply
-    expect(result.breakdown?.randomMultiplier).toBeCloseTo(1.0, 2);
+    expect(result.breakdown?.burnMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.neutral); // special move, burn doesn't apply
+    expect(result.breakdown?.randomMultiplier).toBeCloseTo(CORE_MECHANIC_MULTIPLIERS.maxRandom, 2);
     expect(result.isCrit).toBe(true);
     expect(result.effectiveness).toBe(2);
   });

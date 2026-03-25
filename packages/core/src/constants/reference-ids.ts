@@ -107,6 +107,7 @@ export const CORE_MOVE_IDS = {
   pursuit: "pursuit",
   round: "round",
   skyDrop: "sky-drop",
+  skyUppercut: "sky-uppercut",
   solarBeam: "solar-beam",
   sleepTalk: "sleep-talk",
   snore: "snore",
@@ -155,7 +156,12 @@ export const CORE_END_OF_TURN_EFFECT_IDS = {
 export const CORE_TERRAIN_IDS = {
   electric: "electric",
   electricTerrain: "electric-terrain",
+  grassy: "grassy",
   grassyTerrain: "grassy-terrain",
+  misty: "misty",
+  mistyTerrain: "misty-terrain",
+  psychic: "psychic",
+  psychicTerrain: "psychic-terrain",
   testSource: "test",
 } as const;
 
@@ -218,6 +224,7 @@ export const CORE_VOLATILE_IDS = {
   rage: "rage",
   recharge: "recharge",
   leechSeed: "leech-seed",
+  saltCure: "salt-cure",
   magnetRise: "magnet-rise",
   nightmare: "nightmare",
   shadowForceCharging: "shadow-force-charging",
@@ -236,10 +243,12 @@ export const CORE_VOLATILE_IDS = {
 } as const;
 
 export const CORE_WEATHER_IDS = {
+  heavyRain: "heavy-rain",
   harshSun: "harsh-sun",
   hail: "hail",
   rain: "rain",
   sand: "sand",
   snow: "snow",
+  strongWinds: "strong-winds",
   sun: "sun",
 } as const;

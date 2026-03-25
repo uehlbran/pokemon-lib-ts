@@ -3,6 +3,7 @@ export {
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
 } from "./damage-calc-shared";
+export { CORE_MECHANIC_MULTIPLIERS } from "./mechanics";
 export { ALL_NATURES, NATURES_BY_ID } from "./natures";
 export {
   CORE_ABILITY_IDS,
