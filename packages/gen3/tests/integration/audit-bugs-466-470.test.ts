@@ -13,8 +13,10 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_SCREEN_IDS,
-  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
@@ -48,7 +50,6 @@ const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS };
 const SCREEN_IDS = CORE_SCREEN_IDS;
-const STATUS_IDS = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const WEATHER_IDS = CORE_WEATHER_IDS;
 const DEFAULT_SPECIES_ID = GEN3_SPECIES_IDS.bulbasaur;
@@ -96,7 +97,9 @@ function createActiveBattler(opts: {
     throw new Error(`Test battler level must be between 1 and 100, got ${level}`);
   }
   if (currentHp < 0 || currentHp > stats.hp) {
-    throw new Error(`Test battler currentHp must be between 0 and max HP ${stats.hp}, got ${currentHp}`);
+    throw new Error(
+      `Test battler currentHp must be between 0 and max HP ${stats.hp}, got ${currentHp}`,
+    );
   }
 
   const pokemon = {
@@ -111,11 +114,11 @@ function createActiveBattler(opts: {
     currentHp,
     moves: [],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -253,7 +256,7 @@ function createAbilityContext(opts: {
       ended: false,
     } as BattleState,
     rng: createMockRng(50),
-    trigger: "on-weather-change",
+    trigger: CORE_ABILITY_TRIGGER_IDS.onWeatherChange,
   } as AbilityContext;
 }
 
@@ -309,10 +312,10 @@ describe("Gen 3 Forecast — #467 on-weather-change trigger", () => {
     });
     const ctx = createAbilityContext({
       pokemon: castform,
-      weather: { type: WEATHER_IDS.rain, turnsLeft: 5, source: "rain-dance" },
+      weather: { type: WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_MOVE_IDS.rainDance },
     });
 
-    const result = applyGen3Ability("on-weather-change", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onWeatherChange, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -334,7 +337,7 @@ describe("Gen 3 Forecast — #467 on-weather-change trigger", () => {
       weather: { type: WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
 
-    const result = applyGen3Ability("on-weather-change", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onWeatherChange, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -355,7 +358,7 @@ describe("Gen 3 Forecast — #467 on-weather-change trigger", () => {
       weather: { type: WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
 
-    const result = applyGen3Ability("on-weather-change", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onWeatherChange, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -370,10 +373,10 @@ describe("Gen 3 Forecast — #467 on-weather-change trigger", () => {
     });
     const ctx = createAbilityContext({
       pokemon: gardevoir,
-      weather: { type: WEATHER_IDS.rain, turnsLeft: 5, source: "rain-dance" },
+      weather: { type: WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_MOVE_IDS.rainDance },
     });
 
-    const result = applyGen3Ability("on-weather-change", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onWeatherChange, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -391,7 +394,7 @@ describe("Gen 3 Forecast — #467 on-weather-change trigger", () => {
       weather: null,
     });
 
-    const result = applyGen3Ability("on-weather-change", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onWeatherChange, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
