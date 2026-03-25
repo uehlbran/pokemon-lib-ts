@@ -16,9 +16,10 @@ import type {
   DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
@@ -28,6 +29,7 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  createMoveSlot,
   getTypeEffectiveness,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
@@ -36,7 +38,9 @@ import {
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
+  createGen6DataManager,
 } from "../../src";
 import { applyGen6Ability } from "../../src/Gen6Abilities";
 import { getToughClawsMultiplier, isParentalBondEligible } from "../../src/Gen6AbilitiesDamage";
@@ -52,6 +56,26 @@ import { GEN6_TYPE_CHART } from "../../src/Gen6TypeChart";
 // Helper factories
 // ---------------------------------------------------------------------------
 
+const DATA_MANAGER = createGen6DataManager()
+const SPECIES = GEN6_SPECIES_IDS
+const TYPES = CORE_TYPE_IDS
+const TERRAINS = CORE_TERRAIN_IDS
+const STATUS = CORE_STATUS_IDS
+const WEATHER = CORE_WEATHER_IDS
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur)
+const DEFAULT_NATURE = GEN6_NATURE_IDS.hardy
+const TACKLE = DATA_MANAGER.getMove(CORE_MOVE_IDS.tackle)
+const THUNDERBOLT = DATA_MANAGER.getMove(CORE_MOVE_IDS.thunderbolt)
+const FIRE_PUNCH = DATA_MANAGER.getMove(GEN6_MOVE_IDS.firePunch)
+const ICE_BEAM = DATA_MANAGER.getMove(GEN6_MOVE_IDS.iceBeam)
+const CLOSE_COMBAT = DATA_MANAGER.getMove(GEN6_MOVE_IDS.closeCombat)
+const SHADOW_BALL = DATA_MANAGER.getMove(GEN6_MOVE_IDS.shadowBall)
+const IRON_HEAD = DATA_MANAGER.getMove(GEN6_MOVE_IDS.ironHead)
+const SURF = DATA_MANAGER.getMove(CORE_MOVE_IDS.surf)
+const PHANTOM_FORCE = DATA_MANAGER.getMove(GEN6_MOVE_IDS.phantomForce)
+const ELECTRIC_TERRAIN = DATA_MANAGER.getMove(GEN6_MOVE_IDS.electricTerrain)
+const MISTY_TERRAIN = DATA_MANAGER.getMove(GEN6_MOVE_IDS.mistyTerrain)
+
 function makeActive(overrides: {
   level?: number;
   attack?: number;
@@ -64,30 +88,32 @@ function makeActive(overrides: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: string | null;
+  status?: PrimaryStatus | null;
   speciesId?: number;
   nickname?: string | null;
-  volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
-  moves?: Array<{ moveId: string; currentPp: number; maxPp: number }>;
+  volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
+  moves?: PokemonInstance["moves"];
   isMega?: boolean;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
+  const speciesId = overrides.speciesId ?? SPECIES.bulbasaur;
+  const species = DATA_MANAGER.getSpecies(speciesId);
   return {
     pokemon: {
       uid: CORE_TERRAIN_IDS.testSource,
-      speciesId: overrides.speciesId ?? 1,
+      speciesId,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
-      moves: overrides.moves ?? [],
+      moves: overrides.moves ?? [createMoveSlot(TACKLE.id, TACKLE.pp)],
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: `${CORE_TYPE_IDS.normal}1` as const,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: overrides.status ?? null,
       friendship: 0,
       gender: "male" as any,
       isShiny: false,
@@ -95,7 +121,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp,
         attack: overrides.attack ?? 100,
@@ -116,7 +142,7 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [CORE_TYPE_IDS.normal],
+    types: overrides.types ?? [...species.types],
     ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -140,52 +166,26 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides?: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  breaksProtect?: boolean;
-}): MoveData {
+function makeCanonicalMove(
+  moveId: (typeof GEN6_MOVE_IDS)[keyof typeof GEN6_MOVE_IDS] | (typeof CORE_MOVE_IDS)[keyof typeof CORE_MOVE_IDS],
+  overrides: Partial<MoveData> = {},
+): MoveData {
+  const baseMove = DATA_MANAGER.getMove(moveId);
   return {
-    id: overrides?.id ?? CORE_MOVE_IDS.tackle,
-    displayName: overrides?.id ?? "Tackle",
-    type: overrides?.type ?? CORE_TYPE_IDS.normal,
-    category: overrides?.category ?? "physical",
-    power: overrides?.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides?.flags,
-    },
-    effect: overrides?.effect ?? null,
-    description: "",
-    generation: 6,
-    critRatio: overrides?.critRatio ?? 0,
-    breaksProtect: overrides?.breaksProtect ?? false,
-  } as MoveData;
+    ...baseMove,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
+    ...overrides,
+  };
+}
+
+function makeSyntheticProtectBreakingPhantomForce(): MoveData {
+  return makeCanonicalMove(GEN6_MOVE_IDS.phantomForce, {
+    // Synthetic probe: the protection-bypass assertion exercises the explicit
+    // `breaksProtect` branch, which is not currently carried on the canonical
+    // Gen 6 move record exported by the data manager.
+    breaksProtect: true,
+  });
 }
 
 function makeState(overrides?: {
@@ -232,7 +232,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? TACKLE,
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -264,35 +264,35 @@ const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
 describe("Gen 6 Integration: Terrain + Status immunity stacking", () => {
   it("given Electric Terrain is active and a grounded Grass-type, when sleep is attempted, then terrain blocks sleep on grounded Pokemon", () => {
     // Source: Bulbapedia "Electric Terrain" -- grounded Pokemon cannot fall asleep
-    const grassTarget = makeActive({ types: [CORE_TYPE_IDS.grass], nickname: "Bulbasaur" });
+    const grassTarget = makeActive({ speciesId: SPECIES.bulbasaur, nickname: "Bulbasaur" });
     const state = makeState({
-      terrain: { type: CORE_TERRAIN_IDS.electric, turnsLeft: 5, source: "electric-surge" },
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ELECTRIC_TERRAIN.id },
     });
-    const canSleep = canInflictStatusWithTerrain(CORE_STATUS_IDS.sleep, grassTarget, state);
+    const canSleep = canInflictStatusWithTerrain(STATUS.sleep, grassTarget, state);
     expect(canSleep).toBe(false);
   });
 
   it("given Electric Terrain is active and a NON-Grass grounded Pokemon, when sleep is attempted, then terrain blocks sleep", () => {
     // Source: Bulbapedia "Electric Terrain" -- grounded Pokemon cannot fall asleep
-    const normalTarget = makeActive({ types: [CORE_TYPE_IDS.normal], nickname: "Snorlax" });
+    const normalTarget = makeActive({ speciesId: SPECIES.snorlax, nickname: "Snorlax" });
     const state = makeState({
-      terrain: { type: CORE_TERRAIN_IDS.electric, turnsLeft: 5, source: "electric-surge" },
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ELECTRIC_TERRAIN.id },
     });
-    const canSleep = canInflictStatusWithTerrain(CORE_STATUS_IDS.sleep, normalTarget, state);
+    const canSleep = canInflictStatusWithTerrain(STATUS.sleep, normalTarget, state);
     expect(canSleep).toBe(false);
   });
 
   it("given Misty Terrain is active and a grounded Pokemon, when statuses are attempted, then terrain blocks ALL primary statuses", () => {
     // Source: Bulbapedia "Misty Terrain" -- grounded Pokemon protected from ALL status conditions
-    const target = makeActive({ types: [CORE_TYPE_IDS.water], nickname: "Vaporeon" });
+    const target = makeActive({ speciesId: SPECIES.vaporeon, nickname: "Vaporeon" });
     const state = makeState({
-      terrain: { type: "misty", turnsLeft: 5, source: "misty-surge" },
+      terrain: { type: TERRAINS.misty, turnsLeft: 5, source: MISTY_TERRAIN.id },
     });
-    expect(canInflictStatusWithTerrain(CORE_STATUS_IDS.paralysis, target, state)).toBe(false);
-    expect(canInflictStatusWithTerrain(CORE_STATUS_IDS.burn, target, state)).toBe(false);
-    expect(canInflictStatusWithTerrain(CORE_STATUS_IDS.poison, target, state)).toBe(false);
-    expect(canInflictStatusWithTerrain(CORE_STATUS_IDS.sleep, target, state)).toBe(false);
-    expect(canInflictStatusWithTerrain(CORE_STATUS_IDS.freeze, target, state)).toBe(false);
+    expect(canInflictStatusWithTerrain(STATUS.paralysis, target, state)).toBe(false);
+    expect(canInflictStatusWithTerrain(STATUS.burn, target, state)).toBe(false);
+    expect(canInflictStatusWithTerrain(STATUS.poison, target, state)).toBe(false);
+    expect(canInflictStatusWithTerrain(STATUS.sleep, target, state)).toBe(false);
+    expect(canInflictStatusWithTerrain(STATUS.freeze, target, state)).toBe(false);
   });
 });
 
@@ -308,7 +308,8 @@ describe("Gen 6 Integration: Mega Evolution + Tough Claws + Damage calc", () => 
   it("given Mega Charizard X uses contact Fire move on Grass/Poison, when damage is calculated, then STAB + SE + Tough Claws all apply", () => {
     // Source: Showdown damage calc -- multiplicative stacking
     const megaCharizardX = makeActive({
-      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.dragon],
+      speciesId: SPECIES.charizard,
+      types: [TYPES.fire, TYPES.dragon],
       ability: GEN6_ABILITY_IDS.toughClaws,
       attack: 130,
       level: 50,
@@ -316,23 +317,17 @@ describe("Gen 6 Integration: Mega Evolution + Tough Claws + Damage calc", () => 
       isMega: true,
     });
     const venusaur = makeActive({
-      types: [CORE_TYPE_IDS.grass, CORE_STATUS_IDS.poison],
+      speciesId: SPECIES.venusaur,
+      types: [TYPES.grass, TYPES.poison],
       defense: 83,
       hp: 160,
       currentHp: 160,
       nickname: "Venusaur",
     });
-    const firePunch = makeMove({
-      id: GEN6_MOVE_IDS.firePunch,
-      type: CORE_TYPE_IDS.fire,
-      category: "physical",
-      power: 75,
-      flags: { contact: true, punch: true },
-    });
     const ctx = makeDamageContext({
       attacker: megaCharizardX,
       defender: venusaur,
-      move: firePunch,
+      move: FIRE_PUNCH,
     });
     const result = calculateGen6Damage(ctx, typeChart);
     // Fire vs Grass = 2x, Fire vs Poison = 1x, combined = 2x
@@ -345,19 +340,19 @@ describe("Gen 6 Integration: Parental Bond + Life Orb", () => {
   it("given a Parental Bond user holding Life Orb, when dealing damage, then Life Orb recoil = floor(maxHP/10)", () => {
     // Source: Showdown data/items.ts -- Life Orb: floor(maxHP / 10)
     const attacker = makeActive({
+      speciesId: SPECIES.kangaskhan,
       ability: GEN6_ABILITY_IDS.parentalBond,
       heldItem: GEN6_ITEM_IDS.lifeOrb,
       hp: 200,
       currentHp: 200,
       attack: 120,
-      types: [CORE_TYPE_IDS.normal],
       nickname: "Kangaskhan",
     });
-    expect(isParentalBondEligible(GEN6_ABILITY_IDS.parentalBond, makeMove({ power: 80 }))).toBe(true);
+    expect(isParentalBondEligible(GEN6_ABILITY_IDS.parentalBond, FIRE_PUNCH)).toBe(true);
     const ctx = makeItemContext({
       pokemon: attacker,
       damage: 100,
-      move: makeMove({ id: GEN6_MOVE_IDS.return, type: CORE_TYPE_IDS.normal, power: 102 }),
+      move: FIRE_PUNCH,
     });
     const result = applyGen6HeldItem("on-hit", ctx);
     expect(result.activated).toBe(true);
@@ -368,25 +363,17 @@ describe("Gen 6 Integration: Parental Bond + Life Orb", () => {
   it("given a Sheer Force user holding Life Orb using a move with secondary effects, when on-hit triggers, then Life Orb recoil is suppressed", () => {
     // Source: Showdown scripts.ts -- Sheer Force suppresses Life Orb recoil
     const attacker = makeActive({
+      speciesId: SPECIES.nidoking,
       ability: GEN6_ABILITY_IDS.sheerForce,
       heldItem: GEN6_ITEM_IDS.lifeOrb,
       hp: 200,
       currentHp: 200,
-      types: [CORE_TYPE_IDS.normal],
       nickname: "Nidoking",
-    });
-    const iceBeam = makeMove({
-      id: GEN6_MOVE_IDS.iceBeam,
-      type: CORE_TYPE_IDS.ice,
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-      effect: { type: "status-chance", status: CORE_STATUS_IDS.freeze, chance: 10 } as MoveEffect,
     });
     const ctx = makeItemContext({
       pokemon: attacker,
       damage: 100,
-      move: iceBeam,
+      move: ICE_BEAM,
     });
     const result = applyGen6HeldItem("on-hit", ctx);
     expect(result.activated).toBe(false);
@@ -406,6 +393,7 @@ describe("Gen 6 Integration: Spiky Shield + Rocky Helmet separate damage", () =>
     // Rocky Helmet: floor(300/6) = 50
     // Source: Showdown data/items.ts -- rockyhelmet: floor(source.maxhp / 6)
     const defender = makeActive({
+      speciesId: SPECIES.chesnaught,
       heldItem: GEN6_ITEM_IDS.rockyHelmet,
       hp: 200,
       currentHp: 200,
@@ -432,17 +420,11 @@ describe("Gen 6 Integration: Spiky Shield + Rocky Helmet separate damage", () =>
         },
       ],
     });
-    const contactMove = makeMove({
-      id: GEN6_MOVE_IDS.closeCombat,
-      type: CORE_TYPE_IDS.fighting,
-      power: 120,
-      flags: { contact: true },
-    });
     const itemCtx = makeItemContext({
       pokemon: defender,
       state,
       damage: 50,
-      move: contactMove,
+      move: CLOSE_COMBAT,
     });
     const rockyResult = applyGen6HeldItem("on-contact", itemCtx);
     expect(rockyResult.activated).toBe(true);
@@ -466,56 +448,39 @@ describe("Gen 6 Integration: King's Shield blocks contact, stat drop persists", 
   it("given an Atk drop from King's Shield, when a special move is used, then the Atk drop does NOT affect special damage", () => {
     // Source: fundamental mechanic -- Atk stages only affect physical moves
     const attacker = makeActive({
-      attack: 100,
-      spAttack: 100,
-      types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.ghost],
+      speciesId: SPECIES.aegislash,
       nickname: "Aegislash",
     });
     attacker.statStages.attack = -2;
-    const shadowBall = makeMove({
-      id: GEN6_MOVE_IDS.shadowBall,
-      type: CORE_TYPE_IDS.ghost,
-      category: "special",
-      power: 80,
-      flags: { contact: false },
-    });
     const psychicTarget = makeActive({
-      types: [CORE_TYPE_IDS.psychic],
+      speciesId: SPECIES.alakazam,
       spDefense: 100,
       nickname: "Alakazam",
     });
     const ctx = makeDamageContext({
       attacker,
       defender: psychicTarget,
-      move: shadowBall,
+      move: SHADOW_BALL,
     });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.effectiveness).toBe(2);
     expect(result.damage).toBeGreaterThan(0);
 
     // Physical move IS affected by Atk drop
-    const ironHead = makeMove({
-      id: GEN6_MOVE_IDS.ironHead,
-      type: CORE_TYPE_IDS.steel,
-      category: "physical",
-      power: 80,
-    });
     const physCtx = makeDamageContext({
       attacker,
       defender: psychicTarget,
-      move: ironHead,
+      move: IRON_HEAD,
     });
     const physResult = calculateGen6Damage(physCtx, typeChart);
 
     const cleanAttacker = makeActive({
-      attack: 100,
-      spAttack: 100,
-      types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.ghost],
+      speciesId: SPECIES.aegislash,
     });
     const cleanCtx = makeDamageContext({
       attacker: cleanAttacker,
       defender: psychicTarget,
-      move: ironHead,
+      move: IRON_HEAD,
     });
     const cleanResult = calculateGen6Damage(cleanCtx, typeChart);
     expect(physResult.damage).toBeLessThan(cleanResult.damage);
@@ -526,7 +491,7 @@ describe("Gen 6 Integration: Sticky Web + grounding checks", () => {
   it("given Sticky Web is set, when Magic Guard Pokemon switches in, then -1 Speed STILL applies (stat change, not damage)", () => {
     // Source: Bulbapedia -- Magic Guard only prevents indirect DAMAGE, not stat changes
     const magicGuardPokemon = makeActive({
-      types: [CORE_TYPE_IDS.psychic],
+      speciesId: SPECIES.alakazam,
       ability: GEN6_ABILITY_IDS.magicGuard,
       nickname: "Alakazam",
     });
@@ -548,7 +513,7 @@ describe("Gen 6 Integration: Sticky Web + grounding checks", () => {
   it("given Sticky Web is set, when Flying-type switches in, then Sticky Web does NOT apply (not grounded)", () => {
     // Source: Showdown data/moves.ts -- stickyweb only affects grounded Pokemon
     const flyingPokemon = makeActive({
-      types: [CORE_TYPE_IDS.flying, CORE_TYPE_IDS.normal],
+      speciesId: SPECIES.talonflame,
       nickname: "Talonflame",
     });
     const hazards = [{ type: CORE_HAZARD_IDS.stickyWeb as const, layers: 1 }];
@@ -569,7 +534,7 @@ describe("Gen 6 Integration: Weather ability switch-in", () => {
   it("given Drizzle with Damp Rock, when switching in, then rain ability activates", () => {
     // Source: Bulbapedia "Damp Rock" -- extends rain from 5 to 8 turns
     const drizzleUser = makeActive({
-      types: [CORE_TYPE_IDS.water],
+      speciesId: SPECIES.politoed,
       ability: CORE_ABILITY_IDS.drizzle,
       heldItem: GEN6_ITEM_IDS.dampRock,
       nickname: "Politoed",
@@ -589,7 +554,7 @@ describe("Gen 6 Integration: Weather ability switch-in", () => {
   it("given Drought with Heat Rock, when switching in, then sun ability activates with weather-set effect", () => {
     // Source: Bulbapedia "Heat Rock" -- extends sun from 5 to 8 turns
     const droughtUser = makeActive({
-      types: [CORE_TYPE_IDS.fire],
+      speciesId: SPECIES.ninetales,
       ability: CORE_ABILITY_IDS.drought,
       heldItem: GEN6_ITEM_IDS.heatRock,
       nickname: "Ninetales",
@@ -610,14 +575,7 @@ describe("Gen 6 Integration: Weather ability switch-in", () => {
 describe("Gen 6 Integration: Phantom Force bypasses Protect variants", () => {
   it("given Phantom Force has breaksProtect, when checked against King's Shield, then the move has the bypass flag", () => {
     // Source: Showdown data/moves.ts -- phantomforce: breaksProtect: true
-    const phantomForce = makeMove({
-      id: GEN6_MOVE_IDS.phantomForce,
-      type: CORE_TYPE_IDS.ghost,
-      category: "physical",
-      power: 90,
-      flags: { contact: true },
-      breaksProtect: true,
-    });
+    const phantomForce = makeSyntheticProtectBreakingPhantomForce();
     expect(phantomForce.breaksProtect).toBe(true);
     expect(phantomForce.flags.contact).toBe(true);
     expect(phantomForce.type).toBe(CORE_TYPE_IDS.ghost);
@@ -628,13 +586,13 @@ describe("Gen 6 Integration: Terrain damage modifiers", () => {
   it("given Electric Terrain, when an Electric move is used by grounded attacker, then 1.5x (6144/4096) boost applies", () => {
     // Source: Showdown data/conditions.ts -- electricterrain: 1.5x for Electric on grounded
     // getTerrainDamageModifier(terrainType, moveType, moveId, attackerGrounded, defenderGrounded)
-    const mod = getTerrainDamageModifier(CORE_TERRAIN_IDS.electric, CORE_TERRAIN_IDS.electric, CORE_MOVE_IDS.thunderbolt, true, true);
+    const mod = getTerrainDamageModifier(TERRAINS.electric, TYPES.electric, CORE_MOVE_IDS.thunderbolt, true, true);
     expect(mod.powerModifier).toBe(6144); // 1.5x in 4096-based
   });
 
   it("given Electric Terrain, when an Electric move is used by NON-grounded attacker, then no boost", () => {
     // Source: Showdown -- terrain boosts only apply to grounded Pokemon
-    const mod = getTerrainDamageModifier(CORE_TERRAIN_IDS.electric, CORE_TERRAIN_IDS.electric, CORE_MOVE_IDS.thunderbolt, false, true);
+    const mod = getTerrainDamageModifier(TERRAINS.electric, TYPES.electric, CORE_MOVE_IDS.thunderbolt, false, true);
     expect(mod.powerModifier).toBeNull();
   });
 
@@ -711,20 +669,13 @@ describe("Gen 6 Integration: Weakness Policy activation", () => {
   it("given Weakness Policy holder hit by SE move, then +2 Atk/SpAtk and item is consumed", () => {
     // Source: Showdown data/items.ts -- weaknesspolicy: +2 atk/spa on SE hit
     const pokemon = makeActive({
-      types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.flying],
+      speciesId: SPECIES.dragonite,
       heldItem: GEN6_ITEM_IDS.weaknessPolicy,
       hp: 300,
       currentHp: 200,
       nickname: "Dragonite",
     });
-    const iceBeam = makeMove({
-      id: GEN6_MOVE_IDS.iceBeam,
-      type: CORE_TYPE_IDS.ice,
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
-    const ctx = makeItemContext({ pokemon, damage: 150, move: iceBeam });
+    const ctx = makeItemContext({ pokemon, damage: 150, move: ICE_BEAM });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -737,20 +688,13 @@ describe("Gen 6 Integration: Weakness Policy activation", () => {
   it("given Weakness Policy holder hit by neutral move, then item does NOT activate", () => {
     // Source: Showdown data/items.ts -- weaknesspolicy requires typeMod >= 2
     const pokemon = makeActive({
-      types: [CORE_TYPE_IDS.water],
+      speciesId: SPECIES.gyarados,
       heldItem: GEN6_ITEM_IDS.weaknessPolicy,
       hp: 200,
       currentHp: 150,
       nickname: "Gyarados",
     });
-    const surf = makeMove({
-      id: CORE_MOVE_IDS.surf,
-      type: CORE_TYPE_IDS.water,
-      category: "special",
-      power: 90,
-      flags: { contact: false },
-    });
-    const ctx = makeItemContext({ pokemon, damage: 50, move: surf });
+    const ctx = makeItemContext({ pokemon, damage: 50, move: SURF });
     const result = applyGen6HeldItem("on-damage-taken", ctx);
     expect(result.activated).toBe(false);
   });
@@ -777,13 +721,12 @@ describe("Gen 6 Integration: Crit multiplier is 1.5x", () => {
     // Source: Bulbapedia "Critical hit" -- Gen 6 uses 1.5x, not 2.0x
     const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100, level: 50 });
     const defender = makeActive({ types: [CORE_TYPE_IDS.normal], defense: 100, hp: 200, currentHp: 200 });
-    const tackle = makeMove({ id: CORE_MOVE_IDS.tackle, type: CORE_TYPE_IDS.normal, power: 50 });
     const nonCritResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, isCrit: false, seed: 99 }),
+      makeDamageContext({ attacker, defender, move: TACKLE, isCrit: false, seed: 99 }),
       typeChart,
     );
     const critResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, isCrit: true, seed: 99 }),
+      makeDamageContext({ attacker, defender, move: TACKLE, isCrit: true, seed: 99 }),
       typeChart,
     );
     expect(critResult.damage).toBeGreaterThan(nonCritResult.damage);
@@ -815,8 +758,10 @@ describe("Gen 6 Integration: Gen6Ruleset end-to-end queries", () => {
   it("given Gen6Ruleset, grassy-terrain-heal is in EoT order after poison-heal", () => {
     const ruleset = new Gen6Ruleset();
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toContain("grassy-terrain-heal");
-    expect(order.indexOf("grassy-terrain-heal")).toBeGreaterThan(order.indexOf(CORE_ABILITY_IDS.poisonHeal));
+    expect(order).toContain(CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal);
+    expect(order.indexOf(CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal)).toBeGreaterThan(
+      order.indexOf(CORE_END_OF_TURN_EFFECT_IDS.poisonHeal),
+    );
   });
 
   it("given Gen6Ruleset, getBattleGimmick returns Mega Evolution", () => {
@@ -841,22 +786,22 @@ describe("Gen 6 Integration: Burn damage is 1/8 max HP", () => {
   it("given burned Pokemon with 200 max HP, then burn deals 25 HP (floor(200/8))", () => {
     // Source: Showdown -- Gen < 7 burn damage is 1/8 max HP
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActive({ hp: 200, currentHp: 180, status: CORE_STATUS_IDS.burn });
-    expect(ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, makeState())).toBe(25);
+    const pokemon = makeActive({ hp: 200, currentHp: 180, status: STATUS.burn });
+    expect(ruleset.applyStatusDamage(pokemon, STATUS.burn, makeState())).toBe(25);
   });
 
   it("given burned Pokemon with 321 max HP, then burn deals 40 HP (floor(321/8))", () => {
     // Derivation: floor(321 / 8) = 40
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActive({ hp: 321, currentHp: 300, status: CORE_STATUS_IDS.burn });
-    expect(ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, makeState())).toBe(40);
+    const pokemon = makeActive({ hp: 321, currentHp: 300, status: STATUS.burn });
+    expect(ruleset.applyStatusDamage(pokemon, STATUS.burn, makeState())).toBe(40);
   });
 
   it("given burned Magic Guard Pokemon, then burn deals 0 HP", () => {
     // Source: Bulbapedia -- Magic Guard prevents indirect damage
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActive({ hp: 200, currentHp: 180, status: CORE_STATUS_IDS.burn, ability: GEN6_ABILITY_IDS.magicGuard });
-    expect(ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, makeState())).toBe(0);
+    const pokemon = makeActive({ hp: 200, currentHp: 180, status: STATUS.burn, ability: GEN6_ABILITY_IDS.magicGuard });
+    expect(ruleset.applyStatusDamage(pokemon, STATUS.burn, makeState())).toBe(0);
   });
 });
 
@@ -887,12 +832,12 @@ describe("Gen 6 Integration: Paralysis 0.25x speed penalty in turn order", () =>
     const ruleset = new Gen6Ruleset();
     const fast = makeActive({
       speed: 200,
-      status: CORE_STATUS_IDS.paralysis,
-      moves: [{ moveId: CORE_MOVE_IDS.thunderbolt, currentPp: 15, maxPp: 15 }],
+      status: STATUS.paralysis,
+      moves: [createMoveSlot(THUNDERBOLT.id, THUNDERBOLT.pp)],
     });
     const slow = makeActive({
       speed: 60,
-      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPp: 35, maxPp: 35 }],
+      moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
     });
     const state = makeState({
       sides: [
@@ -927,14 +872,14 @@ describe("Gen 6 Integration: Heatproof halves burn damage", () => {
   it("given burned Heatproof Pokemon with 200 max HP, then burn deals 12 HP (floor(200/16))", () => {
     // Source: Bulbapedia -- Heatproof halves burn damage from 1/8 to 1/16
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActive({ hp: 200, currentHp: 180, status: CORE_STATUS_IDS.burn, ability: GEN6_ABILITY_IDS.heatproof });
-    expect(ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, makeState())).toBe(12);
+    const pokemon = makeActive({ hp: 200, currentHp: 180, status: STATUS.burn, ability: GEN6_ABILITY_IDS.heatproof });
+    expect(ruleset.applyStatusDamage(pokemon, STATUS.burn, makeState())).toBe(12);
   });
 
   it("given burned Heatproof Pokemon with 100 max HP, then burn deals 6 HP (floor(100/16))", () => {
     // Derivation: floor(100/16) = 6
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActive({ hp: 100, currentHp: 80, status: CORE_STATUS_IDS.burn, ability: GEN6_ABILITY_IDS.heatproof });
-    expect(ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, makeState())).toBe(6);
+    const pokemon = makeActive({ hp: 100, currentHp: 80, status: STATUS.burn, ability: GEN6_ABILITY_IDS.heatproof });
+    expect(ruleset.applyStatusDamage(pokemon, STATUS.burn, makeState())).toBe(6);
   });
 });

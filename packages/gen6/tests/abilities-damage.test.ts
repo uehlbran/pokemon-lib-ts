@@ -132,32 +132,15 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-}): MoveData {
+function makeMove(moveId = DEFAULT_MOVE.id, overrides: Partial<MoveData> = {}): MoveData {
+  const baseMove = dataManager.getMove(moveId)
   return {
-    ...DEFAULT_MOVE,
-    id: overrides.id ?? DEFAULT_MOVE.id,
-    displayName: overrides.id ? dataManager.getMove(overrides.id).displayName : DEFAULT_MOVE.displayName,
-    type: overrides.type ?? DEFAULT_MOVE.type,
-    category: overrides.category ?? DEFAULT_MOVE.category,
-    power: overrides.power ?? DEFAULT_MOVE.power,
-    accuracy: DEFAULT_MOVE.accuracy,
-    pp: DEFAULT_MOVE.pp,
-    priority: DEFAULT_MOVE.priority,
-    target: DEFAULT_MOVE.target,
+    ...baseMove,
+    ...overrides,
     flags: {
-      ...DEFAULT_MOVE.flags,
+      ...baseMove.flags,
       ...overrides.flags,
     },
-    effect: overrides.effect ?? DEFAULT_MOVE.effect,
-    description: DEFAULT_MOVE.description,
-    generation: DEFAULT_MOVE.generation,
   } as MoveData;
 }
 
@@ -191,7 +174,7 @@ function makeAbilityContext(overrides: {
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(42),
     trigger: "on-damage-calc",
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeMove(),
     damage: overrides.damage,
   };
 }
@@ -206,7 +189,7 @@ describe("Tough Claws", () => {
     // Source: Showdown data/abilities.ts -- toughclaws: move.flags['contact'], chainModify([5325, 4096])
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.toughClaws }),
-      move: makeMove({ flags: { contact: true } }),
+      move: makeMove(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -216,12 +199,7 @@ describe("Tough Claws", () => {
     // Source: Bulbapedia "Tough Claws" Gen 6 -- only contact moves
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.toughClaws }),
-      move: makeMove({
-        id: CORE_MOVE_IDS.flamethrower,
-        type: CORE_TYPE_IDS.fire,
-        category: "special",
-        flags: { contact: false },
-      }),
+      move: makeMove(CORE_MOVE_IDS.flamethrower),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -248,7 +226,7 @@ describe("Strong Jaw", () => {
     // Source: Showdown data/abilities.ts -- strongjaw: move.flags['bite']
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.strongJaw }),
-      move: makeMove({ id: GEN6_MOVE_IDS.crunch, type: CORE_TYPE_IDS.dark, flags: { bite: true, contact: true } }),
+      move: makeMove(GEN6_MOVE_IDS.crunch),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -258,7 +236,7 @@ describe("Strong Jaw", () => {
     // Source: Bulbapedia "Strong Jaw" -- only bite moves are boosted
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.strongJaw }),
-      move: makeMove({ id: CORE_MOVE_IDS.tackle, flags: { bite: false } }),
+      move: makeMove(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -285,12 +263,7 @@ describe("Mega Launcher", () => {
     // Source: Showdown data/abilities.ts -- megalauncher: move.flags['pulse']
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.megaLauncher }),
-      move: makeMove({
-        id: GEN6_MOVE_IDS.auraSphere,
-        type: CORE_TYPE_IDS.fighting,
-        category: "special",
-        flags: { pulse: true, contact: false },
-      }),
+      move: makeMove(GEN6_MOVE_IDS.auraSphere),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -300,7 +273,7 @@ describe("Mega Launcher", () => {
     // Source: Bulbapedia "Mega Launcher" -- only pulse/aura moves
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.megaLauncher }),
-      move: makeMove({ id: CORE_MOVE_IDS.tackle, flags: { pulse: false } }),
+      move: makeMove(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -327,7 +300,7 @@ describe("Fur Coat", () => {
     // Source: Showdown data/abilities.ts -- furcoat: onModifyDef, chainModify(2)
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.furCoat }),
-      move: makeMove({ category: "physical" }),
+      move: makeMove(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -338,7 +311,7 @@ describe("Fur Coat", () => {
     // Source: Bulbapedia "Fur Coat" -- only physical attacks trigger defense doubling
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.furCoat }),
-      move: makeMove({ category: "special", flags: { contact: false } }),
+      move: makeMove(CORE_MOVE_IDS.flamethrower),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -365,7 +338,7 @@ describe("Pixilate", () => {
     // Source: Showdown data/abilities.ts -- pixilate: onModifyType + onBasePower([5325, 4096])
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.pixilate, types: [CORE_TYPE_IDS.fairy] }),
-      move: makeMove({ type: CORE_TYPE_IDS.normal }),
+      move: makeMove(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -378,7 +351,7 @@ describe("Pixilate", () => {
     // Source: Bulbapedia "Pixilate" -- only Normal-type moves are converted
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.pixilate }),
-      move: makeMove({ type: CORE_TYPE_IDS.fire, flags: { contact: false } }),
+      move: makeMove(CORE_MOVE_IDS.flamethrower),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -408,7 +381,7 @@ describe("Aerilate", () => {
     // Source: Showdown data/abilities.ts -- aerilate: onModifyType + onBasePower
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.aerilate, types: [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying] }),
-      move: makeMove({ type: CORE_TYPE_IDS.normal }),
+      move: makeMove(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -421,7 +394,7 @@ describe("Aerilate", () => {
     // Source: Bulbapedia "Aerilate" -- only Normal-type moves
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.aerilate }),
-      move: makeMove({ type: CORE_TYPE_IDS.ice, flags: { contact: false } }),
+      move: makeMove(GEN6_MOVE_IDS.iceBeam),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -452,7 +425,7 @@ describe("Refrigerate", () => {
     // Source: Showdown data/abilities.ts -- refrigerate: onModifyType + onBasePower
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.refrigerate, types: [CORE_TYPE_IDS.ice] }),
-      move: makeMove({ type: CORE_TYPE_IDS.normal }),
+      move: makeMove(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -463,7 +436,7 @@ describe("Refrigerate", () => {
     // Source: Bulbapedia "Refrigerate" -- only Normal-type moves
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.refrigerate }),
-      move: makeMove({ type: CORE_TYPE_IDS.grass, flags: { contact: false } }),
+      move: makeMove(GEN6_MOVE_IDS.energyBall),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -494,7 +467,7 @@ describe("Parental Bond", () => {
     // Source: Showdown data/abilities.ts -- parentalbond: onModifyMove adds multihit
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.parentalBond }),
-      move: makeMove({ power: 80 }),
+      move: makeMove(GEN6_MOVE_IDS.strength),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -505,7 +478,7 @@ describe("Parental Bond", () => {
     const multiHitEffect: MoveEffect = { type: "multi-hit", min: 2, max: 5 };
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.parentalBond }),
-      move: makeMove({ power: 25, effect: multiHitEffect }),
+      move: makeMove(GEN6_MOVE_IDS.doubleSlap, { effect: multiHitEffect }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -515,7 +488,7 @@ describe("Parental Bond", () => {
     // Source: Bulbapedia "Parental Bond" -- only damaging moves
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.parentalBond }),
-      move: makeMove({ power: 0, category: "status" }),
+      move: makeMove(GEN6_MOVE_IDS.growl),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -555,7 +528,7 @@ describe("Technician (carry-forward)", () => {
     // Source: Showdown data/abilities.ts -- technician: basePower <= 60, chainModify(1.5)
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.technician }),
-      move: makeMove({ power: 60 }),
+      move: makeMove(GEN6_MOVE_IDS.swift),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -565,7 +538,7 @@ describe("Technician (carry-forward)", () => {
     // Source: Showdown data/abilities.ts -- technician only for basePower <= 60
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.technician }),
-      move: makeMove({ power: 80 }),
+      move: makeMove(GEN6_MOVE_IDS.strength),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -617,7 +590,7 @@ describe("Sturdy (carry-forward)", () => {
     const ohkoEffect: MoveEffect = { type: "ohko" };
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: CORE_ABILITY_IDS.sturdy }),
-      move: makeMove({ effect: ohkoEffect }),
+      move: makeMove(GEN6_MOVE_IDS.fissure, { effect: ohkoEffect }),
     });
     const result = handleGen6DamageImmunityAbility(ctx);
     expect(result.activated).toBe(true);
@@ -628,7 +601,7 @@ describe("Sturdy (carry-forward)", () => {
     // Source: Showdown -- OHKO-block only; survival is in capLethalDamage
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: CORE_ABILITY_IDS.sturdy }),
-      move: makeMove({}),
+      move: makeMove(),
     });
     const result = handleGen6DamageImmunityAbility(ctx);
     expect(result.activated).toBe(false);
@@ -667,7 +640,7 @@ describe("Sheer Force (carry-forward)", () => {
     const effect: MoveEffect = { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 10 };
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove({ effect }),
+      move: makeMove(CORE_MOVE_IDS.flamethrower, { effect }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -677,7 +650,7 @@ describe("Sheer Force (carry-forward)", () => {
     // Source: Showdown -- Sheer Force only for moves with secondary effects
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove({ effect: null }),
+      move: makeMove(CORE_MOVE_IDS.tackle, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -699,7 +672,7 @@ describe("Sheer Force (carry-forward)", () => {
     //   Our data stores effect=null because the onHit function is not serializable
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove({ id: CORE_MOVE_IDS.triAttack, effect: null }),
+      move: makeMove(CORE_MOVE_IDS.triAttack, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -711,7 +684,7 @@ describe("Sheer Force (carry-forward)", () => {
     //   by hasSheerForceEligibleEffect. The whitelist provides defense-in-depth.
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove({ id: GEN6_MOVE_IDS.secretPower, effect: null }),
+      move: makeMove(GEN6_MOVE_IDS.secretPower, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -723,7 +696,7 @@ describe("Sheer Force (carry-forward)", () => {
     //   by hasSheerForceEligibleEffect. The whitelist provides defense-in-depth.
     const ctx = makeAbilityContext({
       pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove({ id: GEN6_MOVE_IDS.relicSong, effect: null }),
+      move: makeMove(GEN6_MOVE_IDS.relicSong, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);

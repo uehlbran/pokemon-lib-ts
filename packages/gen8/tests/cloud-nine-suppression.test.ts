@@ -9,8 +9,15 @@
  */
 import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen8DataManager,
+  GEN8_ABILITY_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
+  GEN8_SPECIES_IDS,
+} from "../src";
 import { calculateGen8Damage } from "../src/Gen8DamageCalc";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 import {
@@ -18,6 +25,16 @@ import {
   isWeatherSuppressedGen8,
   isWeatherSuppressedOnFieldGen8,
 } from "../src/Gen8Weather";
+
+const ABILITIES = GEN8_ABILITY_IDS;
+const MOVES = GEN8_MOVE_IDS;
+const NATURES = GEN8_NATURE_IDS;
+const SPECIES = GEN8_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHERS = CORE_WEATHER_IDS;
+const GEN8_DATA = createGen8DataManager();
+const DEFAULT_SPECIES_ID = GEN8_DATA.getSpecies(SPECIES.pikachu).id;
+const DEFAULT_NATURE = GEN8_DATA.getNature(NATURES.hardy).id;
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as gen5/gen6 cloud-nine-suppression tests)
@@ -42,16 +59,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? DEFAULT_SPECIES_ID,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? ABILITIES.blaze,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -62,7 +79,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp,
         attack: overrides.attack ?? 100,
@@ -83,8 +100,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.blaze,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -107,46 +124,11 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-}): MoveData {
-  return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 8,
-    critRatio: 0,
-  } as MoveData;
+function makeMove(moveId: string): MoveData {
+  const base = GEN8_DATA.getMove(moveId);
+  const move = { ...base, flags: { ...base.flags } } as MoveData;
+  move.id = moveId;
+  return move;
 }
 
 function makeState(overrides?: {
@@ -195,7 +177,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeMove(MOVES.tackle),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -209,22 +191,22 @@ function makeDamageContext(overrides: {
 describe("isWeatherSuppressedGen8", () => {
   it("given attacker has Cloud Nine, when checking suppression, then returns true", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() returns true for Cloud Nine
-    const cloudNine = makeActive({ ability: "cloud-nine" });
-    const normal = makeActive({ ability: "blaze" });
+    const cloudNine = makeActive({ ability: ABILITIES.cloudNine });
+    const normal = makeActive({ ability: ABILITIES.blaze });
     expect(isWeatherSuppressedGen8(cloudNine, normal)).toBe(true);
   });
 
   it("given defender has Air Lock, when checking suppression, then returns true", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() returns true for Air Lock
-    const normal = makeActive({ ability: "blaze" });
-    const airLock = makeActive({ ability: "air-lock" });
+    const normal = makeActive({ ability: ABILITIES.blaze });
+    const airLock = makeActive({ ability: ABILITIES.airLock });
     expect(isWeatherSuppressedGen8(normal, airLock)).toBe(true);
   });
 
   it("given neither has Cloud Nine or Air Lock, when checking suppression, then returns false", () => {
     // Source: Showdown sim/battle.ts — no suppression without Cloud Nine/Air Lock
-    const a = makeActive({ ability: "blaze" });
-    const b = makeActive({ ability: "torrent" });
+    const a = makeActive({ ability: ABILITIES.blaze });
+    const b = makeActive({ ability: ABILITIES.torrent });
     expect(isWeatherSuppressedGen8(a, b)).toBe(false);
   });
 });
@@ -235,30 +217,30 @@ describe("isWeatherSuppressedGen8", () => {
 
 describe("isWeatherSuppressedOnFieldGen8", () => {
   it("given Cloud Nine user on side 0, when checking field, then returns true", () => {
-    const cloudNine = makeActive({ ability: "cloud-nine" });
-    const normal = makeActive({ ability: "blaze" });
+    const cloudNine = makeActive({ ability: ABILITIES.cloudNine });
+    const normal = makeActive({ ability: ABILITIES.blaze });
     const state = makeState({
-      weather: { type: "sand", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.sand, turnsLeft: 5, source: "test" },
       sides: [makeSide(cloudNine, 0), makeSide(normal, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen8(state)).toBe(true);
   });
 
   it("given Air Lock user on side 1, when checking field, then returns true", () => {
-    const normal = makeActive({ ability: "blaze" });
-    const airLock = makeActive({ ability: "air-lock" });
+    const normal = makeActive({ ability: ABILITIES.blaze });
+    const airLock = makeActive({ ability: ABILITIES.airLock });
     const state = makeState({
-      weather: { type: "rain", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.rain, turnsLeft: 5, source: "test" },
       sides: [makeSide(normal, 0), makeSide(airLock, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen8(state)).toBe(true);
   });
 
   it("given no suppression abilities on field, when checking, then returns false", () => {
-    const a = makeActive({ ability: "blaze" });
-    const b = makeActive({ ability: "torrent" });
+    const a = makeActive({ ability: ABILITIES.blaze });
+    const b = makeActive({ ability: ABILITIES.torrent });
     const state = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: "test" },
       sides: [makeSide(a, 0), makeSide(b, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen8(state)).toBe(false);
@@ -275,12 +257,12 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
     // With Cloud Nine, the sun boost is suppressed — damage should equal no-weather damage.
     //
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather modifier in damage calc
-    const attacker = makeActive({ ability: "cloud-nine", attack: 100, types: ["fire"] });
-    const defender = makeActive({ ability: "blaze", defense: 100, types: ["normal"] });
-    const fireMove = makeMove({ id: "flamethrower", type: "fire", category: "special", power: 90 });
+    const attacker = makeActive({ ability: ABILITIES.cloudNine, attack: 100, types: [TYPES.fire] });
+    const defender = makeActive({ ability: ABILITIES.blaze, defense: 100, types: [TYPES.normal] });
+    const fireMove = makeMove(MOVES.flamethrower);
 
     const sunState = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: "test" },
     });
     const noWeatherState = makeState();
 
@@ -308,12 +290,12 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
     // Confirm that without Cloud Nine / Air Lock, rain boost works normally.
     //
     // Source: Showdown sim/battle-actions.ts — weather modifier 1.5x for Water in rain
-    const attacker = makeActive({ ability: "torrent", attack: 100, types: ["water"] });
-    const defender = makeActive({ ability: "blaze", defense: 100, types: ["normal"] });
-    const waterMove = makeMove({ id: "surf", type: "water", category: "special", power: 90 });
+    const attacker = makeActive({ ability: ABILITIES.torrent, attack: 100, types: [TYPES.water] });
+    const defender = makeActive({ ability: ABILITIES.blaze, defense: 100, types: [TYPES.normal] });
+    const waterMove = makeMove(MOVES.surf);
 
     const rainState = makeState({
-      weather: { type: "rain", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.rain, turnsLeft: 5, source: "test" },
     });
     const noWeatherState = makeState();
 
@@ -338,12 +320,12 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
 
   it("given Air Lock defender in rain, when using Water move, then no 1.5x rain boost applied", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather modifier in damage calc
-    const attacker = makeActive({ ability: "torrent", attack: 100, types: ["water"] });
-    const defender = makeActive({ ability: "air-lock", defense: 100, types: ["normal"] });
-    const waterMove = makeMove({ id: "surf", type: "water", category: "special", power: 90 });
+    const attacker = makeActive({ ability: ABILITIES.torrent, attack: 100, types: [TYPES.water] });
+    const defender = makeActive({ ability: ABILITIES.airLock, defense: 100, types: [TYPES.normal] });
+    const waterMove = makeMove(MOVES.surf);
 
     const rainState = makeState({
-      weather: { type: "rain", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.rain, turnsLeft: 5, source: "test" },
     });
     const noWeatherState = makeState();
 
@@ -375,14 +357,14 @@ describe("Gen8 Cloud Nine weather chip suppression", () => {
   it("given Cloud Nine user on field in sandstorm, when applying weather effects, then no chip damage dealt", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather residual damage
     const cloudNine = makeActive({
-      ability: "cloud-nine",
-      types: ["normal"],
+      ability: ABILITIES.cloudNine,
+      types: [TYPES.normal],
       hp: 200,
       currentHp: 200,
     });
-    const normalMon = makeActive({ ability: "blaze", types: ["normal"], hp: 200, currentHp: 200 });
+    const normalMon = makeActive({ ability: ABILITIES.blaze, types: [TYPES.normal], hp: 200, currentHp: 200 });
     const state = makeState({
-      weather: { type: "sand", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.sand, turnsLeft: 5, source: "test" },
       sides: [makeSide(cloudNine, 0), makeSide(normalMon, 1)],
     });
 
@@ -392,10 +374,10 @@ describe("Gen8 Cloud Nine weather chip suppression", () => {
 
   it("given Air Lock user on field in hail, when applying weather effects, then no chip damage dealt", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather residual damage
-    const normalMon = makeActive({ ability: "blaze", types: ["normal"], hp: 200, currentHp: 200 });
-    const airLock = makeActive({ ability: "air-lock", types: ["normal"], hp: 200, currentHp: 200 });
+    const normalMon = makeActive({ ability: ABILITIES.blaze, types: [TYPES.normal], hp: 200, currentHp: 200 });
+    const airLock = makeActive({ ability: ABILITIES.airLock, types: [TYPES.normal], hp: 200, currentHp: 200 });
     const state = makeState({
-      weather: { type: "hail", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.hail, turnsLeft: 5, source: "test" },
       sides: [makeSide(normalMon, 0), makeSide(airLock, 1)],
     });
 
@@ -406,19 +388,19 @@ describe("Gen8 Cloud Nine weather chip suppression", () => {
   it("given no suppression in hail, when applying weather effects, then chip damage is dealt to non-immune Pokemon", () => {
     // Source: Showdown data/conditions.ts — hail deals 1/16 max HP chip damage
     const normalMon1 = makeActive({
-      ability: "blaze",
-      types: ["normal"],
+      ability: ABILITIES.blaze,
+      types: [TYPES.normal],
       hp: 200,
       currentHp: 200,
     });
     const normalMon2 = makeActive({
-      ability: "blaze",
-      types: ["fire"],
+      ability: ABILITIES.blaze,
+      types: [TYPES.fire],
       hp: 240,
       currentHp: 240,
     });
     const state = makeState({
-      weather: { type: "hail", turnsLeft: 5, source: "test" },
+      weather: { type: WEATHERS.hail, turnsLeft: 5, source: "test" },
       sides: [makeSide(normalMon1, 0), makeSide(normalMon2, 1)],
     });
 
