@@ -151,12 +151,11 @@ const TEST_IDS = {
   types: CORE_TYPE_IDS,
   terrain: {
     electric: CORE_TERRAIN_IDS.electric,
-    grassy: "grassy",
+    grassy: CORE_TERRAIN_IDS.grassy,
   },
   volatiles: CORE_VOLATILE_IDS,
   weather: {
     ...CORE_WEATHER_IDS,
-    heavyRain: "heavy-rain",
   },
 } as const;
 

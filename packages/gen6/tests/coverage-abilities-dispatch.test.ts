@@ -11,7 +11,14 @@ import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/ba
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { CORE_ABILITY_IDS, CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN6_ABILITY_IDS, GEN6_ITEM_IDS, GEN6_MOVE_IDS, GEN6_SPECIES_IDS, applyGen6Ability } from "../src";
+import {
+  createGen6DataManager,
+  GEN6_ABILITY_IDS,
+  GEN6_ITEM_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_SPECIES_IDS,
+  applyGen6Ability,
+} from "../src";
 import { handleGen6RemainingAbility } from "../src/Gen6AbilitiesRemaining";
 import { handleGen6StatAbility } from "../src/Gen6AbilitiesStat";
 
@@ -32,6 +39,8 @@ const C = CORE_ABILITY_IDS;
 const T = CORE_TYPE_IDS;
 const S = CORE_STATUS_IDS;
 const W = CORE_WEATHER_IDS;
+const dataManager = createGen6DataManager();
+const DEFAULT_MOVE = dataManager.getMove(M.tackle);
 
 function makePokemon(overrides: {
   ability?: string;
@@ -161,21 +170,28 @@ function makeMove(
     effect?: { type: string; [key: string]: unknown } | null;
   },
 ): MoveData {
+  const baseMove = (() => {
+    try {
+      return dataManager.getMove(opts?.id ?? M.tackle);
+    } catch {
+      return {
+        ...DEFAULT_MOVE,
+        id: opts?.id ?? DEFAULT_MOVE.id,
+        displayName: opts?.displayName ?? DEFAULT_MOVE.displayName,
+      };
+    }
+  })();
   return {
-    id: opts?.id ?? "test-move",
-    displayName: opts?.displayName ?? "Test Move",
+    ...baseMove,
+    id: opts?.id ?? baseMove.id,
+    displayName: opts?.displayName ?? baseMove.displayName,
     type,
-    category: opts?.category ?? "physical",
-    power: opts?.power ?? 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
+    category: opts?.category ?? baseMove.category,
+    power: opts?.power ?? baseMove.power,
     priority: 0,
-    target: "normal",
-    flags: opts?.flags ?? {},
-    effect: opts?.effect ?? null,
-    critRate: 0,
-    hasCrashDamage: false,
+    target: baseMove.target,
+    flags: { ...baseMove.flags, ...(opts?.flags ?? {}) },
+    effect: opts?.effect ?? baseMove.effect,
   } as MoveData;
 }
 
@@ -748,7 +764,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
     // Source: Showdown data/abilities.ts -- stancechange only applies to Aegislash (speciesId 681)
     const pokemon = makePokemon({
       ability: A.stanceChange,
-      speciesId: 25, // Pikachu, not Aegislash
+      speciesId: SP.pikachu, // Pikachu, not Aegislash
     });
     const ctx = {
       pokemon,

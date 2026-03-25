@@ -1,4 +1,5 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type { WeatherType } from "@pokemon-lib-ts/core";
 import { CORE_ABILITY_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN6_ABILITY_IDS, GEN6_SPECIES_IDS } from "../src";
@@ -69,7 +70,7 @@ function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
 }
 
 function makeState(
-  weatherType: string | null,
+  weatherType: WeatherType | null,
   turnsLeft: number,
   sides: [BattleSide, BattleSide],
 ): BattleState {
@@ -108,15 +109,12 @@ describe("Gen6 weather duration constants", () => {
 describe("Gen6 weather immunity type constants", () => {
   it("given SANDSTORM_IMMUNE_TYPES, then includes rock, ground, steel", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel are immune to sandstorm chip damage
-    expect(SANDSTORM_IMMUNE_TYPES).toContain(T.rock);
-    expect(SANDSTORM_IMMUNE_TYPES).toContain(T.ground);
-    expect(SANDSTORM_IMMUNE_TYPES).toContain(T.steel);
+    expect(SANDSTORM_IMMUNE_TYPES).toEqual([T.rock, T.ground, T.steel]);
   });
 
   it("given HAIL_IMMUNE_TYPES, then includes only ice", () => {
     // Source: Bulbapedia -- only Ice type is immune to hail chip damage
-    expect(HAIL_IMMUNE_TYPES).toContain(T.ice);
-    expect(HAIL_IMMUNE_TYPES).toHaveLength(1);
+    expect(HAIL_IMMUNE_TYPES).toEqual([T.ice]);
   });
 });
 

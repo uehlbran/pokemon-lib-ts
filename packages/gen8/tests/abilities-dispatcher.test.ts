@@ -24,6 +24,7 @@ import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/cor
 import {
   CORE_ABILITY_IDS,
   CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
@@ -251,8 +252,8 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
   it("given handleGen8SwitchInAbility with correct trigger (on-switch-in) and screen-cleaner ability, when called, then delegates and activates", () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner removes screens on switch-in
     const state = makeBattleState();
-    state.sides[0].screens = [{ type: "reflect", turnsLeft: 5 }] as any;
-    state.sides[1].screens = [{ type: "light-screen", turnsLeft: 3 }] as any;
+    state.sides[0].screens = [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 }] as any;
+    state.sides[1].screens = [{ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 3 }] as any;
     const pokemon = makeActivePokemon({ ability: A.screenCleaner });
     const ctx: AbilityContext = {
       pokemon,
@@ -262,6 +263,8 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
     };
     const result = handleGen8SwitchInAbility(A.screenCleaner, "on-switch-in", ctx);
     expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([{ effectType: "none", target: "field" }]);
+    expect(result.messages).toEqual([`${String(S.corviknight)}'s Screen Cleaner removed all screens!`]);
   });
 
   it("given handleGen8SwitchInAbility with correct trigger (on-switch-in) and intrepid-sword ability, when called, then delegates and activates", () => {
@@ -270,7 +273,10 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
     const ctx = makeContext({ ability: A.intrepidSword, trigger: "on-switch-in" });
     const result = handleGen8SwitchInAbility(A.intrepidSword, "on-switch-in", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects.length).toBeGreaterThan(0);
+    expect(result.effects).toEqual([
+      { effectType: "stat-change", target: "self", stat: "attack", stages: 1 },
+    ]);
+    expect(result.messages).toEqual([`${String(S.corviknight)}'s Intrepid Sword raised its Attack!`]);
   });
 });
 
@@ -572,20 +578,20 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   // Source: Bulbapedia -- "Surf and Whirlpool can hit a Pokemon during Dive."
 
   it("given underwater volatile and surf move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable(M.surf, "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(M.surf, V.underwater)).toBe(true);
   });
 
   it("given underwater volatile and whirlpool move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable(M.whirlpool, "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(M.whirlpool, V.underwater)).toBe(true);
   });
 
   it("given underwater volatile and tackle move, when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable(M.tackle, "underwater")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(M.tackle, V.underwater)).toBe(false);
   });
 
   it("given underwater volatile and earthquake move, when canHitSemiInvulnerable, then returns false", () => {
     // Source: Showdown -- Earthquake does not hit underwater targets
-    expect(ruleset.canHitSemiInvulnerable(M.earthquake, "underwater")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(M.earthquake, V.underwater)).toBe(false);
   });
 
   // --- Shadow Force charging volatile ---
