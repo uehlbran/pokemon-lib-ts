@@ -18,20 +18,24 @@ import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonInstance,
-  PokemonSpeciesData,
   PokemonType,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
   NEUTRAL_NATURES,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { getGen2CritStage } from "../../src/Gen2CritCalc";
@@ -39,11 +43,11 @@ import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 
 const dataManager = createGen2DataManager();
-const MOVES = { ...CORE_MOVE_IDS, ...GEN2_MOVE_IDS } as const;
-const ITEMS = { ...CORE_ITEM_IDS, ...GEN2_ITEM_IDS } as const;
-const TYPES = CORE_TYPE_IDS;
-const STATUS = CORE_STATUS_IDS;
-const SPECIES = GEN2_SPECIES_IDS;
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN2_MOVE_IDS } as const;
+const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN2_ITEM_IDS } as const;
+const TYPE_IDS = CORE_TYPE_IDS;
+const STATUS_IDS = CORE_STATUS_IDS;
+const SPECIES_IDS = GEN2_SPECIES_IDS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 
 // ---------------------------------------------------------------------------
@@ -70,7 +74,7 @@ function countSuccessfulTrials(trials: number, attempt: (index: number) => boole
   return total;
 }
 
-function createActivePokemon(opts: {
+function createSyntheticOnFieldPokemon(opts: {
   speciesId?: number;
   level?: number;
   maxHp?: number;
@@ -98,7 +102,7 @@ function createActivePokemon(opts: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: opts.speciesId ?? SPECIES.bulbasaur,
+      speciesId: opts.speciesId ?? SPECIES_IDS.bulbasaur,
       nickname: null,
       level: opts.level ?? 50,
       experience: 0,
@@ -108,17 +112,17 @@ function createActivePokemon(opts: {
       currentHp: maxHp,
       moves: [],
       ability: CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: opts.heldItem ?? null,
       status: opts.status ?? null,
       friendship: 70,
-      gender: "male" as const,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "test",
       metLevel: 5,
       originalTrainer: "Test",
       originalTrainerId: 12345,
-      pokeball: ITEMS.pokeBall,
+      pokeball: ITEM_IDS.pokeBall,
       calculatedStats: stats,
     } as PokemonInstance,
     teamSlot: 0,
@@ -133,7 +137,7 @@ function createActivePokemon(opts: {
       evasion: opts.statStages?.evasion ?? 0,
     },
     volatileStatuses: (opts.volatileStatuses ?? new Map()) as Map<never, never>,
-    types: opts.types ?? [TYPES.normal],
+    types: opts.types ?? [TYPE_IDS.normal],
     ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 1,
@@ -151,8 +155,8 @@ function createActivePokemon(opts: {
   } as unknown as ActivePokemon;
 }
 
-function createMove(
-  id: string,
+function createSyntheticMoveFrom(
+  moveId: string,
   opts?: {
     type?: PokemonType;
     power?: number | null;
@@ -161,7 +165,7 @@ function createMove(
     effect?: { type: string } | null;
   },
 ): MoveData {
-  const base = dataManager.getMove(id);
+  const base = dataManager.getMove(moveId);
   return {
     ...base,
     type: opts?.type ?? base.type,
@@ -172,12 +176,8 @@ function createMove(
   } as MoveData;
 }
 
-function createSpecies(): PokemonSpeciesData {
-  return dataManager.getSpecies(SPECIES.bulbasaur) as PokemonSpeciesData;
-}
-
-function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = Object.values(TYPES) as PokemonType[];
+function createSyntheticNeutralTypeChart(): TypeChart {
+  const types: PokemonType[] = Object.values(TYPE_IDS) as PokemonType[];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
     chart[atk] = {};
@@ -200,7 +200,7 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
     // Gen 2 formula: F = floor(catchRate * (maxHP*2 - currentHP*3) / (maxHP*2))
     // At full HP (current=max=200): maxHP*2=400, currentHP*3=600 → curHp3 >= maxHp2
     // When curHp3 >= maxHp2, numerator <= 0 → hpFactor clamps to 1.
-    const species = dataManager.getSpecies(SPECIES.bulbasaur);
+    const species = dataManager.getSpecies(SPECIES_IDS.bulbasaur);
     // Bulbasaur catchRate is sourced from Gen 2 data.
     // ballMod=1 (Poke Ball). hpFactor = 1.
     // No status bonus. finalRate = 1.
@@ -218,7 +218,7 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
 
   it("given 1 HP and high catch rate, when rolling catch, then probability is very high", () => {
     // Source: pret/pokecrystal engine/items/item_effects.asm PokeBallEffect
-    const species = dataManager.getSpecies(SPECIES.caterpie);
+    const species = dataManager.getSpecies(SPECIES_IDS.caterpie);
     // Caterpie catchRate is sourced from Gen 2 data.
     // ballMod=1 (Poke Ball), maxHP=100, currentHP=1
     // maxHP*2=200, currentHP*3=3. F = floor(255 * (200-3) / 200) = floor(255*197/200)
@@ -250,7 +250,7 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
     });
     const catchesFreeze = countSuccessfulTrials(trials, (i) => {
       const rng2 = new SeededRandom(i);
-      const r2 = ruleset.rollCatchAttempt(100, 200, 100, STATUS.freeze, 1, rng2);
+      const r2 = ruleset.rollCatchAttempt(100, 200, 100, STATUS_IDS.freeze, 1, rng2);
       return r2.caught;
     });
     // Freeze should give higher catch rate than no status
@@ -275,7 +275,7 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
       if (r1.caught) catchesNoStatus++;
 
       const rng2 = new SeededRandom(i);
-      const r2 = ruleset.rollCatchAttempt(100, 200, 100, STATUS.burn, 1, rng2);
+      const r2 = ruleset.rollCatchAttempt(100, 200, 100, STATUS_IDS.burn, 1, rng2);
       if (r2.caught) catchesBurn++;
     }
     // Burn should give SAME catch rate as no status (decomp bug)
@@ -295,12 +295,12 @@ describe("Issue #314 regression: stat stages use integer ratio table, not float 
     // Float 2/3 = 0.6666..., floor(150*0.6666) = floor(100.0) = 100 (WRONG)
     // Integer: floor(150*66/100) = floor(9900/100) = floor(99) = 99 (CORRECT)
     // We test this via calculateStruggleDamage which applies stat stages.
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 150,
       statStages: { attack: -1 },
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       defense: 100,
     });
@@ -360,7 +360,7 @@ describe("Issue #314 regression: stat stages use integer ratio table, not float 
     // Integer: floor(150*28/100) = floor(4200/100) = 42
     // These happen to match at 150, but at 151: float=floor(43.14)=43, int=floor(4228/100)=42
     // Test with stat=151 to show the difference
-    const pokemon = createActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 151,
       defense: 100,
@@ -400,19 +400,22 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
     // Reflect: sla c; rl b = doubles the defense register pair before formula
     // This means: baseDamage = floor(floor(levelFactor * power * atk / (def * 2)) / 50)
     // NOT: baseDamage = floor(normalDamage / 2) — which gives different results.
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
-      types: [TYPES.fighting], // Not Normal — no STAB
+      types: [TYPE_IDS.fighting], // Not Normal — no STAB
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       defense: 100,
-      types: [TYPES.normal],
+      types: [TYPE_IDS.normal],
     });
-    const move = createMove(MOVES.struggle, { type: TYPES.normal, power: 80 });
-    const typeChart = createNeutralTypeChart();
-    const species = createSpecies();
+    const move = createSyntheticMoveFrom(MOVE_IDS.struggle, {
+      type: TYPE_IDS.normal,
+      power: 80,
+    });
+    const typeChart = createSyntheticNeutralTypeChart();
+    const species = dataManager.getSpecies(SPECIES_IDS.bulbasaur);
     const rng = createMockRng(255);
 
     // With Reflect
@@ -425,7 +428,7 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
         },
         {
           active: [defender],
-          screens: [{ type: "reflect", turnsLeft: 5 }],
+          screens: [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 }],
         },
       ],
     } as any;
@@ -453,23 +456,23 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
   it("given Light Screen active and STAB, when a special move hits, then damage uses doubled SpDef", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:2577-2581
     // Light Screen: sla c; rl b = doubles SpDef register pair
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       spAttack: 100,
-      types: [TYPES.psychic], // STAB with Psychic move
+      types: [TYPE_IDS.psychic], // STAB with Psychic move
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       spDefense: 100,
-      types: [TYPES.normal],
+      types: [TYPE_IDS.normal],
     });
-    const move = createMove(MOVES.psybeam, {
-      type: TYPES.psychic,
+    const move = createSyntheticMoveFrom(MOVE_IDS.psybeam, {
+      type: TYPE_IDS.psychic,
       power: 80,
-      category: "special",
+      category: CORE_MOVE_CATEGORIES.special,
     });
-    const typeChart = createNeutralTypeChart();
-    const species = createSpecies();
+    const typeChart = createSyntheticNeutralTypeChart();
+    const species = dataManager.getSpecies(SPECIES_IDS.bulbasaur);
     const rng = createMockRng(255);
 
     const stateWithLS = {
@@ -481,7 +484,7 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
         },
         {
           active: [defender],
-          screens: [{ type: "light-screen", turnsLeft: 5 }],
+          screens: [{ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 5 }],
         },
       ],
     } as any;
@@ -523,12 +526,16 @@ describe("Issue #320 regression: accuracy uses integer ratio table, not float fr
 
     // We verify by running many trials at stage -5. The hit rate should be around 91/256 ≈ 35.5%
     // (integer), not 95/256 ≈ 37.1% (float).
-    const move = createMove(MOVES.tackle, { type: TYPES.normal, power: 80, accuracy: 100 });
+    const move = createSyntheticMoveFrom(MOVE_IDS.tackle, {
+      type: TYPE_IDS.normal,
+      power: 80,
+      accuracy: 100,
+    });
     const trials = 10000;
     const hits = countSuccessfulTrials(trials, (i) => {
       const rng = new SeededRandom(i * 7919);
-      const attacker = createActivePokemon({ statStages: { accuracy: -5 } });
-      const defender = createActivePokemon({ statStages: { evasion: 0 } });
+      const attacker = createSyntheticOnFieldPokemon({ statStages: { accuracy: -5 } });
+      const defender = createSyntheticOnFieldPokemon({ statStages: { evasion: 0 } });
       return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
     });
 
@@ -546,12 +553,16 @@ describe("Issue #320 regression: accuracy uses integer ratio table, not float fr
     // Float 5/3: floor(127 * 5/3) = floor(211.67) = 211
     // Integer gives slightly lower (210 vs 211). Both hit most of the time at 50% base,
     // but the integer method is cartridge-accurate.
-    const move = createMove(MOVES.tackle, { type: TYPES.normal, power: 80, accuracy: 50 });
+    const move = createSyntheticMoveFrom(MOVE_IDS.tackle, {
+      type: TYPE_IDS.normal,
+      power: 80,
+      accuracy: 50,
+    });
     const trials = 10000;
     const hits = countSuccessfulTrials(trials, (i) => {
       const rng = new SeededRandom(i * 3571);
-      const attacker = createActivePokemon({ statStages: { accuracy: 2 } });
-      const defender = createActivePokemon({ statStages: { evasion: 0 } });
+      const attacker = createSyntheticOnFieldPokemon({ statStages: { accuracy: 2 } });
+      const defender = createSyntheticOnFieldPokemon({ statStages: { evasion: 0 } });
       return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
     });
 
@@ -572,8 +583,8 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
   it("given attacker level < defender level, when using an OHKO move, then it always fails", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:5438-5439
     // `sub [hl]; jr c, .no_effect` — if attacker level < defender level, carry flag set → fail
-    const move = createMove(MOVES.fissure, {
-      type: TYPES.ground,
+    const move = createSyntheticMoveFrom(MOVE_IDS.fissure, {
+      type: TYPE_IDS.ground,
       power: null,
       accuracy: 30,
       effect: { type: "ohko" },
@@ -581,8 +592,8 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
 
     const hits = countSuccessfulTrials(1000, (i) => {
       const rng = new SeededRandom(i);
-      const attacker = createActivePokemon({ level: 30 });
-      const defender = createActivePokemon({ level: 50 });
+      const attacker = createSyntheticOnFieldPokemon({ level: 30 });
+      const defender = createSyntheticOnFieldPokemon({ level: 50 });
       return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
     });
 
@@ -594,8 +605,8 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:5440-5448
     // levelDiff = 0, doubled = 0, accuracy = 30 + 0 = 30
     // Hit if random(0-255) < 30 → rate = 30/256 ≈ 11.7%
-    const move = createMove(MOVES.hornDrill, {
-      type: TYPES.normal,
+    const move = createSyntheticMoveFrom(MOVE_IDS.hornDrill, {
+      type: TYPE_IDS.normal,
       power: null,
       accuracy: 30,
       effect: { type: "ohko" },
@@ -604,8 +615,8 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
     const trials = 10000;
     const hits = countSuccessfulTrials(trials, (i) => {
       const rng = new SeededRandom(i);
-      const attacker = createActivePokemon({ level: 50 });
-      const defender = createActivePokemon({ level: 50 });
+      const attacker = createSyntheticOnFieldPokemon({ level: 50 });
+      const defender = createSyntheticOnFieldPokemon({ level: 50 });
       return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
     });
 
@@ -620,8 +631,8 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
     // levelDiff = 20, doubled = 40 (add a = 2 * levelDiff)
     // accuracy = 30 + 40 = 70
     // Hit if random(0-255) < 70 → rate = 70/256 ≈ 27.3%
-    const move = createMove(MOVES.guillotine, {
-      type: TYPES.normal,
+    const move = createSyntheticMoveFrom(MOVE_IDS.guillotine, {
+      type: TYPE_IDS.normal,
       power: null,
       accuracy: 30,
       effect: { type: "ohko" },
@@ -631,8 +642,8 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
     const trials = 10000;
     for (let i = 0; i < trials; i++) {
       const rng = new SeededRandom(i);
-      const attacker = createActivePokemon({ level: 70 });
-      const defender = createActivePokemon({ level: 50 });
+      const attacker = createSyntheticOnFieldPokemon({ level: 70 });
+      const defender = createSyntheticOnFieldPokemon({ level: 50 });
       if (ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any })) {
         hits++;
       }
@@ -657,18 +668,21 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     // effectiveLevel = 50, levelFactor = floor(100/5)+2 = 22
     // base = floor(floor(22*80*100/100)/50) = floor(floor(176000/100)/50) = floor(1760/50) = 35
     // item: none. clamp. +2 = 37. no weather, no STAB. random(255/255)=37.
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
-      types: [TYPES.fighting],
+      types: [TYPE_IDS.fighting],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       defense: 100,
-      types: [TYPES.normal],
+      types: [TYPE_IDS.normal],
     });
-    const move = createMove(MOVES.struggle, { type: TYPES.normal, power: 80 });
-    const typeChart = createNeutralTypeChart();
+    const move = createSyntheticMoveFrom(MOVE_IDS.struggle, {
+      type: TYPE_IDS.normal,
+      power: 80,
+    });
+    const typeChart = dataManager.getTypeChart();
     const rng = createMockRng(255);
 
     const ctx: DamageContext = {
@@ -680,7 +694,11 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
       isCrit: false,
     };
 
-    const result = calculateGen2Damage(ctx, typeChart, createSpecies());
+    const result = calculateGen2Damage(
+      ctx,
+      typeChart,
+      dataManager.getSpecies(SPECIES_IDS.bulbasaur),
+    );
 
     // Source: bug #315 analysis — levelFactor=22, base=35, +2=37
     expect(result.damage).toBe(37);
@@ -695,18 +713,21 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     // base = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
     // item: none. crit 2x: 35*2=70. clamp: 70. +2=72.
     // no weather, no STAB. max random → 72.
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
-      types: [TYPES.fighting],
+      types: [TYPE_IDS.fighting],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       defense: 100,
-      types: [TYPES.normal],
+      types: [TYPE_IDS.normal],
     });
-    const move = createMove(MOVES.struggle, { type: TYPES.normal, power: 80 });
-    const typeChart = createNeutralTypeChart();
+    const move = createSyntheticMoveFrom(MOVE_IDS.struggle, {
+      type: TYPE_IDS.normal,
+      power: 80,
+    });
+    const typeChart = dataManager.getTypeChart();
     const rng = createMockRng(255);
 
     const ctx: DamageContext = {
@@ -718,7 +739,11 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
       isCrit: true,
     };
 
-    const result = calculateGen2Damage(ctx, typeChart, createSpecies());
+    const result = calculateGen2Damage(
+      ctx,
+      typeChart,
+      dataManager.getSpecies(SPECIES_IDS.bulbasaur),
+    );
 
     // Source: pret/pokecrystal — base=35, crit*2=70, +2=72
     expect(result.damage).toBe(72);
@@ -728,26 +753,26 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
   it("#317 — given maxHp=300 and damageDealt=60, when calculating Struggle recoil, then returns 75 (floor(300/4))", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Recoil
     // Gen 2 uses wMaxHP, not wCurDamage for Struggle recoil
-    const attacker = createActivePokemon({ maxHp: 300 });
+    const attacker = createSyntheticOnFieldPokemon({ maxHp: 300 });
     expect(ruleset.calculateStruggleRecoil(attacker, 60)).toBe(75);
   });
 
   it("#317 — given maxHp=300 and damageDealt=100, when calculating Struggle recoil, then returns 75 (same as with 60 damage)", () => {
     // Source: pret/pokecrystal — damageDealt is irrelevant; only maxHp matters
-    const attacker = createActivePokemon({ maxHp: 300 });
+    const attacker = createSyntheticOnFieldPokemon({ maxHp: 300 });
     expect(ruleset.calculateStruggleRecoil(attacker, 100)).toBe(75);
   });
 
   it("#317 — given maxHp=200 and damageDealt=40, when calculating Struggle recoil, then returns 50 (not 10)", () => {
     // Source: bug #317 — old code returned floor(40/4)=10; fixed code returns floor(200/4)=50
     // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Recoil
-    const attacker = createActivePokemon({ maxHp: 200 });
+    const attacker = createSyntheticOnFieldPokemon({ maxHp: 200 });
     expect(ruleset.calculateStruggleRecoil(attacker, 40)).toBe(50);
   });
 
   it("#317 — given maxHp=1 and any damage dealt, when calculating Struggle recoil, then returns 1 (minimum)", () => {
     // Source: pret/pokecrystal — floor(1/4) = 0, but minimum recoil is 1
-    const attacker = createActivePokemon({ maxHp: 1 });
+    const attacker = createSyntheticOnFieldPokemon({ maxHp: 1 });
     expect(ruleset.calculateStruggleRecoil(attacker, 0)).toBe(1);
     expect(ruleset.calculateStruggleRecoil(attacker, 50)).toBe(1);
   });
@@ -776,22 +801,25 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
   it("#319 — STAB is applied before weather per bug #319 fix", () => {
     // Source: bug #319 fix — STAB first, then weather
     // Test: Fire STAB move in rain (weather 0.5x for fire)
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
-      types: [TYPES.fire], // Fire STAB
+      types: [TYPE_IDS.fire], // Fire STAB
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       defense: 100,
-      types: [TYPES.normal],
+      types: [TYPE_IDS.normal],
     });
-    const move = createMove(MOVES.flamethrower, { type: TYPES.fire, power: 80 });
-    const typeChart = createNeutralTypeChart();
+    const move = createSyntheticMoveFrom(MOVE_IDS.flamethrower, {
+      type: TYPE_IDS.fire,
+      power: 80,
+    });
+    const typeChart = dataManager.getTypeChart();
     const rng = createMockRng(255);
 
     const stateRain = {
-      weather: { type: "rain", turnsLeft: 5, source: MOVES.rainDance },
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: MOVE_IDS.rainDance },
       sides: [
         { active: [attacker], screens: [] },
         { active: [defender], screens: [] },
@@ -807,7 +835,11 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
       isCrit: false,
     };
 
-    const result = calculateGen2Damage(ctx, typeChart, createSpecies());
+    const result = calculateGen2Damage(
+      ctx,
+      typeChart,
+      dataManager.getSpecies(SPECIES_IDS.bulbasaur),
+    );
 
     // Correct order (STAB then weather):
     // base = 35, +2 = 37. STAB: floor(37*1.5) = 55. Weather (rain, fire 0.5x): floor(55*0.5) = 27.
@@ -821,11 +853,11 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     //   BattleCommand_Critical .CheckCritical: "inc c; inc c" = +2 for CriticalHitMoves.
     // NOTE: The earlier bug #324 "fix" incorrectly changed +2 → +1. The cartridge uses two
     // increments of register c. The correct value is +2.
-    const attacker = createActivePokemon({});
-    const slashMove = createMove(MOVES.slash, { type: TYPES.normal });
+    const attacker = createSyntheticOnFieldPokemon({});
+    const slashMove = createSyntheticMoveFrom(MOVE_IDS.slash, { type: TYPE_IDS.normal });
     expect(getGen2CritStage(attacker, slashMove)).toBe(2);
 
-    const crossChopMove = createMove(MOVES.crossChop, { type: TYPES.fighting });
+    const crossChopMove = createSyntheticMoveFrom(MOVE_IDS.crossChop, { type: TYPE_IDS.fighting });
     expect(getGen2CritStage(attacker, crossChopMove)).toBe(2);
   });
 });
