@@ -20,36 +20,84 @@ export const CORE_FIXED_POINT = {
 
 export const CORE_ABILITY_IDS = {
   blaze: "blaze",
+  defeatist: "defeatist",
   flashFire: "flash-fire",
+  klutz: "klutz",
   levitate: "levitate",
+  marvelScale: "marvel-scale",
   moldBreaker: "mold-breaker",
   none: "none",
   scrappy: "scrappy",
+  simple: "simple",
+  skillLink: "skill-link",
+  slowStart: "slow-start",
+  solarPower: "solar-power",
   sturdy: "sturdy",
+  unburden: "unburden",
   wonderGuard: "wonder-guard",
 } as const;
 
 export const CORE_ITEM_IDS = {
+  adamantOrb: "adamant-orb",
   airBalloon: "air-balloon",
+  blackSludge: "black-sludge",
   chilanBerry: "chilan-berry",
+  choiceBand: "choice-band",
+  deepSeaScale: "deep-sea-scale",
+  deepSeaTooth: "deep-sea-tooth",
+  griseousOrb: "griseous-orb",
   ironBall: "iron-ball",
+  leftovers: "leftovers",
+  lightBall: "light-ball",
+  lustrousOrb: "lustrous-orb",
   normalGem: "normal-gem",
   occaBerry: "occa-berry",
+  soulDew: "soul-dew",
+  thickClub: "thick-club",
   yacheBerry: "yache-berry",
 } as const;
 
 export const CORE_MOVE_IDS = {
   aerialAce: "aerial-ace",
+  acrobatics: "acrobatics",
+  bind: "bind",
   bounce: "bounce",
+  confusion: "confusion",
+  doubleEdge: "double-edge",
   energyBall: "energy-ball",
   firePledge: "fire-pledge",
+  flameCharge: "flame-charge",
   flamethrower: "flamethrower",
+  focusBlast: "focus-blast",
   fly: "fly",
   grassPledge: "grass-pledge",
+  headbutt: "headbutt",
+  hex: "hex",
+  leechSeed: "leech-seed",
+  machPunch: "mach-punch",
+  perishSong: "perish-song",
+  quickAttack: "quick-attack",
+  round: "round",
   skyDrop: "sky-drop",
+  solarBeam: "solar-beam",
+  struggle: "struggle",
   surf: "surf",
+  swift: "swift",
   tackle: "tackle",
+  triAttack: "tri-attack",
+  wish: "wish",
   waterPledge: "water-pledge",
+} as const;
+
+export const CORE_HAZARD_IDS = {
+  spikes: "spikes",
+  stealthRock: "stealth-rock",
+  stickyWeb: "sticky-web",
+  toxicSpikes: "toxic-spikes",
+} as const;
+
+export const CORE_GIMMICK_IDS = {
+  mega: "mega",
 } as const;
 
 export const CORE_TERRAIN_IDS = {
@@ -62,6 +110,7 @@ export const CORE_TYPE_IDS = {
   dark: "dark",
   dragon: "dragon",
   electric: "electric",
+  fairy: "fairy",
   fighting: "fighting",
   fire: "fire",
   flying: "flying",
@@ -94,9 +143,14 @@ export const CORE_STATUS_IDS = {
 export const CORE_VOLATILE_IDS = {
   bound: "bound",
   confusion: "confusion",
+  curse: "curse",
   embargo: "embargo",
   ingrain: "ingrain",
+  leechSeed: "leech-seed",
+  magnetRise: "magnet-rise",
+  nightmare: "nightmare",
   smackDown: "smackdown",
+  substitute: "substitute",
   taunt: "taunt",
   unburden: "unburden",
 } as const;

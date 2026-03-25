@@ -144,6 +144,8 @@ These rules govern **how** tests are written. The Testing Philosophy section abo
 - **No Weak Assertions for Formulas** — formula tests must use `toBe()`, `toEqual()`, or `toBeCloseTo()`. Never use `toBeTruthy()`, `toBeFalsy()`, `toBeDefined()`, or `toBeGreaterThan(0)` to assert a formula result — these can pass even when the formula is completely wrong.
 - **Tests-first enforcement** — if a change adds or changes behavior, the PR must show the test work landing with or before the implementation. Missing tests for behavior changes is a review finding.
 - **Reference Id Imports** — do not handwrite canonical move, item, ability, species, weather, terrain, status, volatile, or gimmick ids in tests when an exported reference surface already owns them. Import shared engine/domain ids from `@pokemon-lib-ts/core` or `@pokemon-lib-ts/battle`, and import generation-specific ids from the generation package's exported `GENN_*_IDS` modules generated from `packages/genN/data/*.json`.
+- **Canonical Expected Values** — when an expected value already exists in an owned canonical data source, assert against that source instead of re-copying the literal into the test. Use exported type charts, generated per-gen data references, move/item metadata from the generation data manager, and core-owned numeric constants where applicable.
+- **Data-backed Fixture Defaults** — do not hardcode fixture defaults like PP, max PP, base power, accuracy, priority, species ids, or similar setup values when the owned move/species/item data already exposes them. Read them from the canonical data surface and make this retrofit retroactive for earlier test files too.
 
 ## Source Authority
 

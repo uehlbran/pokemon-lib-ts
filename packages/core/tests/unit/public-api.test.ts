@@ -1,20 +1,30 @@
 import { describe, expect, it } from "vitest";
+import {
+  BASE_PINCH_ABILITY_TYPES,
+  BASE_PLATE_ITEMS,
+  BASE_TYPE_BOOST_ITEMS,
+} from "../../src/constants/index.js";
+import {
+  gen1to2FullParalysisCheck,
+  gen1to4MultiHitRoll,
+  gen1to6ConfusionSelfHitRoll,
+} from "../../src/logic/gen12-shared.js";
 import * as core from "../../src/index.js";
 
 describe("core public API exports", () => {
-  it("exports the shared damage lookup tables from the root barrel", () => {
-    expect(core.BASE_TYPE_BOOST_ITEMS).toBeDefined();
-    expect(core.BASE_PLATE_ITEMS).toBeDefined();
-    expect(core.BASE_PINCH_ABILITY_TYPES).toBeDefined();
+  it("given the root barrel, when reading shared damage lookup table exports, then it re-exports the canonical module bindings", () => {
+    expect(core.BASE_TYPE_BOOST_ITEMS).toBe(BASE_TYPE_BOOST_ITEMS);
+    expect(core.BASE_PLATE_ITEMS).toBe(BASE_PLATE_ITEMS);
+    expect(core.BASE_PINCH_ABILITY_TYPES).toBe(BASE_PINCH_ABILITY_TYPES);
   });
 
-  it("exports the clearer shared-mechanics names from the root barrel", () => {
-    expect(core.gen1to2FullParalysisCheck).toBeDefined();
-    expect(core.gen1to4MultiHitRoll).toBeDefined();
-    expect(core.gen1to6ConfusionSelfHitRoll).toBeDefined();
+  it("given the root barrel, when reading the clearer shared-mechanics exports, then it re-exports the canonical renamed bindings", () => {
+    expect(core.gen1to2FullParalysisCheck).toBe(gen1to2FullParalysisCheck);
+    expect(core.gen1to4MultiHitRoll).toBe(gen1to4MultiHitRoll);
+    expect(core.gen1to6ConfusionSelfHitRoll).toBe(gen1to6ConfusionSelfHitRoll);
   });
 
-  it("does not export the ambiguous digit-concatenation names from the root barrel", () => {
+  it("given the root barrel, when reading deprecated digit-concatenation names, then it does not export them", () => {
     expect("gen12FullParalysisCheck" in core).toBe(false);
     expect("gen14MultiHitRoll" in core).toBe(false);
     expect("gen16ConfusionSelfHitRoll" in core).toBe(false);

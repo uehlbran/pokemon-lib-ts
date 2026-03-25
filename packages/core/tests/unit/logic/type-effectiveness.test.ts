@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CORE_TYPE_IDS, GEN6_TYPE_CHART } from "../../../src/constants";
 import type { TypeChart } from "../../../src/entities/type-chart";
 import type { PokemonType } from "../../../src/entities/types";
 import {
@@ -7,224 +8,86 @@ import {
   getTypeMultiplier,
 } from "../../../src/logic/type-effectiveness";
 
+const {
+  bug,
+  dark,
+  dragon,
+  electric,
+  fairy,
+  fighting,
+  fire,
+  flying,
+  ghost,
+  grass,
+  ground,
+  ice,
+  normal,
+  poison,
+  psychic,
+  rock,
+  steel,
+  water,
+} = CORE_TYPE_IDS;
+
 // Full Gen 6+ type chart (18x18)
 // Only stores non-1.0 values; getTypeMultiplier defaults missing entries to 1.
 // Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
 // Cross-check: Bulbapedia Fairy-era type chart.
 const ALL_TYPES: PokemonType[] = [
-  "normal",
-  "fire",
-  "water",
-  "electric",
-  "grass",
-  "ice",
-  "fighting",
-  "poison",
-  "ground",
-  "flying",
-  "psychic",
-  "bug",
-  "rock",
-  "ghost",
-  "dragon",
-  "dark",
-  "steel",
-  "fairy",
+  normal,
+  fire,
+  water,
+  electric,
+  grass,
+  ice,
+  fighting,
+  poison,
+  ground,
+  flying,
+  psychic,
+  bug,
+  rock,
+  ghost,
+  dragon,
+  dark,
+  steel,
+  fairy,
 ];
-
-function buildDefaultTypeChart(): TypeChart {
-  // Initialize all matchups to 1.0
-  const chart = {} as Record<PokemonType, Record<PokemonType, number>>;
-  for (const atk of ALL_TYPES) {
-    chart[atk] = {} as Record<PokemonType, number>;
-    for (const def of ALL_TYPES) {
-      chart[atk][def] = 1.0;
-    }
-  }
-
-  // Super effective (2x)
-  // Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
-  const superEffective: [PokemonType, PokemonType][] = [
-    ["fire", "grass"],
-    ["fire", "ice"],
-    ["fire", "bug"],
-    ["fire", "steel"],
-    ["water", "fire"],
-    ["water", "ground"],
-    ["water", "rock"],
-    ["electric", "water"],
-    ["electric", "flying"],
-    ["grass", "water"],
-    ["grass", "ground"],
-    ["grass", "rock"],
-    ["ice", "grass"],
-    ["ice", "ground"],
-    ["ice", "flying"],
-    ["ice", "dragon"],
-    ["fighting", "normal"],
-    ["fighting", "ice"],
-    ["fighting", "rock"],
-    ["fighting", "dark"],
-    ["fighting", "steel"],
-    ["poison", "grass"],
-    ["poison", "fairy"],
-    ["ground", "fire"],
-    ["ground", "electric"],
-    ["ground", "poison"],
-    ["ground", "rock"],
-    ["ground", "steel"],
-    ["flying", "grass"],
-    ["flying", "fighting"],
-    ["flying", "bug"],
-    ["psychic", "fighting"],
-    ["psychic", "poison"],
-    ["bug", "grass"],
-    ["bug", "psychic"],
-    ["bug", "dark"],
-    ["rock", "fire"],
-    ["rock", "ice"],
-    ["rock", "flying"],
-    ["rock", "bug"],
-    ["ghost", "psychic"],
-    ["ghost", "ghost"],
-    ["dragon", "dragon"],
-    ["dark", "psychic"],
-    ["dark", "ghost"],
-    ["steel", "ice"],
-    ["steel", "rock"],
-    ["steel", "fairy"],
-    ["fairy", "fighting"],
-    ["fairy", "dragon"],
-    ["fairy", "dark"],
-  ];
-
-  // Not very effective (0.5x)
-  // Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
-  const notVeryEffective: [PokemonType, PokemonType][] = [
-    ["normal", "rock"],
-    ["normal", "steel"],
-    ["fire", "fire"],
-    ["fire", "water"],
-    ["fire", "rock"],
-    ["fire", "dragon"],
-    ["water", "water"],
-    ["water", "grass"],
-    ["water", "dragon"],
-    ["electric", "electric"],
-    ["electric", "grass"],
-    ["electric", "dragon"],
-    ["grass", "fire"],
-    ["grass", "grass"],
-    ["grass", "poison"],
-    ["grass", "flying"],
-    ["grass", "bug"],
-    ["grass", "dragon"],
-    ["grass", "steel"],
-    ["ice", "fire"],
-    ["ice", "water"],
-    ["ice", "ice"],
-    ["ice", "steel"],
-    ["fighting", "poison"],
-    ["fighting", "flying"],
-    ["fighting", "psychic"],
-    ["fighting", "bug"],
-    ["fighting", "fairy"],
-    ["poison", "poison"],
-    ["poison", "ground"],
-    ["poison", "rock"],
-    ["poison", "ghost"],
-    ["ground", "grass"],
-    ["ground", "bug"],
-    ["flying", "electric"],
-    ["flying", "rock"],
-    ["flying", "steel"],
-    ["psychic", "psychic"],
-    ["psychic", "steel"],
-    ["bug", "fire"],
-    ["bug", "fighting"],
-    ["bug", "poison"],
-    ["bug", "flying"],
-    ["bug", "ghost"],
-    ["bug", "steel"],
-    ["bug", "fairy"],
-    ["rock", "fighting"],
-    ["rock", "ground"],
-    ["rock", "steel"],
-    ["ghost", "dark"],
-    ["dragon", "steel"],
-    ["dark", "fighting"],
-    ["dark", "dark"],
-    ["dark", "fairy"],
-    ["steel", "fire"],
-    ["steel", "water"],
-    ["steel", "electric"],
-    ["steel", "steel"],
-    ["fairy", "fire"],
-    ["fairy", "poison"],
-    ["fairy", "steel"],
-  ];
-
-  // Immune (0x)
-  // Source: Pokemon Showdown `data/typechart.ts` Gen 6+ chart.
-  const immune: [PokemonType, PokemonType][] = [
-    ["normal", "ghost"],
-    ["electric", "ground"],
-    ["fighting", "ghost"],
-    ["poison", "steel"],
-    ["ground", "flying"],
-    ["psychic", "dark"],
-    ["ghost", "normal"],
-    ["dragon", "fairy"],
-  ];
-
-  for (const [atk, def] of superEffective) {
-    chart[atk][def] = 2.0;
-  }
-  for (const [atk, def] of notVeryEffective) {
-    chart[atk][def] = 0.5;
-  }
-  for (const [atk, def] of immune) {
-    chart[atk][def] = 0.0;
-  }
-
-  return chart as TypeChart;
-}
-
-const TYPE_CHART = buildDefaultTypeChart();
+const TYPE_CHART = GEN6_TYPE_CHART;
 
 describe("getTypeMultiplier", () => {
   it("given a Fire-type attacker and Grass-type defender, when calculating type multiplier, then returns 2.0", () => {
     // Source: Gen 6+ type chart: Fire is super effective against Grass.
-    expect(getTypeMultiplier("fire", "grass", TYPE_CHART)).toBe(2.0);
+    expect(getTypeMultiplier(fire, grass, TYPE_CHART)).toBe(TYPE_CHART[fire][grass]);
   });
 
   it("given a Fire-type attacker and Water-type defender, when calculating type multiplier, then returns 0.5", () => {
-    expect(getTypeMultiplier("fire", "water", TYPE_CHART)).toBe(0.5);
+    expect(getTypeMultiplier(fire, water, TYPE_CHART)).toBe(TYPE_CHART[fire][water]);
   });
 
   it("given a Normal-type attacker and Ghost-type defender, when calculating type multiplier, then returns 0", () => {
-    expect(getTypeMultiplier("normal", "ghost", TYPE_CHART)).toBe(0);
+    expect(getTypeMultiplier(normal, ghost, TYPE_CHART)).toBe(TYPE_CHART[normal][ghost]);
   });
 
   it("given a Normal-type attacker and Normal-type defender, when calculating type multiplier, then returns 1.0", () => {
     // Derived from getTypeMultiplier: unspecified entries in the chart remain neutral (1.0).
     const neutralMultiplier = 1.0;
-    expect(getTypeMultiplier("normal", "normal", TYPE_CHART)).toBe(neutralMultiplier);
+    expect(getTypeMultiplier(normal, normal, TYPE_CHART)).toBe(neutralMultiplier);
   });
 
   it("given a Ghost-type attacker and Psychic-type defender, when calculating type multiplier, then returns 2.0", () => {
     // Source: Gen 6+ type chart: Ghost is super effective against Psychic.
-    const superEffectiveMultiplier = 2.0;
-    expect(getTypeMultiplier("ghost", "psychic", TYPE_CHART)).toBe(superEffectiveMultiplier);
+    const superEffectiveMultiplier = TYPE_CHART[ghost][psychic];
+    expect(getTypeMultiplier(ghost, psychic, TYPE_CHART)).toBe(superEffectiveMultiplier);
   });
 
   it("given a Dragon-type attacker and Fairy-type defender, when calculating type multiplier, then returns 0", () => {
-    expect(getTypeMultiplier("dragon", "fairy", TYPE_CHART)).toBe(0);
+    expect(getTypeMultiplier(dragon, fairy, TYPE_CHART)).toBe(TYPE_CHART[dragon][fairy]);
   });
 
   it("given a Fairy-type attacker and Dragon-type defender, when calculating type multiplier, then returns 2.0", () => {
     // Source: Gen 6+ type chart: Fairy is super effective against Dragon.
-    expect(getTypeMultiplier("fairy", "dragon", TYPE_CHART)).toBe(2.0);
+    expect(getTypeMultiplier(fairy, dragon, TYPE_CHART)).toBe(TYPE_CHART[fairy][dragon]);
   });
 
   it("given a sparse chart with a missing matchup, when calculating type multiplier, then defaults to neutral", () => {
@@ -234,33 +97,35 @@ describe("getTypeMultiplier", () => {
 
     // Derived from getTypeMultiplier: missing chart entries default to neutral (1).
     const neutralMultiplier = 1.0;
-    expect(getTypeMultiplier("normal", "normal", sparseChart)).toBe(neutralMultiplier);
+    expect(getTypeMultiplier(normal, normal, sparseChart)).toBe(neutralMultiplier);
   });
 });
 
 describe("getTypeEffectiveness", () => {
   it("given a Fire-type move and single-type Grass defender, when calculating effectiveness, then returns 2.0", () => {
     // Source: Gen 6+ type chart: Fire is super effective against Grass.
-    expect(getTypeEffectiveness("fire", ["grass"], TYPE_CHART)).toBe(2.0);
+    expect(getTypeEffectiveness(fire, [grass], TYPE_CHART)).toBe(TYPE_CHART[fire][grass]);
   });
 
   it("given an Ice-type move and Dragon/Flying dual-type defender, when calculating effectiveness, then returns 4.0", () => {
-    // Derived from the chart: Ice vs Dragon = 2.0 and Ice vs Flying = 2.0, so 2.0 * 2.0 = 4.0.
-    const doubleSuperEffectiveMultiplier = 4.0;
-    expect(getTypeEffectiveness("ice", ["dragon", "flying"], TYPE_CHART)).toBe(
+    // Derived from the chart: the dual-type result multiplies the two canonical single-type entries.
+    const doubleSuperEffectiveMultiplier = TYPE_CHART[ice][dragon] * TYPE_CHART[ice][flying];
+    expect(getTypeEffectiveness(ice, [dragon, flying], TYPE_CHART)).toBe(
       doubleSuperEffectiveMultiplier,
     );
   });
 
   it("given a Normal-type move and Ghost-type defender, when calculating effectiveness, then returns 0 regardless of second type", () => {
-    expect(getTypeEffectiveness("normal", ["ghost"], TYPE_CHART)).toBe(0);
-    expect(getTypeEffectiveness("normal", ["ghost", "poison"], TYPE_CHART)).toBe(0);
+    expect(getTypeEffectiveness(normal, [ghost], TYPE_CHART)).toBe(TYPE_CHART[normal][ghost]);
+    expect(getTypeEffectiveness(normal, [ghost, poison], TYPE_CHART)).toBe(
+      TYPE_CHART[normal][ghost] * TYPE_CHART[normal][poison],
+    );
   });
 
   it("given a Fire-type move and Water/Dragon dual-type defender, when calculating effectiveness, then returns 0.25", () => {
-    // Derived from the chart: Fire vs Water = 0.5 and Fire vs Dragon = 0.5, so 0.5 * 0.5 = 0.25.
-    const doubleResistedMultiplier = 0.25;
-    expect(getTypeEffectiveness("fire", ["water", "dragon"], TYPE_CHART)).toBe(
+    // Derived from the chart: the dual-type result multiplies the two canonical single-type entries.
+    const doubleResistedMultiplier = TYPE_CHART[fire][water] * TYPE_CHART[fire][dragon];
+    expect(getTypeEffectiveness(fire, [water, dragon], TYPE_CHART)).toBe(
       doubleResistedMultiplier,
     );
   });
@@ -268,18 +133,18 @@ describe("getTypeEffectiveness", () => {
   it("given a Normal-type move and Normal-type defender, when calculating effectiveness, then returns 1.0", () => {
     // Derived from the chart builder: Normal vs Normal is an unspecified matchup, so it stays neutral at 1.0.
     const neutralMultiplier = 1.0;
-    expect(getTypeEffectiveness("normal", ["normal"], TYPE_CHART)).toBe(neutralMultiplier);
+    expect(getTypeEffectiveness(normal, [normal], TYPE_CHART)).toBe(neutralMultiplier);
   });
 
   it("given a Fire-type move and Grass/Water dual-type defender, when calculating effectiveness, then returns 1.0", () => {
-    // Fire vs Grass/Water: 2.0 * 0.5 = 1.0
-    const neutralMultiplier = 1.0;
-    expect(getTypeEffectiveness("fire", ["grass", "water"], TYPE_CHART)).toBe(neutralMultiplier);
+    // Fire vs Grass/Water multiplies the canonical single-type entries from the exported chart.
+    const neutralMultiplier = TYPE_CHART[fire][grass] * TYPE_CHART[fire][water];
+    expect(getTypeEffectiveness(fire, [grass, water], TYPE_CHART)).toBe(neutralMultiplier);
   });
 
   it("given a Water-type move and single-type Fire defender, when calculating effectiveness, then returns 2.0", () => {
     // Source: Gen 6+ type chart: Water is super effective against Fire.
-    expect(getTypeEffectiveness("water", ["fire"], TYPE_CHART)).toBe(2.0);
+    expect(getTypeEffectiveness(water, [fire], TYPE_CHART)).toBe(TYPE_CHART[water][fire]);
   });
 
   it("given any attack type and any single or dual-type defender, when calculating effectiveness, then returns a valid multiplier from the set {0, 0.25, 0.5, 1, 2, 4}", () => {

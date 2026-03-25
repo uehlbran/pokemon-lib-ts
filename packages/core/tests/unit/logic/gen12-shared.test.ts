@@ -43,11 +43,11 @@ describe("gen1to2FullParalysisCheck", () => {
     // Source: pret/pokered engine/battle/core.asm:3454 — threshold 63/256 ≈ 24.6%
     // 10,000 trials with seed=42 yields ~24.83% (verified empirically)
     const rng = new SeededRandom(42);
-    let trueCount = 0;
     const trials = 10000;
-    for (let i = 0; i < trials; i++) {
-      if (gen1to2FullParalysisCheck(rng)) trueCount++;
-    }
+    const trueCount = Array.from({ length: trials }).reduce(
+      (count) => count + (gen1to2FullParalysisCheck(rng) ? 1 : 0),
+      0,
+    );
     const rate = trueCount / trials;
     expect(rate).toBeGreaterThan(0.22);
     expect(rate).toBeLessThan(0.27);
@@ -86,6 +86,7 @@ describe("gen1to4MultiHitRoll", () => {
     // Seed 1 → pick index in [3,4,5] → value 3
     // Verified: new SeededRandom(1).pick([2,2,2,3,3,3,4,5]) === 3
     const rng = new SeededRandom(1);
+    // Source: pret/pokered multi-hit table index 3 resolves to 3 hits.
     expect(gen1to4MultiHitRoll(rng)).toBe(3);
   });
 
@@ -93,6 +94,7 @@ describe("gen1to4MultiHitRoll", () => {
     // Seed 20 → pick index 6 → value 4
     // Verified: new SeededRandom(20).pick([2,2,2,3,3,3,4,5]) === 4
     const rng = new SeededRandom(20);
+    // Source: pret/pokered multi-hit table index 6 resolves to 4 hits.
     expect(gen1to4MultiHitRoll(rng)).toBe(4);
   });
 
@@ -100,6 +102,7 @@ describe("gen1to4MultiHitRoll", () => {
     // Seed 4 → pick index 7 → value 5
     // Verified: new SeededRandom(4).pick([2,2,2,3,3,3,4,5]) === 5
     const rng = new SeededRandom(4);
+    // Source: pret/pokered multi-hit table index 7 resolves to 5 hits.
     expect(gen1to4MultiHitRoll(rng)).toBe(5);
   });
 
@@ -178,11 +181,11 @@ describe("gen1to6ConfusionSelfHitRoll", () => {
     // Source: pret/pokered engine/battle/core.asm — 50% chance, rng.chance(0.5)
     // Empirical with seed=42: 50.22% self-hits (verified)
     const rng = new SeededRandom(42);
-    let trueCount = 0;
     const trials = 10000;
-    for (let i = 0; i < trials; i++) {
-      if (gen1to6ConfusionSelfHitRoll(rng)) trueCount++;
-    }
+    const trueCount = Array.from({ length: trials }).reduce(
+      (count) => count + (gen1to6ConfusionSelfHitRoll(rng) ? 1 : 0),
+      0,
+    );
     const rate = trueCount / trials;
     expect(rate).toBeGreaterThan(0.47);
     expect(rate).toBeLessThan(0.53);

@@ -12,6 +12,9 @@ Code examples for the test types used in this project. For testing philosophy, c
 - For core-owned ids, import from `@pokemon-lib-ts/core`.
 - For battle-owned ids, import from `@pokemon-lib-ts/battle`.
 - For generation-specific ids, import from the generation package's exported data-backed `GENN_*_IDS` references derived from `packages/genN/data/*.json`.
+- When an expected value can be read from the same canonical owned data source, do that instead of duplicating literals in the test.
+- Apply the same rule to fixture setup values like move slots, PP, max PP, priority, accuracy, species ids, and similar defaults whenever the owned move/species/item data already provides them.
+- Examples: type effectiveness from the exported type chart, move metadata from the generation data bundle, item metadata from the generated per-gen references, and owned fixed-point constants from core.
 
 ## Unit Tests
 

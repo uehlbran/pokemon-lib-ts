@@ -11,8 +11,14 @@ import type {
   PokemonSpeciesData,
   PokemonType,
 } from "@pokemon-lib-ts/core";
-import { getGen12StatStageRatio, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  getGen12StatStageRatio,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN1_MOVE_IDS } from "../../src";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 import { calculateGen1Stats } from "../../src/Gen1StatCalc";
@@ -48,6 +54,9 @@ const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   bypassSubstitute: false,
 };
 
+const { burn, paralysis } = CORE_STATUS_IDS;
+const { electric, fire, normal, psychic } = CORE_TYPE_IDS;
+
 function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   return {
     id: "test-move",
@@ -78,7 +87,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       nature: "hardy",
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       currentHp: 100,
       status: null,
       friendship: 70,
@@ -113,7 +122,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
+    types: [electric] as PokemonType[],
     ability: "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -643,18 +652,17 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
       } as PokemonInstance,
     });
     const move = makeMove({
-      id: "horn-drill",
+      id: GEN1_MOVE_IDS.hornDrill,
       accuracy: 30,
       effect: { type: "ohko" },
     });
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // Run many trials — at least some should hit (if speed check passes, accuracy is 30%)
-    let hits = 0;
-    for (let i = 0; i < 1000; i++) {
-      const rng = new SeededRandom(i);
+    const hits = Array.from({ length: 1000 }, (_, i) => i).reduce((count, seed) => {
+      const rng = new SeededRandom(seed);
       const ctx: AccuracyContext = { attacker, defender, move, state, rng };
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
+      return count + (ruleset.doesMoveHit(ctx) ? 1 : 0);
+    }, 0);
     // If speed check failed, hits would be 0. With 30% accuracy, expect ~300 hits.
     expect(hits).toBeGreaterThan(100);
   });
@@ -700,7 +708,7 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
       },
     });
     const move = makeMove({
-      id: "fissure",
+      id: GEN1_MOVE_IDS.fissure,
       accuracy: 30,
       effect: { type: "ohko" },
     });
@@ -743,18 +751,17 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
       } as PokemonInstance,
     });
     const move = makeMove({
-      id: "guillotine",
+      id: GEN1_MOVE_IDS.guillotine,
       accuracy: 30,
       effect: { type: "ohko" },
     });
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // With equal speed, OHKO should pass speed check and proceed to accuracy (30%)
-    let hits = 0;
-    for (let i = 0; i < 1000; i++) {
-      const rng = new SeededRandom(i);
+    const hits = Array.from({ length: 1000 }, (_, i) => i).reduce((count, seed) => {
+      const rng = new SeededRandom(seed);
       const ctx: AccuracyContext = { attacker, defender, move, state, rng };
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
+      return count + (ruleset.doesMoveHit(ctx) ? 1 : 0);
+    }, 0);
     // If speed check passed, expect ~30% hit rate
     expect(hits).toBeGreaterThan(50);
   });
@@ -787,21 +794,20 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
           spDefense: 60,
           speed: 120,
         },
-        status: "paralysis",
+        status: paralysis,
       } as PokemonInstance,
     });
     const move = makeMove({
-      id: "horn-drill",
+      id: GEN1_MOVE_IDS.hornDrill,
       accuracy: 30,
       effect: { type: "ohko" },
     });
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
-    let hits = 0;
-    for (let i = 0; i < 1000; i++) {
-      const rng = new SeededRandom(i);
+    const hits = Array.from({ length: 1000 }, (_, i) => i).reduce((count, seed) => {
+      const rng = new SeededRandom(seed);
       const ctx: AccuracyContext = { attacker, defender, move, state, rng };
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
+      return count + (ruleset.doesMoveHit(ctx) ? 1 : 0);
+    }, 0);
     // Speed check should pass; expect ~30% hits
     expect(hits).toBeGreaterThan(50);
   });
@@ -832,13 +838,13 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
     //   on 1-100 scale, rng.int(0,99) would be ~2 too (same seed), still < 10, so it would inflict.
     //   The BOUNDARY test below with roll=27 is the discriminating case.
     const move = makeMove({
-      id: "flamethrower",
-      type: "fire" as PokemonType,
+      id: GEN1_MOVE_IDS.flamethrower,
+      type: fire as PokemonType,
       category: "special",
       power: 95,
       effect: {
         type: "status-chance",
-        status: "burn" as any,
+        status: burn as any,
         chance: 10,
       },
     });
@@ -846,9 +852,9 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
     const rng = new SeededRandom(7);
     // Derivation: SeededRandom(7).int(0, 255) = 2. Threshold = floor(10 * 256 / 100) = 25.
     // 2 < 25 → burn inflicted.
-    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
+    const attacker = makeActivePokemon({ types: [fire] as PokemonType[] });
     const defender = makeActivePokemon({
-      types: ["normal"] as PokemonType[],
+      types: [normal] as PokemonType[],
       pokemon: { ...makeActivePokemon().pokemon, status: null } as PokemonInstance,
     });
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
@@ -856,7 +862,7 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.statusInflicted).toBe("burn");
+    expect(result.statusInflicted).toBe(burn);
   });
 
   it("given a seed where RNG rolls 27 (at or above 25/256 threshold), when Flamethrower hits, then burn is NOT inflicted", () => {
@@ -870,13 +876,13 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
     // NOT inflicted on a pure-10% float check (0.090 < 0.10 → inflicted, so that also fires).
     // Together with the roll=2 test, these two prove the threshold is 25/256, not 10/100.
     const move = makeMove({
-      id: "flamethrower",
-      type: "fire" as PokemonType,
+      id: GEN1_MOVE_IDS.flamethrower,
+      type: fire as PokemonType,
       category: "special",
       power: 95,
       effect: {
         type: "status-chance",
-        status: "burn" as any,
+        status: burn as any,
         chance: 10,
       },
     });
@@ -884,9 +890,9 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
     const rng = new SeededRandom(65);
     // Derivation: SeededRandom(65).int(0, 255) = 27. Threshold = 25.
     // 27 >= 25 → no burn inflicted.
-    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
+    const attacker = makeActivePokemon({ types: [fire] as PokemonType[] });
     const defender = makeActivePokemon({
-      types: ["normal"] as PokemonType[],
+      types: [normal] as PokemonType[],
       pokemon: { ...makeActivePokemon().pokemon, status: null } as PokemonInstance,
     });
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
@@ -936,13 +942,12 @@ describe("#303 — Accuracy/evasion stages use integer ratios (Gen 1 stat stage 
     const move = makeMove({ accuracy: 100 });
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // Run trials: threshold 63 → hit rate ≈ 63/256 ≈ 24.6%
-    let hits = 0;
     const trials = 10000;
-    for (let i = 0; i < trials; i++) {
-      const rng = new SeededRandom(i);
+    const hits = Array.from({ length: trials }, (_, i) => i).reduce((count, seed) => {
+      const rng = new SeededRandom(seed);
       const ctx: AccuracyContext = { attacker, defender, move, state, rng };
-      if (ruleset.doesMoveHit(ctx)) hits++;
-    }
+      return count + (ruleset.doesMoveHit(ctx) ? 1 : 0);
+    }, 0);
     const rate = hits / trials;
     // Expected: 63/256 ≈ 24.6%
     expect(rate).toBeGreaterThan(0.2);
@@ -1073,31 +1078,27 @@ describe("#438 — Enemy Psywave allows 0 damage, player Psywave minimum 1", () 
     });
     const defender = makeActivePokemon();
     const move = makeMove({
-      id: "psywave",
-      type: "psychic" as PokemonType,
-      effect: { type: "custom", handler: "psywave" },
+      id: GEN1_MOVE_IDS.psywave,
+      type: psychic as PokemonType,
+      effect: { type: "custom", handler: GEN1_MOVE_IDS.psywave },
     });
     // Place attacker on side 1 (enemy side)
     const state = makeBattleState({ side0Active: defender, side1Active: attacker });
-    let zeroDamageCount = 0;
-    const trials = 1000;
-    for (let i = 0; i < trials; i++) {
-      const rng = new SeededRandom(i * 3);
-      const context: MoveEffectContext = {
-        attacker,
-        defender,
-        move,
-        damage: 0,
-        state,
-        rng,
-      };
-      const result = ruleset.executeMoveEffect(context);
-      if (result.customDamage && result.customDamage.amount === 0) {
-        zeroDamageCount++;
-      }
-    }
-    // Enemy Psywave can deal 0 damage — expect some zeros
-    expect(zeroDamageCount).toBeGreaterThan(0);
+    // Verification: seed 7 deterministically hits the enemy-side 0-damage branch.
+    const context: MoveEffectContext = {
+      attacker,
+      defender,
+      move,
+      damage: 0,
+      state,
+      rng: new SeededRandom(7),
+    };
+    const result = ruleset.executeMoveEffect(context);
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 0,
+      source: GEN1_MOVE_IDS.psywave,
+    });
   });
 
   it("given player-side attacker (side 0) uses Psywave, when rolling many times, then 0-damage results never occur", () => {
@@ -1111,9 +1112,9 @@ describe("#438 — Enemy Psywave allows 0 damage, player Psywave minimum 1", () 
     });
     const defender = makeActivePokemon();
     const move = makeMove({
-      id: "psywave",
-      type: "psychic" as PokemonType,
-      effect: { type: "custom", handler: "psywave" },
+      id: GEN1_MOVE_IDS.psywave,
+      type: psychic as PokemonType,
+      effect: { type: "custom", handler: GEN1_MOVE_IDS.psywave },
     });
     // Place attacker on side 0 (player side)
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
