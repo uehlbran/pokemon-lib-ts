@@ -1,6 +1,13 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { Gender, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_NATURE_IDS, GEN4_SPECIES_IDS } from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 
 // ---------------------------------------------------------------------------
@@ -39,12 +46,20 @@ function makeAlwaysTriggersRng() {
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS };
+const ITEMS = GEN4_ITEM_IDS;
+const NATURES = GEN4_NATURE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+
 function makePokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PokemonInstance["status"];
   currentHp?: number;
   maxHp?: number;
   gender?: Gender;
@@ -52,16 +67,16 @@ function makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     uid: "test",
-    speciesId: overrides.speciesId ?? 1,
+    speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: NATURES.hardy,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
     moves: [],
-    ability: overrides.ability ?? "",
+    ability: overrides.ability ?? ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
@@ -72,7 +87,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -89,7 +104,7 @@ function makeActivePokemon(overrides: {
   types?: PokemonType[];
   speciesId?: number;
   nickname?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PokemonInstance["status"];
   currentHp?: number;
   maxHp?: number;
   heldItem?: string | null;
@@ -117,8 +132,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -224,7 +239,7 @@ describe("applyGen4Ability on-contact -- Aftermath (NEW in Gen 4)", () => {
     // Derivation: floor(200/4) = 50
     const attacker = makeActivePokemon({ maxHp: 200, currentHp: 100 });
     const ctx = makeContext({
-      ability: "aftermath",
+      ability: ABILITIES.aftermath,
       opponent: attacker,
       currentHp: 0, // holder fainted
       maxHp: 150,
@@ -246,7 +261,7 @@ describe("applyGen4Ability on-contact -- Aftermath (NEW in Gen 4)", () => {
     // Derivation: floor(320/4) = 80
     const attacker = makeActivePokemon({ maxHp: 320, currentHp: 200 });
     const ctx = makeContext({
-      ability: "aftermath",
+      ability: ABILITIES.aftermath,
       opponent: attacker,
       currentHp: 0,
       maxHp: 150,
@@ -266,7 +281,7 @@ describe("applyGen4Ability on-contact -- Aftermath (NEW in Gen 4)", () => {
     // Source: Showdown Gen 4 mod — Aftermath requires 0 HP
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "aftermath",
+      ability: ABILITIES.aftermath,
       opponent: attacker,
       currentHp: 50, // NOT fainted
       maxHp: 150,
@@ -281,7 +296,7 @@ describe("applyGen4Ability on-contact -- Aftermath (NEW in Gen 4)", () => {
     // Derivation: floor(1/4) = 0, Math.max(1, 0) = 1
     const attacker = makeActivePokemon({ maxHp: 1, currentHp: 1 });
     const ctx = makeContext({
-      ability: "aftermath",
+      ability: ABILITIES.aftermath,
       opponent: attacker,
       currentHp: 0,
       maxHp: 50,
@@ -299,7 +314,7 @@ describe("applyGen4Ability on-contact -- Aftermath (NEW in Gen 4)", () => {
   it("given Aftermath holder fainted but no opponent present, when contact triggers, then does not activate", () => {
     // Edge case: no opponent means on-contact cannot fire
     const ctx = makeContext({
-      ability: "aftermath",
+      ability: ABILITIES.aftermath,
       currentHp: 0,
       maxHp: 150,
     });
@@ -312,7 +327,7 @@ describe("applyGen4Ability on-contact -- Aftermath (NEW in Gen 4)", () => {
     // Verify message content
     const attacker = makeActivePokemon({ maxHp: 200 });
     const ctx = makeContext({
-      ability: "aftermath",
+      ability: ABILITIES.aftermath,
       opponent: attacker,
       currentHp: 0,
       maxHp: 150,
@@ -333,9 +348,9 @@ describe("applyGen4Ability on-contact -- Static immunity checks", () => {
     // Source: Bulbapedia — Limber: prevents paralysis
     // Source: Showdown Gen 4 mod — ability immunity table (ABILITY_STATUS_IMMUNITIES)
     // Static fires (rng returns 0) but Limber blocks the paralysis infliction.
-    const attacker = makeActivePokemon({ ability: "limber" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.limber });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "static" });
+    const defender = makeActivePokemon({ ability: ABILITIES.static });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -352,9 +367,9 @@ describe("applyGen4Ability on-contact -- Static immunity checks", () => {
   it("given attacker without status immunity, when Static triggers, then paralysis is inflicted", () => {
     // Triangulation: confirm Static does fire when no immunity is present.
     // Source: Bulbapedia — Static: 30% chance to paralyze attacker on contact
-    const attacker = makeActivePokemon({ ability: "blaze" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.blaze });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "static" });
+    const defender = makeActivePokemon({ ability: ABILITIES.static });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -366,7 +381,10 @@ describe("applyGen4Ability on-contact -- Static immunity checks", () => {
     const result = applyGen4Ability("on-contact", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ effectType: "status-inflict", status: "paralysis" });
+    expect(result.effects[0]).toMatchObject({
+      effectType: "status-inflict",
+      status: STATUSES.paralysis,
+    });
   });
 });
 
@@ -374,9 +392,9 @@ describe("applyGen4Ability on-contact -- Flame Body immunity checks", () => {
   it("given Fire-type attacker, when Flame Body triggers, then burn is blocked", () => {
     // Source: Bulbapedia — Fire-types are immune to burn
     // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: burn: ['fire']
-    const attacker = makeActivePokemon({ types: ["fire"] });
+    const attacker = makeActivePokemon({ types: [TYPES.fire] });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "flame-body" });
+    const defender = makeActivePokemon({ ability: ABILITIES.flameBody });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -393,9 +411,9 @@ describe("applyGen4Ability on-contact -- Flame Body immunity checks", () => {
   it("given attacker with Water Veil, when Flame Body triggers, then burn is blocked", () => {
     // Source: Bulbapedia — Water Veil: prevents burn
     // Source: Showdown Gen 4 mod — ABILITY_STATUS_IMMUNITIES: 'water-veil': ['burn']
-    const attacker = makeActivePokemon({ ability: "water-veil", types: ["water"] });
+    const attacker = makeActivePokemon({ ability: ABILITIES.waterVeil, types: [TYPES.water] });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "flame-body" });
+    const defender = makeActivePokemon({ ability: ABILITIES.flameBody });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -414,9 +432,9 @@ describe("applyGen4Ability on-contact -- Poison Point immunity checks", () => {
   it("given attacker with Immunity ability, when Poison Point triggers, then poison is blocked", () => {
     // Source: Bulbapedia — Immunity: prevents poisoning
     // Source: Showdown Gen 4 mod — ABILITY_STATUS_IMMUNITIES: immunity: ['poison', 'badly-poisoned']
-    const attacker = makeActivePokemon({ ability: "immunity" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.immunity });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "poison-point" });
+    const defender = makeActivePokemon({ ability: ABILITIES.poisonPoint });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -433,9 +451,9 @@ describe("applyGen4Ability on-contact -- Poison Point immunity checks", () => {
   it("given Poison-type attacker, when Poison Point triggers, then poison is blocked", () => {
     // Source: Bulbapedia — Poison-types are immune to being poisoned
     // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: poison: ['poison', 'steel']
-    const attacker = makeActivePokemon({ types: ["poison"] });
+    const attacker = makeActivePokemon({ types: [TYPES.poison] });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "poison-point" });
+    const defender = makeActivePokemon({ ability: ABILITIES.poisonPoint });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -452,9 +470,9 @@ describe("applyGen4Ability on-contact -- Poison Point immunity checks", () => {
   it("given Steel-type attacker, when Poison Point triggers, then poison is blocked", () => {
     // Source: Bulbapedia — Steel-types are immune to being poisoned
     // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: poison: ['poison', 'steel']
-    const attacker = makeActivePokemon({ types: ["steel"] });
+    const attacker = makeActivePokemon({ types: [TYPES.steel] });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "poison-point" });
+    const defender = makeActivePokemon({ ability: ABILITIES.poisonPoint });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -478,9 +496,9 @@ describe("applyGen4Ability on-contact -- Effect Spore immunity checks", () => {
     // Source: Bulbapedia — Steel-types are immune to poison
     // Source: Showdown Gen 4 mod — GEN4_STATUS_IMMUNITIES: poison: ['poison', 'steel']
     // rng.next() = 0.25 => Math.floor(0.25 * 100) = 25 => poison path, blocked by Steel type
-    const attacker = makeActivePokemon({ types: ["steel"] });
+    const attacker = makeActivePokemon({ types: [TYPES.steel] });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const defender = makeActivePokemon({ ability: ABILITIES.effectSpore });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -498,9 +516,9 @@ describe("applyGen4Ability on-contact -- Effect Spore immunity checks", () => {
     // Source: Bulbapedia — Insomnia: prevents sleep
     // Source: Showdown Gen 4 mod — ABILITY_STATUS_IMMUNITIES: insomnia: ['sleep']
     // rng.next() = 0.05 => Math.floor(0.05 * 100) = 5 => sleep path, blocked by Insomnia
-    const attacker = makeActivePokemon({ ability: "insomnia" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.insomnia });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const defender = makeActivePokemon({ ability: ABILITIES.effectSpore });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -546,9 +564,9 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     // Source: Bulbapedia — Flame Body: 30% chance to burn attacker on contact
     // Source: Showdown Gen 4 mod — Flame Body trigger fires when rng.next() < 0.3
     // RNG returns 0.1 (< 0.3) to guarantee activation.
-    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const attacker = makeActivePokemon({ types: [TYPES.normal], ability: ABILITIES.blaze });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "flame-body" });
+    const defender = makeActivePokemon({ ability: ABILITIES.flameBody });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -564,7 +582,7 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "burn",
+      status: STATUSES.burn,
     });
   });
 
@@ -572,9 +590,9 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     // Source: Bulbapedia — Poison Point: 30% chance to poison attacker on contact
     // Source: Showdown Gen 4 mod — Poison Point trigger fires when rng.next() < 0.3
     // RNG returns 0.1 (< 0.3) to guarantee activation.
-    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const attacker = makeActivePokemon({ types: [TYPES.normal], ability: ABILITIES.blaze });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "poison-point" });
+    const defender = makeActivePokemon({ ability: ABILITIES.poisonPoint });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -590,7 +608,7 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: STATUSES.poison,
     });
   });
 
@@ -599,9 +617,9 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     //   0-9 = sleep, 10-19 = paralysis, 20-29 = poison
     // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts
     // rng.next() = 0.25 => Math.floor(0.25 * 100) = 25 => poison path
-    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const attacker = makeActivePokemon({ types: [TYPES.normal], ability: ABILITIES.blaze });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const defender = makeActivePokemon({ ability: ABILITIES.effectSpore });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -617,7 +635,7 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: STATUSES.poison,
     });
   });
 
@@ -625,9 +643,9 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     // Source: Bulbapedia — Effect Spore: 30% total; 1/3 splits
     // Source: Showdown Gen 4 mod — Effect Spore paralysis path
     // First rng.next() = 0.1 (gate passes), second rng.next() = 0.5 (>= 1/3, < 2/3 = paralysis)
-    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const attacker = makeActivePokemon({ types: [TYPES.normal], ability: ABILITIES.blaze });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const defender = makeActivePokemon({ ability: ABILITIES.effectSpore });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -643,7 +661,7 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "paralysis",
+      status: STATUSES.paralysis,
     });
   });
 
@@ -652,9 +670,9 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     //   0-9 = sleep, 10-19 = paralysis, 20-29 = poison
     // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts
     // rng.next() = 0.05 => Math.floor(0.05 * 100) = 5 => sleep path
-    const attacker = makeActivePokemon({ types: ["normal"], ability: "blaze" });
+    const attacker = makeActivePokemon({ types: [TYPES.normal], ability: ABILITIES.blaze });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "effect-spore" });
+    const defender = makeActivePokemon({ ability: ABILITIES.effectSpore });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -670,7 +688,7 @@ describe("applyGen4Ability on-contact -- positive status infliction (triangulati
     expect(result.effects[0]).toMatchObject({
       effectType: "status-inflict",
       target: "opponent",
-      status: "sleep",
+      status: STATUSES.sleep,
     });
   });
 });
@@ -679,9 +697,9 @@ describe("applyGen4Ability on-contact -- Cute Charm immunity checks", () => {
   it("given attacker with Oblivious, when Cute Charm triggers, then infatuation is blocked", () => {
     // Source: Bulbapedia — Oblivious: prevents infatuation
     // Source: Showdown Gen 4 mod — ABILITY_VOLATILE_IMMUNITIES: oblivious: ['infatuation']
-    const attacker = makeActivePokemon({ ability: "oblivious", gender: "male" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.oblivious, gender: "male" });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "cute-charm", gender: "female" });
+    const defender = makeActivePokemon({ ability: ABILITIES.cuteCharm, gender: "female" });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -698,9 +716,9 @@ describe("applyGen4Ability on-contact -- Cute Charm immunity checks", () => {
   it("given attacker without Oblivious and opposite gender, when Cute Charm triggers, then infatuation is inflicted", () => {
     // Triangulation: confirm Cute Charm fires when no immunity is present.
     // Source: Bulbapedia — Cute Charm: 30% chance to infatuate attacker of opposite gender
-    const attacker = makeActivePokemon({ ability: "blaze", gender: "male" });
+    const attacker = makeActivePokemon({ ability: ABILITIES.blaze, gender: "male" });
     const state = makeBattleState();
-    const defender = makeActivePokemon({ ability: "cute-charm", gender: "female" });
+    const defender = makeActivePokemon({ ability: ABILITIES.cuteCharm, gender: "female" });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -714,7 +732,7 @@ describe("applyGen4Ability on-contact -- Cute Charm immunity checks", () => {
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
       effectType: "volatile-inflict",
-      volatile: "infatuation",
+      volatile: VOLATILES.infatuation,
     });
   });
 });
