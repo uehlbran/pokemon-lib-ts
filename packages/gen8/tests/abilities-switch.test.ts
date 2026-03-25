@@ -1,4 +1,14 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import {
+  CORE_ABILITY_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -32,6 +42,14 @@ import {
   TRACE_UNCOPYABLE_ABILITIES,
   UNSUPPRESSABLE_ABILITIES,
 } from "../src/Gen8AbilitiesSwitch";
+import {
+  GEN8_ABILITY_IDS,
+  GEN8_ITEM_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
+  GEN8_SPECIES_IDS,
+} from "../src";
+import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
 
 /**
  * Gen 8 switch-in, switch-out, contact, and passive ability tests.
@@ -58,6 +76,15 @@ import {
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const A = GEN8_ABILITY_IDS;
+const I = GEN8_ITEM_IDS;
+const M = GEN8_MOVE_IDS;
+const C = CORE_ABILITY_IDS;
+const T = CORE_TYPE_IDS;
+const S = CORE_STATUS_IDS;
+const W = CORE_WEATHER_IDS;
+const SC = CORE_SCREEN_IDS;
+
 let nextTestUid = 0;
 function makeTestUid() {
   return `test-${nextTestUid++}`;
@@ -80,13 +107,13 @@ function makePokemonInstance(overrides: {
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN8_NATURE_IDS.hardy,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
     moves: [],
     ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: `${CORE_TYPE_IDS.normal}1` as const,
     heldItem: overrides.heldItem ?? null,
     status: (overrides.status as PokemonInstance["status"]) ?? null,
     friendship: 0,
@@ -143,7 +170,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [CORE_TYPE_IDS.normal],
     ability: overrides.ability ?? "",
     suppressedAbility: null,
     lastMoveUsed: null,
@@ -221,7 +248,7 @@ function makeMove(
   } = {},
 ): MoveData {
   return {
-    id: opts.id ?? "test-move",
+    id: opts.id ?? `${CORE_TERRAIN_IDS.testSource}-move`,
     displayName: "Test Move",
     type,
     category: opts.category ?? "physical",
@@ -289,103 +316,103 @@ function makeContext(opts: {
 // Tests: Carry-forward passive ability checks
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Passive Ability Checks (carry-forward)", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Passive Ability Checks (carry-forward)`, () => {
   describe("hasMagicGuard", () => {
-    it("given magic-guard, when checking, then returns true", () => {
+    it(`given ${GEN8_ABILITY_IDS.magicGuard}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- magicguard blocks indirect damage
-      expect(hasMagicGuard("magic-guard")).toBe(true);
+      expect(hasMagicGuard(GEN8_ABILITY_IDS.magicGuard)).toBe(true);
     });
 
-    it("given other ability, when checking, then returns false", () => {
+    it(`given other ability, when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
       // Source: Showdown data/abilities.ts -- only magic-guard triggers this
-      expect(hasMagicGuard("levitate")).toBe(false);
+      expect(hasMagicGuard(CORE_ABILITY_IDS.levitate)).toBe(false);
     });
   });
 
   describe("hasOvercoat", () => {
-    it("given overcoat, when checking, then returns true", () => {
+    it(`given ${GEN8_ABILITY_IDS.overcoat}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- overcoat blocks weather + powder
-      expect(hasOvercoat("overcoat")).toBe(true);
+      expect(hasOvercoat(GEN8_ABILITY_IDS.overcoat)).toBe(true);
     });
 
-    it("given other ability, when checking, then returns false", () => {
-      expect(hasOvercoat("sturdy")).toBe(false);
+    it(`given other ability, when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
+      expect(hasOvercoat(CORE_ABILITY_IDS.sturdy)).toBe(false);
     });
   });
 
   describe("isBulletproofBlocked", () => {
-    it("given bulletproof ability and bullet flag move, when checking, then returns true", () => {
+    it(`given ${GEN8_ABILITY_IDS.bulletproof} ability and bullet flag move, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- bulletproof: move.flags['bullet']
-      expect(isBulletproofBlocked("bulletproof", { bullet: true })).toBe(true);
+      expect(isBulletproofBlocked(GEN8_ABILITY_IDS.bulletproof, { bullet: true })).toBe(true);
     });
 
-    it("given bulletproof ability and non-bullet move, when checking, then returns false", () => {
-      expect(isBulletproofBlocked("bulletproof", { contact: true })).toBe(false);
+    it(`given ${GEN8_ABILITY_IDS.bulletproof} ability and non-bullet move, when checking, then returns false`, () => {
+      expect(isBulletproofBlocked(GEN8_ABILITY_IDS.bulletproof, { contact: true })).toBe(false);
     });
 
-    it("given non-bulletproof ability and bullet flag move, when checking, then returns false", () => {
-      expect(isBulletproofBlocked("sturdy", { bullet: true })).toBe(false);
+    it(`given non-${GEN8_ABILITY_IDS.bulletproof} ability and bullet flag move, when checking, then returns false`, () => {
+      expect(isBulletproofBlocked(CORE_ABILITY_IDS.sturdy, { bullet: true })).toBe(false);
     });
   });
 
   describe("isDampBlocked", () => {
-    it("given damp ability and explosion, when checking, then returns true", () => {
+    it(`given damp ability and ${GEN8_MOVE_IDS.explosion}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- damp prevents Explosion
-      expect(isDampBlocked("damp", "explosion")).toBe(true);
+      expect(isDampBlocked(GEN8_ABILITY_IDS.damp, GEN8_MOVE_IDS.explosion)).toBe(true);
     });
 
-    it("given damp ability and self-destruct, when checking, then returns true", () => {
+    it(`given damp ability and ${GEN8_MOVE_IDS.selfDestruct}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- damp prevents Self-Destruct
-      expect(isDampBlocked("damp", "self-destruct")).toBe(true);
+      expect(isDampBlocked(GEN8_ABILITY_IDS.damp, GEN8_MOVE_IDS.selfDestruct)).toBe(true);
     });
 
-    it("given damp ability and mind-blown, when checking, then returns true", () => {
+    it(`given damp ability and ${GEN8_MOVE_IDS.mindBlown}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- damp prevents Mind Blown (Gen 7+)
-      expect(isDampBlocked("damp", "mind-blown")).toBe(true);
+      expect(isDampBlocked(GEN8_ABILITY_IDS.damp, GEN8_MOVE_IDS.mindBlown)).toBe(true);
     });
 
-    it("given damp ability and normal move, when checking, then returns false", () => {
-      expect(isDampBlocked("damp", "tackle")).toBe(false);
+    it(`given damp ability and ${CORE_TYPE_IDS.normal} move, when checking, then returns false`, () => {
+      expect(isDampBlocked(GEN8_ABILITY_IDS.damp, CORE_MOVE_IDS.tackle)).toBe(false);
     });
 
-    it("given non-damp ability and explosion, when checking, then returns false", () => {
-      expect(isDampBlocked("sturdy", "explosion")).toBe(false);
+    it(`given non-damp ability and ${GEN8_MOVE_IDS.explosion}, when checking, then returns false`, () => {
+      expect(isDampBlocked(CORE_ABILITY_IDS.sturdy, GEN8_MOVE_IDS.explosion)).toBe(false);
     });
   });
 
   describe("isSoundproofBlocked", () => {
-    it("given soundproof ability and sound flag move, when checking, then returns true", () => {
+    it(`given ${CORE_ABILITY_IDS.soundproof} ability and sound flag move, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- soundproof: move.flags['sound']
-      expect(isSoundproofBlocked("soundproof", { sound: true })).toBe(true);
+      expect(isSoundproofBlocked(CORE_ABILITY_IDS.soundproof, { sound: true })).toBe(true);
     });
 
-    it("given soundproof ability and non-sound move, when checking, then returns false", () => {
-      expect(isSoundproofBlocked("soundproof", { contact: true })).toBe(false);
+    it(`given ${CORE_ABILITY_IDS.soundproof} ability and non-sound move, when checking, then returns false`, () => {
+      expect(isSoundproofBlocked(CORE_ABILITY_IDS.soundproof, { contact: true })).toBe(false);
     });
 
-    it("given non-soundproof ability and sound flag move, when checking, then returns false", () => {
-      expect(isSoundproofBlocked("sturdy", { sound: true })).toBe(false);
+    it(`given non-${CORE_ABILITY_IDS.soundproof} ability and sound flag move, when checking, then returns false`, () => {
+      expect(isSoundproofBlocked(CORE_ABILITY_IDS.sturdy, { sound: true })).toBe(false);
     });
   });
 
   describe("isMoldBreakerAbility", () => {
-    it("given mold-breaker, when checking, then returns true", () => {
+    it(`given ${CORE_ABILITY_IDS.moldBreaker}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- moldbreaker
-      expect(isMoldBreakerAbility("mold-breaker")).toBe(true);
+      expect(isMoldBreakerAbility(CORE_ABILITY_IDS.moldBreaker)).toBe(true);
     });
 
-    it("given teravolt, when checking, then returns true", () => {
+    it(`given ${GEN8_ABILITY_IDS.teravolt}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- teravolt is mold breaker variant
-      expect(isMoldBreakerAbility("teravolt")).toBe(true);
+      expect(isMoldBreakerAbility(GEN8_ABILITY_IDS.teravolt)).toBe(true);
     });
 
-    it("given turboblaze, when checking, then returns true", () => {
+    it(`given turbo${CORE_ABILITY_IDS.blaze}, when checking, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- turboblaze is mold breaker variant
-      expect(isMoldBreakerAbility("turboblaze")).toBe(true);
+      expect(isMoldBreakerAbility(`turbo${CORE_ABILITY_IDS.blaze}`)).toBe(true);
     });
 
-    it("given other ability, when checking, then returns false", () => {
-      expect(isMoldBreakerAbility("intimidate")).toBe(false);
+    it(`given other ability, when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
+      expect(isMoldBreakerAbility(CORE_ABILITY_IDS.intimidate)).toBe(false);
     });
   });
 });
@@ -394,74 +421,74 @@ describe("Gen 8 Passive Ability Checks (carry-forward)", () => {
 // Tests: RNG-based passive abilities
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 RNG-based Passive Abilities (carry-forward)", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} RNG-based Passive Abilities (carry-forward)`, () => {
   describe("rollShedSkin", () => {
-    it("given shed-skin with status and low RNG roll, when rolling, then returns true (cures)", () => {
+    it(`given ${CORE_ABILITY_IDS.shedSkin} with status and low RNG roll, when rolling, then returns true (cures)`, () => {
       // Source: Showdown data/abilities.ts -- Shed Skin: 1/3 chance to cure
       // 1/3 = 0.3333... so roll of 0.3 is below threshold
-      expect(rollShedSkin("shed-skin", true, 0.3)).toBe(true);
+      expect(rollShedSkin(CORE_ABILITY_IDS.shedSkin, true, 0.3)).toBe(true);
     });
 
-    it("given shed-skin with status and high RNG roll, when rolling, then returns false (no cure)", () => {
+    it(`given ${CORE_ABILITY_IDS.shedSkin} with status and high RNG roll, when rolling, then returns false (no cure)`, () => {
       // Source: Showdown data/abilities.ts -- Shed Skin: ~67% chance of failure
       // Roll of 0.5 > 1/3 threshold
-      expect(rollShedSkin("shed-skin", true, 0.5)).toBe(false);
+      expect(rollShedSkin(CORE_ABILITY_IDS.shedSkin, true, 0.5)).toBe(false);
     });
 
-    it("given shed-skin without status, when rolling, then returns false", () => {
+    it(`given ${CORE_ABILITY_IDS.shedSkin} without status, when rolling, then returns false`, () => {
       // Source: Showdown data/abilities.ts -- Shed Skin only cures if status exists
-      expect(rollShedSkin("shed-skin", false, 0.1)).toBe(false);
+      expect(rollShedSkin(CORE_ABILITY_IDS.shedSkin, false, 0.1)).toBe(false);
     });
 
-    it("given non-shed-skin ability with status, when rolling, then returns false", () => {
-      expect(rollShedSkin("sturdy", true, 0.1)).toBe(false);
+    it(`given non-${CORE_ABILITY_IDS.shedSkin} ability with status, when rolling, then returns false`, () => {
+      expect(rollShedSkin(CORE_ABILITY_IDS.sturdy, true, 0.1)).toBe(false);
     });
   });
 
   describe("rollHarvest", () => {
-    it("given harvest with consumed berry and low RNG roll, when rolling, then returns true", () => {
+    it(`given ${CORE_ABILITY_IDS.harvest} with consumed berry and low RNG roll, when rolling, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- Harvest: 50% normally
       // Roll of 0.3 < 0.5 threshold
-      expect(rollHarvest("harvest", true, null, 0.3)).toBe(true);
+      expect(rollHarvest(CORE_ABILITY_IDS.harvest, true, null, 0.3)).toBe(true);
     });
 
-    it("given harvest with consumed berry and high RNG roll, when rolling, then returns false", () => {
+    it(`given ${CORE_ABILITY_IDS.harvest} with consumed berry and high RNG roll, when rolling, then returns false`, () => {
       // Source: Showdown data/abilities.ts -- Harvest: 50% normally
       // Roll of 0.7 > 0.5 threshold
-      expect(rollHarvest("harvest", true, null, 0.7)).toBe(false);
+      expect(rollHarvest(CORE_ABILITY_IDS.harvest, true, null, 0.7)).toBe(false);
     });
 
-    it("given harvest with consumed berry in sun, when rolling, then always returns true", () => {
+    it(`given ${CORE_ABILITY_IDS.harvest} with consumed berry in sun, when rolling, then always returns true`, () => {
       // Source: Showdown data/abilities.ts -- Harvest: 100% in sun
       // Even a high RNG roll returns true in sun
-      expect(rollHarvest("harvest", true, "sun", 0.99)).toBe(true);
+      expect(rollHarvest(CORE_ABILITY_IDS.harvest, true, CORE_WEATHER_IDS.sun, 0.99)).toBe(true);
     });
 
-    it("given harvest without consumed berry, when rolling, then returns false", () => {
+    it(`given ${CORE_ABILITY_IDS.harvest} without consumed berry, when rolling, then returns false`, () => {
       // Source: Showdown data/abilities.ts -- Harvest: needs consumed berry
-      expect(rollHarvest("harvest", false, null, 0.1)).toBe(false);
+      expect(rollHarvest(CORE_ABILITY_IDS.harvest, false, null, 0.1)).toBe(false);
     });
   });
 
   describe("getWeatherDuration", () => {
-    it("given no held item, when getting duration, then returns 5 turns", () => {
+    it(`given no held item, when getting duration, then returns ${GEN8_SPECIES_IDS.charmeleon} turns`, () => {
       // Source: Showdown data/abilities.ts -- base weather is 5 turns
-      expect(getWeatherDuration(null, "rain")).toBe(5);
+      expect(getWeatherDuration(null, CORE_WEATHER_IDS.rain)).toBe(5);
     });
 
-    it("given damp-rock for rain, when getting duration, then returns 8 turns", () => {
+    it(`given damp-${CORE_TYPE_IDS.rock} for rain, when getting duration, then returns 8 turns`, () => {
       // Source: Showdown data/items.ts -- Damp Rock extends rain to 8 turns
-      expect(getWeatherDuration("damp-rock", "rain")).toBe(8);
+      expect(getWeatherDuration(`damp-${CORE_TYPE_IDS.rock}`, CORE_WEATHER_IDS.rain)).toBe(8);
     });
 
-    it("given heat-rock for sun, when getting duration, then returns 8 turns", () => {
+    it(`given heat-${CORE_TYPE_IDS.rock} for sun, when getting duration, then returns 8 turns`, () => {
       // Source: Showdown data/items.ts -- Heat Rock extends sun to 8 turns
-      expect(getWeatherDuration("heat-rock", "sun")).toBe(8);
+      expect(getWeatherDuration(`heat-${CORE_TYPE_IDS.rock}`, CORE_WEATHER_IDS.sun)).toBe(8);
     });
 
-    it("given damp-rock for sun (wrong weather), when getting duration, then returns 5 turns", () => {
+    it(`given damp-${CORE_TYPE_IDS.rock} for sun (wrong weather), when getting duration, then returns 5 turns`, () => {
       // Source: Showdown data/items.ts -- rock must match weather type
-      expect(getWeatherDuration("damp-rock", "sun")).toBe(5);
+      expect(getWeatherDuration(`damp-${CORE_TYPE_IDS.rock}`, CORE_WEATHER_IDS.sun)).toBe(5);
     });
   });
 });
@@ -470,12 +497,12 @@ describe("Gen 8 RNG-based Passive Abilities (carry-forward)", () => {
 // Tests: Gen 8 New Abilities -- Screen Cleaner
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Screen Cleaner", () => {
-  it("given screen-cleaner ability, when switching in, then returns activated with field effect", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Screen Cleaner`, () => {
+  it(`given ${GEN8_ABILITY_IDS.screenCleaner} ability, when switching in, then returns activated with field effect`, () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner onStart: removes screens both sides
     // Source: specs/reference/gen8-ground-truth.md -- Screen Cleaner: both sides + Aurora Veil
     const ctx = makeContext({
-      ability: "screen-cleaner",
+      ability: GEN8_ABILITY_IDS.screenCleaner,
       trigger: "on-switch-in",
       nickname: "MrRime",
     });
@@ -486,28 +513,28 @@ describe("Gen 8 Screen Cleaner", () => {
     expect(result.messages[0]).toContain("Screen Cleaner");
   });
 
-  it("given isScreenCleaner, when checking screen-cleaner ability, then returns true", () => {
+  it(`given isScreenCleaner, when checking ${GEN8_ABILITY_IDS.screenCleaner} ability, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner ability ID
-    expect(isScreenCleaner("screen-cleaner")).toBe(true);
+    expect(isScreenCleaner(GEN8_ABILITY_IDS.screenCleaner)).toBe(true);
   });
 
-  it("given isScreenCleaner, when checking other ability, then returns false", () => {
-    expect(isScreenCleaner("intimidate")).toBe(false);
+  it(`given isScreenCleaner, when checking other ability, then ${GEN7_MOVE_IDS.return}s false`, () => {
+    expect(isScreenCleaner(CORE_ABILITY_IDS.intimidate)).toBe(false);
   });
 
-  it("given getScreenCleanerTargets, when called, then returns reflect, light-screen, and aurora-veil", () => {
+  it(`given getScreenCleanerTargets, when called, then returns reflect, ${CORE_SCREEN_IDS.lightScreen}, and aurora-veil`, () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner removes all three screen types
     const targets = getScreenCleanerTargets();
-    expect(targets).toContain("reflect");
-    expect(targets).toContain("light-screen");
-    expect(targets).toContain("aurora-veil");
+    expect(targets).toContain(CORE_SCREEN_IDS.reflect);
+    expect(targets).toContain(CORE_SCREEN_IDS.lightScreen);
+    expect(targets).toContain(GEN8_MOVE_IDS.auroraVeil);
     expect(targets).toHaveLength(3);
   });
 
-  it("given SCREEN_CLEANER_SCREENS constant, then includes aurora-veil (Gen 8 spec fix)", () => {
+  it(`given SCREEN_CLEANER_SCREENS constant, then includes ${GEN8_MOVE_IDS.auroraVeil} (Gen 8 spec fix)`, () => {
     // Source: specs/battle/09-gen8.md -- Screen Cleaner was corrected to include Aurora Veil
     // The v2.0 spec fix confirmed Aurora Veil is included
-    expect(SCREEN_CLEANER_SCREENS).toContain("aurora-veil");
+    expect(SCREEN_CLEANER_SCREENS).toContain(GEN8_MOVE_IDS.auroraVeil);
   });
 });
 
@@ -515,31 +542,31 @@ describe("Gen 8 Screen Cleaner", () => {
 // Tests: Gen 8 New Abilities -- Mirror Armor
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Mirror Armor", () => {
-  it("given mirror-armor and opponent stat drop, when checking, then reflects stat drop", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Mirror Armor`, () => {
+  it(`given mirror-armor and opponent stat drop, when checking, then ${CORE_SCREEN_IDS.reflect}s stat drop`, () => {
     // Source: Showdown data/abilities.ts -- Mirror Armor onTryBoost: reflects opponent-caused drops
     // Source: Bulbapedia "Mirror Armor" -- reflects stat-lowering effects
-    expect(shouldMirrorArmorReflect("mirror-armor", -1, "opponent")).toBe(true);
+    expect(shouldMirrorArmorReflect(GEN8_ABILITY_IDS.mirrorArmor, -1, "opponent")).toBe(true);
   });
 
-  it("given mirror-armor and opponent stat drop of -2, when checking, then reflects", () => {
+  it(`given mirror-armor and opponent stat drop of -2, when checking, then ${CORE_SCREEN_IDS.reflect}s`, () => {
     // Source: Showdown data/abilities.ts -- Mirror Armor reflects any magnitude of drop
-    expect(shouldMirrorArmorReflect("mirror-armor", -2, "opponent")).toBe(true);
+    expect(shouldMirrorArmorReflect(GEN8_ABILITY_IDS.mirrorArmor, -2, "opponent")).toBe(true);
   });
 
-  it("given mirror-armor and self-inflicted stat drop, when checking, then does not reflect", () => {
+  it(`given mirror-armor and self-inflicted stat drop, when checking, then does not ${CORE_SCREEN_IDS.reflect}`, () => {
     // Source: Showdown data/abilities.ts -- Mirror Armor only reflects opponent-caused drops
     // Self-inflicted drops (e.g. Close Combat, Superpower) are not reflected
-    expect(shouldMirrorArmorReflect("mirror-armor", -1, "self")).toBe(false);
+    expect(shouldMirrorArmorReflect(GEN8_ABILITY_IDS.mirrorArmor, -1, "self")).toBe(false);
   });
 
-  it("given mirror-armor and stat boost (positive stages), when checking, then does not reflect", () => {
+  it(`given mirror-armor and stat boost (positive stages), when checking, then does not ${CORE_SCREEN_IDS.reflect}`, () => {
     // Source: Showdown data/abilities.ts -- Mirror Armor only reflects negative stat changes
-    expect(shouldMirrorArmorReflect("mirror-armor", 1, "opponent")).toBe(false);
+    expect(shouldMirrorArmorReflect(GEN8_ABILITY_IDS.mirrorArmor, 1, "opponent")).toBe(false);
   });
 
-  it("given non-mirror-armor ability and opponent stat drop, when checking, then does not reflect", () => {
-    expect(shouldMirrorArmorReflect("intimidate", -1, "opponent")).toBe(false);
+  it(`given non-mirror-armor ability and opponent stat drop, when checking, then does not ${CORE_SCREEN_IDS.reflect}`, () => {
+    expect(shouldMirrorArmorReflect(CORE_ABILITY_IDS.intimidate, -1, "opponent")).toBe(false);
   });
 });
 
@@ -547,37 +574,37 @@ describe("Gen 8 Mirror Armor", () => {
 // Tests: Gen 8 New Abilities -- Neutralizing Gas
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Neutralizing Gas", () => {
-  it("given neutralizing-gas on field, when checking isNeutralizingGasActive, then returns true", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Neutralizing Gas`, () => {
+  it(`given ${GEN8_ABILITY_IDS.neutralizingGas} on field, when checking isNeutralizingGasActive, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Neutralizing Gas suppresses all abilities on field
     // Source: Bulbapedia "Neutralizing Gas" -- nullifies all abilities while on field
-    expect(isNeutralizingGasActive(["intimidate", "neutralizing-gas", "levitate"])).toBe(true);
+    expect(isNeutralizingGasActive([CORE_ABILITY_IDS.intimidate, GEN8_ABILITY_IDS.neutralizingGas, CORE_ABILITY_IDS.levitate])).toBe(true);
   });
 
-  it("given no neutralizing-gas on field, when checking isNeutralizingGasActive, then returns false", () => {
+  it(`given no ${GEN8_ABILITY_IDS.neutralizingGas} on field, when checking isNeutralizingGasActive, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- only active when Neutralizing Gas Pokemon is on field
-    expect(isNeutralizingGasActive(["intimidate", "levitate"])).toBe(false);
+    expect(isNeutralizingGasActive([CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.levitate])).toBe(false);
   });
 
-  it("given neutralizing-gas ability, when checking immunity, then is immune to its own suppression", () => {
+  it(`given ${GEN8_ABILITY_IDS.neutralizingGas} ability, when checking immunity, then is immune to its own suppression`, () => {
     // Source: Showdown data/abilities.ts -- Neutralizing Gas cannot suppress itself
-    expect(isNeutralizingGasImmune("neutralizing-gas")).toBe(true);
+    expect(isNeutralizingGasImmune(GEN8_ABILITY_IDS.neutralizingGas)).toBe(true);
   });
 
-  it("given comatose ability, when checking immunity, then is immune to Neutralizing Gas", () => {
+  it(`given ${GEN8_ABILITY_IDS.comatose} ability, when checking immunity, then is immune to Neutralizing Gas`, () => {
     // Source: Showdown data/abilities.ts -- Comatose is in the unsuppressable set
-    expect(isNeutralizingGasImmune("comatose")).toBe(true);
+    expect(isNeutralizingGasImmune(GEN8_ABILITY_IDS.comatose)).toBe(true);
   });
 
-  it("given normal ability like intimidate, when checking immunity, then is NOT immune", () => {
+  it(`given normal ability like ${CORE_ABILITY_IDS.intimidate}, when checking immunity, then is NOT immune`, () => {
     // Source: Showdown data/abilities.ts -- most abilities are suppressed
-    expect(isNeutralizingGasImmune("intimidate")).toBe(false);
+    expect(isNeutralizingGasImmune(CORE_ABILITY_IDS.intimidate)).toBe(false);
   });
 
-  it("given neutralizing-gas user, when switching in, then announces Neutralizing Gas", () => {
+  it(`given ${GEN8_ABILITY_IDS.neutralizingGas} user, when switching in, then announces Neutralizing Gas`, () => {
     // Source: Showdown data/abilities.ts -- Neutralizing Gas onStart message
     const ctx = makeContext({
-      ability: "neutralizing-gas",
+      ability: GEN8_ABILITY_IDS.neutralizingGas,
       trigger: "on-switch-in",
       nickname: "Weezing",
     });
@@ -593,36 +620,36 @@ describe("Gen 8 Neutralizing Gas", () => {
 // Tests: Gen 8 New Abilities -- Pastel Veil
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Pastel Veil", () => {
-  it("given pastel-veil on side and poison status, when checking, then blocks poison", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Pastel Veil`, () => {
+  it(`given pastel-veil on side and ${CORE_STATUS_IDS.poison} status, when checking, then blocks poison`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil onAllySetStatus: blocks poison
     // Source: Bulbapedia "Pastel Veil" -- prevents poisoning for holder and allies
-    expect(isPastelVeilBlocking(["pastel-veil", "run-away"], "poison")).toBe(true);
+    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil, GEN8_ABILITY_IDS.runAway], CORE_STATUS_IDS.poison)).toBe(true);
   });
 
-  it("given pastel-veil on side and bad-poison status, when checking, then blocks toxic", () => {
+  it(`given pastel-veil on side and bad-${CORE_STATUS_IDS.poison} status, when checking, then blocks toxic`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil blocks Toxic poison too
-    expect(isPastelVeilBlocking(["pastel-veil"], "bad-poison")).toBe(true);
+    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], `bad-${CORE_STATUS_IDS.poison}`)).toBe(true);
   });
 
-  it("given pastel-veil on ally (not self), when checking poison, then still blocks", () => {
+  it(`given pastel-veil on ally (not self), when checking ${CORE_STATUS_IDS.poison}, then still blocks`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil onAllySetStatus (covers allies too)
-    // Source: Bulbapedia "Pastel Veil" -- "prevents the Pokemon and its allies from being poisoned"
-    expect(isPastelVeilBlocking(["run-away", "pastel-veil"], "poison")).toBe(true);
+    // Source: Bulbapedia "Pastel Veil" -- `prevents the Pokemon and its allies from being ${CORE_STATUS_IDS.poison}ed`
+    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.runAway, GEN8_ABILITY_IDS.pastelVeil], CORE_STATUS_IDS.poison)).toBe(true);
   });
 
-  it("given pastel-veil on side and burn status, when checking, then does NOT block burn", () => {
+  it(`given pastel-veil on side and ${CORE_STATUS_IDS.burn} status, when checking, then does NOT block burn`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil only blocks poison/toxic
-    expect(isPastelVeilBlocking(["pastel-veil"], "burn")).toBe(false);
+    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], CORE_STATUS_IDS.burn)).toBe(false);
   });
 
-  it("given pastel-veil on side and paralysis status, when checking, then does NOT block paralysis", () => {
+  it(`given pastel-veil on side and ${CORE_STATUS_IDS.paralysis} status, when checking, then does NOT block paralysis`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil only blocks poison/toxic
-    expect(isPastelVeilBlocking(["pastel-veil"], "paralysis")).toBe(false);
+    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], CORE_STATUS_IDS.paralysis)).toBe(false);
   });
 
-  it("given no pastel-veil on side and poison status, when checking, then does not block", () => {
-    expect(isPastelVeilBlocking(["intimidate", "levitate"], "poison")).toBe(false);
+  it(`given no pastel-veil on side and ${CORE_STATUS_IDS.poison} status, when checking, then does not block`, () => {
+    expect(isPastelVeilBlocking([CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.levitate], CORE_STATUS_IDS.poison)).toBe(false);
   });
 });
 
@@ -630,31 +657,31 @@ describe("Gen 8 Pastel Veil", () => {
 // Tests: Gen 8 New Abilities -- Wandering Spirit
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Wandering Spirit", () => {
-  it("given wandering-spirit and on-contact trigger with contact, when checking, then returns true", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Wandering Spirit`, () => {
+  it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and on-contact trigger with contact, when checking, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Wandering Spirit onDamagingHit: swaps on contact
     // Source: Bulbapedia "Wandering Spirit" -- swaps abilities on contact
-    expect(shouldWanderingSpiritSwap("wandering-spirit", "on-contact", true)).toBe(true);
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, "on-contact", true)).toBe(true);
   });
 
-  it("given wandering-spirit and on-contact trigger without contact, when checking, then returns false", () => {
+  it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and on-contact trigger without contact, when checking, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- requires contact flag
-    expect(shouldWanderingSpiritSwap("wandering-spirit", "on-contact", false)).toBe(false);
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, "on-contact", false)).toBe(false);
   });
 
-  it("given wandering-spirit and non-contact trigger, when checking, then returns false", () => {
-    expect(shouldWanderingSpiritSwap("wandering-spirit", "on-switch-in", true)).toBe(false);
+  it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and non-contact trigger, when checking, then returns false`, () => {
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, "on-switch-in", true)).toBe(false);
   });
 
-  it("given non-wandering-spirit ability, when checking, then returns false", () => {
-    expect(shouldWanderingSpiritSwap("rough-skin", "on-contact", true)).toBe(false);
+  it(`given non-${GEN8_ABILITY_IDS.wanderingSpirit} ability, when checking, then returns false`, () => {
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.roughSkin, "on-contact", true)).toBe(false);
   });
 
-  it("given wandering-spirit holder hit by contact, when triggered, then swaps both abilities", () => {
+  it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} holder hit by contact, when triggered, then swaps both abilities`, () => {
     // Source: Showdown data/abilities.ts -- Wandering Spirit: swap abilities with attacker
-    const attacker = makeActivePokemon({ ability: "intimidate" });
+    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
     const ctx = makeContext({
-      ability: "wandering-spirit",
+      ability: GEN8_ABILITY_IDS.wanderingSpirit,
       trigger: "on-contact",
       nickname: "Runerigus",
       opponent: attacker,
@@ -667,20 +694,20 @@ describe("Gen 8 Wandering Spirit", () => {
     expect(result.effects[0]).toEqual({
       effectType: "ability-change",
       target: "self",
-      newAbility: "intimidate",
+      newAbility: CORE_ABILITY_IDS.intimidate,
     });
     expect(result.effects[1]).toEqual({
       effectType: "ability-change",
       target: "opponent",
-      newAbility: "wandering-spirit",
+      newAbility: GEN8_ABILITY_IDS.wanderingSpirit,
     });
   });
 
-  it("given wandering-spirit holder hit by unsuppressable ability attacker, when triggered, then does not swap", () => {
+  it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} holder hit by unsuppressable ability attacker, when triggered, then does not swap`, () => {
     // Source: Showdown data/abilities.ts -- can't swap unsuppressable abilities
-    const attacker = makeActivePokemon({ ability: "multitype" });
+    const attacker = makeActivePokemon({ ability: GEN8_ABILITY_IDS.multitype });
     const ctx = makeContext({
-      ability: "wandering-spirit",
+      ability: GEN8_ABILITY_IDS.wanderingSpirit,
       trigger: "on-contact",
       opponent: attacker,
     });
@@ -694,26 +721,26 @@ describe("Gen 8 Wandering Spirit", () => {
 // Tests: Gen 8 New Abilities -- Perish Body
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Perish Body", () => {
-  it("given perish-body and on-contact trigger with contact, when checking, then returns true", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Perish Body`, () => {
+  it(`given ${GEN8_ABILITY_IDS.perishBody} and on-contact trigger with contact, when checking, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Perish Body onDamagingHit: triggers on contact
     // Source: Bulbapedia "Perish Body" -- both get Perish Song on contact
-    expect(shouldPerishBodyTrigger("perish-body", "on-contact", true)).toBe(true);
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, "on-contact", true)).toBe(true);
   });
 
-  it("given perish-body and on-contact trigger without contact, when checking, then returns false", () => {
-    expect(shouldPerishBodyTrigger("perish-body", "on-contact", false)).toBe(false);
+  it(`given ${GEN8_ABILITY_IDS.perishBody} and on-contact trigger without contact, when checking, then returns false`, () => {
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, "on-contact", false)).toBe(false);
   });
 
-  it("given non-perish-body ability, when checking, then returns false", () => {
-    expect(shouldPerishBodyTrigger("rough-skin", "on-contact", true)).toBe(false);
+  it(`given non-${GEN8_ABILITY_IDS.perishBody} ability, when checking, then returns false`, () => {
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.roughSkin, "on-contact", true)).toBe(false);
   });
 
-  it("given perish-body holder hit by contact move, when triggered, then both get perish-song volatile", () => {
+  it(`given perish-body holder hit by contact move, when triggered, then both get ${CORE_MOVE_IDS.perishSong} volatile`, () => {
     // Source: Showdown data/abilities.ts -- Perish Body: both Pokemon get Perish Song
-    const attacker = makeActivePokemon({ ability: "intimidate" });
+    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
     const ctx = makeContext({
-      ability: "perish-body",
+      ability: GEN8_ABILITY_IDS.perishBody,
       trigger: "on-contact",
       nickname: "Cursola",
       opponent: attacker,
@@ -726,14 +753,14 @@ describe("Gen 8 Perish Body", () => {
     expect(result.effects[0]).toEqual({
       effectType: "volatile-inflict",
       target: "self",
-      volatile: "perish-song",
+      volatile: CORE_MOVE_IDS.perishSong,
     });
     expect(result.effects[1]).toEqual({
       effectType: "volatile-inflict",
       target: "opponent",
-      volatile: "perish-song",
+      volatile: CORE_MOVE_IDS.perishSong,
     });
-    expect(result.messages).toContain("Both Pokemon will faint in 3 turns!");
+    expect(result.messages).toContain(`Both Pokemon will faint in ${GEN8_SPECIES_IDS.venusaur} turns!`);
   });
 });
 
@@ -741,30 +768,30 @@ describe("Gen 8 Perish Body", () => {
 // Tests: Gen 8 Libero / Protean
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Libero / Protean", () => {
-  it("given libero ability, when isLiberoActive, then returns true", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Libero / Protean`, () => {
+  it(`given ${GEN8_ABILITY_IDS.libero} ability, when isLiberoActive, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Libero same as Protean
-    expect(isLiberoActive("libero")).toBe(true);
+    expect(isLiberoActive(GEN8_ABILITY_IDS.libero)).toBe(true);
   });
 
-  it("given protean ability, when isLiberoActive, then returns true", () => {
+  it(`given ${GEN8_ABILITY_IDS.protean} ability, when isLiberoActive, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Protean type change before attacking
-    expect(isLiberoActive("protean")).toBe(true);
+    expect(isLiberoActive(GEN8_ABILITY_IDS.protean)).toBe(true);
   });
 
-  it("given other ability, when isLiberoActive, then returns false", () => {
-    expect(isLiberoActive("intimidate")).toBe(false);
+  it(`given other ability, when isLiberoActive, then ${GEN7_MOVE_IDS.return}s false`, () => {
+    expect(isLiberoActive(CORE_ABILITY_IDS.intimidate)).toBe(false);
   });
 
-  it("given libero user using fire move, when on-before-move triggers, then changes type to fire", () => {
+  it(`given libero user using ${CORE_TYPE_IDS.fire} move, when on-before-move triggers, then changes type to fire`, () => {
     // Source: Showdown data/mods/gen8/ -- Libero: no once-per-switchin limit in Gen 8
     // Source: specs/reference/gen8-ground-truth.md -- activates on every move use
     const ctx = makeContext({
-      ability: "libero",
+      ability: GEN8_ABILITY_IDS.libero,
       trigger: "on-before-move",
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       nickname: "Cinderace",
-      move: makeMove("fire", { id: "pyro-ball" }),
+      move: makeMove(CORE_TYPE_IDS.fire, { id: GEN8_MOVE_IDS.pyroBall }),
     });
 
     const result = handleGen8SwitchAbility("on-before-move", ctx);
@@ -774,20 +801,20 @@ describe("Gen 8 Libero / Protean", () => {
     expect(result.effects[0]).toEqual({
       effectType: "type-change",
       target: "self",
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
     expect(result.messages[0]).toContain("Libero");
-    expect(result.messages[0]).toContain("fire");
+    expect(result.messages[0]).toContain(CORE_TYPE_IDS.fire);
   });
 
-  it("given protean user using water move, when on-before-move triggers, then changes type to water", () => {
+  it(`given protean user using ${CORE_TYPE_IDS.water} move, when on-before-move triggers, then changes type to water`, () => {
     // Source: Showdown data/abilities.ts -- Protean: same behavior as Libero
     const ctx = makeContext({
-      ability: "protean",
+      ability: GEN8_ABILITY_IDS.protean,
       trigger: "on-before-move",
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
       nickname: "Greninja",
-      move: makeMove("water", { id: "water-shuriken" }),
+      move: makeMove(CORE_TYPE_IDS.water, { id: `${CORE_TYPE_IDS.water}-shuriken` }),
     });
 
     // Already water type -- should not activate
@@ -795,13 +822,13 @@ describe("Gen 8 Libero / Protean", () => {
     expect(result.activated).toBe(false);
   });
 
-  it("given libero user already matching type, when on-before-move triggers, then does NOT activate", () => {
+  it(`given ${GEN8_ABILITY_IDS.libero} user already matching type, when on-before-move triggers, then does NOT activate`, () => {
     // Source: Showdown data/abilities.ts -- Libero/Protean doesn't activate if already that monotype
     const ctx = makeContext({
-      ability: "libero",
+      ability: GEN8_ABILITY_IDS.libero,
       trigger: "on-before-move",
-      types: ["fire"],
-      move: makeMove("fire", { id: "pyro-ball" }),
+      types: [CORE_TYPE_IDS.fire],
+      move: makeMove(CORE_TYPE_IDS.fire, { id: GEN8_MOVE_IDS.pyroBall }),
     });
 
     const result = handleGen8SwitchAbility("on-before-move", ctx);
@@ -813,53 +840,53 @@ describe("Gen 8 Libero / Protean", () => {
 // Tests: Gen 8 Ice Face
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Ice Face", () => {
-  it("given Eiscue with ice-face, when isIceFaceActive with no broken volatile, then returns true", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ice Face`, () => {
+  it(`given Eiscue with ${CORE_TYPE_IDS.ice}-face, when isIceFaceActive with no broken volatile, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face: active in Ice Face form
     // Eiscue species ID: 875
-    expect(isIceFaceActive(875, "ice-face", false)).toBe(true);
+    expect(isIceFaceActive(875, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(true);
   });
 
-  it("given Eiscue with ice-face, when isIceFaceActive with broken volatile, then returns false", () => {
+  it(`given Eiscue with ${CORE_TYPE_IDS.ice}-face, when isIceFaceActive with broken volatile, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face: once broken, stays Noice Face
-    expect(isIceFaceActive(875, "ice-face", true)).toBe(false);
+    expect(isIceFaceActive(875, `${CORE_TYPE_IDS.ice}-face`, true)).toBe(false);
   });
 
-  it("given non-Eiscue with ice-face, when isIceFaceActive, then returns false", () => {
+  it(`given non-Eiscue with ${CORE_TYPE_IDS.ice}-face, when isIceFaceActive, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- only works for Eiscue (species 875)
-    expect(isIceFaceActive(25, "ice-face", false)).toBe(false);
+    expect(isIceFaceActive(25, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(false);
   });
 
-  it("given Eiscue with different ability, when isIceFaceActive, then returns false", () => {
-    expect(isIceFaceActive(875, "sturdy", false)).toBe(false);
+  it(`given Eiscue with different ability, when isIceFaceActive, then ${GEN7_MOVE_IDS.return}s false`, () => {
+    expect(isIceFaceActive(875, CORE_ABILITY_IDS.sturdy, false)).toBe(false);
   });
 
-  it("given ice-face in hail, when shouldIceFaceReform, then returns true", () => {
+  it(`given ice-face in ${CORE_WEATHER_IDS.hail}, when shouldIceFaceReform, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face reforms in Hail
     // Source: Bulbapedia "Ice Face" -- "If Hail is active, it will reform."
-    expect(shouldIceFaceReform("ice-face", "hail")).toBe(true);
+    expect(shouldIceFaceReform(`${CORE_TYPE_IDS.ice}-face`, CORE_WEATHER_IDS.hail)).toBe(true);
   });
 
-  it("given ice-face in sun, when shouldIceFaceReform, then returns false", () => {
+  it(`given ${CORE_TYPE_IDS.ice}-face in sun, when shouldIceFaceReform, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face only reforms in hail
-    expect(shouldIceFaceReform("ice-face", "sun")).toBe(false);
+    expect(shouldIceFaceReform(`${CORE_TYPE_IDS.ice}-face`, CORE_WEATHER_IDS.sun)).toBe(false);
   });
 
-  it("given ice-face with no weather, when shouldIceFaceReform, then returns false", () => {
-    expect(shouldIceFaceReform("ice-face", null)).toBe(false);
+  it(`given ${CORE_TYPE_IDS.ice}-face with no weather, when shouldIceFaceReform, then returns false`, () => {
+    expect(shouldIceFaceReform(`${CORE_TYPE_IDS.ice}-face`, null)).toBe(false);
   });
 
-  it("given Eiscue hit by physical move with Ice Face active, when on-contact triggers, then blocks damage", () => {
+  it(`given Eiscue hit by physical move with Ice Face active, when on-contact triggers, then ${GEN8_MOVE_IDS.block}s damage`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face onDamage: blocks physical hit
     // Source: Bulbapedia "Ice Face" -- blocks first physical hit
-    const attacker = makeActivePokemon({ ability: "intimidate" });
+    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
     const ctx = makeContext({
-      ability: "ice-face",
+      ability: `${CORE_TYPE_IDS.ice}-face`,
       trigger: "on-contact",
       speciesId: 875,
       nickname: "Eiscue",
       opponent: attacker,
-      move: makeMove("normal", { id: "tackle", category: "physical" }),
+      move: makeMove(`${CORE_TYPE_IDS.normal}`, { id: CORE_MOVE_IDS.tackle, category: `physical` }),
     });
 
     const result = handleGen8SwitchAbility("on-contact", ctx);
@@ -869,16 +896,16 @@ describe("Gen 8 Ice Face", () => {
     expect(result.messages[0]).toContain("Ice Face");
   });
 
-  it("given Eiscue hit by special move with Ice Face active, when on-contact triggers, then does NOT block", () => {
+  it(`given Eiscue hit by special move with Ice Face active, when on-contact triggers, then does NOT ${GEN8_MOVE_IDS.block}`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face only blocks physical moves
-    const attacker = makeActivePokemon({ ability: "intimidate" });
+    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
     const ctx = makeContext({
-      ability: "ice-face",
+      ability: `${CORE_TYPE_IDS.ice}-face`,
       trigger: "on-contact",
       speciesId: 875,
       nickname: "Eiscue",
       opponent: attacker,
-      move: makeMove("fire", { id: "flamethrower", category: "special" }),
+      move: makeMove(`${CORE_TYPE_IDS.fire}`, { id: CORE_MOVE_IDS.flamethrower, category: `special` }),
     });
 
     const result = handleGen8SwitchAbility("on-contact", ctx);
@@ -890,21 +917,21 @@ describe("Gen 8 Ice Face", () => {
 // Tests: Gen 8 Gulp Missile
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Gulp Missile", () => {
-  it("given Cramorant with gulp-missile, when isCramorantWithGulpMissile, then returns true", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Gulp Missile`, () => {
+  it(`given Cramorant with ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Gulp Missile: species 845 = Cramorant
-    expect(isCramorantWithGulpMissile(845, "gulp-missile")).toBe(true);
+    expect(isCramorantWithGulpMissile(845, GEN8_ABILITY_IDS.gulpMissile)).toBe(true);
   });
 
-  it("given non-Cramorant with gulp-missile, when isCramorantWithGulpMissile, then returns false", () => {
-    expect(isCramorantWithGulpMissile(25, "gulp-missile")).toBe(false);
+  it(`given non-Cramorant with ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns false`, () => {
+    expect(isCramorantWithGulpMissile(25, GEN8_ABILITY_IDS.gulpMissile)).toBe(false);
   });
 
-  it("given Cramorant without gulp-missile, when isCramorantWithGulpMissile, then returns false", () => {
-    expect(isCramorantWithGulpMissile(845, "keen-eye")).toBe(false);
+  it(`given Cramorant without ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns false`, () => {
+    expect(isCramorantWithGulpMissile(845, GEN8_ABILITY_IDS.keenEye)).toBe(false);
   });
 
-  it("given gulping form (Arrokuda), when getGulpMissileResult, then returns 1/4 HP damage and defense-drop", () => {
+  it(`given gulping form (Arrokuda), when getGulpMissileResult, then returns ${GEN8_SPECIES_IDS.bulbasaur}/4 HP damage and defense-drop`, () => {
     // Source: Showdown data/abilities.ts -- Gulp Missile gulping: 1/4 HP + -1 Defense
     // Source: Bulbapedia "Gulp Missile" -- Arrokuda: damage + Defense drop
     // With 200 max HP: floor(200/4) = 50 damage
@@ -913,16 +940,16 @@ describe("Gen 8 Gulp Missile", () => {
     expect(result.secondaryEffect).toBe("defense-drop");
   });
 
-  it("given gorging form (Pikachu), when getGulpMissileResult, then returns 1/4 HP damage and paralysis", () => {
+  it(`given gorging form (Pikachu), when getGulpMissileResult, then returns 1/4 HP damage and ${CORE_STATUS_IDS.paralysis}`, () => {
     // Source: Showdown data/abilities.ts -- Gulp Missile gorging: 1/4 HP + paralysis
     // Source: Bulbapedia "Gulp Missile" -- Pikachu: damage + paralysis
     // With 160 max HP: floor(160/4) = 40 damage
     const result = getGulpMissileResult("gorging", 160);
     expect(result.damage).toBe(40);
-    expect(result.secondaryEffect).toBe("paralysis");
+    expect(result.secondaryEffect).toBe(CORE_STATUS_IDS.paralysis);
   });
 
-  it("given gulping form with 1 HP attacker, when getGulpMissileResult, then minimum damage is 1", () => {
+  it(`given gulping form with ${GEN8_SPECIES_IDS.bulbasaur} HP attacker, when getGulpMissileResult, then minimum damage is 1`, () => {
     // Source: Showdown -- minimum damage is 1
     // With 3 max HP: floor(3/4) = 0, but minimum is 1
     const result = getGulpMissileResult("gulping", 3);
@@ -934,20 +961,20 @@ describe("Gen 8 Gulp Missile", () => {
 // Tests: Gen 8 Hunger Switch
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Hunger Switch", () => {
-  it("given hunger-switch and Morpeko (877), when shouldHungerSwitchToggle, then returns true", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Hunger Switch`, () => {
+  it(`given ${GEN8_ABILITY_IDS.hungerSwitch} and Morpeko (877), when shouldHungerSwitchToggle, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Hunger Switch: Morpeko (species 877) only
     // Source: Bulbapedia "Hunger Switch" -- toggles form each turn
-    expect(shouldHungerSwitchToggle("hunger-switch", 877)).toBe(true);
+    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, 877)).toBe(true);
   });
 
-  it("given hunger-switch and non-Morpeko, when shouldHungerSwitchToggle, then returns false", () => {
+  it(`given ${GEN8_ABILITY_IDS.hungerSwitch} and non-Morpeko, when shouldHungerSwitchToggle, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- only applies to Morpeko
-    expect(shouldHungerSwitchToggle("hunger-switch", 25)).toBe(false);
+    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, 25)).toBe(false);
   });
 
-  it("given non-hunger-switch ability and Morpeko, when shouldHungerSwitchToggle, then returns false", () => {
-    expect(shouldHungerSwitchToggle("intimidate", 877)).toBe(false);
+  it(`given non-${GEN8_ABILITY_IDS.hungerSwitch} ability and Morpeko, when shouldHungerSwitchToggle, then returns false`, () => {
+    expect(shouldHungerSwitchToggle(CORE_ABILITY_IDS.intimidate, 877)).toBe(false);
   });
 });
 
@@ -955,12 +982,12 @@ describe("Gen 8 Hunger Switch", () => {
 // Tests: Gen 8 Intrepid Sword / Dauntless Shield
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Intrepid Sword / Dauntless Shield", () => {
-  it("given intrepid-sword user, when switching in, then raises Attack by 1 stage", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Intrepid Sword / Dauntless Shield`, () => {
+  it(`given ${GEN8_ABILITY_IDS.intrepidSword} user, when switching in, then raises Attack by 1 stage`, () => {
     // Source: Showdown data/mods/gen8/abilities.ts -- Intrepid Sword onStart: +1 Atk
     // Source: specs/reference/gen8-ground-truth.md -- every switch-in (Gen 8 pre-nerf)
     const ctx = makeContext({
-      ability: "intrepid-sword",
+      ability: GEN8_ABILITY_IDS.intrepidSword,
       trigger: "on-switch-in",
       nickname: "Zacian",
     });
@@ -978,11 +1005,11 @@ describe("Gen 8 Intrepid Sword / Dauntless Shield", () => {
     expect(result.messages[0]).toContain("Intrepid Sword");
   });
 
-  it("given dauntless-shield user, when switching in, then raises Defense by 1 stage", () => {
+  it(`given ${GEN8_ABILITY_IDS.dauntlessShield} user, when switching in, then raises Defense by 1 stage`, () => {
     // Source: Showdown data/mods/gen8/abilities.ts -- Dauntless Shield onStart: +1 Def
     // Source: specs/reference/gen8-ground-truth.md -- every switch-in (Gen 8 pre-nerf)
     const ctx = makeContext({
-      ability: "dauntless-shield",
+      ability: GEN8_ABILITY_IDS.dauntlessShield,
       trigger: "on-switch-in",
       nickname: "Zamazenta",
     });
@@ -1005,12 +1032,12 @@ describe("Gen 8 Intrepid Sword / Dauntless Shield", () => {
 // Tests: Carry-forward switch-in abilities
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Switch-in Abilities (carry-forward)", () => {
-  it("given intimidate user, when switching in, then lowers opponent Attack by 1", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Switch-in Abilities (carry-forward)`, () => {
+  it(`given ${CORE_ABILITY_IDS.intimidate} user, when switching in, then lowers opponent Attack by 1`, () => {
     // Source: Showdown data/abilities.ts -- Intimidate: -1 Atk to foe on switch-in
-    const opponent = makeActivePokemon({ ability: "inner-focus" });
+    const opponent = makeActivePokemon({ ability: GEN8_ABILITY_IDS.innerFocus });
     const ctx = makeContext({
-      ability: "intimidate",
+      ability: CORE_ABILITY_IDS.intimidate,
       trigger: "on-switch-in",
       nickname: "Gyarados",
       opponent,
@@ -1027,10 +1054,10 @@ describe("Gen 8 Switch-in Abilities (carry-forward)", () => {
     });
   });
 
-  it("given drizzle user, when switching in, then sets rain weather", () => {
+  it(`given ${CORE_ABILITY_IDS.drizzle} user, when switching in, then sets rain weather`, () => {
     // Source: Showdown data/abilities.ts -- Drizzle sets rain
     const ctx = makeContext({
-      ability: "drizzle",
+      ability: CORE_ABILITY_IDS.drizzle,
       trigger: "on-switch-in",
       nickname: "Pelipper",
     });
@@ -1041,7 +1068,7 @@ describe("Gen 8 Switch-in Abilities (carry-forward)", () => {
     expect(result.effects[0]).toEqual({
       effectType: "weather-set",
       target: "field",
-      weather: "rain",
+      weather: CORE_WEATHER_IDS.rain,
       weatherTurns: 5,
     });
   });
@@ -1051,45 +1078,45 @@ describe("Gen 8 Switch-in Abilities (carry-forward)", () => {
 // Tests: Constants
 // ---------------------------------------------------------------------------
 
-describe("Gen 8 Ability Constants", () => {
-  it("given TRACE_UNCOPYABLE_ABILITIES, then includes Gen 8 additions", () => {
+describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ability Constants`, () => {
+  it(`given TRACE_UNCOPYABLE_ABILITIES, then includes Gen ${GEN8_SPECIES_IDS.wartortle} additions`, () => {
     // Source: Showdown data/abilities.ts -- trace Gen 8 ban list
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("hunger-switch")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("gulp-missile")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("ice-face")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("neutralizing-gas")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("intrepid-sword")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("dauntless-shield")).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.hungerSwitch)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.gulpMissile)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(`${CORE_TYPE_IDS.ice}-face`)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.neutralizingGas)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.intrepidSword)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.dauntlessShield)).toBe(true);
   });
 
-  it("given TRACE_UNCOPYABLE_ABILITIES, then still includes Gen 7 entries", () => {
+  it(`given TRACE_UNCOPYABLE_ABILITIES, then still includes Gen ${GEN8_SPECIES_IDS.squirtle} entries`, () => {
     // Source: Showdown data/abilities.ts -- trace ban list carry-forward
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("trace")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("multitype")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("disguise")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("battle-bond")).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.trace)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.multitype)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.disguise)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(GEN8_ABILITY_IDS.battleBond)).toBe(true);
   });
 
-  it("given UNSUPPRESSABLE_ABILITIES, then includes Gen 8 additions", () => {
+  it(`given UNSUPPRESSABLE_ABILITIES, then includes Gen ${GEN8_SPECIES_IDS.wartortle} additions`, () => {
     // Source: Showdown data/abilities.ts -- cantsuppress Gen 8 entries
-    expect(UNSUPPRESSABLE_ABILITIES.has("gulp-missile")).toBe(true);
-    expect(UNSUPPRESSABLE_ABILITIES.has("ice-face")).toBe(true);
-    expect(UNSUPPRESSABLE_ABILITIES.has("neutralizing-gas")).toBe(true);
+    expect(UNSUPPRESSABLE_ABILITIES.has(GEN8_ABILITY_IDS.gulpMissile)).toBe(true);
+    expect(UNSUPPRESSABLE_ABILITIES.has(`${CORE_TYPE_IDS.ice}-face`)).toBe(true);
+    expect(UNSUPPRESSABLE_ABILITIES.has(GEN8_ABILITY_IDS.neutralizingGas)).toBe(true);
   });
 
-  it("given MOLD_BREAKER_ALIASES, then contains mold-breaker, teravolt, turboblaze", () => {
+  it(`given MOLD_BREAKER_ALIASES, then contains ${CORE_ABILITY_IDS.moldBreaker}, teravolt, turboblaze`, () => {
     // Source: Showdown data/abilities.ts -- mold breaker variants
-    expect(MOLD_BREAKER_ALIASES.has("mold-breaker")).toBe(true);
-    expect(MOLD_BREAKER_ALIASES.has("teravolt")).toBe(true);
-    expect(MOLD_BREAKER_ALIASES.has("turboblaze")).toBe(true);
+    expect(MOLD_BREAKER_ALIASES.has(CORE_ABILITY_IDS.moldBreaker)).toBe(true);
+    expect(MOLD_BREAKER_ALIASES.has(GEN8_ABILITY_IDS.teravolt)).toBe(true);
+    expect(MOLD_BREAKER_ALIASES.has(`turbo${CORE_ABILITY_IDS.blaze}`)).toBe(true);
     expect(MOLD_BREAKER_ALIASES.size).toBe(3);
   });
 
-  it("given NEUTRALIZING_GAS_IMMUNE_ABILITIES, then includes neutralizing-gas and comatose", () => {
+  it(`given NEUTRALIZING_GAS_IMMUNE_ABILITIES, then includes ${GEN8_ABILITY_IDS.neutralizingGas} and comatose`, () => {
     // Source: Showdown data/abilities.ts -- Neutralizing Gas immune set
-    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has("neutralizing-gas")).toBe(true);
-    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has("comatose")).toBe(true);
-    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has("multitype")).toBe(true);
-    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has("disguise")).toBe(true);
+    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has(GEN8_ABILITY_IDS.neutralizingGas)).toBe(true);
+    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has(GEN8_ABILITY_IDS.comatose)).toBe(true);
+    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has(GEN8_ABILITY_IDS.multitype)).toBe(true);
+    expect(NEUTRALIZING_GAS_IMMUNE_ABILITIES.has(GEN8_ABILITY_IDS.disguise)).toBe(true);
   });
 });
