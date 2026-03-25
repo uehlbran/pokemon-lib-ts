@@ -441,7 +441,7 @@ describe("Gen 4 executeMoveEffect — Knock Off", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(result.messages).toContain("Snorlax lost its leftovers!");
+    expect(result.messages).toEqual(["Snorlax lost its leftovers!"]);
   });
 
   it("given Knock Off vs Pokemon with no item, when executeMoveEffect called, then no effect", () => {
@@ -455,6 +455,7 @@ describe("Gen 4 executeMoveEffect — Knock Off", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.messages.length).toBe(0);
+    expect(result.itemTransfer).toBeUndefined();
   });
 });
 
@@ -473,6 +474,7 @@ describe("Gen 4 executeMoveEffect — Status Infliction", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBe("burn");
+    expect(result.messages).toEqual([]);
   });
 
   it("given Flamethrower (10% burn chance) and roll fails, when executeMoveEffect called, then statusInflicted = null", () => {
@@ -486,6 +488,7 @@ describe("Gen 4 executeMoveEffect — Status Infliction", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 
   it("given Fire-type defender, when Flamethrower burn chance succeeds, then burn NOT inflicted (type immunity)", () => {
@@ -499,6 +502,7 @@ describe("Gen 4 executeMoveEffect — Status Infliction", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 
   it("given defender already has status, when burn chance succeeds, then status NOT inflicted", () => {
@@ -512,6 +516,7 @@ describe("Gen 4 executeMoveEffect — Status Infliction", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -590,6 +595,7 @@ describe("Gen 4 executeMoveEffect — Shield Dust", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 
   it("given defender has Shield Dust, when guaranteed status move used, then status IS inflicted (not secondary)", () => {
@@ -604,6 +610,7 @@ describe("Gen 4 executeMoveEffect — Shield Dust", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBe("paralysis");
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -622,6 +629,7 @@ describe("Gen 4 executeMoveEffect — Serene Grace", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBe("burn");
+    expect(result.messages).toEqual([]);
   });
 
   it("given attacker without Serene Grace and roll at 15, when Flamethrower (10% burn), then burn NOT inflicted", () => {
@@ -635,6 +643,7 @@ describe("Gen 4 executeMoveEffect — Serene Grace", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -904,7 +913,7 @@ describe("Gen 4 executeMoveEffect — Thief/Covet", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.itemTransfer).toEqual({ from: "defender", to: "attacker" });
-    expect(result.messages).toContain("Sneasel stole Chansey's sitrus-berry!");
+    expect(result.messages).toEqual(["Sneasel stole Chansey's sitrus-berry!"]);
   });
 
   it("given Thief used and attacker already has item, when executeMoveEffect called, then no itemTransfer", () => {
@@ -924,6 +933,7 @@ describe("Gen 4 executeMoveEffect — Thief/Covet", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.itemTransfer).toBeUndefined();
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -1045,6 +1055,7 @@ describe("Gen 4 executeMoveEffect — Roost (null-effect)", () => {
       target: "attacker",
       types: ["normal"],
     });
+    expect(result.messages).toEqual(["Tornadus landed and recovered health!"]);
   });
 
   it("given Roost used by non-Flying type, when executeMoveEffect called, then no typeChange", () => {
@@ -1067,6 +1078,7 @@ describe("Gen 4 executeMoveEffect — Roost (null-effect)", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.typeChange).toBeUndefined();
+    expect(result.messages).toEqual(["The Pokemon landed and recovered health!"]);
   });
 });
 
@@ -1584,6 +1596,7 @@ describe("Gen 4 executeMoveEffect — Covet", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.itemTransfer).toBeUndefined();
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -1605,7 +1618,7 @@ describe("Gen 4 executeMoveEffect — Refresh", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusCuredOnly).toEqual({ target: "attacker" });
-    expect(result.messages).toContain("Chansey cured its status condition!");
+    expect(result.messages).toEqual(["Chansey cured its status condition!"]);
   });
 
   it("given Refresh used by healthy Pokemon (no status), when executeMoveEffect called, then no effect", () => {
@@ -1619,6 +1632,7 @@ describe("Gen 4 executeMoveEffect — Refresh", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusCuredOnly).toBeUndefined();
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -1712,6 +1726,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     // remove-hazards is a no-op in applyMoveEffect — only statuses/messages reset
     expect(result.clearSideHazards).toBeUndefined();
     expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 
   it("given a move with fixed-damage effect type, when executeMoveEffect called, then no status inflicted (handled by damage calc)", () => {
@@ -1729,6 +1744,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
 
     expect(result.statusInflicted).toBeNull();
     expect(result.recoilDamage).toBe(0);
+    expect(result.messages).toEqual([]);
   });
 
   it("given a move with terrain effect type, when executeMoveEffect called, then no terrain set in result (not in Gen 4)", () => {
@@ -1745,7 +1761,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusInflicted).toBeNull();
-    expect(result.messages).toHaveLength(0);
+    expect(result.messages).toEqual([]);
   });
 
   it("given a move with multi-hit effect type, when executeMoveEffect called, then no additional effects (handled by engine)", () => {
@@ -1873,6 +1889,7 @@ describe("Gen 4 executeMoveEffect — volatile-status on status move (guaranteed
 
     // Status moves with volatile-status are guaranteed, ignoring chance
     expect(result.volatileInflicted).toBe("focus-energy");
+    expect(result.messages).toEqual([]);
   });
 
   it("given a damaging move with volatile-status secondary effect, when roll fails, then volatile NOT inflicted", () => {
@@ -1894,6 +1911,7 @@ describe("Gen 4 executeMoveEffect — volatile-status on status move (guaranteed
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.volatileInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -1921,6 +1939,7 @@ describe("Gen 4 executeMoveEffect — Serene Grace doubling chance to 100%", () 
 
     // 100% guaranteed effect — covers the 'effectiveChance >= 100' fast-path
     expect(result.volatileInflicted).toBe("flinch");
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -1943,7 +1962,7 @@ describe("Gen 4 executeMoveEffect — handleNullEffectMoves default case", () =>
     expect(result.statusInflicted).toBeNull();
     expect(result.volatileInflicted).toBeNull();
     expect(result.statChanges).toHaveLength(0);
-    expect(result.messages).toHaveLength(0);
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -1965,7 +1984,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect default case", () => {
 
     expect(result.statusInflicted).toBeNull();
     expect(result.volatileInflicted).toBeNull();
-    expect(result.messages).toHaveLength(0);
+    expect(result.messages).toEqual([]);
   });
 });
 
@@ -2408,7 +2427,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusCuredOnly).toEqual({ target: "attacker" });
-    expect(result.messages).toContain("Chansey cured its status condition!");
+    expect(result.messages).toEqual(["Chansey cured its status condition!"]);
   });
 
   it("given synthetic custom-effect refresh move and healthy Pokemon, when used, then no effect", () => {
@@ -2424,6 +2443,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.statusCuredOnly).toBeUndefined();
+    expect(result.messages).toEqual([]);
   });
 
   it("given synthetic custom-effect baton-pass move, when used, then switchOut = true", () => {
